@@ -122,7 +122,21 @@ FOR SELECT USING (id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid);
 
 -- PROFILES
 CREATE POLICY "Profiles: Read Tenant" ON public.profiles FOR SELECT USING (tenant_id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid);
+CREATE POLICY "Profiles: Insert" ON public.profiles FOR INSERT WITH CHECK (
+    tenant_id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid 
+    AND public.has_permission('public.profiles:insert')
+);
 CREATE POLICY "Profiles: Update Self" ON public.profiles FOR UPDATE USING (id = auth.uid());
+CREATE POLICY "Profiles: Update Subordinate" ON public.profiles FOR UPDATE USING (
+    tenant_id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid 
+    AND public.has_permission('public.profiles:update')
+    AND public.is_subordinate(role_id)
+);
+CREATE POLICY "Profiles: Delete" ON public.profiles FOR DELETE USING (
+    tenant_id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid 
+    AND public.has_permission('public.profiles:delete')
+    AND public.is_subordinate(role_id)
+);
 
 -- ROLES
 CREATE POLICY "Roles: Read Tenant" ON public.roles FOR SELECT USING (tenant_id = (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid);

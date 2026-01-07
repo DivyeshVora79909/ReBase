@@ -20,6 +20,8 @@ CREATE TABLE public.roles (
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     permissions TEXT[],
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    owner_role_id UUID REFERENCES public.roles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -29,6 +31,8 @@ CREATE TABLE public.hierarchy (
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     child_role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
     parent_role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    owner_role_id UUID REFERENCES public.roles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -39,6 +43,8 @@ CREATE TABLE public.profiles (
     role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE RESTRICT,
     first_name TEXT,
     last_name TEXT,
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    owner_role_id UUID REFERENCES public.roles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -80,7 +86,7 @@ CREATE UNIQUE INDEX idx_invitations_email_pending ON public.invitations(email, t
 
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$ BEGIN
-    NEW.updated_at = now();
+    NEW.updated_at = clock_timestamp();
     RETURN NEW;
 END;
  $$ LANGUAGE plpgsql;

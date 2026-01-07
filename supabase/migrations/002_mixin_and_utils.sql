@@ -1,3 +1,17 @@
+-- 0. ADMIN CHECKER
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+AS $$ BEGIN
+    RETURN (
+        (auth.jwt() ->> 'role') = 'service_role' OR
+        (auth.uid() IS NULL AND session_user IN ('service_role', 'postgres', 'supabase_admin', 'supabase_auth_admin'))
+    );
+END;
+ $$;
+
 -- 1. SECURITY MIXIN: Forces Tenant Isolation and Sets Audit Fields
 CREATE OR REPLACE FUNCTION public.handle_security_mixin()
 RETURNS TRIGGER
@@ -9,45 +23,33 @@ AS $$ DECLARE
     v_role_id uuid;
     v_has_jwt boolean;
 BEGIN
-    IF (auth.jwt() ->> 'role') = 'service_role' THEN
+    IF public.is_admin() AND auth.uid() IS NULL THEN
         RETURN NEW;
     END IF;
 
-    BEGIN
-        v_tenant_id := (auth.jwt()->'app_metadata'->>'tenant_id')::uuid;
-        v_role_id := (auth.jwt()->'app_metadata'->>'role_id')::uuid;
-        v_has_jwt := (v_tenant_id IS NOT NULL);
-    EXCEPTION
-        WHEN OTHERS THEN
-            v_has_jwt := FALSE;
-    END;
+    -- 1. ENFORCE TENANT ID
+    v_has_jwt := (auth.jwt() IS NOT NULL);
+    
+    IF v_has_jwt THEN
+        v_tenant_id := (auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid;
+        v_role_id := (auth.jwt() -> 'app_metadata' -> 'role' ->> 'id')::uuid;
 
-    BEGIN
-        IF v_has_jwt THEN
+        -- If tenant_id is provided, it MUST match the JWT
+        IF NEW.tenant_id IS NOT NULL AND NEW.tenant_id != v_tenant_id THEN
+            RAISE EXCEPTION 'Security Violation: Tenant ID mismatch.';
+        END IF;
+
+        -- Auto-populate tenant_id if missing
+        IF NEW.tenant_id IS NULL THEN
             NEW.tenant_id := v_tenant_id;
         END IF;
-        IF NEW.tenant_id IS NULL THEN
-            RAISE EXCEPTION 'Security Violation: Tenant ID is missing.';
-        END IF;
-    EXCEPTION
-        WHEN undefined_column THEN NULL;
-    END;
+    END IF;
 
-    BEGIN
-        IF NEW.owner_id IS NULL THEN
-            NEW.owner_id := auth.uid();
-        END IF;
-    EXCEPTION
-        WHEN undefined_column THEN NULL;
-    END;
-
-    BEGIN
-        IF NEW.owner_role_id IS NULL AND v_has_jwt THEN
-            NEW.owner_role_id := v_role_id;
-        END IF;
-    EXCEPTION
-        WHEN undefined_column THEN NULL;
-    END;
+    -- 2. ENFORCE AUDIT FIELDS
+    IF v_has_jwt THEN
+        NEW.owner_id := auth.uid();
+        NEW.owner_role_id := v_role_id;
+    END IF;
 
     RETURN NEW;
 END;
@@ -61,7 +63,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$ 
 BEGIN
-    IF (auth.jwt() ->> 'role') = 'service_role' THEN
+    IF public.is_admin() AND auth.uid() IS NULL THEN
         RETURN NEW;
     END IF;
 

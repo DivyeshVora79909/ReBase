@@ -25,23 +25,25 @@ BEGIN
         RAISE EXCEPTION 'Security Violation: Cannot link roles from different tenants.';
     END IF;
 
-    -- RULE 3: Cycle Detection
-    WITH RECURSIVE path_check AS (
-        SELECT parent_role_id, child_role_id, 1 as depth
-        FROM public.hierarchy
-        WHERE child_role_id = NEW.child_role_id AND tenant_id = v_child_tenant_id
-        
-        UNION ALL
-        
-        SELECT h.parent_role_id, h.child_role_id, pc.depth + 1
-        FROM public.hierarchy h
-        JOIN path_check pc ON h.child_role_id = pc.parent_role_id
-        WHERE h.tenant_id = v_child_tenant_id AND pc.depth < 20
-    )
-    SELECT EXISTS(SELECT 1 FROM path_check WHERE parent_role_id = NEW.parent_role_id) INTO v_is_cycle;
+    -- RULE 3: Prevent Cycles (DAG)
+    IF NEW.parent_role_id = NEW.child_role_id THEN
+        RAISE EXCEPTION 'Hierarchy Cycle Detected: A role cannot be its own parent.';
+    END IF;
 
-    IF v_is_cycle THEN
-        RAISE EXCEPTION 'Constraint Violation: Cycle detected in role hierarchy.';
+    IF EXISTS (
+        WITH RECURSIVE hierarchy_tree AS (
+            SELECT child_role_id as role_id
+            FROM public.hierarchy
+            WHERE parent_role_id = NEW.child_role_id AND tenant_id = v_child_tenant_id
+            UNION ALL
+            SELECT h.child_role_id
+            FROM public.hierarchy h
+            JOIN hierarchy_tree ht ON h.parent_role_id = ht.role_id
+            WHERE h.tenant_id = v_child_tenant_id
+        )
+        SELECT 1 FROM hierarchy_tree WHERE role_id = NEW.parent_role_id
+    ) THEN
+        RAISE EXCEPTION 'Hierarchy Cycle Detected: Role % is already a descendant of %', NEW.child_role_id, NEW.parent_role_id;
     END IF;
 
     RETURN NEW;
@@ -59,6 +61,10 @@ SECURITY DEFINER
 AS $$ DECLARE
     v_my_perms text[];
 BEGIN
+    IF public.is_admin() THEN
+        RETURN NEW;
+    END IF;
+
     IF TG_OP = 'UPDATE' AND NOT public.is_subordinate(OLD.id) THEN
         RAISE EXCEPTION 'Security Violation: You can only manage roles that are subordinates of your role.';
     END IF;
@@ -85,6 +91,10 @@ AS $$ DECLARE
     v_target_perms text[];
     v_my_perms text[];
 BEGIN
+    IF public.is_admin() THEN
+        RETURN NEW;
+    END IF;
+
     IF NEW.role_id IS DISTINCT FROM OLD.role_id THEN
         IF NOT public.is_subordinate(NEW.role_id) THEN
             RAISE EXCEPTION 'Security Violation: You cannot assign a role that is not your subordinate.';
@@ -101,7 +111,7 @@ END;
  $$;
 
 DROP TRIGGER IF EXISTS protect_profile_role_trigger ON public.profiles;
-CREATE TRIGGER protect_profile_role_trigger BEFORE UPDATE OF role_id ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role_assignment();
+CREATE TRIGGER protect_profile_role_trigger BEFORE INSERT OR UPDATE OF role_id ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role_assignment();
 
 -- 4. PREVENT INVITATION ESCALATION
 CREATE OR REPLACE FUNCTION public.protect_invitation_escalation()
@@ -110,7 +120,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    IF (auth.jwt() ->> 'role') = 'service_role' THEN
+    IF public.is_admin() THEN
         RETURN NEW;
     END IF;
 
