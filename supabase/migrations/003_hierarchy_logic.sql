@@ -1,33 +1,42 @@
--- 1. HIERARCHY ENFORCEMENT (DAG & ROOT LOCK)
+-- 1. HIERARCHY ENFORCEMENT (DAG, ROOT LOCK, & TENANT ISOLATION)
 CREATE OR REPLACE FUNCTION public.enforce_hierarchy_rules()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$ DECLARE
     v_child_name TEXT;
+    v_child_tenant_id uuid;
     v_parent_name TEXT;
+    v_parent_tenant_id uuid;
     v_is_cycle BOOLEAN;
     v_my_role_id uuid;
 BEGIN
-    SELECT name INTO v_child_name FROM public.roles WHERE id = NEW.child_role_id;
-    SELECT name INTO v_parent_name FROM public.roles WHERE id = NEW.parent_role_id;
+    -- Fetch metadata for checks
+    SELECT name, tenant_id INTO v_child_name, v_child_tenant_id FROM public.roles WHERE id = NEW.child_role_id;
+    SELECT name, tenant_id INTO v_parent_name, v_parent_tenant_id FROM public.roles WHERE id = NEW.parent_role_id;
 
+    -- RULE 1: Root Lock (Tenant Owner cannot be a child)
     IF v_child_name = 'Tenant Owner' THEN
         RAISE EXCEPTION 'Security Violation: Tenant Owner role cannot be a subordinate.';
     END IF;
 
-    -- Cycle Detection using Recursive CTE
+    -- RULE 2: Tenant Isolation (Cross-tenant links forbidden)
+    IF v_child_tenant_id IS DISTINCT FROM v_parent_tenant_id THEN
+        RAISE EXCEPTION 'Security Violation: Cannot link roles from different tenants.';
+    END IF;
+
+    -- RULE 3: Cycle Detection
     WITH RECURSIVE path_check AS (
         SELECT parent_role_id, child_role_id, 1 as depth
         FROM public.hierarchy
-        WHERE child_role_id = NEW.child_role_id AND tenant_id = NEW.tenant_id
+        WHERE child_role_id = NEW.child_role_id AND tenant_id = v_child_tenant_id
         
         UNION ALL
         
         SELECT h.parent_role_id, h.child_role_id, pc.depth + 1
         FROM public.hierarchy h
         JOIN path_check pc ON h.child_role_id = pc.parent_role_id
-        WHERE h.tenant_id = NEW.tenant_id AND pc.depth < 20
+        WHERE h.tenant_id = v_child_tenant_id AND pc.depth < 20
     )
     SELECT EXISTS(SELECT 1 FROM path_check WHERE parent_role_id = NEW.parent_role_id) INTO v_is_cycle;
 
@@ -42,7 +51,7 @@ END;
 DROP TRIGGER IF EXISTS check_hierarchy_integrity ON public.hierarchy;
 CREATE TRIGGER check_hierarchy_integrity BEFORE INSERT OR UPDATE ON public.hierarchy FOR EACH ROW EXECUTE FUNCTION public.enforce_hierarchy_rules();
 
--- 2. ROLES ESCALATION PREVENTION (Refined)
+-- 2. ROLES ESCALATION PREVENTION
 CREATE OR REPLACE FUNCTION public.protect_roles()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -50,21 +59,68 @@ SECURITY DEFINER
 AS $$ DECLARE
     v_my_perms text[];
 BEGIN
-    IF NOT public.is_subordinate(OLD.id) THEN
+    IF TG_OP = 'UPDATE' AND NOT public.is_subordinate(OLD.id) THEN
         RAISE EXCEPTION 'Security Violation: You can only manage roles that are subordinates of your role.';
     END IF;
-
-    IF NEW.permissions IS DISTINCT FROM OLD.permissions THEN
+    IF (TG_OP = 'INSERT') OR (NEW.permissions IS DISTINCT FROM OLD.permissions) THEN
         SELECT array_agg(x::text) INTO v_my_perms
         FROM jsonb_array_elements_text(auth.jwt() -> 'app_metadata' -> 'role' -> 'permissions') x;
-        IF NOT (NEW.permissions <@ v_my_perms) THEN
+        IF NOT (COALESCE(NEW.permissions, '{}') <@ COALESCE(v_my_perms, '{}')) THEN
             RAISE EXCEPTION 'Security Violation: You cannot grant permissions you do not possess.';
         END IF;
     END IF;
-
     RETURN NEW;
 END;
  $$;
 
 DROP TRIGGER IF EXISTS protect_roles_trigger ON public.roles;
-CREATE TRIGGER protect_roles_trigger BEFORE UPDATE ON public.roles FOR EACH ROW EXECUTE FUNCTION public.protect_roles();
+CREATE TRIGGER protect_roles_trigger BEFORE INSERT OR UPDATE ON public.roles FOR EACH ROW EXECUTE FUNCTION public.protect_roles();
+
+-- 3. PREVENT ROLE ASSIGNMENT ESCALATION
+CREATE OR REPLACE FUNCTION public.protect_profile_role_assignment()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$ DECLARE
+    v_target_perms text[];
+    v_my_perms text[];
+BEGIN
+    IF NEW.role_id IS DISTINCT FROM OLD.role_id THEN
+        IF NOT public.is_subordinate(NEW.role_id) THEN
+            RAISE EXCEPTION 'Security Violation: You cannot assign a role that is not your subordinate.';
+        END IF;
+        SELECT permissions INTO v_target_perms FROM public.roles WHERE id = NEW.role_id;
+        SELECT array_agg(x::text) INTO v_my_perms
+        FROM jsonb_array_elements_text(auth.jwt() -> 'app_metadata' -> 'role' -> 'permissions') x;
+        IF NOT (v_target_perms <@ v_my_perms) THEN
+            RAISE EXCEPTION 'Security Violation: You cannot assign a role with permissions you do not possess.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+ $$;
+
+DROP TRIGGER IF EXISTS protect_profile_role_trigger ON public.profiles;
+CREATE TRIGGER protect_profile_role_trigger BEFORE UPDATE OF role_id ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role_assignment();
+
+-- 4. PREVENT INVITATION ESCALATION
+CREATE OR REPLACE FUNCTION public.protect_invitation_escalation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF (auth.jwt() ->> 'role') = 'service_role' THEN
+        RETURN NEW;
+    END IF;
+
+    IF NOT public.is_subordinate(NEW.target_role_id) THEN
+        RAISE EXCEPTION 'Security Violation: You cannot invite a user to a role that is not your subordinate.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_invitation_trigger ON public.invitations;
+CREATE TRIGGER protect_invitation_trigger BEFORE INSERT OR UPDATE ON public.invitations FOR EACH ROW EXECUTE FUNCTION public.protect_invitation_escalation();
