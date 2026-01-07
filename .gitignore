@@ -1,0 +1,457 @@
+# ============================
+# Operating System Files
+# ============================
+.DS_Store
+.DS_Store?
+*.swp
+*~
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# ============================
+# IDE and Editor Files
+# ============================
+## Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.vscode/**
+
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+## Eclipse
+.classpath
+.project
+.settings/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+
+## NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+## Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+## Vim
+*.swp
+*.swo
+*~
+.netrwhist
+Session.vim
+
+## Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+## Atom
+.atom/
+.history
+*.c9/
+.store/
+.atom-build.json
+
+# ============================
+# Language/Framework Specific
+# ============================
+
+## Node.js / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.next/
+out/
+dist/
+build/
+.parcel-cache/
+.cache/
+.vuepress/dist
+.nuxt/
+.serverless/
+.serverless_nextjs/
+.fusebox/
+.dynamodb/
+.webpack/
+.coverage/
+.nyc_output/
+*.tsbuildinfo
+*.tgz
+.yarn/
+.yarnrc.yml
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.vercel
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+.pytest_cache/
+.coverage
+.tox/
+.noisrctre
+htmlcov/
+.python-version
+.poetry/
+.env
+.venv/
+venv/
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+## Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+out/
+.apt_generated/
+.factorypath
+.project
+
+## Android
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+.gradle/
+local.properties
+*.keystore
+!gradle/wrapper/gradle-wrapper.jar
+!.idea/codeStyles/Project.xml
+!.idea/codeStyles/codeStyleConfig.xml
+
+## iOS / Swift
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+build/
+DerivedData/
+*.xcodeproj
+!default.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.xcuserstate
+*.xccheckout
+profile
+
+## Go
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+# Test binary, built with `go test -c`
+*.test
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+# Dependency directories (remove the comment below to include it)
+# vendor/
+# Go workspace file
+go.work
+
+## Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+.ruby-version
+.ruby-gemset
+
+## Rails
+*.rbc
+capybara-*.png
+.rspec
+/db/*.sqlite3
+/db/*.sqlite3-journal
+/db/*.sqlite3-[0-9]*
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+*.swp
+.DS_Store
+/public/system
+/coverage/
+/spec/tmp
+**.orig
+rerun.txt
+pickle-email-*.html
+
+## PHP
+vendor/
+composer.lock
+.env
+.phpunit.result.cache
+.php_cs.cache
+.phpunit.cache
+phpcs.xml
+build/
+.phan/
+
+## .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.ncrunchsolution
+*.ncrunchproject
+*.vspscc
+*.vssscc
+*.[Cc]ache
+*.ilk
+*.meta
+*.log
+*.dll
+*.pdb
+*.min.*
+*.resources
+*.exe
+*.publishprofiles
+_ReSharper*/
+.[Pp]ublish.xml
+*.msi
+*.back
+*.backup
+[Tt]humbs.db
+*.dbmdl
+*.jfm
+.paket/
+.fake/
+.metadata/
+!**/[Pp]ackages/build/
+packages/
+
+## Docker
+**/.dockerignore
+**/.env
+**/.dockerenv
+**/docker-compose.override.yml
+
+# ============================
+# Database & Cache
+# ============================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.cache
+.dump.rdb
+*.rdb
+redis.conf
+mongod.log
+mysql.err
+mysql.log
+*.mwb
+*.myd
+*.myi
+*.sock
+
+# ============================
+# Logs
+# ============================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+logs
+*.logs
+
+# ============================
+# Testing
+# ============================
+coverage/
+.nyc_output/
+*.lcov
+.junit.xml
+test-results/
+*.tap
+*.trx
+
+# ============================
+# Secrets & Environment
+# ============================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.secret
+*.token
+secrets.yaml
+credentials.json
+firebase.json
+serviceAccountKey.json
+
+# ============================
+# Build & Deployment
+# ============================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.serverless/
+.serverless_nextjs/
+.fusebox/
+.dynamodb/
+.webpack/
+public/build/
+public/bundles/
+web/bundles/
+.webpack/
+*.zip
+*.tar.gz
+*.tgz
+
+# ============================
+# macOS
+# ============================
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================
+# Linux
+# ============================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================
+# Windows
+# ============================
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================
+# Project Specific
+# ============================
+# Uncomment and customize as needed
+# /app/config/parameters.yml
+# /web/uploads/
+# /web/bundles/
+
+# ============================
+# Temporary Files
+# ============================
+*.tmp
+*.temp
+*.swp
+*~
+*.swo
+*.bak
+*.backup
+
+
+# Supabase specific
+supabase/.temp/
+supabase/.wrangler/
+supabase/functions/dist/
+supabase/.env
+supabase/.data/
+supabase/.branches
