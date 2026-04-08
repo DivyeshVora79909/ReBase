@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>ReBase | Admin</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+
+    <!-- Dagre needs process.hrtime -->
+    <script>
+      window.process = { hrtime: () => [0, 0] };
+      window.process.hrtime.bigint = () => BigInt(Date.now() * 1_000_000);
+    </script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+          "surrealdb": "https://esm.sh/surrealdb"
+        }
+      }
+    </script>
+
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        overflow: hidden;
+        font-family: ui-monospace, monospace;
+      }
+
+      #cy {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: radial-gradient(
+          ellipse at 60% 40%,
+          #0f2034 0%,
+          #060d18 100%
+        );
+      }
+
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 2px;
+      }
+
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.25s;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+
+      .toast-enter-active {
+        transition: all 0.2s ease-out;
+      }
+      .toast-leave-active {
+        transition: all 0.2s ease-in;
+      }
+      .toast-enter-from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      .toast-leave-to {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+    </style>
+  </head>
+
+  <body class="bg-slate-950 text-slate-200">
+    <div id="app" class="h-screen w-screen relative select-none">
+      <!-- ═══════════════════════════════════════════════════════════
+       GRAPH CANVAS
+  ════════════════════════════════════════════════════════════ -->
+      <div id="cy"></div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+       LOGIN OVERLAY
+  ════════════════════════════════════════════════════════════ -->
+      <transition name="fade">
+        <div
+          v-if="!auth.me"
+          class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md"
+        >
+          <div class="card w-96 bg-base-100 shadow-2xl border border-white/10">
+            <div class="card-body gap-3">
+              <div class="mb-1">
+                <h1 class="text-2xl font-black text-primary tracking-[0.2em]">
+                  REBASE
+                </h1>
+                <p class="text-[11px] opacity-30 mt-0.5">
+                  SurrealDB Administration Console
+                </p>
+              </div>
+
+              <div class="divider my-0 opacity-20"></div>
+
+              <label
+                class="text-[10px] opacity-40 uppercase tracking-wider -mb-1"
+                >Connection</label
+              >
+              <input
+                v-model="cfg.url"
+                class="input input-bordered input-sm w-full"
+                placeholder="ws://localhost:8000"
+              />
+              <div class="flex gap-2">
+                <input
+                  v-model="cfg.ns"
+                  class="input input-bordered input-sm flex-1"
+                  placeholder="Namespace"
+                />
+                <input
+                  v-model="cfg.db"
+                  class="input input-bordered input-sm flex-1"
+                  placeholder="Database"
+                />
+              </div>
+
+              <label
+                class="text-[10px] opacity-40 uppercase tracking-wider -mb-1 mt-1"
+                >Credentials</label
+              >
+              <input
+                v-model="loginForm.email"
+                class="input input-bordered input-sm w-full"
+                placeholder="Email"
+              />
+              <input
+                v-model="loginForm.password"
+                type="password"
+                class="input input-bordered input-sm w-full"
+                placeholder="Password"
+                @keyup.enter="doLogin"
+              />
+
+              <button
+                @click="doLogin"
+                :disabled="busy"
+                class="btn btn-primary btn-sm w-full mt-1"
+                :class="{ loading: busy }"
+              >
+                {{ busy ? 'Connecting…' : 'Sign In' }}
+              </button>
+
+              <div v-if="loginErr" class="alert alert-error py-2 text-xs">
+                {{ loginErr }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- ═══════════════════════════════════════════════════════════
+       MAIN UI
+  ════════════════════════════════════════════════════════════ -->
+      <template v-if="auth.me">
+        <!-- ── Top Bar ──────────────────────────────────────────── -->
+        <header
+          class="absolute top-0 inset-x-0 z-20 h-12 flex items-center gap-3 px-4 bg-slate-900/80 backdrop-blur border-b border-white/5"
+        >
+          <span class="font-black text-primary tracking-[0.2em] text-sm"
+            >REBASE</span
+          >
+          <div class="divider divider-horizontal mx-0 h-5 opacity-20"></div>
+          <span class="badge badge-outline text-[10px] opacity-40 font-mono"
+            >{{ auth.me.email }}</span
+          >
+
+          <div class="flex-1"></div>
+
+          <span class="text-[10px] opacity-20 font-mono hidden md:block">
+            {{ graph.nodes.length }}N · {{ graph.edges.length }}E
+          </span>
+
+          <button @click="findOrphans" class="btn btn-ghost btn-xs gap-1">
+            <span class="text-warning">◈</span> Orphans
+          </button>
+          <button
+            @click="sync"
+            :class="{ loading: syncing }"
+            class="btn btn-ghost btn-xs"
+          >
+            ⟳ Sync
+          </button>
+          <button @click="doLogout" class="btn btn-error btn-outline btn-xs">
+            Exit
+          </button>
+        </header>
+
+        <!-- ── Side Panel ───────────────────────────────────────── -->
+        <aside
+          v-if="panel"
+          class="absolute right-3 top-14 z-20 w-80 max-h-[calc(100vh-3.5rem-0.75rem)] overflow-y-auto flex flex-col gap-3 pb-2"
+        >
+          <!-- NODE PANEL -->
+          <div
+            v-if="panel.kind === 'node'"
+            class="bg-slate-900/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-4 space-y-4"
+          >
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0">
+                <span
+                  class="badge badge-sm mb-1"
+                  :class="panel.node.table === 'groups' ? 'badge-success' : 'badge-info'"
+                >
+                  {{ panel.node.table }}
+                </span>
+                <h2 class="font-bold text-base leading-tight">
+                  {{ panel.node.name }}
+                </h2>
+                <code
+                  class="text-[9px] opacity-25 break-all select-all leading-tight block mt-0.5"
+                >
+                  {{ panel.node.id }}
+                </code>
+              </div>
+              <button
+                @click="panel = null"
+                class="btn btn-xs btn-circle btn-ghost shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Meta -->
+            <div class="bg-slate-800/50 rounded-xl p-3 text-xs space-y-2.5">
+              <div
+                v-if="panel.node.email"
+                class="flex justify-between gap-2 items-start"
+              >
+                <span class="opacity-40 shrink-0">Email</span>
+                <span class="text-right break-all">{{ panel.node.email }}</span>
+              </div>
+              <div class="flex justify-between gap-2">
+                <span class="opacity-40">Dominates</span>
+                <span class="text-info font-bold"
+                  >{{ panel.node.dominates?.length ?? 0 }} nodes</span
+                >
+              </div>
+              <div
+                v-if="(panel.node.permissions || panel.node.role || []).length"
+              >
+                <div class="opacity-40 mb-1.5">Permissions</div>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="p in (panel.node.permissions || panel.node.role)"
+                    :key="p"
+                    class="badge badge-neutral badge-xs font-normal"
+                    >{{ p }}</span
+                  >
+                </div>
+              </div>
+              <div v-else class="opacity-20 italic text-[10px]">
+                No permissions assigned
+              </div>
+            </div>
+
+            <!-- Create Child -->
+            <div
+              class="border border-white/5 rounded-xl p-3 space-y-2 bg-slate-800/20"
+            >
+              <p
+                class="text-[10px] font-bold text-info uppercase tracking-widest"
+              >
+                Create & Link Child
+              </p>
+              <div class="flex gap-2">
+                <select
+                  v-model="form.cType"
+                  class="select select-bordered select-xs w-24 shrink-0"
+                >
+                  <option value="user">User</option>
+                  <option value="groups">Group</option>
+                </select>
+                <input
+                  v-model="form.cName"
+                  class="input input-bordered input-xs flex-1"
+                  placeholder="Display name"
+                />
+              </div>
+              <input
+                v-if="form.cType === 'user'"
+                v-model="form.cEmail"
+                class="input input-bordered input-xs w-full"
+                placeholder="Email address"
+              />
+              <input
+                v-if="form.cType === 'groups'"
+                v-model="form.cRoles"
+                class="input input-bordered input-xs w-full"
+                placeholder="node_select, link_create…"
+              />
+              <button @click="createChild" class="btn btn-info btn-xs w-full">
+                ↳ Create & Link
+              </button>
+            </div>
+
+            <!-- Link Existing -->
+            <div
+              class="border border-white/5 rounded-xl p-3 space-y-2 bg-slate-800/20"
+            >
+              <p
+                class="text-[10px] font-bold text-success uppercase tracking-widest"
+              >
+                Link Existing Node
+              </p>
+              <select
+                v-model="form.linkId"
+                class="select select-bordered select-xs w-full"
+              >
+                <option value="">— select a node —</option>
+                <option v-for="n in otherNodes" :key="n.id" :value="n.id">
+                  {{ n.name }} [{{ n.table }}]
+                </option>
+              </select>
+              <button
+                @click="linkExisting"
+                class="btn btn-success btn-xs w-full"
+              >
+                → Create Edge
+              </button>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-1">
+              <button
+                @click="refreshAccess"
+                class="btn btn-neutral btn-xs w-full justify-start gap-2"
+              >
+                ↻ Recalculate Paths
+              </button>
+              <button
+                v-if="panel.node.table === 'user'"
+                @click="deactivateUser"
+                class="btn btn-warning btn-outline btn-xs w-full justify-start gap-2"
+              >
+                ⚠ Deactivate User
+              </button>
+              <button
+                @click="deleteNode"
+                class="btn btn-error btn-outline btn-xs w-full justify-start gap-2"
+              >
+                ✕ Delete Record (leaf only)
+              </button>
+            </div>
+          </div>
+
+          <!-- EDGE PANEL -->
+          <div
+            v-if="panel.kind === 'edge'"
+            class="bg-slate-900/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-4 space-y-4"
+          >
+            <div class="flex justify-between items-center">
+              <span
+                class="text-[10px] font-bold uppercase tracking-widest opacity-40"
+                >Edge</span
+              >
+              <button
+                @click="panel = null"
+                class="btn btn-xs btn-circle btn-ghost"
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              class="bg-slate-800/50 rounded-xl p-3 text-xs font-mono space-y-2 break-all"
+            >
+              <div>
+                <span class="opacity-30 mr-2">ID</span
+                ><span class="text-warning">{{ panel.edge.id }}</span>
+              </div>
+              <div>
+                <span class="opacity-30 mr-2">FROM</span
+                ><span class="text-info">{{ panel.edge.source }}</span>
+              </div>
+              <div>
+                <span class="opacity-30 mr-2">TO</span
+                ><span class="text-success">{{ panel.edge.target }}</span>
+              </div>
+            </div>
+            <button @click="deleteEdge" class="btn btn-error btn-xs w-full">
+              ✂ Sever Link
+            </button>
+          </div>
+        </aside>
+      </template>
+
+      <!-- Toasts -->
+      <div
+        class="toast toast-bottom toast-center z-50 pointer-events-none gap-2"
+      >
+        <transition-group name="toast">
+          <div
+            v-for="t in toasts"
+            :key="t.id"
+            :class="['alert text-sm font-bold shadow-xl py-2 px-4',
+                    t.err ? 'alert-error' : 'alert-success']"
+          >
+            {{ t.msg }}
+          </div>
+        </transition-group>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createApp, ref, reactive, computed, markRaw } from "vue";
+      import { Surreal, RecordId, StringRecordId } from "surrealdb";
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // ROOT FIX — valueDecodeVisitor
+      //
+      // RecordId objects use private class fields (#t, #i). When Vue's reactive()
+      // wraps them in a Proxy, those private fields become inaccessible, causing:
+      //   • "Cannot read private member #t from an object whose class did not declare it"
+      //   • "e.match is not a function"  (Cytoscape expects string node IDs)
+      //
+      // Solution: convert every RecordId → plain string at the CBOR decode boundary,
+      // before the value ever touches Vue. Strings have no private fields and work
+      // perfectly as Cytoscape node IDs.
+      //
+      // To send IDs back to the server we use StringRecordId(str), which is a thin
+      // wrapper that lets SurrealDB's server do the parsing — no client-side
+      // RecordId construction required.
+      // ─────────────────────────────────────────────────────────────────────────────
+      const db = markRaw(
+        new Surreal({
+          codecOptions: {
+            valueDecodeVisitor(val) {
+              if (val instanceof RecordId) return val.toString();
+              return val;
+            },
+          },
+        }),
+      );
+
+      // Wrap a string ID so the SDK can send it as a record reference
+      const rid = (s) => new StringRecordId(String(s));
+
+      // Cytoscape lives outside Vue entirely
+      let cy = null;
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      createApp({
+        setup() {
+          // Config (persisted across page loads)
+          const cfg = reactive({
+            url: localStorage.getItem("rb_url") || "ws://localhost:8000",
+            ns: localStorage.getItem("rb_ns") || "main",
+            db: localStorage.getItem("rb_db") || "main",
+          });
+
+          const loginForm = reactive({ email: "", password: "" });
+          const loginErr = ref("");
+          const busy = ref(false);
+          const syncing = ref(false);
+
+          // All data is plain strings/objects — guaranteed by codec visitor
+          const auth = reactive({ me: null });
+          const graph = reactive({ nodes: [], edges: [] });
+          const panel = ref(null);
+          const toasts = ref([]);
+
+          const form = reactive({
+            cType: "user",
+            cName: "",
+            cEmail: "",
+            cRoles: "",
+            linkId: "",
+          });
+
+          const otherNodes = computed(() =>
+            panel.value?.kind === "node"
+              ? graph.nodes.filter((n) => n.id !== panel.value.node.id)
+              : [],
+          );
+
+          // ── Toast ─────────────────────────────────────────────────────────────────
+          function toast(msg, isErr = false) {
+            const id = Date.now() + Math.random();
+            toasts.value.push({ id, msg, err: isErr });
+            setTimeout(() => {
+              toasts.value = toasts.value.filter((t) => t.id !== id);
+            }, 4200);
+          }
+
+          // ── Cytoscape ─────────────────────────────────────────────────────────────
+          function initCy() {
+            if (cy) cy.destroy();
+            cy = cytoscape({
+              container: document.getElementById("cy"),
+              style: [
+                {
+                  selector: "node",
+                  style: {
+                    label: "data(label)",
+                    color: "#94a3b8",
+                    "font-size": 10,
+                    "font-family": "ui-monospace, monospace",
+                    "text-valign": "bottom",
+                    "text-margin-y": 6,
+                    width: 32,
+                    height: 32,
+                    "border-width": 2,
+                  },
+                },
+                {
+                  selector: 'node[type="groups"]',
+                  style: {
+                    shape: "hexagon",
+                    "background-color": "#00a96e",
+                    "border-color": "#007a4f",
+                  },
+                },
+                {
+                  selector: 'node[type="user"]',
+                  style: {
+                    shape: "ellipse",
+                    "background-color": "#3abff8",
+                    "border-color": "#0284c7",
+                  },
+                },
+                {
+                  selector: "node.me",
+                  style: { "border-width": 4, "border-color": "#fbbf24" },
+                },
+                {
+                  selector: "node.sel",
+                  style: {
+                    "border-width": 4,
+                    "border-color": "#f87171",
+                    width: 42,
+                    height: 42,
+                  },
+                },
+                {
+                  selector: "node.orphan",
+                  style: {
+                    "border-style": "dashed",
+                    "border-color": "#ef4444",
+                  },
+                },
+                {
+                  selector: "edge",
+                  style: {
+                    width: 1.5,
+                    "curve-style": "bezier",
+                    "target-arrow-shape": "triangle",
+                    "line-color": "#1e293b",
+                    "target-arrow-color": "#334155",
+                  },
+                },
+                {
+                  selector: "edge.sel",
+                  style: {
+                    "line-color": "#f87171",
+                    "target-arrow-color": "#f87171",
+                    width: 3,
+                  },
+                },
+              ],
+            });
+
+            cy.on("tap", "node", (evt) => {
+              cy.elements().removeClass("sel");
+              evt.target.addClass("sel");
+              const node = graph.nodes.find((n) => n.id === evt.target.id());
+              panel.value = node ? { kind: "node", node } : null;
+            });
+
+            cy.on("tap", "edge", (evt) => {
+              cy.elements().removeClass("sel");
+              evt.target.addClass("sel");
+              panel.value = {
+                kind: "edge",
+                edge: {
+                  id: evt.target.id(),
+                  source: evt.target.data("source"),
+                  target: evt.target.data("target"),
+                },
+              };
+            });
+
+            cy.on("tap", (evt) => {
+              if (evt.target === cy) {
+                panel.value = null;
+                cy.elements().removeClass("sel");
+              }
+            });
+          }
+
+          function renderGraph() {
+            if (!cy) return;
+            const myId = auth.me?.id;
+            cy.batch(() => {
+              cy.elements().remove();
+              for (const n of graph.nodes) {
+                const el = cy.add({
+                  data: { id: n.id, label: n.name, type: n.table },
+                });
+                if (n.id === myId) el.addClass("me");
+              }
+              for (const e of graph.edges) {
+                if (cy.$id(e.source).length && cy.$id(e.target).length)
+                  cy.add({
+                    data: { id: e.id, source: e.source, target: e.target },
+                  });
+              }
+            });
+            cy.layout({
+              name: "dagre",
+              rankDir: "TB",
+              animate: true,
+              padding: 70,
+              nodeSep: 40,
+            }).run();
+          }
+
+          // ── Sync ──────────────────────────────────────────────────────────────────
+          async function sync() {
+            syncing.value = true;
+            try {
+              const [users, groups, links, meArr] = await db.query(`
+          SELECT id, name, email, permissions, dominates, parents FROM user;
+          SELECT id, name, role FROM groups;
+          SELECT id, in, out FROM link;
+          SELECT * FROM $auth;
+        `);
+
+              graph.nodes = [
+                ...(users || []).map((u) => ({ ...u, table: "user" })),
+                ...(groups || []).map((g) => ({ ...g, table: "groups" })),
+              ];
+              graph.edges = (links || []).map((l) => ({
+                id: l.id,
+                source: l.in,
+                target: l.out,
+              }));
+              auth.me = meArr?.[0] ?? null;
+
+              // Refresh open panel if node still exists
+              if (panel.value?.kind === "node") {
+                const fresh = graph.nodes.find(
+                  (n) => n.id === panel.value.node.id,
+                );
+                panel.value = fresh ? { kind: "node", node: fresh } : null;
+              }
+
+              renderGraph();
+            } catch (e) {
+              toast(e.message, true);
+            } finally {
+              syncing.value = false;
+            }
+          }
+
+          // ── Auth ──────────────────────────────────────────────────────────────────
+          async function doLogin() {
+            busy.value = true;
+            loginErr.value = "";
+            try {
+              localStorage.setItem("rb_url", cfg.url);
+              localStorage.setItem("rb_ns", cfg.ns);
+              localStorage.setItem("rb_db", cfg.db);
+
+              await db.connect(cfg.url);
+              await db.use({ namespace: cfg.ns, database: cfg.db });
+              await db.signin({
+                access: "user",
+                namespace: cfg.ns,
+                database: cfg.db,
+                variables: {
+                  email: loginForm.email,
+                  password: loginForm.password,
+                },
+              });
+              initCy();
+              await sync();
+              toast("Authenticated successfully");
+            } catch (e) {
+              loginErr.value = e.message;
+            } finally {
+              busy.value = false;
+            }
+          }
+
+          function doLogout() {
+            db.invalidate();
+            auth.me = null;
+            graph.nodes = [];
+            graph.edges = [];
+            panel.value = null;
+            if (cy) {
+              cy.destroy();
+              cy = null;
+            }
+            toast("Signed out");
+          }
+
+          // ── Generic error wrapper ─────────────────────────────────────────────────
+          async function run(fn) {
+            try {
+              await fn();
+            } catch (e) {
+              toast(e.message, true);
+            }
+          }
+
+          // ── Actions ───────────────────────────────────────────────────────────────
+          async function createChild() {
+            const p = panel.value?.node;
+            if (!p || !form.cName.trim())
+              return toast("Name is required", true);
+            await run(async () => {
+              const roles = form.cRoles
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              await db.query(
+                "RETURN fn::create_and_link($parent, $table, $name, $email, $roles)",
+                {
+                  parent: rid(p.id),
+                  table: form.cType,
+                  name: form.cName.trim(),
+                  email: form.cEmail.trim() || null,
+                  roles,
+                },
+              );
+              form.cName = "";
+              form.cEmail = "";
+              form.cRoles = "";
+              toast("Child created and linked");
+              await sync();
+            });
+          }
+
+          async function linkExisting() {
+            const p = panel.value?.node;
+            if (!p || !form.linkId) return toast("Select a target node", true);
+            await run(async () => {
+              await db.query("RELATE $from->link->$to", {
+                from: rid(p.id),
+                to: rid(form.linkId),
+              });
+              form.linkId = "";
+              toast("Edge created");
+              await sync();
+            });
+          }
+
+          async function refreshAccess() {
+            const p = panel.value?.node;
+            if (!p) return;
+            await run(async () => {
+              await db.query("RETURN fn::refresh_access($target)", {
+                target: rid(p.id),
+              });
+              toast("Paths recalculated");
+              await sync();
+            });
+          }
+
+          async function deactivateUser() {
+            const p = panel.value?.node;
+            if (!p) return;
+            await run(async () => {
+              await db.query("RETURN fn::deactivate_node($target)", {
+                target: rid(p.id),
+              });
+              toast("User deactivated — invite token reset");
+              await sync();
+            });
+          }
+
+          async function deleteNode() {
+            const p = panel.value?.node;
+            if (
+              !p ||
+              !confirm(
+                `Delete "${p.name}"?\n\nWill fail if node has children (not a leaf).`,
+              )
+            )
+              return;
+            await run(async () => {
+              await db.delete(rid(p.id));
+              panel.value = null;
+              toast("Node deleted");
+              await sync();
+            });
+          }
+
+          async function deleteEdge() {
+            const e = panel.value?.edge;
+            if (!e) return;
+            await run(async () => {
+              await db.delete(rid(e.id));
+              panel.value = null;
+              toast("Link severed");
+              await sync();
+            });
+          }
+
+          function findOrphans() {
+            if (!cy) return;
+            cy.elements().removeClass("orphan");
+            let count = 0;
+            for (const n of graph.nodes) {
+              if (n.id === auth.me?.id) continue;
+              if (!graph.edges.some((e) => e.target === n.id)) {
+                cy.$id(n.id).addClass("orphan");
+                count++;
+              }
+            }
+            toast(
+              count
+                ? `${count} orphaned node(s) highlighted`
+                : "All nodes are connected",
+              count > 0,
+            );
+          }
+
+          return {
+            cfg,
+            loginForm,
+            loginErr,
+            busy,
+            syncing,
+            auth,
+            graph,
+            panel,
+            form,
+            toasts,
+            otherNodes,
+            doLogin,
+            doLogout,
+            sync,
+            createChild,
+            linkExisting,
+            refreshAccess,
+            deactivateUser,
+            deleteNode,
+            deleteEdge,
+            findOrphans,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
