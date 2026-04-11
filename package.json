@@ -12,9 +12,8 @@
   "description": "",
   "devDependencies": {
     "supabase": "^2.67.3",
-    "tap": "^21.5.0"
-  },
-  "dependencies": {
-    "surrealdb": "^2.0.3"
+    "surrealdb": "^2.0.3",
+    "tap": "^21.5.0",
+    "vitest": "^4.1.4"
   }
 }

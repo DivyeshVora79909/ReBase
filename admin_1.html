@@ -89,14 +89,7 @@
 
   <body class="bg-slate-950 text-slate-200">
     <div id="app" class="h-screen w-screen relative select-none">
-      <!-- ═══════════════════════════════════════════════════════════
-       GRAPH CANVAS
-  ════════════════════════════════════════════════════════════ -->
       <div id="cy"></div>
-
-      <!-- ═══════════════════════════════════════════════════════════
-       LOGIN OVERLAY
-  ════════════════════════════════════════════════════════════ -->
       <transition name="fade">
         <div
           v-if="!auth.me"
@@ -171,11 +164,7 @@
         </div>
       </transition>
 
-      <!-- ═══════════════════════════════════════════════════════════
-       MAIN UI
-  ════════════════════════════════════════════════════════════ -->
       <template v-if="auth.me">
-        <!-- ── Top Bar ──────────────────────────────────────────── -->
         <header
           class="absolute top-0 inset-x-0 z-20 h-12 flex items-center gap-3 px-4 bg-slate-900/80 backdrop-blur border-b border-white/5"
         >
@@ -208,7 +197,6 @@
           </button>
         </header>
 
-        <!-- ── Side Panel ───────────────────────────────────────── -->
         <aside
           v-if="panel"
           class="absolute right-3 top-14 z-20 w-80 max-h-[calc(100vh-3.5rem-0.75rem)] overflow-y-auto flex flex-col gap-3 pb-2"
@@ -686,7 +674,7 @@
               await db.connect(cfg.url);
               await db.use({ namespace: cfg.ns, database: cfg.db });
               await db.signin({
-                access: "user",
+                access: "account",
                 namespace: cfg.ns,
                 database: cfg.db,
                 variables: {

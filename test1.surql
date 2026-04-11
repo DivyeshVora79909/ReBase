@@ -41,3 +41,31 @@ DELETE $last_link;
 
 -- EXCEPTION TEST 2: CYCLE CHECK
 RELATE user:alice -> link -> user:admin;
+
+
+
+
+
+
+-- ── After any link is created/deleted, refresh the affected node's RBAC cache ──
+DEFINE EVENT OVERWRITE link_refresh_target ON TABLE link
+    WHEN $event IN ["CREATE", "DELETE"] THEN {
+    LET $target = IF $event = "CREATE" { $after.out } ELSE { $before.out };
+    IF meta::tb($target) = 'user' {
+        UPDATE $target SET last_refreshed_at = time::now();
+    };
+};
+
+
+
+-- ── When a group's role changes, refresh every member user's RBAC cache ──
+DEFINE EVENT OVERWRITE group_role_changed ON TABLE groups WHEN $event = "UPDATE"
+    AND $before.role != $after.role THEN {
+
+    -- Collect every user that is a transitive member of this group
+    LET $affected_users = ($after.id.{..+collect}->link->user ?? []);
+
+    FOR $u IN $affected_users {
+        UPDATE $u SET last_refreshed_at = time::now();
+    };
+};
