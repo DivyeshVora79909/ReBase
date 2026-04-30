@@ -1,0 +1,366 @@
+# RELATE
+Creates graph edges between records. Edge tables auto-delete when no relations remain. Required fields: `in`, `out` (direction-specifying, type-restrictable but not removable).
+
+Syntax: `RELATE [ONLY] @from -> @table -> @to [CONTENT @val | SET @f=@v ...] [RETURN ...] [TIMEOUT @dur]`
+
+Note: RELATE works on non-existent records (use `ENFORCED` on table to prevent this).
+
+Examples:
+```surql
+RELATE person:a->wrote->article:b;
+RELATE [cat:a, cat:b]->parent_of->cat:c;  -- creates 2 edges
+RELATE [a,b]->[c,d];                       -- creates 4 edges (product)
+RELATE p:a->wrote->a:b SET meta.loc="Tallinn";
+RELATE ONLY p:a->wrote->a:b;              -- returns object not array
+```
+
+Delete edge: `DELETE person:a->bought WHERE out=product:b RETURN BEFORE`
+Enforce direction: `DEFINE FIELD in ON wrote TYPE record<person>; DEFINE FIELD out ON wrote TYPE record<article>;`
+Unique relations: `DEFINE INDEX uniq ON wrote COLUMNS in,out UNIQUE;`
+
+---
+
+# Graph Queries
+
+Arrows: `->` (out), `<-` (in), `<->` (both directions)
+
+```surql
+SELECT ->wrote->article FROM person;           -- articles written by persons
+SELECT <-wrote<-person FROM article;           -- persons who wrote articles  
+SELECT ->wrote.time_written AS t FROM person;  -- edge field
+SELECT id, ->wrote->(book WHERE "Ring" IN name).* FROM person;  -- filter at node
+SELECT ->(wrote WHERE written_at="Athens")->book.* FROM person; -- filter at edge
+SELECT array::complement(<->sister_of<->city,[id]) AS sisters FROM city; -- bidirectional dedup
+```
+
+Wildcards: `->?` (any table), `->(?).* AS out_relations` (all with data)
+Aliases: `SELECT ->f->c->f->c AS friends_of_friends FROM cat:one`
+Parentheses for clauses: `->(SELECT *, time::now() AS t FROM knows LIMIT 1)`
+Range on edges: `person:one->likes:2..=4->person`
+
+Recursive: `SELECT @.{3}->to->city FROM city:1` (3 levels), `city:1.{1..20}->to->city` (range), `@.{..}` (open, max 256)
+```surql
+SELECT @.{1..5}.{ id, next: ->to->city } FROM city;  -- range + destructure
+```
+Use `TIMEOUT` with recursive queries.
+
+Graph clauses (v2.2+): Full SELECT syntax inside graph path:
+```surql
+SELECT ->(SELECT count() AS c, know_in_person FROM likes GROUP BY know_in_person) FROM person;
+```
+
+---
+
+# LIVE SELECT
+Real-time change stream. Returns UUID (live query ID). Use to KILL.
+
+Syntax: `LIVE SELECT [VALUE @fields | DIFF] FROM @targets [WHERE @cond] [FETCH @fields]`
+
+```surql
+LIVE SELECT * FROM person;
+LIVE SELECT DIFF FROM person;              -- JSON Patch format
+LIVE SELECT * FROM person WHERE age > 18;
+LIVE SELECT * FROM person WHERE age > 18 FETCH friends;  -- v2.2+
+```
+- Only committed transactions publish notifications
+- Single-node only (multi-node WIP)
+- Parameters in WHERE supported v3.0+: `LIVE SELECT * FROM type::table($t) WHERE loc=$loc`
+
+---
+
+# LET
+Store values/query results as parameters (`$` prefix).
+
+Syntax: `LET $param [: @type] = @value`
+
+```surql
+LET $name = "tobie";
+LET $adults = SELECT * FROM person WHERE age > 18;
+LET $t = IF type::is_int($n) { "int" } ELSE { "other" };
+LET $n: int = 9;                     -- typed (error if mismatch)
+LET $n: int | string = "9";          -- union type
+```
+Protected params (cannot overwrite): `$auth`, `$session`. `$before` is overridable but restored after use.
+
+---
+
+# DEFINE TABLE
+`DEFINE TABLE [OVERWRITE|IF NOT EXISTS] @name [DROP] [SCHEMAFULL|SCHEMALESS] [TYPE ANY|NORMAL|RELATION [IN @t] [OUT @t] [ENFORCED]] [AS SELECT ...] [CHANGEFEED @dur [INCLUDE ORIGINAL]] [PERMISSIONS ...] [COMMENT @s]`
+
+- DROP: disallows create/update (useful with events/views)
+- SCHEMAFULL: strict schema, undefined fields ignored (v3: error)
+- RELATION: edge table; `IN/FROM`, `OUT/TO` constrain record types; `ENFORCED` requires records to exist
+- AS SELECT: materialized incremental view (event-based, FROM table triggers updates, not joined tables)
+- CHANGEFEED: `SHOW CHANGES FOR TABLE t SINCE d"..." LIMIT 10` or `SINCE 0`
+
+Permissions default: NONE unless specified
+```surql
+DEFINE TABLE post SCHEMALESS PERMISSIONS
+  FOR select WHERE published=true OR user=$auth.id
+  FOR create,update WHERE user=$auth.id
+  FOR delete WHERE user=$auth.id OR $auth.admin=true;
+```
+
+Schemafull with unneeded data (v3+): Use destructuring: `CREATE user CONTENT {...}.{name, user_num}`
+
+---
+
+# DEFINE FIELD
+`DEFINE FIELD [OVERWRITE|IF NOT EXISTS] @name ON [TABLE] @table [TYPE @type [FLEXIBLE]] [REFERENCE [ON DELETE REJECT|CASCADE|IGNORE|UNSET|THEN @expr]] [DEFAULT [ALWAYS] @expr] [READONLY] [VALUE @expr] [ASSERT @expr] [PERMISSIONS ...] [COMMENT @s]`
+
+Computed (v3+): `DEFINE FIELD @name ON @table COMPUTED @expr [TYPE @type]` — recalculated on access, not stored
+
+Types:
+```surql
+TYPE string | datetime | bool | number | uuid | int
+TYPE array<string> | array<object> | array<int, 640>
+TYPE option<string>           -- allows NONE
+TYPE record<user>
+TYPE option<record<user>>
+TYPE "regular"|"large"|{special_order:string}   -- literal
+TYPE int|string               -- union
+FLEXIBLE TYPE object          -- schemaless nested object
+```
+
+Clauses:
+- `DEFAULT x`: used on CREATE if empty; `DEFAULT ALWAYS x`: also on UPDATE if NONE
+- `VALUE x`: always overrides (ignores user input), recalc on every write
+- `ASSERT x`: boolean expression; use THROW for custom messages
+- `READONLY`: prevent updates after create
+- `REFERENCE`: track incoming record links (v2.2+)
+
+id field typing:
+```surql
+DEFINE FIELD id ON log TYPE [record, "info"|"warn"|"error", datetime];
+```
+
+Order: DEFINE FIELD statements computed alphabetically — arrange accordingly.
+
+Permissions default: FULL
+```surql
+DEFINE FIELD email ON user PERMISSIONS
+  FOR select WHERE published=true OR user=$auth.id
+  FOR update WHERE user=$auth.id OR $auth.role="admin";
+```
+
+---
+
+# DEFINE INDEX
+`DEFINE INDEX [OVERWRITE|IF NOT EXISTS] @name ON [TABLE] @table [FIELDS|COLUMNS] @fields [@special] [COMMENT @s] [CONCURRENTLY] [DEFER]`
+
+Special clauses:
+- `UNIQUE` — enforce uniqueness
+- `COUNT` — fast count() with GROUP ALL (v3+, no FIELDS clause)
+- `FULLTEXT ANALYZER @a [BM25 [(@k1,@b)]] [HIGHLIGHTS]` — full-text search
+- `HNSW DIMENSION @d [TYPE F64|F32|I64|I32|I16] [DIST @dist] [EFC @n] [M @n]` — vector ANN
+
+CONCURRENTLY: builds in background; monitor with `INFO FOR INDEX @name ON @table`
+DEFER (v2.5+): eventual consistency for high-volume ingestion (incompatible with UNIQUE)
+CONTAINS vs CONTAINSANY: Only `CONTAINSANY ["val"]` uses index for string fields
+
+Rebuild: `REBUILD INDEX @name ON @table`
+
+---
+
+# DEFINE FUNCTION
+`DEFINE FUNCTION [OVERWRITE|IF NOT EXISTS] fn::@name([$arg: @type ...]) [-> @type] { @body } [PERMISSIONS NONE|FULL|WHERE @cond] [COMMENT @s]`
+
+- Trailing `option<T>` args are optional
+- Supports recursion
+- Return type enforces coercion; use literal union types for multi-shape returns
+- Permissions: FULL (default for record users), NONE, WHERE @cond
+
+```surql
+DEFINE FUNCTION fn::greet($name: string) -> string { "Hello, " + $name + "!" };
+DEFINE FUNCTION fn::opt($req: number, $opt: option<number>) { ... };
+DEFINE FUNCTION fn::combo($a: any, $b: any) -> number { $a + $b }; -- error at return
+```
+
+---
+
+# DEFINE EVENT
+`DEFINE EVENT [OVERWRITE|IF NOT EXISTS] @name ON [TABLE] @table [ASYNC [RETRY @n] [MAXDEPTH @n]] [WHEN @cond] [THEN @action] [COMMENT @s]`
+
+Params: `$event` ("CREATE"/"UPDATE"/"DELETE"), `$before`, `$after`, `$value` (after for C/U, before for D), `$input` (v3+)
+
+```surql
+DEFINE EVENT email_changed ON user WHEN $before.email != $after.email THEN (
+  CREATE log SET old=$before.email??'', new=$after.email??'', at=time::now()
+);
+DEFINE EVENT on_create ON purchase WHEN $event="CREATE" THEN { ... };
+```
+
+ASYNC (v3+): runs outside triggering transaction; processed every 5s (configurable via `SURREAL_ASYNC_EVENT_PROCESSING_INTERVAL`)
+- Atomically enqueued with document change
+- `RETRY @n`: retry on failure
+- `MAXDEPTH @n`: max re-trigger depth (default 3, max 16)
+- Events always run without permission checks
+
+---
+
+# DEFINE ANALYZER
+`DEFINE ANALYZER [OVERWRITE|IF NOT EXISTS] @name [FUNCTION fn::@f] [TOKENIZERS @t,...] [FILTERS @f,...] [COMMENT @s]`
+
+Tokenizers: `blank` (whitespace), `camel` (CamelCase), `class` (char-class change), `punct` (punctuation)
+
+Filters: `ascii`, `lowercase`, `uppercase`, `edgengram(min,max)`, `ngram(min,max)`, `snowball(lang)`, `mapper(path)`, `mapper` (lemmatization via tab-delimited file)
+
+```surql
+DEFINE ANALYZER en TOKENIZERS class FILTERS snowball(english);
+DEFINE ANALYZER ac FILTERS lowercase,edgengram(2,10);
+DEFINE ANALYZER code TOKENIZERS class,camel FILTERS lowercase,ascii;
+DEFINE ANALYZER backwards FUNCTION fn::backwardsify TOKENIZERS blank;
+```
+Test: `search::analyze("analyzer_name", "input text")`
+
+---
+
+# DEFINE USER
+`DEFINE USER [OVERWRITE|IF NOT EXISTS] @name ON [ROOT|NAMESPACE|DATABASE] [PASSWORD @p | PASSHASH @h] [ROLES @roles] [DURATION FOR TOKEN @d [,] FOR SESSION @d] [COMMENT @s]`
+
+Roles: OWNER (full+IAM), EDITOR (full, no IAM), VIEWER (read-only)
+
+```surql
+DEFINE USER admin ON ROOT PASSWORD 'pass' ROLES OWNER DURATION FOR SESSION 15m, FOR TOKEN 5s;
+DEFINE USER viewer ON NAMESPACE PASSWORD 'p' ROLES VIEWER;
+```
+
+---
+
+# DEFINE ACCESS
+`DEFINE ACCESS [OVERWRITE|IF NOT EXISTS] @name ON [ROOT|NAMESPACE|DATABASE] TYPE [JWT|RECORD|BEARER] [AUTHENTICATE @expr] [DURATION FOR GRANT @d, FOR TOKEN @d, FOR SESSION @d] [COMMENT @s]`
+
+# TYPE JWT
+Verify third-party tokens. `ALGORITHM @alg KEY @key` or `URL @jwks_url`
+
+Algorithms: `HS256/384/512` (HMAC, symmetric), `RS/ES/PS256/384/512`, `EDDSA` (asymmetric, public key only), `JWKS` (remote key set, cached 12h)
+
+```surql
+DEFINE ACCESS jwt ON DATABASE TYPE JWT ALGORITHM HS512 KEY "secret";
+DEFINE ACCESS jwt ON DATABASE TYPE JWT URL "https://example.com/.well-known/jwks.json";
+```
+
+AUTHENTICATE clause: validate claims, throw on failure, runs per-auth not per-query.
+
+# TYPE RECORD
+Custom signup/signin + table permissions.
+
+```surql
+DEFINE ACCESS account ON DATABASE TYPE RECORD
+  SIGNUP ( CREATE user SET email=$email, pass=crypto::argon2::generate($pass) )
+  SIGNIN ( SELECT * FROM user WHERE email=$email AND crypto::argon2::compare(pass,$pass) )
+  DURATION FOR TOKEN 15m, FOR SESSION 12h;
+```
+
+- `WITH JWT ALGORITHM @alg KEY @key`: verify external tokens as record users
+- `WITH ISSUER KEY @key`: sign tokens with specific key (asymmetric supported)
+- `WITH REFRESH`: returns opaque refresh token alongside JWT (experimental; HTTP API only); use `DURATION FOR GRANT @d`
+- `AUTHENTICATE {}`: runs on all signin/signup/token-auth; use to remap auth id, validate claims, audit tokens
+
+Token claims (JWT): `exp`, `ns`, `db`, `ac`, `id`; access via `$token`, `$auth`, `$access`, `$scope`
+
+---
+
+# DEFINE PARAM
+`DEFINE PARAM [OVERWRITE|IF NOT EXISTS] $name VALUE @val [PERMISSIONS NONE|FULL|WHERE @cond] [COMMENT @s]`
+
+Database-wide global parameter available to all clients.
+```surql
+DEFINE PARAM $base VALUE "https://api.example.com";
+RETURN http::get($base + "/users");
+```
+
+---
+
+# DEFINE CONFIG
+
+# API
+`DEFINE CONFIG [OVERWRITE|IF NOT EXISTS] API [MIDDLEWARE @fn,...] [PERMISSIONS NONE|FULL|@expr]`
+
+Sets global middleware/permissions for all API endpoints. Individual `DEFINE API` middleware overrides this.
+
+# GRAPHQL
+`DEFINE CONFIG [OVERWRITE|IF NOT EXISTS] GRAPHQL [TABLES AUTO|NONE|INCLUDE @t,...|EXCLUDE @t,...] [FUNCTIONS AUTO|NONE|INCLUDE [@f,...]|EXCLUDE [@f,...]] [DEPTH @n] [COMPLEXITY @n] [INTROSPECTION NONE]`
+
+Must be defined before using GraphQL API. Requires ≥1 table.
+
+```surql
+DEFINE CONFIG GRAPHQL TABLES AUTO FUNCTIONS AUTO;
+DEFINE CONFIG GRAPHQL TABLES INCLUDE user,post FUNCTIONS NONE;
+```
+
+# DEFAULT
+`DEFINE CONFIG DEFAULT NAMESPACE @ns DATABASE @db`
+
+---
+
+# DEFINE API (v3+)
+`DEFINE API [OVERWRITE|IF NOT EXISTS] @path FOR @method,... [MIDDLEWARE @fn,...] [THEN { @body }] [PERMISSIONS NONE|FULL|@expr]`
+
+Endpoint at `/api/:ns/:db/:path`. Access `$request` (body, headers, params, method, query, context).
+
+Path patterns: `/static`, `/:param` (single segment), `/*wildcard` (remainder)
+
+Response object: `{ status: 200, body: {...}, headers: {...}, context: {...} }`
+
+```surql
+DEFINE API "/users/:id" FOR get THEN {
+  { status: 200, body: (SELECT * FROM ONLY type::record("user",$request.params.id)) }
+};
+api::invoke("/users/123");
+api::invoke("/users/123", { body: {...} });
+```
+
+Custom middleware function signature: `fn::mw($req: object, $next: function [, @extra_args]) -> object`
+- Call `$next($req)` to get current response, modify and return
+
+---
+
+# DEFINE BUCKET (v3+, experimental)
+`DEFINE BUCKET [OVERWRITE|IF NOT EXISTS] @name [BACKEND @str] [READONLY] [PERMISSIONS @expr] [COMMENT @s]`
+
+Enable: `--allow-experimental files` or `SURREAL_CAPS_ALLOW_EXPERIMENTAL=files`
+
+Backends: `"memory"`, `"file:/path"` (needs `SURREAL_BUCKET_FOLDER_ALLOWLIST`), global (`SURREAL_GLOBAL_BUCKET`)
+
+File pointer syntax: `f"bucket:/path"`
+Operations: `.put(data)`, `.get()`, `.copy("dest")`, `.delete()`, `.exists()`, `.list()`, `.rename("dest")`, `.head()`
+
+Permissions vars: `$action`, `$file`, `$target`
+
+```surql
+DEFINE BUCKET imgs BACKEND "memory";
+f"imgs:/photo.jpg".put(<bytes>data);
+<string>f"imgs:/photo.jpg".get();
+```
+
+---
+
+# DEFINE SCOPE (deprecated v2, removed v3)
+Replaced by `DEFINE ACCESS ... TYPE RECORD`
+
+# DEFINE TOKEN (deprecated v2, removed v3)
+Replaced by `DEFINE ACCESS ... TYPE JWT`
+
+---
+
+# LIVE SELECT (v3 params)
+```surql
+LET $t = 'measurement'; LET $loc = 'Tallinn';
+LIVE SELECT * FROM type::table($t) WHERE location=$loc;
+```
+
+---
+
+# Common Clauses Reference
+| Clause | Effect |
+|--------|--------|
+| `IF NOT EXISTS` | Error if already exists |
+| `OVERWRITE` | Replace if exists (v2+) |
+| `RETURN NONE\|BEFORE\|AFTER\|DIFF\|@field` | Control output |
+| `TIMEOUT @dur` | Abort if exceeded |
+| `COMMENT @s` | Documentation string |
+| `CONCURRENTLY` | Background index build |
+| `ENFORCED` | Require referenced records to exist |
+| `READONLY` | Immutable after create |
+| `FLEXIBLE` | Schemaless nested objects in schemafull table |

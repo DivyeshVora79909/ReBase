@@ -1,0 +1,26 @@
+SurrealDB Security (compressed)
+
+Authentication: System users (root/ns/db level, RBAC with roles OWNER/EDITOR/VIEWER via DEFINE USER) and Record users (defined via DEFINE ACCESS TYPE RECORD with custom SIGNUP/SIGNIN queries in SurrealQL, no RBAC, permissions enforced per table/field). Sessions established after auth; $session and $token vars hold identity/claims. Tokens are JWTs; duration configurable with DURATION FOR SESSION/TOKEN. System user passwords stored hashed with Argon2id. For record users, use crypto::argon2::generate/compare.
+
+Permissions (Row-Level Security): Table permissions: PERMISSIONS FOR select/create/update/delete WHERE expr. Field permissions: FOR select/create/update. Expressions can reference $auth (authenticated record user’s fields) or $session. All denied by default (NONE). Example: table user PERMISSIONS FOR select WHERE id = $auth.id; field internal_note PERMISSIONS FOR update WHERE $auth.role = 'admin'. Guest access (--allow-guests) still obeys permissions.
+
+Capabilities: Disabled by default. Controlled via --allow-* / --deny-* flags (also env vars). Priority: specific over general, deny over allow. Examples: --deny-all --allow-funcs "array,string,crypto::argon2,http::get" --allow-net "api.example.com:443". Functions: allow/deny lists; network targets: IPs, hosts, CIDR; scripting; experimental (surrealism,files); arbitrary queries per user group (guest,record,system). Guest access: allows unauthenticated queries but only if resource PERMISSIONS FULL. Network DNS resolved, but no reverse DNS; recommend allow by default with specific --allow-net, never --allow-net --deny-net (denylist approach risky). Deny arbitrary query can block /sql, /key, RPC methods for given groups; use DEFINE API for controlled access.
+
+Tokens & JWTs: SurrealDB verifies JWTs. DEFINE ACCESS ... TYPE JWT (system) or TYPE RECORD WITH JWT. Supports symmetric (HS256) with secret, asymmetric (RS256, ES256) with public key or JWKS URL. Claims mapped to $auth and $token. Prefer asymmetric + JWKS for production. Record access can also issue JWTs after custom signin. Token and session expiration are separate: tokens stored client-side (short-lived), sessions server-side (can be longer). Best to use token only to establish session then discard.
+
+Sessions: $session contains ip, exp, ns, db, rd (record id), ac (access method), or (origin), id (client id), tk (token claims). $token contains token claims (iat, nbf, exp, jti, iss, NS, DB, AC, ID). $auth is the record of authenticated record user (only for record users). Session/connection remains until expired or invalidated; use separate WebSocket connections per user for isolation.
+
+Best practices (condensed):
+- Capabilities: deny all by default, allow only necessary specific capabilities. Use allowlisting, not denylisting.
+- Passwords: never store plaintext; use crypto::argon2::generate (or bcrypt/scrypt/pbkdf2). Never use fast hashes (md5, sha1). Store password hashes with field/table permissions to prevent read.
+- Expiration: always set DURATION FOR SESSION and TOKEN. Session short (hours), token extremely short (seconds).
+- Query safety: always bind parameters (prepared statements) via vars/bind, never concatenate user input.
+- Content safety: use string::html::encode to prevent XSS; string::html::sanitize if HTML required but less safe.
+- JWTs: use asymmetric algorithms (RS/ES) with JWKS; avoid symmetric secrets in production.
+- Network exposure: limit to internal networks; if public, use --no-identification-headers to hide version, and use firewall/IPS.
+- Least privilege: define system users at lowest level with minimal role (VIEWER/EDITOR).
+- Encryption in transit: use TLS (--web-crt/--web-key) or reverse proxy.
+- Encryption at rest: use disk encryption (LUKS/BitLocker); datastore encryption optional.
+- Isolate WebSocket sessions per user; avoid reusing connections across users.
+- Token storage: avoid storage if possible; if needed, use browser localStorage with CSP and XSS prevention; never cookies (CSRF risk).
+- Monitor security advisories (GitHub); keep updated. Report vulnerabilities responsibly.

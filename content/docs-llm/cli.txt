@@ -1,0 +1,234 @@
+SurrealDB CLI tool overview: Quickstart with `surreal start --user root --pass secret` (in-memory, serves at 127.0.0.1:8000). Interactive shell via `surreal sql --username root --password secret --pretty` (defaults to NS=main, DB=main). Use `--namespace`, `--database` to customize.
+
+Environment variables (lossless, compressed; all `SURREAL_` prefix omitted for brevity; "usize" = unsigned int of target pointer width):
+Categories: Batch, Cache, File, HTTP client, HTTP server, Limits, Runtime, Scripting, Security, Surrealism, Telemetry, WebSocket, Other, Command aliases, Storage backends (RocksDB, SurrealKV, TiKV, FoundationDB).
+
+Batch config:
+- NORMAL_FETCH_SIZE=500 (usize) max keys scanned in general queries.
+- EXPORT_BATCH_SIZE=1000 (usize) export scan size.
+- COUNT_BATCH_SIZE=10000 (usize, v2.2.0) count scan size.
+- INDEXING_BATCH_SIZE=250 (usize) keys per indexing batch.
+
+Cache config:
+- TRANSACTION_CACHE_SIZE=10000 (usize) items cached per transaction.
+- DATASTORE_CACHE_SIZE=1000 (usize, v2.1.0) definitions cached across transactions.
+- HNSW_CACHE_SIZE=268435456 (256 MiB, usize) max HNSW vector cache.
+
+File config:
+- BUCKET_FOLDER_ALLOWLIST=none (comma-separated paths) allowed file paths.
+- FILE_ALLOWLIST=none (paths separated by : on Unix, ; on Windows, v2.1.5) mapper filter allowed paths.
+- GLOBAL_BUCKET=none (string) global bucket name for file data.
+- GLOBAL_BUCKET_ENFORCED=false (true/false) enforce global bucket.
+
+HTTP client:
+- MAX_HTTP_REDIRECTS=10 (usize, v2.0.5) max redirects in http functions.
+- MAX_HTTP_IDLE_CONNECTIONS_PER_HOST=128 (usize).
+- MAX_HTTP_IDLE_CONNECTIONS=1000 (usize).
+- HTTP_IDLE_TIMEOUT_SECS=90 (usize) idle connection timeout seconds.
+- HTTP_CONNECT_TIMEOUT_SECS=30 (usize) connect timeout seconds.
+- USER_AGENT="SurrealDB" (string).
+
+HTTP server:
+- NET_MAX_CONCURRENT_REQUESTS=1048576 (usize) concurrent network requests.
+- HTTP_MAX_ML_BODY_SIZE=4398046511104 (4 GiB) max body for /ml endpoints.
+- HTTP_MAX_SQL_BODY_SIZE=1048576 (1 MiB) for /sql.
+- HTTP_MAX_API_BODY_SIZE=4194304 (4 MiB) for /api.
+- HTTP_MAX_RPC_BODY_SIZE=4194304 (4 MiB) for /rpc.
+- HTTP_MAX_KEY_BODY_SIZE=16384 (16 KiB) for /key.
+- HTTP_MAX_SIGNUP_BODY_SIZE=1024 (1 KiB) for /signup.
+- HTTP_MAX_IMPORT_BODY_SIZE=4398046511104 (4 GiB) for /import.
+- HTTP_MAX_SIGNIN_BODY_SIZE=1024 (1 KiB) for /signin.
+
+Limits:
+- EXTERNAL_SORTING_BUFFER_LIMIT=50000 (usize) record count to trigger on-disk sort.
+- STRING_SIMILARITY_LIMIT=16384 (usize) max input length for similarity/distance.
+- GENERATION_ALLOCATION_LIMIT=1048576 (usize) max allocation bytes for string::replace etc. (2^20).
+- IDIOM_RECURSION_LIMIT=256 (usize) max recursive idiom depth.
+- MAX_COMPUTATION_DEPTH=120 (usize) recursive computation depth.
+- MAX_CONCURRENT_TASKS=64 (usize) max buffered concurrent jobs.
+- MAX_OBJECT_PARSING_DEPTH=100 (usize) nested object/array parsing depth.
+- MAX_ORDER_LIMIT_PRIORITY_QUEUE_SIZE=1000 (usize, v2.2.0) priority queue trigger size.
+- MAX_QUERY_PARSING_DEPTH=20 (usize) recursion depth for subqueries.
+- OPERATOR_BUFFER_SIZE=2 (usize, v2.1.5) operator pipeline batches; 0 disables.
+- REGEX_SIZE_LIMIT=10485760 (10 MiB, usize, v2.1.5) max regex size in bytes.
+
+Runtime:
+- RUNTIME_MAX_BLOCKING_THREADS=512 (usize) threads for blocking ops.
+- RUNTIME_STACK_SIZE=10485760 (10 MiB, doubled in debug build) thread stack size.
+- RUNTIME_WORKER_THREADS=number of CPU cores (minimum 4) (usize).
+
+Scripting:
+- SCRIPTING_MAX_STACK_SIZE=262144 (256 KiB) JS runtime stack.
+- SCRIPTING_MAX_MEMORY_LIMIT=2097152 (2 MiB) JS runtime memory limit.
+- SCRIPTING_MAX_TIME_LIMIT=5000 (ms, v2.0.5) JS function timeout.
+
+Security:
+- INSECURE_FORWARD_ACCESS_ERRORS=false (true/false) forward auth errors to client (production unsafe).
+
+Surrealism (v3.0.0+):
+- SURREALISM_CACHE_SIZE=100 (usize) cached surrealism modules.
+- SURREALISM_MAX_POOL_SIZE=8 (usize) per-module WASM pool ceiling.
+- SURREALISM_MAX_MEMORY=none (usize) per-module WASM linear memory bytes.
+- SURREALISM_MAX_EXECUTION_TIME=none (u64, ms) per-invocation time cap.
+- SURREALISM_MAX_KV_ENTRIES=none (usize) per-module KV entries ceiling.
+- SURREALISM_MAX_KV_VALUE_BYTES=none (usize) max value size.
+- SURREALISM_LOG_LEVEL=debug (none/full/error/warn/info/debug/trace, v3.1.0) tracing level.
+
+Telemetry:
+- TELEMETRY_DISABLE_METRICS=false (v2.1.3) disable metrics to OTLP.
+- TELEMETRY_DISABLE_TRACING=false (v2.1.3) disable traces.
+- TELEMETRY_NAMESPACE=none (string) label value for telemetry.
+- TELEMETRY_PROVIDER=none (otlp only) if "otlp" sends to GRPC collector.
+- TOKIO_CONSOLE_ENABLED=false (v3.0.0) enable tokio console.
+- TOKIO_CONSOLE_RETENTION=60 (usize, v3.0.0) seconds to retain completed events.
+- TOKIO_CONSOLE_SOCKET_ADDR=none (string) bind address.
+
+WebSocket:
+- WEBSOCKET_MAX_MESSAGE_SIZE=134217728 (128 MiB) max message size.
+- WEBSOCKET_MAX_WRITE_BUFFER_SIZE=max usize (usize) backpressure threshold.
+- WEBSOCKET_READ_BUFFER_SIZE=131072 (128 KiB) read buffer per connection.
+- WEBSOCKET_WRITE_BUFFER_SIZE=131072 (128 KiB) write buffer per connection.
+- WEBSOCKET_RESPONSE_BUFFER_SIZE=0 (usize) responses buffered before client delivery.
+- WEBSOCKET_RESPONSE_CHANNEL_SIZE=100 (usize) queued messages for sending.
+- WEBSOCKET_RESPONSE_FLUSH_PERIOD=3 (usize, ms) flush interval.
+
+Other:
+- BUILD_METADATA=auto (string) version identifier (CARGO_PKG_VERSION).
+- DATASTORE_AOL=never (v3.0.0, never|sync|async) append-only log mode (memory engine).
+- DATASTORE_PERSIST=none (v3.0.0, file path) persistence path (memory engine).
+- DATASTORE_RETENTION=0 (v3.0.0, duration string) version retention (memory & surrealkv).
+- DATASTORE_SNAPSHOT=never (v3.0.0, never|duration) snapshot interval (memory engine).
+- DATASTORE_SYNC_DATA=every (v3.0.0, never|every|duration) sync mode (memory, rocksdb, surrealkv).
+- DATASTORE_VERSIONED=false (v3.0.0, true/false/0/1) MVCC versioning (memory & surrealkv).
+- MEMORY_THRESHOLD=0 (v2.1.5, usize or suffixed int) memory availability threshold (bytes/kib/mib/gib); 0=disable.
+- REGEX_CACHE_SIZE=1000 (usize) cached computed regexes.
+
+Command environment variables (map to CLI flags/args):
+- ASYNC_EVENT_PROCESSING_INTERVAL=5s (duration, v3.0.0) -> --async-event-processing-interval (start)
+- AUTH_LEVEL=root (root|namespace|ns|database|db) -> --auth-level (export,import,sql)
+- BIND=127.0.0.1:8000 (address string) -> --bind (start)
+- CAPS_ALLOW_ALL=false (bool) -> --allow-all (start; true just by flag presence)
+- CAPS_ALLOW_ARBITRARY_QUERY=none (guest,record,system comma-sep) -> --allow-arbitrary-query (start)
+- CAPS_ALLOW_EXPERIMENTAL=none (files,surrealism comma-sep) -> --allow-experimental (start)
+- CAPS_ALLOW_FUNC=false (true/false or function paths) -> --allow-funcs (start)
+- CAPS_ALLOW_GUESTS=true (bool) -> --allow-guests (start)
+- CAPS_ALLOW_NET=none (comma-sep paths) -> --allow-net (start)
+- CAPS_ALLOW_SCRIPT=true (bool) -> --allow-scripting (start)
+- CAPS_ALLOW_INSECURE_STORABLE_CLOSURES=false (bool, v2.5.0) -> --allow-insecure-storable-closures (start)
+- CAPS_DENY_ALL=false (bool) -> --deny-all (start)
+- CAPS_DENY_FUNC=false (true/false or comma-sep funcs) -> --deny-funcs (start)
+- CAPS_DENY_GUESTS=true (bool) -> --deny-guests (start)
+- CAPS_DENY_NET=true (true/false or comma-sep paths) -> --deny-net (start)
+- CAPS_DENY_SCRIPT=true (bool) -> --deny-scripting (start)
+- CHANGEFEED_GC_INTERVAL=30s (duration) -> --changefeed-gc-interval (start)
+- CLIENT_IP=none (none|socket|CF-Connecting-IP|Fly-Client-IP|True-Client-IP|X-Real-IP|X-Forwarded-For) -> --client-ip (start)
+- DATABASE=main (sql) or none (export,import) -> --database
+- DEFAULT_DATABASE=main (v3.0.0, string) -> --default-database (start)
+- DEFAULT_NAMESPACE=main (v3.0.0, string) -> --default-namespace (start)
+- HIDE_WELCOME=false (bool) -> --hide-welcome (sql)
+- IMPORT_FILE=none (path) -> --import-file (start)
+- INDEX_COMPACTION_INTERVAL=5s (duration, v3.0.0) -> --index-compaction-interval (start)
+- KEY=none (string 16/24/32 bytes) -> --key (start, on-disk encryption, not yet in use)
+- KVS_CA=none (path) -> --kvs-ca (start)
+- KVS_CRT=none (path) -> --kvs-crt (start)
+- KVS_KEY=none (path) -> --kvs-key (start)
+- LOG=info (none|full|error|warn|info|debug|trace) -> --log (start, fix)
+- LOG_FILE_ENABLED=false (v2.4.0, bool) -> --log-file-enabled (start)
+- LOG_FILE_FORMAT=none (text|json, v2.4.0) -> --log-file-format (start)
+- LOG_FILE_LEVEL=none (level, v2.4.0) -> --log-file-level (start)
+- LOG_FILE_NAME=surrealdb.log (v2.4.0) -> --log-file-name (start)
+- LOG_FILE_PATH=logs (v2.4.0) -> --log-file-path (start)
+- LOG_FILE_ROTATION=daily (daily|hourly|never, v2.4.0) -> --log-file-rotation (start)
+- LOG_FORMAT=text (text|json, v2.4.0) -> --log-format (start)
+- LOG_OTEL_LEVEL=inherit from LOG (v2.4.0) -> --log-otel-level (start)
+- LOG_SOCKET=none (v3.0.0, host:port) -> --log-socket (start)
+- LOG_SOCKET_FORMAT=text (v3.0.0, text|json) -> --log-socket-format (start)
+- LOG_SOCKET_LEVEL=inherit (v3.0.0) -> --log-socket-level (start)
+- NAME=none (string, for ml export) -> --name
+- NAMESPACE=main (sql) or none (export,import) -> --namespace
+- NO_BANNER=false (bool) -> --no-banner (start)
+- NO_DEFAULTS=false (v3.0.0, bool) -> --no-defaults (start; conflicts with DEFAULT_*)
+- NO_IDENTIFICATION_HEADERS=false (bool) -> --no-identification-headers (start)
+- NODE_MEMBERSHIP_CHECK_INTERVAL=15s (duration) -> --node-membership-check-interval (start)
+- NODE_MEMBERSHIP_CLEANUP_INTERVAL=300s (duration) -> --node-membership-cleanup-interval (start)
+- NODE_MEMBERSHIP_REFRESH_INTERVAL=3s (duration) -> --node-membership-refresh-interval (start)
+- PASS=none (string) -> --pass (export,import,sql,start)
+- PATH=memory (string) -> (positional, no --path; for fix,start)
+- PLANNER_STRATEGY=best-effort (v3.0.0, best-effort|compute-only|all-read-only) -> --planner-strategy (start)
+- QUERY_TIMEOUT=none (duration) -> --query-timeout (start)
+- SLOW_QUERY_LOG_THRESHOLD=none (duration, v2.3.8) -> --slow-log-threshold (start)
+- SLOW_QUERY_LOG_PARAM_ALLOW=none (v2.3.9, comma-sep params) -> --slow-log-param-allow (start)
+- SLOW_QUERY_LOG_PARAM_DENY=none (v2.3.9, comma-sep params) -> --slow-log-param-deny (start)
+- STRICT=false (bool, ignored since v3.0, now per DB) -> --strict (start)
+- TEMPORARY_DIRECTORY=none (dir) -> --temporary-directory (start)
+- TOKEN=none (JWT string) -> --token (export,import,sql)
+- TRANSACTION_TIMEOUT=none (duration) -> --transaction-timeout (start)
+- UNAUTHENTICATED=false (bool) -> --unauthenticated (start)
+- USER=none (string) -> --user (export,import,sql,start)
+- VERSION=none (string, ml export) -> --version
+
+Storage backend env vars:
+RocksDB:
+- ROCKSDB_BACKGROUND_FLUSH=true (bool) enable WAL background flush.
+- ROCKSDB_BACKGROUND_FLUSH_INTERVAL=200 (usize) ms between flushes.
+- ROCKSDB_BLOB_COMPRESSION_TYPE=snappy (none|snappy|lz4|zstd).
+- ROCKSDB_BLOB_FILE_SIZE=268435456 (256 MiB, usize).
+- ROCKSDB_ENABLE_BLOB_GC=true (bool).
+- ROCKSDB_BLOB_GC_AGE_CUTOFF=0.5 (float 0-1) fractional age cutoff.
+- ROCKSDB_BLOB_GC_FORCE_THRESHOLD=0.5 (float 0-1) discardable ratio to force GC.
+- ROCKSDB_BLOB_COMPACTION_READAHEAD_SIZE=0 (usize) readahead.
+- ROCKSDB_BLOCK_CACHE_SIZE=dynamic: max((mem/2)-1GiB,16MiB) (usize).
+- ROCKSDB_BLOCK_SIZE=65536 (64 KiB, usize).
+- ROCKSDB_COMPACTION_READAHEAD_SIZE=dynamic (4/8/16 MiB based on sys mem) (usize).
+- ROCKSDB_COMPACTION_STYLE=level (level|universal, v2.0.3).
+- ROCKSDB_DELETION_FACTORY_DELETE_COUNT=50 (usize, v2.0.3).
+- ROCKSDB_DELETION_FACTORY_RATIO=0.5 (float, v2.0.3).
+- ROCKSDB_DELETION_FACTORY_WINDOW_SIZE=1000 (usize, v2.0.3).
+- ROCKSDB_ENABLE_BLOB_FILES=true (bool).
+- ROCKSDB_ENABLE_PIPELINED_WRITES=true (bool) separate queues for WAL and memtable.
+- ROCKSDB_GROUPED_COMMIT=true (bool) only if SYNC_DATA enabled & BACKGROUND_FLUSH disabled.
+- ROCKSDB_GROUPED_COMMIT_MAX_BATCH_SIZE=4096 (usize).
+- ROCKSDB_GROUPED_COMMIT_TIMEOUT=5ms (duration in ns).
+- ROCKSDB_GROUPED_COMMIT_WAIT_THRESHOLD=12 (usize).
+- ROCKSDB_FILE_COMPACTION_TRIGGER=4 (usize).
+- ROCKSDB_JOBS_COUNT=CPUs*2 (usize, v2.0.3) max threads for flush/compaction.
+- ROCKSDB_KEEP_LOG_FILE_NUM=10 (usize) info log files kept.
+- ROCKSDB_MAX_CONCURRENT_SUBCOMPACTIONS=4 (usize).
+- ROCKSDB_MAX_OPEN_FILES=1024 (usize).
+- ROCKSDB_MAX_WRITE_BUFFER_NUMBER=dynamic (2/4/8/32 based on mem) (usize).
+- ROCKSDB_MIN_BLOB_SIZE=4096 (usize) min value size to store in blob.
+- ROCKSDB_MIN_WRITE_BUFFER_NUMBER_TO_MERGE=2 (usize).
+- ROCKSDB_SST_MAX_ALLOWED_SPACE_USAGE=0 (usize) 0=unlimited; when reached, read+delete only.
+- ROCKSDB_STORAGE_LOG_LEVEL=warn (level).
+- ROCKSDB_TARGET_FILE_SIZE_BASE=67108864 (64 MiB).
+- ROCKSDB_TARGET_FILE_SIZE_MULTIPLIER=2 (usize).
+- ROCKSDB_THREAD_COUNT=CPUs (usize) flush/compaction threads.
+- ROCKSDB_WAL_SIZE_LIMIT=0 (usize) MiB limit.
+- ROCKSDB_WRITE_BUFFER_SIZE=dynamic (32/64/128 MiB based on mem).
+- SYNC_DATA=true (bool) sync writes before ack.
+
+SurrealKV:
+- SURREALKV_ENABLE_VLOG=true (bool) value log separation.
+- SURREALKV_VERSIONED_INDEX=false (bool) versioned index (if versioning on).
+- SURREALKV_BLOCK_SIZE=65536 (64 KiB).
+- SURREALKV_VLOG_MAX_FILE_SIZE=dynamic (64/128/256/512 MiB based on mem).
+- SURREALKV_VLOG_THRESHOLD=4096 (4 KiB) threshold to store in vlog.
+- SURREALKV_BLOCK_CACHE_CAPACITY=dynamic same as RocksDB block cache calc.
+- SURREALKV_GROUPED_COMMIT_TIMEOUT=5ms (duration ns).
+- SURREALKV_GROUPED_COMMIT_WAIT_THRESHOLD=12 (usize).
+- SURREALKV_GROUPED_COMMIT_MAX_BATCH_SIZE=4096 (usize).
+
+TiKV:
+- TIKV_API_VERSION=1 (u8) cluster API version.
+- TIKV_ASYNC_COMMIT=true (bool).
+- TIKV_KEYSPACE=none (string) keyspace identifier.
+- TIKV_GRPC_MAX_DECODING_MESSAGE_SIZE=4194304 (4 MiB, v2.1.8).
+- TIKV_ONE_PHASE_COMMIT=true (bool).
+- TIKV_REQUEST_TIMEOUT=10 (usize) seconds.
+
+FoundationDB (deprecated v3.0):
+- FOUNDATIONDB_TRANSACTION_MAX_RETRY_DELAY=500 (ms).
+- FOUNDATIONDB_TRANSACTION_RETRY_LIMIT=5.
+- FOUNDATIONDB_TRANSACTION_TIMEOUT=5000 (ms).
+
+Cloud instance config is done via panel, not env vars.

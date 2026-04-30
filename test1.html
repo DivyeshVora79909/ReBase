@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>ReBase | Domination Panel</title>
+
+    <!-- CSS Frameworks -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Graph Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+
+    <!-- Dagre Polyfill -->
+    <script>
+      window.process = { hrtime: () => [0, 0] };
+      window.process.hrtime.bigint = () => BigInt(Date.now() * 1_000_000);
+    </script>
+
+    <!-- Import Maps for Vue & SurrealDB -->
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+          "surrealdb": "https://esm.sh/surrealdb"
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        overflow: hidden;
+        font-family: ui-monospace, monospace;
+      }
+      #cy {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: #020617;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+
+      /* Transitions */
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.2s;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+    </style>
+  </head>
+
+  <body class="bg-slate-950 text-slate-200 select-none">
+    <div id="app" class="h-screen w-screen relative">
+      <!-- GRAPH CANVAS -->
+      <div id="cy"></div>
+
+      <!-- LOGIN MODAL -->
+      <transition name="fade">
+        <div
+          v-if="!auth.me"
+          class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm"
+        >
+          <div
+            class="card w-96 bg-slate-900 border border-slate-700 shadow-2xl"
+          >
+            <div class="card-body gap-4">
+              <div>
+                <h1 class="text-2xl font-black text-info tracking-widest">
+                  DOMINATION
+                </h1>
+                <p
+                  class="text-[10px] opacity-50 uppercase tracking-widest mt-1"
+                >
+                  Architecture Control Panel
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <input
+                  v-model="cfg.url"
+                  class="input input-bordered input-sm w-full font-mono text-xs"
+                  placeholder="ws://localhost:8000"
+                />
+                <div class="flex gap-2">
+                  <input
+                    v-model="cfg.ns"
+                    class="input input-bordered input-sm flex-1 font-mono text-xs"
+                    placeholder="Namespace"
+                  />
+                  <input
+                    v-model="cfg.db"
+                    class="input input-bordered input-sm flex-1 font-mono text-xs"
+                    placeholder="Database"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-2 pt-2 border-t border-slate-800">
+                <input
+                  v-model="loginForm.email"
+                  class="input input-bordered input-sm w-full"
+                  placeholder="Admin Email"
+                />
+                <input
+                  v-model="loginForm.password"
+                  type="password"
+                  class="input input-bordered input-sm w-full"
+                  placeholder="Password"
+                  @keyup.enter="doLogin"
+                />
+              </div>
+
+              <button
+                @click="doLogin"
+                :disabled="busy"
+                class="btn btn-info btn-sm w-full mt-2 uppercase tracking-wider"
+              >
+                {{ busy ? 'Authenticating...' : 'Engage' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- MAIN DASHBOARD -->
+      <template v-if="auth.me">
+        <!-- TOP BAR -->
+        <header
+          class="absolute top-0 inset-x-0 z-20 h-12 flex items-center gap-4 px-4 bg-slate-900/90 backdrop-blur border-b border-slate-800"
+        >
+          <span class="font-black text-info tracking-widest text-sm"
+            >DOMINATION</span
+          >
+          <div class="divider divider-horizontal mx-0 opacity-20"></div>
+          <span class="text-xs font-bold text-success">{{ auth.me.name }}</span>
+
+          <div class="flex-1"></div>
+
+          <span class="text-[10px] opacity-50 font-mono tracking-widest">
+            NODES: {{ graph.nodes.length }} | EDGES: {{ graph.edges.length }}
+          </span>
+          <button @click="sync" class="btn btn-ghost btn-xs text-info">
+            ⟳ Sync Graph
+          </button>
+          <button @click="doLogout" class="btn btn-error btn-outline btn-xs">
+            Logout
+          </button>
+        </header>
+
+        <!-- INSPECTOR PANEL (Appears when node/edge is clicked) -->
+        <aside
+          v-if="panel"
+          class="absolute right-4 top-16 z-20 w-80 max-h-[85vh] overflow-y-auto flex flex-col gap-4"
+        >
+          <!-- ==================== NODE PANEL ==================== -->
+          <div
+            v-if="panel.kind === 'node'"
+            class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl p-4 space-y-4"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <span
+                  class="badge badge-sm mb-1 uppercase tracking-wider text-[9px]"
+                  :class="panel.node.table === 'groups' ? 'badge-success' : 'badge-info'"
+                >
+                  {{ panel.node.table }}
+                </span>
+                <h2 class="font-bold text-lg leading-tight">
+                  {{ panel.node.name }}
+                </h2>
+                <code class="text-[10px] text-slate-500 block mt-1"
+                  >{{ panel.node.id }}</code
+                >
+              </div>
+              <button
+                @click="panel = null"
+                class="btn btn-xs btn-circle btn-ghost text-slate-400"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Read-Only Data -->
+            <div class="bg-slate-800 rounded p-3 text-xs space-y-2 font-mono">
+              <div v-if="panel.node.email" class="flex justify-between">
+                <span class="text-slate-500">Email:</span>
+                <span class="text-info">{{ panel.node.email }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Dominates:</span>
+                <span class="text-warning"
+                  >{{ panel.node.dominates?.length ?? 0 }} Nodes</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Parents:</span>
+                <span class="text-warning"
+                  >{{ panel.node.parents?.length ?? 0 }} Groups</span
+                >
+              </div>
+
+              <!-- Permissions List -->
+              <div
+                v-if="(panel.node.permissions || panel.node.role || []).length"
+                class="pt-2 border-t border-slate-700 mt-2"
+              >
+                <span class="text-slate-500 block mb-1">Permissions:</span>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="p in (panel.node.permissions || panel.node.role)"
+                    :key="p"
+                    class="bg-slate-700 px-1.5 py-0.5 rounded text-[9px]"
+                    >{{ p }}</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Action: Create Child -->
+            <div class="border border-slate-700 rounded p-3 space-y-2">
+              <p
+                class="text-[10px] font-bold text-info uppercase tracking-widest"
+              >
+                Create & Link Child
+              </p>
+              <div class="flex gap-2">
+                <select
+                  v-model="form.cType"
+                  class="select select-bordered select-xs w-24"
+                >
+                  <option value="user">User</option>
+                  <option value="groups">Group</option>
+                </select>
+                <input
+                  v-model="form.cName"
+                  class="input input-bordered input-xs flex-1"
+                  placeholder="Name"
+                />
+              </div>
+              <input
+                v-if="form.cType === 'user'"
+                v-model="form.cEmail"
+                class="input input-bordered input-xs w-full"
+                placeholder="Email"
+              />
+              <input
+                v-if="form.cType === 'groups'"
+                v-model="form.cRoles"
+                class="input input-bordered input-xs w-full"
+                placeholder="node_select, node_create..."
+              />
+              <button @click="createChild" class="btn btn-info btn-xs w-full">
+                Deploy Child Node
+              </button>
+            </div>
+
+            <!-- Action: Link Existing -->
+            <div class="border border-slate-700 rounded p-3 space-y-2">
+              <p
+                class="text-[10px] font-bold text-success uppercase tracking-widest"
+              >
+                Link Existing Node
+              </p>
+              <select
+                v-model="form.linkId"
+                class="select select-bordered select-xs w-full"
+              >
+                <option value="">- Select Target -</option>
+                <option v-for="n in otherNodes" :key="n.id" :value="n.id">
+                  {{ n.name }} [{{ n.table }}]
+                </option>
+              </select>
+              <button
+                @click="linkExisting"
+                class="btn btn-success btn-xs w-full"
+              >
+                Create Edge
+              </button>
+            </div>
+
+            <!-- Danger / State Triggers -->
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+              <button
+                @click="refreshState"
+                class="btn btn-neutral btn-xs w-full justify-start"
+              >
+                ↻ Force State Refresh (RBAC)
+              </button>
+              <button
+                v-if="panel.node.table === 'user'"
+                @click="deactivateUser"
+                class="btn btn-warning btn-outline btn-xs w-full justify-start"
+              >
+                ⚠ Deactivate (Reset Password)
+              </button>
+              <button
+                @click="deleteNode"
+                class="btn btn-error btn-outline btn-xs w-full justify-start"
+              >
+                ✕ Delete Node
+              </button>
+            </div>
+          </div>
+
+          <!-- ==================== EDGE PANEL ==================== -->
+          <div
+            v-if="panel.kind === 'edge'"
+            class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl p-4 space-y-4"
+          >
+            <div class="flex justify-between items-center">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-slate-400"
+                >Manage Edge</span
+              >
+              <button
+                @click="panel = null"
+                class="btn btn-xs btn-circle btn-ghost text-slate-400"
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              class="bg-slate-800 rounded p-3 text-[10px] font-mono space-y-2 break-all"
+            >
+              <div>
+                <span class="text-slate-500 block">Edge ID</span
+                ><span class="text-slate-300">{{ panel.edge.id }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Parent (OUT)</span
+                ><span class="text-info">{{ panel.edge.source }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Child (IN)</span
+                ><span class="text-success">{{ panel.edge.target }}</span>
+              </div>
+            </div>
+            <button @click="deleteEdge" class="btn btn-error btn-xs w-full">
+              Sever Connection
+            </button>
+          </div>
+        </aside>
+      </template>
+
+      <!-- TOAST NOTIFICATIONS -->
+      <div class="toast toast-bottom toast-center z-50">
+        <div
+          v-for="t in toasts"
+          :key="t.id"
+          class="alert text-xs font-bold py-2 shadow-xl"
+          :class="t.err ? 'alert-error' : 'alert-success'"
+        >
+          <span>{{ t.msg }}</span>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createApp, ref, reactive, computed, markRaw } from "vue";
+      import { Surreal, RecordId, StringRecordId } from "surrealdb";
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // SURREALDB SETUP & POLYFILL
+      // Converts RecordIds to plain strings so Cytoscape and Vue don't crash
+      // ─────────────────────────────────────────────────────────────────────────────
+      const db = markRaw(
+        new Surreal({
+          codecOptions: {
+            valueDecodeVisitor(val) {
+              if (val instanceof RecordId) return val.toString();
+              return val;
+            },
+          },
+        }),
+      );
+      const rid = (s) => new StringRecordId(String(s)); // Wrapper for queries
+
+      let cy = null;
+
+      createApp({
+        setup() {
+          const cfg = reactive({
+            url: localStorage.getItem("rb_url") || "ws://localhost:8000",
+            ns: localStorage.getItem("rb_ns") || "main",
+            db: localStorage.getItem("rb_db") || "main",
+          });
+
+          const loginForm = reactive({ email: "", password: "" });
+          const busy = ref(false);
+          const auth = reactive({ me: null });
+          const graph = reactive({ nodes: [], edges: [] });
+          const panel = ref(null);
+          const toasts = ref([]);
+
+          const form = reactive({
+            cType: "user",
+            cName: "",
+            cEmail: "",
+            cRoles: "",
+            linkId: "",
+          });
+
+          const otherNodes = computed(() =>
+            panel.value?.kind === "node"
+              ? graph.nodes.filter((n) => n.id !== panel.value.node.id)
+              : [],
+          );
+
+          function toast(msg, isErr = false) {
+            const id = Date.now();
+            toasts.value.push({ id, msg, err: isErr });
+            setTimeout(
+              () => (toasts.value = toasts.value.filter((t) => t.id !== id)),
+              4000,
+            );
+          }
+
+          // ─────────────────────────────────────────────────────────────────────────────
+          // GRAPH RENDERER
+          // ─────────────────────────────────────────────────────────────────────────────
+          function initCy() {
+            if (cy) cy.destroy();
+            cy = cytoscape({
+              container: document.getElementById("cy"),
+              style: [
+                {
+                  selector: "node",
+                  style: {
+                    label: "data(label)",
+                    color: "#cbd5e1",
+                    "font-size": 11,
+                    "font-weight": "bold",
+                    "text-valign": "bottom",
+                    "text-margin-y": 6,
+                    width: 36,
+                    height: 36,
+                    "border-width": 2,
+                  },
+                },
+                {
+                  selector: 'node[type="groups"]',
+                  style: {
+                    shape: "hexagon",
+                    "background-color": "#059669",
+                    "border-color": "#047857",
+                  },
+                },
+                {
+                  selector: 'node[type="user"]',
+                  style: {
+                    shape: "ellipse",
+                    "background-color": "#0284c7",
+                    "border-color": "#0369a1",
+                  },
+                },
+                {
+                  selector: "node.me",
+                  style: { "border-width": 4, "border-color": "#fbbf24" },
+                },
+                {
+                  selector: "node.sel",
+                  style: {
+                    "border-width": 4,
+                    "border-color": "#f43f5e",
+                    width: 44,
+                    height: 44,
+                  },
+                },
+                {
+                  selector: "edge",
+                  style: {
+                    width: 2,
+                    "curve-style": "bezier",
+                    "target-arrow-shape": "triangle",
+                    "line-color": "#334155",
+                    "target-arrow-color": "#334155",
+                  },
+                },
+                {
+                  selector: "edge.sel",
+                  style: {
+                    "line-color": "#f43f5e",
+                    "target-arrow-color": "#f43f5e",
+                    width: 4,
+                  },
+                },
+              ],
+            });
+
+            cy.on("tap", "node", (e) => {
+              cy.elements().removeClass("sel");
+              e.target.addClass("sel");
+              panel.value = {
+                kind: "node",
+                node: graph.nodes.find((n) => n.id === e.target.id()),
+              };
+            });
+            cy.on("tap", "edge", (e) => {
+              cy.elements().removeClass("sel");
+              e.target.addClass("sel");
+              panel.value = {
+                kind: "edge",
+                edge: {
+                  id: e.target.id(),
+                  source: e.target.data("source"),
+                  target: e.target.data("target"),
+                },
+              };
+            });
+            cy.on("tap", (e) => {
+              if (e.target === cy) {
+                panel.value = null;
+                cy.elements().removeClass("sel");
+              }
+            });
+          }
+
+          function renderGraph() {
+            if (!cy) return;
+            cy.batch(() => {
+              cy.elements().remove();
+              graph.nodes.forEach((n) => {
+                const el = cy.add({
+                  data: { id: n.id, label: n.name, type: n.table },
+                });
+                if (n.id === auth.me?.id) el.addClass("me");
+              });
+              graph.edges.forEach((e) => {
+                if (cy.$id(e.source).length && cy.$id(e.target).length)
+                  cy.add({
+                    data: { id: e.id, source: e.source, target: e.target },
+                  });
+              });
+            });
+            cy.layout({ name: "dagre", rankDir: "TB", animate: true }).run();
+          }
+
+          // ─────────────────────────────────────────────────────────────────────────────
+          // CORE DATABASE ACTIONS
+          // ─────────────────────────────────────────────────────────────────────────────
+          async function sync() {
+            try {
+              const [users, groups, links, me] = await db.query(`
+              SELECT id, name, email, permissions, dominates, parents FROM user;
+              SELECT id, name, role FROM groups;
+              SELECT id, in, out FROM link;
+              SELECT * FROM $auth;
+            `);
+              graph.nodes = [
+                ...(users || []).map((u) => ({ ...u, table: "user" })),
+                ...(groups || []).map((g) => ({ ...g, table: "groups" })),
+              ];
+              graph.edges = (links || []).map((l) => ({
+                id: l.id,
+                source: l.out,
+                target: l.in,
+              })); // IN=child, OUT=parent
+              auth.me = me?.[0] ?? null;
+
+              if (panel.value?.kind === "node") {
+                const fresh = graph.nodes.find(
+                  (n) => n.id === panel.value.node.id,
+                );
+                panel.value = fresh ? { kind: "node", node: fresh } : null;
+              }
+              renderGraph();
+            } catch (e) {
+              toast(e.message, true);
+            }
+          }
+
+          async function doLogin() {
+            busy.value = true;
+            try {
+              localStorage.setItem("rb_url", cfg.url);
+              localStorage.setItem("rb_ns", cfg.ns);
+              localStorage.setItem("rb_db", cfg.db);
+              await db.connect(cfg.url);
+              await db.use({ namespace: cfg.ns, database: cfg.db });
+              await db.signin({
+                access: "account",
+                namespace: cfg.ns,
+                database: cfg.db,
+                variables: {
+                  email: loginForm.email,
+                  password: loginForm.password,
+                },
+              });
+              initCy();
+              await sync();
+              toast("Connected securely.");
+            } catch (e) {
+              toast(e.message, true);
+            } finally {
+              busy.value = false;
+            }
+          }
+
+          function doLogout() {
+            db.invalidate();
+            auth.me = null;
+            panel.value = null;
+            cy?.destroy();
+          }
+
+          // --- NATIVE SCHEMA ACTIONS --- //
+
+          async function runTx(fn) {
+            try {
+              await fn();
+              await sync();
+            } catch (e) {
+              toast(e.message, true);
+            }
+          }
+
+          async function createChild() {
+            if (!form.cName) return toast("Name required", true);
+            await runTx(async () => {
+              const roles = form.cRoles
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+              // Raw transaction: Creates the node and relates it in one step
+              const query =
+                `
+              BEGIN TRANSACTION;
+              LET $new = ` +
+                (form.cType === "user"
+                  ? `(CREATE user CONTENT { name: $name, email: $email })[0]`
+                  : `(CREATE groups CONTENT { name: $name, role: $roles })[0]`) +
+                `;
+              RELATE type::record($parent)->link->($new.id);
+              COMMIT TRANSACTION;
+            `;
+              await db.query(query, {
+                parent: rid(panel.value.node.id),
+                name: form.cName,
+                email: form.cEmail || null,
+                roles,
+              });
+              form.cName = "";
+              form.cEmail = "";
+              form.cRoles = "";
+              toast("Node deployed and linked.");
+            });
+          }
+
+          async function linkExisting() {
+            if (!form.linkId) return toast("Select target", true);
+            await runTx(async () => {
+              await db.query(
+                "RELATE type::record($parent)->link->type::record($child)",
+                {
+                  parent: rid(panel.value.node.id),
+                  child: rid(form.linkId),
+                },
+              );
+              form.linkId = "";
+              toast("Edge established.");
+            });
+          }
+
+          // Triggers the user_state_machine event by touching the field
+          async function refreshState() {
+            await runTx(async () => {
+              await db.query(
+                "UPDATE type::record($id) SET last_refreshed_at = time::now()",
+                { id: rid(panel.value.node.id) },
+              );
+              toast("Session paths recalculated.");
+            });
+          }
+
+          // Triggers the deactivation cascade event
+          async function deactivateUser() {
+            await runTx(async () => {
+              await db.query(
+                "UPDATE type::record($id) SET last_deactivated_at = time::now()",
+                { id: rid(panel.value.node.id) },
+              );
+              toast("User deactivated. Password cleared.");
+            });
+          }
+
+          async function deleteNode() {
+            if (!confirm("Destroy node? (Will fail if node has dependents)"))
+              return;
+            await runTx(async () => {
+              await db.query("DELETE type::record($id)", {
+                id: rid(panel.value.node.id),
+              });
+              panel.value = null;
+              toast("Node destroyed.");
+            });
+          }
+
+          async function deleteEdge() {
+            await runTx(async () => {
+              await db.query("DELETE type::record($id)", {
+                id: rid(panel.value.edge.id),
+              });
+              panel.value = null;
+              toast("Link severed.");
+            });
+          }
+
+          return {
+            cfg,
+            loginForm,
+            busy,
+            auth,
+            graph,
+            panel,
+            form,
+            toasts,
+            otherNodes,
+            doLogin,
+            doLogout,
+            sync,
+            createChild,
+            linkExisting,
+            refreshState,
+            deactivateUser,
+            deleteNode,
+            deleteEdge,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>

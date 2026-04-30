@@ -1,0 +1,396 @@
+SURREALDB FUNCTION REFERENCE (Minimal LLM Context)
+============================================================
+
+SYNTAX: namespace::function(args) -> return_type
+METHOD CHAINING: [1,2,3].push(4).join(',')
+CLOSURES: |$var| $var > 0
+
+
+==================================================
+ARRAY
+==================================================
+  array::add: adds an item to an array only if it doesn't exist
+  array::all(): Checks whether all array values are truthy, or equal to a condition
+  array::any(): Checks whether any array value is truthy, or equal to a condition
+  array::append(): Appends an item to the end of an array
+  array::at(): Returns value for X index, or in reverse for a negative index
+  array::boolean_and(): Perform the AND  bitwise operations  on two arrays
+  array::boolean_not(): Perform the NOT  bitwise operations  on an array
+  array::boolean_or(): Perform the OR  bitwise operations  on two arrays
+  array::boolean_xor(): Perform the XOR  bitwise operations  on two arrays
+  array::clump(): Returns the original array split into multiple arrays of X size
+  array::combine(): Combines all values from two arrays together
+  array::complement(): Returns the complement of two arrays
+  array::concat(): Returns the merged values from two arrays
+  array::difference(): Returns the difference between two arrays
+  array::distinct(): Returns the unique items in an array
+  array::fill(): Fills an existing array of the same value
+  array::filter(): Filters out values that do not match a pattern
+  array::filter_index(): Returns the indexes of all occurrences of all matching X value
+  array::find(): Returns the first matching value
+  array::find_index(): Returns the index of the first occurrence of X value
+  array::first(): Returns the first item in an array
+  array::flatten(): Flattens multiple arrays into a single array
+  array::fold(): Applies an operation on an initial value plus every element in the array, returning the final result
+  array::group(): Flattens and returns the unique items in an array
+  array::insert(): Inserts an item at the end of an array, or in a specific position
+  array::intersect(): Returns the values which intersect two arrays
+  array::is_empty(): Checks if an array is empty
+  array::join(): Returns concatenated value of an array with a string in between
+  array::last(): Returns the last item in an array
+  array::len(): Returns the length of an array
+  array::logical_and(): Performs the AND  logical operations  on two arrays
+  array::logical_or(): Performs the OR  logical operations  on two arrays
+  array::logical_xor(): Performs the XOR  logical operations  on two arrays
+  array::map(): Applies an operation to every item in an array and passes it on
+  array::matches(): Returns an array of booleans indicating which elements of the input array contain a specified value
+  array::max(): Returns the greatest item from an array
+  array::min(): Returns the least item from an array
+  array::pop(): Returns the last item from an array
+  array::prepend(): Prepends an item to the beginning of an array
+  array::push(): Appends an item to the end of an array
+  array::range(): Creates a number array from a range (start to end)
+  array::reduce(): Applies an operation on every element in the array, returning the final result
+  array::remove(): Removes an item at a specific position from an array
+  array::repeat(): Creates an array a given size with a specified value used for each element
+  array::reverse(): Reverses the sorting order of an array
+  array::sequence(): Creates an array of sequential integers
+  array::shuffle(): Randomly shuffles the contents of an array
+  array::slice(): Returns a slice of an array
+  array::sort(): Sorts the values in an array in ascending or descending order
+  array::sort::asc(): Sorts the values in an array in ascending order
+  array::sort::desc(): Sorts the values in an array in descending order
+  array::sort_lexical(): Sorts the values in an array, with strings sorted lexically
+  array::sort_natural(): Sorts the values in an array, with numeric strings sorted numerically
+  array::sort_natural_lexical(): Sorts the values in an array, applying both natural numeric and lexical ordering to strings
+  array::swap(): Swaps two items in an array
+  array::transpose(): Performs 2d array transposition on arrays
+  array::union(): Returns the unique merged values from two arrays
+  array::windows(): Returns a number of arrays of length `size` created by moving one index at a time down the original array
+
+==================================================
+CRYPTO
+==================================================
+  crypto::argon2::compare(): Compares an argon2 hash to a password
+  crypto::argon2::generate(): Generates a new argon2 hashed password
+  crypto::bcrypt::compare(): Compares an bcrypt hash to a password
+  crypto::bcrypt::generate(): Generates a new bcrypt hashed password
+  crypto::blake3(): Returns the blake3 hash of a value
+  crypto::joaat(): Returns the joaat hash of a value
+  crypto::md5(): Returns the md5 hash of a value
+  crypto::pbkdf2::compare(): Compares an pbkdf2 hash to a password
+  crypto::pbkdf2::generate(): Generates a new pbkdf2 hashed password
+  crypto::scrypt::compare(): Compares an scrypt hash to a password
+  crypto::scrypt::generate(): Generates a new scrypt hashed password
+  crypto::sha1(): Returns the sha1 hash of a value
+  crypto::sha256(): Returns the sha256 hash of a value
+  crypto::sha512(): Returns the sha512 hash of a value
+
+==================================================
+ENCODING
+==================================================
+  encoding::base64::decode(): Decodes a base64-encoded string into bytes
+  encoding::base64::encode(): Encodes bytes into a base64 string, with optional padding
+  encoding::cbor::decode(): Decodes CBOR-formatted bytes into a SurrealQL value
+  encoding::cbor::encode(): Encodes a SurrealQL value into CBOR-formatted bytes
+  encoding::json::decode(): Decodes a JSON string into a SurrealQL value
+  encoding::json::encode(): Encodes a SurrealQL value into a JSON string
+
+==================================================
+FILE
+==================================================
+  file::bucket(): Returns the bucket path from a file pointer
+  file::copy(): Copies the contents of a file
+  file::copy_if_not_exists(): Copies the contents of a file to a new file if the name is available
+  file::delete(): Deletes a file
+  file::exists(): Checks if a file already exists
+  file::get(): Loads a file
+  file::head(): Returns the metadata of a file
+  file::key(): Returns the key (the portion following the bucket) from a file pointer
+  file::list(): Returns a list of files inside a bucket
+  file::put(): Writes bytes to a file
+  file::put_if_not_exists(): Attempts to write bytes to a file
+  file::rename(): Renames a file
+  file::rename_if_not_exists(): Renames a file if the new name is not already in use
+
+==================================================
+HTTP
+==================================================
+  http::delete(): Perform a remote HTTP DELETE request
+  http::get(): Perform a remote HTTP GET request
+  http::head: performs a remote HTTP `HEAD` request. The first parameter is the URL of the remote endpoint. If the response does not return a `2XX` status code, then the function will fail and return the error
+  http::patch(): Perform a remote HTTP PATCH request
+  http::post(): Perform a remote HTTP POST request
+  http::put(): Perform a remote HTTP PUT request
+
+==================================================
+MATH
+==================================================
+  math::abs: returns the absolute value of a number
+  math::acos(): Computes the arccosine (inverse cosine) of a value
+  math::acot(): Computes the arccotangent (inverse cotangent) of an angle given in radians
+  math::asin(): Computes the arcsine (inverse sine) of a value
+  math::atan(): Computes the arctangent (inverse tangent) of a value
+  math::bottom(): Returns the bottom X set of numbers in a set of numbers
+  math::ceil(): Rounds a number up to the next largest integer
+  math::clamp(): Clamps a value between a specified minimum and maximum
+  math::cos(): Computes the cosine of an angle given in radians
+  math::cot(): Computes the cotangent of an angle given in radians
+  math::deg2rad(): Converts an angle from degrees to radians
+  math::e: Constant representing the base of the natural logarithm (Euler's number)
+  math::fixed(): Returns a number with the specified number of decimal places
+  math::floor(): Rounds a number down to the nearest integer
+  math::frac_1_pi: Constant representing the fraction 1/π
+  math::frac_1_sqrt_2: Constant representing the fraction 1/sqrt(2)
+  math::frac_2_pi: Constant representing the fraction 2/π
+  math::frac_2_sqrt_pi: Constant representing the fraction 2/sqrt(π)
+  math::frac_pi_2: Constant representing the fraction π/2
+  math::frac_pi_3: Constant representing the fraction π/3
+  math::frac_pi_4: Constant representing the fraction π/4
+  math::frac_pi_6: Constant representing the fraction π/6
+  math::frac_pi_8: Constant representing the fraction π/8
+  math::infinity: Constant representing positive infinity
+  math::interquartile(): Returns the interquartile of an array of numbers
+  math::lerp(): Linearly interpolates between two values based on a factor
+  math::lerpangle(): Linearly interpolates between two angles in degrees
+  math::ln(): Computes the natural logarithm (base e) of a value
+  math::ln_10: Constant representing the natural logarithm (base e) of 10
+  math::ln_2: Constant representing the natural logarithm (base e) of 2
+  math::log(): Computes the logarithm of a value with the specified base
+  math::log10(): Computes the base-10 logarithm of a value
+  math::log10_2: Constant representing the base-10 logarithm of 2
+  math::log10_e: Constant representing the base-10 logarithm of e, the base of the natural logarithm (Euler’s number)
+  math::log2(): Computes the base-2 logarithm of a value
+  math::log2_10: Constant representing the base-2 logarithm of 10
+  math::log2_e: Constant representing the base-2 logarithm of e, the base of the natural logarithm (Euler’s number)
+  math::max(): Returns the greatest number from an array of numbers
+  math::mean(): Returns the mean of a set of numbers
+  math::median(): Returns the median of a set of numbers
+  math::midhinge(): Returns the midhinge of a set of numbers
+  math::min(): Returns the least number from an array of numbers
+  math::mode(): Returns the value that occurs most often in a set of numbers
+  math::nearestrank(): Returns the nearest rank of an array of numbers
+  math::neg_infinity: Constant representing negative infinity
+  math::percentile(): Returns the value below which a percentage of data falls
+  math::pi: Constant representing the mathematical constant π
+  math::pow(): Returns a number raised to a power
+  math::product(): Returns the product of a set of numbers
+  math::rad2deg(): Converts an angle from radians to degrees
+  math::round(): Rounds a number up or down to the nearest integer
+  math::sign(): Returns the sign of a value (-1, 0, or 1)
+  math::sin(): Computes the sine of an angle given in radians
+  math::spread(): Returns the spread of an array of numbers
+  math::sqrt(): Returns the square root of a number
+  math::sqrt_2: Constant representing the square root of 2
+  math::stddev(): Calculates how far a set of numbers are away from the mean
+  math::sum(): Returns the total sum of a set of numbers
+  math::tan(): Computes the tangent of an angle given in radians
+  math::tau(): Represents the mathematical constant τ, which is equal to 2π
+  math::top(): Returns the top X set of numbers in a set of numbers
+  math::trimean(): The weighted average of the median and the two quartiles
+  math::variance(): Calculates how far a set of numbers are spread out from the mean
+
+==================================================
+OBJECT
+==================================================
+  object::entries: transforms an object into an array with arrays of key-value combinations
+  object::extend(): Extends an object with the content of another one
+  object::from_entries(): Transforms an array with arrays of key-value combinations into an object
+  object::is_empty(): Checks if an object is empty
+  object::keys(): Returns an array with all the keys of an object
+  object::len(): Returns the amount of key-value pairs an object holds
+  object::remove(): Removes one or more fields from an object
+  object::values(): Returns an array with all the values of an object
+
+==================================================
+PARSE
+==================================================
+  parse::email::host: parses and returns an email host from a valid email address
+  parse::email::user(): Parses and returns an email username from an email address
+  parse::url::domain(): Parses and returns the domain from a URL
+  parse::url::fragment(): Parses and returns the fragment from a URL
+  parse::url::host(): Parses and returns the hostname from a URL
+  parse::url::path(): Parses and returns the path from a URL
+  parse::url::port(): Parses and returns the port number from a URL
+  parse::url::query(): Parses and returns the query string from a URL
+  parse::url::scheme(): Parses and returns the scheme from a URL
+
+==================================================
+RECORD
+==================================================
+  record::exists: checks to see if a given record exists
+  record::id(): Extracts and returns the identifier from a SurrealDB Record ID
+  record::is_edge(): Identifies whether the value passed in is a graph edge
+  record::refs(): Extracts and returns the record IDs of any records that have a record link along with a `REFERENCES` clause
+  record::tb(): Extracts and returns the table name from a SurrealDB Record ID
+
+==================================================
+SESSION
+==================================================
+  session::ac(): Returns the current user's access method
+  session::db(): Returns the currently selected database
+  session::id(): Returns the current user's session ID
+  session::ip(): Returns the current user's session IP address
+  session::ns(): Returns the currently selected namespace
+  session::origin(): Returns the current user's HTTP origin
+  session::rd(): Returns the current user's record authentication data
+  session::token(): Returns the current user's authentication token
+
+==================================================
+SET
+==================================================
+  set::add: adds an item to a set only if it does not already exist
+  set::all(): Checks if all elements in a set match a condition
+  set::any(): Checks if any elements in a set match a condition
+  set::at(): Accesses the element at a specific position in a set
+  set::complement(): Returns the complement of two sets
+  set::contains(): Checks to see if a value is present in a set
+  set::difference(): Returns the difference between two sets
+  set::filter(): Filters elements in a set that match a condition
+  set::find(): Finds the first element in a set that matches a condition
+  set::flatten(): Flattens nested sets and arrays into a single set
+  set::fold(): Folds over a set with an accumulator
+  set::intersect(): Returns the values which intersect two sets
+  set::is_empty(): Checks if a set is empty
+  set::join(): Joins set elements into a string with a separator
+  set::last(): Gets the last element in a set
+  set::len(): Returns the length of a set
+  set::map(): Maps over the elements of a set to return a new set
+  set::max(): Returns the greatest value from a set
+  set::min(): Returns the least value from a set
+  set::reduce(): Reduces a set via a closure
+  set::remove(): Removes an item at a specific position from a set
+  set::slice(): Removes an item at a specific position from a set
+  set::union(): Returns the unique merged values from two sets
+
+==================================================
+STRING
+==================================================
+  string::capitalize(): Capitalizes each word of a string
+  string::concat(): Concatenates strings together
+  string::contains(): Checks whether a string contains another string
+  string::distance::damerau_levenshtein(): Returns the Damerau–Levenshtein distance between two strings
+  string::distance::hamming(): Returns the Hamming distance between two strings
+  string::distance::levenshtein(): Returns the Levenshtein distance between two strings
+  string::distance::normalized_damerau_levenshtein(): Returns the normalized Damerau–Levenshtein distance between two strings
+  string::distance::normalized_levenshtein(): Returns the normalized Levenshtein distance between two strings
+  string::distance::osa(): Returns the OSA (Optimal String Alignment) distance between two strings
+  string::ends_with(): Checks whether a string ends with another string
+  string::html::encode(): Encodes special characters into HTML entities to prevent HTML injection
+  string::html::sanitize(): Sanitizes HTML code to prevent the most dangerous subset of HTML injection
+  string::is_alpha(): Checks whether a value has only alpha characters
+  string::is_alphanum(): Checks whether a value has only alphanumeric characters
+  string::is_ascii(): Checks whether a value has only ascii characters
+  string::is_datetime(): Checks whether a string representation of a date and time matches a specified format
+  string::is_domain(): Checks whether a value is a domain
+  string::is_email(): Checks whether a value is an email
+  string::is_hexadecimal(): Checks whether a value is hexadecimal
+  string::is_ip(): Checks whether a value is an IP address
+  string::is_ipv4(): Checks whether a value is an IP v4 address
+  string::is_ipv6(): Checks whether a value is an IP v6 address
+  string::is_latitude(): Checks whether a value is a latitude value
+  string::is_longitude(): Checks whether a value is a longitude value
+  string::is_numeric(): Checks whether a value has only numeric characters
+  string::is_record(): Checks whether a string is a Record ID, optionally of a certain table
+  string::is_semver(): Checks whether a value matches a semver version
+  string::is_ulid(): Checks whether a string is a ULID
+  string::is_url(): Checks whether a value is a valid URL
+  string::is_uuid(): Checks whether a string is a UUID
+  string::join(): Joins strings together with a delimiter
+  string::len(): Returns the length of a string
+  string::lowercase(): Converts a string to lowercase
+  string::matches(): Performs a regex match on a string
+  string::repeat(): Repeats a string a number of times
+  string::replace(): Replaces an occurrence of a string with another string
+  string::reverse(): Reverses a string
+  string::semver::compare(): Performs a comparison between two semver strings
+  string::semver::inc::major(): Increment the major version of a semver string
+  string::semver::inc::minor(): Increment the minor version of a semver string
+  string::semver::inc::patch(): Increment the patch version of a semver string
+  string::semver::major(): Extract the major version from a semver string
+  string::semver::minor(): Extract the minor version from a semver string
+  string::semver::patch(): Extract the patch version from a semver string
+  string::semver::set::major(): Set the major version of a semver string
+  string::semver::set::minor(): Set the minor version of a semver string
+  string::semver::set::patch(): Set the patch version of a semver string
+  string::similarity::fuzzy(): Return the similarity score of fuzzy matching strings
+  string::similarity::jaro(): Returns the Jaro similarity between two strings
+  string::similarity::jaro_winkler(): Return the Jaro-Winkler similarity between two strings
+  string::slice(): Extracts and returns a section of a string
+  string::slug(): Converts a string into human and URL-friendly string
+  string::split(): Divides a string into an ordered list of substrings
+  string::starts_with(): Checks whether a string starts with another string
+  string::trim(): Removes whitespace from the start and end of a string
+  string::uppercase(): Converts a string to uppercase
+  string::words(): Splits a string into an array of separate words
+
+==================================================
+TYPE
+==================================================
+  type::array: converts a value into an array
+  type::bool(): Converts a value into a boolean
+  type::bytes(): Converts a value into bytes
+  type::datetime(): Converts a value into a datetime
+  type::decimal(): Converts a value into a decimal
+  type::duration(): Converts a value into a duration
+  type::field(): Projects a single field within a SELECT statement
+  type::fields(): Projects a multiple fields within a SELECT statement
+  type::file(): Converts two strings into a file pointer
+  type::float(): Converts a value into a floating point number
+  type::int(): Converts a value into an integer
+  type::is_array(): Checks if given value is of type array
+  type::is_bool(): Checks if given value is of type bool
+  type::is_bytes(): Checks if given value is of type bytes
+  type::is_collection(): Checks if given value is of type collection
+  type::is_datetime(): Checks if given value is of type datetime
+  type::is_decimal(): Checks if given value is of type decimal
+  type::is_duration(): Checks if given value is of type duration
+  type::is_float(): Checks if given value is of type float
+  type::is_geometry(): Checks if given value is of type geometry
+  type::is_int(): Checks if given value is of type int
+  type::is_line(): Checks if given value is of type line
+  type::is_multiline(): Checks if given value is of type multiline
+  type::is_multipoint(): Checks if given value is of type multipoint
+  type::is_multipolygon(): Checks if given value is of type multipolygon
+  type::is_none(): Checks if given value is of type none
+  type::is_null(): Checks if given value is of type null
+  type::is_number(): Checks if given value is of type number
+  type::is_object(): Checks if given value is of type object
+  type::is_point(): Checks if given value is of type point
+  type::is_polygon(): Checks if given value is of type polygon
+  type::is_range(): Checks if given value is of type range
+  type::is_record(): Checks if given value is of type record
+  type::is_string(): Checks if given value is of type string
+  type::is_uuid(): Checks if given value is of type uuid
+  type::number(): Converts a value into a number
+  type::of(): Returns the type of a value
+  type::point(): Converts a value into a geometry point
+  type::range(): Converts a value into a range
+  type::record(): Converts a value into a record pointer
+  type::string(): Converts a value into a string
+  type::table(): Converts a value into a table
+  type::uuid(): Converts a value into a UUID
+
+==================================================
+VECTOR
+==================================================
+  vector::add: performs element-wise addition of two vectors, where each element in the first vector is added to the corresponding element in the second vector
+  vector::angle(): Computes the angle between two vectors
+  vector::cross(): Computes the cross product of two vectors
+  vector::distance::chebyshev(): Computes the Chebyshev distance
+  vector::distance::euclidean(): Computes the Euclidean distance between two vectors
+  vector::distance::hamming(): Computes the Hamming distance between two vectors
+  vector::distance::knn(): Returns the distance computed during the query
+  vector::distance::manhattan(): Computes the Manhattan distance between two vectors
+  vector::distance::minkowski(): Computes the Minkowski distance between two vectors
+  vector::divide(): Performs element-wise division between two vectors
+  vector::dot(): Computes the dot product of two vectors
+  vector::magnitude(): Computes the magnitude (or length) of a vector
+  vector::multiply(): Performs element-wise multiplication of two vectors
+  vector::normalize(): Computes the normalization of a vector
+  vector::project(): Computes the projection of one vector onto another
+  vector::scale(): Multiplies each item in a vector
+  vector::similarity::cosine(): Computes the Cosine similarity between two vectors
+  vector::similarity::jaccard(): Computes the Jaccard similarity between two vectors
+  vector::similarity::pearson(): Computes the Pearson correlation coefficient between two vectors
+  vector::subtract(): Performs element-wise subtraction between two vectors

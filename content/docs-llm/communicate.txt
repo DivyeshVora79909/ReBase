@@ -1,0 +1,259 @@
+# SurrealDB API Reference (compressed lossless)
+
+# RPC Protocol (WebSocket/HTTP)
+
+# Session Variables
+Session-wide: `let(name,value)`, `unset(name)`, `reset` (clears all)
+Request-scoped: `query`, `select`, `insert`, `create`, `upsert`, `update`, `relate`, `delete` accept `vars` object (key=var name without $), overrides session vars for that call only
+Usage in queries: `$var_name`
+
+# Methods
+authenticate(token): no desc needed.
+  params: [token:str] (required)
+  request: {id,method:"authenticate",params:[token_str]}
+  response: {id,result:null}
+
+create(thing, data?):
+  params: [thing:str(table|record_id) required, data:obj optional]
+  request: {method:"create",params:["person",{name:"Mary"}]}
+  response: {id,result:[{id, name}]}
+  note: passing table generates random ID
+
+delete(thing):
+  params: [thing:str(table|record_id) required]
+  request: {method:"delete",params:["person:id"]}
+  response: {id,result:{ ... deleted record }} (returns deleted record, unlike SQL DELETE)
+
+info():
+  no params
+  request: {method:"info"}
+  response: {id,result:{id, name,...}} (authenticated record user's data)
+
+insert(thing, data):
+  params: [thing:str(table) required, data:obj|array required]
+  request single: {method:"insert",params:["person",{name:"Mary"}]}
+  request bulk: {method:"insert",params:["person",[{...},{...}]]}
+  response: {id,result:[{id,name}]}
+
+insert_relation(table, data):
+  params: [table:str|null required, data:{in,out,...} required]
+  if table null, infers from data.id
+  request: {method:"insert_relation",params:["likes",{in:"user:a",out:"post:b"}]}
+  response: {id,result:{id,in,out,...}}
+
+invalidate():
+  no params, invalidates current session auth
+  request: {method:"invalidate"}, response: {id,result:null}
+
+let(name, value): (WebSocket only)
+  params: [name:str (no $), value:any]
+  request: {method:"let",params:["website","https://..."]}
+  response: {id,result:null}
+
+live(table, diff?): (WebSocket only)
+  params: [table:str required, diff:bool optional (true->JSON patches)]
+  request: {method:"live",params:["person"]}
+  response: {id,result:"uuid"} (live query UUID)
+  live notifications: {result:{action:"CREATE"|"UPDATE"|"DELETE", id:UUID, result:{record}}}
+
+merge(thing, data?):
+  params: [thing:str(table|record_id) required, data:obj optional]
+  merges data into existing records
+  request: {method:"merge",params:["person",{active:true}]}
+  response: {id,result:[{id,active,name}]}
+
+patch(thing, patches, diff?):
+  params: [thing required, patches:array of JSON Patch ops, diff:bool optional]
+  request: {method:"patch",params:["person",[{op:"replace",path:"/x",value:"y"}]]}
+  response: {id,result:array of diffs}
+
+ping():
+  request: {method:"ping"}, response: {id,result:null}
+
+query(sql, vars?):
+  params: [sql:str required, vars:obj optional]
+  request: {method:"query",params:["SELECT ...",{tb:"person"}]}
+  response: {id,result:[{status:"OK",time:"...",result:[...]}]}
+
+relate(in, relation, out, data?):
+  params: [in:str required, relation:str(table) required, out:str required, data:obj optional]
+  request: {method:"relate",params:["person:a","knows","person:b"]}
+  response: {id,result:{id,in,out}}
+
+reset():
+  clears auth, NS/DB, connection vars, aborts live queries
+  request: {method:"reset"}, response: {id,result:null}
+
+run(func_name, version?, args?):
+  params: [func_name:str (prefix fn:: or ml::), version:str|null optional, args:array optional]
+  for ml:: models, version required
+  example: {method:"run",params:["ml::classifier","v2.1",["img_data"]]}
+  response: {id,result:value}
+
+select(thing):
+  params: [thing:str(table|record_id) required]
+  request: {method:"select",params:["person"]}
+  response: {id,result:array of records}
+
+signin(...):
+  params: object containing:
+    ROOT/NS/DB login: {user, pass}
+    Record login: {NS, DB, AC, ...vars} (AC=access method)
+  response: {id,result:token_string} (or null for root?)
+  example root: {method:"signin",params:[{user:"root",pass:"..."}]}
+  example record: {method:"signin",params:[{NS:"ns",DB:"db",AC:"acc",username:"...",password:"..."}]}
+
+signup(...):
+  params: object {NS, DB, AC, ...vars} (record access signup)
+  request: {method:"signup",params:[{NS:"ns",DB:"db",AC:"acc",username:"...",password:"..."}]}
+  response: {id,result:token_string}
+
+unset(name): (WebSocket only)
+  params: [name:str (no $)]
+  request: {method:"unset",params:["website"]}, response: {id,result:null}
+
+update(thing, data?):
+  params: [thing:str required, data:obj optional]
+  replaces record if exists, else empty array
+  request: {method:"update",params:["person:id",{name:"John"}]}
+  response: {id,result:{id,name}}
+
+upsert(thing, data?):
+  params: [thing required, data optional]
+  replaces or creates record
+  request: similar to update
+  response: {id,result:{record}}
+
+use(ns, db):
+  params: [ns:str|null|none, db:str|null|none]
+  null unsets, none no change, string sets
+  request: {method:"use",params:["ns","db"]}, response: {id,result:null}
+  Cannot unset only DB (must unset both or ns)
+
+version():
+  no params
+  response: {id,result:{version, build, timestamp}}
+
+# HTTP REST Endpoints
+
+Base URL: `http://localhost:8000`
+
+Common Headers (often required):
+`Authorization`: basic/token (optional if unauthenticated)
+`Surreal-NS`: namespace
+`Surreal-DB`: database
+`Accept`: application/json
+
+# Endpoints
+
+1. GET /status
+   returns 200 OK, no body. Checks web server running.
+
+2. GET /health
+   returns 200 if server & storage OK, 500 otherwise.
+
+3. GET /version
+   returns plain text version string (e.g., `surrealdb-3.0.0-beta`).
+
+4. POST /import
+   headers: Authorization, Surreal-NS, Surreal-DB, Accept
+   body: SurrealQL file (binary)
+   Import data into NS/DB.
+
+5. POST /export
+   headers: Authorization, Surreal-NS, Surreal-DB, Accept
+   body (optional JSON): options object {users, accesses, params, functions, analyzers, tables, versions, records} (all optional bool/array)
+   Exports all data for NS/DB; writes file if `-o` used.
+
+6. POST /signin
+   headers: Accept
+   body JSON: {ns?, db?, ac?, user?, pass?, ...} (ns required for DB/record, db required for record, ac required for record)
+   response JSON: {code, details, token}
+   Example record: {"ns":"main","db":"main","ac":"users","user":"johndoe","pass":"123456"}
+
+7. POST /signup
+   headers: Accept
+   body JSON: {ns, db, ac (access method), ...vars}
+   response JSON: {code, details, token}
+
+   Note: must define record access method first (via /sql with DEFINE ACCESS ...)
+
+8. GET /key/:table
+   headers: Authorization, Surreal-NS, Surreal-DB, Accept
+   translates to: SELECT * FROM type::table($table)
+   example: curl -X GET ... http://localhost:8000/key/person
+
+9. POST /key/:table
+   headers: Authorization, Surreal-NS, Surreal-DB, Accept
+   body: JSON object
+   translates: CREATE type::table($table) CONTENT $body
+   response: [{result:[{id, ...}], status:"OK", time:"..."}]
+
+10. PUT /key/:table
+    headers: same
+    body: JSON object
+    translates: UPDATE type::table($table) CONTENT $body
+    response: similar update all records
+
+11. PATCH /key/:table
+    headers: same
+    body: JSON object
+    translates: UPDATE type::table($table) MERGE $body
+    response: updated records
+
+12. DELETE /key/:table
+    headers: same
+    translates: DELETE FROM type::table($table) RETURN BEFORE
+    returns deleted records
+
+13. GET /key/:table/:id
+    translates: SELECT * FROM type::record($table, $id)
+
+14. POST /key/:table/:id
+    body: JSON object
+    translates: CREATE type::record($table, $id) CONTENT $body
+
+15. PUT /key/:table/:id
+    body: JSON object
+    translates: UPDATE type::record($table, $id) CONTENT $body
+
+16. PATCH /key/:table/:id
+    body: JSON object
+    translates: UPDATE type::record($table, $id) MERGE $body
+
+17. DELETE /key/:table/:id
+    translates: DELETE FROM type::record($table, $id) RETURN BEFORE
+
+18. POST /sql
+    headers: Authorization, Surreal-NS, Surreal-DB, Accept
+    body: SurrealQL statement(s)
+    query params can be provided as URL query string (e.g., ?age=18), replacing $ variables in query (prepared statements)
+    response: array of {time, status:"OK", result:[...]}
+
+19. POST /graphql (since v2.0.0)
+    headers: Authorization, Surreal-NS, Surreal-DB, Accept
+    body: JSON {query: "graphql query string"}
+    requires DEFINE CONFIG GRAPHQL AUTO first
+
+20. POST /ml/import
+    headers: Authorization, Surreal-NS, Surreal-DB
+    body: .surml file (chunked)
+    imports ML model
+
+21. GET /ml/export/:name/:version
+    headers: Authorization, Surreal-NS, Surreal-DB, Accept
+    exports model to .surml file
+
+22. Custom API: /api/:namespace/:database/:endpoint
+    defined via DEFINE API statement; supports GET, POST, etc.
+    headers: Authorization, Surreal-NS, Surreal-DB
+    example: DEFINE API "/custom" FOR GET MIDDLEWARE ... THEN { { status:200, body:{...} } }
+    request: curl http://localhost:8000/api/ns/db/custom -H "Surreal-NS: ns" -H "Surreal-DB: db"
+
+# Authentication Notes
+Token can be used via Authorization header (e.g., Bearer token) or via signin/signup response.
+For HTTP, set Surreal-NS/Surreal-DB headers to specify namespace/database.
+`use` method in RPC to set context.
+Record access method: signup/signin with NS, DB, AC fields.
+
+All methods return JSON: {id, result} or {id, error:{code,message}}.

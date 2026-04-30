@@ -1,29 +1,34 @@
 import { Surreal } from "surrealdb";
 
-const db = new Surreal();
+async function main() {
+  const db = new Surreal();
 
-async function run() {
   try {
     await db.connect("http://localhost:8000/rpc");
 
-    await db.signin({
+    const variables = {
+      email: "a1@g.c",
+      new_password: "password",
+      password: "password",
+      invite: "019d7d9f-8b6f-7933-8e20-efb46ff28c10",
+    };
+
+    console.log("[~] Executing Final SIGNUP...");
+
+    const result = await db.signup({
       namespace: "main",
       database: "main",
-      access: "account",
-      variables: {
-        email: "admin@example.com",
-        password: "admin123",
-      },
+      access: "update_password", // account
+      variables: variables,
     });
 
-    console.log(await db.query("SELECT id, name FROM $auth;"));
-    console.log(await db.query(`SELECT * FROM user;`));
-    console.log(await db.query(`SELECT * FROM groups;`));
-  } catch (error) {
-    console.error("❌", error.message);
+    console.log("SUCCESSFUL");
+    console.log("JWT Received:", result.access);
+  } catch (err) {
+    console.error("XXX FAILED", err.message);
   } finally {
-    db.close();
+    await db.close();
   }
 }
 
-run();
+main();

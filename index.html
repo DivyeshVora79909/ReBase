@@ -1,0 +1,1552 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Domination</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    <script>
+      window.process = { hrtime: () => [0, 0] };
+      window.process.hrtime.bigint = () => BigInt(Date.now() * 1e6);
+    </script>
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+          "surrealdb": "https://esm.sh/surrealdb"
+        }
+      }
+    </script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        background: #03080f;
+        color: #8ba3be;
+        overflow: hidden;
+        font-size: 11px;
+      }
+      #cy {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 40% 20%,
+            rgba(0, 160, 220, 0.04) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 80%,
+            rgba(0, 80, 180, 0.05) 0%,
+            transparent 50%
+          ),
+          #03080f;
+      }
+
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1a2a3a;
+        border-radius: 2px;
+      }
+
+      /* ── Typography ── */
+      .label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #2a4458;
+      }
+      .mono {
+        font-size: 9px;
+        color: #3a5570;
+        word-break: break-all;
+      }
+
+      /* ── Inputs ── */
+      input,
+      select,
+      textarea {
+        background: #060e18;
+        border: 1px solid #0f2030;
+        border-radius: 4px;
+        color: #8ba3be;
+        padding: 5px 8px;
+        font: inherit;
+        font-size: 10px;
+        width: 100%;
+        outline: none;
+        transition: border-color 0.12s;
+      }
+      input:focus,
+      select:focus {
+        border-color: #00a8d8;
+        color: #c8dcea;
+      }
+      input[type="checkbox"] {
+        width: auto;
+        accent-color: #00a8d8;
+        cursor: pointer;
+      }
+      select option {
+        background: #060e18;
+      }
+
+      /* ── Buttons ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid;
+        cursor: pointer;
+        font: inherit;
+        font-size: 10px;
+        transition: all 0.12s;
+        white-space: nowrap;
+        line-height: 1.5;
+        font-weight: 500;
+      }
+      .btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .btn-cyan {
+        background: rgba(0, 168, 216, 0.12);
+        border-color: #00a8d8;
+        color: #00d4ff;
+      }
+      .btn-cyan:not(:disabled):hover {
+        background: rgba(0, 168, 216, 0.22);
+        border-color: #00d4ff;
+      }
+      .btn-green {
+        background: rgba(0, 180, 100, 0.1);
+        border-color: #00b464;
+        color: #00e880;
+      }
+      .btn-green:not(:disabled):hover {
+        background: rgba(0, 180, 100, 0.2);
+      }
+      .btn-red {
+        background: transparent;
+        border-color: #c0282a;
+        color: #f06060;
+      }
+      .btn-red:not(:disabled):hover {
+        background: rgba(192, 40, 42, 0.12);
+      }
+      .btn-amber {
+        background: transparent;
+        border-color: #b06010;
+        color: #e09040;
+      }
+      .btn-amber:not(:disabled):hover {
+        background: rgba(176, 96, 16, 0.12);
+      }
+      .btn-ghost {
+        background: transparent;
+        border-color: #0f2030;
+        color: #3a5570;
+      }
+      .btn-ghost:not(:disabled):hover {
+        border-color: #1a3550;
+        color: #6a8ea8;
+      }
+      .btn-full {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* ── Chips ── */
+      .chip {
+        display: inline-block;
+        padding: 0 5px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 600;
+        border: 1px solid;
+        line-height: 1.7;
+      }
+      .chip-cyan {
+        background: rgba(0, 168, 216, 0.1);
+        border-color: #004868;
+        color: #00a8d8;
+      }
+      .chip-green {
+        background: rgba(0, 180, 100, 0.1);
+        border-color: #004830;
+        color: #00b464;
+      }
+      .chip-amber {
+        background: rgba(176, 96, 16, 0.1);
+        border-color: #5a3800;
+        color: #d08030;
+      }
+      .chip-slate {
+        background: rgba(26, 42, 56, 0.5);
+        border-color: #1a2a38;
+        color: #4a6878;
+      }
+      .chip-red {
+        background: rgba(192, 40, 42, 0.08);
+        border-color: #6a1010;
+        color: #c06060;
+      }
+
+      /* ── Status dot ── */
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: all 0.3s;
+      }
+      .dot-active {
+        background: #00d490;
+        box-shadow: 0 0 6px #00d490;
+      }
+      .dot-busy {
+        background: #d09000;
+        animation: pulse 1s infinite;
+      }
+      .dot-error {
+        background: #e04040;
+      }
+      .dot-idle {
+        background: #1a3048;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── Session card ── */
+      .sess {
+        border: 1px solid #0a1820;
+        border-radius: 6px;
+        padding: 9px 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: rgba(6, 14, 24, 0.6);
+      }
+      .sess:hover {
+        border-color: #1a3048;
+      }
+      .sess.active {
+        border-color: #00a8d8;
+        background: rgba(0, 100, 160, 0.07);
+      }
+
+      /* ── Side panels ── */
+      .side {
+        position: relative;
+        z-index: 10;
+        background: rgba(3, 8, 15, 0.88);
+        border-right: 1px solid #080e16;
+        backdrop-filter: blur(8px);
+      }
+      .rpanel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 10;
+        width: 268px;
+        background: rgba(3, 8, 15, 0.92);
+        border-left: 1px solid #080e16;
+        backdrop-filter: blur(8px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Divider ── */
+      .hr {
+        border: none;
+        border-top: 1px solid #080e16;
+        margin: 8px 0;
+      }
+
+      /* ── Field row (inspector) ── */
+      .frow {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 6px;
+        padding: 3px 0;
+        border-bottom: 1px solid #050c16;
+        align-items: start;
+      }
+      .frow:last-child {
+        border-bottom: none;
+      }
+
+      /* ── Toast ── */
+      .toast {
+        padding: 7px 12px;
+        border-radius: 5px;
+        font-size: 10px;
+        max-width: 280px;
+        line-height: 1.5;
+        animation: tIn 0.15s ease-out;
+      }
+      .toast-ok {
+        background: #04150a;
+        border: 1px solid #0a3a18;
+        color: #50c870;
+      }
+      .toast-err {
+        background: #150406;
+        border: 1px solid #3a0a0c;
+        color: #d06060;
+      }
+      @keyframes tIn {
+        from {
+          opacity: 0;
+          transform: translateX(10px);
+        }
+      }
+
+      /* ── Perm checkboxes ── */
+      .permgrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 6px;
+      }
+      .permlabel {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        padding: 2px 0;
+      }
+
+      /* ── Transitions ── */
+      .slide-enter-active,
+      .slide-leave-active {
+        transition: all 0.18s ease;
+      }
+      .slide-enter-from,
+      .slide-leave-to {
+        opacity: 0;
+        transform: translateX(14px);
+      }
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.15s;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+
+      /* ── History overlay ── */
+      .hist-overlay {
+        position: absolute;
+        left: 196px;
+        bottom: 0;
+        z-index: 30;
+        width: 300px;
+        background: rgba(3, 8, 15, 0.97);
+        border: 1px solid #0a1820;
+        border-radius: 8px 8px 0 0;
+        max-height: 40vh;
+        display: flex;
+        flex-direction: column;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="app"
+      style="height: 100vh; width: 100vw; position: relative; display: flex"
+    >
+      <!-- GRAPH -->
+      <div id="cy"></div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+       LEFT RAIL — sessions
+  ══════════════════════════════════════════════════════════════ -->
+      <div
+        class="side"
+        style="
+          width: 192px;
+          padding: 10px 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          overflow-y: auto;
+          overflow-x: hidden;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 2px 8px;
+            border-bottom: 1px solid #080e16;
+          "
+        >
+          <span
+            class="label"
+            style="color: #006080; font-size: 10px; letter-spacing: 0.2em"
+            >DOMINATION</span
+          >
+          <button
+            @click="addSession"
+            class="btn btn-cyan"
+            style="padding: 2px 7px; font-size: 9px"
+          >
+            + SESSION
+          </button>
+        </div>
+
+        <!-- Session cards -->
+        <div
+          v-for="(s, i) in sessions"
+          :key="s.id"
+          class="sess"
+          :class="{active: activeIdx===i}"
+          @click="activate(i)"
+        >
+          <!-- Card header -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              margin-bottom: 5px;
+            "
+          >
+            <div
+              class="dot"
+              :class="{
+          'dot-active': s.status==='active',
+          'dot-busy':   s.status==='connecting',
+          'dot-error':  s.status==='error',
+          'dot-idle':   s.status==='idle'
+        }"
+            ></div>
+            <span
+              style="
+                font-weight: 700;
+                font-size: 10px;
+                color: #7a9ab8;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              {{ s.me?.name || s.login.email || 'Session '+(i+1) }}
+            </span>
+            <button
+              @click.stop="killSession(i)"
+              class="btn btn-ghost"
+              style="
+                padding: 0 4px;
+                font-size: 9px;
+                border: none;
+                color: #1a3048;
+              "
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Active stats -->
+          <div
+            v-if="s.status==='active'"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            "
+          >
+            <span class="mono"
+              >{{ s.graph.nodes.length }}N · {{ s.graph.edges.length }}E</span
+            >
+            <div style="display: flex; gap: 3px">
+              <button
+                @click.stop="syncSession(s)"
+                class="btn btn-ghost"
+                style="padding: 1px 5px; font-size: 9px"
+                title="Sync"
+              >
+                ⟳
+              </button>
+              <button
+                @click.stop="s.client.invalidate();s.status='idle';s.me=null"
+                class="btn btn-ghost"
+                style="padding: 1px 5px; font-size: 9px"
+                title="Re-login"
+              >
+                ↩
+              </button>
+            </div>
+          </div>
+          <div
+            v-if="s.status==='error'"
+            class="chip chip-red"
+            style="
+              margin-bottom: 5px;
+              display: block;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              max-width: 100%;
+            "
+          >
+            {{ s.err }}
+          </div>
+
+          <!-- Login form (idle / error) -->
+          <div
+            v-if="s.status==='idle' || s.status==='error'"
+            @click.stop
+            style="display: flex; flex-direction: column; gap: 3px"
+          >
+            <input
+              v-model="s.cfg.url"
+              placeholder="ws://localhost:8000"
+              style="font-size: 9px"
+            />
+            <div style="display: flex; gap: 3px">
+              <input
+                v-model="s.cfg.ns"
+                placeholder="ns"
+                style="font-size: 9px"
+              />
+              <input
+                v-model="s.cfg.db"
+                placeholder="db"
+                style="font-size: 9px"
+              />
+            </div>
+            <input
+              v-model="s.login.email"
+              placeholder="Email"
+              style="font-size: 9px"
+              @keyup.enter="connectSession(s)"
+            />
+            <input
+              v-model="s.login.password"
+              type="password"
+              placeholder="Password"
+              style="font-size: 9px"
+              @keyup.enter="connectSession(s)"
+            />
+            <button
+              @click.stop="connectSession(s)"
+              class="btn btn-cyan btn-full"
+              :disabled="s.busy"
+            >
+              {{ s.busy ? '…' : 'Connect' }}
+            </button>
+          </div>
+        </div>
+        <!-- /session card -->
+
+        <!-- Spacer + history toggle -->
+        <div
+          style="
+            margin-top: auto;
+            padding-top: 6px;
+            border-top: 1px solid #080e16;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+          "
+        >
+          <button
+            @click="showHistory=!showHistory"
+            class="btn btn-ghost btn-full"
+            style="font-size: 9px"
+          >
+            {{ showHistory ? '▼' : '▶' }} Log ({{ allToasts.length }})
+          </button>
+        </div>
+      </div>
+      <!-- /left rail -->
+
+      <!-- ═══════════════════════════════════════════════════════════
+       RIGHT PANEL — Inspector / Form
+  ══════════════════════════════════════════════════════════════ -->
+      <transition name="slide">
+        <div v-if="panel" class="rpanel">
+          <!-- Header -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 10px 12px;
+              border-bottom: 1px solid #080e16;
+              flex-shrink: 0;
+            "
+          >
+            <span class="label" style="flex: 1">
+              {{ panel.kind==='node' ? panel.data._table : panel.kind==='edge' ?
+              'edge' : panel.mode==='create' ? 'create' : 'edit' }}
+            </span>
+            <div v-if="panel.kind==='node'" style="display: flex; gap: 4px">
+              <button
+                @click="openEdit(panel.data)"
+                class="btn btn-ghost"
+                style="padding: 1px 6px; font-size: 9px"
+                title="Edit"
+              >
+                ✎
+              </button>
+              <button
+                @click="openCreate(panel.data.id)"
+                class="btn btn-ghost"
+                style="padding: 1px 6px; font-size: 9px"
+                title="Create child"
+              >
+                +
+              </button>
+            </div>
+            <button
+              @click="panel=null"
+              class="btn btn-ghost"
+              style="padding: 1px 6px; font-size: 9px"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- ── NODE INSPECTOR ── -->
+          <div
+            v-if="panel.kind==='node'"
+            style="
+              flex: 1;
+              overflow-y: auto;
+              padding: 10px 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+            "
+          >
+            <!-- Generic field loop — no conditionals, handles any schema -->
+            <div>
+              <div
+                v-for="[k,v] in Object.entries(panel.data).filter(([k])=>!k.startsWith('_'))"
+                :key="k"
+                class="frow"
+              >
+                <span
+                  class="label"
+                  style="
+                    padding-top: 2px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  "
+                  :title="k"
+                  >{{ k }}</span
+                >
+                <div style="min-width: 0">
+                  <!-- null / undefined -->
+                  <template v-if="v===null||v===undefined">
+                    <span style="color: #1a3048">null</span>
+                  </template>
+
+                  <!-- array -->
+                  <template v-else-if="Array.isArray(v)">
+                    <span v-if="!v.length" style="color: #1a3048">[]</span>
+                    <template v-else>
+                      <!-- Compact if >4 items: show count toggle -->
+                      <div
+                        v-if="v.length > 4"
+                        style="
+                          display: flex;
+                          flex-wrap: wrap;
+                          gap: 2px;
+                          align-items: center;
+                        "
+                      >
+                        <template v-if="!expanded[k]">
+                          <span
+                            v-for="item in v.slice(0,3)"
+                            :key="item"
+                            class="chip chip-slate"
+                            >{{ typeof item==='object'?JSON.stringify(item):item
+                            }}</span
+                          >
+                          <span
+                            @click="expanded[k]=true"
+                            class="chip chip-cyan"
+                            style="cursor: pointer"
+                            >+{{ v.length-3 }}</span
+                          >
+                        </template>
+                        <template v-else>
+                          <span
+                            v-for="item in v"
+                            :key="item"
+                            class="chip chip-slate"
+                            style="margin: 1px"
+                            >{{ typeof item==='object'?JSON.stringify(item):item
+                            }}</span
+                          >
+                          <span
+                            @click="expanded[k]=false"
+                            class="chip chip-cyan"
+                            style="cursor: pointer; margin: 1px"
+                            >▲</span
+                          >
+                        </template>
+                      </div>
+                      <div
+                        v-else
+                        style="display: flex; flex-wrap: wrap; gap: 2px"
+                      >
+                        <span
+                          v-for="item in v"
+                          :key="item"
+                          class="chip chip-slate"
+                          >{{ typeof item==='object'?JSON.stringify(item):item
+                          }}</span
+                        >
+                      </div>
+                    </template>
+                  </template>
+
+                  <!-- boolean -->
+                  <template v-else-if="typeof v==='boolean'">
+                    <span :class="v?'chip-green':'chip-red'" class="chip"
+                      >{{ v }}</span
+                    >
+                  </template>
+
+                  <!-- object -->
+                  <template v-else-if="typeof v==='object'">
+                    <span class="mono">{{ JSON.stringify(v) }}</span>
+                  </template>
+
+                  <!-- primitive -->
+                  <template v-else>
+                    <span
+                      style="
+                        color: #8ba3be;
+                        font-size: 10px;
+                        word-break: break-all;
+                      "
+                      >{{ v }}</span
+                    >
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                padding-top: 6px;
+                border-top: 1px solid #080e16;
+              "
+            >
+              <button
+                @click="openCreate(panel.data.id)"
+                class="btn btn-green btn-full"
+              >
+                + Create Child
+              </button>
+              <button
+                @click="openEdit(panel.data)"
+                class="btn btn-cyan btn-full"
+              >
+                ✎ Edit Node
+              </button>
+              <button @click="refreshNode" class="btn btn-ghost btn-full">
+                ↻ Refresh RBAC
+              </button>
+              <button @click="deactivateNode" class="btn btn-amber btn-full">
+                ⚠ Deactivate
+              </button>
+              <button @click="deleteNode" class="btn btn-red btn-full">
+                ✕ Delete
+              </button>
+            </div>
+          </div>
+
+          <!-- ── EDGE INSPECTOR ── -->
+          <div
+            v-if="panel.kind==='edge'"
+            style="
+              flex: 1;
+              overflow-y: auto;
+              padding: 10px 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+            "
+          >
+            <div>
+              <div
+                v-for="[k,v] in Object.entries(panel.data)"
+                :key="k"
+                class="frow"
+              >
+                <span class="label" :title="k">{{ k }}</span>
+                <span class="mono" style="font-size: 9px">{{ v }}</span>
+              </div>
+            </div>
+            <button @click="deleteEdge" class="btn btn-red btn-full">
+              ✂ Sever Link
+            </button>
+          </div>
+
+          <!-- ── CREATE / EDIT FORM ── -->
+          <div
+            v-if="panel.kind==='form'"
+            style="
+              flex: 1;
+              overflow-y: auto;
+              padding: 10px 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 7px;
+            "
+          >
+            <div
+              v-if="panel.mode==='create' && form.parentId"
+              style="
+                padding: 4px 8px;
+                border-radius: 4px;
+                background: rgba(0, 100, 160, 0.08);
+                border: 1px solid #004868;
+                font-size: 9px;
+                color: #00a8d8;
+              "
+            >
+              ↳ child of
+              <strong
+                >{{ form.parentId.split(':')[1] || form.parentId }}</strong
+              >
+            </div>
+
+            <!-- Type -->
+            <div>
+              <div class="label" style="margin-bottom: 4px">Type</div>
+              <select v-model="form.type" :disabled="panel.mode==='edit'">
+                <option value="user">user</option>
+                <option value="groups">groups</option>
+              </select>
+            </div>
+
+            <!-- Name -->
+            <div>
+              <div class="label" style="margin-bottom: 4px">Name *</div>
+              <input v-model="form.name" placeholder="Display name" />
+            </div>
+
+            <!-- Email -->
+            <div>
+              <div class="label" style="margin-bottom: 4px">Email</div>
+              <input
+                v-model="form.email"
+                placeholder="user@example.com"
+                type="email"
+              />
+            </div>
+
+            <!-- Permissions / Role (multi-select checkboxes) -->
+            <div>
+              <div class="label" style="margin-bottom: 4px">Permissions</div>
+              <div
+                style="
+                  padding: 6px 8px;
+                  background: #040a12;
+                  border: 1px solid #0a1820;
+                  border-radius: 4px;
+                "
+              >
+                <div class="permgrid">
+                  <label v-for="p in PERMS" :key="p" class="permlabel">
+                    <input type="checkbox" :value="p" v-model="form.role" />
+                    <span style="font-size: 9px; color: #4a6878">{{ p }}</span>
+                  </label>
+                </div>
+                <div style="display: flex; gap: 5px; margin-top: 6px">
+                  <button
+                    @click="form.role=[...PERMS]"
+                    class="btn btn-ghost"
+                    style="
+                      padding: 1px 6px;
+                      font-size: 9px;
+                      flex: 1;
+                      justify-content: center;
+                    "
+                  >
+                    All
+                  </button>
+                  <button
+                    @click="form.role=[]"
+                    class="btn btn-ghost"
+                    style="
+                      padding: 1px 6px;
+                      font-size: 9px;
+                      flex: 1;
+                      justify-content: center;
+                    "
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parent (create only) -->
+            <div v-if="panel.mode==='create'">
+              <div class="label" style="margin-bottom: 4px">Parent Node</div>
+              <select v-model="form.parentId">
+                <option value="">— none —</option>
+                <option
+                  v-for="n in sess?.graph.nodes"
+                  :key="n.id"
+                  :value="n.id"
+                >
+                  [{{ n._table }}] {{ n.name }}
+                </option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 5px; margin-top: 4px">
+              <button
+                @click="submitForm"
+                class="btn btn-cyan"
+                style="flex: 1; justify-content: center"
+              >
+                {{ panel.mode==='create' ? 'Create' : 'Save' }}
+              </button>
+              <button
+                @click="panel=null"
+                class="btn btn-ghost"
+                style="justify-content: center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- ═══════════════════════════════════════════════════════════
+       TOAST LOG HISTORY (slide up from bottom-left)
+  ══════════════════════════════════════════════════════════════ -->
+      <transition name="slide">
+        <div v-if="showHistory" class="hist-overlay">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 7px 10px;
+              border-bottom: 1px solid #080e16;
+              flex-shrink: 0;
+            "
+          >
+            <span class="label">Event Log</span>
+            <div style="display: flex; gap: 4px">
+              <button
+                @click="allToasts=[]"
+                class="btn btn-ghost"
+                style="padding: 1px 6px; font-size: 9px"
+              >
+                Clear
+              </button>
+              <button
+                @click="showHistory=false"
+                class="btn btn-ghost"
+                style="padding: 1px 6px; font-size: 9px"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div
+            style="
+              overflow-y: auto;
+              padding: 6px;
+              display: flex;
+              flex-direction: column;
+              gap: 3px;
+            "
+          >
+            <div
+              v-if="!allToasts.length"
+              style="
+                color: #1a3048;
+                font-size: 9px;
+                text-align: center;
+                padding: 12px;
+              "
+            >
+              No events yet
+            </div>
+            <div
+              v-for="t in allToasts"
+              :key="t.id"
+              class="toast"
+              :class="t.err?'toast-err':'toast-ok'"
+              style="animation: none"
+            >
+              <span style="opacity: 0.4; margin-right: 8px">{{ t.time }}</span
+              >{{ t.msg }}
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- ═══════════════════════════════════════════════════════════
+       LIVE TOASTS (bottom centre of graph)
+  ══════════════════════════════════════════════════════════════ -->
+      <div
+        style="
+          position: absolute;
+          bottom: 14px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 40;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          align-items: center;
+          pointer-events: none;
+        "
+      >
+        <transition-group name="fade">
+          <div
+            v-for="t in toasts"
+            :key="t.id"
+            class="toast"
+            :class="t.err?'toast-err':'toast-ok'"
+          >
+            {{ t.msg }}
+          </div>
+        </transition-group>
+      </div>
+    </div>
+    <!-- /#app -->
+
+    <script type="module">
+      import {
+        createApp,
+        ref,
+        reactive,
+        computed,
+        watch,
+        onMounted,
+        markRaw,
+      } from "vue";
+      import { Surreal, RecordId, StringRecordId } from "surrealdb";
+
+      // ─── Constants ────────────────────────────────────────────────────────────────
+      const PERMS = [
+        "node_create",
+        "node_select",
+        "node_update",
+        "node_delete",
+        "link_create",
+        "link_select",
+        "link_delete",
+      ];
+
+      // ─── SDK factory: converts RecordId → string at decode boundary ───────────────
+      // This prevents Vue's Proxy from touching private class fields (#t, #i) on RecordId
+      function mkClient() {
+        return markRaw(
+          new Surreal({
+            codecOptions: {
+              valueDecodeVisitor(val) {
+                if (val instanceof RecordId) return val.toString();
+                return val;
+              },
+            },
+          }),
+        );
+      }
+      // Wrap a plain string so the SDK serialises it as a record reference
+      const rid = (s) => new StringRecordId(String(s));
+
+      // Cytoscape lives outside Vue entirely (no reactive proxy needed)
+      let cy = null;
+
+      // ─── App ──────────────────────────────────────────────────────────────────────
+      createApp({
+        setup() {
+          const sessions = ref([]);
+          const activeIdx = ref(null);
+          const panel = ref(null); // { kind: 'node'|'edge'|'form', data?, mode? }
+          const toasts = ref([]);
+          const allToasts = ref([]);
+          const showHistory = ref(false);
+          const expanded = reactive({}); // k → bool for long array fields in inspector
+
+          // Single shared form for both create and edit
+          const form = reactive({
+            type: "user",
+            name: "",
+            email: "",
+            role: [],
+            parentId: "",
+            nodeId: "",
+          });
+
+          // Active session shorthand
+          const sess = computed(() =>
+            activeIdx.value !== null ? sessions.value[activeIdx.value] : null,
+          );
+
+          // ── Toast ────────────────────────────────────────────────────────────────
+          function toast(msg, isErr = false) {
+            const id = Date.now() + Math.random();
+            const time = new Date().toLocaleTimeString();
+            const t = { id, msg, err: isErr, time };
+            toasts.value.push(t);
+            allToasts.value.unshift(t);
+            setTimeout(() => {
+              toasts.value = toasts.value.filter((x) => x.id !== id);
+            }, 4500);
+          }
+
+          // ── Session management ────────────────────────────────────────────────────
+          function addSession() {
+            // Grab defaults from last session config (or use defaults)
+            const prev = sessions.value[sessions.value.length - 1];
+            const s = reactive({
+              id: crypto.randomUUID(),
+              cfg: {
+                url: prev?.cfg.url || "ws://localhost:8000",
+                ns: prev?.cfg.ns || "main",
+                db: prev?.cfg.db || "main",
+              },
+              login: { email: "", password: "" },
+              client: mkClient(),
+              me: null,
+              graph: { nodes: [], edges: [] },
+              status: "idle",
+              err: "",
+              busy: false,
+            });
+            sessions.value.push(s);
+            activeIdx.value = sessions.value.length - 1;
+          }
+
+          function activate(i) {
+            activeIdx.value = i;
+            panel.value = null;
+            Object.keys(expanded).forEach((k) => delete expanded[k]);
+            renderGraph();
+          }
+
+          async function connectSession(s) {
+            s.busy = true;
+            s.err = "";
+            s.status = "connecting";
+            try {
+              await s.client.connect(s.cfg.url);
+              await s.client.use({ namespace: s.cfg.ns, database: s.cfg.db });
+              await s.client.signin({
+                access: "account",
+                namespace: s.cfg.ns,
+                database: s.cfg.db,
+                variables: { email: s.login.email, password: s.login.password },
+              });
+              s.status = "active";
+              await syncSession(s);
+              toast(`Connected: ${s.me?.name || s.login.email}`);
+            } catch (e) {
+              s.status = "error";
+              s.err = e.message;
+              toast(e.message, true);
+            } finally {
+              s.busy = false;
+            }
+          }
+
+          async function syncSession(s) {
+            if (s.status !== "active") return;
+            try {
+              const [users, groups, links, meArr] = await s.client.query(`
+          SELECT id, name, email, permissions, dominates, parents FROM user;
+          SELECT id, name, role FROM groups;
+          SELECT id, in, out FROM link;
+          SELECT * FROM $auth;
+        `);
+              // _table is a client-side meta field, prefixed with _ to skip in inspector
+              s.graph.nodes = [
+                ...(users || []).map((u) => ({ ...u, _table: "user" })),
+                ...(groups || []).map((g) => ({ ...g, _table: "groups" })),
+              ];
+              // in = origin (parent), out = destination (child)
+              s.graph.edges = (links || []).map((l) => ({
+                id: l.id,
+                source: l.in,
+                target: l.out,
+              }));
+              s.me = meArr?.[0] ?? null;
+
+              // Refresh open inspector if it shows a node from this session
+              if (
+                panel.value?.kind === "node" &&
+                sessions.value[activeIdx.value] === s
+              ) {
+                const fresh = s.graph.nodes.find(
+                  (n) => n.id === panel.value.data.id,
+                );
+                panel.value = fresh ? { kind: "node", data: fresh } : null;
+              }
+
+              if (sessions.value[activeIdx.value] === s) renderGraph();
+            } catch (e) {
+              toast(e.message, true);
+            }
+          }
+
+          function killSession(i) {
+            try {
+              sessions.value[i].client.invalidate();
+            } catch {}
+            sessions.value.splice(i, 1);
+            if (sessions.value.length === 0) {
+              activeIdx.value = null;
+            } else if (activeIdx.value >= sessions.value.length) {
+              activeIdx.value = sessions.value.length - 1;
+            }
+            panel.value = null;
+            renderGraph();
+          }
+
+          // ── Cytoscape ─────────────────────────────────────────────────────────────
+          function initCy() {
+            cy = cytoscape({
+              container: document.getElementById("cy"),
+              style: [
+                {
+                  selector: "node",
+                  style: {
+                    label: "data(label)",
+                    color: "#4a7090",
+                    "font-size": 10,
+                    "font-family": "'JetBrains Mono', ui-monospace, monospace",
+                    "text-valign": "bottom",
+                    "text-margin-y": 8,
+                    width: 28,
+                    height: 28,
+                    "border-width": 2,
+                  },
+                },
+                {
+                  selector: 'node[type="groups"]',
+                  style: {
+                    shape: "hexagon",
+                    "background-color": "#003a20",
+                    "border-color": "#005a34",
+                  },
+                },
+                {
+                  selector: 'node[type="user"]',
+                  style: {
+                    shape: "ellipse",
+                    "background-color": "#002845",
+                    "border-color": "#004878",
+                  },
+                },
+                {
+                  selector: "node.me",
+                  style: { "border-width": 4, "border-color": "#c09000" },
+                },
+                {
+                  selector: "node.sel",
+                  style: {
+                    "border-width": 3,
+                    "border-color": "#00a8d8",
+                    width: 36,
+                    height: 36,
+                    "background-color": "#003060",
+                  },
+                },
+                {
+                  selector: "edge",
+                  style: {
+                    width: 1.5,
+                    "curve-style": "bezier",
+                    "target-arrow-shape": "triangle",
+                    "line-color": "#0a1820",
+                    "target-arrow-color": "#0f2030",
+                    opacity: 0.8,
+                  },
+                },
+                {
+                  selector: "edge.sel",
+                  style: {
+                    "line-color": "#00a8d8",
+                    "target-arrow-color": "#00a8d8",
+                    width: 2.5,
+                  },
+                },
+              ],
+            });
+
+            cy.on("tap", "node", (evt) => {
+              cy.elements().removeClass("sel");
+              evt.target.addClass("sel");
+              const node = sess.value?.graph.nodes.find(
+                (n) => n.id === evt.target.id(),
+              );
+              if (node) {
+                Object.keys(expanded).forEach((k) => delete expanded[k]);
+                panel.value = { kind: "node", data: node };
+              }
+            });
+
+            cy.on("tap", "edge", (evt) => {
+              cy.elements().removeClass("sel");
+              evt.target.addClass("sel");
+              panel.value = {
+                kind: "edge",
+                data: {
+                  id: evt.target.id(),
+                  source: evt.target.data("source"),
+                  target: evt.target.data("target"),
+                },
+              };
+            });
+
+            cy.on("tap", (evt) => {
+              if (evt.target === cy) {
+                panel.value = null;
+                cy.elements().removeClass("sel");
+              }
+            });
+          }
+
+          function renderGraph() {
+            if (!cy) return;
+            const s = sess.value;
+            cy.batch(() => {
+              cy.elements().remove();
+              if (!s || s.status !== "active") return;
+              for (const n of s.graph.nodes) {
+                const el = cy.add({
+                  data: { id: n.id, label: n.name, type: n._table },
+                });
+                if (n.id === s.me?.id) el.addClass("me");
+              }
+              for (const e of s.graph.edges) {
+                if (cy.$id(e.source).length && cy.$id(e.target).length)
+                  cy.add({
+                    data: { id: e.id, source: e.source, target: e.target },
+                  });
+              }
+            });
+            cy.layout({
+              name: "dagre",
+              rankDir: "TB",
+              animate: true,
+              animationDuration: 250,
+              padding: 60,
+              nodeSep: 50,
+              rankSep: 60,
+            }).run();
+          }
+
+          // ── Error wrapper ─────────────────────────────────────────────────────────
+          async function run(fn) {
+            try {
+              await fn();
+            } catch (e) {
+              toast(e.message || String(e), true);
+            }
+          }
+
+          // ── Panel helpers ─────────────────────────────────────────────────────────
+          function openCreate(parentId = "") {
+            Object.assign(form, {
+              type: "user",
+              name: "",
+              email: "",
+              role: [],
+              parentId,
+              nodeId: "",
+            });
+            panel.value = { kind: "form", mode: "create" };
+          }
+
+          function openEdit(node) {
+            Object.assign(form, {
+              type: node._table,
+              name: node.name || "",
+              email: node.email || "",
+              role: [...(node.role || node.permissions || [])],
+              parentId: "",
+              nodeId: node.id,
+            });
+            panel.value = { kind: "form", mode: "edit" };
+          }
+
+          // ── CRUD ──────────────────────────────────────────────────────────────────
+          async function submitForm() {
+            const s = sess.value;
+            if (!s) return toast("No active session", true);
+            if (!form.name.trim()) return toast("Name is required", true);
+
+            await run(async () => {
+              const content =
+                form.type === "user"
+                  ? { name: form.name, email: form.email || null }
+                  : { name: form.name, role: form.role };
+
+              if (panel.value.mode === "create") {
+                // Two-step (avoids BEGIN TRANSACTION which was deprecated in 3.0 → use BEGIN)
+                const [created] = await s.client.query(
+                  `CREATE type::table($t) CONTENT $c`,
+                  { t: form.type, c: content },
+                );
+                const newId = created?.[0]?.id;
+                if (newId && form.parentId) {
+                  await s.client.query(
+                    "RELATE type::record($from)->link->type::record($to)",
+                    { from: rid(form.parentId), to: rid(newId) },
+                  );
+                }
+                toast("Created: " + form.name);
+              } else {
+                await s.client.query("UPDATE type::record($id) MERGE $c", {
+                  id: rid(form.nodeId),
+                  c: content,
+                });
+                toast("Updated: " + form.name);
+              }
+              panel.value = null;
+              await syncSession(s);
+            });
+          }
+
+          async function deleteNode() {
+            const s = sess.value;
+            const node = panel.value?.data;
+            if (!s || !node) return;
+            if (
+              !confirm(
+                `Delete "${node.name}"?\nWill fail if node has children.`,
+              )
+            )
+              return;
+            await run(async () => {
+              await s.client.delete(rid(node.id));
+              panel.value = null;
+              toast("Deleted: " + node.name);
+              await syncSession(s);
+            });
+          }
+
+          async function refreshNode() {
+            const s = sess.value;
+            const node = panel.value?.data;
+            if (!s || !node) return;
+            await run(async () => {
+              await s.client.query(
+                "UPDATE type::record($id) SET last_refreshed_at = time::now()",
+                { id: rid(node.id) },
+              );
+              toast("RBAC refreshed: " + node.name);
+              await syncSession(s);
+            });
+          }
+
+          async function deactivateNode() {
+            const s = sess.value;
+            const node = panel.value?.data;
+            if (!s || !node) return;
+            await run(async () => {
+              await s.client.query(
+                "UPDATE type::record($id) SET last_deactivated_at = time::now()",
+                { id: rid(node.id) },
+              );
+              toast("Deactivated: " + node.name);
+              await syncSession(s);
+            });
+          }
+
+          async function deleteEdge() {
+            const s = sess.value;
+            const edge = panel.value?.data;
+            if (!s || !edge) return;
+            await run(async () => {
+              await s.client.delete(rid(edge.id));
+              panel.value = null;
+              toast("Link severed");
+              await syncSession(s);
+            });
+          }
+
+          onMounted(() => {
+            initCy();
+            // Start with one blank session ready to fill in
+            addSession();
+          });
+
+          return {
+            sessions,
+            activeIdx,
+            sess,
+            panel,
+            toasts,
+            allToasts,
+            showHistory,
+            expanded,
+            form,
+            PERMS,
+            addSession,
+            activate,
+            connectSession,
+            syncSession,
+            killSession,
+            openCreate,
+            openEdit,
+            submitForm,
+            deleteNode,
+            refreshNode,
+            deactivateNode,
+            deleteEdge,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,221 @@
+SURREALDB LANGUAGE PRIMITIVES - COMPRESSED REFERENCE
+
+=== IDIOMS (PATH NAVIGATION) ===
+
+Parts: field (.name), index ([0]), all (.*), last ([$]), where filter ([WHERE]), method (.method()), graph (->/->/etc), destructure (.{a,b}), optional (.?), recursive (.{n})
+
+Field: SELECT address.city FROM person
+Index: SELECT results[0].score FROM student
+All: SELECT results.* FROM student  -- returns full array
+Last: SELECT results[$].score FROM student
+Filter: SELECT friends[WHERE age > 18].name FROM person:5
+Method: SELECT name.uppercase() FROM person  -- maps to string::uppercase()
+Optional (.?): SELECT person.spouse.?.name FROM person  -- returns NONE if spouse missing
+
+Destructure:
+  SELECT obj.{ a, c.{ e, f } } FROM ONLY person:1
+  SELECT * OMIT obj.c.{ d, f } FROM ONLY person:1
+  Alias inside destructure: $town.{ location, num_people: population }
+  AS is for SELECT aliases; colon(:) is for destructure aliases
+
+Current record (@, v2.1+):
+  SELECT @.{ name, id, orbits: ->orbits->star } FROM planet
+  SELECT @.{ name, id, orbits: ->orbits->star }.values() FROM planet
+  @ is required in recursive SELECT queries
+
+Expressions in destructure (v3+):
+  person:one.{ name, name_length: name.len(), accessed_at: time::now() }
+  $this = current object, $parent = parent object in nested destructure
+
+=== RECURSIVE PATHS (v2.1+) ===
+
+Syntax: record.{depth}(path_to_repeat).rest
+  planet:earth.{2}->has->(?)          -- exact 2 hops
+  planet:earth.{1..4}->has->(?)       -- 1 to 4 hops
+  planet:earth.{..}->has->(?)         -- open-ended (max 256)
+  planet:earth.{..}->has->(?).name    -- WRONG: recurses 'path.name'
+  planet:earth.{..}(->has->(?)).name  -- RIGHT: recurses path, then .name
+
+Depth range: 1..256. {0} and {500} error. Open-ended {..} stops at dead end.
+Dead ends: NONE, NULL, empty array, or same value as previous iteration.
+Below minimum depth -> returns NONE. Above minimum -> returns last valid.
+
+Using @ for tree building:
+  planet:earth.{1..2}.{ name, id, contains: ->has->(?).@ }
+  .@ marks the recursive gateway field. Only one .@ allowed per query.
+
+In SELECT: SELECT @.{1..4}(->knows->person).name AS names FROM person
+
+Works with record links too:
+  person:tobie.{..}(.friends).name
+
+=== PATH/COLLECT/SHORTEST ALGORITHMS (v2.2+) ===
+
+  person:you.{..+path}->knows->person        -- all possible paths (array of arrays)
+  person:you.{..+collect}->knows->person     -- unique nodes BFS order
+  person:you.{..+shortest=person:star}->knows->person  -- shortest path
+  Add +inclusive to include starting record
+  Bounded: person:you.{..2+collect}->knows->person
+  Chain: person:you.{..+shortest=person:star+inclusive}(->knows->person).name.map(|$n| n.uppercase())
+  DO NOT combine these algorithms with .@ (causes error)
+
+=== RECORD LINKS ===
+
+Store record IDs in fields: CREATE person:jaime SET friends = [person:tobie, person:simon]
+Traverse: SELECT friends.name FROM person:tobie  -- fetches remote records async
+Deep: SELECT friends.friends.friends.name FROM person:tobie  -- unlimited depth, nested arrays
+Direct access: person:tobie.*  /  person:tobie.{ name, email }
+
+=== RECORD REFERENCES (v2.2+) ===
+
+Add REFERENCE to DEFINE FIELD for record/array<record> fields (top-level only).
+Query incoming refs with <~ (like graph but reverse):
+  SELECT *, <~person AS owners FROM comic_book
+  SELECT *, <~person.{ id, name } AS owners FROM comic_book
+
+Computed field for refs:
+  DEFINE FIELD owned_by ON comic_book COMPUTED <~person
+  DEFINE FIELD owned_by ON comic_book COMPUTED <~(person FIELD comics)  -- narrow by field
+  DEFINE FIELD all_readers ON comic_book COMPUTED <~(person FIELD comics borrowed_comics)
+
+ON DELETE behaviours (set in REFERENCE clause):
+  ON DELETE IGNORE    -- default, stale refs remain
+  ON DELETE UNSET     -- removes deleted ref from field
+  ON DELETE CASCADE   -- deletes the referencing record
+  ON DELETE REJECT    -- prevents deletion if referenced (error)
+  ON DELETE THEN { UPDATE $this SET ...; }  -- custom logic; $this=record, $reference=deleted ref
+  Note: UNSET on non-optional field = effectively REJECT
+
+=== DATA TYPES ===
+
+--- ARRAYS ---
+[1,2,3,4,5]  [1,2,3,4,5][0]  [1,2,3,4,5][0..=2]
+SELECT * FROM ONLY 9  -- returns object not array
+Filter: [true,false,true][WHERE $this=true]  or  [1,2,NONE][? $this]  (? = WHERE alias)
+Filter chained: arr[WHERE $this.population][WHERE $this.first_mayor]
+Map: [1,2,3].map(|$v| $v+1)  -- [2,3,4]
+Map with index: [1,2,3].map(|$v,$i| "idx "+<string>$i)
+Filter closure: [1,3,5].filter(|$v| $v>2)
+Concat (v3+): [1,2]+[3,4] == [1,2,3,4] == [1,2].concat([3,4])
+Sized array type: DEFINE FIELD emp ON team TYPE array<record<employee>,5>
+
+--- BOOLEANS ---
+true/false (case insensitive: TRUE, True, trUE all valid)
+In WHERE: boolean field check is faster than expression check
+Truthy vs bool: all values have truthiness; bool is a specific type
+
+--- DATETIMES ---
+Prefix d: d"2025-07-03T07:18:52Z"  -- nanosecond precision, RFC 3339
+Timezone: d"2025-07-03T07:18:52+02:00" stored as UTC
+Cast: <datetime>"2025-06-07"  -- date-only also works
+Math: d"2025-07-03T07:18:52Z" + 2w  /  + 1h30m20s1350ms
+Comparison: d"2025-07-03" < d"2025-07-03T07:18:52.84Z"  -- true
+Alter (v3.0.2+): d'1970-01-01'.set_year(1914).set_month(6).set_day(28)
+DEFINE FIELD time ON event TYPE datetime  -- rejects plain strings
+
+--- FILES (v3+) ---
+Prefix f: f"bucket:/path/file.txt"
+Requires DEFINE BUCKET. Operations:
+  f"bucket:/file.txt".put("content")
+  f"bucket:/file.txt".get()  -- returns bytes
+  <string>f"bucket:/file.txt".get()
+
+--- NUMBERS ---
+int: no decimal, range -9223372036854775808 to 9223372036854775807
+float: decimal point or out of int range (suffix f), limited precision
+decimal: suffix dec, 128-bit. Use dec suffix not <decimal> cast for precision.
+  0.3+0.3+0.3+0.1 = 0.9999999999999999f  (float imprecision)
+  0.3dec+0.3dec+0.3dec+0.1dec = 1.0dec  (exact)
+Underscores ignored: 1_000_000 = 1000000
+Constants (case insensitive): MATH::PI, MATH::E, MATH::INF, MATH::NEG_INF,
+  MATH::SQRT_2(1.414), MATH::TAU(6.283), MATH::FRAC_PI_2(1.5708), etc.
+
+--- OBJECTS ---
+Nested to any depth. Field names: ASCII+underscore+number, or backtick for complex.
+String field name in object: { "mi nómine": "Edgar" }
+Auto field names from operations: SELECT math::mean(temps) -- field is "math::mean"
+Use AS to rename: SELECT math::mean(temps) AS avg FROM ...
+Extend (v3+): { a:1 } + { b:2 }  or  obj.extend({ b:2 })
+Remove (v3+): obj.remove("field")  or  obj.remove(["f1","f2"])
+
+--- RANGES (v2+) ---
+0..10 (0-9), 0..=10 (0-10), 0>..10 (1-9), 0>..=10 (1-10)
+Open: 0.. (0+), ..10 (up to 9), .. (infinite)
+Works with any type: 'g' IN 'a'..'z'  /  d"2024" IN d"2020"..=d"2025"
+In FOR: FOR $y IN 0..=2024 { ... }
+In WHERE: age IN 18..=65  (shorter + slightly faster than two conditions)
+Cast to array: <array>1..3  ->  [1,2]
+Functional: (<array>1..=100).map(|$v| $v*10).filter(|$v| $v IN 100..200)
+CREATE mock (v3): CREATE |person:1..=10|  -- inclusive range now uses true range syntax
+
+--- RECORD IDs ---
+Format: table:identifier  (e.g. company:surrealdb, weather:['London',d'2025-02-14'])
+Random: CREATE company  -- auto 20-char alphanumeric
+  CREATE temp:rand()  -- same as default
+  CREATE temp:ulid()  -- sortable ULID
+  CREATE temp:uuid()  -- UUIDv7
+Text IDs: letters+numbers+underscore. Backticks for complex: article:`uuid-here`
+  Complex IDs display in output with angle brackets: article:⟨uuid-here⟩
+Numeric: article:10 (int) vs article:`10` (string "10") -- both valid, different
+  Numbers outside int64 range stored as strings with backticks
+Array IDs: weather:['London', d'2025-02-13']  -- great for range queries
+  Range: SELECT * FROM weather:['London',NONE]..=['London',..]  -- all London records
+  Perf: range query = bounded scan; WHERE clause = full table scan
+Object IDs also valid. Parameters and fn calls work in IDs.
+type::record("table", $id)  -- build record ID programmatically
+Defining: DEFINE FIELD f ON t TYPE record  (not record<any>)
+  record<any> means table literally named 'any'
+Ranges: SELECT * FROM person:1..1000  /  SELECT * FROM person:0..=1000
+VALUE clause cannot be used on id field (limitation)
+Duplicate ID on CREATE = error; use UPSERT or INSERT...ON DUPLICATE KEY UPDATE
+
+--- SETS (v3+) ---
+Literal: {1,6,6,2} -> {1,2,6}  (auto-dedup + auto-sort)
+Empty/single item needs comma: {,} {9,}
+Cast: <set>[4,6,2]  -- deduplicated sorted set
+Index: (<set>[4,6,2])[0] = 2 (minimum value, not position)
+Ops: {1,2}+[3,4] = {1,2,3,4}  /  {1,2}+{3,4} = {1,2,3,4}
+Filter: {1,3,5}.filter(|$v| $v>2)
+Dedup trick: <array><set>[18,7,6,6,5,4,3,9] = [3,4,5,6,7,9,18]
+
+--- STRINGS ---
+Single or double quotes. Unicode, emoji, line breaks all valid.
+Prefixes (v2+, not eager-conversion anymore):
+  r"person:john"  -- record ID
+  d"2025-11-28T11:41:20Z"  -- datetime (RFC 3339)
+  u"8c54161f-d4fe-4a74-9409-ed1e137040c1"  -- UUID
+  b"0099aaff"  -- bytes
+  f"bucket:/path"  -- file pointer
+Prefix vs cast: prefix is parser instruction (parse-time); cast is runtime conversion.
+  Imprecise float cast: <decimal>8.888888888888888 = 8.88888888888889dec (imprecise)
+  Precise suffix: 8.888888888888888dec = 8.888888888888888dec (exact)
+  Cast fails on out-of-range int: <decimal>9999999999999999999 -- parse error
+  Suffix works: 9999999999999999999dec -- ok
+
+--- UUIDS ---
+Obtain via: rand::uuid::v4(), rand::uuid::v7(), <uuid>"...", u"..."
+v2+: strings no longer auto-convert to UUID; must use u prefix or <uuid> cast
+
+=== CASTING REFERENCE ===
+
+<array>range  -- range to array
+<array<T>>arr  -- cast each element to T
+<array<T1|T2>>arr  -- try T1 first, then T2
+<bool>"true"/"false"
+<datetime>"2025-06-07"
+<decimal>val  -- 128-bit (use dec suffix for literal input instead)
+<duration>"1h30m"
+<float>val
+<int>val
+<number>val  -- decimal type
+<record>"table:id"
+<record<T>>"table:id"
+<record<T1|T2>>"table:id"
+<set<T>>arr
+<string>val
+<regex>"pattern"  -- <regex>"a|b" = "a" -> true
+<uuid>"ffffffff-..."
+
+Casting order matters: <array<bool|string>>[...] tries bool first.
+Spaces/newlines ignored in cast syntax.
+Parser processes right side before applying cast -- reason prefix/suffix often preferred.
