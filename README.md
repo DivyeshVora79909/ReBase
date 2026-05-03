@@ -546,16 +546,60 @@ DEFINE ACCESS account ON DATABASE TYPE RECORD
 
 ## Appendix A – Official Documentation Links (SurrealDB 3.0)
 
-- [DEFINE FIELD – all attributes](https://surrealdb.com/docs/surrealql/statements/define/field)
-- [DEFINE EVENT – when/then, async](https://surrealdb.com/docs/surrealql/statements/define/event)
-- [Reference Integrity](https://surrealdb.com/docs/surrealql/datamodel/references)
-- [Record Links vs Graph Relations](https://surrealdb.com/docs/learn/data-models/graph/record-links-vs-graph-relations)
-- [DEFINE ACCESS (Record)](https://surrealdb.com/docs/surrealql/statements/define/access/record)
+### Statements & Clauses
+
+- [DEFINE FIELD – all attributes](https://surrealdb.com/docs/surrealql/statements/define/field)  
+  ([alternative reference link](https://surrealdb.com/docs/reference/query-language/statements/define/field))
+- [DEFINE EVENT – when/then, async](https://surrealdb.com/docs/surrealql/statements/define/event)  
+  ([alternative reference link](https://surrealdb.com/docs/reference/query-language/statements/define/event))
+- [DEFINE TABLE](https://surrealdb.com/docs/reference/query-language/statements/define/table)
+- [DEFINE FUNCTION](https://surrealdb.com/docs/reference/query-language/statements/define/function)
+- [DEFINE ACCESS (Record)](https://surrealdb.com/docs/surrealql/statements/define/access/record)  
+  ([alternative reference link](https://surrealdb.com/docs/reference/query-language/statements/define/access/record))
+- [RELATE – create graph edges](https://surrealdb.com/docs/reference/query-language/statements/relate)
+- [FOR loop](https://surrealdb.com/docs/reference/query-language/statements/for)
+- [IF ELSE](https://surrealdb.com/docs/reference/query-language/statements/if-else)
+- [LET – assign variable](https://surrealdb.com/docs/reference/query-language/statements/let)
+
+### Language Primitives & Data Types
+
+- [Statements and values overview](https://surrealdb.com/docs/learn/querying/surrealql/statements-and-values)
+- [Data types](https://surrealdb.com/docs/reference/query-language/language-primitives/data-types)
+- [Arrays](https://surrealdb.com/docs/reference/query-language/language-primitives/data-types/arrays)
+- [Objects](https://surrealdb.com/docs/reference/query-language/language-primitives/data-types/objects)
+- [Sets](https://surrealdb.com/docs/reference/query-language/language-primitives/data-types/sets)
+- [Record references](https://surrealdb.com/docs/reference/query-language/language-primitives/record-references)
+- [Record links](https://surrealdb.com/docs/reference/query-language/language-primitives/record-links)
 - [Parameters & Pointers ($before, $after, $value, $input)](https://surrealdb.com/docs/surrealql/parameters)
+
+### Schema Management
+
+- [Fields and validation](https://surrealdb.com/docs/learn/schema-management/tables-and-fields/fields-and-validation)
+- [Record IDs and addressing](https://surrealdb.com/docs/learn/schema-management/tables-and-fields/record-ids-and-addressing)
+- [Defining events](https://surrealdb.com/docs/learn/schema-management/events-and-triggers/defining-events)
+- [Reactive patterns with events](https://surrealdb.com/docs/learn/schema-management/events-and-triggers/reactive-patterns)
+- [Custom functions](https://surrealdb.com/docs/learn/querying/concepts-and-guides/custom-functions)
+
+### Graph & Relations
+
+- [Reference Integrity](https://surrealdb.com/docs/surrealql/datamodel/references)
+- [Record Links vs Graph Relations](https://surrealdb.com/docs/learn/data-models/graph/record-links-vs-graph-relations)  
+  ([alternative link](https://surrealdb.com/docs/reference/query-language/language-primitives/record-links))
+- [Creating relations](https://surrealdb.com/docs/learn/data-models/graph/creating-relations)
+- [Graph traversal](https://surrealdb.com/docs/learn/data-models/graph/graph-traversal)
+
+### Security & Permissions
+
+- [Permissions & Row Level Security (RLS)](https://surrealdb.com/docs/learn/security/authorization/permissions-and-row-level-security)
+
+### Migrations & Futures
+
 - [Futures → COMPUTED field migration](https://surrealdb.com/docs/surrealql/datamodel/futures)
+
+### Blog / Best Practices
+
 - [Ten tips for your schema](https://surrealdb.com/blog/ten-tips-and-tricks-for-your-database-schema)
 - [Ten more schema tips](https://surrealdb.com/blog/ten-more-schema-tips)
-- [Permissions & RLS](https://surrealdb.com/docs/learn/security/authorization/permissions-and-row-level-security)
 
 ---
 
