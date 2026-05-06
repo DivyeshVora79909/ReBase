@@ -101,14 +101,7 @@ DEFINE FIELD OVERWRITE role ON groups TYPE array<string> VALUE (
     ELSE IF $before.len() = 0 THEN []
     ELSE IF ($value ??[]).len() = 0 THEN $before
     ELSE $value.distinct() END
-)
-ASSERT $value ALLINSIDE[
-    'node_create', 'node_select', 'node_update', 'node_delete',
-    'link_create', 'link_select', 'link_delete',
-    'finance_create', 'finance_select', 'finance_update', 'finance_delete',
-    'order_create', 'order_select', 'order_update', 'order_delete',
-    'inventory_create', 'inventory_select', 'inventory_update', 'inventory_delete'
-];
+);
 
 DEFINE FIELD OVERWRITE created_at ON groups TYPE datetime VALUE $before OR time::now() READONLY;
 DEFINE FIELD OVERWRITE updated_at ON groups TYPE datetime VALUE time::now();
@@ -193,12 +186,26 @@ DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
 
 --  INITIALIZATION
-CREATE groups:root SET name = 'System Admins', role =[
+CREATE groups:root SET name = 'System Admins', role = [
     'node_create', 'node_select', 'node_update', 'node_delete',
     'link_create', 'link_select', 'link_delete',
-    'finance_create', 'finance_select', 'finance_update', 'finance_delete',
-    'order_create', 'order_select', 'order_update', 'order_delete',
-    'inventory_create', 'inventory_select', 'inventory_update', 'inventory_delete'
+    'company_settings_select', 'company_settings_manage',
+    'treasury_account_select', 'treasury_account_create', 'treasury_account_update', 'treasury_account_delete',
+    'trade_account_select', 'trade_account_create', 'trade_account_update', 'trade_account_delete',
+    'expense_account_select', 'expense_account_create', 'expense_account_update', 'expense_account_delete',
+    'equity_account_select', 'equity_account_create', 'equity_account_update', 'equity_account_delete',
+    'inventory_node_select', 'inventory_node_create', 'inventory_node_update', 'inventory_node_delete',
+    'catalog_node_select', 'catalog_node_create', 'catalog_node_update', 'catalog_node_delete',
+    'location_node_select', 'location_node_create', 'location_node_update', 'location_node_delete',
+    'tax_node_select', 'tax_node_create', 'tax_node_update', 'tax_node_delete',
+    'order_select', 'order_create', 'order_update', 'order_delete',
+    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
+    'vendor_bill_select', 'vendor_bill_create', 'vendor_bill_update', 'vendor_bill_delete',
+    'adjustment_note_select', 'adjustment_note_create', 'adjustment_note_update', 'adjustment_note_delete',
+    'payment_select', 'payment_create', 'payment_update', 'payment_delete',
+    'financial_adjustment_select', 'financial_adjustment_create', 'financial_adjustment_update', 'financial_adjustment_delete',
+    'exchange_select', 'exchange_create', 'exchange_update', 'exchange_delete',
+    'production_run_select', 'production_run_create', 'production_run_update', 'production_run_delete'
 ];
 
 CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';
