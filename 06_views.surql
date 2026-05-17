@@ -1,107 +1,65 @@
 USE NS main DB main;
 
--- 1. DOCUMENT TOTAL VIEWS (Financial)
-DEFINE TABLE OVERWRITE v_invoice_totals AS 
-    SELECT
-        invoice_ref,
+-- 1. THE UNIVERSAL LEDGER OBSERVERS (Real-time balances)
+-- General Ledger (Trial Balance)
+DEFINE TABLE OVERWRITE v_account_balance AS
+    SELECT 
+        account_ref, 
+        math::sum(z_amount_base) AS total_base_balance,
+        count() AS transaction_count
+    FROM journal_line 
+    GROUP BY account_ref
+PERMISSIONS FOR select WHERE 'account_select' IN $auth.permissions;
+
+-- AR/AP Sub-Ledger (Real-time Contact Balances / Aging Base)
+-- Positive = Customer owes us (AR). Negative = We owe Vendor (AP).
+DEFINE TABLE OVERWRITE v_contact_balance AS
+    SELECT 
+        contact_ref, 
+        math::sum(z_amount_base) AS net_balance 
+    FROM journal_line 
+    WHERE contact_ref != NONE
+    GROUP BY contact_ref
+PERMISSIONS FOR select WHERE 'contact_select' IN $auth.permissions;
+
+-- Dimension / Tracking Ledger (Project & Department tracking)
+DEFINE TABLE OVERWRITE v_tracking_balance AS
+    SELECT 
+        tracking_tag_ref, 
+        account_ref,
+        math::sum(z_amount_base) AS total_balance 
+    FROM journal_line 
+    WHERE tracking_tag_ref != NONE
+    GROUP BY tracking_tag_ref, account_ref
+PERMISSIONS FOR select WHERE 'tracking_tag_select' IN $auth.permissions;
+
+
+-- 2. CQRS GATEKEEPER VIEWS (For Event Validations)
+-- Document Totals (Aggregates the document_line VALUE fields)
+DEFINE TABLE OVERWRITE v_document_totals AS 
+    SELECT 
+        document_ref, 
         math::sum(z_base_amount) AS total_base,
         math::sum(z_tax_amount) AS total_tax,
-        math::sum(z_base_amount + z_tax_amount) AS total_amount
-    FROM invoice_line
-    GROUP BY invoice_ref
-PERMISSIONS
-    FOR select WHERE 'invoice_select' IN $auth.permissions;
+        math::sum(z_total_amount) AS total_amount
+    FROM document_line 
+    GROUP BY document_ref
+PERMISSIONS FOR select WHERE 'document_select' IN $auth.permissions;
 
-DEFINE TABLE OVERWRITE v_vendor_bill_totals AS 
-    SELECT
-        bill_ref,
-        math::sum(z_base_amount) AS total_base,
-        math::sum(z_tax_amount) AS total_tax,
-        math::sum(z_base_amount + z_tax_amount) AS total_amount
-    FROM vendor_bill_line
-    GROUP BY bill_ref
-PERMISSIONS
-    FOR select WHERE 'vendor_bill_select' IN $auth.permissions;
-
+-- Payment Outbound Limit (How much of the Payment has been allocated to documents)
 DEFINE TABLE OVERWRITE v_payment_outbound AS
-    SELECT
-        payment_ref,
-        math::sum(pay_currency_amount) AS total_allocated
-    FROM payment_allocation
+    SELECT 
+        payment_ref, 
+        math::sum(pay_currency_amount) AS total_allocated 
+    FROM payment_allocation 
     GROUP BY payment_ref
-PERMISSIONS
-    FOR select WHERE 'payment_select' IN $auth.permissions;
+PERMISSIONS FOR select WHERE 'payment_select' IN $auth.permissions;
 
+-- Document Settlement Status (How much of a Document has been paid off)
 DEFINE TABLE OVERWRITE v_payment_allocations AS
-    SELECT
-        target_ref,
-        math::sum(doc_currency_amount) AS total_paid
-    FROM payment_allocation
-    GROUP BY target_ref
-PERMISSIONS
-    FOR select WHERE
-        'invoice_select' IN $auth.permissions
-        OR 'vendor_bill_select' IN $auth.permissions
-        OR 'trade_account_select' IN $auth.permissions;
-
-DEFINE TABLE OVERWRITE v_line_adjustments AS 
-    SELECT
-        target_line_ref,
-        math::sum(delta_qty) AS net_qty_delta,
-        math::sum(delta_base_amount) AS net_amount_delta
-    FROM adjustment_note_line
-    GROUP BY target_line_ref
-PERMISSIONS
-    FOR select WHERE 'adjustment_note_select' IN $auth.permissions;
-
--- 2. INVENTORY VIEWS (Physical Stock grouped by Location)
-DEFINE TABLE OVERWRITE v_stock_out AS 
-    SELECT
-        item_ref,
-        location_ref,
-        math::sum(qty) AS total_out 
-    FROM invoice_line
-    GROUP BY item_ref, location_ref
-PERMISSIONS
-    FOR select WHERE 'invoice_select' IN $auth.permissions;
-
-DEFINE TABLE OVERWRITE v_stock_in AS 
-    SELECT
-        item_ref,
-        location_ref,
-        math::sum(qty) AS total_in 
-    FROM vendor_bill_line
-    GROUP BY item_ref, location_ref
-PERMISSIONS
-    FOR select WHERE 'vendor_bill_select' IN $auth.permissions;
-
-DEFINE TABLE OVERWRITE v_exchange_out AS
-    SELECT
-        item_ref,
-        from_location_ref,
-        math::sum(qty) AS total_out
-    FROM exchange_line
-    GROUP BY item_ref, from_location_ref
-PERMISSIONS
-    FOR select WHERE 'exchange_select' IN $auth.permissions;
-
-DEFINE TABLE OVERWRITE v_exchange_in AS
-    SELECT
-        item_ref,
-        to_location_ref,
-        math::sum(qty) AS total_in
-    FROM exchange_line
-    GROUP BY item_ref, to_location_ref
-PERMISSIONS
-    FOR select WHERE 'exchange_select' IN $auth.permissions;
-
-DEFINE TABLE OVERWRITE v_production_totals AS
-    SELECT
-        item_ref,
-        location_ref,
-        direction,
-        math::sum(qty) AS total_qty
-    FROM production_line
-    GROUP BY item_ref, location_ref, direction
-PERMISSIONS
-    FOR select WHERE 'production_run_select' IN $auth.permissions;
+    SELECT 
+        document_ref, 
+        math::sum(doc_currency_amount) AS total_paid 
+    FROM payment_allocation 
+    GROUP BY document_ref
+PERMISSIONS FOR select WHERE 'document_select' IN $auth.permissions;

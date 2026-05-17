@@ -2,7 +2,7 @@ REMOVE DATABASE main;
 DEFINE DATABASE main;
 USE NS main DB main;
 
---  TABLE: USER
+-- USER
 DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     FOR create WHERE $auth != NONE AND 'node_create' IN $auth.permissions
     FOR select WHERE id = $auth OR ('node_select' IN $auth.permissions AND id IN $auth.dominates)
@@ -17,11 +17,9 @@ DEFINE FIELD OVERWRITE email ON user TYPE string
     VALUE $value.trim().lowercase()
     ASSERT string::is_email($value);
 
--- System-Level SIGNUP blocks.
 DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
 DEFINE FIELD OVERWRITE invite_token ON user TYPE option<uuid> PERMISSIONS NONE;
 
--- RBAC Cache Arrays
 DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> 
     PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
 
@@ -31,11 +29,9 @@ DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>>
 DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> 
     PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
 
--- Event Triggers
 DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE;
 DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE;
 
--- Audit Fields
 DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
 DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
 DEFINE FIELD OVERWRITE created_by ON user TYPE option<record<user>> VALUE $before OR $auth READONLY;
@@ -78,7 +74,6 @@ DEFINE EVENT OVERWRITE user_on_create ON TABLE user WHEN $event = "CREATE" THEN 
     };
 };
 
--- 3. Safety Events
 DEFINE EVENT OVERWRITE prevent_user_non_leaf_delete ON TABLE user WHEN $event = "DELETE" THEN {
     IF $before.id->link.len() > 0 { THROW "ERR_NOT_A_LEAF"; };
     DELETE link WHERE in = $before.id OR out = $before.id;
@@ -88,7 +83,7 @@ DEFINE EVENT OVERWRITE auto_link_creator ON TABLE user WHEN $event = "CREATE" AN
     RELATE ($after.created_by) -> link -> ($after.id);
 };
 
---  TABLE: GROUPS
+-- GROUPS
 DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
     FOR create WHERE $auth != NONE AND 'node_create' IN $auth.permissions
     FOR select WHERE 'node_select' IN $auth.permissions AND (id IN $auth.dominates OR id IN $auth.parents)
@@ -124,7 +119,7 @@ DEFINE EVENT OVERWRITE auto_link_creator_group ON TABLE groups WHEN $event = "CR
     RELATE ($after.created_by) -> link -> ($after.id);
 };
 
---  TABLE: LINK
+-- LINK
 DEFINE TABLE OVERWRITE link SCHEMAFULL TYPE RELATION IN user | groups OUT user | groups PERMISSIONS
     FOR create WHERE 'link_create' IN $auth.permissions AND (in = $auth OR in IN $auth.dominates) AND out IN $auth.dominates
     FOR update NONE
@@ -134,14 +129,14 @@ DEFINE TABLE OVERWRITE link SCHEMAFULL TYPE RELATION IN user | groups OUT user |
 DEFINE FIELD OVERWRITE created_at ON link TYPE datetime VALUE $before OR time::now() READONLY;
 DEFINE FIELD OVERWRITE created_by ON link TYPE option<record<user>> VALUE $before OR $auth READONLY;
 
+DEFINE INDEX OVERWRITE idx_unique_link ON TABLE link COLUMNS in, out UNIQUE;
+
 DEFINE EVENT OVERWRITE prevent_cycle ON TABLE link WHEN $event = "CREATE" THEN {
     LET $start = $after.out;
     LET $end = $after.in;
     LET $cycle = $start.{..+shortest=$end}->link->(?);
     IF $cycle.len() > 0 { THROW "ERR_CYCLE"; };
 };
-
-DEFINE INDEX OVERWRITE idx_unique_link ON TABLE link COLUMNS in, out UNIQUE;
 
 DEFINE EVENT OVERWRITE prevent_orphans ON TABLE link WHEN $event = "DELETE" THEN {
     IF $before.out != NONE AND record::exists($before.in) AND record::exists($before.out) {
@@ -150,7 +145,7 @@ DEFINE EVENT OVERWRITE prevent_orphans ON TABLE link WHEN $event = "DELETE" THEN
     };
 };
 
--- Primary Access: Login and Claiming Invites
+-- ACCESS METHODS
 DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     SIGNUP (
         UPDATE user SET password = crypto::argon2::generate($password), invite_token = NONE, last_refreshed_at = time::now()
@@ -170,7 +165,6 @@ DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     }
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
 
--- Secondary Access: Safe Password Updating
 DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
     SIGNUP (
         UPDATE user SET password = crypto::argon2::generate($new_password), last_refreshed_at = time::now()
@@ -185,31 +179,23 @@ DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
     }
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
 
---  INITIALIZATION
-CREATE groups:root SET name = 'System Admins', role = [
-    'node_create', 'node_select', 'node_update', 'node_delete',
+-- INITIALIZATION
+CREATE groups:root SET name = 'System Admins', role =[
+    'node_create', 'node_select', 'node_update', 'node_delete', 
     'link_create', 'link_select', 'link_delete',
     'company_settings_select', 'company_settings_manage',
-    'treasury_account_select', 'treasury_account_create', 'treasury_account_update', 'treasury_account_delete',
-    'trade_account_select', 'trade_account_create', 'trade_account_update', 'trade_account_delete',
-    'expense_account_select', 'expense_account_create', 'expense_account_update', 'expense_account_delete',
-    'equity_account_select', 'equity_account_create', 'equity_account_update', 'equity_account_delete',
-    'inventory_node_select', 'inventory_node_create', 'inventory_node_update', 'inventory_node_delete',
-    'catalog_node_select', 'catalog_node_create', 'catalog_node_update', 'catalog_node_delete',
-    'location_node_select', 'location_node_create', 'location_node_update', 'location_node_delete',
-    'tax_node_select', 'tax_node_create', 'tax_node_update', 'tax_node_delete',
-    'order_select', 'order_create', 'order_update', 'order_delete',
-    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
-    'vendor_bill_select', 'vendor_bill_create', 'vendor_bill_update', 'vendor_bill_delete',
-    'adjustment_note_select', 'adjustment_note_create', 'adjustment_note_update', 'adjustment_note_delete',
+    'account_select', 'account_create', 'account_update', 'account_delete',
+    'tracking_tag_select', 'tracking_tag_create', 'tracking_tag_update', 'tracking_tag_delete',
+    'tax_rate_select', 'tax_rate_create', 'tax_rate_update', 'tax_rate_delete',
+    'contact_select', 'contact_create', 'contact_update', 'contact_delete',
+    'item_select', 'item_create', 'item_update', 'item_delete',
+    'bank_account_select', 'bank_account_create', 'bank_account_update', 'bank_account_delete',
+    'document_select', 'document_create', 'document_update', 'document_delete',
     'payment_select', 'payment_create', 'payment_update', 'payment_delete',
-    'financial_adjustment_select', 'financial_adjustment_create', 'financial_adjustment_update', 'financial_adjustment_delete',
-    'exchange_select', 'exchange_create', 'exchange_update', 'exchange_delete',
-    'production_run_select', 'production_run_create', 'production_run_update', 'production_run_delete'
+    'journal_select', 'journal_create', 'journal_update', 'journal_delete'
 ];
 
 CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';
 UPDATE user:root SET password = crypto::argon2::generate("password"), invite_token = NONE;
 RELATE groups:root -> link -> user:root;
-
 UPDATE user:root SET last_refreshed_at = time::now();

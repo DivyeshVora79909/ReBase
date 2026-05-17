@@ -1,134 +1,133 @@
 USE NS main DB main;
 
--- 1. THE NOUNS (Semantic Nodes)
+-- 1. CONFIGURATION & MASTER NODES
+-- Company Settings
 DEFINE FIELD OVERWRITE base_currency ON company_settings TYPE string DEFAULT 'USD';
-DEFINE FIELD OVERWRITE invoice_lock_after ON company_settings TYPE duration DEFAULT 30d;
+DEFINE FIELD OVERWRITE lock_period_days ON company_settings TYPE int DEFAULT 30;
 
-DEFINE FIELD OVERWRITE name ON treasury_account TYPE string;
-DEFINE FIELD OVERWRITE currency ON treasury_account TYPE string;
+-- Account (Hierarchical Chart of Accounts)
+DEFINE FIELD OVERWRITE code ON account TYPE string;
+DEFINE FIELD OVERWRITE name ON account TYPE string;
+DEFINE FIELD OVERWRITE category ON account TYPE string ASSERT $value IN ['asset', 'liability', 'equity', 'revenue', 'expense'];
+DEFINE FIELD OVERWRITE parent_account_ref ON account TYPE option<record<account>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 
-DEFINE FIELD OVERWRITE name ON trade_account TYPE string;
-DEFINE FIELD OVERWRITE tax_id ON trade_account TYPE option<string>;
+-- Tracking Tag (Replaces Cost Centers, Departments, Locations)
+DEFINE FIELD OVERWRITE category ON tracking_tag TYPE string; -- e.g., 'Project', 'Department'
+DEFINE FIELD OVERWRITE name ON tracking_tag TYPE string;     -- e.g., 'Alpha', 'Marketing'
 
-DEFINE FIELD OVERWRITE name ON expense_account TYPE string;
-DEFINE FIELD OVERWRITE name ON equity_account TYPE string;
+-- Tax Rate
+DEFINE FIELD OVERWRITE name ON tax_rate TYPE string;
+DEFINE FIELD OVERWRITE rate ON tax_rate TYPE decimal ASSERT $value >= 0dec;
+DEFINE FIELD OVERWRITE liability_account_ref ON tax_rate TYPE record<account> REFERENCE ON DELETE REJECT;
 
-DEFINE FIELD OVERWRITE sku ON inventory_node TYPE string;
-DEFINE INDEX OVERWRITE idx_inventory_sku ON inventory_node COLUMNS sku UNIQUE;
-DEFINE FIELD OVERWRITE name ON inventory_node TYPE string;
+-- Contact (Unified Party)
+DEFINE FIELD OVERWRITE type ON contact TYPE string ASSERT $value IN ['customer', 'vendor', 'both'];
+DEFINE FIELD OVERWRITE name ON contact TYPE string;
+DEFINE FIELD OVERWRITE email ON contact TYPE option<string> DEFAULT NONE;
+DEFINE FIELD OVERWRITE address ON contact TYPE object DEFAULT {};
 
-DEFINE FIELD OVERWRITE name ON catalog_node TYPE string;
-DEFINE FIELD OVERWRITE name ON location_node TYPE string;
+-- Item (Unified Catalog)
+DEFINE FIELD OVERWRITE type ON item TYPE string ASSERT $value IN ['product', 'service'];
+DEFINE FIELD OVERWRITE name ON item TYPE string;
+DEFINE FIELD OVERWRITE default_price ON item TYPE decimal DEFAULT 0dec;
+DEFINE FIELD OVERWRITE income_account_ref ON item TYPE record<account> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE expense_account_ref ON item TYPE record<account> REFERENCE ON DELETE REJECT;
 
-DEFINE FIELD OVERWRITE name ON tax_node TYPE string;
-DEFINE FIELD OVERWRITE behavior ON tax_node TYPE string ASSERT $value IN ['add', 'subtract'];
+-- Bank Account
+DEFINE FIELD OVERWRITE name ON bank_account TYPE string;
+DEFINE FIELD OVERWRITE currency ON bank_account TYPE string;
+DEFINE FIELD OVERWRITE account_number ON bank_account TYPE string;
+DEFINE FIELD OVERWRITE asset_account_ref ON bank_account TYPE record<account> REFERENCE ON DELETE REJECT;
 
--- 2. THE VERBS (Sales)
-DEFINE FIELD OVERWRITE status ON order TYPE string DEFAULT 'draft';
-DEFINE FIELD OVERWRITE party_ref ON order TYPE record<trade_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE currency ON order TYPE string;
 
-DEFINE FIELD OVERWRITE order_ref ON order_line TYPE record<order> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE item_ref ON order_line TYPE record<inventory_node | catalog_node> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE qty ON order_line TYPE decimal ASSERT $value > 0;
-DEFINE FIELD OVERWRITE unit_price ON order_line TYPE decimal ASSERT $value >= 0;
+-- 2. DOCUMENTS & OPERATIONS (Intent Layer)
+-- Document (Polymorphic Master for Invoices, Bills, Notes)
+DEFINE FIELD OVERWRITE type ON document TYPE string ASSERT $value IN ['sales_invoice', 'vendor_bill', 'credit_note', 'journal_voucher'];
+DEFINE FIELD OVERWRITE document_number ON document TYPE string;
+DEFINE FIELD OVERWRITE status ON document TYPE string DEFAULT 'draft' ASSERT $value IN ['draft', 'posted', 'void'];
+DEFINE FIELD OVERWRITE issue_date ON document TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE due_date ON document TYPE datetime;
+DEFINE FIELD OVERWRITE contact_ref ON document TYPE record<contact> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE currency ON document TYPE string;
+DEFINE FIELD OVERWRITE fx_rate ON document TYPE decimal DEFAULT 1dec ASSERT $value > 0dec;
 
-DEFINE FIELD OVERWRITE status ON invoice TYPE string DEFAULT 'draft' ASSERT $value IN ['draft', 'posted', 'void'];
-DEFINE FIELD OVERWRITE party_ref ON invoice TYPE record<trade_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE currency ON invoice TYPE string;
-DEFINE FIELD OVERWRITE fx_rate ON invoice TYPE decimal DEFAULT 1dec;
+-- Document Line (Child of Document)
+DEFINE FIELD OVERWRITE document_ref ON document_line TYPE record<document> REFERENCE ON DELETE CASCADE;
+DEFINE FIELD OVERWRITE item_ref ON document_line TYPE record<item> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE tracking_tag_ref ON document_line TYPE option<record<tracking_tag>> REFERENCE ON DELETE REJECT DEFAULT NONE;
+DEFINE FIELD OVERWRITE description ON document_line TYPE string DEFAULT "";
 
-DEFINE FIELD OVERWRITE invoice_ref ON invoice_line TYPE record<invoice> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE item_ref ON invoice_line TYPE record<inventory_node | catalog_node> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE location_ref ON invoice_line TYPE record<location_node> DEFAULT location_node:main REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE qty ON invoice_line TYPE decimal ASSERT $value > 0;
-DEFINE FIELD OVERWRITE unit_price ON invoice_line TYPE decimal ASSERT $value >= 0;
+-- Line Math & Taxes
+DEFINE FIELD OVERWRITE qty ON document_line TYPE decimal ASSERT $value > 0dec;
+DEFINE FIELD OVERWRITE unit_price ON document_line TYPE decimal ASSERT $value >= 0dec;
 
-DEFINE FIELD OVERWRITE taxes ON invoice_line TYPE array<object> DEFAULT[];
-DEFINE FIELD OVERWRITE taxes.*.tax_ref ON invoice_line TYPE record<tax_node>;
-DEFINE FIELD OVERWRITE taxes.*.rate ON invoice_line TYPE decimal ASSERT $value >= 0;
-DEFINE FIELD OVERWRITE z_tax_refs ON invoice_line TYPE set<record<tax_node>> 
-    VALUE <set> ($this.taxes.tax_ref ??[]).filter(|$v| $v != NONE) 
+DEFINE FIELD OVERWRITE taxes ON document_line TYPE array<object> DEFAULT [];
+DEFINE FIELD OVERWRITE taxes.*.tax_ref ON document_line TYPE record<tax_rate>;
+
+-- [HACK]: Shadow Referential Integrity for nested tax records
+DEFINE FIELD OVERWRITE z_tax_refs ON document_line TYPE set<record<tax_rate>> 
+    VALUE <set> ($this.taxes.tax_ref ?? []).filter(|$v| $v != NONE) 
     REFERENCE ON DELETE REJECT;
 
-DEFINE FIELD OVERWRITE z_base_amount ON invoice_line TYPE decimal VALUE $this.qty * $this.unit_price;
-DEFINE FIELD OVERWRITE z_tax_amount ON invoice_line TYPE decimal VALUE {
-    LET $add_rates = math::sum(($this.taxes[WHERE tax_ref.behavior = 'add']).rate) ?? 0dec;
-    LET $sub_rates = math::sum(($this.taxes[WHERE tax_ref.behavior = 'subtract']).rate) ?? 0dec;
-    LET $added = $this.z_base_amount * ($add_rates / 100dec);
-    LET $sub = $this.z_base_amount * ($sub_rates / 100dec);
-    RETURN type::decimal(math::round(($added - $sub) * 100dec) / 100dec);
+-- [HACK]: Intra-Record Autonomy (Dynamic Execution Alphabetically A-Z)
+DEFINE FIELD OVERWRITE z_base_amount ON document_line TYPE decimal 
+    VALUE $this.qty * $this.unit_price;
+
+DEFINE FIELD OVERWRITE z_tax_amount ON document_line TYPE decimal VALUE {
+    -- Calculates tax based on the actual live rate of the linked tax_rate nodes
+    LET $rates = ($this.taxes.tax_ref.rate ?? []);
+    LET $total_rate_pct = math::sum($rates) ?? 0dec;
+    RETURN type::decimal(math::round(($this.z_base_amount * ($total_rate_pct / 100dec)) * 100dec) / 100dec);
 };
 
--- 3. THE VERBS (Purchasing)
-DEFINE FIELD OVERWRITE status ON vendor_bill TYPE string DEFAULT 'draft' ASSERT $value IN['draft', 'posted', 'void'];
-DEFINE FIELD OVERWRITE party_ref ON vendor_bill TYPE record<trade_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE currency ON vendor_bill TYPE string;
-DEFINE FIELD OVERWRITE fx_rate ON vendor_bill TYPE decimal DEFAULT 1dec;
+DEFINE FIELD OVERWRITE z_total_amount ON document_line TYPE decimal 
+    VALUE $this.z_base_amount + $this.z_tax_amount;
 
-DEFINE FIELD OVERWRITE bill_ref ON vendor_bill_line TYPE record<vendor_bill> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE item_ref ON vendor_bill_line TYPE record<inventory_node | catalog_node | expense_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE location_ref ON vendor_bill_line TYPE record<location_node> DEFAULT location_node:main REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE qty ON vendor_bill_line TYPE decimal ASSERT $value > 0;
-DEFINE FIELD OVERWRITE unit_cost ON vendor_bill_line TYPE decimal ASSERT $value >= 0;
 
-DEFINE FIELD OVERWRITE taxes ON vendor_bill_line TYPE array<object> DEFAULT[];
-DEFINE FIELD OVERWRITE taxes.*.tax_ref ON vendor_bill_line TYPE record<tax_node>;
-DEFINE FIELD OVERWRITE taxes.*.rate ON vendor_bill_line TYPE decimal ASSERT $value >= 0;
+-- 3. TREASURY & SETTLEMENT
+-- Payment
+DEFINE FIELD OVERWRITE type ON payment TYPE string ASSERT $value IN ['receive_money', 'spend_money'];
+DEFINE FIELD OVERWRITE status ON payment TYPE string DEFAULT 'draft' ASSERT $value IN ['draft', 'posted', 'void'];
+DEFINE FIELD OVERWRITE payment_date ON payment TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE reference ON payment TYPE string DEFAULT "";
+DEFINE FIELD OVERWRITE contact_ref ON payment TYPE record<contact> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE bank_account_ref ON payment TYPE record<bank_account> REFERENCE ON DELETE REJECT;
 
-DEFINE FIELD OVERWRITE z_tax_refs ON vendor_bill_line TYPE set<record<tax_node>> 
-    VALUE <set> ($this.taxes.tax_ref ??[]).filter(|$v| $v != NONE) 
-    REFERENCE ON DELETE REJECT;
-
-DEFINE FIELD OVERWRITE z_base_amount ON vendor_bill_line TYPE decimal VALUE $this.qty * $this.unit_cost;
-DEFINE FIELD OVERWRITE z_tax_amount ON vendor_bill_line TYPE decimal VALUE {
-    LET $add_rates = math::sum(($this.taxes[WHERE tax_ref.behavior = 'add']).rate) ?? 0dec;
-    LET $sub_rates = math::sum(($this.taxes[WHERE tax_ref.behavior = 'subtract']).rate) ?? 0dec;
-    LET $added = $this.z_base_amount * ($add_rates / 100dec);
-    LET $sub = $this.z_base_amount * ($sub_rates / 100dec);
-    RETURN type::decimal(math::round(($added - $sub) * 100dec) / 100dec);
-};
-
--- 4. DELTAS
-DEFINE FIELD OVERWRITE status ON adjustment_note TYPE string DEFAULT 'draft' ASSERT $value IN['draft', 'posted', 'void'];
-DEFINE FIELD OVERWRITE party_ref ON adjustment_note TYPE record<trade_account> REFERENCE ON DELETE REJECT;
-
-DEFINE FIELD OVERWRITE note_ref ON adjustment_note_line TYPE record<adjustment_note> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE target_line_ref ON adjustment_note_line TYPE record<invoice_line | vendor_bill_line> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE delta_qty ON adjustment_note_line TYPE decimal;
-DEFINE FIELD OVERWRITE delta_base_amount ON adjustment_note_line TYPE decimal;
-DEFINE FIELD OVERWRITE delta_tax_amount ON adjustment_note_line TYPE decimal;
-DEFINE FIELD OVERWRITE restock_inventory ON adjustment_note_line TYPE bool DEFAULT false;
-
--- 5. SETTLEMENT
-DEFINE FIELD OVERWRITE direction ON payment TYPE string ASSERT $value IN ['inbound', 'outbound'];
-DEFINE FIELD OVERWRITE treasury_ref ON payment TYPE record<treasury_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE amount ON payment TYPE decimal ASSERT $value > 0;
+DEFINE FIELD OVERWRITE amount ON payment TYPE decimal ASSERT $value > 0dec;
 DEFINE FIELD OVERWRITE currency ON payment TYPE string;
-DEFINE FIELD OVERWRITE fx_rate ON payment TYPE decimal DEFAULT 1dec;
+DEFINE FIELD OVERWRITE fx_rate ON payment TYPE decimal DEFAULT 1dec ASSERT $value > 0dec;
 
+-- Payment Allocation (Edges mapping Cash to Documents)
 DEFINE FIELD OVERWRITE payment_ref ON payment_allocation TYPE record<payment> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE target_ref ON payment_allocation TYPE record<invoice | vendor_bill | trade_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE pay_currency_amount ON payment_allocation TYPE decimal ASSERT $value > 0;
-DEFINE FIELD OVERWRITE doc_currency_amount ON payment_allocation TYPE decimal ASSERT $value > 0;
+DEFINE FIELD OVERWRITE document_ref ON payment_allocation TYPE record<document> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE pay_currency_amount ON payment_allocation TYPE decimal ASSERT $value > 0dec;
+DEFINE FIELD OVERWRITE doc_currency_amount ON payment_allocation TYPE decimal ASSERT $value > 0dec;
 
-DEFINE FIELD OVERWRITE kind ON financial_adjustment TYPE string ASSERT $value IN['fx_gain', 'fx_loss', 'depreciation', 'writeoff', 'capital'];
-DEFINE FIELD OVERWRITE from_node ON financial_adjustment TYPE record REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE to_node ON financial_adjustment TYPE record REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE amount ON financial_adjustment TYPE decimal ASSERT $value > 0;
-DEFINE FIELD OVERWRITE currency ON financial_adjustment TYPE string;
 
--- 6. PHYSICAL OPERATIONS
-DEFINE FIELD OVERWRITE status ON exchange TYPE string;
-DEFINE FIELD OVERWRITE exchange_ref ON exchange_line TYPE record<exchange> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE item_ref ON exchange_line TYPE record<inventory_node> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE from_location_ref ON exchange_line TYPE option<record<location_node | expense_account>> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE to_location_ref ON exchange_line TYPE option<record<location_node | expense_account>> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE qty ON exchange_line TYPE decimal ASSERT $value > 0;
+-- 4. THE IMMUTABLE LEDGER (Physics Layer)
+-- Journal Entry (Header)
+DEFINE FIELD OVERWRITE status ON journal_entry TYPE string DEFAULT 'posted' ASSERT $value IN ['posted', 'void'];
+DEFINE FIELD OVERWRITE posting_date ON journal_entry TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE description ON journal_entry TYPE string DEFAULT "";
 
-DEFINE FIELD OVERWRITE status ON production_run TYPE string ASSERT $value IN ['draft', 'in_progress', 'completed'];
-DEFINE FIELD OVERWRITE run_ref ON production_line TYPE record<production_run> REFERENCE ON DELETE CASCADE;
-DEFINE FIELD OVERWRITE item_ref ON production_line TYPE record<inventory_node | expense_account> REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE location_ref ON production_line TYPE record<location_node> DEFAULT location_node:main REFERENCE ON DELETE REJECT;
-DEFINE FIELD OVERWRITE direction ON production_line TYPE string ASSERT $value IN['consume', 'yield'];
-DEFINE FIELD OVERWRITE qty ON production_line TYPE decimal ASSERT $value > 0;
+-- Polymorphic Link: Can be spawned by a document, a payment, or manually
+DEFINE FIELD OVERWRITE source_doc ON journal_entry TYPE option<record<document | payment>> REFERENCE ON DELETE CASCADE DEFAULT NONE;
+
+-- Journal Line (The Core Double-Entry Row)
+DEFINE FIELD OVERWRITE journal_entry_ref ON journal_line TYPE record<journal_entry> REFERENCE ON DELETE CASCADE;
+DEFINE FIELD OVERWRITE account_ref ON journal_line TYPE record<account> REFERENCE ON DELETE REJECT;
+
+-- Optional Sub-ledger Links
+DEFINE FIELD OVERWRITE contact_ref ON journal_line TYPE option<record<contact>> REFERENCE ON DELETE REJECT DEFAULT NONE;
+DEFINE FIELD OVERWRITE tracking_tag_ref ON journal_line TYPE option<record<tracking_tag>> REFERENCE ON DELETE REJECT DEFAULT NONE;
+
+-- [HACK]: Signed Mathematics for pure O(1) View aggregations
+-- Positive = Debit (Increases Assets/Expenses)
+-- Negative = Credit (Increases Liabilities/Equity/Revenue)
+DEFINE FIELD OVERWRITE amount_currency ON journal_line TYPE decimal;
+DEFINE FIELD OVERWRITE currency ON journal_line TYPE string;
+DEFINE FIELD OVERWRITE fx_rate ON journal_line TYPE decimal DEFAULT 1dec ASSERT $value > 0dec;
+
+-- Automatically computes the base equivalent at write-time
+DEFINE FIELD OVERWRITE z_amount_base ON journal_line TYPE decimal 
+    VALUE $this.amount_currency * $this.fx_rate;

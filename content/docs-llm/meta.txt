@@ -1,0 +1,35 @@
+[META_COGNITIVE_BLUEPRINT]
+CORE_PHILOSOPHY = "Database as the Compute Engine. Implicit Enforcement over Explicit Application Logic. O(1) Reads. Zero Write-Amplification."
+
+[1] INTRA-RECORD AUTONOMY (The `VALUE` Hack)
+Rule: Never compute row-level math (A * B) in Views, Events, or the Application layer.
+Hack: Use the `VALUE` clause on fields. The record computes itself dynamically at write-time.
+Hack (Alphabetical Execution): SurrealDB evaluates fields alphabetically (A-Z). If Field_B depends on the computed output of Field_A, name it `z_Field_B` to ensure it executes last in the pipeline.
+Result: Flawless, zero-cost data normalization before it ever hits a View.
+
+[2] THE OBSERVER PATTERN (Reactive Views)
+Rule: Materialized Views are strictly for O(1) Mathematical Aggregations (SUM, COUNT).
+Hack (Dimensional Grouping): NEVER use `WHERE status = 'active'` inside a Materialized View. Views do not reliably react to parent state changes. Instead, push the dynamic state into the `GROUP BY` clause (e.g., `GROUP BY target_node, state`).
+Hack (Signed Mathematics): Avoid ENUMs for directions (in/out, debit/credit). Store quantities as positive/negative decimals. The View becomes a pure `math::sum(amount)` without complex IF/ELSE branching.
+Result: The View becomes an indestructible, self-updating O(1) index array.
+
+[3] CQRS GATEKEEPERS (Validation Events)
+Rule: Events must NEVER perform N-scan computations.
+Hack: In SurrealDB, Materialized Views update *synchronously* before the `AFTER` event triggers. 
+1. The Gatekeeper Event queries the pre-updated View using an explicit synchronous fetch: `(SELECT VALUE total FROM v_name WHERE id = $target LIMIT 1)[0] ?? 0dec`.
+2. If the limit is breached (e.g., `< 0`), the event evaluates `THROW "Error"`.
+Result: The `THROW` instantly rolls back the transaction AND the View update. Perfect validation with O(1) computational cost.
+
+[4] POLYMORPHIC ROUTING
+Rule: Avoid creating 10 different tables for 10 different variations of a generic action.
+Hack: Use polymorphic pointers `record<type_a | type_b>`. Inside Translator Events, use `record::tb($after.target)` to dynamically switch business logic based on the destination table type.
+Result: Massively reduced schema complexity. One event handles multiple diverse domains cleanly.[5] READ-TIME ASSEMBLY (Graph Stitching & Hydration)
+Rule: Never denormalize massive nested JSON objects into Materialized Views.
+Hack: Use Materialized Views ONLY for computing flat, single-layer mathematical totals. When a full JSON tree is required by the client, use Inverse Graph Traversal (`<~edge_table`) to stitch the structural hierarchy (parents, children, relations) together natively in RAM at Read-Time. Query these normal tables alongside the pre-computed flat Views to instantly hydrate the tree nodes with their required mathematical totals.
+Result: Zero N+1 query problems. Instant construction of complex, deeply nested JSON responses with absolutely zero write-amplification.
+
+[6] SHADOW REFERENTIAL INTEGRITY
+Rule: `REFERENCE ON DELETE REJECT/CASCADE` only works on top-level fields, but complex schemas often have deeply nested arrays of record pointers.
+Hack: Create a hidden, top-level set using a VALUE clause: 
+`DEFINE FIELD z_shadow_refs ON table TYPE set<record> VALUE <set> ($this.nested_array.target_ref).flatten().filter(|$v| $v != NONE) REFERENCE ON DELETE REJECT;`
+Result: Strict, engine-level referential integrity on complex JSON documents without application-layer join checks.
