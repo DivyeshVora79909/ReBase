@@ -1,65 +1,111 @@
 USE NS main DB main;
 
--- 1. THE UNIVERSAL LEDGER OBSERVERS (Real-time balances)
--- General Ledger (Trial Balance)
-DEFINE TABLE OVERWRITE v_account_balance AS
-    SELECT 
-        account_ref, 
-        math::sum(z_amount_base) AS total_base_balance,
-        count() AS transaction_count
-    FROM journal_line 
-    GROUP BY account_ref
-PERMISSIONS FOR select WHERE 'account_select' IN $auth.permissions;
+-- ==========================================
+-- 1. VIEWS
+-- ==========================================
 
--- AR/AP Sub-Ledger (Real-time Contact Balances / Aging Base)
--- Positive = Customer owes us (AR). Negative = We owe Vendor (AP).
-DEFINE TABLE OVERWRITE v_contact_balance AS
-    SELECT 
-        contact_ref, 
-        math::sum(z_amount_base) AS net_balance 
-    FROM journal_line 
-    WHERE contact_ref != NONE
-    GROUP BY contact_ref
-PERMISSIONS FOR select WHERE 'contact_select' IN $auth.permissions;
+-- Payment Routing
+DEFINE TABLE OVERWRITE v_payment_from AS 
+    SELECT from AS node, math::sum(z_active_amount) AS total 
+    FROM payment GROUP BY node;
 
--- Dimension / Tracking Ledger (Project & Department tracking)
-DEFINE TABLE OVERWRITE v_tracking_balance AS
-    SELECT 
-        tracking_tag_ref, 
-        account_ref,
-        math::sum(z_amount_base) AS total_balance 
-    FROM journal_line 
-    WHERE tracking_tag_ref != NONE
-    GROUP BY tracking_tag_ref, account_ref
-PERMISSIONS FOR select WHERE 'tracking_tag_select' IN $auth.permissions;
+DEFINE TABLE OVERWRITE v_payment_to AS 
+    SELECT to AS node, math::sum(z_active_amount) AS total 
+    FROM payment GROUP BY node;
+
+-- Payment Allocations
+DEFINE TABLE OVERWRITE v_pa_pay AS 
+    SELECT payment, math::sum(amount) AS total 
+    FROM payment_allocation GROUP BY payment;
+
+DEFINE TABLE OVERWRITE v_pa_inv AS 
+    SELECT invoice, math::sum(amount) AS total 
+    FROM payment_allocation GROUP BY invoice;
+
+-- Invoice Lines Matrix
+DEFINE TABLE OVERWRITE v_inv_line_item AS 
+    SELECT item, math::mean(cogs) AS avg_cogs, math::sum(qty) AS total_qty 
+    FROM invoice_line GROUP BY item;
+
+DEFINE TABLE OVERWRITE v_inv_line_inv AS 
+    SELECT inv AS invoice, 
+           math::sum(z_total_value) AS total_value, 
+           math::sum(z_remaining_value) AS remaining_value, 
+           math::sum(qty) AS total_qty, 
+           math::sum(z_qty_remaining) AS total_qty_remaining, 
+           math::sum(cogs) AS sum_cogs 
+    FROM invoice_line GROUP BY invoice;
+
+-- Invoice to Org Total
+DEFINE TABLE OVERWRITE v_invoice_org AS 
+    SELECT org, math::sum(z_active_amount) AS total 
+    FROM invoice GROUP BY org;
+
+-- Stock Movements (Specific item validation)
+DEFINE TABLE OVERWRITE v_sl_from AS 
+    SELECT from AS node, item, math::sum(z_active_qty) AS total 
+    FROM sl GROUP BY node, item;
+
+DEFINE TABLE OVERWRITE v_sl_to AS 
+    SELECT to AS node, item, math::sum(z_active_qty) AS total 
+    FROM sl GROUP BY node, item;
+
+-- Stock Movements (Generic warehouse total for pitch display)
+DEFINE TABLE OVERWRITE v_sl_from_generic AS 
+    SELECT from AS node, math::sum(z_active_qty) AS total 
+    FROM sl GROUP BY node;
+
+DEFINE TABLE OVERWRITE v_sl_to_generic AS 
+    SELECT to AS node, math::sum(z_active_qty) AS total 
+    FROM sl GROUP BY node;
+
+-- Stock to Invoice Line fulfillment
+DEFINE TABLE OVERWRITE v_sl_inv_line AS 
+    SELECT inv_line, math::sum(z_active_qty) AS total_qty 
+    FROM sl WHERE inv_line != NONE GROUP BY inv_line;
 
 
--- 2. CQRS GATEKEEPER VIEWS (For Event Validations)
--- Document Totals (Aggregates the document_line VALUE fields)
-DEFINE TABLE OVERWRITE v_document_totals AS 
-    SELECT 
-        document_ref, 
-        math::sum(z_base_amount) AS total_base,
-        math::sum(z_tax_amount) AS total_tax,
-        math::sum(z_total_amount) AS total_amount
-    FROM document_line 
-    GROUP BY document_ref
-PERMISSIONS FOR select WHERE 'document_select' IN $auth.permissions;
+-- ==========================================
+-- 2. EVENTS (THE UPWARD PINGS)
+-- ==========================================
 
--- Payment Outbound Limit (How much of the Payment has been allocated to documents)
-DEFINE TABLE OVERWRITE v_payment_outbound AS
-    SELECT 
-        payment_ref, 
-        math::sum(pay_currency_amount) AS total_allocated 
-    FROM payment_allocation 
-    GROUP BY payment_ref
-PERMISSIONS FOR select WHERE 'payment_select' IN $auth.permissions;
+DEFINE EVENT OVERWRITE ping_node_from ON TABLE v_payment_from WHEN $event != 'NONE' THEN {
+    UPDATE ($after.node ?? $before.node) SET updated_at = time::now();
+};
 
--- Document Settlement Status (How much of a Document has been paid off)
-DEFINE TABLE OVERWRITE v_payment_allocations AS
-    SELECT 
-        document_ref, 
-        math::sum(doc_currency_amount) AS total_paid 
-    FROM payment_allocation 
-    GROUP BY document_ref
-PERMISSIONS FOR select WHERE 'document_select' IN $auth.permissions;
+DEFINE EVENT OVERWRITE ping_node_to ON TABLE v_payment_to WHEN $event != 'NONE' THEN {
+    UPDATE ($after.node ?? $before.node) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_payment ON TABLE v_pa_pay WHEN $event != 'NONE' THEN {
+    UPDATE ($after.payment ?? $before.payment) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_invoice_alloc ON TABLE v_pa_inv WHEN $event != 'NONE' THEN {
+    UPDATE ($after.invoice ?? $before.invoice) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_item ON TABLE v_inv_line_item WHEN $event != 'NONE' THEN {
+    UPDATE ($after.item ?? $before.item) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_invoice_lines ON TABLE v_inv_line_inv WHEN $event != 'NONE' THEN {
+    UPDATE ($after.invoice ?? $before.invoice) SET updated_at = time::now();
+};
+
+-- Pings the Warehouse/Stock Acc when specific items move
+DEFINE EVENT OVERWRITE ping_sl_from_generic ON TABLE v_sl_from_generic WHEN $event != 'NONE' THEN {
+    UPDATE ($after.node ?? $before.node) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_sl_to_generic ON TABLE v_sl_to_generic WHEN $event != 'NONE' THEN {
+    UPDATE ($after.node ?? $before.node) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_inv_line_sl ON TABLE v_sl_inv_line WHEN $event != 'NONE' THEN {
+    UPDATE ($after.inv_line ?? $before.inv_line) SET updated_at = time::now();
+};
+
+DEFINE EVENT OVERWRITE ping_org_inv ON TABLE v_invoice_org WHEN $event != 'NONE' THEN {
+    UPDATE ($after.org ?? $before.org) SET updated_at = time::now();
+};

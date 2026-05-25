@@ -180,19 +180,25 @@ DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
 
 -- INITIALIZATION
-CREATE groups:root SET name = 'System Admins', role =[
+CREATE groups:root SET name = 'System Admins', role = [
+    -- System Control
     'node_create', 'node_select', 'node_update', 'node_delete', 
     'link_create', 'link_select', 'link_delete',
-    'company_settings_select', 'company_settings_manage',
-    'account_select', 'account_create', 'account_update', 'account_delete',
-    'tracking_tag_select', 'tracking_tag_create', 'tracking_tag_update', 'tracking_tag_delete',
-    'tax_rate_select', 'tax_rate_create', 'tax_rate_update', 'tax_rate_delete',
-    'contact_select', 'contact_create', 'contact_update', 'contact_delete',
+    
+    -- Parent / Stateless Nodes
+    'org_select', 'org_create', 'org_update', 'org_delete',
+    'treasury_select', 'treasury_create', 'treasury_update', 'treasury_delete',
+    'acc_select', 'acc_create', 'acc_update', 'acc_delete',
+    'warehouse_select', 'warehouse_create', 'warehouse_update', 'warehouse_delete',
+    'stock_acc_select', 'stock_acc_create', 'stock_acc_update', 'stock_acc_delete',
     'item_select', 'item_create', 'item_update', 'item_delete',
-    'bank_account_select', 'bank_account_create', 'bank_account_update', 'bank_account_delete',
-    'document_select', 'document_create', 'document_update', 'document_delete',
+    
+    -- Dependent Nodes
     'payment_select', 'payment_create', 'payment_update', 'payment_delete',
-    'journal_select', 'journal_create', 'journal_update', 'journal_delete'
+    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
+    'sl_select', 'sl_create', 'sl_update', 'sl_delete',
+    'invoice_line_select', 'invoice_line_create', 'invoice_line_update', 'invoice_line_delete',
+    'payment_allocation_select', 'payment_allocation_create', 'payment_allocation_update', 'payment_allocation_delete'
 ];
 
 CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';

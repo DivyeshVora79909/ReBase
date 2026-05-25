@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Schema Graph Architect</title>
+
+    <!-- Tailwind & Vue -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Stable 3D Rendering Libraries -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #0f172a;
+        color: #f8fafc;
+        font-family: sans-serif;
+      }
+      #app {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+      }
+      #ui-panel {
+        width: 420px;
+        background: #1e293b;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #334155;
+        z-index: 10;
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.7);
+      }
+      #graph-container {
+        flex-grow: 1;
+        position: relative;
+        background: #020617;
+      }
+      .scrollable {
+        overflow-y: auto;
+        flex-grow: 1;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- LEFT PANEL: Editor -->
+      <div id="ui-panel">
+        <div class="p-4 border-b border-slate-700 bg-slate-900">
+          <h1 class="text-xl font-bold text-emerald-400">
+            3D Schema Architect
+          </h1>
+          <p class="text-xs text-slate-400 mt-1">
+            z_ (shadow), v_ (view), p_ (parent inheritance)
+          </p>
+        </div>
+
+        <div class="p-4 scrollable">
+          <!-- Add Table -->
+          <div class="mb-6">
+            <form @submit.prevent="addTable" class="flex gap-2">
+              <input
+                v-model="newTableName"
+                placeholder="New Node (Table)..."
+                class="flex-grow bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="submit"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded text-sm font-bold"
+              >
+                +
+              </button>
+            </form>
+          </div>
+
+          <!-- Table List -->
+          <div
+            v-for="(table, tIndex) in tables"
+            :key="table.name"
+            class="mb-4 bg-slate-800 rounded border border-slate-700 overflow-hidden shadow-lg"
+          >
+            <div
+              class="bg-slate-700 px-3 py-2 flex justify-between items-center cursor-pointer"
+              @click="table.expanded = !table.expanded"
+            >
+              <span class="font-bold text-emerald-300"
+                >{{ table.name.toUpperCase() }}</span
+              >
+              <button
+                @click.stop="removeTable(tIndex)"
+                class="text-red-400 hover:text-red-300 text-xs"
+              >
+                Del
+              </button>
+            </div>
+
+            <div v-if="table.expanded" class="p-3">
+              <!-- Fields List -->
+              <div
+                v-for="(field, fIndex) in table.fields"
+                :key="fIndex"
+                class="mb-2 p-2 bg-slate-900 rounded text-xs border border-slate-700"
+              >
+                <div class="flex justify-between text-slate-300 mb-1">
+                  <span class="font-mono">
+                    <span :class="getFieldColor(field.name)"
+                      >{{ field.name }}</span
+                    >
+                    <span class="text-slate-500">[{{ field.type }}]</span>
+                  </span>
+                  <button
+                    @click="removeField(table, fIndex)"
+                    class="text-slate-500 hover:text-red-400"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <!-- Polymorphic Targets (Edges) -->
+                <div
+                  v-if="field.type === 'relation'"
+                  class="mt-2 pl-2 border-l-2 border-emerald-500"
+                >
+                  <span class="text-slate-500">Graph Edges (Targets):</span>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    <label
+                      v-for="t in tableNames"
+                      :key="t"
+                      class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer border border-slate-600 hover:bg-slate-700"
+                    >
+                      <input
+                        type="checkbox"
+                        :value="t"
+                        v-model="field.targets"
+                        @change="updateGraph"
+                      />
+                      {{ t }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Parent Validation (p_) -->
+                <div
+                  v-if="field.name.startsWith('p_')"
+                  class="mt-2 pl-2 border-l-2 border-blue-500"
+                >
+                  <div class="flex gap-2">
+                    <select
+                      v-model="field.parentRel"
+                      class="bg-slate-800 border border-slate-600 rounded px-1 py-1 text-xs w-1/2"
+                    >
+                      <option value="">Inherit via...</option>
+                      <option v-for="rel in getRelations(table)" :value="rel">
+                        {{ rel }}
+                      </option>
+                    </select>
+                    <input
+                      v-model="field.parentField"
+                      placeholder="Parent field name..."
+                      class="bg-slate-800 border border-slate-600 rounded px-1 py-1 text-xs w-1/2"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Field Form -->
+              <form
+                @submit.prevent="addField(table)"
+                class="mt-3 pt-3 border-t border-slate-700"
+              >
+                <input
+                  v-model="table.newFieldName"
+                  placeholder="Field name (e.g. z_total)..."
+                  class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-emerald-500"
+                />
+                <div class="flex gap-2">
+                  <select
+                    v-model="table.newFieldType"
+                    class="flex-grow bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs"
+                  >
+                    <option value="value">Value</option>
+                    <option value="relation">Relation</option>
+                    <option value="boolean">Boolean</option>
+                  </select>
+                  <button
+                    type="submit"
+                    class="bg-slate-600 hover:bg-slate-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    Add Field
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-700 bg-slate-900">
+          <button
+            @click="generateNormalizedOutput"
+            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded mb-2"
+          >
+            Export Normalized Graph
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: 3D Graph -->
+      <div id="graph-container"></div>
+
+      <!-- MODAL FOR NORMALIZED OUTPUT -->
+      <div
+        v-if="showModal"
+        class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-10"
+      >
+        <div
+          class="bg-slate-900 border border-slate-600 rounded-lg p-6 w-full max-w-3xl h-full max-h-[80vh] flex flex-column flex-col shadow-2xl"
+        >
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-emerald-400">
+              Normalized Graph Language
+            </h2>
+            <button
+              @click="showModal = false"
+              class="text-slate-400 hover:text-white text-2xl font-bold"
+            >
+              &times;
+            </button>
+          </div>
+          <textarea
+            readonly
+            class="flex-grow bg-slate-950 border border-slate-700 text-teal-300 font-mono text-sm p-4 rounded focus:outline-none whitespace-pre"
+            v-model="normalizedOutput"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, computed, onMounted } = Vue;
+
+      createApp({
+        setup() {
+          // Seeded Base Architecture
+          const tables = ref([
+            {
+              name: "org",
+              expanded: false,
+              fields: [
+                { name: "net_money", type: "value" },
+                { name: "total_invoices", type: "value" },
+              ],
+            },
+            {
+              name: "treasury",
+              expanded: false,
+              fields: [{ name: "balance", type: "value" }],
+            },
+            { name: "acc", expanded: false, fields: [] },
+            {
+              name: "item",
+              expanded: false,
+              fields: [
+                { name: "turnover", type: "value" },
+                { name: "avg_cogs", type: "value" },
+              ],
+            },
+            { name: "warehouse", expanded: false, fields: [] },
+            { name: "stock_acc", expanded: false, fields: [] },
+
+            {
+              name: "payment",
+              expanded: true,
+              fields: [
+                { name: "active", type: "boolean" },
+                { name: "amount", type: "value" },
+                {
+                  name: "from",
+                  type: "relation",
+                  targets: ["org", "treasury", "acc"],
+                },
+                {
+                  name: "to",
+                  type: "relation",
+                  targets: ["org", "treasury", "acc"],
+                },
+                { name: "z_amt", type: "value" },
+                { name: "v_total_allocated", type: "value" },
+              ],
+            },
+            {
+              name: "payment_allocation",
+              expanded: false,
+              fields: [
+                { name: "payment", type: "relation", targets: ["payment"] },
+                { name: "invoice", type: "relation", targets: ["invoice"] },
+                { name: "amount", type: "value" },
+              ],
+            },
+            {
+              name: "invoice",
+              expanded: true,
+              fields: [
+                { name: "active", type: "boolean" },
+                { name: "org", type: "relation", targets: ["org"] },
+                { name: "tax_rate", type: "value" },
+                { name: "v_total_ordered_value", type: "value" },
+                { name: "z_total_amount", type: "value" },
+              ],
+            },
+            {
+              name: "invoice_line",
+              expanded: true,
+              fields: [
+                { name: "inv", type: "relation", targets: ["invoice"] },
+                { name: "item", type: "relation", targets: ["item"] },
+                { name: "qty", type: "value" },
+                { name: "cogs", type: "value" },
+                { name: "v_delivered_qty", type: "value" },
+                { name: "z_qty_remaining", type: "value" },
+                {
+                  name: "p_org",
+                  type: "value",
+                  parentRel: "inv",
+                  parentField: "org",
+                },
+              ],
+            },
+            {
+              name: "sl",
+              expanded: false,
+              fields: [
+                { name: "active", type: "boolean" },
+                {
+                  name: "from",
+                  type: "relation",
+                  targets: ["warehouse", "stock_acc"],
+                },
+                {
+                  name: "to",
+                  type: "relation",
+                  targets: ["warehouse", "stock_acc"],
+                },
+                {
+                  name: "inv_line",
+                  type: "relation",
+                  targets: ["invoice_line"],
+                },
+                { name: "qty", type: "value" },
+                { name: "z_qty", type: "value" },
+              ],
+            },
+          ]);
+
+          const newTableName = ref("");
+          let graphInstance = null;
+          const showModal = ref(false);
+          const normalizedOutput = ref("");
+
+          const tableNames = computed(() => tables.value.map((t) => t.name));
+
+          const addTable = () => {
+            if (!newTableName.value.trim()) return;
+            tables.value.push({
+              name: newTableName.value.trim().toLowerCase(),
+              expanded: true,
+              fields: [],
+            });
+            newTableName.value = "";
+            updateGraph();
+          };
+
+          const removeTable = (index) => {
+            tables.value.splice(index, 1);
+            updateGraph();
+          };
+
+          const addField = (table) => {
+            if (!table.newFieldName) return;
+            const fieldName = table.newFieldName.trim().toLowerCase();
+            const newField = {
+              name: fieldName,
+              type: table.newFieldType || "value",
+            };
+
+            if (newField.type === "relation") newField.targets = [];
+            if (fieldName.startsWith("p_")) {
+              newField.parentRel = "";
+              newField.parentField = "";
+            }
+
+            table.fields.push(newField);
+            table.newFieldName = "";
+            updateGraph();
+          };
+
+          const removeField = (table, fIndex) => {
+            table.fields.splice(fIndex, 1);
+            updateGraph();
+          };
+
+          const getRelations = (table) => {
+            return table.fields
+              .filter((f) => f.type === "relation")
+              .map((f) => f.name);
+          };
+
+          const getFieldColor = (name) => {
+            if (name.startsWith("z_") || name.startsWith("zz_"))
+              return "text-purple-400 font-bold";
+            if (name.startsWith("v_")) return "text-amber-400 font-bold";
+            if (name.startsWith("p_")) return "text-blue-400 font-bold";
+            return "text-slate-300";
+          };
+
+          const updateGraph = () => {
+            if (!graphInstance) return;
+
+            const nodes = tables.value.map((t) => ({ id: t.name }));
+            const links = [];
+
+            tables.value.forEach((t) => {
+              t.fields.forEach((f) => {
+                if (f.type === "relation" && f.targets) {
+                  f.targets.forEach((target) => {
+                    if (nodes.some((n) => n.id === target)) {
+                      links.push({
+                        source: t.name,
+                        target: target,
+                        label: f.name,
+                      });
+                    }
+                  });
+                }
+              });
+            });
+
+            graphInstance.graphData({ nodes, links });
+          };
+
+          // Pure Normalized Graph Output
+          const generateNormalizedOutput = () => {
+            let out = "";
+            tables.value.forEach((t) => {
+              out += `NODE: ${t.name}\n`;
+              t.fields.forEach((f) => {
+                if (f.type === "relation") {
+                  const targets =
+                    f.targets && f.targets.length
+                      ? f.targets.join(" | ")
+                      : "NONE";
+                  out += `  => EDGE: ${f.name} -> [${targets}]\n`;
+                } else if (f.name.startsWith("p_")) {
+                  const path = f.parentRel
+                    ? `${f.parentRel}.${f.parentField}`
+                    : "UNDEFINED_PATH";
+                  out += `  -> INHERIT: ${f.name} <- (${path})\n`;
+                } else if (f.name.startsWith("v_")) {
+                  out += `  -> AGGREGATE: ${f.name}\n`;
+                } else if (
+                  f.name.startsWith("z_") ||
+                  f.name.startsWith("zz_")
+                ) {
+                  out += `  -> SHADOW: ${f.name}\n`;
+                } else {
+                  out += `  -> STATE: ${f.name} [${f.type}]\n`;
+                }
+              });
+              out += `\n`;
+            });
+            normalizedOutput.value = out;
+            showModal.value = true;
+          };
+
+          onMounted(() => {
+            const container = document.getElementById("graph-container");
+            graphInstance = ForceGraph3D()(container)
+              .backgroundColor("#020617")
+              .nodeThreeObject((node) => {
+                const sprite = new SpriteText(node.id.toUpperCase());
+                sprite.color = "#10b981";
+                sprite.textHeight = 6;
+                sprite.borderWidth = 1;
+                sprite.borderColor = "#047857";
+                sprite.backgroundColor = "#064e3b";
+                sprite.padding = 3;
+                sprite.borderRadius = 2;
+                return sprite;
+              })
+              .linkDirectionalArrowLength(4)
+              .linkDirectionalArrowRelPos(1)
+              .linkWidth(1.5)
+              .linkColor(() => "#334155")
+              .linkLabel(
+                (link) =>
+                  `<span style="background: rgba(0,0,0,0.8); padding: 4px; border-radius: 4px; color: #34d399; font-family: monospace; border: 1px solid #059669;">${link.label}</span>`,
+              );
+
+            // Responsive Canvas
+            window.addEventListener("resize", () => {
+              const rect = container.getBoundingClientRect();
+              graphInstance.width(rect.width).height(rect.height);
+            });
+
+            setTimeout(updateGraph, 100);
+          });
+
+          return {
+            tables,
+            newTableName,
+            addTable,
+            removeTable,
+            addField,
+            removeField,
+            getRelations,
+            getFieldColor,
+            updateGraph,
+            generateNormalizedOutput,
+            showModal,
+            normalizedOutput,
+            tableNames,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
