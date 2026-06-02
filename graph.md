@@ -4,7 +4,7 @@ config:
 ---
 
 flowchart LR
-PAYMENT["P"] --> ORGANIZATION(("O")) & TRESURY(("TR")) & ACCOUNT(("ACC")) & TAX_ACCOUNT["TA"] & ACCOUNT(("ACC"))
+PAYMENT["P"] --> ORGANIZATION(("O")) & TRESURY(("TR")) & ACCOUNT(("ACC")) & TAX_ACCOUNT(("TA")) & ACCOUNT
 INVOICE["INV"] --> ORGANIZATION
 PAYMENT_ALLOCATION["PA"] --> PAYMENT & INVOICE
 PACKAGE_NOTE["PKG"] --> INVOICE
@@ -16,15 +16,3 @@ ADJUSTMENT_TAX_LINE["ATL"] --> ADJUSTMENT_NOTE & TAX_LINE["TL"]
 TAX_LINE --> TAX_ACCOUNT
 ADJUSTMENT_STOCK_LINE["ASL"] --> ADJUSTMENT_NOTE & STOCK_MOVEMENT
 SETTINGS["S"]
-
-PAYMENT
-from (r)
-to (r)
-base_amt
-active
-date
-base_currency
-destination_currency
-base_to_des_currency
-z_base_amt
-z_des_amt

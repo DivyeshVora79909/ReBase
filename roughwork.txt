@@ -1,0 +1,185 @@
+SETTINGS:main
+    base_currency
+    metadata{}
+
+T(treasury)
+    child{
+        paid: PAY.sum(amt_in, group by in:T)
+        recived: PAY.sum(amt_to, group by out:T)
+    }
+    z{
+        balance: 
+    }
+
+ORG
+    name
+    metadata{}
+    currency
+    child{
+        recieved: PAY.sum(amt_in, group by in:ORG)
+        paid: PAY.sum(amt_to, group by out:ORG)
+        receivable: INV.sum(invoice_amt, group by sales:ORG)
+        payable: INV.sum(invoice_amt, group by purchase:ORG)
+    }
+    z{
+        gross_receivable_or_payable: recieved - paid + receivable - payable
+    }
+
+
+WH(warehouse)
+    metadata{}
+    child{
+        recieved: SL.sum(qty, group by in:WH)
+        send: SL.sum(qty, group by out:WH)
+    }
+    z{
+        balance: recieved - send > 0
+    }
+
+SA(stock account)
+    metadata{}
+    child{
+        recieved: SL.sum(qty, group by in:SA)
+        send: SL.sum(qty, group by out:SA)
+    }
+
+PAY
+    amt_in > 0
+    fx_in_to_out > 0: 1 if no org involved
+    date < present
+    metadata{}
+    a{
+        suspended
+        locked
+    }
+    relation{
+        in: TAX|T|ORG|ACC
+        out: TAX|T|ORG|ACC assert one from in, out must be t, in <> out
+    }
+    parent{
+        in.currency || SETTINGS:main.base_currency
+        out.currency || SETTINGS:main.base_currency
+    }
+    child{
+        PA.sum(allocate_amount_from_payment, group by PAY ) ?? 0 assert < amt_in and if suspended then must be = 0
+    }
+    z{
+        amt_to: amt_in * fx_in_to_out
+    }
+
+PA
+    metadata{}
+    allocate_amount_from_payment > 0
+    relation{
+        PAY
+        INV
+    }
+    parent{
+        PAY.fx_in_to_out
+    }
+    z{
+        allocat_amount_to_invoice: allocate_amount_from_payment * pay.fx_in_to_out
+    }
+
+INV
+    sales/purchase
+    metadata{}
+    a{
+        suspended
+        locked
+    }
+    relation{
+        ORG
+    }
+    parent{
+        ORG.currency
+    }
+    child{
+        payment_amt: PA.sum(allocat_amount_to_invoice, group by INV)
+        invoice_amt: INV_L.sum(total_line_value, group by INV)
+    }
+    z{
+        remaining_value: invoice_amt - payment_amt >= 0
+    }
+
+INV_L(invoice line)
+I(item)
+SL(stock ledger)
+    metadata{}
+    qty > 0
+    date
+    a{
+        suspended
+        locked
+    }
+    relation{
+        in: SA|WH|INV_L
+        out: SA|WH|INV_L assert one from in, out must be warehouse, in <> out
+        dn: DN
+    }
+    child{
+        adjusted_qty: ASL.sum(adjusted_delta_qty) ?? 0 assert if suspended then must be 0
+    }
+    z{
+        total_adjusted_qty: qty - adjusted_qty >= 0
+    }
+
+
+TAX
+TL(tax line)
+ACC
+
+AN(adjustment note)
+ANL(adjustment note line)
+ATL(adjustment tax line)
+ASL(adjustment stock line)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GJ27DV7619
+269357957243
+M5WBDGBEEN1276325
