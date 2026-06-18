@@ -1,0 +1,58 @@
+flowchart TD
+classDef anchor fill:#2d3436,stroke:#dfe6e9,stroke-width:2px,color:#fff;
+classDef intent fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff;
+classDef branch fill:#00b894,stroke:#55efc4,stroke-width:2px,color:#fff;
+classDef leaf fill:#fdcb6e,stroke:#ffeaa7,stroke-width:2px,color:#2d3436;
+classDef delta fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff;
+
+    subgraph L0 [Level 0: Independent Anchors]
+        ORG((org)):::anchor
+        TREASURY((treasury)):::anchor
+        ACC((acc)):::anchor
+        TAX_ACC((tax_account)):::anchor
+        ITEM((item)):::anchor
+        STOCK_ACC((stock_acc)):::anchor
+        WAREHOUSE((warehouse)):::anchor
+    end
+
+    subgraph L1 [Level 1: Intents]
+        PAYMENT[payment]:::intent
+        INVOICE[invoice]:::intent
+        ADJ_NOTE[adjustment_note]:::intent
+    end
+
+    subgraph L2 [Level 2: Branches]
+        PAY_ALLOC[payment_allocation]:::branch
+        INV_LINE[invoice_line]:::branch
+        PKG_NOTE[package_note]:::branch
+    end
+
+    subgraph L3 [Level 3: Leaves]
+        SL[sl]:::leaf
+        TAX_LINE[tax_line]:::leaf
+    end
+
+    subgraph L4 [Level 4: Deltas]
+        ADJ_LINE[adjustment_line]:::delta
+        ADJ_TAX[adjustment_tax_line]:::delta
+        ADJ_SL[adjustment_stock_line]:::delta
+    end
+
+    %% RELATIONSHIPS (DAG Topology)
+    PAYMENT -- "from / to" --> ORG & TREASURY & ACC & TAX_ACC
+    INVOICE -- "org" --> ORG
+    ADJ_NOTE -- "org" --> ORG
+
+    PAY_ALLOC --> PAYMENT & INVOICE
+    INV_LINE --> INVOICE & ITEM
+    PKG_NOTE --> INVOICE
+
+    SL -- "from / to" --> WAREHOUSE & STOCK_ACC
+    SL -- "item" --> ITEM
+    SL -. "pkg / inv_line" .-> PKG_NOTE & INV_LINE
+
+    TAX_LINE --> INV_LINE & TAX_ACC
+
+    ADJ_LINE --> ADJ_NOTE & INV_LINE
+    ADJ_TAX --> ADJ_NOTE & TAX_LINE
+    ADJ_SL --> ADJ_NOTE & SL

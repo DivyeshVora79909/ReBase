@@ -1,105 +1,121 @@
-📐 Reactive Graph Engine: Format Standard
+# 🏛️ The Reactive Graph Engine: Master Engineering Constitution
 
-1. File Structure
+This document is the absolute, deterministic source of truth for our backend architecture. It abandons procedural, domain-driven "commerce" logic in favor of **Algebraic Physics** and **Data-Driven Systems Engineering**.
 
-The architecture must be strictly split into these files. LLMs and developers
-must append code to the correct file to prevent execution loop errors.
+Any AI model or human developer building upon this stack must strictly adhere to these laws. There is no ambiguity; the database kernel enforces the reality.
 
-- 01_auth_rbac.surql: Users, groups, link relations, and database access
-  definitions.
-- 02_table_permissions.surql: Root table access control (FOR select, create,
-  update, delete).
-- 03_owned_by_fields.surql: Inheritance pointers mapping records to RBAC
-  groups.
-- 04_audit_meta_fields.surql: created_at, updated_at, created_by, updated_by
-  (applied via loops).
-- 05_system_flags.surql: System-level toggles (suspended, locked). Note: Do
-  not use the generic word "state".
-- 06_table_fields.surql: Standard inputs, hierarchical objects, and physics
-  assertions.
-- 07_views.surql: Stateless aggregations (GROUP BY). Always apply WHERE
-  suspended = false.
-- 08_events_upward.surql: View -> Parent pings (updated_at triggers and locked
-  chokes).
-- 09_events_downward_topology.surql: Parent -> Child DAG root checks.
-- 10_events_downward_data.surql: Parent -> Child data pushes (The Zig-Zag
-  variable hand-off).
+---
 
-2. Table Schema Standard
+## I. The Lexicographical Pipeline (Schema Structure)
 
-SurrealDB evaluates VALUE clauses sequentially in alphabetical order. To
-guarantee fields resolve in the correct sequence, every table must nest its
-computed fields strictly within these specific objects.
+SurrealDB evaluates `VALUE` clauses in strict ASCII alphabetical order. We exploit this to create a deterministic, 7-tier compilation pipeline. Every dependent table must strictly follow this object/field naming convention to guarantee that data is fetched before it is calculated, and calculated before it is asserted.
 
-Rule: ASSERT clauses can be placed in z, zz, or zzz as needed.
+1. **`A_guard` (The Intent & State Shield):** Evaluates **1st**. Validates human intent, state transitions (`suspended`, `locked`), and DAG topology. Throws explicit `UX_ERR` strings.
+2. **Raw Fields (The Base Facts):** Evaluates **2nd**. Human inputs, structural foreign keys, and state flags (`qty`, `cogs`, `suspended`, `locked`, `system_ping`).
+3. **`za_parent` (Downward Context):** Evaluates **3rd**. Pulls structural or mathematical context from parents via Graph Traversal or Direct Pings.
+4. **`zb_child` (Upward Context):** Evaluates **4th**. Receives aggregated dimensional vectors from Materialized Views.
+5. **`zz` (Primary Physics):** Evaluates **5th**. Combines raw inputs, `za_parent`, and `zb_child` to calculate the current state of reality.
+6. **`zzz` (Secondary Shields):** Evaluates **6th**. Applies `ASSERT` constraints to the `zz` math (e.g., `ASSERT $value >= 0dec`).
+7. **`zzzzz_out` (The API Payload):** Evaluates **7th**. The strict, dimensional export object that Views are legally allowed to read.
 
-1.  Normal Fields: Base inputs and relations (qty, cogs, invoice).
-2.  parent{}: Variables pulled DOWN from a parent record. Evaluates 1st.
-3.  view{}: Variables pulled UP from a view aggregation. Evaluates 2nd.
-4.  z{}: Primary derived math. Evaluates 3rd.
-5.  zz{}: Secondary derived math (depends on z). Evaluates 4th.
-6.  zzz{}: (Rare) Final-stage derived math (depends on zz). Evaluates 5th.
+---
 
-Boilerplate Template (06_table_fields.surql)
+## II. The Three Planes of Validation
 
-DEFINE TABLE child_node SCHEMAFULL;
+To eliminate ambiguity, every constraint in the system must be mapped to exactly one of these three planes. We do not mix Intent with Physics.
 
--- 1. NORMAL FIELDS
-DEFINE FIELD qty ON child_node TYPE decimal ASSERT $value > 0dec;
+### Plane 1: Intent & Topology (Lives in `A_guard`)
 
--- 2. PARENT OBJECT (Push-down context)
-DEFINE FIELD parent ON child_node TYPE object DEFAULT {};
-DEFINE FIELD parent.locked ON child_node TYPE bool VALUE $this.parent_node.locked ?? false;
+- **Purpose:** Prevent illogical human actions _before_ math is calculated.
+- **Examples:**
+  - "Cannot suspend an invoice if physical deliveries exist."
+  - "Cannot allocate a payment to an invoice from a different Org." (DAG Check)
+  - "Cannot record an Outbound Stock Movement against a Purchase Invoice."
+- **Mechanism:** `IF condition THEN THROW "UX_ERR: ..."`
 
--- 3. VIEW OBJECT (Pull-up aggregations)
-DEFINE FIELD view ON child_node TYPE object DEFAULT {};
-DEFINE FIELD view.v_sl_totals ON child_node TYPE object DEFAULT {};
-DEFINE FIELD view.v_sl_totals.delivered_qty ON child_node TYPE decimal DEFAULT 0dec;
+### Plane 2: Conservation of Physics (Lives in `zz` / `zzz` inline `ASSERT`)
 
--- 4. Z OBJECT (Primary Math & Asserts)
-DEFINE FIELD z ON child_node TYPE object DEFAULT {};
-DEFINE FIELD z.base_value ON child_node TYPE decimal
-VALUE $this.qty \* 10dec
-ASSERT $value >= 0dec;
+- **Purpose:** Enforce the absolute laws of nature (mass/money cannot be negative).
+- **Examples:**
+  - Treasury Balance: `ASSERT (in - out) >= 0`
+  - Stock Remaining: `ASSERT (ordered - delivered) >= 0`
+  - Allocation Shield: `ASSERT (received - allocated) >= 0`
+- **Mechanism:** `DEFINE FIELD zzz.shield ... ASSERT $value >= 0dec`
 
--- 5. ZZ OBJECT (Secondary Math & Asserts)
-DEFINE FIELD zz ON child_node TYPE object DEFAULT {};
-DEFINE FIELD zz.qty_remaining ON child_node TYPE decimal
-VALUE ($this.qty - $this.view.v_sl_totals.delivered_qty)
-ASSERT $value >= 0dec;
+### Plane 3: The Matrix Exception (Lives in `zzz` via O(1) View Peek)
 
-3. Event Formatting Rules
+- **Purpose:** Handle 2D intersections that cannot be normalized into a single parent record.
+- **The Rule:** A `warehouse` cannot hold a physical limit for _every possible item_ in its schema. Therefore, the physics shield for `Warehouse x Item` must live on the **Leaf Node (`sl`)**.
+- **Mechanism:** The `sl` table uses `type::record('v_sl_node_item', [$this.from, $this.item])` to peek at the View's aggregated math in O(1) time _during the transaction_. If the stock drops below zero, the transaction physically collapses before the View is ever updated.
 
-Events must contain no procedural business logic. They are purely data-transport
-mechanisms.
+---
 
-Upward Ping (08_events_upward.surql)
+## III. Dimensional Math & Maximum Entropy
 
-DEFINE EVENT ping_parent ON TABLE v_child_view WHEN $event != 'NONE' THEN {
-LET $target_id = $after.parent_node ?? $before.parent_node;
+We ban generic names like `amount`, `qty`, or `type` in the `zzzzz_out` payload. We use **Dimensional Naming**. This eliminates the need for parents to write `IF type == 'sales'` logic. The name _is_ the dimension.
 
-    -- Choke point via O(1) graph traversal
-    IF $target_id.locked = true { THROW "LOCKED"; };
+- **The Law of Maximum Entropy:** A child must export _every_ dimensional vector it generates.
+- **Example:** `invoice_line` exports both `zzzzz_out.sales_financial_value` and `zzzzz_out.purchase_financial_value`. `sl` exports `zzzzz_out.inbound_physical_qty` and `zzzzz_out.outbound_physical_qty`.
+- **Result:** Views only ever use `math::sum()`. They never use `WHERE` filters for logic. The math is purely commutative. Parents receive omniscient context, allowing them to enforce complex cross-dimensional rules without table scans.
 
-    -- Sync aggregate & Spark evaluation
-    UPDATE $target_id SET
-        view.v_child_view.total = $after.total,
-        updated_at = time::now();
+---
 
-};
+## IV. State Mechanics & Performance
 
-Downward Topology (09_events_downward_topology.surql)
+We do not use categorical string statuses (e.g., 'draft', 'posted', 'void'). We use boolean flags and system timestamps that dictate exact database mechanics.
 
-DEFINE EVENT ping_topology ON parent_node
-WHEN $event = 'UPDATE' AND $before.org != $after.org THEN {
--- Forces child to re-evaluate DAG integrity
-UPDATE (<~child_node) SET updated_at = time::now();
-};
+1.  **`suspended` (Snatch Participation):** The record is quarantined. Views explicitly filter these out (`WHERE suspended = false`). It drops from upward propagation instantly.
+2.  **`locked` (Choke Propagation):** The record's financial math is cryptographically sealed. Upward View Events check `$parent.locked`. If true, the event throws, halting any child modifications that would alter aggregates.
+3.  **`system_ping` (The Performance Clutch):** A `datetime` field with `PERMISSIONS FOR update NONE`. Heavy declarative subqueries or complex `zz` math check: `IF $before.system_ping != $this.system_ping`.
+    - **Result:** Human metadata edits (like changing `notes`) bypass the math engine entirely. Only System Events (Direct Pings) can engage the clutch and force recalculation.
 
-Downward Data (10_events_downward_data.surql)
+---
 
-DEFINE EVENT ping_data ON parent_node
-WHEN $event = 'UPDATE' AND $before.z.total != $after.z.total THEN {
--- Pushes required context down to child
-UPDATE child_node SET parent.total = $after.z.total WHERE parent_node = $after.id;
-};
+## V. The Three Pings (Data Motion)
+
+No procedural business logic is allowed in `EVENTS`. Events exist **strictly to pass data** between nodes.
+
+### 1. Upward View Ping (The Aggregator)
+
+- **Trigger:** Fires automatically when a View recalculates.
+- **Action:** Checks the `locked` choke point. Pushes the aggregate sum to the parent's `zb_child` object and sparks the parent's evaluation cycle by updating `updated_at`.
+
+### 2. Downward Topology Ping (DAG Integrity)
+
+- **Trigger:** Fires when a parent's root identity changes (e.g., shifting an Invoice to a different Org).
+- **Action:** `UPDATE <~child SET updated_at = time::now()`. Forces children to re-verify the DAG "Pentagon Check" via their `za_parent` and `A_guard`.
+
+### 3. Downward Data Ping (The Zig-Zag / Orthogonal)
+
+- **Trigger:** Fires when a parent's core mathematical inputs change (e.g., `invoice_line` base value changes), requiring a child (like `tax_line`) to recalculate fractions.
+- **Safety Rule:** Must _only_ trigger on explicit human/math field changes, never on `zb_child` view updates, to prevent infinite loops. Updates the child's `system_ping` to engage the math clutch.
+
+---
+
+## VI. File Structure Standard
+
+The architecture is strictly divided into specialized files to prevent execution loop errors and maintain context. LLMs and developers must append code to the correct file.
+
+- `01_auth_rbac.surql`: Users, groups, link relations, and database access definitions.
+- `02_table_permissions.surql`: Root table access control (`FOR select, create, update, delete`).
+- `03_owned_by_fields.surql`: Inheritance pointers mapping records to RBAC groups.
+- `04_audit_meta_fields.surql`: `created_at`, `updated_at`, `created_by`, `updated_by`.
+- `05_system_flags.surql`: `suspended`, `locked`, and `system_ping` definitions.
+- `06_table_fields.surql`: The 7-Tier Lexicographical Pipeline (`A_guard` through `zzzzz_out`).
+- `07_views.surql`: Stateless aggregations (`GROUP BY`). Always apply `WHERE suspended = false`.
+- `08_events_upward.surql`: View -> Parent pings (`updated_at` triggers and `locked` chokes).
+- `09_events_downward.surql`: Topology & Data pings (The Zig-Zag variable hand-off).
+
+---
+
+### Summary Mandate for AI & Developers
+
+When adding a new feature, table, or relational concept to the engine:
+
+1. **Define the Dimensions:** What are the vectors? (Inbound/Outbound, Sales/Purchase).
+2. **Map the DAG:** Identify the Anchors, Intents, Branches, Leaves, and Deltas.
+3. **Draft the `zzzzz_out` Payloads:** Ensure maximum entropy is exported.
+4. **Assign Validations:** Put state/logic blocks in `A_guard`. Put conservation laws (`>= 0`) in `zzz` ASSERTs. Put 2D Matrix limits in `zzz` O(1) View Peeks.
+5. **Wire the Pings:** Write the Upward View Pings, and the strictly filtered Downward Pings.
+
+**Philosophy:** _Errors belong in the Frontend. The Backend belongs to Physics._

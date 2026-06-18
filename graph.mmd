@@ -1,0 +1,172 @@
+flowchart TD
+    %% ==========================================
+    %% STYLES & LEGEND
+    %% ==========================================
+    classDef upward fill:#e8f8f5,stroke:#1abc9c,stroke-width:3px,color:#0e6251;
+    classDef downward fill:#fdedec,stroke:#e74c3c,stroke-width:2px,stroke-dasharray: 5 5,color:#78281f;
+    classDef direct fill:#fef9e7,stroke:#f39c12,stroke-width:3px,stroke-dasharray: 2 2,color:#7e5109;
+    classDef viewNode fill:#f4ecf7,stroke:#8e44ad,stroke-width:2px,color:#4a235a,shape:hexagon;
+    classDef anchor fill:#2c3e50,stroke:#bdc3c7,stroke-width:2px,color:#fff;
+    classDef intent fill:#2980b9,stroke:#bdc3c7,stroke-width:2px,color:#fff;
+    classDef branch fill:#27ae60,stroke:#bdc3c7,stroke-width:2px,color:#fff;
+    classDef leaf fill:#f39c12,stroke:#bdc3c7,stroke-width:2px,color:#fff;
+    classDef delta fill:#c0392b,stroke:#bdc3c7,stroke-width:2px,color:#fff;
+
+    %% ==========================================
+    %% LEVEL 0: INDEPENDENT ANCHORS
+    %% ==========================================
+    subgraph L0 [Level 0: Independent Anchors / The Bottom-Line Ledgers]
+        direction TB
+        subgraph ORG [org]
+            ORG_ZB[zb_child: v_inv_sales, v_inv_purchases, v_pay_in, v_pay_out, v_an_delta]
+            ORG_ZZ[zz: net_money, total_sales_rev, total_purchase_liab]
+        end
+        subgraph TREASURY [treasury]
+            TR_ZB[zb_child: v_pay_in, v_pay_out]
+            TR_ZZ[zz: balance]
+        end
+        subgraph ITEM [item]
+            ITEM_ZB[zb_child: v_invl_fin_qty, v_invl_base_val, v_sl_inbound, v_sl_outbound]
+            ITEM_ZZ[zz: turnover, avg_cogs, physical_stock]
+        end
+        subgraph WH [warehouse]
+            WH_ZB[zb_child: v_sl_matrix_in, v_sl_matrix_out]
+            WH_ZZ[zz: matrix_stock]
+        end
+    end
+
+    %% ==========================================
+    %% LEVEL 1: INTENTS
+    %% ==========================================
+    subgraph L1 [Level 1: Intents / Autonomous Roots]
+        direction TB
+        subgraph INV [invoice]
+            INV_ZA[za_parent: org_context]
+            INV_ZB[zb_child: v_invl_sales, v_invl_purchases, v_tl_tax, v_pa_alloc, v_sl_out, v_sl_in]
+            INV_ZZ[zz: total_sales, total_purchases, total_tax, unfulfilled_qty]
+            INV_OUT[zzzzz_out: sales_val, purchase_val, total_tax]
+            V_INV_ORG((v_inv_org)):::viewNode
+        end
+        subgraph PAY [payment]
+            PAY_ZA[za_parent: org_trace]
+            PAY_ZB[zb_child: v_pa_alloc]
+            PAY_ZZ[zz: active_amount]
+            PAY_OUT[zzzzz_out: active_amount]
+            V_PAY_ORG((v_pay_routing)):::viewNode
+        end
+        subgraph AN [adjustment_note]
+            AN_ZA[za_parent: org_context]
+            AN_ZB[zb_child: Empty / Declarative]
+            AN_ZZ[zz: display_totals via Subquery]
+            AN_OUT[zzzzz_out: is_active]
+        end
+    end
+
+    %% ==========================================
+    %% LEVEL 2: BRANCHES
+    %% ==========================================
+    subgraph L2 [Level 2: Branches / The Core Matrix]
+        direction TB
+        subgraph INVL [invoice_line]
+            INVL_ZA[za_parent: inv_type, locked, suspended]
+            INVL_ZB[zb_child: v_sl_inbound, v_sl_outbound, v_al_delta, v_tl_tax]
+            INVL_ZZ[zz: net_qty, base_val, sales_val, purchase_val]
+            INVL_OUT[zzzzz_out: sales_val, purchase_val, fin_qty, inv_qty]
+            V_INVL_INV((v_invl_inv)):::viewNode
+            V_INVL_ITEM((v_invl_item)):::viewNode
+        end
+        subgraph PA [payment_allocation]
+            PA_ZA[za_parent: pay_org, inv_org, locked_states]
+            PA_ZZ[zz: dag_check]
+            PA_OUT[zzzzz_out: amount]
+            V_PA_INV((v_pa_inv)):::viewNode
+        end
+    end
+
+    %% ==========================================
+    %% LEVEL 3: LEAVES
+    %% ==========================================
+    subgraph L3 [Level 3: Leaves / Physical Executions]
+        direction TB
+        subgraph SL [sl / Stock Ledger]
+            SL_ZA[za_parent: inv_type, locked, final_cogs]
+            SL_ZB[zb_child: v_asl_delta]
+            SL_ZZ[zz: vector, inbound_qty, outbound_qty, base_val]
+            SL_OUT[zzzzz_out: inbound_qty, outbound_qty, base_val]
+            V_SL_INVL((v_sl_invl)):::viewNode
+            V_SL_MATRIX((v_sl_matrix)):::viewNode
+        end
+        subgraph TL [tax_line]
+            TL_ZA[za_parent: invl_base_val, locked]
+            TL_ZB[zb_child: v_atl_delta]
+            TL_ZZ[zz: tax_amount]
+            TL_OUT[zzzzz_out: tax_amount]
+            V_TL_INVL((v_tl_invl)):::viewNode
+        end
+    end
+
+    %% ==========================================
+    %% LEVEL 4: DELTAS
+    %% ==========================================
+    subgraph L4 [Level 4: Deltas / Differential Programming]
+        direction TB
+        subgraph AL [adjustment_line]
+            AL_ZA[za_parent: note_org, line_org]
+            AL_OUT[zzzzz_out: delta_qty, delta_cogs]
+            V_AL_INVL((v_al_invl)):::viewNode
+        end
+        subgraph ATL [adjustment_tax_line]
+            ATL_OUT[zzzzz_out: delta_amount]
+            V_ATL_TL((v_atl_tl)):::viewNode
+        end
+        subgraph ASL [adjustment_stock_line]
+            ASL_OUT[zzzzz_out: delta_qty]
+            V_ASL_SL((v_asl_sl)):::viewNode
+        end
+    end
+
+    %% ==========================================
+    %% EDGES: UPWARD PROPAGATION (Thick Green)
+    %% Maps zzzzz_out -> View -> Parent zb_child
+    %% ==========================================
+    INV_OUT ==> V_INV_ORG ==> ORG_ZB
+    PAY_OUT ==> V_PAY_ORG ==> ORG_ZB & TREASURY
+    PA_OUT ==> V_PA_INV ==> INV_ZB & PAY_ZB
+    INVL_OUT ==> V_INVL_INV ==> INV_ZB
+    INVL_OUT ==> V_INVL_ITEM ==> ITEM_ZB
+    SL_OUT ==> V_SL_INVL ==> INVL_ZB
+    SL_OUT ==> V_SL_MATRIX ==> WH_ZB & ITEM_ZB
+    TL_OUT ==> V_TL_INVL ==> INVL_ZB
+    AL_OUT ==> V_AL_INVL ==> INVL_ZB
+    ATL_OUT ==> V_ATL_TL ==> TL_ZB
+    ASL_OUT ==> V_ASL_SL ==> SL_ZB
+
+    %% ==========================================
+    %% EDGES: DOWNWARD / ZIG-ZAG (Dashed Red)
+    %% Maps Parent zz/zzzzz_out -> Child za_parent
+    %% ==========================================
+    INV_ZZ -.->|type, locked| INVL_ZA
+    INVL_ZZ -.->|base_val, locked| TL_ZA & SL_ZA
+    INVL_ZA -.->|type, locked| SL_ZA
+    AN_ZA -.->|org| AL_ZA
+
+    %% ==========================================
+    %% EDGES: DIRECT TABLE PINGS (Dotted Orange)
+    %% Bypasses Views, triggers system_ping
+    %% ==========================================
+    AL_OUT -.-o|system_ping| AN_ZZ
+    ATL_OUT -.-o|system_ping| AN_ZZ
+    ASL_OUT -.-o|system_ping| AN_ZZ
+
+    %% ==========================================
+    %% EDGES: STRUCTURAL DAG (Solid Grey)
+    %% ==========================================
+    INV --> ORG
+    PAY --> ORG & TREASURY
+    PA --> PAY & INV
+    INVL --> INV & ITEM
+    SL --> INVL & ITEM & WH
+    TL --> INVL & ITEM
+    AL --> AN & INVL
+    ATL --> AN & TL
+    ASL --> AN & SL

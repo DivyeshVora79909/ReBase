@@ -1,27 +1,16 @@
 USE NS main DB main;
 
--- UNIVERSAL AUDIT TRAILS & PING RECEIVERS
-LET $tables = [
-    -- 1. Parent / Stateless Nodes
-    'org', 'treasury', 'acc', 
-    'warehouse', 'stock_acc', 'item',
-    -- 2. Dependent Nodes
-    'payment', 'invoice', 'sl', 
-    'invoice_line', 'payment_allocation'
+LET $all_tables = [
+    'org', 'treasury', 'acc', 'tax_account', 'item', 'stock_acc', 'warehouse',
+    'payment', 'invoice', 'adjustment_note',
+    'payment_allocation', 'invoice_line', 'package_note',
+    'sl', 'tax_line',
+    'adjustment_line', 'adjustment_tax_line', 'adjustment_stock_line'
 ];
 
-FOR $tb IN $tables {
-    -- Timestamps
-    DEFINE FIELD OVERWRITE created_at ON TABLE $tb TYPE datetime 
-        VALUE $before OR time::now() READONLY;
-        
-    DEFINE FIELD OVERWRITE updated_at ON TABLE $tb TYPE datetime 
-        VALUE time::now();
-        
-    -- User Traceability
-    DEFINE FIELD OVERWRITE created_by ON TABLE $tb TYPE option<record<user>> 
-        VALUE $before OR $auth READONLY;
-        
-    DEFINE FIELD OVERWRITE updated_by ON TABLE $tb TYPE option<record<user>> 
-        VALUE $auth;
+FOR $tb IN $all_tables {
+    DEFINE FIELD OVERWRITE created_at ON TABLE $tb TYPE datetime VALUE $before OR time::now() READONLY;
+    DEFINE FIELD OVERWRITE updated_at ON TABLE $tb TYPE datetime VALUE time::now();
+    DEFINE FIELD OVERWRITE created_by ON TABLE $tb TYPE option<record<user>> VALUE $before OR $auth READONLY;
+    DEFINE FIELD OVERWRITE updated_by ON TABLE $tb TYPE option<record<user>> VALUE $auth;
 };
