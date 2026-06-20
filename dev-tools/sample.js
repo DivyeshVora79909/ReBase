@@ -9,79 +9,28 @@ const dataset = {
     "user:root": {
       id: "user:root",
       name: "Super Admin",
-      email: "test@admin.com",
-      password: "<argon2 hash>",
-      invite_token: null,
-      dominates: ["groups:root", "groups:acme_admins", "user:alice"],
-      parents: ["groups:root"],
-      permissions: ["node_create", "node_select", "node_update", "node_delete"],
-      last_deactivated_at: null,
-      last_refreshed_at: "2026-06-03T08:00:00Z",
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-06-03T08:00:00Z",
-      created_by: null,
-      updated_by: "user:root",
+      email: "root@acme.com",
     },
     "user:alice": {
       id: "user:alice",
       name: "Alice Manager",
       email: "alice@acme.com",
-      password: "<argon2 hash>",
-      invite_token: null,
-      dominates: ["groups:acme_admins", "user:bob"],
-      parents: ["groups:acme_admins"],
-      permissions: [
-        "node_select",
-        "node_update",
-        "invoice_select",
-        "invoice_create",
-      ],
-      created_at: "2026-01-02T10:00:00Z",
-      updated_at: "2026-01-02T10:00:00Z",
-      created_by: "user:root",
-      updated_by: "user:root",
     },
   },
   groups: {
-    "groups:root": {
-      id: "groups:root",
-      name: "System Admins",
-      role: ["node_create", "node_select", "node_update", "node_delete"],
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-01-01T00:00:00Z",
-      created_by: null,
-      updated_by: null,
-    },
-    "groups:acme_admins": {
-      id: "groups:acme_admins",
-      name: "Acme Admins",
-      role: [
-        "invoice_select",
-        "invoice_create",
-        "invoice_update",
-        "payment_select",
-        "payment_create",
-      ],
-      created_at: "2026-01-02T10:00:00Z",
-      updated_at: "2026-01-02T10:00:00Z",
-      created_by: "user:root",
-      updated_by: "user:root",
-    },
+    "groups:root": { id: "groups:root", name: "System Admins" },
+    "groups:acme_admins": { id: "groups:acme_admins", name: "Acme Admins" },
   },
   link: [
-    { id: "link:1", in: "groups:root", out: "user:root", created_by: null },
-    {
-      id: "link:2",
-      in: "groups:acme_admins",
-      out: "user:alice",
-      created_by: "user:root",
-    },
+    { in: "groups:root", out: "user:root" },
+    { in: "groups:acme_admins", out: "user:alice" },
   ],
 
   // ---------- LEVEL 0: INDEPENDENT ANCHORS (Stateless / Parents) ----------
   org: {
     "org:tech_supplier": {
       name: "Tech Distro Inc.",
+      currency: "USD",
       zb_child: {
         v_inv_org: {
           purchase_base_value: 10000,
@@ -96,6 +45,7 @@ const dataset = {
     },
     "org:acme_customer": {
       name: "Acme Corp",
+      currency: "EUR",
       zb_child: {
         v_inv_org: {
           purchase_base_value: 0,
@@ -111,23 +61,25 @@ const dataset = {
     "org:globex": {
       id: "org:globex",
       name: "Globex Inc.",
+      currency: "USD",
       zb_child: {
         v_inv_org: {
           purchase_base_value: 0,
-          sales_base_value: 400, // FIXED: Imported math mirrors invoice:inv2 payload exactly
+          sales_base_value: 400,
           purchase_tax_value: 0,
           sales_tax_value: 0,
         },
         v_pay_to: { active_amount: 0 },
         v_pay_from: { active_amount: 0 },
       },
-      zz: { net_financial_position: 400 }, // FIXED: Aligned to reflect true receivable position
+      zz: { net_financial_position: 400 }, // FIXED: Aggregates restored inv2
     },
   },
 
   treasury: {
     "treasury:main": {
       name: "Central Bank",
+      currency: "USD",
       zb_child: {
         v_pay_to: { active_amount: 4900 },
         v_pay_from: { active_amount: 0 },
@@ -145,17 +97,11 @@ const dataset = {
           purchase_financial_qty: 10,
           purchase_base_value: 10000,
           sales_financial_qty: 4,
-          sales_base_value: 4400,
+          sales_base_value: 4400, // FIXED: 2 (il1) + 2 (il3)
         },
-        v_sl_matrix: {
-          inbound_physical_qty: 10,
-          outbound_physical_qty: 4,
-        },
+        v_sl_matrix: { inbound_physical_qty: 10, outbound_physical_qty: 4 }, // FIXED: 2 (sl1) + 2 (sl2)
       },
-      zz: {
-        physical_stock: 6,
-        avg_cogs: 1000,
-      },
+      zz: { physical_stock: 6, avg_cogs: 1000 }, // FIXED: 10 - 4 = 6
     },
     "item:setup_service": {
       name: "Installation Service",
@@ -177,7 +123,7 @@ const dataset = {
       name: "Central Fulfillment",
       zb_child: {
         v_sl_matrix: { inbound_physical_qty: 10, outbound_physical_qty: 4 },
-      },
+      }, // FIXED: 10 - 4
       zz: { global_matrix_stock: 6 },
     },
   },
@@ -186,9 +132,7 @@ const dataset = {
     "acc:cogs": {
       name: "Cost of Goods Sold",
       type: "expense",
-      zb_child: {
-        v_sl_cogs: { actual_cogs_value: 4000 },
-      },
+      zb_child: { v_sl_cogs: { actual_cogs_value: 4000 } }, // FIXED: 2000 (sl1) + 2000 (sl2)
       zz: { balance: 4000 },
     },
   },
@@ -196,9 +140,7 @@ const dataset = {
   tax_account: {
     "tax:sales_tax": {
       name: "Sales Tax Payable",
-      zb_child: {
-        v_tl: { sales_tax_value: 400, purchase_tax_value: 0 },
-      },
+      zb_child: { v_tl: { sales_tax_value: 400, purchase_tax_value: 0 } },
       zz: { liability: 400 },
     },
   },
@@ -213,21 +155,18 @@ const dataset = {
       system_ping: "2026-01-01T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {},
+      za_parent: { currency: "USD" },
       zb_child: {
         v_invl_inv: {
           purchase_base_value: 10000,
           inbound_physical_qty: 10,
           outbound_physical_qty: 0,
         },
-        v_tl_inv: { purchase_tax_value: 0 },
+        v_tl_inv: { purchase_tax_value: 0, sales_tax_value: 0 },
         v_pa_inv: { allocated_amount: 0 },
       },
       zz: { grand_total: 10000 },
-      zzz: {
-        allocation_shield: 10000,
-        vector_shield: true,
-      },
+      zzz: { allocation_shield: 10000, vector_shield: true },
       zzzzz_out: {
         purchase_base_value: 10000,
         sales_base_value: 0,
@@ -245,21 +184,18 @@ const dataset = {
       system_ping: "2026-01-05T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {},
+      za_parent: { currency: "EUR" },
       zb_child: {
         v_invl_inv: {
           sales_base_value: 4500,
           inbound_physical_qty: 0,
           outbound_physical_qty: 2,
         },
-        v_tl_inv: { sales_tax_value: 400 },
+        v_tl_inv: { sales_tax_value: 400, purchase_tax_value: 0 },
         v_pa_inv: { allocated_amount: 4900 },
       },
       zz: { grand_total: 4900 },
-      zzz: {
-        allocation_shield: 0,
-        vector_shield: true,
-      },
+      zzz: { allocation_shield: 0, vector_shield: true },
       zzzzz_out: {
         sales_base_value: 4500,
         purchase_base_value: 0,
@@ -270,6 +206,7 @@ const dataset = {
     },
 
     "invoice:inv2": {
+      // FIXED: Restored ghost data
       org: "org:globex",
       raw_type: "sales",
       is_suspended: false,
@@ -277,21 +214,18 @@ const dataset = {
       system_ping: "2026-05-15T09:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {},
+      za_parent: { currency: "USD" },
       zb_child: {
         v_invl_inv: {
           sales_base_value: 400,
           inbound_physical_qty: 0,
           outbound_physical_qty: 2,
         },
-        v_tl_inv: { sales_tax_value: 0 },
+        v_tl_inv: { sales_tax_value: 0, purchase_tax_value: 0 },
         v_pa_inv: { allocated_amount: 0 },
       },
       zz: { grand_total: 400 },
-      zzz: {
-        allocation_shield: 400,
-        vector_shield: true,
-      },
+      zzz: { allocation_shield: 400, vector_shield: true },
       zzzzz_out: {
         sales_base_value: 400,
         purchase_base_value: 0,
@@ -307,12 +241,13 @@ const dataset = {
       from: "org:acme_customer",
       to: "treasury:main",
       raw_amount: 4900,
+      fx_rate: 1.0,
       is_suspended: false,
       is_locked: true,
       system_ping: "2026-01-06T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {},
+      za_parent: { base_currency: "EUR" },
       zb_child: { v_pa_pay: { allocated_amount: 4900 } },
       zz: { active_amount: 4900 },
       zzz: { allocation_shield: 0 },
@@ -320,25 +255,33 @@ const dataset = {
     },
   },
 
+  adjustment_note: {
+    "an:note1": {
+      org: "org:tech_supplier",
+      A_guard: { state_check: true },
+      za_parent: {},
+      zb_child: {},
+      zz: { total_delta_qty: -2, total_delta_cogs: 0 },
+      zzzzz_out: { is_active: true },
+    },
+  },
+
   // ---------- LEVEL 2: BRANCHES ----------
   invoice_line: [
     {
-      id: "invl:pur_laptop",
+      id: "invoice_line:pur_laptop",
       invoice: "invoice:purchase_1",
       item: "item:laptop",
-      raw_qty: 10,
+      raw_qty: 12,
       raw_unit_price: 1000,
-      is_suspended: false,
       system_ping: "2026-01-01T10:00:00Z",
+      // FIXED: Purged is_suspended & is_locked
 
       A_guard: { state_check: true },
-      za_parent: {
-        inv_type: "purchase",
-        inv_locked: true,
-      },
+      za_parent: { inv_type: "purchase", inv_locked: true },
       zb_child: {
         v_sl_invl: { inbound_physical_qty: 10, outbound_physical_qty: 0 },
-        v_al_invl: { delta_qty: 0, delta_price: 0 },
+        v_al_invl: { delta_qty: -2, delta_price: 0 },
       },
       zz: {
         net_qty: 10,
@@ -346,10 +289,7 @@ const dataset = {
         inventory_qty: 10,
         actual_unit_cogs: 1000,
       },
-      zzz: {
-        qty_shield: 0,
-        vector_shield: true,
-      },
+      zzz: { qty_shield: 0, vector_shield: true },
       zzzzz_out: {
         purchase_base_value: 10000,
         sales_base_value: 0,
@@ -363,22 +303,18 @@ const dataset = {
       },
     },
     {
-      id: "invl:sale_laptop",
+      id: "invoice_line:sale_laptop",
       invoice: "invoice:sales_1",
       item: "item:laptop",
       raw_qty: 2,
       raw_unit_price: 2000,
-      is_suspended: false,
       system_ping: "2026-01-05T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        inv_type: "sales",
-        inv_locked: true,
-        item_avg_cogs: 1000,
-      },
+      za_parent: { inv_type: "sales", inv_locked: true, item_avg_cogs: 1000 },
       zb_child: {
         v_sl_invl: { inbound_physical_qty: 0, outbound_physical_qty: 2 },
+        v_al_invl: { delta_qty: 0, delta_price: 0 },
       },
       zz: {
         net_qty: 2,
@@ -386,10 +322,7 @@ const dataset = {
         inventory_qty: 2,
         actual_unit_cogs: 1000,
       },
-      zzz: {
-        qty_shield: 0,
-        vector_shield: true,
-      },
+      zzz: { qty_shield: 0, vector_shield: true },
       zzzzz_out: {
         sales_base_value: 4000,
         purchase_base_value: 0,
@@ -403,22 +336,18 @@ const dataset = {
       },
     },
     {
-      id: "invl:sale_service",
+      id: "invoice_line:sale_service",
       invoice: "invoice:sales_1",
       item: "item:setup_service",
       raw_qty: 1,
       raw_unit_price: 500,
-      is_suspended: false,
       system_ping: "2026-01-05T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        inv_type: "sales",
-        inv_locked: true,
-        item_avg_cogs: 0,
-      },
+      za_parent: { inv_type: "sales", inv_locked: true, item_avg_cogs: 0 },
       zb_child: {
         v_sl_invl: { inbound_physical_qty: 0, outbound_physical_qty: 0 },
+        v_al_invl: { delta_qty: 0, delta_price: 0 },
       },
       zz: {
         net_qty: 1,
@@ -440,22 +369,18 @@ const dataset = {
       },
     },
     {
-      id: "invl:il3",
+      id: "invoice_line:il3", // FIXED: Restored ghost data
       invoice: "invoice:inv2",
       item: "item:laptop",
       raw_qty: 2,
       raw_unit_price: 200,
-      is_suspended: false,
       system_ping: "2026-05-15T09:30:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        inv_type: "sales",
-        inv_locked: false,
-        item_avg_cogs: 1000,
-      },
+      za_parent: { inv_type: "sales", inv_locked: false, item_avg_cogs: 1000 },
       zb_child: {
         v_sl_invl: { inbound_physical_qty: 0, outbound_physical_qty: 2 },
+        v_al_invl: { delta_qty: 0, delta_price: 0 },
       },
       zz: {
         net_qty: 2,
@@ -484,19 +409,17 @@ const dataset = {
       payment: "payment:pay_1",
       invoice: "invoice:sales_1",
       raw_amount: 4900,
-      is_suspended: false,
       system_ping: "2026-01-06T10:00:00Z",
+      // FIXED: Purged state flags
 
-      A_guard: {
-        state_check: true,
-        dag_check: true,
-      },
+      A_guard: { dag_check: true },
       za_parent: {
         pay_org: "org:acme_customer",
         inv_org: "org:acme_customer",
+        pay_fx_rate: 1.0,
       },
       zb_child: {},
-      zz: { active_amount: 4900 },
+      zz: { amount_pay_curr: 4900, amount_inv_curr: 4900 },
       zzz: {},
       zzzzz_out: { allocated_amount: 4900 },
     },
@@ -504,21 +427,18 @@ const dataset = {
 
   package_note: [
     {
-      id: "pkg:1",
+      id: "package_note:pkg1",
       invoice: "invoice:sales_1",
       tracking: "TRACK-001",
-      is_suspended: false,
       system_ping: "2026-01-05T12:00:00Z",
+      // FIXED: Purged state flags
 
-      A_guard: { state_check: true },
+      A_guard: {},
       za_parent: { inv_locked: true },
       zb_child: { v_sl_pkg: { outbound_physical_qty: 2 } },
       zz: {},
       zzz: {},
-      zzzzz_out: {
-        is_active: true,
-        is_locked: true,
-      },
+      zzzzz_out: { outbound_physical_qty: 2, is_locked: true },
     },
   ],
 
@@ -526,25 +446,18 @@ const dataset = {
   sl: [
     {
       id: "sl:inbound_purchase",
-      from: "stock_acc:vendor",
+      from: "invoice_line:pur_laptop",
       to: "warehouse:main",
-      item: "item:laptop",
-      inv_line: "invl:pur_laptop",
+      pkg: null,
       raw_qty: 10,
       is_suspended: false,
+      is_locked: true,
       system_ping: "2026-01-01T10:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        unit_cogs: 1000,
-        parent_locked: true,
-      },
+      za_parent: { item: "item:laptop", unit_cogs: 1000 },
       zb_child: { v_asl_sl: { delta_qty: 0 } },
-      zz: {
-        vector: 1,
-        active_qty: 10,
-        actual_cogs_value: 10000,
-      },
+      zz: { vector: 1, active_qty: 10, actual_cogs_value: 10000 },
       zzz: { matrix_shield: true },
       zzzzz_out: {
         inbound_physical_qty: 10,
@@ -555,25 +468,17 @@ const dataset = {
     {
       id: "sl:outbound_sales",
       from: "warehouse:main",
-      to: "stock_acc:customer",
-      item: "item:laptop",
-      inv_line: "invl:sale_laptop",
-      pkg: "pkg:1",
+      to: "invoice_line:sale_laptop",
+      pkg: "package_note:pkg1",
       raw_qty: 2,
       is_suspended: false,
+      is_locked: true,
       system_ping: "2026-01-05T12:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        unit_cogs: 1000,
-        parent_locked: true,
-      },
+      za_parent: { item: "item:laptop", unit_cogs: 1000 },
       zb_child: { v_asl_sl: { delta_qty: 0 } },
-      zz: {
-        vector: -1,
-        active_qty: 2,
-        actual_cogs_value: 2000,
-      },
+      zz: { vector: -1, active_qty: 2, actual_cogs_value: 2000 },
       zzz: { matrix_shield: true },
       zzzzz_out: {
         inbound_physical_qty: 0,
@@ -582,26 +487,19 @@ const dataset = {
       },
     },
     {
-      id: "sl:outbound_sales_2",
+      id: "sl:outbound_sales_2", // FIXED: Restored ghost data
       from: "warehouse:main",
-      to: "stock_acc:globex",
-      item: "item:laptop",
-      inv_line: "invl:il3",
+      to: "invoice_line:il3",
+      pkg: null,
       raw_qty: 2,
       is_suspended: false,
+      is_locked: false,
       system_ping: "2026-05-15T12:00:00Z",
 
       A_guard: { state_check: true },
-      za_parent: {
-        unit_cogs: 1000,
-        parent_locked: false,
-      },
+      za_parent: { item: "item:laptop", unit_cogs: 1000 },
       zb_child: { v_asl_sl: { delta_qty: 0 } },
-      zz: {
-        vector: -1,
-        active_qty: 2,
-        actual_cogs_value: 2000,
-      },
+      zz: { vector: -1, active_qty: 2, actual_cogs_value: 2000 },
       zzz: { matrix_shield: true },
       zzzzz_out: {
         inbound_physical_qty: 0,
@@ -614,24 +512,18 @@ const dataset = {
   tax_line: [
     {
       id: "tax_line:tl1",
-      invoice_line: "invl:sale_laptop",
+      invoice_line: "invoice_line:sale_laptop",
       tax_account: "tax:sales_tax",
       raw_rate: 10,
-      is_suspended: false,
       system_ping: "2026-01-05T10:00:00Z",
+      // FIXED: Purged state flags
 
-      A_guard: { state_check: true },
-      za_parent: {
-        invl_base_value: 4000,
-        inv_type: "sales",
-      },
+      A_guard: {},
+      za_parent: { invl_base_value: 4000, inv_type: "sales" },
       zb_child: { v_atl_tl: { delta_amount: 0 } },
       zz: { tax_amount: 400 },
       zzz: { shield: true },
-      zzzzz_out: {
-        sales_tax_value: 400,
-        purchase_tax_value: 0,
-      },
+      zzzzz_out: { sales_tax_value: 400, purchase_tax_value: 0 },
     },
   ],
 
@@ -640,17 +532,20 @@ const dataset = {
     {
       id: "adjustment_line:al1",
       adjustment_note: "an:note1",
-      invoice_line: "invl:pur_laptop",
-      delta_qty: 0,
+      invoice_line: "invoice_line:pur_laptop",
+      delta_qty: -2,
       delta_cogs: 0,
+      system_ping: "2026-05-20T08:00:00Z",
+      // FIXED: Purged state flags
 
+      A_guard: { dag_check: true },
       za_parent: {
         note_org: "org:tech_supplier",
         line_org: "org:tech_supplier",
-        note_suspended: false,
       },
-      A_guard: { dag_check: true },
-      zzzzz_out: { delta_qty: 0, delta_cogs: 0 },
+      zb_child: {},
+      zz: {},
+      zzzzz_out: { delta_qty: -2, delta_cogs: 0 },
     },
   ],
 };

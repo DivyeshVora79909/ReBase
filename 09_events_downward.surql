@@ -1,78 +1,71 @@
+-- ==============================================================================
+-- FILE 09: DOWNWARD PROPAGATION (TOPOLOGY & ZIG-ZAG DATA PINGS)
+-- ==============================================================================
 USE NS main DB main;
 
--- INVOICE -> INVOICE_LINE, PACKAGE_NOTE, PAYMENT_ALLOCATION
+-- 1. INVOICE -> DOWNSTREAM
 DEFINE EVENT push_invoice_context ON TABLE invoice
 WHEN $event = 'UPDATE' AND (
     $before.org != $after.org OR
     $before.locked != $after.locked OR
     $before.suspended != $after.suspended OR
-    $before.type != $after.type
+    $before.raw_type != $after.raw_type
 ) THEN {
-    UPDATE invoice_line SET updated_at = time::now() WHERE invoice = $after.id;
-    UPDATE package_note SET updated_at = time::now() WHERE invoice = $after.id;
-    UPDATE payment_allocation SET updated_at = time::now() WHERE invoice = $after.id;
+    UPDATE invoice_line SET system_ping = time::now() WHERE invoice = $after.id;
+    UPDATE package_note SET system_ping = time::now() WHERE invoice = $after.id;
+    UPDATE payment_allocation SET system_ping = time::now() WHERE invoice = $after.id;
 };
 
--- PAYMENT -> PAYMENT_ALLOCATION
+-- 2. PAYMENT -> ALLOCATION
 DEFINE EVENT push_payment_context ON TABLE payment
 WHEN $event = 'UPDATE' AND (
     $before.from != $after.from OR
     $before.to != $after.to OR
+    $before.fx_rate != $after.fx_rate OR
     $before.locked != $after.locked OR
     $before.suspended != $after.suspended
 ) THEN {
-    UPDATE payment_allocation SET updated_at = time::now() WHERE payment = $after.id;
+    UPDATE payment_allocation SET system_ping = time::now() WHERE payment = $after.id;
 };
 
--- ADJUSTMENT_NOTE -> ADJUSTMENT_LINE, ADJUSTMENT_TAX_LINE, ADJUSTMENT_STOCK_LINE
+-- 3. ADJUSTMENT NOTE -> DELTAS
 DEFINE EVENT push_an_context ON TABLE adjustment_note
 WHEN $event = 'UPDATE' AND (
-    $before.org != $after.org OR
-    $before.locked != $after.locked OR
-    $before.suspended != $after.suspended
+    $before.org != $after.org
 ) THEN {
-    UPDATE adjustment_line SET updated_at = time::now() WHERE adjustment_note = $after.id;
-    UPDATE adjustment_tax_line SET updated_at = time::now() WHERE adjustment_note = $after.id;
-    UPDATE adjustment_stock_line SET updated_at = time::now() WHERE adjustment_note = $after.id;
+    UPDATE adjustment_line SET system_ping = time::now() WHERE adjustment_note = $after.id;
 };
 
--- INVOICE_LINE -> TAX_LINE, SL, ADJUSTMENT_LINE (The Zig-Zag Data Push)
+-- 4. INVOICE LINE -> TAX, SL, ADJ LINE (The Zig-Zag Data Push)
 DEFINE EVENT push_invl_context ON TABLE invoice_line
 WHEN $event = 'UPDATE' AND (
-    $before.qty != $after.qty OR
-    $before.cogs != $after.cogs OR
+    $before.raw_qty != $after.raw_qty OR
+    $before.raw_unit_price != $after.raw_unit_price OR
     $before.item != $after.item OR
-    $before.zz.base_value != $after.zz.base_value
+    $before.zz_base_value != $after.zz_base_value OR
+    $before.za_parent.inv_locked != $after.za_parent.inv_locked OR
+    $before.za_parent.invoice_suspended != $after.za_parent.invoice_suspended
 ) THEN {
-    UPDATE tax_line SET updated_at = time::now() WHERE invoice_line = $after.id;
-    UPDATE sl SET updated_at = time::now() WHERE inv_line = $after.id;
-    UPDATE adjustment_line SET updated_at = time::now() WHERE invoice_line = $after.id;
+    UPDATE tax_line SET system_ping = time::now() WHERE invoice_line = $after.id;
+    UPDATE sl SET system_ping = time::now() WHERE from = $after.id OR to = $after.id;
+    UPDATE adjustment_line SET system_ping = time::now() WHERE invoice_line = $after.id;
 };
 
--- PACKAGE_NOTE -> SL
+-- 5. PACKAGE NOTE -> SL
 DEFINE EVENT push_pkg_context ON TABLE package_note
 WHEN $event = 'UPDATE' AND (
-    $before.locked != $after.locked OR
-    $before.suspended != $after.suspended
+    $before.zzzzz_out.is_locked != $after.zzzzz_out.is_locked
 ) THEN {
-    UPDATE sl SET updated_at = time::now() WHERE pkg = $after.id;
+    UPDATE sl SET system_ping = time::now() WHERE pkg = $after.id;
 };
 
--- TAX_LINE -> ADJUSTMENT_TAX_LINE
-DEFINE EVENT push_tl_context ON TABLE tax_line
-WHEN $event = 'UPDATE' AND (
-    $before.rate != $after.rate OR
-    $before.tax_account != $after.tax_account
+-- 6. ADJUSTMENT LINE -> ADJUSTMENT NOTE (Declarative Ping)
+DEFINE EVENT ping_adj_note ON TABLE adjustment_line 
+WHEN $event IN ['CREATE', 'DELETE'] OR (
+    $event = 'UPDATE' AND (
+        $before.delta_qty != $after.delta_qty OR 
+        $before.delta_price != $after.delta_price
+    )
 ) THEN {
-    UPDATE adjustment_tax_line SET updated_at = time::now() WHERE tax_line = $after.id;
-};
-
--- SL -> ADJUSTMENT_STOCK_LINE
-DEFINE EVENT push_sl_context ON TABLE sl
-WHEN $event = 'UPDATE' AND (
-    $before.qty != $after.qty OR
-    $before.from != $after.from OR
-    $before.to != $after.to
-) THEN {
-    UPDATE adjustment_stock_line SET updated_at = time::now() WHERE stock_movement = $after.id;
+    UPDATE ($after.adjustment_note ?? $before.adjustment_note) SET system_ping = time::now();
 };
