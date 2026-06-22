@@ -1,32 +1,39 @@
+-- FILE 05: SYSTEM FLAGS
 USE NS main DB main;
 
-LET $all_tables = [
-    'org', 'treasury', 'acc', 'tax_account', 'item', 'stock_acc', 'warehouse',
-    'payment', 'invoice', 'adjustment_note',
-    'payment_allocation', 'invoice_line', 'package_note',
-    'sl', 'tax_line',
-    'adjustment_line'
-];
+DEFINE FIELD OVERWRITE system_ping ON TABLE acc TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
 
--- ==========================================
--- 1. UNIVERSAL CLUTCH (Performance Optimizer)
--- ==========================================
--- Prevents human metadata updates from triggering heavy mathematical subqueries.
--- Only system events (Direct Pings) are permitted to update this field.
-FOR $tb IN $all_tables {
-    DEFINE FIELD OVERWRITE system_ping ON TABLE $tb TYPE datetime 
-        DEFAULT time::now() 
-        PERMISSIONS FOR update NONE;
-};
+DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
 
--- ==========================================
--- 2. THE STATE VECTORS (Strictly Limited)
--- ==========================================
--- By architectural decree, only these three tables are permitted to hold state.
--- All other tables must pull lock/suspend status via `za_parent` at runtime.
-LET $state_tables = ['payment', 'invoice', 'sl'];
+DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_note TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
 
-FOR $tb IN $state_tables {
-    DEFINE FIELD OVERWRITE suspended ON TABLE $tb TYPE bool DEFAULT false;
-    DEFINE FIELD OVERWRITE locked ON TABLE $tb TYPE bool DEFAULT false;
-};
+DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_stock_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_tax_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE invoice TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE invoice_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE item TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE org TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE package_note TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE payment TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE payment_allocation TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE sl TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE stock_acc TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE tax_account TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE tax_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE treasury TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+
+DEFINE FIELD OVERWRITE system_ping ON TABLE warehouse TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
+

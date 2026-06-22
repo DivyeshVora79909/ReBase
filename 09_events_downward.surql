@@ -1,71 +1,88 @@
--- ==============================================================================
--- FILE 09: DOWNWARD PROPAGATION (TOPOLOGY & ZIG-ZAG DATA PINGS)
--- ==============================================================================
+-- FILE 09: DOWNWARD PROPAGATION (DAG ALERTS)
 USE NS main DB main;
 
--- 1. INVOICE -> DOWNSTREAM
-DEFINE EVENT push_invoice_context ON TABLE invoice
-WHEN $event = 'UPDATE' AND (
-    $before.org != $after.org OR
-    $before.locked != $after.locked OR
-    $before.suspended != $after.suspended OR
-    $before.raw_type != $after.raw_type
-) THEN {
-    UPDATE invoice_line SET system_ping = time::now() WHERE invoice = $after.id;
-    UPDATE package_note SET system_ping = time::now() WHERE invoice = $after.id;
-    UPDATE payment_allocation SET system_ping = time::now() WHERE invoice = $after.id;
+DEFINE EVENT push_org_to_invoice_via_a_in_org ON TABLE org
+WHEN $event = 'UPDATE' AND ($before.f_out.currency != $after.f_out.currency) THEN {
+    UPDATE invoice SET system_ping = time::now() WHERE a_in_org = $after.id;
 };
 
--- 2. PAYMENT -> ALLOCATION
-DEFINE EVENT push_payment_context ON TABLE payment
-WHEN $event = 'UPDATE' AND (
-    $before.from != $after.from OR
-    $before.to != $after.to OR
-    $before.fx_rate != $after.fx_rate OR
-    $before.locked != $after.locked OR
-    $before.suspended != $after.suspended
-) THEN {
-    UPDATE payment_allocation SET system_ping = time::now() WHERE payment = $after.id;
+DEFINE EVENT push_invoice_to_invoice_line_via_a_in_invoice ON TABLE invoice
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.type != $after.f_out.type OR $before.f_out.fx_rate != $after.f_out.fx_rate) THEN {
+    UPDATE invoice_line SET system_ping = time::now() WHERE a_in_invoice = $after.id;
 };
 
--- 3. ADJUSTMENT NOTE -> DELTAS
-DEFINE EVENT push_an_context ON TABLE adjustment_note
-WHEN $event = 'UPDATE' AND (
-    $before.org != $after.org
-) THEN {
-    UPDATE adjustment_line SET system_ping = time::now() WHERE adjustment_note = $after.id;
+DEFINE EVENT push_invoice_to_payment_allocation_via_a_in_invoice ON TABLE invoice
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.grand_total != $after.f_out.grand_total) THEN {
+    UPDATE payment_allocation SET system_ping = time::now() WHERE a_in_invoice = $after.id;
 };
 
--- 4. INVOICE LINE -> TAX, SL, ADJ LINE (The Zig-Zag Data Push)
-DEFINE EVENT push_invl_context ON TABLE invoice_line
-WHEN $event = 'UPDATE' AND (
-    $before.raw_qty != $after.raw_qty OR
-    $before.raw_unit_price != $after.raw_unit_price OR
-    $before.item != $after.item OR
-    $before.zz_base_value != $after.zz_base_value OR
-    $before.za_parent.inv_locked != $after.za_parent.inv_locked OR
-    $before.za_parent.invoice_suspended != $after.za_parent.invoice_suspended
-) THEN {
-    UPDATE tax_line SET system_ping = time::now() WHERE invoice_line = $after.id;
-    UPDATE sl SET system_ping = time::now() WHERE from = $after.id OR to = $after.id;
-    UPDATE adjustment_line SET system_ping = time::now() WHERE invoice_line = $after.id;
+DEFINE EVENT push_invoice_to_package_note_via_a_in_invoice ON TABLE invoice
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked) THEN {
+    UPDATE package_note SET system_ping = time::now() WHERE a_in_invoice = $after.id;
 };
 
--- 5. PACKAGE NOTE -> SL
-DEFINE EVENT push_pkg_context ON TABLE package_note
-WHEN $event = 'UPDATE' AND (
-    $before.zzzzz_out.is_locked != $after.zzzzz_out.is_locked
-) THEN {
-    UPDATE sl SET system_ping = time::now() WHERE pkg = $after.id;
+DEFINE EVENT push_item_to_invoice_line_via_a_in_item ON TABLE item
+WHEN $event = 'UPDATE' AND ($before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs OR $before.f_out.is_service != $after.f_out.is_service) THEN {
+    UPDATE invoice_line SET system_ping = time::now() WHERE a_in_item = $after.id;
 };
 
--- 6. ADJUSTMENT LINE -> ADJUSTMENT NOTE (Declarative Ping)
-DEFINE EVENT ping_adj_note ON TABLE adjustment_line 
-WHEN $event IN ['CREATE', 'DELETE'] OR (
-    $event = 'UPDATE' AND (
-        $before.delta_qty != $after.delta_qty OR 
-        $before.delta_price != $after.delta_price
-    )
-) THEN {
-    UPDATE ($after.adjustment_note ?? $before.adjustment_note) SET system_ping = time::now();
+DEFINE EVENT push_payment_to_payment_allocation_via_a_in_payment ON TABLE payment
+WHEN $event = 'UPDATE' AND ($before.f_out.fx_rate != $after.f_out.fx_rate OR $before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.active_amount != $after.f_out.active_amount) THEN {
+    UPDATE payment_allocation SET system_ping = time::now() WHERE a_in_payment = $after.id;
 };
+
+DEFINE EVENT push_warehouse_to_sl_via_a_in_from ON TABLE warehouse
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_from = $after.id;
+};
+
+DEFINE EVENT push_warehouse_to_sl_via_a_in_to ON TABLE warehouse
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_to = $after.id;
+};
+
+DEFINE EVENT push_stock_acc_to_sl_via_a_in_from ON TABLE stock_acc
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_from = $after.id;
+};
+
+DEFINE EVENT push_stock_acc_to_sl_via_a_in_to ON TABLE stock_acc
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_to = $after.id;
+};
+
+DEFINE EVENT push_invoice_line_to_sl_via_a_in_from ON TABLE invoice_line
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_from = $after.id;
+};
+
+DEFINE EVENT push_invoice_line_to_sl_via_a_in_to ON TABLE invoice_line
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_to = $after.id;
+};
+
+DEFINE EVENT push_invoice_line_to_tax_line_via_a_in_invoice_line ON TABLE invoice_line
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.type != $after.f_out.type OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.sales_base_value != $after.f_out.sales_base_value OR $before.f_out.purchase_base_value != $after.f_out.purchase_base_value) THEN {
+    UPDATE tax_line SET system_ping = time::now() WHERE a_in_invoice_line = $after.id;
+};
+
+DEFINE EVENT push_acc_to_sl_via_a_in_from ON TABLE acc
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_from = $after.id;
+};
+
+DEFINE EVENT push_acc_to_sl_via_a_in_to ON TABLE acc
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked OR $before.f_out.inv_fx_rate != $after.f_out.inv_fx_rate OR $before.f_out.item != $after.f_out.item OR $before.f_out.actual_unit_cogs != $after.f_out.actual_unit_cogs) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_to = $after.id;
+};
+
+DEFINE EVENT push_package_note_to_sl_via_a_in_pkg ON TABLE package_note
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked) THEN {
+    UPDATE sl SET system_ping = time::now() WHERE a_in_pkg = $after.id;
+};
+
+DEFINE EVENT push_adjustment_note_to_adjustment_line_via_a_in_note ON TABLE adjustment_note
+WHEN $event = 'UPDATE' AND ($before.f_out.is_locked != $after.f_out.is_locked) THEN {
+    UPDATE adjustment_line SET system_ping = time::now() WHERE a_in_note = $after.id;
+};
+

@@ -181,24 +181,24 @@ DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
 
 -- INITIALIZATION
 CREATE groups:root SET name = 'System Admins', role = [
-    'node_create', 'node_select', 'node_update', 'node_delete', 
+    'node_create', 'node_select', 'node_update', 'node_delete',
     'link_create', 'link_select', 'link_delete',
-    'org_select', 'org_create', 'org_update', 'org_delete',
-    'treasury_select', 'treasury_create', 'treasury_update', 'treasury_delete',
     'acc_select', 'acc_create', 'acc_update', 'acc_delete',
-    'tax_account_select', 'tax_account_create', 'tax_account_update', 'tax_account_delete',
-    'item_select', 'item_create', 'item_update', 'item_delete',
-    'stock_acc_select', 'stock_acc_create', 'stock_acc_update', 'stock_acc_delete',
-    'warehouse_select', 'warehouse_create', 'warehouse_update', 'warehouse_delete',
-    'payment_select', 'payment_create', 'payment_update', 'payment_delete',
-    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
+    'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete',
     'adjustment_note_select', 'adjustment_note_create', 'adjustment_note_update', 'adjustment_note_delete',
-    'payment_allocation_select', 'payment_allocation_create', 'payment_allocation_update', 'payment_allocation_delete',
+    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
     'invoice_line_select', 'invoice_line_create', 'invoice_line_update', 'invoice_line_delete',
+    'item_select', 'item_create', 'item_update', 'item_delete',
+    'org_select', 'org_create', 'org_update', 'org_delete',
     'package_note_select', 'package_note_create', 'package_note_update', 'package_note_delete',
+    'payment_select', 'payment_create', 'payment_update', 'payment_delete',
+    'payment_allocation_select', 'payment_allocation_create', 'payment_allocation_update', 'payment_allocation_delete',
     'sl_select', 'sl_create', 'sl_update', 'sl_delete',
+    'stock_acc_select', 'stock_acc_create', 'stock_acc_update', 'stock_acc_delete',
+    'tax_account_select', 'tax_account_create', 'tax_account_update', 'tax_account_delete',
     'tax_line_select', 'tax_line_create', 'tax_line_update', 'tax_line_delete',
-    'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete'
+    'treasury_select', 'treasury_create', 'treasury_update', 'treasury_delete',
+    'warehouse_select', 'warehouse_create', 'warehouse_update', 'warehouse_delete'
 ];
 
 CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';
