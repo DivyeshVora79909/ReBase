@@ -1,136 +1,253 @@
-SETTINGS:main
-    base_currency
-    metadata{}
+so now i have totally written the whole architechture from scratch, many of the things remain same but there are some more things to be done
 
-T(treasury)
-    child{
-        paid: PAY.sum(amt_in, group by in:T)
-        recived: PAY.sum(amt_to, group by out:T)
-    }
-    z{
-        balance: 
-    }
+in org we would need the contest of invoice, payment, adjustment, here we can have two different views one for the sales and another for the purchase, the org will have two context for invoice, this is for flexibility or should i only do it once, which will be better long term and future, it is the great grand parent so no parent context required here, there will be many guards and other fields, there will be more derived fields for payment, outstanding, invoice, .... this is for the frontend as well as the validation, in org there are no typical validations, i think we dont need the locked field here, do we
 
-ORG
-    name
-    metadata{}
-    currency
-    child{
-        recieved: PAY.sum(amt_in, group by in:ORG)
-        paid: PAY.sum(amt_to, group by out:ORG)
-        receivable: INV.sum(invoice_amt, group by sales:ORG)
-        payable: INV.sum(invoice_amt, group by purchase:ORG)
-    }
-    z{
-        gross_receivable_or_payable: recieved - paid + receivable - payable
-    }
+treasury is mostly correct but here the currency is normalised meaning a company has the currency from company settings only, so even if we dont give the currency here it is okay, the default is company settings currency only, once again do we need locked here, wait are locked and is_locked different, what is the use case of is_locked
 
+in acc why mixing with the stock account, this is a account that deals with other money related manual things, example expence, income accounts, so this is same as treasury the difference is that there is no guard and also remove the stock related cogs and all
 
-WH(warehouse)
-    metadata{}
-    child{
-        recieved: SL.sum(qty, group by in:WH)
-        send: SL.sum(qty, group by out:WH)
-    }
-    z{
-        balance: recieved - send > 0
-    }
+tax account has the payment in and out, also has the tax line views context, so here the validation would be that the taxes cant be negative which blocks the negative tax rates, also the net payment diff must be positive, so the guards are liberal like treasury cant have negative balance and total tax liability cant be negative, be flexible here
 
-SA(stock account)
-    metadata{}
-    child{
-        recieved: SL.sum(qty, group by in:SA)
-        send: SL.sum(qty, group by out:SA)
-    }
+item has sl and invoice line contexts, from invoice line we get the liability where as from sl we get the actual deliveries, the invoice line inherits the sales or purchase from invoice so in the item we have the net outside and net inside liability, also the sl has the actual inward and outward that is also there here, now comes the aggregated average cogs as well as the average sales, so basically we have some split contexts in invoice line and sl so it would be better to have different views for them, what do you say, so now the average cogs and sales are easy to get, other fields like the count and all, these are the view contexts, we will have the validation that the positivity must be there, physical stock must be positive, i cant remember more, if there are more then tell, note that be liberal, we need integrity not strict validation, the database integrity like the balance must be positive at all costs
 
-PAY
-    amt_in > 0
-    fx_in_to_out > 0: 1 if no org involved
-    date < present
-    metadata{}
-    a{
-        suspended
-        locked
-    }
-    relation{
-        in: TAX|T|ORG|ACC
-        out: TAX|T|ORG|ACC assert one from in, out must be t, in <> out
-    }
-    parent{
-        in.currency || SETTINGS:main.base_currency
-        out.currency || SETTINGS:main.base_currency
-    }
-    child{
-        PA.sum(allocate_amount_from_payment, group by PAY ) ?? 0 assert < amt_in and if suspended then must be = 0
-    }
-    z{
-        amt_to: amt_in * fx_in_to_out
-    }
+warehouse will have the sl context, validation the global stock matrix must not be negative, i dont understand the usage of the is_locked
 
-PA
-    metadata{}
-    allocate_amount_from_payment > 0
-    relation{
-        PAY
-        INV
-    }
-    parent{
-        PAY.fx_in_to_out
-    }
-    z{
-        allocat_amount_to_invoice: allocate_amount_from_payment * pay.fx_in_to_out
-    }
+stock account here serves as the universal account for manual entries like damage, depreciation,...., there will be no guard here, but still we can keep track of the total amount or qtys or some context in the view, so keep the view entry here
 
-INV
-    sales/purchase
-    metadata{}
-    a{
-        suspended
-        locked
-    }
-    relation{
-        ORG
-    }
-    parent{
-        ORG.currency
-    }
-    child{
-        payment_amt: PA.sum(allocat_amount_to_invoice, group by INV)
-        invoice_amt: INV_L.sum(total_line_value, group by INV)
-    }
-    z{
-        remaining_value: invoice_amt - payment_amt >= 0
-    }
+INTENTS
 
-INV_L(invoice line)
-I(item)
-SL(stock ledger)
-    metadata{}
-    qty > 0
-    date
-    a{
-        suspended
-        locked
-    }
-    relation{
-        in: SA|WH|INV_L
-        out: SA|WH|INV_L assert one from in, out must be warehouse, in <> out
-        dn: DN
-    }
-    child{
-        adjusted_qty: ASL.sum(adjusted_delta_qty) ?? 0 assert if suspended then must be 0
-    }
-    z{
-        total_adjusted_qty: qty - adjusted_qty >= 0
-    }
+invoice has context of currency from org, it can sales or purchase, two different views will also be better, it gets the context from invoice line view, payment allocation view, package note view, validation that the payment allocation cant exceed above the invoice value, note that take the after fx rate field from the payment allocation, the suspended validation guard, here the views also contains the context of adjusted values, tax lines there adjusted values and all, so here based on all the contexts make sure there was no sl trade done, this suspended is propagated to children as well
+
+payment has the context of payment allocation, validation guard that payment allocation cant exceed payment, now here the payment has currency derived from and to currencies from any two accounts, there is fx rate manual input, org natually have the currency, the rest like tax account, acc, treasury dont have so fallback to the company settings if there is not currency in the parent, also validate that one must be treasury account in from and to, the suspended context here make sure there was no payment allocation then only i can suspend
+
+adjustment note has the context of the adjustment lines and has the parent org, adjustment lines on tl, sl, inv line/cogs are stateless, they only carry the delta, these deltas are grouped into adjustment note, as said adjustment line dont have views they trigger through special exception to trigger all the adjustment notes after there parent as well, so the parent adjustment note updates itself by getting the delta of certain order, now adjustment note also groups each three of lines and all into array of invoice lines adjustments, each invoice adjustments has total adjusted and total tax adjusted, now i think there is some less context here or it is enough to make it, this is still some what ambigious so we need a discussion
+
+next level
+
+payment allocation has two fathers payment and invoice, it gives them the context of before and after exchange, it gets the exchange from the payment, note that the org must match, not just match but also the directions must match as well
 
 
-TAX
-TL(tax line)
-ACC
 
-AN(adjustment note)
-ANL(adjustment note line)
-ATL(adjustment tax line)
-ASL(adjustment stock line)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+i need to give an interview about this project so i have totally rewritten this
+whole project, or now totally discard the adjustment note and adjustment lines,
+we will only have the 7 level 0, intents payment and invoice, package note, inv
+line, pay allocation, tax line and stock ledger
+
+how it works:
+
+in org we would need the context of the child views payment, invoice, here we
+have two different views for better ness, in invoice there are two different
+views filtered with the sales and purchase, payment has two different from and
+to views, now we have to make sure all the derived fields are also accessible
+from the org only, org will have the currency, this is inherited in payment as
+well as invoice, make sure to include all the context required from all the
+views
+
+treasury mostly is correct but here the currency is normalised meaning a company
+has the currency from company settings not different for all treasury accounts,
+we dont need to give the currency here, it is understood that the currecny is
+from company settings only, i think in all the seven level 0 ones we dont need
+the locked status right, in tr there will be strict vaidation that the balance
+must be positive at all costs, so it gets the context from the payment from and
+to, and a guard to validate that balance must be positive
+
+in acc why mixing with the cogs, this is just like treasury just that we dont
+need the guard here thats it, it is used for something like account expense,
+account income, account manual entries and all, there is no relation to the cogs
+or stock ledger here
+
+tax account has payment i and out, tax line views contexts, here we derive the
+fields tax incomming and outgoing so what is the total tax value, for now make
+it simple and robust, also the net payment done must be positive
+
+item has sl and invoice line context, from invoice line we get the liability
+where as from sl we get the actual deliveries, the invoice line inherits the
+sales or purchase from invoice so in the item we have the net outside and net
+inside liability, also the sl has the actual inward and outward that is also
+there here, now comes the aggregated average cogs as well as the average sales,
+so basically we have some split contexts in invoice line and sl so it would be
+better to have different views for them, what do you say, so now the average
+cogs and sales are easy to get, other fields like the count and all, these are
+the view contexts, we will have the validation that the positivity must be
+there, physical stock must be positive, i cant remember more, if there are more
+then tell, note that be liberal, we need integrity not strict validation, the
+database integrity like the balance must be positive at all costs
+
+warehouse will have the sl context, validation the global stock matrix must not
+be negative, i dont understand the usage of the is_locked
+
+stock account here serves as the universal account for manual entries like
+damage, depreciation,...., there will be no guard here, but still we can keep
+track of the total amount or qtys or some context in the view, so keep the view
+entry here
+
+intents
+
+payment has the context of payment allocation, validation guard that payment
+allocation cant exceed payment, now here the payment has currency derived from
+and to currencies from any two accounts, there is fx rate manual input, org
+natually have the currency, the rest like tax account, acc, treasury dont have
+so fallback to the company settings if there is not currency in the parent, also
+validate that one must be treasury account in from and to, the suspended context
+here make sure there was no payment allocation then only i can suspend
+
+invoice has context of currency from org, it can sales or purchase, two
+different views will also be better, it gets the context from invoice line view,
+payment allocation view, package note view, validation that the payment
+allocation cant exceed above the invoice value, note that take the after fx rate
+field from the payment allocation, the suspended validation guard, here the
+views also contains the context of adjusted values, tax lines there adjusted
+values and all, so here based on all the contexts make sure there was no sl
+trade done, this suspended is propagated to children as well
+
+nest level
+
+package note has the context from sl and does not inherits anything but groups
+for a invoice, it gives some context to the invoice, so invoice cant be
+suspended when there is a package delivered or inv line, invoice can take the
+contexts from both
+
+invoice line has the context sl, tax line, gives context to invoice
+
+payment allocation has two parents invoice and pyament, it gets the from
+currency and to currency in payment, it basically captures both the before and
+after currency fx rates, so invoice makes it validation on the basis of
+direction and sign, example if i was invoiced they cant allocate the payment
+from there payment, what i mean is that the validation is robust i can validate
+the payment allocation both based on the sign and direction, so we have the
+context of the payment and invoice
+
+tax line has the parents tax account and also the invoice line, here the rates
+are enterede maually, but it also takes the total tax rate xontext from its
+parent invoice line and updates the divided rates, example if the tax rate were
+two records 0.09, 0.09, the invoice line will have a consolidated 0.18, now the
+total tax value when calculated in the invoice line, we simply update that value
+to the tax line, the tax line will get the total without tax and then multiply
+with its own tax rate to get its own splits, this amount is grouped by the tax
+account example sgst, cgst
+
+now comes the important understanding when i suspend the invoice or payment,
+they do the checking at there stage, but for things like the tax line, we will
+propagate to tax lines meaning if a invoice is suspended then the tax will be
+also suspended, the invoice lines will also be suspended, when payment is
+suspended the payment allocation must not be there, when invoice is suspended
+there must be no sl excange
+
+sl, here we make it easy for now, no suspend or locked here, it basically it
+simply maps the fathers package note, from, to and item, now when mapping there
+is also an extra view that groups by warehouse as well as the item, there will
+be two views for from and to, event to validate that each warehouse item pair
+should be positive, only warehouse filter, stock account can be negative, also
+in upper ones there will be check to validate that sl is in the right direction
+as well as the right behind the invoice line
+
+there will be guards on the payment and sl that from or to one must be treasury
+and in sl there must be one warehouse
+
+now make this, deep think and reason
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+I have reworked the whole thing from scratch
+
+Invoice we can make them filter based two different views, for payments we have from and to, for invoice we have org and sales/purchase so two different views will be better
+
+Org has the context and father of the invoice purchase/sale, payment from, to, adjustment note debit/credit as well, org has no normal guards but better to have more context like how much values and all, if it's free then use it, so the view population should be better, org has the currency, we will have the context from invoice, payment and adjustment note, we can split them into six with directions
+
+Treasury has the context and father of payment, treasury does not have any currency, it is normalised and understood that the currency is company settings currency, so payment basically gets the context of currencies from two tables, from and to, for treasury, acc, tax account it fall backs to company settings currency, so get the upper table. Cur if exists then use it otherwise fall back to company settings, guards for always being positive, so payment from and to must give the balance positive only
+
+Account, this should not contain the cogs, it does not deals with any stock related things, it is for payment and money related manual entries like expense, income and all, so just like treasury but no guard, same as treasury it does not has any currency, the normalised currency is used here as well, it has context of payment from and to
+
+Tax account, herethe context is of the tax lines as well as payment, the tax lines get the tax amount and update them here, so here we have the total tax example cgst, sgst, here the context of payment must be positive, derived field to show how much tax and all
+
+Item has the context from sl, inv line, item gets the variables like average cogs, average sales value, here sl is the actual transaction happened, while inv line is just a liability like thing, it works like this the sl if it has any of from or to inv line then it simply gets the item from the inv line only, so we may have the context from inv line as well as cogs, here note that the cogs is there in sl as well as inv line, basically just like item, it either inherits from inv line if there else manual input, so item has the required contexts, guard that cogs must be positive, other suggestions if there are any, note that item can be service as well, now how would i handle the item as a service to not exhaust in warehouse, will it hinder other things, how can i make it such that process is still easy and smooth and no hinderance
+
+Stock account deals with the stock related stuff like damage, manufacturing, depreciation, basically only stock related things, just like account for payment, stock account for sl, here I can map off things, here we have simple context but no guard
+
+Warehouse has the context from sl, here we put normalised info, not just here wherever we need normalised info, so instead of storing array of items and there qtys, we store the total global matrix qtys and total value of that which can't get negative
+
+Payment has the context of pay allocation and gets the vars from father for currency if not available then fall back to company settings, note that two currency are stored along with a manual entered fx rate, so it tells both the our currency amount and there currency amount, there will be guard that at least one of the from or to must be treasury table, there will be two views as well, there will also be a guard that takes the context of pay allocation and validate that total pay allocated amount must be less than pay, so by default we have the tax account payment, account and treasury in our own currency only and when the currency is same simply take 1 as fx rate, make the fx rate declarative for easiness
+
+Invoice has the context from inv line, sl, tl, pa, package, and there adjustments as well, basically here is where the maximum of the contexts appear, get the children views like payment allocation, inv lines, note that they pass on many other contexts as well like total qtys of items involved, total value,......., now takes or inherits the currency from its father org, the fx rate is entered manually, it gives the org the total value and all, it also has sales or purchase tag, it guards the payment allocation, note that because of time difference here we have to take the after conversion rate from pa, so view of sum of all the after converted rates should be less than the invoice total amount which it gets from inv line, we also have the package note, it gets the total qty and its value which will be same as in the inv line but still, the contexts like tax ammount and others like sl total delivery and all will be usefull for other guards, especially status guards
+
+adjustment note has the context from the adjustment lines, here there is no view to propagate upward, so we make a custom event to update the adjustment note when a adjustment line is changed, it declares many things in the table only, this is the only exception where we make queries on table that are not O(1) like views have, this is triggered by the event in the adjustment lines, here i would need efficient algorithms for calculating the ordered plates, basically when we take an invoice we can divide it into many adjustments, meaning an org can have many inv lines from different invoices adjusted in one single note, and we have to maintain that order when we make another adjustment note, we can declare the main variables like total adjusted value without tax, total tax adjusted, ...., the algorithm works like this, when an adjustment line is updated it first gets all the adjustment lines on the same parent, basically its siblings and filters the created date greater then itself and then fires an event to update all the adjustment notes parents of these, is this correct, note that adjustment note has the view to org, so propagates upward, now adjustment note also makes a custom json like thing, here it through traversal gets the set of invoice lines it has manipulated and makes an entire json for the changes and all in detail, it also sums the certain fields to get the total adjusted value and tax added by it, if i am not wrong when i aggregate all the adjustment note for a org i get the same as when i get from the invoive through other propagation path, right
+
+payment allocation has father payment and invoice, here this is a manual entry, we get the fx rate from the payment and derive the currency conversion so we pass both the after and before conversion contexts, rest validation is made in the parents
+
+package note has the context of sl where it groups multiple sl, it basically has the context like how much is the total value of the sl, how much is the total qty, average cogs, average for each item cost of the sl and others if needed for the context, now we also need to check the direction, it gets the direction as well, this is used to guard or validate the opposite direction in the invoice line, now i have two options either i check this in invoice line or here, i have the question what will be easier, whatever is easier we use that
+
+invoice line has the context of the total tax rate from tax lines, it has the parents item, invoice, it gets the sl total value and total qtys, note that sl gets the cogs from the inv line if there was inv line involved, meaning sl first gets the parent and then updates the parent through upward propagation, this means when i update the invoice line the package note also gets updated and validated, guards for the opposing direction, and also for the range, example if the inv line has 6 items then i cant move more than 6 items in sl, here only the without tax amount, total amount, tax amount, and others are derived, note that the tax line, stock ledger have two values there own and also there adjusted values, meaning if we permutated the variables will be increased, and also it has to propagate all the values to the org as well, also the context for the adjusted cogs from inv line will be there, we have the guard that i cant over deliver or deliver in negative direction
+
+tax line has the context of adjusted tax only, it gets the amount without tax from the father invoice line and updates the tax in itself, it also has the adjusted value so it divided that as well and propagates to the tax account both the values, in this was we have both the contexts here, validation like tax rate must be positive and minor ones would be there, the derived tax amount after sum with adjusted value must be positive, i cant think of any other guard here, do you
+
+sl will have the context of sl adjustements, same that the adjustments cant make the derived sl to be negative, sl again propagates both the values to its parents, now it has the from, to, item, package note, here it propagates the total value, in the from and to it can have the inv line/stock acc/warehouse, here the guard that one must be warehouse, it either inherits the item and its cogs from the inv line if there is any one inv line or they are manual entered, so when there is inv line they are just overrided, here guard that only one of the from and to can be inv line, one must be warehouse
+
+in both the sl and treasury warehouse to warehouse or treasury to treasury can take place so i dont think we need any change simply it gets negated in the balance or total value right or do we need something here, parents item and warehouse get some more contexts, item gets its average cogs or sales price and whatever, note that this is just for record purposes, in the inv line we still need to manually enter and sl inherits if inv line or manual entry for the stock account, it gets things like item and its cogs from inv line, do i need anything more, it propagates the things to the invoice line as well as package note, inside of them we also need the directions
+
+there will be a special view on the sl that is grouped by warehouse and item, here there will be an event that makes sure that ware house and an item pair is always positive, we can do this by making the event get the directions and then adding them or is there a better way to ensure this then tell me
+
+now comes the adjustments, here the lines only store the delta,they dont have anything else derived from parents, the parents are tl/sl/inv line and adjustment note, inv line for adjusting the cogs, tl to adjust tax rate, sl to adjust the qty, there will be views for tl/sl/inv line, no views to update the adjustment note, so a custom event will be there to update all the affected adjustment notes, note that the tax, invoice line and others have all the context of how much was adjusted and all, the differences is that they are initial and final, they dont have divided planes like adjustment notes have, here i think both total adjusted and adjusted tax will be same only when i aggregate them wholly right, so the adjustment notes have more divided and detailed context and tl,sl,inv line, inv, upper propagations will also have the context but it will be final and initial only of a particular inv line, right
+
+there will also be another exception event on invoice line, it activates when the adjusted final values of tax, sl, or cogs gets changed in invoice due to change in things like cogs, tl,sl, here for validation as well as the integrity we traverse to the adjustment lines and update all the adjustment notes, i know this has massive complexity but the real adjustment records are significantly lesser, note that adjustment lines only have the delta they simply propagate, the upper fields are the one to evaluate and validate and all, here in the calculations we must use the adjusted values, example in sl, tl and inv line we use adjusted values so the correctness is maintained, but still we will have the full context of whatever is avaialbale, what do you say
+
+because there is no suspended or locked, we would not need the status guards anymore, still the normal guards that validate the magnitude range and direction will be still used, i want complete integrity, basically precaution based, do not let the bad data come in, what do you say, deep think and answer, is there any ambiguity remaining
+
+now comes the biggest change we wont have any locked or suspended variable states, simply delete it, here because of massive headache we remove it better so calculations can be much much easier

@@ -19,6 +19,12 @@ DEFINE EVENT ping_v_inv_org ON TABLE v_inv_org WHEN $event != 'NONE' THEN {
     UPDATE $t SET system_ping = time::now();
 };
 
+DEFINE EVENT ping_v_adj_org ON TABLE v_adj_org WHEN $event != 'NONE' THEN {
+    LET $t = $after.org ?? $before.org;
+    IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
+    UPDATE $t SET system_ping = time::now();
+};
+
 DEFINE EVENT ping_v_pa_pay ON TABLE v_pa_pay WHEN $event != 'NONE' THEN {
     LET $t = $after.payment ?? $before.payment;
     IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
@@ -49,26 +55,14 @@ DEFINE EVENT ping_v_sl_pkg ON TABLE v_sl_pkg WHEN $event != 'NONE' THEN {
     UPDATE $t SET system_ping = time::now();
 };
 
-DEFINE EVENT ping_v_sl_invl_in ON TABLE v_sl_invl_in WHEN $event != 'NONE' THEN {
+DEFINE EVENT ping_v_sl_invl_from ON TABLE v_sl_invl_from WHEN $event != 'NONE' THEN {
     LET $t = $after.inv_line ?? $before.inv_line;
     IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
     UPDATE $t SET system_ping = time::now();
 };
 
-DEFINE EVENT ping_v_sl_invl_out ON TABLE v_sl_invl_out WHEN $event != 'NONE' THEN {
+DEFINE EVENT ping_v_sl_invl_to ON TABLE v_sl_invl_to WHEN $event != 'NONE' THEN {
     LET $t = $after.inv_line ?? $before.inv_line;
-    IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
-    UPDATE $t SET system_ping = time::now();
-};
-
-DEFINE EVENT ping_v_sl_item_in ON TABLE v_sl_item_in WHEN $event != 'NONE' THEN {
-    LET $t = $after.item ?? $before.item;
-    IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
-    UPDATE $t SET system_ping = time::now();
-};
-
-DEFINE EVENT ping_v_sl_item_out ON TABLE v_sl_item_out WHEN $event != 'NONE' THEN {
-    LET $t = $after.item ?? $before.item;
     IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };
     UPDATE $t SET system_ping = time::now();
 };

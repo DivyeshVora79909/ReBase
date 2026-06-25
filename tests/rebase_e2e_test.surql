@@ -1,113 +1,114 @@
-USE NS main DB main;
+-- ------------------------------------------------------------------------------
+-- PHASE 0: BOOTSTRAP ANCHORS
+-- ------------------------------------------------------------------------------
+CREATE org:vendor SET a_in_name = 'Supplier Inc', owned_by = groups:root;
+CREATE org:customer SET a_in_name = 'Client LLC', owned_by = groups:root;
+CREATE org:rogue SET a_in_name = 'Rogue Corp', owned_by = groups:root;
 
--- =====================================================================
--- STEP 1: CREATE THE ANCHORS (Level 0)
--- =====================================================================
-CREATE org:tech_supplier SET name = "Tech Distro Inc.", currency = "USD";
-CREATE org:acme_customer SET name = "Acme Corp", currency = "EUR";
+CREATE treasury:main SET a_in_name = 'HQ Bank', owned_by = groups:root;
+CREATE acc:cogs SET a_in_name = 'COGS', owned_by = groups:root;
+CREATE tax_account:vat SET a_in_name = 'VAT 10%', owned_by = groups:root;
+CREATE warehouse:ny SET a_in_name = 'New York Depot', owned_by = groups:root;
 
-CREATE treasury:main SET name = "Central Bank", currency = "USD";
-CREATE acc:cogs SET name = "Cost of Goods Sold", type = "expense";
-CREATE tax_account:sales_tax SET name = "Sales Tax Payable";
-
-CREATE warehouse:main SET name = "Central Fulfillment";
-CREATE stock_acc:vendor SET name = "Vendor Transit";
-CREATE stock_acc:customer SET name = "Customer Transit";
-
-CREATE item:laptop SET name = "Pro Laptop", is_service = false, default_cogs = 0dec;
-CREATE item:setup SET name = "Setup Service", is_service = true;
-
-SELECT '1. ANCHORS CREATED' AS step;
+CREATE item:alpha SET a_in_name = 'Product Alpha', a_in_cogs_acc = acc:cogs, owned_by = groups:root;
+CREATE item:srv SET a_in_name = 'Consulting', a_in_is_service = true, a_in_cogs_acc = acc:cogs, owned_by = groups:root;
 
 
--- =====================================================================
--- STEP 2: PURCHASE INVENTORY (Level 1 & 2)
--- Buying 10 Laptops at $1000 each.
--- =====================================================================
-CREATE invoice:pur_1 SET org = org:tech_supplier, raw_type = "purchase";
-CREATE invoice_line:il_pur_1 SET invoice = invoice:pur_1, item = item:laptop, raw_qty = 10dec, raw_unit_price = 1000dec;
+-- ------------------------------------------------------------------------------
+-- PHASE 1: PROCUREMENT (INBOUND PHYSICS)
+-- ------------------------------------------------------------------------------
+CREATE invoice:pur1 SET a_in_org = org:vendor, a_in_type = 'purchase', owned_by = groups:root;
+-- Buy 100 Alpha @ $50
+CREATE invoice_line:il_pur1 SET a_in_invoice = invoice:pur1, a_in_item = item:alpha, a_in_qty = 100dec, a_in_price = 50dec;
+-- Receive 100 Alpha into NY Warehouse
+CREATE sl:recv1 SET a_in_from = invoice_line:il_pur1, a_in_to = warehouse:ny, a_in_qty = 100dec;
 
--- PROOF: Invoice aggregates the $10,000. Item sees 10 inbound financial qty.
-SELECT '2. PURCHASE INTENT' AS step, zz.grand_total FROM invoice:pur_1;
-
-
--- =====================================================================
--- STEP 3: PHYSICAL RECEIVE (Level 3)
--- Moving stock from the contract (inv_line) to the Warehouse.
--- =====================================================================
-CREATE sl:in_1 SET from = invoice_line:il_pur_1, to = warehouse:main, raw_qty = 10dec;
-
--- PROOF: Matrix Shield allows it. Item Avg COGS calculates. Warehouse fills up.
-SELECT '3. INVENTORY RECEIVED' AS step, zz.physical_stock, zz.avg_cogs FROM item:laptop;
-SELECT '3. WAREHOUSE STOCK' AS step, zz.global_matrix_stock FROM warehouse:main;
+-- 🔍 DEBUG 1: POST-RECEIPT STATE
+SELECT 'DEBUG 1A: TABLE STOCK (REALITY)' AS debug_step, d_c1_global_matrix_stock AS total_stock FROM warehouse:ny;
+SELECT 'DEBUG 1B: VIEW STOCK (AGGREGATION)' AS debug_step, * FROM v_sl_node_in WHERE node = warehouse:ny;
+SELECT 'DEBUG 1C: ITEM COGS' AS debug_step, f_out.actual_unit_cogs AS avg_cogs FROM item:alpha;
 
 
--- =====================================================================
--- STEP 4: SALES & TAXES (Level 1, 2, 3)
--- Selling 2 Laptops at $2000 each + 10% Tax.
--- =====================================================================
-CREATE invoice:sale_1 SET org = org:acme_customer, raw_type = "sales";
-CREATE invoice_line:il_sale_1 SET invoice = invoice:sale_1, item = item:laptop, raw_qty = 2dec, raw_unit_price = 2000dec;
-CREATE tax_line:tl_1 SET invoice_line = invoice_line:il_sale_1, tax_account = tax_account:sales_tax, raw_rate = 10dec;
+-- ------------------------------------------------------------------------------
+-- PHASE 2: SALES (OUTBOUND PHYSICS & TAXES)
+-- ------------------------------------------------------------------------------
+CREATE invoice:sal1 SET a_in_org = org:customer, a_in_type = 'sales', owned_by = groups:root;
+-- Sell 10 Alpha @ $100 ($1000 Base)
+CREATE invoice_line:il_sal_alpha SET a_in_invoice = invoice:sal1, a_in_item = item:alpha, a_in_qty = 10dec, a_in_price = 100dec;
+-- Sell 1 Service @ $200 ($200 Base)
+CREATE invoice_line:il_sal_srv SET a_in_invoice = invoice:sal1, a_in_item = item:srv, a_in_qty = 1dec, a_in_price = 200dec;
+-- 10% Tax on Alpha only ($100 Tax)
+CREATE tax_line:tl_sal1 SET a_in_invoice_line = invoice_line:il_sal_alpha, a_in_tax_account = tax_account:vat, a_in_rate = 10dec;
+CREATE package_note:pkg1 SET a_in_invoice = invoice:sal1, owned_by = groups:root;
 
--- PROOF: Tax calculates automatically. Invoice totals $4400.
-SELECT '4. SALES TOTALS' AS step, zzzzz_out.sales_base_value, zzzzz_out.sales_tax_value, zz.grand_total FROM invoice:sale_1;
+-- 🔍 DEBUG 2: PRE-SHIPMENT INVOICE STATE
+SELECT 'DEBUG 2A: PRE-SHIP INVOICE' AS debug_step, f_out.inv_grand_total AS total, f_out.tl_sales_tax AS tax FROM invoice:sal1;
+SELECT 'DEBUG 2B: PRE-SHIP LINE' AS debug_step, d_c4_delivered_qty AS delivered FROM invoice_line:il_sal_alpha;
 
+-- Ship 10 Alpha out of NY (Should trigger O(1) Matrix Guard and Package View)
+CREATE sl:ship1 SET a_in_from = warehouse:ny, a_in_to = invoice_line:il_sal_alpha, a_in_qty = 10dec, a_in_pkg = package_note:pkg1;
 
--- =====================================================================
--- STEP 5: PHYSICAL SHIP (Level 3 Matrix Check)
--- Moving stock from Warehouse to the Sales Contract.
--- =====================================================================
-CREATE package_note:pkg_1 SET invoice = invoice:sale_1, tracking = "TRACK-123";
-CREATE sl:out_1 SET from = warehouse:main, to = invoice_line:il_sale_1, pkg = package_note:pkg_1, raw_qty = 2dec;
-
--- PROOF: Warehouse drops to 8. COGS ledger hits $2000 (2 * 1000 avg_cost).
-SELECT '5. WH REMAINING' AS step, zz.global_matrix_stock FROM warehouse:main;
-SELECT '5. COGS EXPENSE' AS step, zz.balance FROM acc:cogs;
-
-
--- =====================================================================
--- STEP 6: PAYMENT & DAG CHECK
--- Acme pays the $4400 invoice.
--- =====================================================================
-CREATE payment:pay_1 SET from = org:acme_customer, to = treasury:main, raw_amount = 4400dec, fx_rate = 1.0dec;
-CREATE payment_allocation:pa_1 SET payment = payment:pay_1, invoice = invoice:sale_1, raw_amount = 4400dec;
-
--- PROOF: Treasury hits 4400. Acme's Net Financial Position hits 0. Invoice allocation shield hits 0.
-SELECT '6. TREASURY' AS step, zz.balance FROM treasury:main;
-SELECT '6. ORG BALANCE' AS step, zz.net_financial_position FROM org:acme_customer;
-SELECT '6. INV UNPAID' AS step, zzz.allocation_shield FROM invoice:sale_1;
+-- 🔍 DEBUG 3: POST-SHIPMENT STATE & TIMING DIAGNOSTICS
+SELECT 'DEBUG 3A: PACKAGE VIEW' AS debug_step, f_out.pkg_delivered_qty AS packaged FROM package_note:pkg1;
+SELECT 'DEBUG 3B: INV LINE VIEW' AS debug_step, d_c4_delivered_qty AS delivered FROM invoice_line:il_sal_alpha;
+-- VERY IMPORTANT: This checks the specific failing Materialized View from your last run
+SELECT 'DEBUG 3C: THE FAILING MAT-VIEW' AS debug_step, inbound, outbound, (inbound - outbound) AS net FROM v_wh_item_stock WHERE warehouse = warehouse:ny;
 
 
--- =====================================================================
--- STEP 7: THE ZIG-ZAG DELTA RIPPLE
--- The Vendor gives us a retroactive discount on the laptops. Drops price by $100.
--- =====================================================================
-CREATE adjustment_note:an_1 SET org = org:tech_supplier;
-CREATE adjustment_line:al_1 SET adjustment_note = adjustment_note:an_1, invoice_line = invoice_line:il_pur_1, delta_qty = 0dec, delta_cogs = -100dec;
+-- ------------------------------------------------------------------------------
+-- PHASE 4: THE DAG RIPPLE (ADJUSTMENTS)
+-- ------------------------------------------------------------------------------
+CREATE adjustment_note:adj1 SET a_in_org = org:customer, a_in_type = 'credit', owned_by = groups:root;
+-- Drop Alpha price by -$20 (Base drops 1000 -> 800)
+CREATE adjustment_line:al_alpha SET a_in_note = adjustment_note:adj1, a_in_invl = invoice_line:il_sal_alpha, a_in_delta_price = -20dec;
 
--- PROOF: Watch the engine ripple!
--- 1. Invoice Line cost drops from 1000 to 900.
--- 2. Item Avg COGS recalculates from 1000 to 900.
--- 3. The Downward Ping wakes up SL! The COGS expense for the sale we already made drops from 2000 to 1800!
-SELECT '7. NEW AVG COGS' AS step, zz.avg_cogs FROM item:laptop;
-SELECT '7. NEW COGS EXPENSE' AS step, zz.balance FROM acc:cogs;
-SELECT '7. VENDOR OWED' AS step, zz.net_financial_position FROM org:tech_supplier;
+-- 🔍 DEBUG 4: THE PHYSICS CASCADE
+-- Expected Base: $800. Expected Tax: $80. Expected Total: $800 + $200 (srv) + $80 = $1080.
+SELECT 'DEBUG 4A: ADJUSTED INVOICE TOTAL' AS debug_step, f_out.inv_grand_total AS grand_total FROM invoice:sal1;
+SELECT 'DEBUG 4B: ADJUSTED TAX LINE' AS debug_step, f_out.tl_sales_tax AS dynamic_tax FROM tax_line:tl_sal1;
 
 
--- =====================================================================
--- STEP 8: NEGATIVE DESTRUCTIVE TESTS
--- (Uncomment to test the physical shields)
--- =====================================================================
+-- ------------------------------------------------------------------------------
+-- PHASE 5: FINANCIAL SETTLEMENT
+-- ------------------------------------------------------------------------------
+CREATE payment:pay1 SET a_in_from = org:customer, a_in_to = treasury:main, a_in_amount = 1080dec;
+CREATE payment_allocation:pa1 SET a_in_payment = payment:pay1, a_in_invoice = invoice:sal1, a_in_amount = 1080dec;
 
--- TEST A: MATRIX SHIELD (Try to ship 100 laptops when we only have 8)
--- EXPECTED: THROW "ASSERT $value = true failed"
--- CREATE sl:fail_1 SET from = warehouse:main, to = stock_acc:customer, item = item:laptop, raw_qty = 100dec;
+-- 🔍 DEBUG 5: SETTLEMENT STATE
+SELECT 'DEBUG 5A: ORG BALANCES' AS debug_step, d_c1_net_financial_position AS vendor_bal FROM org:vendor;
+SELECT 'DEBUG 5B: ORG BALANCES' AS debug_step, d_c1_net_financial_position AS customer_bal FROM org:customer;
+SELECT 'DEBUG 5C: INVOICE SHIELD' AS debug_step, d_c2_allocation_shield AS shield_remaining FROM invoice:sal1;
 
--- TEST B: DAG FRACTURE (Try to allocate Acme's money to Tech Distro's invoice)
--- EXPECTED: THROW "UX_ERR: DAG Fracture. Payment and Invoice do not share Org."
--- CREATE payment_allocation:fail_2 SET payment = payment:pay_1, invoice = invoice:pur_1, raw_amount = 1dec;
 
--- TEST C: VECTOR SHIELD (Try to receive inbound goods on a Sales Invoice)
--- EXPECTED: THROW "PHYSICS_ERR: Sales invoice cannot have inbound deliveries."
--- CREATE sl:fail_3 SET from = stock_acc:vendor, to = invoice_line:il_sale_1, raw_qty = 1dec;
+-- ------------------------------------------------------------------------------
+-- PHASE 6: THE SABOTAGE GAUNTLET (PERMUTATIONS)
+-- ------------------------------------------------------------------------------
+
+-- PERMUTATION 1: Cross-Org DAG Fracture (Adjustment Note)
+CREATE adjustment_note:adj_fail SET a_in_org = org:rogue, a_in_type = 'credit', owned_by = groups:root;
+CREATE adjustment_line:fail_adj SET a_in_note = adjustment_note:adj_fail, a_in_invl = invoice_line:il_sal_alpha, a_in_delta_price = -1dec;
+-- EXPECTED: Throws DAG FRACTURE (Note Org != Inv Line Org)
+
+-- PERMUTATION 2: Cross-Invoice DAG Fracture (Package Note)
+CREATE invoice:sal_dummy SET a_in_org = org:customer, a_in_type = 'sales', owned_by = groups:root;
+CREATE package_note:pkg_fail SET a_in_invoice = invoice:sal_dummy, owned_by = groups:root;
+CREATE sl:fail_pkg SET a_in_from = warehouse:ny, a_in_to = invoice_line:il_sal_alpha, a_in_qty = 1dec, a_in_pkg = package_note:pkg_fail;
+-- EXPECTED: Throws DAG FRACTURE (Package Note Inv != SL Inv Target)
+
+-- PERMUTATION 3: Physics Direction Collision (Receiving into a Sales Contract)
+CREATE sl:fail_dir SET a_in_from = invoice_line:il_sal_alpha, a_in_to = warehouse:ny, a_in_qty = 1dec;
+-- EXPECTED: Throws PHYSICS_ERR (Sales cannot receive inbound stock)
+
+-- PERMUTATION 4: Physics Over-Delivery
+CREATE sl:fail_over SET a_in_from = warehouse:ny, a_in_to = invoice_line:il_sal_alpha, a_in_qty = 1dec;
+-- EXPECTED: Throws PHYSICS_ERR (Delivered qty exceeds net contract qty)
+
+-- PERMUTATION 5: Physics Negative Stock / O(1) Matrix Guard
+CREATE invoice_line:il_fail_stock SET a_in_invoice = invoice:sal1, a_in_item = item:alpha, a_in_qty = 5000dec, a_in_price = 1dec;
+CREATE sl:fail_stock SET a_in_from = warehouse:ny, a_in_to = invoice_line:il_fail_stock, a_in_qty = 5000dec;
+-- EXPECTED: Throws PHYSICS_ERR (Insufficient Physical Stock)
+
+-- PERMUTATION 6: Financial Over-Allocation
+CREATE payment:pay_fail SET a_in_from = org:customer, a_in_to = treasury:main, a_in_amount = 500dec;
+CREATE payment_allocation:fail_alloc SET a_in_payment = payment:pay_fail, a_in_invoice = invoice:sal1, a_in_amount = 500dec;
+-- EXPECTED: Throws UX_ERR (Exceeds invoice shield)

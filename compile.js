@@ -1,5 +1,5 @@
 // ==============================================================================
-// REBASE META-COMPILER (PROTOCOL V5)
+// REBASE META-COMPILER (PROTOCOL V5.1 - DAG TOPOLOGY SUPPORT)
 // ==============================================================================
 const fs = require("fs");
 
@@ -8,14 +8,12 @@ console.log("🚀 Initializing ReBase Compiler Pipeline...");
 const file06 = fs.readFileSync("06_table_fields.surql", "utf8");
 const file07 = fs.readFileSync("07_views.surql", "utf8");
 
-// 1. EXTRACT TABLES
 const allTables = [
   ...new Set(
     [...file06.matchAll(/DEFINE TABLE ([a-zA-Z0-9_]+)/g)].map((m) => m[1]),
   ),
 ].sort();
 
-// PASS 1: MAP FIELD TYPES FOR RBAC
 const fieldTypeMap = {};
 const typeRegex =
   /DEFINE FIELD (a_in_[a-zA-Z0-9_]+) ON ([a-zA-Z0-9_]+) TYPE (?:option<)?record<([a-zA-Z0-9_| ]+)>/g;
@@ -28,7 +26,6 @@ while ((match = typeRegex.exec(file06)) !== null) {
     .map((t) => t.trim());
 }
 
-// 2. RBAC & META COMPILER (Files 02, 03, 04, 05)
 let file02 = `-- FILE 02: RLS PERMISSIONS\nUSE NS main DB main;\n\n`;
 let file03 = `-- FILE 03: DAG OWNERSHIP INHERITANCE\nUSE NS main DB main;\n\n`;
 let file04 = `-- FILE 04: AUDIT FIELDS\nUSE NS main DB main;\n\n`;
@@ -65,7 +62,6 @@ fs.writeFileSync("03_owners.surql", file03);
 fs.writeFileSync("04_audit_meta_fields.surql", file04);
 fs.writeFileSync("05_system_flags.surql", file05);
 
-// 3. REACTIVE PING COMPILER (Files 08 & 09)
 let file08 = `-- FILE 08: UPWARD PROPAGATION (O(1) VIEWS TO PARENT SIGNAL)\nUSE NS main DB main;\n\n`;
 const viewRegex =
   /DEFINE TABLE (?:OVERWRITE )?(v_[a-zA-Z0-9_]+) AS SELECT .*? GROUP BY ([a-zA-Z0-9_, ]+);/g;
@@ -73,7 +69,6 @@ while ((match = viewRegex.exec(file07)) !== null) {
   const viewName = match[1];
   const keys = match[2].split(",").map((k) => k.trim());
   if (keys.length === 1) {
-    // Only ping 1D views
     const parentKey = keys[0];
     file08 += `DEFINE EVENT ping_${viewName} ON TABLE ${viewName} WHEN $event != 'NONE' THEN {\n    LET $t = $after.${parentKey} ?? $before.${parentKey};\n    IF ($t.f_out.is_locked ?? false) = true { THROW "LOCKED"; };\n    UPDATE $t SET system_ping = time::now();\n};\n\n`;
   }
@@ -82,7 +77,6 @@ fs.writeFileSync("08_events_upward.surql", file08);
 
 let file09 = `-- FILE 09: DOWNWARD PROPAGATION (DAG ALERTS)\nUSE NS main DB main;\n\n`;
 const dependMap = {};
-// Parse Context Regex: looks for b_ctx_... VALUE ... $this.a_in_[ref].f_out.[target]
 const blockRegex = /DEFINE TABLE ([a-zA-Z0-9_]+).*?(?=DEFINE TABLE|$)/gs;
 while ((match = blockRegex.exec(file06)) !== null) {
   const childTable = match[1];
@@ -90,7 +84,7 @@ while ((match = blockRegex.exec(file06)) !== null) {
   const ctxRegex = /\$this\.(a_in_[a-zA-Z0-9_]+)\.f_out\.([a-zA-Z0-9_]+)/g;
   let ctxMatch;
   while ((ctxMatch = ctxRegex.exec(blockContent)) !== null) {
-    const parentFieldRef = ctxMatch[1]; // e.g., 'a_in_invoice'
+    const parentFieldRef = ctxMatch[1];
     const targetOutput = ctxMatch[2];
     const parentTables =
       fieldTypeMap[childTable] && fieldTypeMap[childTable][parentFieldRef];
