@@ -251,3 +251,55 @@ there will also be another exception event on invoice line, it activates when th
 because there is no suspended or locked, we would not need the status guards anymore, still the normal guards that validate the magnitude range and direction will be still used, i want complete integrity, basically precaution based, do not let the bad data come in, what do you say, deep think and answer, is there any ambiguity remaining
 
 now comes the biggest change we wont have any locked or suspended variable states, simply delete it, here because of massive headache we remove it better so calculations can be much much easier
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+acc, item, stock acc
+
+DEFINE FIELD b_ctx_sys_curr ON payment VALUE (SELECT VALUE default_currency FROM company:settings LIMIT 1)[0];
+make it easier, we simply use dot operators right for easier syntax
+
+DEFINE FIELD e_guard_state ON payment TYPE bool VALUE {
+    LET $is_from_tr = record::tb($this.a_in_from) = 'treasury';
+    LET $is_to_tr = record::tb($this.a_in_to) = 'treasury';
+    IF NOT ($is_from_tr OR $is_to_tr) { THROW "PHYSICS_ERR: At least one leg of a Payment must touch a Treasury."; };
+    RETURN true;
+} ASSERT $value = true;
+we can make this better syntax that is more general and robust, also dont use not operator as parser gets more confused in if condition
+
+DEFINE FIELD a_in_type ON adjustment_note TYPE string ASSERT $value IN ['debit', 'credit'];
+here we have to derive if it is credit or debit note, or should i do this in frontend, i think we can derive this right, also in the adjustment note
+
+DEFINE FIELD d_c1_computed_json ON adjustment_note TYPE string VALUE {
+    LET $my_id = $this.id; 
+    LET $details = (SELECT a_in_invl, f_out.al_delta_qty, f_out.al_delta_price FROM adjustment_line WHERE a_in_note = $my_id);
+    RETURN type::string($details);
+};
+here i did not mean to store literal string, we can have array or objects, from json i mean nesting and all, here we can optimise, we can store some more things and all, note that here some what time complexity is forgiven because adjustment notes are very low compared to invoices and payments, so we can afford to do some more complex stuff here, also this is simply storing here a copy, i can simply traverse, the entire point is that adjustment gets the context of mid planes in the whole adjusted invoice with many adjustment notes and lines, basically this makes a complex graph so instead of efficient work, we simply do the calculation entirely again, we can also improve the syntax, why use my_id or $this.id, we can simply use id, thats it
+
+
+i though about some logic here, first get all the ids of the children adjustment lines then get all the invoice lines of those adjustment lines then make a set of those invoice lines, here the array of objects of invoice lines, here in each object of a invoice line there will be diffs, we define how many diff lines are there, the maximum is three if there are more then error, cause the granular control we maximum can only add three per sl, tl, inv line/cogs, so here do i need to add that validation here, after getting diffs, we can have possbilities of 0,1,2,3 diffs, if there is no lines associated this is the client's fault he can delete the adjustment note without any error, for diffs 1,2 the diffs will be there and get them from there lines and for the no diff ones simply fallback to 0 diff and note them in the context of the inv line obj, for 3 all diffs will be present, now the whole inv line before and after will be there and all, here we get the total of all the tax amount, total amount, it can be negative as well as positive, so from the array consolidated we get one values for total tax, total amount added to the org, i think here there can be a mismatch that total amount is positive and tax amount is negative, what to do then, we can enforce that both should be positive or negative, if one is positive and other is negative then we can throw error, based on positive or negative we consider it credit or debit note, what about this idea, is there any ambiguity
+
+
+in package note we are only giving away the total qty and no total value, is that already covered meaning the invoice gets the total value of the qty from the inv line only, then there is no problem, just a simple check

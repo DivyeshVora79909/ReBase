@@ -19,18 +19,6 @@ DEFINE TABLE OVERWRITE adjustment_note SCHEMAFULL PERMISSIONS
     FOR update WHERE 'adjustment_note_update' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
     FOR delete WHERE 'adjustment_note_delete' IN $auth.permissions AND (owned_by IN $auth.dominates);
 
-DEFINE TABLE OVERWRITE adjustment_stock_line SCHEMAFULL PERMISSIONS
-    FOR select WHERE 'adjustment_stock_line_select' IN $auth.permissions AND (owners CONTAINS $auth.parents OR owners CONTAINS $auth.dominates)
-    FOR create WHERE 'adjustment_stock_line_create' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
-    FOR update WHERE 'adjustment_stock_line_update' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
-    FOR delete WHERE 'adjustment_stock_line_delete' IN $auth.permissions AND (owned_by IN $auth.dominates);
-
-DEFINE TABLE OVERWRITE adjustment_tax_line SCHEMAFULL PERMISSIONS
-    FOR select WHERE 'adjustment_tax_line_select' IN $auth.permissions AND (owners CONTAINS $auth.parents OR owners CONTAINS $auth.dominates)
-    FOR create WHERE 'adjustment_tax_line_create' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
-    FOR update WHERE 'adjustment_tax_line_update' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
-    FOR delete WHERE 'adjustment_tax_line_delete' IN $auth.permissions AND (owned_by IN $auth.dominates);
-
 DEFINE TABLE OVERWRITE invoice SCHEMAFULL PERMISSIONS
     FOR select WHERE 'invoice_select' IN $auth.permissions AND (owners CONTAINS $auth.parents OR owners CONTAINS $auth.dominates)
     FOR create WHERE 'invoice_create' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)

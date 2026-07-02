@@ -1,44 +1,40 @@
--- FILE 07: O(1) AGGREGATIONS
+-- ==============================================================================
+-- FILE 07: O(1) AGGREGATIONS & BI VIEWS
+-- ==============================================================================
 USE NS main DB main;
 
--- 1. POLYMORPHIC MONEY ROUTING
-DEFINE TABLE OVERWRITE v_pay_node_to AS SELECT a_in_to AS node, math::sum(f_out.pay_inbound_val) AS pay_inbound_val FROM payment GROUP BY node;
-DEFINE TABLE OVERWRITE v_pay_node_from AS SELECT a_in_from AS node, math::sum(f_out.pay_outbound_val) AS pay_outbound_val FROM payment GROUP BY node;
+-- 1. PAYMENT ROUTING 
+DEFINE TABLE OVERWRITE v_pay_to AS SELECT a_to AS node, math::sum(a_amount) AS amount, math::sum(a_amount * a_fx_rate) AS val FROM payment WHERE d2_p_to = 1 GROUP BY node;
+DEFINE TABLE OVERWRITE v_pay_from AS SELECT a_from AS node, math::sum(a_amount) AS amount, math::sum(a_amount * a_fx_rate) AS val FROM payment WHERE d1_p_from = 1 GROUP BY node;
 
--- 2. ORG AGGREGATIONS
-DEFINE TABLE OVERWRITE v_inv_org AS SELECT a_in_org AS org, math::sum(f_out.inv_purchase_total) AS inv_purchase_total, math::sum(f_out.inv_sales_total) AS inv_sales_total FROM invoice GROUP BY org;
-DEFINE TABLE OVERWRITE v_adj_org AS SELECT a_in_org AS org, math::sum(f_out.adj_debit_val) AS adj_debit_val, math::sum(f_out.adj_credit_val) AS adj_credit_val FROM adjustment_note GROUP BY org;
+-- 2. PAYMENT ALLOCATIONS
+DEFINE TABLE OVERWRITE v_pa_pay AS SELECT a_payment AS payment, math::sum(a_amount) AS amount FROM payment_allocation GROUP BY payment;
+DEFINE TABLE OVERWRITE v_pa_inv AS SELECT a_invoice AS invoice, math::sum(d1_alloc_inv_amount) AS amount FROM payment_allocation GROUP BY invoice;
 
--- 3. PAYMENT ALLOCATIONS
-DEFINE TABLE OVERWRITE v_pa_pay AS SELECT a_in_payment AS payment, math::sum(f_out.pa_alloc_pay_amount) AS pa_alloc_pay_amount FROM payment_allocation GROUP BY payment;
-DEFINE TABLE OVERWRITE v_pa_inv AS SELECT a_in_invoice AS invoice, math::sum(f_out.pa_alloc_inv_amount) AS pa_alloc_inv_amount FROM payment_allocation GROUP BY invoice;
+-- 3. INVOICES & ORG TOTALS (Grouped by Vector)
+DEFINE TABLE OVERWRITE v_invl_inv AS SELECT a_invoice AS invoice, d1_vector AS vector, math::sum(d2_raw_base) AS raw_base, math::sum(d3_net_base) AS net_base, math::sum(d7_raw_gross) AS raw_gross, math::sum(d8_net_gross) AS net_gross FROM invoice_line GROUP BY invoice, vector;
+DEFINE TABLE OVERWRITE v_inv_org AS SELECT a_invoice.a_org AS org, d1_vector AS vector, math::sum(d7_raw_gross) AS raw_gross, math::sum(d8_net_gross) AS net_gross, math::sum(a_qty) AS qty, math::mean(d8_net_gross) AS mean_gross, math::variance(d8_net_gross) AS var_gross FROM invoice_line GROUP BY org, vector;
+DEFINE TABLE OVERWRITE v_invl_item AS SELECT a_item AS item, d1_vector AS vector, math::sum(a_qty) AS qty, math::sum(d3_net_base) AS val, math::mean(a_price) AS mean_price, math::max(a_price) AS max_price, math::min(a_price) AS min_price, math::variance(a_price) AS var_price FROM invoice_line GROUP BY item, vector;
 
--- 4. INVOICE LINES & ITEMS
-DEFINE TABLE OVERWRITE v_invl_inv AS SELECT a_in_invoice AS invoice, math::sum(f_out.invl_purchase_value) AS invl_purchase_value, math::sum(f_out.invl_sales_value) AS invl_sales_value FROM invoice_line GROUP BY invoice;
-DEFINE TABLE OVERWRITE v_invl_item AS SELECT a_in_item AS item, math::sum(f_out.invl_purchase_qty) AS invl_purchase_qty, math::sum(f_out.invl_purchase_value) AS invl_purchase_value, math::sum(f_out.invl_sales_qty) AS invl_sales_qty, math::sum(f_out.invl_sales_value) AS invl_sales_value FROM invoice_line GROUP BY item;
+-- 4. STOCK MOVEMENTS (Polymorphic Node Context & Package Notes)
+DEFINE TABLE OVERWRITE v_sl_in_ctx AS SELECT a_to AS node, d8_is_contract_backed AS is_contract_backed, math::sum(d6_net_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS val, math::variance(d6_net_qty) AS var_qty, math::max(d6_net_qty) AS max_qty FROM sl WHERE d2_p_to = 1 GROUP BY node, is_contract_backed;
+DEFINE TABLE OVERWRITE v_sl_out_ctx AS SELECT a_from AS node, d8_is_contract_backed AS is_contract_backed, math::sum(d6_net_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS val, math::variance(d6_net_qty) AS var_qty, math::max(d6_net_qty) AS max_qty FROM sl WHERE d1_p_from = 1 GROUP BY node, is_contract_backed;
 
--- 5. PACKAGES & STOCK MOVEMENTS
-DEFINE TABLE OVERWRITE v_sl_pkg AS SELECT a_in_pkg AS pkg, math::sum(f_out.sl_delivered_qty) AS sl_delivered_qty FROM sl WHERE a_in_pkg != NONE GROUP BY pkg;
+DEFINE TABLE OVERWRITE v_sl_pkg AS SELECT a_pkg AS pkg, math::sum(d6_net_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS val, math::variance(d6_net_qty) AS var_qty, math::max(d6_net_qty) AS max_qty, math::min(d6_net_qty) AS min_qty, math::max(d5_cogs) AS max_cogs FROM sl WHERE a_pkg != NONE GROUP BY pkg;
 
-DEFINE TABLE OVERWRITE v_sl_invl_from AS SELECT a_in_from AS inv_line, math::sum(f_out.sl_delivered_qty) AS qty FROM sl WHERE record::tb(a_in_from) = 'invoice_line' GROUP BY inv_line;
-DEFINE TABLE OVERWRITE v_sl_invl_to AS SELECT a_in_to AS inv_line, math::sum(f_out.sl_delivered_qty) AS qty FROM sl WHERE record::tb(a_in_to) = 'invoice_line' GROUP BY inv_line;
+DEFINE TABLE OVERWRITE v_sl_from AS SELECT a_from AS inv_line, d8_is_contract_backed AS is_contract_backed, math::sum(d6_net_qty) AS total_qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? 1.0dec)) AS total_val FROM sl WHERE record::tb(a_from) = 'invoice_line' GROUP BY inv_line, is_contract_backed;
+DEFINE TABLE OVERWRITE v_sl_to AS SELECT a_to AS inv_line, d8_is_contract_backed AS is_contract_backed, math::sum(d6_net_qty) AS total_qty, math::sum(d7_impact_qty * d5_cogs * (a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS total_val FROM sl WHERE record::tb(a_to) = 'invoice_line' GROUP BY inv_line, is_contract_backed;
 
-DEFINE TABLE OVERWRITE v_sl_node_in AS SELECT a_in_to AS node, math::sum(f_out.sl_inbound_qty) AS sl_inbound_qty FROM sl GROUP BY node;
-DEFINE TABLE OVERWRITE v_sl_node_out AS SELECT a_in_from AS node, math::sum(f_out.sl_outbound_qty) AS sl_outbound_qty FROM sl GROUP BY node;
+DEFINE TABLE OVERWRITE v_bi_sl_item AS SELECT d4_item AS item, d8_is_contract_backed AS is_contract_backed, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS total_val, math::mean(d5_cogs) AS mean_cogs, math::variance(d5_cogs) AS var_cogs, math::variance(d6_net_qty) AS var_qty FROM sl GROUP BY item, is_contract_backed;
 
-DEFINE TABLE OVERWRITE v_sl_cogs_out AS SELECT f_out.cogs_acc AS acc, math::sum(f_out.sl_cogs_value) AS sl_cogs_value FROM sl WHERE record::tb(a_in_from) = 'warehouse' AND record::tb(a_in_to) != 'warehouse' GROUP BY acc;
+-- 5. WAREHOUSE MATRIX (Absolute Physical Limits)
+DEFINE TABLE OVERWRITE v_sl_matrix_in AS SELECT a_to AS node, d4_item AS item, math::sum(d7_impact_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val FROM sl WHERE d2_p_to = 1 GROUP BY node, item;
+DEFINE TABLE OVERWRITE v_sl_matrix_out AS SELECT a_from AS node, d4_item AS item, math::sum(d7_impact_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val FROM sl WHERE d1_p_from = 1 GROUP BY node, item;
 
--- 6. TAX LINES
-DEFINE TABLE OVERWRITE v_tl_inv AS SELECT a_in_invoice_line.a_in_invoice AS invoice, math::sum(f_out.tl_purchase_tax) AS tl_purchase_tax, math::sum(f_out.tl_sales_tax) AS tl_sales_tax FROM tax_line GROUP BY invoice;
-DEFINE TABLE OVERWRITE v_tl_acc AS SELECT a_in_tax_account AS tax_account, math::sum(f_out.tl_sales_tax) AS tl_sales_tax, math::sum(f_out.tl_purchase_tax) AS tl_purchase_tax FROM tax_line GROUP BY tax_account;
+-- 6. TAX ACCOUNTS
+DEFINE TABLE OVERWRITE v_tl_invl AS SELECT a_invoice_line AS invoice_line, math::sum(d2_raw_tax) AS raw_tax, math::sum(d3_net_tax) AS net_tax FROM tax_line GROUP BY invoice_line;
+DEFINE TABLE OVERWRITE v_tl_acc AS SELECT a_tax_account AS tax_account, d1_vector AS vector, math::sum(d3_net_tax * (a_invoice_line.a_invoice.a_fx_rate ?? 1.0dec)) AS tax_base_curr, math::mean(a_rate) AS mean_rate, math::variance(a_rate) AS var_rate FROM tax_line GROUP BY tax_account, vector;
 
--- 7. DELTAS
-DEFINE TABLE OVERWRITE v_al_invl AS SELECT a_in_invl AS invoice_line, math::sum(f_out.al_delta_qty) AS al_delta_qty, math::sum(f_out.al_delta_price) AS al_delta_price FROM adjustment_line GROUP BY invoice_line;
-DEFINE TABLE OVERWRITE v_atl_tl AS SELECT a_in_tax_line AS tax_line, math::sum(f_out.al_delta_amount) AS al_delta_amount FROM adjustment_tax_line GROUP BY tax_line;
-DEFINE TABLE OVERWRITE v_asl_sl AS SELECT a_in_sl AS sl, math::sum(f_out.al_delta_qty) AS al_delta_qty FROM adjustment_stock_line GROUP BY sl;
-
--- 8. O(1) STOCK SHIELD VIEWS
-DEFINE TABLE OVERWRITE v_sl_wh_in AS SELECT a_in_to AS warehouse, f_out.item AS item, math::sum(f_out.sl_inbound_qty) AS qty FROM sl WHERE record::tb(a_in_to) = 'warehouse' GROUP BY warehouse, item;
-DEFINE TABLE OVERWRITE v_sl_wh_out AS SELECT a_in_from AS warehouse, f_out.item AS item, math::sum(f_out.sl_outbound_qty) AS qty FROM sl WHERE record::tb(a_in_from) = 'warehouse' GROUP BY warehouse, item;
-
-DEFINE INDEX idx_sl_matrix ON sl COLUMNS a_in_from, a_in_to, f_out.item;
+-- 7. ADJUSTMENT TARGETS
+DEFINE TABLE OVERWRITE v_adj_target AS SELECT a_target AS target, math::sum(a_delta) AS delta FROM adjustment_line GROUP BY target;
+DEFINE TABLE OVERWRITE v_adj_note AS SELECT a_note AS note, d1_target_type AS target_type, math::sum(a_delta) AS delta FROM adjustment_line GROUP BY note, target_type;

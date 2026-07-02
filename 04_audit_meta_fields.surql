@@ -16,16 +16,6 @@ DEFINE FIELD OVERWRITE updated_at ON TABLE adjustment_note TYPE datetime VALUE t
 DEFINE FIELD OVERWRITE created_by ON TABLE adjustment_note TYPE option<record<user>> VALUE $before OR $auth READONLY;
 DEFINE FIELD OVERWRITE updated_by ON TABLE adjustment_note TYPE option<record<user>> VALUE $auth;
 
-DEFINE FIELD OVERWRITE created_at ON TABLE adjustment_stock_line TYPE datetime VALUE $before OR time::now() READONLY;
-DEFINE FIELD OVERWRITE updated_at ON TABLE adjustment_stock_line TYPE datetime VALUE time::now();
-DEFINE FIELD OVERWRITE created_by ON TABLE adjustment_stock_line TYPE option<record<user>> VALUE $before OR $auth READONLY;
-DEFINE FIELD OVERWRITE updated_by ON TABLE adjustment_stock_line TYPE option<record<user>> VALUE $auth;
-
-DEFINE FIELD OVERWRITE created_at ON TABLE adjustment_tax_line TYPE datetime VALUE $before OR time::now() READONLY;
-DEFINE FIELD OVERWRITE updated_at ON TABLE adjustment_tax_line TYPE datetime VALUE time::now();
-DEFINE FIELD OVERWRITE created_by ON TABLE adjustment_tax_line TYPE option<record<user>> VALUE $before OR $auth READONLY;
-DEFINE FIELD OVERWRITE updated_by ON TABLE adjustment_tax_line TYPE option<record<user>> VALUE $auth;
-
 DEFINE FIELD OVERWRITE created_at ON TABLE invoice TYPE datetime VALUE $before OR time::now() READONLY;
 DEFINE FIELD OVERWRITE updated_at ON TABLE invoice TYPE datetime VALUE time::now();
 DEFINE FIELD OVERWRITE created_by ON TABLE invoice TYPE option<record<user>> VALUE $before OR $auth READONLY;

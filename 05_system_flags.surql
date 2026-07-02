@@ -7,10 +7,6 @@ DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_line TYPE datetime DEFAUL
 
 DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_note TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
 
-DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_stock_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
-
-DEFINE FIELD OVERWRITE system_ping ON TABLE adjustment_tax_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
-
 DEFINE FIELD OVERWRITE system_ping ON TABLE invoice TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
 
 DEFINE FIELD OVERWRITE system_ping ON TABLE invoice_line TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
