@@ -61,6 +61,10 @@ DEFINE FIELD d3_vector ON payment TYPE int VALUE $this.d2_p_to - $this.d1_p_from
 DEFINE FIELD d4_currency ON payment TYPE string VALUE $this.a_from.a_currency ?? $this.a_to.a_currency ?? company:settings.default_currency ?? 'USD';
 
 DEFINE FIELD e_guard ON payment TYPE bool VALUE {
+    IF record::tb($this.a_from) != 'treasury' AND record::tb($this.a_to) != 'treasury' { 
+        THROW "PHYSICS_ERR: Payment must involve at least one Treasury account."; 
+    };
+
     IF $this.d1_p_from = 0 AND $this.d2_p_to = 0 { THROW "PHYSICS_ERR: External-to-External payment invalid."; };
     
     LET $alloc = (type::record('v_pa_pay', [$this.id])).amount ?? 0dec;
@@ -169,7 +173,7 @@ DEFINE FIELD a_cogs ON sl TYPE option<decimal> DEFAULT NONE;
 DEFINE FIELD d1_p_from ON sl TYPE int VALUE IF record::tb($this.a_from) IN ['warehouse', 'stock_acc'] THEN 1 ELSE 0 END;
 DEFINE FIELD d2_p_to ON sl TYPE int VALUE IF record::tb($this.a_to) IN ['warehouse', 'stock_acc'] THEN 1 ELSE 0 END;
 DEFINE FIELD d3_vector ON sl TYPE int VALUE $this.d2_p_to - $this.d1_p_from;
-DEFINE FIELD d4_item ON sl TYPE record<item> VALUE $this.a_from.a_item ?? $this.a_to.a_item ?? $this.a_item;
+DEFINE FIELD d4_item ON sl TYPE record VALUE $this.a_from.a_item ?? $this.a_to.a_item ?? $this.a_item;
 DEFINE FIELD d5_cogs ON sl TYPE decimal VALUE $this.a_from.d4_actual_cogs ?? $this.a_to.d4_actual_cogs ?? $this.a_cogs ?? $this.d4_item.d1_avg_cogs ?? 0dec;
 DEFINE FIELD d6_net_qty ON sl TYPE decimal VALUE ($this.a_qty + ((type::record('v_adj_target', [$this.id])).delta ?? 0dec)) ASSERT $value >= 0dec;
 DEFINE FIELD d7_impact_qty ON sl TYPE decimal VALUE IF ($this.d4_item.a_is_service ?? false) THEN 0dec ELSE $this.d6_net_qty END;

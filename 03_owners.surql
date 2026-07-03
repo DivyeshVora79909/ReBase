@@ -1,4 +1,3 @@
--- FILE 03: DAG OWNERSHIP INHERITANCE
 USE NS main DB main;
 
 DEFINE FIELD OVERWRITE owned_by ON TABLE acc TYPE record<groups> REFERENCE ON DELETE REJECT PERMISSIONS FOR select WHERE TRUE FOR create WHERE $value IN $auth.parents OR $value IN $auth.dominates FOR update WHERE $value = $before OR $value IN $auth.dominates;

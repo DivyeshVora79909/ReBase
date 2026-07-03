@@ -1,4 +1,3 @@
--- FILE 04: AUDIT FIELDS
 USE NS main DB main;
 
 DEFINE FIELD OVERWRITE created_at ON TABLE acc TYPE datetime VALUE $before OR time::now() READONLY;

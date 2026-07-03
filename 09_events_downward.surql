@@ -1,4 +1,3 @@
--- FILE 09: DOWNWARD PROPAGATION (NATIVE GRAPH ROUTING)
 USE NS main DB main;
 
 DEFINE EVENT aot_cascade_downward ON TABLE org WHEN $event = 'UPDATE' THEN {

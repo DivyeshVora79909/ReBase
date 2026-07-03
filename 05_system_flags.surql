@@ -1,4 +1,3 @@
--- FILE 05: SYSTEM FLAGS
 USE NS main DB main;
 
 DEFINE FIELD OVERWRITE system_ping ON TABLE acc TYPE datetime DEFAULT time::now() PERMISSIONS FOR update NONE;
