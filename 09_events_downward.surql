@@ -91,6 +91,12 @@ DEFINE EVENT aot_cascade_downward ON TABLE item WHEN $event = 'UPDATE' THEN {
         IF $before.d1_avg_cogs != $after.d1_avg_cogs {
             LET $tgt = array::flatten([$after<~invoice_line]).filter(|$v| $v != NONE);
             IF array::len($tgt) > 0 { UPDATE $tgt SET system_ping = time::now(); };
+            LET $tgt = array::flatten([$after<~sl]).filter(|$v| $v != NONE);
+            IF array::len($tgt) > 0 { UPDATE $tgt SET system_ping = time::now(); };
+        };
+        IF $before.a_is_service != $after.a_is_service {
+            LET $tgt = array::flatten([$after<~sl]).filter(|$v| $v != NONE);
+            IF array::len($tgt) > 0 { UPDATE $tgt SET system_ping = time::now(); };
         };
     };
 };

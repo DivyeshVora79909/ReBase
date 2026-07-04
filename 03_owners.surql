@@ -31,7 +31,7 @@ DEFINE FIELD OVERWRITE owned_by ON TABLE payment_allocation TYPE option<record<g
 DEFINE FIELD OVERWRITE owners ON TABLE payment_allocation TYPE array<record<groups>> VALUE (array::distinct(array::flatten([$this.owned_by, $this.a_payment.owners, $this.a_invoice.owners]))).filter(|$v| $v != NONE);
 
 DEFINE FIELD OVERWRITE owned_by ON TABLE sl TYPE option<record<groups>> VALUE $this.a_from.owned_by ?? $this.a_to.owned_by ?? $this.a_pkg.owned_by;
-DEFINE FIELD OVERWRITE owners ON TABLE sl TYPE array<record<groups>> VALUE (array::distinct(array::flatten([$this.owned_by, $this.a_from.owners, $this.a_to.owners, $this.a_pkg.owners, $this.a_item.owners]))).filter(|$v| $v != NONE);
+DEFINE FIELD OVERWRITE owners ON TABLE sl TYPE array<record<groups>> VALUE (array::distinct(array::flatten([$this.owned_by, $this.a_from.owners, $this.a_to.owners, $this.a_pkg.owners, $this.a_item.owners, $this.d4_item.owners]))).filter(|$v| $v != NONE);
 
 DEFINE FIELD OVERWRITE owned_by ON TABLE stock_acc TYPE record<groups> REFERENCE ON DELETE REJECT PERMISSIONS FOR select WHERE TRUE FOR create WHERE $value IN $auth.parents OR $value IN $auth.dominates FOR update WHERE $value = $before OR $value IN $auth.dominates;
 DEFINE FIELD OVERWRITE owners ON TABLE stock_acc TYPE array<record<groups>> VALUE array::distinct(array::flatten([$this.owned_by]));

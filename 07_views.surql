@@ -27,14 +27,10 @@ DEFINE TABLE OVERWRITE v_sl_to AS SELECT a_to AS inv_line, d8_is_contract_backed
 
 DEFINE TABLE OVERWRITE v_bi_sl_item AS SELECT d4_item AS item, d8_is_contract_backed AS is_contract_backed, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS total_val, math::mean(d5_cogs) AS mean_cogs, math::variance(d5_cogs) AS var_cogs, math::variance(d6_net_qty) AS var_qty FROM sl GROUP BY item, is_contract_backed;
 
--- 5. WAREHOUSE MATRIX (Absolute Physical Limits)
-DEFINE TABLE OVERWRITE v_sl_matrix_in AS SELECT a_to AS node, d4_item AS item, math::sum(d7_impact_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val FROM sl WHERE d2_p_to = 1 GROUP BY node, item;
-DEFINE TABLE OVERWRITE v_sl_matrix_out AS SELECT a_from AS node, d4_item AS item, math::sum(d7_impact_qty) AS qty, math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val FROM sl WHERE d1_p_from = 1 GROUP BY node, item;
-
--- 6. TAX ACCOUNTS
+-- 5. TAX ACCOUNTS
 DEFINE TABLE OVERWRITE v_tl_invl AS SELECT a_invoice_line AS invoice_line, math::sum(d2_raw_tax) AS raw_tax, math::sum(d3_net_tax) AS net_tax FROM tax_line GROUP BY invoice_line;
 DEFINE TABLE OVERWRITE v_tl_acc AS SELECT a_tax_account AS tax_account, d1_vector AS vector, math::sum(d3_net_tax * (a_invoice_line.a_invoice.a_fx_rate ?? 1.0dec)) AS tax_base_curr, math::mean(a_rate) AS mean_rate, math::variance(a_rate) AS var_rate FROM tax_line GROUP BY tax_account, vector;
 
--- 7. ADJUSTMENT TARGETS
+-- 6. ADJUSTMENT TARGETS
 DEFINE TABLE OVERWRITE v_adj_target AS SELECT a_target AS target, math::sum(a_delta) AS delta FROM adjustment_line GROUP BY target;
 DEFINE TABLE OVERWRITE v_adj_note AS SELECT a_note AS note, d1_target_type AS target_type, math::sum(a_delta) AS delta FROM adjustment_line GROUP BY note, target_type;

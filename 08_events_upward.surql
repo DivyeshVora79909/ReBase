@@ -84,16 +84,9 @@ DEFINE EVENT ping_v_sl_to_inv_line ON TABLE v_sl_to WHEN $event != 'NONE' THEN {
     };
 };
 
-DEFINE EVENT ping_v_sl_matrix_in_node ON TABLE v_sl_matrix_in WHEN $event != 'NONE' THEN {
+DEFINE EVENT ping_v_bi_sl_item_item ON TABLE v_bi_sl_item WHEN $event != 'NONE' THEN {
     IF $__rebase_halt_cascade != true {
-        LET $tgt = array::flatten([$after.node ?? $before.node]).filter(|$v| $v != NONE);
-        IF array::len($tgt) > 0 { UPDATE $tgt SET system_ping = time::now(); };
-    };
-};
-
-DEFINE EVENT ping_v_sl_matrix_out_node ON TABLE v_sl_matrix_out WHEN $event != 'NONE' THEN {
-    IF $__rebase_halt_cascade != true {
-        LET $tgt = array::flatten([$after.node ?? $before.node]).filter(|$v| $v != NONE);
+        LET $tgt = array::flatten([$after.item ?? $before.item]).filter(|$v| $v != NONE);
         IF array::len($tgt) > 0 { UPDATE $tgt SET system_ping = time::now(); };
     };
 };

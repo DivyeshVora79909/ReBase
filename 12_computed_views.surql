@@ -26,12 +26,7 @@ DEFINE FIELD c_v_sl_from ON invoice_line COMPUTED (SELECT * FROM v_sl_from WHERE
 DEFINE FIELD c_v_sl_to ON warehouse COMPUTED (SELECT * FROM v_sl_to WHERE inv_line = $parent.id);
 DEFINE FIELD c_v_sl_to ON stock_acc COMPUTED (SELECT * FROM v_sl_to WHERE inv_line = $parent.id);
 DEFINE FIELD c_v_sl_to ON invoice_line COMPUTED (SELECT * FROM v_sl_to WHERE inv_line = $parent.id);
-DEFINE FIELD c_v_sl_matrix_in ON warehouse COMPUTED (SELECT * FROM v_sl_matrix_in WHERE node = $parent.id);
-DEFINE FIELD c_v_sl_matrix_in ON stock_acc COMPUTED (SELECT * FROM v_sl_matrix_in WHERE node = $parent.id);
-DEFINE FIELD c_v_sl_matrix_in ON invoice_line COMPUTED (SELECT * FROM v_sl_matrix_in WHERE node = $parent.id);
-DEFINE FIELD c_v_sl_matrix_out ON warehouse COMPUTED (SELECT * FROM v_sl_matrix_out WHERE node = $parent.id);
-DEFINE FIELD c_v_sl_matrix_out ON stock_acc COMPUTED (SELECT * FROM v_sl_matrix_out WHERE node = $parent.id);
-DEFINE FIELD c_v_sl_matrix_out ON invoice_line COMPUTED (SELECT * FROM v_sl_matrix_out WHERE node = $parent.id);
+DEFINE FIELD c_v_bi_sl_item ON item COMPUTED (SELECT * FROM v_bi_sl_item WHERE item = $parent.id);
 DEFINE FIELD c_v_tl_invl ON invoice_line COMPUTED (SELECT * FROM v_tl_invl WHERE invoice_line = $parent.id);
 DEFINE FIELD c_v_tl_acc ON tax_account COMPUTED (SELECT * FROM v_tl_acc WHERE tax_account = $parent.id);
 DEFINE FIELD c_v_adj_target ON invoice_line COMPUTED (SELECT * FROM v_adj_target WHERE target = $parent.id);

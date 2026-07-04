@@ -12,6 +12,26 @@ CREATE company:settings SET default_currency = 'USD';
 -- THE ABSOLUTE MATRIX GUARD (O(1) Memory Cross-Checking)
 -- ==============================================================================
 
+DEFINE TABLE OVERWRITE v_sl_matrix_in AS 
+    SELECT 
+        a_to AS node, 
+        d4_item AS item, 
+        math::sum(d7_impact_qty) AS qty, 
+        math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val 
+    FROM sl 
+    WHERE d2_p_to = 1 
+    GROUP BY node, item;
+
+DEFINE TABLE OVERWRITE v_sl_matrix_out AS 
+    SELECT 
+        a_from AS node, 
+        d4_item AS item, 
+        math::sum(d7_impact_qty) AS qty, 
+        math::sum(d7_impact_qty * d5_cogs * (a_from.a_invoice.a_fx_rate ?? a_to.a_invoice.a_fx_rate ?? 1.0dec)) AS cogs_val 
+    FROM sl 
+    WHERE d1_p_from = 1 
+    GROUP BY node, item;
+
 DEFINE EVENT enforce_matrix_stock_in ON TABLE v_sl_matrix_in WHEN $event != 'NONE' THEN {
     IF record::tb($after.node) = 'warehouse' {
         LET $node = $after.node ?? $before.node;

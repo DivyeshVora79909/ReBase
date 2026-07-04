@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ultimate Set Theory Cheatsheet</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Segoe UI",
+          Roboto,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f6f8fc;
+        padding: 2rem 1.5rem;
+        color: #1a1e2b;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 1300px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 2.6rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        border-bottom: 4px solid #2a6df4;
+        padding-bottom: 0.6rem;
+        margin-bottom: 2rem;
+        color: #0b1a33;
+      }
+      .sub {
+        font-weight: 400;
+        font-size: 1.1rem;
+        color: #3d4a5c;
+        margin-top: -0.5rem;
+        margin-bottom: 2rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: 1.8rem;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.8rem 1.8rem 2rem;
+        box-shadow: 0 8px 24px rgba(0, 20, 50, 0.06);
+        border: 1px solid #e9edf4;
+        transition: transform 0.1s ease;
+      }
+      .card:hover {
+        border-color: #c8d2e3;
+      }
+      .card h2 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-top: 0;
+        margin-bottom: 1.2rem;
+        color: #0b1a33;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .card h2 span {
+        background: #eef3fc;
+        border-radius: 40px;
+        padding: 0.1rem 0.8rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #1f4e9c;
+      }
+      .card h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 1.2rem 0 0.4rem 0;
+        color: #1f3a6b;
+      }
+      .card p,
+      .card li {
+        color: #1e293b;
+        font-size: 0.98rem;
+      }
+      .card ul,
+      .card .def-list {
+        padding-left: 1.4rem;
+        margin: 0.5rem 0 0.8rem 0;
+      }
+      .card li {
+        margin-bottom: 0.25rem;
+      }
+      .sym {
+        font-family: "Times New Roman", "CMU Serif", serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #0f2b66;
+        background: #f0f4fe;
+        padding: 0 0.4rem;
+        border-radius: 6px;
+        display: inline-block;
+      }
+      .math {
+        font-family: "Times New Roman", "STIX", serif;
+        font-size: 1.1rem;
+        background: #f4f7fb;
+        padding: 0.1rem 0.5rem;
+        border-radius: 8px;
+        border-left: 3px solid #2a6df4;
+        display: inline-block;
+      }
+      .math-block {
+        background: #f4f7fc;
+        padding: 0.8rem 1.2rem;
+        border-radius: 12px;
+        margin: 0.7rem 0;
+        font-family: "Times New Roman", "STIX", serif;
+        font-size: 1.05rem;
+        border-left: 4px solid #2a6df4;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .badge {
+        background: #dce5f5;
+        border-radius: 30px;
+        padding: 0.1rem 0.9rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #1a3c7a;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        display: inline-block;
+        margin-right: 0.3rem;
+      }
+      .hr-light {
+        border: none;
+        border-top: 1px solid #e2e9f2;
+        margin: 1rem 0;
+      }
+      .footnote {
+        background: #eef3fa;
+        border-radius: 14px;
+        padding: 0.8rem 1.2rem;
+        margin-top: 1rem;
+        font-size: 0.92rem;
+        border-left: 3px solid #6b8fcb;
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 1.2rem 0.8rem;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .card {
+          padding: 1.5rem;
+        }
+        h1 {
+          font-size: 2rem;
+        }
+        .math-block {
+          white-space: normal;
+        }
+      }
+      .tag {
+        background: #eef3fc;
+        border-radius: 12px;
+        padding: 0.2rem 0.8rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #1f4e9c;
+      }
+      .col-2 {
+        columns: 2 200px;
+        column-gap: 1.8rem;
+        margin: 0.6rem 0;
+      }
+      .col-2 li {
+        break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📐 Set Theory · Complete Revision</h1>
+      <div class="sub">
+        All definitions, symbols, and axioms — compact &amp; exam-ready
+      </div>
+
+      <div class="grid">
+        <!-- 1. CORE SYMBOLS -->
+        <div class="card">
+          <h2>1. Core Symbols &amp; Basics</h2>
+          <ul>
+            <li>
+              <span class="sym">∈</span> — element of &nbsp;
+              <span class="sym">∉</span> — not element of
+            </li>
+            <li>
+              <span class="sym">∅</span> — empty set &nbsp;
+              <span class="badge">|∅| = 0</span>
+            </li>
+            <li>
+              <span class="sym">⊆</span> — subset (all elements of A are in B)
+              <br />
+              <span class="sym">⊂</span> — proper subset (strict, not equal)
+            </li>
+            <li>
+              <span class="sym">=</span> — set equality <br />
+              <span class="math">A = B ⇔ ∀x (x ∈ A ⇔ x ∈ B)</span> (Axiom of
+              Extension)
+            </li>
+          </ul>
+          <div class="footnote">
+            <strong>Note:</strong> Sets are unordered and ignore duplicates:
+            {1,2} = {2,1,2}.
+          </div>
+        </div>
+
+        <!-- 2. OPERATIONS -->
+        <div class="card">
+          <h2>2. Set Operations</h2>
+          <ul>
+            <li>
+              <span class="sym">∪</span> — union
+              <span class="math">A ∪ B = { x | x ∈ A ∨ x ∈ B }</span>
+            </li>
+            <li>
+              <span class="sym">∩</span> — intersection
+              <span class="math">A ∩ B = { x | x ∈ A ∧ x ∈ B }</span>
+            </li>
+            <li>
+              <span class="sym">\</span> or <span class="sym">−</span> —
+              difference <span class="math">A \ B = { x | x ∈ A ∧ x ∉ B }</span>
+            </li>
+            <li>
+              <span class="sym">∁</span> or <span class="sym">^c</span> —
+              complement <span class="math">A^c = U \ A</span> (relative to a
+              fixed universe U)
+            </li>
+          </ul>
+          <h3>Generalised (indexed) operations</h3>
+          <ul>
+            <li>
+              <span class="math"
+                >⋃<sub>i∈I</sub> A<sub>i</sub> = { x | ∃i ∈ I : x ∈ A<sub
+                  >i</sub
+                >
+                }</span
+              >
+            </li>
+            <li>
+              <span class="math"
+                >⋂<sub>i∈I</sub> A<sub>i</sub> = { x | ∀i ∈ I : x ∈ A<sub
+                  >i</sub
+                >
+                }</span
+              >
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. CARTESIAN, POWER, COPRODUCT -->
+        <div class="card">
+          <h2>3. Advanced Constructions</h2>
+          <ul>
+            <li>
+              <span class="sym">×</span> — Cartesian product <br />
+              <span class="math">X × Y = { (x,y) | x ∈ X, y ∈ Y }</span>
+            </li>
+            <li>
+              <span class="sym">𝒫(X)</span> — power set <br />
+              <span class="math">𝒫(X) = { S | S ⊆ X }</span> <br />
+              <span class="badge">|𝒫(X)| = 2<sup>|X|</sup></span> (finite)
+            </li>
+            <li>
+              <span class="sym">⊔</span> or <span class="sym">⊎</span> —
+              coproduct (disjoint union / tagged union) <br />
+              <span class="math">A ⊔ B = (A × {0}) ∪ (B × {1})</span>
+            </li>
+            <li>
+              <span class="badge">Polymorphism:</span> a field maps to
+              <span class="math">A ⊔ B ⊔ C</span> (exactly one, tagged)
+            </li>
+          </ul>
+          <div class="footnote">
+            <strong>Cartesian vs Power:</strong>
+            <span class="math">X × Y</span> is the grid of pairs.
+            <span class="math">𝒫(X × Y)</span> is the set of
+            <em>all possible relations</em>.
+          </div>
+        </div>
+
+        <!-- 4. RELATIONS -->
+        <div class="card">
+          <h2>4. Relations</h2>
+          <p>
+            A relation is a subset of a Cartesian product:
+            <span class="math">R ⊆ X × Y</span>.
+          </p>
+          <ul>
+            <li>
+              <span class="math">Dom(R) = { x | ∃y, (x,y) ∈ R }</span> — domain
+              (left set)
+            </li>
+            <li>
+              <span class="math">Cod(R) = Y</span> — codomain (right set,
+              declared)
+            </li>
+            <li>
+              <span class="math">Range(R) = { y | ∃x, (x,y) ∈ R }</span> — image
+              (used subset of codomain)
+            </li>
+            <li>
+              <span class="math">R<sup>−1</sup> = { (y,x) | (x,y) ∈ R }</span> —
+              inverse relation
+            </li>
+            <li>
+              <span class="math">R(x) = { y | (x,y) ∈ R }</span> — the set of
+              all y related to x
+            </li>
+          </ul>
+          <div class="footnote">
+            <strong>Preimage:</strong>
+            <span class="math">R<sup>−1</sup>(y) = { x | (x,y) ∈ R }</span>
+            &rarr; counting this gives you cardinality (1, N, 0).
+          </div>
+        </div>
+
+        <!-- 5. FUNCTIONS -->
+        <div class="card">
+          <h2>5. Functions (Mappings)</h2>
+          <ul>
+            <li>
+              <span class="math">f: X → Y</span> —
+              <strong>total function</strong> <br />
+              <span class="math">∀x ∈ X, |f(x)| = 1</span> (each x maps to
+              exactly one y)
+            </li>
+            <li>
+              <span class="math">f: X ⇀ Y</span> —
+              <strong>partial function</strong> <br />
+              <span class="math">∀x ∈ X, |f(x)| ∈ {0,1}</span> (optional 0..1)
+            </li>
+            <li>
+              <span class="math">f: X → 𝒫<sub>fin</sub>(Y)</span> — set-valued
+              (list / multi-value) <br />
+              each x maps to a <em>set</em> of y's
+            </li>
+          </ul>
+          <h3>Properties of functions</h3>
+          <ul>
+            <li>
+              <strong>Injective (1‑to‑1):</strong>
+              <span class="math">f(x₁)=f(x₂) ⇒ x₁=x₂</span>
+            </li>
+            <li>
+              <strong>Surjective (onto):</strong>
+              <span class="math">∀y ∈ Y, ∃x : f(x)=y</span>
+            </li>
+            <li>
+              <strong>Bijection:</strong> injective + surjective &rarr; strict
+              1:1, inverse is also a function
+            </li>
+          </ul>
+        </div>
+
+        <!-- 6. EQUIVALENCE & ORDER -->
+        <div class="card">
+          <h2>6. Equivalence &amp; Order Relations</h2>
+          <p>
+            A relation <span class="math">R ⊆ X × X</span> (on a single set) can
+            be:
+          </p>
+          <ul>
+            <li>
+              <strong>Reflexive:</strong>
+              <span class="math">∀x, (x,x) ∈ R</span>
+            </li>
+            <li>
+              <strong>Symmetric:</strong>
+              <span class="math">(x,y)∈R ⇒ (y,x)∈R</span>
+            </li>
+            <li>
+              <strong>Transitive:</strong>
+              <span class="math">(x,y)∈R ∧ (y,z)∈R ⇒ (x,z)∈R</span>
+            </li>
+          </ul>
+          <h3>Equivalence relation (~)</h3>
+          <p>
+            If R is reflexive, symmetric, and transitive → it partitions X into
+            <strong>equivalence classes</strong>
+            <span class="math">[x] = { y | x ~ y }</span>.
+          </p>
+          <p>
+            The set of all classes is the <strong>quotient set</strong>:
+            <span class="math">X / \sim</span>.
+          </p>
+          <h3>Order relations</h3>
+          <ul>
+            <li>
+              <strong>Partial order (≤):</strong> reflexive, transitive,
+              antisymmetric (<span class="math">xRy ∧ yRx ⇒ x=y</span>).
+            </li>
+            <li>
+              <strong>Total order:</strong> every pair is comparable (<span
+                class="math"
+                >xRy</span
+              >
+              or <span class="math">yRx</span>).
+            </li>
+          </ul>
+        </div>
+
+        <!-- 7. CARDINALITY -->
+        <div class="card">
+          <h2>7. Cardinality (Sizes)</h2>
+          <ul>
+            <li>
+              <span class="math">|S|</span> — cardinality (number of elements)
+            </li>
+            <li><span class="math">|\emptyset| = 0</span></li>
+            <li>
+              <strong>Countably infinite:</strong>
+              <span class="math">|\mathbb{N}| = \aleph_0</span> (natural
+              numbers)
+            </li>
+            <li>
+              <strong>Uncountably infinite:</strong>
+              <span class="math">|\mathbb{R}| = 2^{\aleph_0}</span> (real
+              numbers)
+            </li>
+            <li>
+              <span class="math">|X| < |\mathcal{P}(X)|</span> &nbsp;
+              <strong>Cantor's theorem:</strong> power set is always strictly
+              bigger.
+            </li>
+          </ul>
+          <div class="footnote">
+            <strong>Key insight:</strong> There are infinitely many infinities.
+            The continuum hypothesis asks if
+            <span class="math">\aleph_1 = 2^{\aleph_0}</span>.
+          </div>
+        </div>
+
+        <!-- 8. TUPLE & GENERALISED PRODUCT -->
+        <div class="card">
+          <h2>8. Tuples &amp; n‑ary Products</h2>
+          <p>
+            Ordered pair (Kuratowski):
+            <span class="math">(a,b) = { {a}, {a,b} }</span>
+          </p>
+          <p>Generalised n‑tuple:</p>
+          <span class="math-block"
+            >X₁ × X₂ × … × X<sub>n</sub> = { (x₁, x₂, …, x<sub>n</sub>) | x<sub
+              >i</sub
+            >
+            ∈ X<sub>i</sub> }</span
+          >
+          <p>Used for composite keys, record types, and relation schemas.</p>
+        </div>
+
+        <!-- 9. AXIOMS & PARADOXES -->
+        <div class="card">
+          <h2>9. Axioms &amp; Important Caveats</h2>
+          <ul>
+            <li>
+              <strong>Axiom of Extension:</strong> sets are equal iff they have
+              the same elements.
+            </li>
+            <li>
+              <strong>Axiom of Foundation:</strong> no set contains itself
+              (<span class="math">A ∉ A</span>).
+            </li>
+            <li>
+              <strong>Russell's Paradox:</strong> there is no universal set
+              <span class="math">U</span> that contains everything. <br />
+              The "universe" in practice is a <strong>class</strong> or a fixed
+              <strong>domain of discourse</strong>.
+            </li>
+            <li>
+              <strong>Complement</strong> (<span class="math">A^c</span>) is
+              always relative to a specific, fixed universal set
+              <span class="math">U</span> — never a true "set of all sets".
+            </li>
+          </ul>
+          <div class="footnote">
+            ⚠️ <strong>Important:</strong> In formal set theory,
+            <span class="math">U</span> is a <em>class</em>, not a set.
+            Complements are relative.
+          </div>
+        </div>
+
+        <!-- 10. QUICK REFERENCE CARD -->
+        <div class="card" style="grid-column: span 1; background: #f0f5fe">
+          <h2>📌 Quick Reference — The Big Picture</h2>
+          <ul style="list-style-type: none; padding-left: 0">
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Relation</span>
+              <span class="math">R ⊆ X × Y</span> — any set of pairs.
+            </li>
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Total function</span>
+              <span class="math">f: X → Y</span> — every x maps to exactly one
+              y. <em>(Child → parent FK)</em>
+            </li>
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Partial function</span>
+              <span class="math">f: X ⇀ Y</span> — at most one y.
+              <em>(Optional FK, 0..1)</em>
+            </li>
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Polymorphism</span>
+              <span class="math">T → (A ⊔ B ⊔ C)</span> — tagged union /
+              coproduct.
+            </li>
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Set-valued</span>
+              <span class="math">f: X → 𝒫<sub>fin</sub>(Y)</span> — each x maps
+              to a <em>set</em> of y's (1:N via a list).
+            </li>
+            <li style="margin-bottom: 0.8rem">
+              <span class="badge">Cardinality check</span> count the preimage:
+              <span class="math">|f^{-1}(y)|</span> gives you N:1, 1:1, etc.
+            </li>
+          </ul>
+          <div
+            style="
+              margin-top: 1rem;
+              padding-top: 0.8rem;
+              border-top: 1px solid #bccfe3;
+            "
+          >
+            <strong>Symbols to remember:</strong> <span class="sym">∈</span>
+            <span class="sym">∉</span> <span class="sym">∅</span>
+            <span class="sym">⊆</span> <span class="sym">⊂</span>
+            <span class="sym">∪</span> <span class="sym">∩</span>
+            <span class="sym">\</span> <span class="sym">×</span>
+            <span class="sym">𝒫</span> <span class="sym">⊔</span>
+            <span class="sym">→</span> <span class="sym">⇀</span>
+            <span class="sym">∼</span> <span class="sym">/</span>
+            <span class="sym">ℵ₀</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div
+        style="
+          margin-top: 2.8rem;
+          padding: 1.2rem 0;
+          border-top: 1px solid #d6dfea;
+          display: flex;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          font-size: 0.9rem;
+          color: #2f405e;
+        "
+      >
+        <span
+          >✅ Complete Set Theory Reference — covers all concepts from basic
+          symbols to cardinality &amp; coproducts.</span
+        >
+        <span
+          style="background: #dce5f5; padding: 0.2rem 1rem; border-radius: 30px"
+          >v1.0 · Ready for revision</span
+        >
+      </div>
+    </div>
+  </body>
+</html>
