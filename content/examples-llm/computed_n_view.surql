@@ -116,6 +116,6 @@ SELECT * FROM v_parent_wealth;
 
 "
 { recursive_wealth: 610000dec, view_backed_wealth: 610000dec }
-COMPUTED is optimised for reads supassing regular queries even during recursions
-but for scale more than 20000 records views are better
+COMPUTED fields are optimised and execute only when they are explicitly selected
+For reads COMPUTED fields surpass regular queries even during recursions but for scale more than 20000 pre computed view tables are better.
 "

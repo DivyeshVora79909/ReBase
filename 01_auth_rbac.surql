@@ -4,40 +4,46 @@ USE NS main DB main;
 
 -- USER
 DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
-    FOR create WHERE $auth != NONE AND 'node_create' IN $auth.permissions
+    FOR create WHERE 'node_create' IN $auth.permissions
     FOR select WHERE id = $auth OR ('node_select' IN $auth.permissions AND id IN $auth.dominates)
     FOR update WHERE id = $auth OR ('node_update' IN $auth.permissions AND id IN $auth.dominates)
     FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates;
 
-DEFINE FIELD OVERWRITE name ON user TYPE string 
-    VALUE $value.trim()
-    ASSERT $value.len() > 0;
+    DEFINE FIELD OVERWRITE name ON user TYPE string VALUE {
+        LET $clean_name = string::trim($value ?? "");
+        IF !$clean_name { 
+            THROW "VALIDATION_ERR: Invalid Name"; 
+        };
+        RETURN $clean_name;
+    };
 
-DEFINE FIELD OVERWRITE email ON user TYPE string
-    VALUE $value.trim().lowercase()
-    ASSERT string::is_email($value);
+    DEFINE FIELD OVERWRITE email ON user TYPE string VALUE {
+        LET $clean_email = string::trim($value ?? "");
+        IF !string::is_email($clean_email) { 
+            THROW "VALIDATION_ERR: Invalid email"; 
+        };
+        RETURN string::lowercase($clean_email);
+    };
 
-DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
-DEFINE FIELD OVERWRITE invite_token ON user TYPE option<uuid> PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE invite_token ON user TYPE option<uuid> PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> 
-    PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> 
+        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> 
+        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> 
+        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
 
-DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> 
-    PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE;
+    DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE;
 
-DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> 
-    PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
+    DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
+    DEFINE FIELD OVERWRITE created_by ON user TYPE option<record<user>> VALUE $before OR $auth READONLY;
+    DEFINE FIELD OVERWRITE updated_by ON user TYPE option<record<user>> VALUE $auth;
 
-DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE;
-DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE;
-
-DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
-DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
-DEFINE FIELD OVERWRITE created_by ON user TYPE option<record<user>> VALUE $before OR $auth READONLY;
-DEFINE FIELD OVERWRITE updated_by ON user TYPE option<record<user>> VALUE $auth;
-
-DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
+    DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
 
 DEFINE EVENT OVERWRITE user_state_machine ON TABLE user WHEN $event = "UPDATE" THEN {
     IF $before.last_refreshed_at != $after.last_refreshed_at {
@@ -85,12 +91,18 @@ DEFINE EVENT OVERWRITE auto_link_creator ON TABLE user WHEN $event = "CREATE" AN
 
 -- GROUPS
 DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
-    FOR create WHERE $auth != NONE AND 'node_create' IN $auth.permissions
+    FOR create WHERE 'node_create' IN $auth.permissions
     FOR select WHERE 'node_select' IN $auth.permissions AND (id IN $auth.dominates OR id IN $auth.parents)
     FOR update WHERE 'node_update' IN $auth.permissions AND id IN $auth.dominates
     FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates;
 
-DEFINE FIELD OVERWRITE name ON groups TYPE string VALUE $value.trim() ASSERT $value.len() > 0;
+DEFINE FIELD OVERWRITE name ON groups TYPE string VALUE {
+        LET $clean_name = string::trim($value ?? "");
+        IF !$clean_name { 
+            THROW "VALIDATION_ERR: Invalid Name"; 
+        };
+        RETURN $clean_name;
+    };
 DEFINE FIELD OVERWRITE role ON groups TYPE array<string> VALUE (
     IF $before = NONE THEN ($value ??[]).distinct()
     ELSE IF $before.len() = 0 THEN []
@@ -104,10 +116,8 @@ DEFINE FIELD OVERWRITE created_by ON groups TYPE option<record<user>> VALUE $bef
 DEFINE FIELD OVERWRITE updated_by ON groups TYPE option<record<user>> VALUE $auth;
 
 DEFINE EVENT OVERWRITE prevent_role_escalation ON TABLE groups WHEN $event IN["CREATE", "UPDATE"] THEN {
-    IF $auth != NONE {
-        LET $unauthorized = array::complement($after.role, $auth.permissions);
-        IF $unauthorized.len() > 0 { THROW "ERR_PRIVILEGE_ESCALATION"; };
-    };
+    LET $unauthorized = array::complement($after.role, $auth.permissions ?? []);
+    IF $unauthorized AND $auth { THROW "ERR_PRIVILEGE_ESCALATION"; };
 };
 
 DEFINE EVENT OVERWRITE prevent_group_non_leaf_delete ON TABLE groups WHEN $event = "DELETE" THEN {
@@ -183,22 +193,22 @@ DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
 CREATE groups:root SET name = 'System Admins', role = [
     'node_create', 'node_select', 'node_update', 'node_delete',
     'link_create', 'link_select', 'link_delete',
-    'acc_select', 'acc_create', 'acc_update', 'acc_delete',
-    'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete',
-    'adjustment_note_select', 'adjustment_note_create', 'adjustment_note_update', 'adjustment_note_delete',
-    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
-    'invoice_line_select', 'invoice_line_create', 'invoice_line_update', 'invoice_line_delete',
-    'item_select', 'item_create', 'item_update', 'item_delete',
     'org_select', 'org_create', 'org_update', 'org_delete',
-    'package_note_select', 'package_note_create', 'package_note_update', 'package_note_delete',
-    'payment_select', 'payment_create', 'payment_update', 'payment_delete',
-    'payment_allocation_select', 'payment_allocation_create', 'payment_allocation_update', 'payment_allocation_delete',
-    'sl_select', 'sl_create', 'sl_update', 'sl_delete',
+    'treasury_select', 'treasury_create', 'treasury_update', 'treasury_delete',
+    'acc_select', 'acc_create', 'acc_update', 'acc_delete',
     'stock_acc_select', 'stock_acc_create', 'stock_acc_update', 'stock_acc_delete',
     'tax_account_select', 'tax_account_create', 'tax_account_update', 'tax_account_delete',
+    'warehouse_select', 'warehouse_create', 'warehouse_update', 'warehouse_delete',
+    'item_select', 'item_create', 'item_update', 'item_delete',
+    'payment_select', 'payment_create', 'payment_update', 'payment_delete',
+    'invoice_select', 'invoice_create', 'invoice_update', 'invoice_delete',
+    'adjustment_note_select', 'adjustment_note_create', 'adjustment_note_update', 'adjustment_note_delete',
+    'payment_allocation_select', 'payment_allocation_create', 'payment_allocation_update', 'payment_allocation_delete',
+    'package_note_select', 'package_note_create', 'package_note_update', 'package_note_delete',
+    'invoice_line_select', 'invoice_line_create', 'invoice_line_update', 'invoice_line_delete',
+    'sl_select', 'sl_create', 'sl_update', 'sl_delete',
     'tax_line_select', 'tax_line_create', 'tax_line_update', 'tax_line_delete',
-    'treasury_select', 'treasury_create', 'treasury_update', 'treasury_delete',
-    'warehouse_select', 'warehouse_create', 'warehouse_update', 'warehouse_delete'
+    'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete'
 ];
 
 CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';
