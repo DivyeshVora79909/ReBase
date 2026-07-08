@@ -11,32 +11,37 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
 
     DEFINE FIELD OVERWRITE name ON user TYPE string VALUE {
         LET $clean_name = string::trim($value ?? "");
-        IF !$clean_name { 
-            THROW "VALIDATION_ERR: Invalid Name"; 
-        };
+        IF !$clean_name { THROW "VALIDATION_ERR: Invalid Name"; };
         RETURN $clean_name;
     };
 
     DEFINE FIELD OVERWRITE email ON user TYPE string VALUE {
         LET $clean_email = string::trim($value ?? "");
-        IF !string::is_email($clean_email) { 
-            THROW "VALIDATION_ERR: Invalid email"; 
-        };
+        IF !string::is_email($clean_email) { THROW "VALIDATION_ERR: Invalid email"; };
         RETURN string::lowercase($clean_email);
     };
 
     DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
     DEFINE FIELD OVERWRITE invite_token ON user TYPE option<uuid> PERMISSIONS NONE;
 
-    DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> 
-        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
-    DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> 
-        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
-    DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> 
-        PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE login_access ON user TYPE bool DEFAULT true 
+        PERMISSIONS FOR update WHERE id != $auth;
 
-    DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE;
-    DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE;
+    DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
+
+    DEFINE FIELD OVERWRITE last_suspended_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE total_suspensions ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
+
+    DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE total_refreshes ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
+
+    DEFINE FIELD OVERWRITE last_send_token_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE total_tokens_sent ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
+
+    DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE total_deactivations ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
 
     DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
     DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
@@ -46,31 +51,66 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
 
 DEFINE EVENT OVERWRITE user_state_machine ON TABLE user WHEN $event = "UPDATE" THEN {
-    IF $before.last_refreshed_at != $after.last_refreshed_at {
-        IF $before.last_refreshed_at != NONE AND time::now() - type::datetime($before.last_refreshed_at) < 10s { 
-            THROW "ERR_RATE_LIMIT"; 
+    IF $before.login_access = true AND $after.login_access = false {
+        UPDATE $after.id SET last_suspended_at = time::now();
+    };
+
+    IF $before.last_suspended_at != $after.last_suspended_at AND $after.last_suspended_at != NONE {
+        UPDATE $after.id SET total_suspensions = ($after.total_suspensions ?? 0) + 1;
+    };
+
+    IF $before.last_refreshed_at != $after.last_refreshed_at AND $after.last_refreshed_at != NONE {
+        IF $before.last_refreshed_at != NONE {
+            LET $diff = <int>time::unix(type::datetime($after.last_refreshed_at)) - <int>time::unix(type::datetime($before.last_refreshed_at));
+            LET $cnt = $before.total_refreshes ?? 0;
+            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
+            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Refresh"; };
         };
         UPDATE $after.id SET 
-            dominates   = ($after.id.{..+collect}->link->(?) ??[]).filter(|$v| $v != NONE).sort(),
-            parents     = ($after.id<-link<-groups ??[]).filter(|$v| $v != NONE).distinct().sort(),
+            total_refreshes = ($after.total_refreshes ?? 0) + 1,
+            dominates = ($after.id.{..+collect}->link->(?) ??[]).filter(|$v| $v != NONE).sort(),
+            parents = ($after.id<-link<-groups ??[]).filter(|$v| $v != NONE).distinct().sort(),
             permissions = ($after.id<-link<-groups.role ??[]).flatten().filter(|$v| $v != NONE).distinct().sort();
+    };
+
+    IF $before.last_send_token_at != $after.last_send_token_at AND $after.last_send_token_at != NONE {
+        IF $before.last_send_token_at != NONE {
+            LET $diff = <int>time::unix(type::datetime($after.last_send_token_at)) - <int>time::unix(type::datetime($before.last_send_token_at));
+            LET $cnt = $before.total_tokens_sent ?? 0;
+            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
+            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Token Sent"; };
+        };
+        UPDATE $after.id SET 
+            total_tokens_sent = ($after.total_tokens_sent ?? 0) + 1,
+            last_deactivated_at = time::now();
     };
 
     IF $before.email != $after.email {
         UPDATE $after.id SET last_deactivated_at = time::now();
     };
-    IF $before.last_deactivated_at != $after.last_deactivated_at {
-        IF $before.last_deactivated_at != NONE AND time::now() - type::datetime($before.last_deactivated_at) < 1m { 
-            THROW "ERR_RATE_LIMIT"; 
+
+    IF $before.last_deactivated_at != $after.last_deactivated_at AND $after.last_deactivated_at != NONE {
+        IF $before.last_deactivated_at != NONE {
+            LET $diff = <int>time::unix(type::datetime($after.last_deactivated_at)) - <int>time::unix(type::datetime($before.last_deactivated_at));
+            LET $cnt = $before.total_deactivations ?? 0;
+            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
+            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Deactivation"; };
         };
-        UPDATE $after.id SET password = NONE;
+        UPDATE $after.id SET 
+            total_deactivations = ($after.total_deactivations ?? 0) + 1,
+            password = NONE;
     };
-    IF $before.password != $after.password {
-        IF $after.password = NONE {
-            UPDATE $after.id SET invite_token = rand::uuid();
-        } ELSE {
-            UPDATE $after.id SET invite_token = NONE;
-        };
+
+    IF $before.password != NONE AND $after.password = NONE {
+        LET $invite_token = rand::uuid();
+        UPDATE $after.id SET invite_token = $invite_token;
+        --http::post("https://internal-worker.yourdomain.com/webhooks/email-trigger", { 
+        --    "namespace": session::ns(), "database": session::db(), "intent": "user_action", "user_email": $after.email, "invite_token": $invite_token 
+        --}, { "Content-Type": "application/json", "x-surreal-signature": "your-internal-cluster-secret" });
+    };
+
+    IF $before.password = NONE AND $after.password != NONE {
+        UPDATE $after.id SET invite_token = NONE;
     };
 };
 
@@ -98,9 +138,7 @@ DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
 
 DEFINE FIELD OVERWRITE name ON groups TYPE string VALUE {
         LET $clean_name = string::trim($value ?? "");
-        IF !$clean_name { 
-            THROW "VALIDATION_ERR: Invalid Name"; 
-        };
+        IF !$clean_name { THROW "VALIDATION_ERR: Invalid Name"; };
         RETURN $clean_name;
     };
 DEFINE FIELD OVERWRITE role ON groups TYPE array<string> VALUE (
@@ -158,36 +196,53 @@ DEFINE EVENT OVERWRITE prevent_orphans ON TABLE link WHEN $event = "DELETE" THEN
 -- ACCESS METHODS
 DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     SIGNUP (
-        UPDATE user SET password = crypto::argon2::generate($password), invite_token = NONE, last_refreshed_at = time::now()
+        UPDATE user SET 
+            password = crypto::argon2::generate($password), 
+            last_refreshed_at = time::now()
         WHERE email = $email.lowercase() 
           AND invite_token = type::uuid($invite)
           AND $password.len() > 6
+          AND login_access = true
     )
     SIGNIN (
         UPDATE user SET last_refreshed_at = time::now()
         WHERE email = $email.lowercase() 
           AND invite_token = NONE 
           AND crypto::argon2::compare(password ?? "", $password)
+          AND login_access = true
     )
     AUTHENTICATE {
-        IF $auth.password = NONE { RETURN NONE; };
+        IF $auth.password = NONE OR $auth.login_access = false { RETURN NONE; };
         RETURN $auth;
     }
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
 
 DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
     SIGNUP (
-        UPDATE user SET password = crypto::argon2::generate($new_password), last_refreshed_at = time::now()
+        UPDATE user SET 
+            password = crypto::argon2::generate($new_password), 
+            last_refreshed_at = time::now()
         WHERE email = $email.lowercase() 
           AND password != NONE 
           AND crypto::argon2::compare(password ?? "", $password)
           AND $new_password.len() > 6
+          AND login_access = true
     )
     AUTHENTICATE {
-        IF $auth.password = NONE { RETURN NONE; };
+        IF $auth.password = NONE OR $auth.login_access = false { RETURN NONE; };
         RETURN $auth;
     }
     DURATION FOR SESSION 8h, FOR TOKEN 1h;
+
+DEFINE ACCESS OVERWRITE request_password_reset ON DATABASE TYPE RECORD
+    SIGNUP (
+        UPDATE user SET last_send_token_at = time::now() 
+        WHERE email = string::lowercase($email) AND login_access = true
+    )
+    AUTHENTICATE {
+        RETURN $auth;
+    }
+    DURATION FOR SESSION 1ms, FOR TOKEN 1ms;
 
 -- INITIALIZATION
 CREATE groups:root SET name = 'System Admins', role = [
