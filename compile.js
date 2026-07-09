@@ -17,11 +17,12 @@ async function runCompiler() {
     "========================================================================\n",
   );
 
-  const file06 = fs.existsSync("06_table_fields.surql")
-    ? fs.readFileSync("06_table_fields.surql", "utf8")
+  const project_dir = "designs/accounts/";
+  const file06 = fs.existsSync(project_dir + "06_table_fields.surql")
+    ? fs.readFileSync(project_dir + "06_table_fields.surql", "utf8")
     : "";
-  const file07 = fs.existsSync("07_views.surql")
-    ? fs.readFileSync("07_views.surql", "utf8")
+  const file07 = fs.existsSync(project_dir + "07_views.surql")
+    ? fs.readFileSync(project_dir + "07_views.surql", "utf8")
     : "";
 
   if (!file06 || !file07) {

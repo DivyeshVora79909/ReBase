@@ -104,9 +104,27 @@ DEFINE EVENT OVERWRITE user_state_machine ON TABLE user WHEN $event = "UPDATE" T
     IF $before.password != NONE AND $after.password = NONE {
         LET $invite_token = rand::uuid();
         UPDATE $after.id SET invite_token = $invite_token;
-        --http::post("https://internal-worker.yourdomain.com/webhooks/email-trigger", { 
-        --    "namespace": session::ns(), "database": session::db(), "intent": "user_action", "user_email": $after.email, "invite_token": $invite_token 
-        --}, { "Content-Type": "application/json", "x-surreal-signature": "your-internal-cluster-secret" });
+
+        LET $html_content = string::replace(
+            string::replace($EMAIL_TEMPLATE_RESET, "{{name}}", $after.name), 
+            "{{token}}", 
+            <string>$invite_token
+        );
+
+        LET $headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "api-key": $BREVO_API_KEY 
+        };
+
+        LET $payload = {
+            "sender": $EMAIL_SENDER,
+            "to": [ { "email": $after.email, "name": $after.name } ],
+            "subject": "Your Secure Access Token",
+            "htmlContent": $html_content
+        };
+
+        LET $email_response = http::post($BREVO_API_URL, $payload, $headers);
     };
 
     IF $before.password = NONE AND $after.password != NONE {
