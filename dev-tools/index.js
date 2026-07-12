@@ -22,7 +22,7 @@ async function main() {
   const db = await ask("Database", "main");
   const access = await ask("Access Method", "account");
   const action = await ask("Action (signin/signup)", "signin");
-  const email = await ask("Email", "test@admin.com");
+  const email = await ask("Email", "divy.r.vora14@gmail.com");
   const password = await ask("Password", "password");
   const new_password = await ask("New Password", "password");
   const invite = await ask("Invite Token (UUID)", "");
@@ -44,11 +44,16 @@ async function main() {
       variables: { email, password, new_password, invite },
     };
 
-    await client[action](authConfig);
-
-    console.log("\x1b[32m[✓] Authentication Successful!\x1b[0m\n");
+    const access_token = await client[action](authConfig);
+    console.log(
+      "\x1b[32m[✓] Authentication Successful!\x1b[0m\n",
+      access_token,
+    );
   } catch (err) {
-    console.error("\x1b[31m[x] Authentication Failed:\x1b[0m", err.message);
+    console.error(
+      "\x1b[31m[x] Authentication Failed:\x1b[0m",
+      JSON.stringify(err, null, 2),
+    );
     process.exit(1);
   }
 

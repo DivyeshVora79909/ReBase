@@ -1,5 +1,3 @@
-REMOVE DATABASE main;
-DEFINE DATABASE main;
 USE NS main DB main;
 
 -- USER
@@ -21,27 +19,18 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
         RETURN string::lowercase($clean_email);
     };
 
+    DEFINE FIELD OVERWRITE refreshed_at ON user TYPE option<datetime> DEFAULT NONE;
+    DEFINE FIELD OVERWRITE login_access ON user TYPE bool DEFAULT true PERMISSIONS FOR update WHERE id != $auth;
+
     DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE invite_token ON user TYPE option<uuid> PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE invite_token ON user TYPE uuid DEFAULT rand::uuid() VALUE rand::uuid() PERMISSIONS FOR select NONE;
 
-    DEFINE FIELD OVERWRITE login_access ON user TYPE bool DEFAULT true 
-        PERMISSIONS FOR update WHERE id != $auth;
+    DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> PERMISSIONS FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> PERMISSIONS FOR create, update WHERE NONE;
+    DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> PERMISSIONS FOR create, update WHERE NONE;
 
-    DEFINE FIELD OVERWRITE dominates ON user TYPE option<array<record<user | groups>>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
-    DEFINE FIELD OVERWRITE parents ON user TYPE option<array<record<groups>>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
-    DEFINE FIELD OVERWRITE permissions ON user TYPE option<array<string>> PERMISSIONS FOR select WHERE TRUE FOR create, update WHERE NONE;
-
-    DEFINE FIELD OVERWRITE last_suspended_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE total_suspensions ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
-
-    DEFINE FIELD OVERWRITE last_refreshed_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE total_refreshes ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
-
-    DEFINE FIELD OVERWRITE last_send_token_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE total_tokens_sent ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
-
-    DEFINE FIELD OVERWRITE last_deactivated_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE total_deactivations ON user TYPE int DEFAULT 0 PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE last_email_sent_at ON user TYPE option<datetime> DEFAULT NONE PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE total_times_email_sent ON user TYPE option<int> DEFAULT 0 PERMISSIONS NONE;
 
     DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
     DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
@@ -51,90 +40,19 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
 
 DEFINE EVENT OVERWRITE user_state_machine ON TABLE user WHEN $event = "UPDATE" THEN {
-    IF $before.login_access = true AND $after.login_access = false {
-        UPDATE $after.id SET last_suspended_at = time::now();
-    };
+    IF $before.refreshed_at != $after.refreshed_at AND $after.refreshed_at != NONE {
+        LET $diff = time::unix(type::datetime($after.refreshed_at)) - time::unix(type::datetime($before.refreshed_at ?? "1970-01-01T00:00:00Z"));
 
-    IF $before.last_suspended_at != $after.last_suspended_at AND $after.last_suspended_at != NONE {
-        UPDATE $after.id SET total_suspensions = ($after.total_suspensions ?? 0) + 1;
-    };
-
-    IF $before.last_refreshed_at != $after.last_refreshed_at AND $after.last_refreshed_at != NONE {
-        IF $before.last_refreshed_at != NONE {
-            LET $diff = <int>time::unix(type::datetime($after.last_refreshed_at)) - <int>time::unix(type::datetime($before.last_refreshed_at));
-            LET $cnt = $before.total_refreshes ?? 0;
-            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
-            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Refresh"; };
+        IF $diff >= 3 {
+            UPDATE $after.id SET 
+                dominates = ($after.id.{..+collect}->link->(?) ?? []).filter(|$v| $v != NONE).sort(),
+                parents = ($after.id<-link<-groups ?? []).filter(|$v| $v != NONE).distinct().sort(),
+                permissions = ($after.id<-link<-groups.role ?? []).flatten().filter(|$v| $v != NONE).distinct().sort();
         };
-        UPDATE $after.id SET 
-            total_refreshes = ($after.total_refreshes ?? 0) + 1,
-            dominates = ($after.id.{..+collect}->link->(?) ??[]).filter(|$v| $v != NONE).sort(),
-            parents = ($after.id<-link<-groups ??[]).filter(|$v| $v != NONE).distinct().sort(),
-            permissions = ($after.id<-link<-groups.role ??[]).flatten().filter(|$v| $v != NONE).distinct().sort();
-    };
-
-    IF $before.last_send_token_at != $after.last_send_token_at AND $after.last_send_token_at != NONE {
-        IF $before.last_send_token_at != NONE {
-            LET $diff = <int>time::unix(type::datetime($after.last_send_token_at)) - <int>time::unix(type::datetime($before.last_send_token_at));
-            LET $cnt = $before.total_tokens_sent ?? 0;
-            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
-            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Token Sent"; };
-        };
-        UPDATE $after.id SET 
-            total_tokens_sent = ($after.total_tokens_sent ?? 0) + 1,
-            last_deactivated_at = time::now();
     };
 
     IF $before.email != $after.email {
-        UPDATE $after.id SET last_deactivated_at = time::now();
-    };
-
-    IF $before.last_deactivated_at != $after.last_deactivated_at AND $after.last_deactivated_at != NONE {
-        IF $before.last_deactivated_at != NONE {
-            LET $diff = <int>time::unix(type::datetime($after.last_deactivated_at)) - <int>time::unix(type::datetime($before.last_deactivated_at));
-            LET $cnt = $before.total_deactivations ?? 0;
-            LET $wait = math::min([ 30, (<int>math::sqrt($cnt) * 5) + <int>(30 / math::max([1, $diff])) ]);
-            IF $diff < $wait { THROW "RATE_LIMIT_EXCEEDED: Deactivation"; };
-        };
-        UPDATE $after.id SET 
-            total_deactivations = ($after.total_deactivations ?? 0) + 1,
-            password = NONE;
-    };
-
-    IF $before.password != NONE AND $after.password = NONE {
-        LET $invite_token = rand::uuid();
-        UPDATE $after.id SET invite_token = $invite_token;
-
-        LET $html_content = string::replace(
-            string::replace($EMAIL_TEMPLATE_RESET, "{{name}}", $after.name), 
-            "{{token}}", 
-            <string>$invite_token
-        );
-
-        LET $headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "api-key": $BREVO_API_KEY 
-        };
-
-        LET $payload = {
-            "sender": $EMAIL_SENDER,
-            "to": [ { "email": $after.email, "name": $after.name } ],
-            "subject": "Your Secure Access Token",
-            "htmlContent": $html_content
-        };
-
-        LET $email_response = http::post($BREVO_API_URL, $payload, $headers);
-    };
-
-    IF $before.password = NONE AND $after.password != NONE {
-        UPDATE $after.id SET invite_token = NONE;
-    };
-};
-
-DEFINE EVENT OVERWRITE user_on_create ON TABLE user WHEN $event = "CREATE" THEN {
-    IF $after.password = NONE {
-        UPDATE $after.id SET invite_token = rand::uuid();
+        UPDATE $after.id SET password = NONE;
     };
 };
 
@@ -211,57 +129,6 @@ DEFINE EVENT OVERWRITE prevent_orphans ON TABLE link WHEN $event = "DELETE" THEN
     };
 };
 
--- ACCESS METHODS
-DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
-    SIGNUP (
-        UPDATE user SET 
-            password = crypto::argon2::generate($password), 
-            last_refreshed_at = time::now()
-        WHERE email = $email.lowercase() 
-          AND invite_token = type::uuid($invite)
-          AND $password.len() > 6
-          AND login_access = true
-    )
-    SIGNIN (
-        UPDATE user SET last_refreshed_at = time::now()
-        WHERE email = $email.lowercase() 
-          AND invite_token = NONE 
-          AND crypto::argon2::compare(password ?? "", $password)
-          AND login_access = true
-    )
-    AUTHENTICATE {
-        IF $auth.password = NONE OR $auth.login_access = false { RETURN NONE; };
-        RETURN $auth;
-    }
-    DURATION FOR SESSION 8h, FOR TOKEN 1h;
-
-DEFINE ACCESS OVERWRITE update_password ON DATABASE TYPE RECORD
-    SIGNUP (
-        UPDATE user SET 
-            password = crypto::argon2::generate($new_password), 
-            last_refreshed_at = time::now()
-        WHERE email = $email.lowercase() 
-          AND password != NONE 
-          AND crypto::argon2::compare(password ?? "", $password)
-          AND $new_password.len() > 6
-          AND login_access = true
-    )
-    AUTHENTICATE {
-        IF $auth.password = NONE OR $auth.login_access = false { RETURN NONE; };
-        RETURN $auth;
-    }
-    DURATION FOR SESSION 8h, FOR TOKEN 1h;
-
-DEFINE ACCESS OVERWRITE request_password_reset ON DATABASE TYPE RECORD
-    SIGNUP (
-        UPDATE user SET last_send_token_at = time::now() 
-        WHERE email = string::lowercase($email) AND login_access = true
-    )
-    AUTHENTICATE {
-        RETURN $auth;
-    }
-    DURATION FOR SESSION 1ms, FOR TOKEN 1ms;
-
 -- INITIALIZATION
 CREATE groups:root SET name = 'System Admins', role = [
     'node_create', 'node_select', 'node_update', 'node_delete',
@@ -284,7 +151,7 @@ CREATE groups:root SET name = 'System Admins', role = [
     'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete'
 ];
 
-CREATE user:root SET name = 'Super Admin', email = 'test@admin.com';
-UPDATE user:root SET password = crypto::argon2::generate("password"), invite_token = NONE;
+CREATE user:root SET name = 'Super Admin', email = 'divy.r.vora14@gmail.com';
+UPDATE user:root SET password = crypto::argon2::generate("password");
 RELATE groups:root -> link -> user:root;
-UPDATE user:root SET last_refreshed_at = time::now();
+UPDATE user:root SET refreshed_at = time::now();
