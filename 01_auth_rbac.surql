@@ -151,7 +151,3 @@ CREATE groups:root SET name = 'System Admins', role = [
     'adjustment_line_select', 'adjustment_line_create', 'adjustment_line_update', 'adjustment_line_delete'
 ];
 
-CREATE user:root SET name = 'Super Admin', email = 'divy.r.vora14@gmail.com';
-UPDATE user:root SET password = crypto::argon2::generate("password");
-RELATE groups:root -> link -> user:root;
-UPDATE user:root SET refreshed_at = time::now();

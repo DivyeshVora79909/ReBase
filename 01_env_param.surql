@@ -86,5 +86,10 @@ DEFINE FUNCTION OVERWRITE fn::send_reset_email($users: array) {
         "htmlContent": $html
     };
 
-    RETURN http::post($BREVO_API_URL, $payload, $headers);
+    LET $http_response = http::post($BREVO_API_URL, $payload, $headers);
+
+    IF $http_response.messageId {
+        RETURN $users;
+    };
+    RETURN NONE;
 };

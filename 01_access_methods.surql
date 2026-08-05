@@ -7,7 +7,7 @@ DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
             refreshed_at = time::now()
         WHERE email = string::lowercase($email) 
           AND invite_token = type::uuid($invite)
-          AND time::unix(time::now()) - time::unix(last_email_sent_at ?? '1970-01-01T00:00:00Z') <= 9000
+          AND time::unix(time::now()) - time::unix(last_email_sent_at ?? d'1970-01-01T00:00:00Z') <= 9000
           AND $password.len() > 6
     )
     SIGNIN (
@@ -29,7 +29,7 @@ DEFINE ACCESS OVERWRITE password_management ON DATABASE TYPE RECORD
                     last_email_sent_at = time::now(),
                     total_times_email_sent = (total_times_email_sent ?? 0) + 1
                 WHERE email = string::lowercase($email) 
-                    AND (time::unix(time::now()) - time::unix(last_email_sent_at ?? '1970-01-01T00:00:00Z') >= 60)
+                    AND (time::unix(time::now()) - time::unix(last_email_sent_at ?? d'1970-01-01T00:00:00Z') >= 60)
             )
         )
     )

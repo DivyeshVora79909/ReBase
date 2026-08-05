@@ -9,21 +9,23 @@ DEFINE TABLE student SCHEMAFULL;
     DEFINE FIELD name ON student TYPE string;
     DEFINE FIELD courses ON student TYPE set<record<course>> DEFAULT <set> [] REFERENCE ON DELETE REJECT;
     -- DEFINE INDEX idx_courses ON student COLUMNS courses.*;
+    DEFINE FIELD under_grad_courses ON student TYPE set<record<course>> DEFAULT <set> [] REFERENCE ON DELETE REJECT;
 
 -- INSERTION
 INSERT INTO course (<array> 1..=1000).map(|$i| { 
     id: type::record('course', $i), 
     name: 'Course ' + <string>$i 
-});
+}) RETURN NONE;
 
 INSERT INTO student (<array> 1..=1000).map(|$s| {
     LET $offset = <int> math::floor(rand::float() * 1000);
     RETURN {
         id: type::record('student', $s),
         name: 'Student ' + <string>$s,
-        courses: <set> (<array> 1..=100).map(|$i| type::record('course', (($offset + $i) % 1000) + 1))
+        courses: <set> (<array> 1..=100).map(|$i| type::record('course', (($offset + $i) % 1000) + 1)),
+        under_grad_courses: <set> (<array> 1..=100).map(|$i| type::record('course', (($offset + $i) % 10000) + 1))
     };
-});
+}) RETURN NONE;
 
 -- RESULT: 
 -- insert 1000 27s for reference, indexed, set courses
@@ -32,9 +34,11 @@ INSERT INTO student (<array> 1..=1000).map(|$s| {
 -- insert 1000 4.2s for set courses
 
 SELECT courses.name FROM student:polymath;
+SELECT VALUE (<array>courses).name FROM student:1;
 SELECT id FROM student WHERE courses CONTAINS course:1;
 SELECT id FROM course:1<~(student FIELD courses);
 SELECT id FROM course:1<~student;
+SELECT id FROM course:1<~(student FIELD under_grad_courses);
 
 
 -- QUERIES
@@ -49,6 +53,9 @@ SELECT * FROM ((SELECT VALUE <array>courses FROM student:1)[0]) FETCH course;
 course:5<~student;
 course:5<~student.name;
 course:5<~student.*;
+course:5<~(student FIELD under_grad_courses).*;
+course:5<~(student FIELD courses).name;
+COUNT(course:5<~(student FIELD under_grad_courses).name);
 
 -- m:n join
 SELECT <~student as students, name from course;
