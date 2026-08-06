@@ -1,483 +1,271 @@
-# ReBase: The Mathematical Operating System for Enterprise Applications
+# ReBase
 
-> **📌 Hackathon Track / Topic:**
-> `[TO BE ANNOUNCED / FILL HERE]`
->
-> _A universal, mathematically proven foundation for building any enterprise software in hours._
+ReBase is a small Schema-as-Code compiler for SurrealDB. You write normal SurrealQL tables, fields, assertions, views, and business indexes. The compiler adds the repetitive ownership, hierarchical DAG RBAC, RLS, audit, reactive event, computed-view, and framework index definitions.
 
----
+There is no custom schema DSL and no frontend package. The project uses JavaScript only for configuration and compiler code.
 
-## 🎯 Executive Summary
+## Project layout
 
-**ReBase** is not just another ERP template. It is a **mathematical operating system** built on top of SurrealDB that transforms the way enterprise applications are architected. By fusing **Set Theory**, **Graph Theory**, and **DAG (Directed Acyclic Graph) Topology**, ReBase eliminates the traditional trade-offs between security, scalability, reactivity, and developer velocity.
-
-Where legacy systems require hundreds of lines of application-level logic to enforce permissions, trigger updates, and maintain data integrity, ReBase pushes all of these guarantees **into the database layer itself** — making them **O(1), atomic, and mathematically impenetrable**.
-
-This project has been independently reviewed and rated an average of **8/10** by leading LLMs including **Gemini, ChatGPT, DeepSeek, and Claude** for its architectural novelty, mathematical rigor, and production-readiness.
-
----
-
-## 📚 Table of Contents
-
-1. [The Mathematical Core: Set Theory & Graph Theory](#1-the-mathematical-core-set-theory--graph-theory)
-2. [The Reactivity Model: Automation via Events & Graph Traversal](#2-the-reactivity-model-automation-via-events--graph-traversal)
-3. [File Architecture: The 12 SurrealQL Pillars](#3-file-architecture-the-12-surrealql-pillars)
-4. [Reactivity Efficiency: Incremental Views & Fine Traversals](#4-reactivity-efficiency-incremental-views--fine-traversals)
-5. [System Architecture: Mermaid Diagrams](#5-system-architecture-mermaid-diagrams)
-6. [Deep Dive: Polymorphic Relations, DAGs, & Hierarchical RBAC](#6-deep-dive-polymorphic-relations-dags--hierarchical-rbac)
-7. [Authorization & Security: Mathematically Impenetrable](#7-authorization--security-mathematically-impenetrable)
-8. [SurrealDB vs PostgreSQL: The Paradigm Shift](#8-surrealdb-vs-postgresql-the-paradigm-shift)
-9. [The Essence of Problem Solving: A Universal Auth Model](#9-the-essence-of-problem-solving-a-universal-auth-model)
-10. [LLM Validation & Ratings](#10-llm-validation--ratings)
-
----
-
-## 1. The Mathematical Core: Set Theory & Graph Theory
-
-Most applications treat data as **rows in tables**. ReBase treats data as **nodes in a graph**, and permissions as **sets of dominion**.
-
-### Set Theory in Practice
-
-Every entity in ReBase belongs to a **permission set**. A user does not just "have a role" — they belong to a **hierarchy of groups** defined by set-theoretic operations:
-
-- **Union:** A user's total permission set is the union of all groups they belong to.
-- **Intersection:** Access to a resource requires the intersection of the user's `parents` set with the resource's `readers` set.
-- **Complement:** Escalation attacks are blocked by computing the complement of allowed roles.
-
-### Graph Theory in Practice
-
-Every record is a **node**, and every `record<>` field is a **directed edge**. This transforms the database into a living, breathing graph where:
-
-- **Traversals** replace JOINs.
-- **Shortest-path algorithms** detect privilege escalation cycles.
-- **DAG enforcement** ensures data flows only in mathematically valid directions.
-
----
-
-## 2. The Reactivity Model: Automation via Events & Graph Traversal
-
-### How It Beats Traditional Systems
-
-In a typical Postgres + Node.js stack, reactivity requires:
-
-1. Application-level observers (Redis pub/sub, webhooks, polling).
-2. Manual cache invalidation.
-3. Race conditions between write paths and read paths.
-4. External queues (Kafka, RabbitMQ) for eventual consistency.
-
-**ReBase eliminates all of this.** The database _is_ the event bus. The database _is_ the cache. The database _is_ the queue.
-
-### The Two-Way Reactivity Engine
-
-ReBase implements a **bidirectional reactivity engine** that propagates changes in both directions of the graph:
-
-#### ⬆️ Upward Propagation (Aggregations)
-
-When a leaf node changes (e.g., an `order_line`), SurrealDB's **incremental materialized views** automatically recalculate the parent's totals (`v_orderl_order`) in **O(1) time** using delta-based computation.
-
-#### ⬇️ Downward Propagation (Cascades)
-
-When a root node changes (e.g., an `organization`'s `owned_by` group changes), a **fine-grained graph traversal event** fires, walking down only the specific edges that depend on that change, and pinging their `system_ping` timestamps to invalidate caches.
-
-### How Automation Scales
-
-| Operation                   | Traditional DB           | ReBase                     |
-| --------------------------- | ------------------------ | -------------------------- |
-| Recalculate Total Revenue   | O(N) full scan           | O(1) incremental view      |
-| Propagate Permission Change | O(N) application loop    | O(depth) graph traversal   |
-| Detect Cycle in Hierarchy   | Custom application logic | `shortest_path` in DB      |
-| Enforce Business Rules      | Application middleware   | `e_guard` field assertions |
-
-The automation scales **linearly with graph depth**, not with data volume.
-
----
-
-## 3. File Architecture: The 12 SurrealQL Pillars
-
-ReBase is organized into 12 deterministic compilation files, each with a single, well-defined responsibility:
-
-| File                           | Purpose                                                                                                                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **01_auth_rbac.surql**         | Core user model, Argon2 password hashing, login flows, Brevo email integration, RBAC group definitions, and privilege escalation prevention.                                   |
-| **02_table_permissions.surql** | Table-level CRUD permissions enforcing that all operations check the `$auth.permissions` set and the `readers`/`owned_by` group membership.                                    |
-| **03_owners.surql**            | Defines the `owned_by` and `readers` fields for every table, automatically inheriting ownership from parent nodes (e.g., an invoice inherits ownership from its organization). |
-| **04_audit_meta_fields.surql** | Injects `created_at`, `updated_at`, `created_by`, and `updated_by` into every single table for complete audit trails.                                                          |
-| **05_system_flags.surql**      | Injects the `system_ping` timestamp field into every table, used as the invalidation trigger for the reactivity engine.                                                        |
-| **06_table_fields.surql**      | **The Business Logic Core.** Defines all tables, fields, `e_guard` assertions (business rule enforcements), and polymorphic relations.                                         |
-| **07_views.surql**             | Defines all O(1) materialized views for aggregations, BI dashboards, and upward mathematical propagation.                                                                      |
-| **08_events_upward.surql**     | Auto-generated events that ping parent nodes whenever a child node's aggregate changes.                                                                                        |
-| **09_events_downward.surql**   | Auto-generated events that traverse the graph downward to invalidate dependent nodes when a root changes.                                                                      |
-| **10_config.surql**            | Global configuration, company settings, and algorithmic exception matrices (e.g., the absolute stock matrix guard).                                                            |
-| **11_indexes.surql**           | Auto-generated indexes for every record field and view grouping key for optimal traversal performance.                                                                         |
-| **12_computed_views.surql**    | Auto-generated computed fields that attach the live materialized view data directly to the parent records.                                                                     |
-
----
-
-## 4. Reactivity Efficiency: Incremental Views & Fine Traversals
-
-### Upward Efficiency: Incremental Materialized Views
-
-SurrealDB does not recalculate entire views on every write. Instead, it uses **delta-based incremental computation**:
-
-```surrealql
--- When an order_line is inserted/updated, only the delta is applied:
-DEFINE TABLE OVERWRITE v_orderl_order AS
-SELECT a_order AS order,
-       math::sum(d2_net_base) AS sum_net
-FROM order_line
-GROUP BY order;
+```text
+ReBase/
+  framework/
+    auth.surql             Array-native DAG RBAC and cycle protection
+    access.surql           Record authentication and password flows
+    settings.surql         Scoped public/private configuration registry
+  src/
+    compiler.js            Build orchestration
+    project.js             Config and CLI loading
+    schema.js              Schema/view discovery
+    surql.js               Small SurrealQL statement utilities
+    analyze.js             Dependency graph and validation
+    generators/
+      security.js          Ownership, readers, RLS, audit, flags
+      reactivity.js        Cascades, view events, computed fields
+      indexes.js           Framework indexes and index metadata
+  designs/<project>/
+    rebase.config.js
+    schema.surql
+    views.surql
+    seed.surql             Optional, non-secret bootstrap data
+  scripts/
+    deploy.js
+    verify-runtime.js
+    benchmark-permissions.js
 ```
 
-Because the view is grouped by `order`, SurrealDB maintains an internal hash map. A single line change updates only that one key in **O(1)** time — regardless of whether the order has 5 lines or 5,000 lines.
+Generated builds contain only:
 
-### Downward Efficiency: Fine Graph Traversals
+```text
+build/<project>/
+  schema.surql             Complete deployable schema
+  optimizer.json           Verified query-plan findings and indexes
+```
 
-Instead of broadcasting "something changed" to the entire system, ReBase compiles the exact reverse path required:
+## Schema project
 
-```surrealql
-DEFINE EVENT aot_cascade_downward ON TABLE organization WHEN $event = 'UPDATE' THEN {
-    IF $before.owned_by != $after.owned_by {
-        LET $tgt = $after<~person;  -- Only ping persons under this org
-        IF $tgt { UPDATE $tgt SET system_ping = time::now(); };
-    };
+`rebase.config.js` stays intentionally small:
+
+```js
+module.exports = {
+  ownership: {
+    inheritArrayReaders: false,
+  },
 };
 ```
 
-The `<~` operator performs a **single-step reverse traversal**. This means:
+Keep only compiler/schema choices in this file. Connections, credentials, namespace, database, build path, bootstrap values, and benchmark options belong in the root `.env`.
 
-- Only the exact nodes that depend on the changed field are pinged.
-- No wasted compute on unrelated branches.
-- Traversal complexity is **O(1)** per dependent node, not O(N).
-
----
-
-## 5. System Architecture: Mermaid Diagrams
-
-### CRM Module Architecture
-
-```mermaid
-graph TD
-    subgraph "Root Entities (Level 0)"
-        ORG[Organization]
-        PER[Person]
-        PRD[Product]
-        CMP[Campaign]
-    end
-
-    subgraph "Transactional DAG (Level 1-3)"
-        OPP[Opportunity] --> QT[Quote]
-        OPP --> ORD[Order]
-        QT --> ORD
-        OPP --> OPPL[Opportunity Line]
-        QT --> QTL[Quote Line]
-        ORD --> ORDL[Order Line]
-    end
-
-    subgraph "Polymorphic Leaves (Level 5)"
-        TSK[Task] -.-> ORG
-        TSK -.-> PER
-        TSK -.-> OPP
-        ACT[Activity] -.-> ORG
-        NTE[Note] -.-> ORD
-    end
-
-    subgraph "O(1) Materialized Views"
-        V1[v_opp_org]
-        V2[v_orderl_org]
-        V3[v_quotel_prod]
-    end
-
-    ORG --> V1
-    ORG --> V2
-    PRD --> V3
-```
-
-### Accounts / Finance Module Architecture
-
-```mermaid
-graph TD
-    subgraph "Financial Anchors (Level 0)"
-        ORGA[Org]
-        TR[Treasury]
-        ACC[Account]
-        TAX[Tax Account]
-        WH[Warehouse]
-        ITM[Item]
-    end
-
-    subgraph "Intents (Level 1)"
-        PAY[Payment]
-        INV[Invoice]
-        ADJ[Adjustment Note]
-    end
-
-    subgraph "Branches (Level 2)"
-        PA[Payment Allocation]
-        INVL[Invoice Line]
-        PKG[Package Note]
-    end
-
-    subgraph "Leaves & Deltas (Level 3-4)"
-        SL[Stock Ledger]
-        TL[Tax Line]
-        AL[Adjustment Line]
-    end
-
-    TR --> PAY
-    PAY --> PA --> INV
-    INV --> INVL
-    INVL --> SL
-    INVL --> TL
-    ADJ --> AL -.-> INVL
-    ADJ --> AL -.-> TL
-    ADJ --> AL -.-> SL
-
-    subgraph "Absolute Matrix Guard"
-        MX[Stock Matrix Guard]
-    end
-
-    SL --> MX
-```
-
----
-
-## 6. Deep Dive: Polymorphic Relations, DAGs, & Hierarchical RBAC
-
-### Polymorphic Relations: Disjoint Union Types
-
-ReBase leverages SurrealDB's `record<A | B | C>` syntax to implement **true polymorphism** at the database level.
+Write business definitions directly in `schema.surql`:
 
 ```surrealql
-DEFINE FIELD a_target ON task TYPE record<person | organization | opportunity | quote | order | campaign>;
+DEFINE TABLE organization SCHEMAFULL;
+DEFINE FIELD name ON organization TYPE string ASSERT string::len($value) > 0;
+
+DEFINE TABLE invoice SCHEMAFULL;
+DEFINE FIELD organization ON invoice TYPE record<organization>
+  REFERENCE ON DELETE REJECT;
+DEFINE FIELD status ON invoice TYPE string
+  ASSERT $value IN ['draft', 'posted', 'void'];
+
+-- Business indexes stay explicit because only the application knows query selectivity.
+DEFINE INDEX invoice_status_created ON invoice FIELDS status, created_at;
 ```
 
-This is not a JSON blob or a nullable foreign key hack. This is a **disjoint union type** enforced by the database engine. A task can point to _exactly one_ of those six entities, and the database guarantees referential integrity across all six tables simultaneously.
-
-This eliminates the need for:
-
-- Polymorphic join tables (Rails-style `target_type`/`target_id` columns).
-- Application-level type guards.
-- Orphaned references.
-
-### The DAG Pattern for Hierarchical RBAC
-
-ReBase models user permissions as a **Directed Acyclic Graph** using the `link` table:
+Write grouped reactive views in `views.surql`:
 
 ```surrealql
-DEFINE TABLE link SCHEMAFULL TYPE RELATION IN user | groups OUT user | groups;
+DEFINE TABLE v_invoice_organization AS
+SELECT organization AS target, count() AS invoice_count
+FROM invoice
+GROUP BY target;
 ```
 
-The `prevent_cycle` event uses SurrealDB's built-in **shortest-path algorithm** to detect cycles before they can be created:
+The compiler discovers record links and grouped view targets, then generates ownership inheritance, reverse cascade events, view lookup indexes, and computed fields on the target table.
 
-```surrealql
-DEFINE EVENT prevent_cycle ON TABLE link WHEN $event = "CREATE" THEN {
-    LET $cycle = $start.{..+shortest=$end}->link->(?);
-    IF $cycle.len() > 0 { THROW "ERR_CYCLE"; };
-};
-```
+Keep secrets and environment-specific admin users out of `seed.surql`. Provision them through deployment secrets or a separate bootstrap command.
 
-This guarantees that the permission hierarchy is **always a valid DAG**, making permission resolution deterministic and cycle-free.
+## Commands
 
-### The Permission Model: `parents` vs `dominates`
-
-Every user has two computed permission sets:
-
-1. **`parents`** — All groups that _contain_ this user (upward traversal).
-2. **`dominates`** — All groups that this user _controls_ (downward traversal).
-
-#### Writers: Require Parent or Dominate
-
-To **create, update, or delete** a resource, the actor must be in the resource's `owned_by` group's `dominates` set. This ensures that only group _managers_ can mutate data, not just group _members_.
-
-```surrealql
-FOR update WHERE 'org_update' IN $auth.permissions AND (owned_by IN $auth.parents OR owned_by IN $auth.dominates)
-```
-
-#### Readers: Inherited Through the Graph
-
-To **read** a resource, the actor only needs to be in the resource's `readers` set. But here is the magic: the `readers` field is **automatically computed** from the entire graph above the resource.
-
-```surrealql
-DEFINE FIELD readers ON order TYPE array<record<groups>>
-VALUE array::flatten([
-    $this.owned_by,
-    $this.a_parent.readers,
-    $this.a_organization.readers
-]);
-```
-
-If you are a parent of an organization, you automatically inherit read access to every order, every invoice, and every task under that organization — **without a single manual permission assignment**.
-
-### Scaling: O(1) to O(N) Permission Resolution
-
-Because SurrealDB caches computed fields and uses index-based lookups:
-
-| Operation                        | Complexity                                    |
-| -------------------------------- | --------------------------------------------- |
-| Check if user can read record    | **O(1)** (set intersection on indexed arrays) |
-| Resolve user's total permissions | **O(depth of DAG)** (typically 3-5 levels)    |
-| Detect privilege escalation      | **O(1)** (set complement operation)           |
-
-**Average length of `parents` and `dominates` sets:**
-In a typical enterprise hierarchy (CEO → VP → Manager → Employee), the average depth is **3.2 levels**. This means permission resolution takes **3-4 set intersections**, executing in under **0.5 milliseconds** per query.
-
----
-
-## 7. Authorization & Security: Mathematically Impenetrable
-
-ReBase is not "secure by configuration" — it is **secure by mathematical proof**.
-
-### The Five-Layer Security Stack
-
-1. **Field-Level Assertions (`e_guard`)** — Every business rule is enforced atomically. For example, a payment cannot exist without a treasury account:
-
-   ```surrealql
-   IF record::tb($this.a_from) != 'treasury' AND record::tb($this.a_to) != 'treasury' {
-       THROW "PHYSICS_ERR: Payment must involve at least one Treasury account.";
-   };
-   ```
-
-2. **DAG Fracture Detection** — The system detects if a graph edge has been broken in a way that violates business logic (e.g., an invoice line pointing to a different organization than its parent invoice).
-
-3. **Absolute Matrix Guards** — O(1) memory cross-checking ensures invariants like "warehouse stock cannot go negative" are enforced by two mirrored views (`v_sl_matrix_in` and `v_sl_matrix_out`) that cross-validate each other on every write.
-
-4. **Privilege Escalation Prevention** — The `prevent_role_escalation` event computes the complement of the user's current permissions and rejects any attempt to assign unauthorized roles.
-
-5. **Cycle Detection** — The shortest-path algorithm prevents circular group memberships that could create infinite permission loops.
-
-### Why It Is Impenetrable
-
-An attacker cannot bypass ReBase's security because:
-
-- **There is no application layer to hack.** All rules run in the database engine.
-- **SQL injection cannot bypass set theory.** A malicious query cannot forge a set membership that does not exist.
-- **Race conditions are impossible.** SurrealDB's ACID transactions combined with the `e_guard` assertions ensure that no intermediate invalid state can ever be observed.
-
----
-
-## 8. SurrealDB vs PostgreSQL: The Paradigm Shift
-
-| Feature                   | PostgreSQL                              | SurrealDB (ReBase)                               |
-| ------------------------- | --------------------------------------- | ------------------------------------------------ |
-| **Storage Engine**        | Coupled (query + storage tightly bound) | **Decoupled** (RocksDB-based single set space)   |
-| **Data Model**            | Relational tables only                  | Multi-model: Relational + Document + Graph       |
-| **Polymorphic Relations** | Requires nullable FKs or join tables    | Native `record<A \| B \| C>` syntax              |
-| **Graph Traversal**       | Requires recursive CTEs (O(N²))         | Native `<~` and `.{..}` operators (O(depth))     |
-| **Materialized Views**    | Manual `REFRESH MATERIALIZED VIEW`      | **Automatic incremental updates**                |
-| **Triggers**              | PL/pgSQL (brittle, hard to debug)       | Native SurrealQL events with graph awareness     |
-| **Permission Model**      | Row-level security (complex policies)   | **Set-theoretic RBAC** (automatic inheritance)   |
-| **Reactivity**            | Requires LISTEN/NOTIFY + app layer      | **Built-in event system** with delta propagation |
-
-### The RocksDB Advantage
-
-SurrealDB uses **RocksDB** as its storage engine, which stores all data in a **single sorted key space**. This means:
-
-- Graph edges are stored as simple key-value pairs adjacent to their nodes.
-- Traversals become **sequential disk reads**, which RocksDB optimizes with bloom filters and block caches.
-- The entire database — users, permissions, invoices, stock movements — exists in one unified set space, making cross-model queries trivial.
-
-### Incremental Views vs Manual Refresh
-
-In Postgres, a materialized view showing "total revenue by organization" must be manually refreshed, causing stale dashboards. In SurrealDB:
-
-```surrealql
-DEFINE TABLE OVERWRITE v_bi_orderl_org_monthly AS
-SELECT time::group(a_order_date, 'month') AS month,
-       a_organization AS org,
-       math::sum(d2_net_base) AS revenue
-FROM order_line
-GROUP BY month, org;
-```
-
-This view is **always fresh**, updated atomically with every `order_line` write, with zero application code required.
-
----
-
-## 9. The Essence of Problem Solving: A Universal Auth Model
-
-### The Generic Auth Hypothesis
-
-The most profound insight of ReBase is this: **The authorization model is application-agnostic.**
-
-The RBAC graph, the set-theoretic permission resolution, the cycle detection, and the privilege escalation prevention are **universal truths** that apply to _every_ enterprise application, whether it is:
-
-- A CRM (Salesforce-like)
-- An ERP (SAP-like)
-- A hospital management system
-- A supply chain tracker
-- A project management tool
-
-### The Three Files That Change
-
-To build a completely new enterprise application, you only need to modify **three files**:
-
-| File                      | What You Change                                          |
-| ------------------------- | -------------------------------------------------------- |
-| **06_table_fields.surql** | Your business entities, fields, and `e_guard` assertions |
-| **07_views.surql**        | Your aggregations, dashboards, and BI queries            |
-| **10_config.surql**       | Your global settings and algorithmic invariants          |
-
-**Files 01 through 05, 08, 09, 11, and 12 are auto-generated and work for ANY application.**
-
-### Building High-Rated ERP Applications
-
-Because the hard problems (security, reactivity, permissions, audit trails) are solved at the foundation, developers can focus entirely on **business logic**. This is why ReBase can produce **high-rated ERP applications** in days instead of months:
-
-- **No permission bugs** — mathematically enforced.
-- **No stale dashboards** — incremental views.
-- **No audit trail gaps** — automatic meta-fields.
-- **No race conditions** — `e_guard` assertions.
-
----
-
-## 10. LLM Validation & Ratings
-
-To validate the architectural soundness of ReBase, the codebase was submitted to four leading Large Language Models for independent review. Each was asked to evaluate the system on:
-
-- Mathematical rigor
-- Security model
-- Scalability
-- Code maintainability
-- Innovation
-
-### The Results
-
-| LLM                             | Rating       | Key Feedback                                                                                                                           |
-| ------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Google Gemini 1.5 Pro**       | **8.5 / 10** | _"Exceptional use of set theory for RBAC. The DAG cycle detection is production-grade."_                                               |
-| **OpenAI ChatGPT-4o**           | **8.0 / 10** | _"The materialized view strategy is elegant. The file separation shows strong engineering discipline."_                                |
-| **DeepSeek-V2**                 | **7.8 / 10** | _"The polymorphic relation handling is a major leap over traditional ORMs. Impressive graph traversal optimizations."_                 |
-| **Anthropic Claude 3.5 Sonnet** | **8.2 / 10** | _"The `e_guard` pattern is a brilliant way to enforce invariants. The absolute matrix guard is a novel approach to stock management."_ |
-
-### **Average Rating: 8.1 / 10**
-
-The consensus among all four models was that ReBase represents a **paradigm shift** in how enterprise applications are built, moving away from application-layer hacks toward **database-native mathematics**.
-
----
-
-## 🚀 Getting Started
+Compile a project:
 
 ```bash
-# Clone the repository
-git clone <rebase-repo>
-
-# Start SurrealDB
-surreal start --auth --user root --pass root
-
-# Run the meta-compiler
-node compile.js
-
-# Apply to your database
-surreal import --conn http://127.0.0.1:8000 --user root --pass root --ns main --db main 01_auth_rbac.surql
-# ... (apply files 02-12 in order)
+npm run build:test
 ```
 
----
+Or invoke the compiler directly:
 
-## 📜 License
+```bash
+node --env-file=.env compile.js --project designs/test --output build/test
+```
 
-MIT License — Built for the open-source community and enterprise innovation.
+Validate generated files are current:
 
----
+```bash
+npm run check:test
+surreal validate build/test/schema.surql
+```
 
-> **"ReBase does not just manage data — it mathematically proves that your data is correct."**
+Deploy:
+
+```bash
+npm run deploy
+```
+
+Bootstrap the first record user explicitly. This keeps credentials out of source and seed files:
+
+```bash
+npm run bootstrap:admin
+```
+
+Verify authorization behavior:
+
+```bash
+npm run verify:runtime
+```
+
+The scripts read these deployment values directly from `.env`: `SURREAL_ENDPOINT`, `SURREAL_USER`, `SURREAL_PASS`, `SURREAL_NAMESPACE`, `SURREAL_DATABASE`, and `REBASE_BUILD_DIR`. Bootstrap also uses `REBASE_ADMIN_EMAIL`, `REBASE_ADMIN_PASSWORD`, and optional `REBASE_ADMIN_NAME`.
+
+## Authorization contract
+
+The framework preserves these invariants:
+
+- `parents` contains immediate mixed user/group DAG parents.
+- Only immediate parent groups contribute roles to a user's `permissions`.
+- `dominates` contains transitive descendants for hierarchy administration.
+- Proposed self-links and links to existing descendants are rejected as cycles.
+- New parent records must exist.
+- Resources have one `owned_by` group and computed inherited `readers`.
+- Clients cannot write computed permission fields.
+- Table permissions are the final RLS security boundary for every query shape.
+
+The compiler materializes `readers_index: array<string>` and indexes `readers_index.*`. Direct indexes on `array<record>` ACL fields are intentionally avoided because SurrealDB 3.2 produced incorrect empty index-scan results in testing.
+
+## Scoped configuration
+
+User-, group-, workspace-, resource-, and root-scoped configuration is stored in the framework `setting` table. The pattern is a **scoped configuration registry** with a **tagged envelope**:
+
+```surrealql
+CREATE setting SET
+  scope = organization:acme,
+  key = 'object-storage',
+  schema_version = 1,
+  values = {
+    provider: 's3',
+    bucket: 'acme-uploads',
+    region: 'ap-south-1'
+  },
+  secrets = {
+    access_key: '...',
+    secret_key: '...'
+  },
+  owned_by = groups:acme_admins;
+```
+
+The stable fields are:
+
+- `scope`: any SurrealDB record, immutable, with `REFERENCE ON DELETE CASCADE`.
+- `key`: immutable slug identifying the contract, such as `ui-theme` or `object-storage`.
+- `schema_version`: the payload contract version understood by consuming code.
+- `enabled`: allows a configuration to be disabled without deleting it.
+- `values`: flexible object visible through normal table RLS.
+- `secrets`: flexible object writable through normal table RLS but `FOR select NONE` for record users.
+- `owned_by`, `readers`, audit fields, and permission indexes: generated like every other ReBase table.
+
+`(scope, key)` is unique. Use one record per independently updated configuration. Do not build one giant settings object.
+
+This table replaces deployment-like user customization only when the values are not relational and are not central to database queries. Keep a normal typed table when:
+
+- Other records reference the value.
+- Database events, assertions, or views depend on its internal fields.
+- Individual payload fields need indexes.
+- The data has a business lifecycle of its own.
+
+For example, a frontend-only default currency can be a setting. A currency used by accounting assertions and materialized views should remain a typed field.
+
+### External actions
+
+Configuration stores state, never executable routing. Do not store function names, source code, or endpoint names in `setting`.
+
+For SMTP, storage, payments, password recovery, and similar actions:
+
+1. The frontend calls an explicit action endpoint, such as `POST /storage/upload-url`.
+2. The action receives the SurrealDB record token and setting record ID.
+3. It queries the setting ID using the record token. An empty result means RLS denied access.
+4. Only after that authorization probe, it reads `secrets` using a trusted SurrealDB system credential.
+5. It validates `key`, `schema_version`, and the payload expected by that endpoint.
+6. It performs the external action and returns only the result, never the stored secret.
+
+The browser should not receive SMTP passwords, storage secret keys, or payment credentials even when RBAC is strict. Once delivered to browser code, a secret is exposed to extensions, injected scripts, logs, and developer tools. Direct clients may update the write-only `secrets` field when authorized, but only trusted action code reads it.
+
+Password recovery follows the same boundary. SurrealDB stores an expiring invite/reset token and performs the token-to-password exchange. Issuing the token, rate limiting requests, and delivering email belong to an explicit trusted action. ReBase no longer contains email hooks or database-side HTTP calls.
+
+### Payload evolution
+
+Do not add a generic schema registry or class hierarchy. That would require maintaining a second validation language.
+
+Each consuming action or frontend feature owns a small validator for the setting keys it understands. It accepts supported `schema_version` values and rejects unknown versions with a clear error. Old records are migrated only when the consuming feature changes. Unknown extra keys should be ignored where possible.
+
+## Query-plan findings
+
+These are database findings, not frontend implementation code. They are also emitted in every build's `optimizer.json`.
+
+### 1. Dynamic ACL array
+
+```surrealql
+WHERE readers_index CONTAINSANY $auth.z_access_index
+```
+
+On SurrealDB 3.2, permission-only `EXPLAIN FULL` reports `TableScan`. Binding the full array to `LET` does not make it indexable. RLS remains correct, but worst-case work grows with table size and ACL comparison cost.
+
+### 2. Scalar reader OR branches
+
+```surrealql
+LET $r0 = $auth.z_access_index[0];
+LET $r1 = $auth.z_access_index[1];
+
+SELECT * FROM invoice
+WHERE readers_index CONTAINS $r0
+   OR readers_index CONTAINS $r1;
+```
+
+Scalar branches can force reader index scans and are approximately `O(m log n + candidates)`, where `m` is the user's access-key count and `n` is table size. Always confirm the exact query with `EXPLAIN FULL` after SurrealDB upgrades.
+
+### 3. Selective filters and sorting
+
+For a query such as:
+
+```surrealql
+SELECT * FROM invoice
+WHERE status = 'posted'
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+SurrealDB can use a composite `(status, created_at)` business index and apply RLS as a residual filter. This is usually preferable when the business predicate sharply reduces candidates.
+
+### 4. Cost policy
+
+- Narrow ACL and weak business filters: consider scalar reader `OR` branches.
+- Selective filters/sorts: lead with the business index and let RLS filter candidates.
+- Wide ACL plus small `LIMIT`: a native scan can sometimes return early and beat many reader branches.
+- Full exports, rare readers, and counts have different crossover points from first-page queries.
+- Use measured plans and representative data distributions; asymptotic complexity alone does not choose the fastest plan.
+
+Run the included benchmark to capture plans and response percentiles:
+
+```bash
+npm run benchmark:permissions
+```
+
+Configure it through `.env` with `REBASE_BENCHMARK_SCALES`, `REBASE_BENCHMARK_MEMBERSHIPS`, `REBASE_BENCHMARK_SAMPLES`, `REBASE_BENCHMARK_BATCH_SIZE`, and optional `REBASE_BENCHMARK_OUTPUT`.
+
+The benchmark uses an isolated synthetic table and deletes that table during setup. Never point it at a production database.
+
+## Maintenance rules
+
+- Prefer documented SurrealQL fields, events, references, permissions, indexes, functions, and `EXPLAIN FULL`.
+- Keep business rules in project SurrealQL, not compiler conditionals.
+- Keep framework generators deterministic and table-driven.
+- Add raw business indexes explicitly; the compiler must not guess workload selectivity.
+- Treat destructive schema changes as reviewed deployments, not automatic compiler behavior.
+- Run compiler tests, `surreal validate`, runtime verification, and permission benchmarks before upgrading SurrealDB.

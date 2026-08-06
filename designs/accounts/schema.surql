@@ -58,7 +58,7 @@ DEFINE FIELD a_fx_rate ON payment TYPE decimal DEFAULT 1.0dec ASSERT $value > 0d
 DEFINE FIELD d1_p_from ON payment TYPE int VALUE IF record::tb($this.a_from) IN ['treasury', 'acc', 'tax_account'] THEN 1 ELSE 0 END;
 DEFINE FIELD d2_p_to ON payment TYPE int VALUE IF record::tb($this.a_to) IN ['treasury', 'acc', 'tax_account'] THEN 1 ELSE 0 END;
 DEFINE FIELD d3_vector ON payment TYPE int VALUE $this.d2_p_to - $this.d1_p_from;
-DEFINE FIELD d4_currency ON payment TYPE string VALUE $this.a_from.a_currency ?? $this.a_to.a_currency ?? company:settings.default_currency ?? 'USD';
+DEFINE FIELD d4_currency ON payment TYPE string VALUE $this.a_from.a_currency ?? $this.a_to.a_currency ?? 'USD';
 
 DEFINE FIELD e_guard ON payment TYPE bool VALUE {
     IF record::tb($this.a_from) != 'treasury' AND record::tb($this.a_to) != 'treasury' { 

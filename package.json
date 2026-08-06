@@ -1,0 +1,18 @@
+{
+  "name": "rebase-surreal-compiler",
+  "version": "0.2.0",
+  "private": true,
+  "description": "SurrealQL-first Schema-as-Code compiler for ownership, DAG RBAC, RLS, and reactive views.",
+  "scripts": {
+    "test": "node --env-file=.env --test tests/*.test.js",
+    "build:test": "node --env-file=.env compile.js --project designs/test --output build/test",
+    "check:test": "node --env-file=.env compile.js --project designs/test --output build/test --check",
+    "deploy": "node --env-file=.env scripts/deploy.js",
+    "bootstrap:admin": "node --env-file=.env scripts/bootstrap-admin.js",
+    "verify:runtime": "node --env-file=.env scripts/verify-runtime.js",
+    "benchmark:permissions": "node --env-file=.env scripts/benchmark-permissions.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

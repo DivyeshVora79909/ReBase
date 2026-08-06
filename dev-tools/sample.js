@@ -1070,13 +1070,5 @@
     {"invoice_line": "invoice_line:pur_laptop", "al_delta_price": -2000}
   ],
   "v_atl_tl": [],
-  "v_asl_sl": [],
-
-  "company": [
-    {
-      "id": "company:settings",
-      "default_currency": "USD",
-      "updated_at": "2025-12-01T00:00:00Z"
-    }
-  ]
+  "v_asl_sl": []
 }

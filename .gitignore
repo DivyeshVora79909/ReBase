@@ -89,6 +89,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .env
+*.env
 .env.local
 .env.development.local
 .env.test.local
@@ -110,6 +111,7 @@ build/
 .nyc_output/
 *.tsbuildinfo
 *.tgz
+benchmark-results*.json
 .yarn/
 .yarnrc.yml
 package-lock.json
