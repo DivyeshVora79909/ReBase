@@ -51,13 +51,16 @@ function loadProject(rawOptions) {
   const namespace = process.env.SURREAL_NAMESPACE;
   const database = process.env.SURREAL_DATABASE;
   if (!namespace || !database) throw new Error("Missing SURREAL_NAMESPACE or SURREAL_DATABASE");
+  const selectMode = config.authorization?.selectMode ?? "readers";
+  if (!["readers", "owner"].includes(selectMode)) {
+    throw new Error(`Invalid authorization.selectMode: ${selectMode}`);
+  }
   const outputDir = path.resolve(
     rootDir,
     rawOptions.outputDir || path.join("build", path.basename(projectDir)),
   );
   const frameworkDir = path.resolve(__dirname, "../framework");
   const framework = {
-    settings: path.join(frameworkDir, "settings.surql"),
     auth: path.resolve(projectDir, config.framework?.auth || path.join(frameworkDir, "auth.surql")),
     access: path.resolve(projectDir, config.framework?.access || path.join(frameworkDir, "access.surql")),
   };
@@ -69,13 +72,13 @@ function loadProject(rawOptions) {
     outputDir,
     namespace,
     database,
+    selectMode,
     includeArrayReaders: rawOptions.includeArrayReaders ?? config.ownership?.inheritArrayReaders ?? false,
     check: rawOptions.check,
     sources: {
       schema: readRequired(path.join(projectDir, "schema.surql")),
       views: readRequired(path.join(projectDir, "views.surql")),
       seed: fs.existsSync(seedPath) ? fs.readFileSync(seedPath, "utf8") : "",
-      settings: readRequired(framework.settings),
       auth: readRequired(framework.auth),
       access: readRequired(framework.access),
     },

@@ -18,7 +18,6 @@ function main() {
   console.log(`ReBase compiled ${result.tableCount} tables and ${result.viewCount} views.`);
   console.log(`Output: ${relativeOutput}`);
   console.log(`Schema: ${path.join(relativeOutput, "schema.surql")}`);
-  console.log(`Optimizer findings: ${path.join(relativeOutput, "optimizer.json")}`);
 }
 
 try {

@@ -23,44 +23,13 @@ function writeOrCheck(filePath, content, check) {
   fs.writeFileSync(filePath, content);
 }
 
-function optimizerManifest(tables, indexes) {
-  return {
-    version: 1,
-    securityBoundary: {
-      predicate: "readers_index CONTAINSANY $auth.z_access_index",
-      behavior: "RLS remains authoritative even when the query planner uses another index.",
-    },
-    findings: [
-      {
-        queryShape: "permission-only with dynamic auth array",
-        observedPlan: "TableScan",
-        reason: "SurrealDB 3.2 does not index dynamic CONTAINSANY arrays.",
-      },
-      {
-        queryShape: "permission-only with scalar OR/fan-out branches",
-        observedPlan: "IndexScan on readers_index.*",
-        complexity: "approximately O(m log n + candidates)",
-      },
-      {
-        queryShape: "selective business filter and sort",
-        observedPlan: "business IndexScan with RLS as a residual filter",
-        guidance: "Prefer this when the business index sharply reduces candidates.",
-      },
-    ],
-    policy: [
-      "Use scalar reader fan-out for narrow ACLs and permission-dominated queries.",
-      "Use business filters and sort indexes first when they are selective.",
-      "Use EXPLAIN FULL in benchmarks; response time alone does not prove index usage.",
-      "Do not index array<record> ACL fields directly; index the materialized array<string> field with field.*.",
-    ],
-    tables: tables.map((table) => ({
-      table,
-      readersField: "readers_index",
-      readersIndex: `idx_${table}_readers`,
-      ownershipIndex: `idx_${table}_owned_by`,
-    })),
-    generatedIndexes: indexes,
-  };
+function removeLegacyArtifacts(outputDir, check) {
+  for (const name of ["optimizer.json", "manifest.json"]) {
+    const filePath = path.join(outputDir, name);
+    if (!fs.existsSync(filePath)) continue;
+    if (check) throw new Error(`Generated output contains legacy artifact: ${filePath}`);
+    fs.unlinkSync(filePath);
+  }
 }
 
 function compileProject(rawOptions) {
@@ -71,14 +40,12 @@ function compileProject(rawOptions) {
       source ? scopeSource(source, project.namespace, project.database) : "",
     ]),
   );
-  const schema = parseSchema(`${scoped.settings}\n${scoped.schema}`, scoped.views);
+  const schema = parseSchema(scoped.schema, scoped.views);
   if (!schema.tables.size) throw new Error(`No tables found in ${project.projectDir}`);
   const analysis = analyzeSchema(schema);
   const views = generateViews(schema, project);
   const indexes = generateIndexes(schema, views.viewIndexes, project, analysis.systemTables);
-  const businessTables = [...schema.tables.keys()].filter((table) => !analysis.systemTables.has(table));
   const sections = [
-    ["scoped settings", scoped.settings],
     ["business schema", scoped.schema],
     ["DAG RBAC", scoped.auth],
     ["record access", scoped.access],
@@ -92,10 +59,9 @@ function compileProject(rawOptions) {
   ];
   if (scoped.seed) sections.push(["project seed", scoped.seed]);
   const bundle = `${sections.map(([name, sql]) => section(name, sql)).join("\n")}\n`;
-  const optimizer = optimizerManifest(businessTables.sort(), indexes.indexes);
+  removeLegacyArtifacts(project.outputDir, project.check);
   writeOrCheck(path.join(project.outputDir, "schema.surql"), bundle, project.check);
-  writeOrCheck(path.join(project.outputDir, "optimizer.json"), `${JSON.stringify(optimizer, null, 2)}\n`, project.check);
   return { outputDir: project.outputDir, tableCount: schema.tables.size, viewCount: schema.views.length, schema };
 }
 
-module.exports = { compileProject, optimizerManifest };
+module.exports = { compileProject };

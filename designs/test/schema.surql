@@ -21,6 +21,22 @@ DEFINE FIELD a_object ON test_primitive TYPE object DEFAULT {};
 DEFINE FIELD a_enum ON test_primitive TYPE string ASSERT $value IN ['pending', 'active', 'archived'] DEFAULT 'pending';
 
 
+-- Optional scoped configuration is ordinary business schema, not framework state.
+DEFINE TABLE setting SCHEMAFULL;
+DEFINE FIELD scope ON setting TYPE record REFERENCE ON DELETE CASCADE READONLY;
+DEFINE FIELD key ON setting TYPE string READONLY;
+DEFINE FIELD schema_version ON setting TYPE int DEFAULT 1 ASSERT $value > 0;
+DEFINE FIELD enabled ON setting TYPE bool DEFAULT true;
+DEFINE FIELD values ON setting TYPE object FLEXIBLE DEFAULT {};
+DEFINE FIELD secrets ON setting TYPE object FLEXIBLE DEFAULT {}
+    PERMISSIONS
+        FOR select NONE
+        FOR create WHERE true
+        FOR update WHERE true;
+DEFINE FIELD primary ON setting TYPE option<record<test_primitive>> REFERENCE ON DELETE CASCADE DEFAULT NONE;
+DEFINE INDEX setting_scope_key ON setting FIELDS scope, key UNIQUE;
+
+
 -- 3. RELATIONAL PERMUTATIONS (Edges, Arrays, and Polymorphism)
 DEFINE TABLE test_relation SCHEMAFULL;
 DEFINE FIELD a_primitive ON test_relation TYPE record<test_primitive> REFERENCE ON DELETE CASCADE;

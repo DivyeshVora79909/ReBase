@@ -100,8 +100,8 @@ async function run() {
       FOR create, update, delete NONE;
     DEFINE FIELD category ON rebase_bench_resource TYPE string;
     DEFINE FIELD score ON rebase_bench_resource TYPE int;
-    DEFINE FIELD owned_by ON rebase_bench_resource TYPE record<groups>;
-    DEFINE FIELD readers ON rebase_bench_resource TYPE array<record<groups>> VALUE [$this.owned_by];
+    DEFINE FIELD owned_by ON rebase_bench_resource TYPE record<user | groups>;
+    DEFINE FIELD readers ON rebase_bench_resource TYPE array<record<user | groups>> VALUE [$this.owned_by];
     DEFINE FIELD readers_index ON rebase_bench_resource TYPE array<string> VALUE $this.readers.map(|$reader| <string>$reader);
     DEFINE INDEX rebase_bench_readers ON rebase_bench_resource FIELDS readers_index.*;
     DEFINE INDEX rebase_bench_owned_by ON rebase_bench_resource FIELDS owned_by;
@@ -116,7 +116,7 @@ async function run() {
     while (inserted < scale) {
       const start = inserted;
       const end = Math.min(scale - 1, start + batchSize - 1);
-      await sql(`FOR $i IN ${start}..=${end} { CREATE type::record('rebase_bench_resource', <string>$i) SET category = 'category_' + <string>($i % 20), score = $i, owned_by = type::record('groups', 'rebase_bench_' + <string>($i % ${maxMembership})); };`);
+      await sql(`FOR $i IN ${start}..=${end} { CREATE type::record('rebase_bench_resource', <string>$i) SET category = 'category_' + <string>($i % 20), score = $i, owned_by = IF ($i % 2) = 0 THEN user:rebase_bench_user ELSE type::record('groups', 'rebase_bench_' + <string>($i % ${maxMembership})) END; };`);
       inserted = end + 1;
     }
     if (resultOf(await sql("SELECT count() AS total FROM rebase_bench_resource GROUP ALL;"))[0].total !== scale) throw new Error(`Expected ${scale} benchmark rows`);
@@ -133,8 +133,9 @@ async function run() {
         const text = JSON.stringify(plan);
         results.push({ case: name, rows: scale, memberships: membership, returnedRows: resultOf(await sql(query, token)).length, expectedIndex, usesExpectedIndex: expectedIndex ? text.includes(expectedIndex) : false, usesIndexScan: text.includes("IndexScan"), usesTableScan: text.includes("TableScan"), timing: await timeQuery(query, token), plan });
       }
-      const indexed = buildIndexedPermissionQuery(membership);
-      const plan = resultOf(await sql(buildIndexedPermissionQuery(membership, true), token));
+      const accessKeyCount = membership + 1; // authenticated user + immediate parent groups
+      const indexed = buildIndexedPermissionQuery(accessKeyCount);
+      const plan = resultOf(await sql(buildIndexedPermissionQuery(accessKeyCount, true), token));
       const text = JSON.stringify(plan);
       results.push({ case: "permission_indexed_or", rows: scale, memberships: membership, returnedRows: resultOf(await sql(indexed, token)).length, expectedIndex: "rebase_bench_readers", usesExpectedIndex: text.includes("rebase_bench_readers"), usesIndexScan: text.includes("IndexScan"), usesTableScan: text.includes("TableScan"), timing: await timeQuery(indexed, token), plan });
     }

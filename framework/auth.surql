@@ -66,6 +66,7 @@ DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE
     DEFINE FIELD OVERWRITE updated_by ON user TYPE option<record<user>> VALUE $auth;
     DEFINE FIELD OVERWRITE z_access_index ON user TYPE array<string>
         VALUE array::distinct(array::concat(
+            [<string>$this.id],
             ($this.parents ?? []).map(|$node| <string>$node),
             ($this.dominates ?? []).map(|$node| <string>$node)
         ))
