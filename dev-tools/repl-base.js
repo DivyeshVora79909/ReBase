@@ -58,7 +58,7 @@ async function main() {
   }
 
   repl.start({
-    prompt: "\x1b[36mdb-test>\x1b[0m ",
+    prompt: "\x1b[36mdb-rebase-cli>\x1b[0m ",
     eval: async (cmd, context, filename, callback) => {
       try {
         cmd = cmd.trim();

@@ -40,13 +40,14 @@ function compileProject(rawOptions) {
       source ? scopeSource(source, project.namespace, project.database) : "",
     ]),
   );
-  const schema = parseSchema(scoped.schema, scoped.views);
+  const schema = parseSchema([scoped.schema, scoped.edge].filter(Boolean).join("\n\n"), scoped.views);
   if (!schema.tables.size) throw new Error(`No tables found in ${project.projectDir}`);
   const analysis = analyzeSchema(schema);
   const views = generateViews(schema, project);
   const indexes = generateIndexes(schema, views.viewIndexes, project, analysis.systemTables);
   const sections = [
     ["business schema", scoped.schema],
+    ["edge integrations", scoped.edge],
     ["DAG RBAC", scoped.auth],
     ["record access", scoped.access],
     ["ownership, RLS, audit, and flags", generateSecurity(schema, project, analysis.systemTables)],

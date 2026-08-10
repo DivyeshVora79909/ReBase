@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReBase DAG</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/json-formatter-js@2.3.4/dist/json-formatter.umd.min.js"></script>
+    <style>
+      #cy {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      .json-formatter-row {
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body class="flex h-screen w-screen overflow-hidden bg-base-200">
+    <div id="cy" class="flex-grow"></div>
+    <aside
+      class="w-[450px] bg-base-100 shadow-2xl z-10 flex flex-col border-l border-base-300 p-4 gap-4 opacity-95"
+    >
+      <button id="btn-refresh" class="btn btn-primary btn-block shadow-md">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        Reload Graph
+      </button>
+
+      <div
+        class="card bg-base-200 flex-grow shadow-inner border border-base-300 overflow-hidden flex flex-col"
+      >
+        <div
+          id="inspector-header"
+          class="bg-base-300 px-4 py-2 text-sm font-bold text-base-content border-b border-base-300"
+        >
+          Inspector
+        </div>
+        <div id="inspector-body" class="p-4 overflow-auto flex-grow">
+          <p class="text-neutral-500 text-center mt-10">
+            Click any node in the graph
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <script>
+      const ws = new WebSocket("ws://127.0.0.1:8000/rpc");
+      let rpcId = 1,
+        pending = {},
+        cy = null;
+
+      ws.onmessage = (e) => {
+        const res = JSON.parse(e.data);
+        if (pending[res.id]) {
+          pending[res.id](res);
+          delete pending[res.id];
+        }
+      };
+
+      const rpc = (method, params = []) =>
+        new Promise((res) => {
+          const id = (rpcId++).toString();
+          pending[id] = res;
+          ws.send(JSON.stringify({ id, method, params }));
+        });
+
+      const query = async (sql) => {
+        const res = await rpc("query", [sql]);
+        if (res.error) throw new Error(res.error.message);
+        const last = res.result.at(-1);
+        if (last.status === "ERR") throw new Error(last.detail);
+        return last.result;
+      };
+      const hashColor = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++)
+          hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        return `hsl(${Math.abs(hash) % 360}, 65%, 60%)`;
+      };
+      const loadGraph = async () => {
+        const btn = document.getElementById("btn-refresh");
+        btn.innerHTML = `<span class="loading loading-spinner"></span> Loading...`;
+
+        try {
+          const q = `
+                LET $root = groups:root;
+                LET $nodes = array::distinct([$root, $root.dominates].flatten());
+                LET $rows = array::flatten([
+                    (SELECT id, parents, name FROM user WHERE id IN $nodes),
+                    (SELECT id, parents, name FROM groups WHERE id IN $nodes)
+                ]);
+                LET $edges = array::flatten(
+                    $rows.map(|$row| {
+                        ($row.parents ?? []).filter(|$p| $p IN $nodes).map(|$p| {
+                            { data: { id: <string>$p + "->" + <string>$row.id, source: <string>$p, target: <string>$row.id } }
+                        })
+                    })
+                );
+                RETURN {
+                    nodes: $rows.map(|$row| { 
+                        data: { 
+                            id: <string>$row.id, 
+                            table: record::tb($row.id),
+                            label: <string>$row.id + "\\n(" + ($row.name ?? "unnamed") + ")" 
+                        } 
+                    }),
+                    edges: array::distinct($edges)
+                };
+            `;
+
+          const elements = await query(q);
+          if (elements.nodes) {
+            elements.nodes.forEach(
+              (n) => (n.data.color = hashColor(n.data.table)),
+            );
+            render(elements);
+          }
+        } catch (err) {
+          alert("Query failed: " + err.message);
+        } finally {
+          btn.innerHTML = `Reload Graph`;
+        }
+      };
+
+      const render = (elements) => {
+        if (cy) cy.destroy();
+        cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements: elements,
+          layout: { name: "dagre", rankDir: "TB", nodeSep: 80, rankSep: 100 },
+          style: [
+            {
+              selector: "node",
+              style: {
+                label: "data(label)",
+                "text-wrap": "wrap",
+                "text-valign": "bottom",
+                "text-margin-y": "8px",
+                "font-size": "11px",
+                "font-weight": "bold",
+                color: "#374151",
+                "background-color": "data(color)",
+                "border-width": 2,
+                "border-color": "#fff",
+                width: 25,
+                height: 25,
+                "transition-property": "opacity, border-color",
+              },
+            },
+            {
+              selector: "edge",
+              style: {
+                width: 2,
+                "line-color": "#cbd5e1",
+                "target-arrow-color": "#cbd5e1",
+                "target-arrow-shape": "triangle",
+                "curve-style": "bezier",
+                "transition-property":
+                  "line-color, target-arrow-color, opacity",
+              },
+            },
+            { selector: ".faded", style: { opacity: 0.15 } },
+            {
+              selector: ".selected",
+              style: { "border-color": "#111827", "border-width": 4 },
+            },
+            {
+              selector: ".parent-node",
+              style: { "border-color": "#ef4444", "border-width": 4 },
+            },
+            {
+              selector: ".parent-edge",
+              style: {
+                "line-color": "#ef4444",
+                "target-arrow-color": "#ef4444",
+                width: 3,
+              },
+            },
+            {
+              selector: ".child-node",
+              style: { "border-color": "#10b981", "border-width": 4 },
+            },
+            {
+              selector: ".child-edge",
+              style: {
+                "line-color": "#10b981",
+                "target-arrow-color": "#10b981",
+                width: 3,
+              },
+            },
+          ],
+        });
+
+        cy.on("tap", (e) => {
+          const b = document.getElementById("inspector-body");
+          const h = document.getElementById("inspector-header");
+
+          if (e.target === cy) {
+            cy.elements().removeClass(
+              "faded selected parent-node parent-edge child-node child-edge",
+            );
+            h.innerText = "Inspector";
+            b.innerHTML = `<p class="text-neutral-500 text-center mt-10">Selection cleared.</p>`;
+            return;
+          }
+
+          if (e.target.isNode()) {
+            const node = e.target;
+
+            cy.elements()
+              .removeClass(
+                "selected parent-node parent-edge child-node child-edge",
+              )
+              .addClass("faded");
+            node.removeClass("faded").addClass("selected");
+            node
+              .incomers()
+              .removeClass("faded")
+              .nodes()
+              .addClass("parent-node");
+            node.incomers().edges().addClass("parent-edge");
+            node
+              .successors()
+              .removeClass("faded")
+              .nodes()
+              .addClass("child-node");
+            node.successors().edges().addClass("child-edge");
+
+            h.innerText = node.id();
+            b.innerHTML = `<span class="loading loading-spinner text-primary block mx-auto mt-10"></span>`;
+
+            query(`SELECT * FROM ${node.id()}`).then((data) => {
+              b.innerHTML = "";
+              if (data[0])
+                b.appendChild(
+                  new JSONFormatter(data[0], 2, { theme: "light" }).render(),
+                );
+            });
+          }
+        });
+      };
+
+      document
+        .getElementById("btn-refresh")
+        .addEventListener("click", loadGraph);
+      ws.onopen = async () => {
+        await rpc("signin", [{ user: "root", pass: "root" }]);
+        await rpc("use", ["main", "main"]);
+        loadGraph();
+      };
+    </script>
+  </body>
+</html>

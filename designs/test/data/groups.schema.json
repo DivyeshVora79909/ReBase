@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "parents", "role"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^groups:[a-z0-9-]+$" },
+    "name": { "type": "string", "minLength": 2 },
+    "parents": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+      "default": []
+    },
+    "role": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "enum": [
+          "node_create",
+          "node_select",
+          "node_update",
+          "node_delete",
+          "test_primitive_select",
+          "test_primitive_create",
+          "test_primitive_update",
+          "test_primitive_delete",
+          "setting_select",
+          "setting_create",
+          "setting_update",
+          "setting_delete",
+          "test_relation_select",
+          "test_relation_create",
+          "test_relation_update",
+          "test_relation_delete",
+          "test_multiref_select",
+          "test_multiref_create",
+          "test_multiref_update",
+          "test_multiref_delete",
+          "test_tree_select",
+          "test_tree_create",
+          "test_tree_update",
+          "test_tree_delete",
+          "edge_file_select",
+          "edge_file_create",
+          "edge_file_update",
+          "edge_file_delete",
+          "edge_operation_select",
+          "edge_operation_create",
+          "edge_operation_update",
+          "edge_operation_delete"
+        ]
+      }
+    },
+    "a_associated_primitive": {
+      "type": "string",
+      "pattern": "^test_primitive:[a-z0-9-]+$"
+    },
+    "a_partner_groups": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^groups:[a-z0-9-]+$" },
+      "default": []
+    }
+  }
+}

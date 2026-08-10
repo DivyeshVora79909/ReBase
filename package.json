@@ -4,13 +4,19 @@
   "private": true,
   "description": "SurrealQL-first Schema-as-Code compiler for ownership, DAG RBAC, RLS, and reactive views.",
   "scripts": {
-    "test": "node --env-file=.env --test tests/*.test.js",
     "build": "node --env-file=.env compile.js",
-    "check": "node --env-file=.env compile.js --check",
-    "verify": "node --env-file=.env scripts/verify-runtime.js",
-    "benchmark": "node --env-file=.env scripts/benchmark-permissions.js"
+    "check": "node --env-file=.env compile.js --check"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "json-schema-faker": "^0.5.9",
+    "seedrandom": "^3.0.5",
+    "simple-statistics": "^7.9.3",
+    "surrealdb": "^2.0.8"
   }
 }

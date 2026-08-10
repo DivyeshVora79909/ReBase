@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "owned_by", "a_primitive"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^test_relation:[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "a_primitive": {
+      "type": "string",
+      "pattern": "^test_primitive:[a-z0-9-]+$"
+    },
+    "a_polymorphic": {
+      "type": "string",
+      "pattern": "^(test_primitive|user):[a-z0-9-]+$"
+    },
+    "a_primitive_array": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^test_primitive:[a-z0-9-]+$" },
+      "default": []
+    },
+    "a_poly_array": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(test_primitive|groups):[a-z0-9-]+$"
+      },
+      "default": []
+    }
+  }
+}

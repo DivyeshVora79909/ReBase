@@ -23,18 +23,30 @@ DEFINE FIELD a_enum ON test_primitive TYPE string ASSERT $value IN ['pending', '
 
 -- Optional scoped configuration is ordinary business schema, not framework state.
 DEFINE TABLE setting SCHEMAFULL;
-DEFINE FIELD scope ON setting TYPE record REFERENCE ON DELETE CASCADE READONLY;
-DEFINE FIELD key ON setting TYPE string READONLY;
-DEFINE FIELD schema_version ON setting TYPE int DEFAULT 1 ASSERT $value > 0;
-DEFINE FIELD enabled ON setting TYPE bool DEFAULT true;
-DEFINE FIELD values ON setting TYPE object FLEXIBLE DEFAULT {};
+DEFINE FIELD target_table ON setting TYPE option<string>;
+DEFINE FIELD target_record ON setting 
+    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
+    REFERENCE ON DELETE CASCADE;
+DEFINE FIELD secondary_record ON setting TYPE option<record> 
+    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
+    REFERENCE ON DELETE CASCADE;
+DEFINE FIELD dependency ON setting TYPE option<record> 
+    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
+    REFERENCE ON DELETE REJECT;
+DEFINE FIELD slug ON setting TYPE string 
+    VALUE string::lowercase(string::trim($value))
+    ASSERT string::len($value) > 0
+        AND array::all($value.split('.'), |$part| $part = string::slug($part));
+DEFINE FIELD is_active ON setting TYPE bool DEFAULT true;
+DEFINE FIELD payload ON setting TYPE object FLEXIBLE DEFAULT {};
+DEFINE FIELD system_data ON setting TYPE object FLEXIBLE DEFAULT {} PERMISSIONS NONE;
 DEFINE FIELD secrets ON setting TYPE object FLEXIBLE DEFAULT {}
     PERMISSIONS
         FOR select NONE
-        FOR create WHERE true
-        FOR update WHERE true;
-DEFINE FIELD primary ON setting TYPE option<record<test_primitive>> REFERENCE ON DELETE CASCADE DEFAULT NONE;
-DEFINE INDEX setting_scope_key ON setting FIELDS scope, key UNIQUE;
+        FOR create, update WHERE true;
+
+DEFINE INDEX idx_setting_context ON setting 
+    FIELDS target_table, target_record, secondary_record, slug UNIQUE;
 
 
 -- 3. RELATIONAL PERMUTATIONS (Edges, Arrays, and Polymorphism)

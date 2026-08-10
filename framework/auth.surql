@@ -67,7 +67,7 @@ DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE
     DEFINE FIELD OVERWRITE z_access_index ON user TYPE array<string>
         VALUE array::distinct(array::concat(
             [<string>$this.id],
-            ($this.parents ?? []).map(|$node| <string>$node),
+            ($this.parent_groups ?? []).map(|$node| <string>$node),
             ($this.dominates ?? []).map(|$node| <string>$node)
         ))
         PERMISSIONS FOR create, update NONE;
@@ -77,7 +77,7 @@ DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE
 -- GROUPS
 DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
     FOR create WHERE 'node_create' IN $auth.permissions
-    FOR select WHERE 'node_select' IN $auth.permissions AND (id IN $auth.dominates OR id IN $auth.parents)
+    FOR select WHERE 'node_select' IN $auth.permissions AND (id IN $auth.dominates OR id IN $auth.parent_groups)
     FOR update WHERE 'node_update' IN $auth.permissions AND id IN $auth.dominates
     FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates;
 
