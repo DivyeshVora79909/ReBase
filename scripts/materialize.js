@@ -103,7 +103,7 @@ function buildBatch({
   const table = tableFor(dataset, tables);
   const groups = relationGroups(config, dataset);
   const statements = [];
-  statements.push("BEGIN TRANSACTION;");
+  //statements.push("BEGIN TRANSACTION;");
   const fields = [];
 
   groups.forEach((group, index) => {
@@ -161,7 +161,7 @@ function buildBatch({
   statements.push(
     `FOR $row IN $rows { CREATE ${table} CONTENT object::extend($row, { ${fields.join(", ")} }) RETURN NONE; };`,
   );
-  statements.push("COMMIT TRANSACTION;");
+  //statements.push("COMMIT TRANSACTION;");
   statements.push(
     `RETURN { dataset: ${JSON.stringify(dataset)}, inserted: array::len($rows) };`,
   );

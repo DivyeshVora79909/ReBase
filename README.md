@@ -6,6 +6,7 @@ ReBase contains a SurrealQL compiler and a minimal native Node REPL for post-dep
 
 ```text
 framework/                 Shared authorization and access contracts
+framework/audit.surql      Fire-and-forget mutation and action audit storage
 src/                       Compiler implementation
 designs/<name>/            Project SurrealQL
 designs/<name>/data/       Project-owned JSON Schemas
@@ -183,7 +184,28 @@ Reports contain the SQL, normalized fingerprint, timing percentiles, returned ro
 
 ## Query Examples
 
-`queries/` contains ordinary SurrealQL files for authorization, cycles, edge workflows, and benchmark shapes. They are intentionally not discovered or parsed by tooling; inspect and paste what is useful.
+`queries/` contains ordinary SurrealQL files for authorization, cycles, graph inspection, and benchmark shapes. They are intentionally not discovered or parsed by tooling; inspect and paste what is useful.
+
+## Audit history
+
+Tables opt in with a native comment marker:
+
+```surrealql
+DEFINE TABLE invoice SCHEMAFULL COMMENT '@rebase-audit';
+DEFINE FIELD api_key ON invoice TYPE option<string> COMMENT '@rebase-audit-redact';
+```
+
+`user` and `groups` use the same marker in `framework/auth.surql`; they are not
+audited merely because they are framework tables. Mutation history is
+fire-and-forget (`ASYNC RETRY 0`) and best-effort. It never rolls back the
+business write and is not a queue or retry mechanism.
+
+External workers write `audit_action` with UUIDv7 IDs and a flexible `data`
+object. Keep provider secrets out of queue messages and audit payloads unless
+they have been deliberately redacted. UUIDv7 IDs are time ordered, so archive
+and purge workers can use bounded record-ID ranges after verifying an R2
+archive. Because UUIDv7 has random trailing bits, use padded ID boundaries plus
+an exact `at` predicate as shown in `queries/audit.surql`.
 
 ## Maintenance Rule
 

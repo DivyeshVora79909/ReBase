@@ -5,7 +5,8 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     FOR create WHERE 'node_create' IN $auth.permissions
     FOR select WHERE id = $auth OR ('node_select' IN $auth.permissions AND id IN $auth.dominates)
     FOR update WHERE id = $auth OR ('node_update' IN $auth.permissions AND id IN $auth.dominates)
-    FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates;
+    FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates
+    COMMENT '@rebase-audit';
 
     DEFINE FIELD OVERWRITE name ON user TYPE string VALUE {
         LET $clean_name = string::trim($value ?? "");
@@ -19,8 +20,8 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     };
 
     DEFINE FIELD OVERWRITE login_access ON user TYPE bool DEFAULT true PERMISSIONS FOR update WHERE id != $auth;
-    DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE;
-    DEFINE FIELD OVERWRITE invite_token ON user TYPE uuid DEFAULT rand::uuid() PERMISSIONS NONE;
+    DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE COMMENT '@rebase-audit-redact';
+    DEFINE FIELD OVERWRITE invite_token ON user TYPE uuid DEFAULT rand::uuid() PERMISSIONS NONE COMMENT '@rebase-audit-redact';
     DEFINE FIELD OVERWRITE invite_expires_at ON user TYPE datetime DEFAULT time::now() + 24h PERMISSIONS NONE;
 
     DEFINE FIELD OVERWRITE parents ON user TYPE array<record<user | groups>> 
@@ -41,11 +42,13 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
 
     DEFINE FIELD OVERWRITE parent_groups ON user TYPE array<record<groups>> 
         VALUE array::distinct(($this.parents ?? []).filter(|$p| record::tb($p) = 'groups'))
-        PERMISSIONS FOR create, update NONE;
+        PERMISSIONS FOR create, update NONE
+        COMMENT '@rebase-audit-omit';
 
     DEFINE FIELD OVERWRITE permissions ON user TYPE array<string> 
         VALUE array::distinct(array::flatten($this.parent_groups.role ?? []))
-        PERMISSIONS FOR create, update NONE;
+        PERMISSIONS FOR create, update NONE
+        COMMENT '@rebase-audit-omit';
 
 DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE {
         LET $ch_users = $this.id<~(user FIELD parents);
@@ -58,19 +61,21 @@ DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE
             array::flatten($ch_groups.dominates)
         ]));
     }
-    PERMISSIONS FOR create, update NONE;
+    PERMISSIONS FOR create, update NONE
+    COMMENT '@rebase-audit-omit';
 
     DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before OR time::now() READONLY;
-    DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now();
+    DEFINE FIELD OVERWRITE updated_at ON user TYPE datetime VALUE time::now() COMMENT '@rebase-audit-omit';
     DEFINE FIELD OVERWRITE created_by ON user TYPE option<record<user>> VALUE $before OR $auth READONLY;
-    DEFINE FIELD OVERWRITE updated_by ON user TYPE option<record<user>> VALUE $auth;
+    DEFINE FIELD OVERWRITE updated_by ON user TYPE option<record<user>> VALUE $auth COMMENT '@rebase-audit-omit';
     DEFINE FIELD OVERWRITE z_access_index ON user TYPE array<string>
         VALUE array::distinct(array::concat(
             [<string>$this.id],
             ($this.parent_groups ?? []).map(|$node| <string>$node),
             ($this.dominates ?? []).map(|$node| <string>$node)
         ))
-        PERMISSIONS FOR create, update NONE;
+        PERMISSIONS FOR create, update NONE
+        COMMENT '@rebase-audit-omit';
 
     DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
 
@@ -79,7 +84,8 @@ DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
     FOR create WHERE 'node_create' IN $auth.permissions
     FOR select WHERE 'node_select' IN $auth.permissions AND (id IN $auth.dominates OR id IN $auth.parent_groups)
     FOR update WHERE 'node_update' IN $auth.permissions AND id IN $auth.dominates
-    FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates;
+    FOR delete WHERE 'node_delete' IN $auth.permissions AND id IN $auth.dominates
+    COMMENT '@rebase-audit';
 
     DEFINE FIELD OVERWRITE name ON groups TYPE string VALUE {
         LET $clean_name = string::trim($value ?? "");
@@ -106,7 +112,8 @@ DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
 
     DEFINE FIELD OVERWRITE parent_groups ON groups TYPE array<record<groups>> 
         VALUE array::distinct(($this.parents ?? []).filter(|$p| record::tb($p) = 'groups'))
-        PERMISSIONS FOR create, update NONE;
+        PERMISSIONS FOR create, update NONE
+        COMMENT '@rebase-audit-omit';
 
     DEFINE FIELD OVERWRITE dominates ON groups TYPE array<record<user | groups>> VALUE {
         LET $ch_users = $this.id<~(user FIELD parents);
@@ -119,12 +126,13 @@ DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
             array::flatten($ch_groups.dominates)
         ]));
     }
-    PERMISSIONS FOR create, update NONE;
+    PERMISSIONS FOR create, update NONE
+    COMMENT '@rebase-audit-omit';
 
     DEFINE FIELD OVERWRITE created_at ON groups TYPE datetime VALUE $before OR time::now() READONLY;
-    DEFINE FIELD OVERWRITE updated_at ON groups TYPE datetime VALUE time::now();
+    DEFINE FIELD OVERWRITE updated_at ON groups TYPE datetime VALUE time::now() COMMENT '@rebase-audit-omit';
     DEFINE FIELD OVERWRITE created_by ON groups TYPE option<record<user>> VALUE $before OR $auth READONLY;
-    DEFINE FIELD OVERWRITE updated_by ON groups TYPE option<record<user>> VALUE $auth;
+    DEFINE FIELD OVERWRITE updated_by ON groups TYPE option<record<user>> VALUE $auth COMMENT '@rebase-audit-omit';
 
 
 -- 1. Cycle Detection

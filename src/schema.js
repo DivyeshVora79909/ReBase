@@ -5,16 +5,25 @@ function parseSchema(schemaSource, viewsSource) {
   for (const statement of splitStatements(schemaSource)) {
     const tableMatch = /\bDEFINE\s+TABLE\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)/i.exec(statement);
     if (tableMatch && !/\bAS\s+SELECT\b/i.test(statement)) {
-      if (!tables.has(tableMatch[1])) tables.set(tableMatch[1], { name: tableMatch[1], fields: new Map() });
+      const table = tables.get(tableMatch[1]) || { name: tableMatch[1], fields: new Map(), definitions: [] };
+      table.definitions.push(statement);
+      table.definition = statement;
+      table.comment = [table.comment, extractComment(statement)].filter(Boolean).join(" ");
+      table.audit = /@rebase-audit(?![-\w])/i.test(table.comment);
+      tables.set(tableMatch[1], table);
     }
     const fieldMatch = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\s+ON\s+(?:TABLE\s+)?([A-Za-z0-9_]+)/i.exec(statement);
     if (!fieldMatch) continue;
     const [, fieldName, tableName] = fieldMatch;
-    if (!tables.has(tableName)) tables.set(tableName, { name: tableName, fields: new Map() });
+    if (!tables.has(tableName)) tables.set(tableName, { name: tableName, fields: new Map(), definitions: [] });
+    const fieldComment = extractComment(statement);
     tables.get(tableName).fields.set(fieldName, {
       name: fieldName,
       definition: statement,
       recordType: parseRecordType(statement),
+      comment: fieldComment,
+      auditOmit: /@rebase-audit-omit\b/i.test(fieldComment),
+      auditRedact: /@rebase-audit-redact\b/i.test(fieldComment),
     });
   }
 
@@ -39,6 +48,11 @@ function parseSchema(schemaSource, viewsSource) {
     });
   }
   return { tables, views, rawViews: viewsSource };
+}
+
+function extractComment(statement) {
+  const match = /\bCOMMENT\s+(['"])([\s\S]*?)\1\s*;?\s*$/i.exec(statement);
+  return match ? match[2] : "";
 }
 
 function resolveRecordTargets(schema, sourceTable, expression) {

@@ -11,7 +11,7 @@ DEFINE FIELD a_associated_primitive ON groups TYPE option<record<test_primitive>
 DEFINE FIELD a_partner_groups ON groups TYPE array<record<groups>> DEFAULT [];
 
 -- 2. PRIMITIVES & ENUMS (The Stateless Leaves)
-DEFINE TABLE test_primitive SCHEMAFULL;
+DEFINE TABLE test_primitive SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_string ON test_primitive TYPE string;
 DEFINE FIELD a_int ON test_primitive TYPE int DEFAULT 0;
 DEFINE FIELD a_decimal ON test_primitive TYPE decimal ASSERT $value >= 0dec;
@@ -22,13 +22,13 @@ DEFINE FIELD a_enum ON test_primitive TYPE string ASSERT $value IN ['pending', '
 
 
 -- Optional scoped configuration is ordinary business schema, not framework state.
-DEFINE TABLE setting SCHEMAFULL;
+DEFINE TABLE setting SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD target_table ON setting TYPE option<string>;
 DEFINE FIELD target_record ON setting 
-    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
+    TYPE option<record<test_primitive | setting | test_relation | test_multiref | test_tree>> 
     REFERENCE ON DELETE CASCADE;
 DEFINE FIELD secondary_record ON setting TYPE option<record> 
-    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
+    TYPE option<record<test_primitive | setting | test_relation | test_multiref | test_tree>> 
     REFERENCE ON DELETE CASCADE;
 DEFINE FIELD dependency ON setting TYPE option<record> 
     TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
@@ -39,18 +39,19 @@ DEFINE FIELD slug ON setting TYPE string
         AND array::all($value.split('.'), |$part| $part = string::slug($part));
 DEFINE FIELD is_active ON setting TYPE bool DEFAULT true;
 DEFINE FIELD payload ON setting TYPE object FLEXIBLE DEFAULT {};
-DEFINE FIELD system_data ON setting TYPE object FLEXIBLE DEFAULT {} PERMISSIONS NONE;
+DEFINE FIELD system_data ON setting TYPE object FLEXIBLE DEFAULT {} PERMISSIONS NONE COMMENT '@rebase-audit-omit';
 DEFINE FIELD secrets ON setting TYPE object FLEXIBLE DEFAULT {}
     PERMISSIONS
         FOR select NONE
-        FOR create, update WHERE true;
+        FOR create, update WHERE true
+    COMMENT '@rebase-audit-omit';
 
 DEFINE INDEX idx_setting_context ON setting 
     FIELDS target_table, target_record, secondary_record, slug UNIQUE;
 
 
 -- 3. RELATIONAL PERMUTATIONS (Edges, Arrays, and Polymorphism)
-DEFINE TABLE test_relation SCHEMAFULL;
+DEFINE TABLE test_relation SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_primitive ON test_relation TYPE record<test_primitive> REFERENCE ON DELETE CASCADE;
 DEFINE FIELD a_polymorphic ON test_relation TYPE option<record<test_primitive | user>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 DEFINE FIELD a_primitive_array ON test_relation TYPE array<record<test_primitive>> DEFAULT [];
@@ -58,7 +59,7 @@ DEFINE FIELD a_poly_array ON test_relation TYPE option<array<record<test_primiti
 
 
 -- 4. MULTI-RELATION (Multiple FKs from ONE table to ONE target)
-DEFINE TABLE test_multiref SCHEMAFULL;
+DEFINE TABLE test_multiref SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_name ON test_multiref TYPE string;
 DEFINE FIELD a_creator ON test_multiref TYPE record<user> REFERENCE ON DELETE REJECT;
 DEFINE FIELD a_reviewer ON test_multiref TYPE option<record<user>> REFERENCE ON DELETE REJECT DEFAULT NONE;
@@ -68,7 +69,7 @@ DEFINE FIELD a_auditing_group ON test_multiref TYPE option<record<groups>> REFER
 
 
 -- 5. TREE / SELF-REFERENTIAL (Recursive DAG)
-DEFINE TABLE test_tree SCHEMAFULL;
+DEFINE TABLE test_tree SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_name ON test_tree TYPE string;
 DEFINE FIELD a_parent ON test_tree TYPE option<record<test_tree>> REFERENCE ON DELETE CASCADE DEFAULT NONE;
 DEFINE FIELD a_related_nodes ON test_tree TYPE array<record<test_tree>> DEFAULT [];

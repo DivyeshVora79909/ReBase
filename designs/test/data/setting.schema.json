@@ -9,11 +9,11 @@
     "target_table": { "type": "string" },
     "target_record": {
       "type": "string",
-      "pattern": "^(user|groups|test_primitive|setting|test_relation|test_multiref|test_tree):[a-z0-9-]+$"
+      "pattern": "^(test_primitive|setting|test_relation|test_multiref|test_tree):[a-z0-9-]+$"
     },
     "secondary_record": {
       "type": "string",
-      "pattern": "^(user|groups|test_primitive|setting|test_relation|test_multiref|test_tree):[a-z0-9-]+$"
+      "pattern": "^(test_primitive|test_relation|test_multiref|test_tree):[a-z0-9-]+$"
     },
     "dependency": {
       "type": "string",

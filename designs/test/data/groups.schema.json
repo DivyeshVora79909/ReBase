@@ -39,15 +39,7 @@
           "test_tree_select",
           "test_tree_create",
           "test_tree_update",
-          "test_tree_delete",
-          "edge_file_select",
-          "edge_file_create",
-          "edge_file_update",
-          "edge_file_delete",
-          "edge_operation_select",
-          "edge_operation_create",
-          "edge_operation_update",
-          "edge_operation_delete"
+          "test_tree_delete"
         ]
       }
     },

@@ -29,26 +29,69 @@
   </head>
   <body class="flex h-screen w-screen overflow-hidden bg-base-200">
     <div id="cy" class="flex-grow"></div>
-    <aside
-      class="w-[450px] bg-base-100 shadow-2xl z-10 flex flex-col border-l border-base-300 p-4 gap-4 opacity-95"
+    <button
+      id="btn-sidebar-toggle"
+      class="absolute top-4 right-4 z-20 btn btn-circle btn-neutral shadow-lg hidden"
     >
-      <button id="btn-refresh" class="btn btn-primary btn-block shadow-md">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    </button>
+
+    <aside
+      id="sidebar"
+      class="absolute right-0 top-0 h-full w-[450px] bg-base-100 shadow-2xl z-10 flex flex-col border-l border-base-300 p-4 gap-4 opacity-95 transition-transform duration-300 translate-x-0"
+    >
+      <div class="flex gap-2">
+        <button id="btn-refresh" class="btn btn-primary flex-grow shadow-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 inline-block mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Reload Graph
+        </button>
+        <button
+          id="btn-sidebar-close"
+          class="btn btn-square btn-ghost border border-base-300 shadow-sm tooltip tooltip-left"
+          data-tip="Hide sidebar"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-        Reload Graph
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
 
       <div
         class="card bg-base-200 flex-grow shadow-inner border border-base-300 overflow-hidden flex flex-col"
@@ -267,6 +310,24 @@
       document
         .getElementById("btn-refresh")
         .addEventListener("click", loadGraph);
+
+      document
+        .getElementById("btn-sidebar-close")
+        .addEventListener("click", () => {
+          document.getElementById("sidebar").classList.add("translate-x-full");
+          document
+            .getElementById("btn-sidebar-toggle")
+            .classList.remove("hidden");
+        });
+
+      document
+        .getElementById("btn-sidebar-toggle")
+        .addEventListener("click", () => {
+          document
+            .getElementById("sidebar")
+            .classList.remove("translate-x-full");
+          document.getElementById("btn-sidebar-toggle").classList.add("hidden");
+        });
       ws.onopen = async () => {
         await rpc("signin", [{ user: "root", pass: "root" }]);
         await rpc("use", ["main", "main"]);

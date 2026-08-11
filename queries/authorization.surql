@@ -21,3 +21,7 @@ RETURN AFTER;
 UPDATE test_primitive:replace_me
 SET owned_by = user:replace_me
 RETURN AFTER;
+
+CREATE user:admin
+SET email = 'divy.r.vora14@gmail.com', name = 'Divyesh Vora', password = crypto::argon2::generate('password'), parents = [groups:root], login_access = true
+RETURN AFTER;

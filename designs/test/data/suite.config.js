@@ -39,22 +39,10 @@ module.exports = {
       count: 25,
       batchSize: 5,
     },
-    edge_file: {
-      schema: "data/edge_file.schema.json",
-      count: 15,
-      batchSize: 5,
-    },
-    edge_operation: {
-      schema: "data/edge_operation.schema.json",
-      count: 20,
-      batchSize: 5,
-    },
   },
   casts: [
     { path: "test_primitive[].a_datetime", type: "datetime" },
     { path: "test_primitive[].a_decimal", type: "decimal" },
-    { path: "edge_operation[].claimed_at", type: "datetime" },
-    { path: "edge_operation[].completed_at", type: "datetime" },
   ],
   relations: [
     // AUTH GRAPH (Acyclic dataset wiring)
@@ -156,8 +144,6 @@ module.exports = {
     { from: "groups.id", to: "test_tree.owned_by" },
 
     // SETTING (Polymorphic targets)
-    { from: "user.id", to: "setting.target_record" },
-    { from: "groups.id", to: "setting.target_record" },
     { from: "test_primitive.id", to: "setting.target_record" },
     { from: "test_relation.id", to: "setting.target_record" },
     { from: "test_multiref.id", to: "setting.target_record" },
@@ -165,16 +151,6 @@ module.exports = {
     { from: "setting.id", to: "setting.target_record" },
 
     // SETTING (Polymorphic secondary records)
-    {
-      from: "user.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-    {
-      from: "groups.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
     {
       from: "test_primitive.id",
       to: "setting.secondary_record",
@@ -208,19 +184,5 @@ module.exports = {
 
     { from: "user.id", to: "setting.owned_by" },
     { from: "groups.id", to: "setting.owned_by" },
-
-    // EDGE
-    { from: "user.id", to: "edge_file.owned_by" },
-    { from: "groups.id", to: "edge_file.owned_by" },
-    { from: "setting.id", to: "edge_operation.setting" },
-    { from: "setting.id", to: "edge_operation.template" },
-    {
-      from: "edge_file.id",
-      to: "edge_operation.files[]",
-      cardinality: { min: 0, max: 2 },
-    },
-    { from: "test_primitive.id", to: "edge_operation.context" },
-    { from: "user.id", to: "edge_operation.owned_by" },
-    { from: "groups.id", to: "edge_operation.owned_by" },
   ],
 };

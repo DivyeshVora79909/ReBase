@@ -27,7 +27,6 @@ function printUsage() {
 Project files:
   rebase.config.js             Optional compiler/schema settings only
   schema.surql                 Tables, fields, rules, and explicit business indexes
-  edge.surql                   Optional external-integration tables and functions
   views.surql                  Reactive grouped views
   seed.surql                   Optional configuration and seed records
 
@@ -64,10 +63,10 @@ function loadProject(rawOptions) {
   const framework = {
     auth: path.resolve(projectDir, config.framework?.auth || path.join(frameworkDir, "auth.surql")),
     access: path.resolve(projectDir, config.framework?.access || path.join(frameworkDir, "access.surql")),
+    audit: path.join(frameworkDir, "audit.surql"),
   };
 
   const seedPath = path.join(projectDir, "seed.surql");
-  const edgePath = path.join(projectDir, "edge.surql");
   return {
     rootDir,
     projectDir,
@@ -79,11 +78,11 @@ function loadProject(rawOptions) {
     check: rawOptions.check,
     sources: {
       schema: readRequired(path.join(projectDir, "schema.surql")),
-      edge: fs.existsSync(edgePath) ? fs.readFileSync(edgePath, "utf8") : "",
       views: readRequired(path.join(projectDir, "views.surql")),
       seed: fs.existsSync(seedPath) ? fs.readFileSync(seedPath, "utf8") : "",
       auth: readRequired(framework.auth),
       access: readRequired(framework.access),
+      audit: readRequired(framework.audit),
     },
   };
 }

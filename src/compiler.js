@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { analyzeSchema } = require("./analyze");
+const { generateAuditEvents } = require("./generators/audit");
 const { generateIndexes } = require("./generators/indexes");
 const { generateCascades, generateViews } = require("./generators/reactivity");
 const { generateRootPermissions, generateSecurity } = require("./generators/security");
@@ -40,17 +41,18 @@ function compileProject(rawOptions) {
       source ? scopeSource(source, project.namespace, project.database) : "",
     ]),
   );
-  const schema = parseSchema([scoped.schema, scoped.edge].filter(Boolean).join("\n\n"), scoped.views);
+  const schema = parseSchema([scoped.schema, scoped.auth].join("\n\n"), scoped.views);
   if (!schema.tables.size) throw new Error(`No tables found in ${project.projectDir}`);
   const analysis = analyzeSchema(schema);
   const views = generateViews(schema, project);
   const indexes = generateIndexes(schema, views.viewIndexes, project, analysis.systemTables);
   const sections = [
     ["business schema", scoped.schema],
-    ["edge integrations", scoped.edge],
     ["DAG RBAC", scoped.auth],
     ["record access", scoped.access],
-    ["ownership, RLS, audit, and flags", generateSecurity(schema, project, analysis.systemTables)],
+    ["audit storage", scoped.audit],
+    ["ownership, RLS, and flags", generateSecurity(schema, project, analysis.systemTables)],
+    ["fire-and-forget mutation audit", generateAuditEvents(schema, project)],
     ["reactive views", views.definitions],
     ["upward view events", views.events],
     ["downward cascade events", generateCascades(analysis, project)],
