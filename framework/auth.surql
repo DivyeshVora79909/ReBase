@@ -50,6 +50,11 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
         PERMISSIONS FOR create, update NONE
         COMMENT '@rebase-audit-omit';
 
+    DEFINE FIELD OVERWRITE capabilities ON user TYPE array<string>
+        VALUE array::distinct(array::flatten($this.parent_groups.capabilities ?? []))
+        PERMISSIONS FOR create, update NONE
+        COMMENT '@rebase-audit-omit';
+
 DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE {
         LET $ch_users = $this.id<~(user FIELD parents);
         LET $ch_groups = $this.id<~(groups FIELD parents);
@@ -93,6 +98,7 @@ DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS
         RETURN $clean_name;
     };
     DEFINE FIELD OVERWRITE role ON groups TYPE array<string> DEFAULT [] VALUE array::distinct($value ?? []);
+    DEFINE FIELD OVERWRITE capabilities ON groups TYPE array<string> DEFAULT [] VALUE array::distinct($value ?? []);
 
     DEFINE FIELD OVERWRITE parents ON groups TYPE array<record<user | groups>> 
         DEFAULT IF $auth THEN [$auth] ELSE [] END
@@ -162,8 +168,13 @@ DEFINE EVENT OVERWRITE prevent_role_escalation ON TABLE groups WHEN $event IN ["
     IF $unauthorized AND $auth { THROW "ERR_PRIVILEGE_ESCALATION"; };
 };
 
+DEFINE EVENT OVERWRITE prevent_capability_escalation ON TABLE groups WHEN $event IN ["CREATE", "UPDATE"] AND $before.capabilities != $after.capabilities THEN {
+    LET $unauthorized = array::complement($after.capabilities ?? [], $auth.capabilities ?? []);
+    IF $unauthorized AND $auth { THROW "ERR_CAPABILITY_ESCALATION"; };
+};
+
 -- 4. Downward Propagation
-DEFINE EVENT OVERWRITE cascade_permissions_downward ON TABLE groups WHEN $event = "UPDATE" AND $before.role != $after.role THEN {
+DEFINE EVENT OVERWRITE cascade_permissions_downward ON TABLE groups WHEN $event = "UPDATE" AND ($before.role != $after.role OR $before.capabilities != $after.capabilities) THEN {
     LET $children_users = $after.id<~(user FIELD parents);
     IF $children_users { UPDATE $children_users; };
 };
@@ -190,6 +201,18 @@ DEFINE EVENT OVERWRITE upward_propagation_trigger ON TABLE groups WHEN $event TH
 };
 
 -- INITIALIZATION
-CREATE groups:root SET name = 'System Admins', role = [
-    'node_create', 'node_select', 'node_update', 'node_delete'
-];
+CREATE groups:root SET
+    name = 'System Admins',
+    role = ['node_create', 'node_select', 'node_update', 'node_delete'],
+    capabilities = [
+        'email_config:get',
+        'email_config:manage',
+        'email_config:delete',
+        'message:send',
+        'file:get',
+        'file:put',
+        'file:delete',
+        'function:invoke'
+    ];
+
+DEFINE INDEX OVERWRITE idx_groups_capabilities ON groups FIELDS capabilities.*;

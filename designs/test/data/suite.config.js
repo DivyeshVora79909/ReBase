@@ -34,11 +34,6 @@ module.exports = {
       count: 25,
       batchSize: 5,
     },
-    setting: {
-      schema: "data/setting.schema.json",
-      count: 25,
-      batchSize: 5,
-    },
   },
   casts: [
     { path: "test_primitive[].a_datetime", type: "datetime" },
@@ -143,46 +138,5 @@ module.exports = {
     { from: "user.id", to: "test_tree.owned_by" },
     { from: "groups.id", to: "test_tree.owned_by" },
 
-    // SETTING (Polymorphic targets)
-    { from: "test_primitive.id", to: "setting.target_record" },
-    { from: "test_relation.id", to: "setting.target_record" },
-    { from: "test_multiref.id", to: "setting.target_record" },
-    { from: "test_tree.id", to: "setting.target_record" },
-    { from: "setting.id", to: "setting.target_record" },
-
-    // SETTING (Polymorphic secondary records)
-    {
-      from: "test_primitive.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-    {
-      from: "test_relation.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-    {
-      from: "test_multiref.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-    {
-      from: "test_tree.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-    {
-      from: "setting.id",
-      to: "setting.secondary_record",
-      cardinality: { min: 0, max: 1 },
-    },
-
-    { from: "user.id", to: "setting.dependency" },
-    { from: "groups.id", to: "setting.dependency" },
-    { from: "test_primitive.id", to: "setting.dependency" },
-    { from: "setting.id", to: "setting.dependency" },
-
-    { from: "user.id", to: "setting.owned_by" },
-    { from: "groups.id", to: "setting.owned_by" },
   ],
 };

@@ -16,7 +16,7 @@ vars.payload = tools.data.generateData({
   seed,
   counts: {
     user: 20,
-    test_primitive: 1000,
+    test_primitive: 100,
     groups: 5,
   },
 });

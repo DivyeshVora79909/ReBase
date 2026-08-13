@@ -43,6 +43,22 @@
         ]
       }
     },
+    "capabilities": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "enum": [
+          "email_config:get",
+          "email_config:manage",
+          "email_config:delete",
+          "message:send",
+          "file:get",
+          "file:put",
+          "file:delete",
+          "function:invoke"
+        ]
+      }
+    },
     "a_associated_primitive": {
       "type": "string",
       "pattern": "^test_primitive:[a-z0-9-]+$"

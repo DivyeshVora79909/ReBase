@@ -91,6 +91,7 @@ yarn-error.log*
 *.ignore.*
 .env
 .env.local
+.env.cloud
 .env.development.local
 .env.test.local
 .env.production.local

@@ -21,34 +21,6 @@ DEFINE FIELD a_object ON test_primitive TYPE object DEFAULT {};
 DEFINE FIELD a_enum ON test_primitive TYPE string ASSERT $value IN ['pending', 'active', 'archived'] DEFAULT 'pending';
 
 
--- Optional scoped configuration is ordinary business schema, not framework state.
-DEFINE TABLE setting SCHEMAFULL COMMENT '@rebase-audit';
-DEFINE FIELD target_table ON setting TYPE option<string>;
-DEFINE FIELD target_record ON setting 
-    TYPE option<record<test_primitive | setting | test_relation | test_multiref | test_tree>> 
-    REFERENCE ON DELETE CASCADE;
-DEFINE FIELD secondary_record ON setting TYPE option<record> 
-    TYPE option<record<test_primitive | setting | test_relation | test_multiref | test_tree>> 
-    REFERENCE ON DELETE CASCADE;
-DEFINE FIELD dependency ON setting TYPE option<record> 
-    TYPE option<record<user | groups | test_primitive | setting | test_relation | test_multiref | test_tree>> 
-    REFERENCE ON DELETE REJECT;
-DEFINE FIELD slug ON setting TYPE string 
-    VALUE string::lowercase(string::trim($value))
-    ASSERT string::len($value) > 0
-        AND array::all($value.split('.'), |$part| $part = string::slug($part));
-DEFINE FIELD is_active ON setting TYPE bool DEFAULT true;
-DEFINE FIELD payload ON setting TYPE object FLEXIBLE DEFAULT {};
-DEFINE FIELD system_data ON setting TYPE object FLEXIBLE DEFAULT {} PERMISSIONS NONE COMMENT '@rebase-audit-omit';
-DEFINE FIELD secrets ON setting TYPE object FLEXIBLE DEFAULT {}
-    PERMISSIONS
-        FOR select NONE
-        FOR create, update WHERE true
-    COMMENT '@rebase-audit-omit';
-
-DEFINE INDEX idx_setting_context ON setting 
-    FIELDS target_table, target_record, secondary_record, slug UNIQUE;
-
 
 -- 3. RELATIONAL PERMUTATIONS (Edges, Arrays, and Polymorphism)
 DEFINE TABLE test_relation SCHEMAFULL COMMENT '@rebase-audit';
