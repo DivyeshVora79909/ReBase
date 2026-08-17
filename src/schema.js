@@ -24,6 +24,7 @@ function parseSchema(schemaSource, viewsSource) {
       comment: fieldComment,
       auditOmit: /@rebase-audit-omit\b/i.test(fieldComment),
       auditRedact: /@rebase-audit-redact\b/i.test(fieldComment),
+      inheritReaders: /@rebase-readers\b/i.test(fieldComment),
     });
   }
 

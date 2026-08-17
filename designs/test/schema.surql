@@ -26,7 +26,8 @@ DEFINE FIELD a_enum ON test_primitive TYPE string ASSERT $value IN ['pending', '
 DEFINE TABLE test_relation SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_primitive ON test_relation TYPE record<test_primitive> REFERENCE ON DELETE CASCADE;
 DEFINE FIELD a_polymorphic ON test_relation TYPE option<record<test_primitive | user>> REFERENCE ON DELETE REJECT DEFAULT NONE;
-DEFINE FIELD a_primitive_array ON test_relation TYPE array<record<test_primitive>> DEFAULT [];
+DEFINE FIELD a_primitive_array ON test_relation TYPE array<record<test_primitive>> DEFAULT [] REFERENCE ON DELETE IGNORE
+    COMMENT '@rebase-readers';
 DEFINE FIELD a_poly_array ON test_relation TYPE option<array<record<test_primitive | groups>>> DEFAULT NONE;
 
 
@@ -44,7 +45,8 @@ DEFINE FIELD a_auditing_group ON test_multiref TYPE option<record<groups>> REFER
 DEFINE TABLE test_tree SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD a_name ON test_tree TYPE string;
 DEFINE FIELD a_parent ON test_tree TYPE option<record<test_tree>> REFERENCE ON DELETE CASCADE DEFAULT NONE;
-DEFINE FIELD a_related_nodes ON test_tree TYPE array<record<test_tree>> DEFAULT [];
+DEFINE FIELD a_related_nodes ON test_tree TYPE array<record<test_tree>> DEFAULT [] REFERENCE ON DELETE IGNORE
+    COMMENT '@rebase-readers';
 
 DEFINE FIELD e_guard ON test_tree TYPE bool VALUE {
     IF $this.a_parent = $this.id {
@@ -52,3 +54,39 @@ DEFINE FIELD e_guard ON test_tree TYPE bool VALUE {
     };
     RETURN true;
 } ASSERT $value = true;
+
+-- 6. NATIVE EXTERNAL RESOURCE TABLES
+DEFINE TABLE email_brevo_config SCHEMAFULL COMMENT '@rebase-audit';
+DEFINE FIELD label ON email_brevo_config TYPE string;
+DEFINE FIELD visibility ON email_brevo_config TYPE bool DEFAULT false;
+DEFINE FIELD technical_owner ON email_brevo_config TYPE option<record<user | groups>> DEFAULT NONE REFERENCE ON DELETE REJECT;
+DEFINE FIELD from_email ON email_brevo_config TYPE string ASSERT string::is_email($value);
+DEFINE FIELD from_name ON email_brevo_config TYPE string;
+DEFINE FIELD reply_to ON email_brevo_config TYPE option<string> DEFAULT NONE ASSERT $value = NONE OR string::is_email($value);
+DEFINE FIELD api_secret_ref ON email_brevo_config TYPE string
+    PERMISSIONS FOR select NONE FOR create, update WHERE true
+    COMMENT '@rebase-audit-redact';
+DEFINE FIELD compliance_note ON email_brevo_config TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select NONE FOR create, update WHERE true
+    COMMENT '@rebase-audit-redact';
+DEFINE FIELD sending_enabled ON email_brevo_config TYPE bool DEFAULT false;
+DEFINE FIELD account_key ON email_brevo_config TYPE string READONLY;
+DEFINE FIELD last_verified_at ON email_brevo_config TYPE option<datetime> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+
+DEFINE TABLE email_campaign_profile SCHEMAFULL COMMENT '@rebase-audit';
+DEFINE FIELD profile_key ON email_campaign_profile TYPE string READONLY;
+DEFINE FIELD name ON email_campaign_profile TYPE string;
+DEFINE FIELD visibility ON email_campaign_profile TYPE bool DEFAULT false;
+DEFINE FIELD config ON email_campaign_profile TYPE record<email_brevo_config> REFERENCE ON DELETE REJECT;
+DEFINE FIELD fallback_config ON email_campaign_profile TYPE option<record<email_brevo_config>> DEFAULT NONE REFERENCE ON DELETE IGNORE;
+DEFINE FIELD parent_profile ON email_campaign_profile TYPE option<record<email_campaign_profile>> DEFAULT NONE REFERENCE ON DELETE CASCADE;
+DEFINE FIELD related_profiles ON email_campaign_profile TYPE array<record<email_campaign_profile>> DEFAULT [] REFERENCE ON DELETE IGNORE
+    COMMENT '@rebase-readers';
+DEFINE FIELD reviewer ON email_campaign_profile TYPE option<record<user | groups>> DEFAULT NONE REFERENCE ON DELETE REJECT;
+DEFINE FIELD subject ON email_campaign_profile TYPE string;
+DEFINE FIELD html ON email_campaign_profile TYPE string;
+DEFINE FIELD text ON email_campaign_profile TYPE option<string> DEFAULT NONE;
+DEFINE FIELD recipients ON email_campaign_profile TYPE array<string> ASSERT array::all($value, |$email| string::is_email($email));
+DEFINE FIELD delivery_count ON email_campaign_profile TYPE int DEFAULT 0
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;

@@ -1,25 +1,32 @@
-const SYSTEM_TABLES = new Set(["user", "groups"]);
+const EXTENSION_TABLES = new Set(["user", "groups"]);
+const { contributesReaders } = require("./readers");
 
-function analyzeSchema(schema) {
-  validateSystemExtensions(schema);
+function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
+  validateSystemExtensions(schema, EXTENSION_TABLES);
   const reverseReferences = new Map();
   for (const table of schema.tables.values()) {
     for (const field of table.fields.values()) {
-      for (const target of field.recordType?.targets || []) {
+      if (!contributesReaders(field, frameworkTables)) continue;
+      if (!/\bREFERENCE\b/i.test(field.definition)) {
+        throw new Error(
+          `Reader field ${table.name}.${field.name} must declare REFERENCE`,
+        );
+      }
+      for (const target of field.recordType.targets) {
         if (!reverseReferences.has(target)) reverseReferences.set(target, []);
         reverseReferences.get(target).push({
           sourceTable: table.name,
           sourceField: field.name,
-          sourceIsSystem: SYSTEM_TABLES.has(table.name),
+          sourceIsSystem: frameworkTables.has(table.name),
         });
       }
     }
   }
-  return { reverseReferences, systemTables: SYSTEM_TABLES };
+  return { reverseReferences, systemTables: frameworkTables };
 }
 
-function validateSystemExtensions(schema) {
-  for (const tableName of SYSTEM_TABLES) {
+function validateSystemExtensions(schema, extensionTables) {
+  for (const tableName of extensionTables) {
     const table = schema.tables.get(tableName);
     if (!table) continue;
     for (const field of table.fields.values()) {
@@ -33,4 +40,4 @@ function validateSystemExtensions(schema) {
   }
 }
 
-module.exports = { SYSTEM_TABLES, analyzeSchema };
+module.exports = { EXTENSION_TABLES, analyzeSchema };

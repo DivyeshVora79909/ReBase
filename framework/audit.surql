@@ -3,7 +3,6 @@ USE NS main DB main;
 -- Append-only operational history. These tables are deliberately outside the
 -- compiler's ownership, reader, cascade, and reactive systems.
 DEFINE TABLE audit_mutation SCHEMAFULL PERMISSIONS NONE;
-DEFINE FIELD id ON audit_mutation TYPE uuid;
 DEFINE FIELD at ON audit_mutation TYPE datetime;
 DEFINE FIELD event ON audit_mutation TYPE string ASSERT $value IN ['CREATE', 'UPDATE', 'DELETE'];
 DEFINE FIELD table_name ON audit_mutation TYPE string;
@@ -15,7 +14,6 @@ DEFINE FIELD after ON audit_mutation TYPE option<object> FLEXIBLE DEFAULT NONE;
 DEFINE INDEX idx_audit_mutation_target ON audit_mutation COLUMNS target;
 
 DEFINE TABLE audit_action SCHEMAFULL PERMISSIONS NONE;
-DEFINE FIELD id ON audit_action TYPE uuid;
 DEFINE FIELD at ON audit_action TYPE datetime;
 DEFINE FIELD source ON audit_action TYPE string;
 DEFINE FIELD action ON audit_action TYPE string;

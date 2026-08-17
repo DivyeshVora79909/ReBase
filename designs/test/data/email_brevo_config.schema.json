@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "owned_by", "label", "from_email", "from_name", "api_secret_ref", "account_key"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^email_brevo_config:[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "label": { "type": "string", "minLength": 2 },
+    "visibility": { "type": "boolean", "default": false },
+    "technical_owner": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "from_email": { "type": "string", "format": "email" },
+    "from_name": { "type": "string", "minLength": 2 },
+    "reply_to": { "type": "string", "format": "email" },
+    "api_secret_ref": { "type": "string", "pattern": "^secret:[A-Za-z0-9._/@-]+$" },
+    "compliance_note": { "type": "string" },
+    "sending_enabled": { "type": "boolean", "default": false },
+    "account_key": { "type": "string", "minLength": 4 }
+  }
+}

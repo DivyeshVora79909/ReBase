@@ -16,6 +16,7 @@ function main() {
   const relativeOutput = path.relative(process.cwd(), result.outputDir) || ".";
 
   console.log(`ReBase compiled ${result.tableCount} tables and ${result.viewCount} views.`);
+  console.log(`Handlers: ${result.handlerCount}`);
   console.log(`Output: ${relativeOutput}`);
   console.log(`Schema: ${path.join(relativeOutput, "schema.surql")}`);
 }

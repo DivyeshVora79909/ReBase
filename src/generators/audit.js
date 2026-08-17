@@ -12,17 +12,17 @@ const DEFAULT_OMIT_FIELDS = new Set([
   "updated_by",
 ]);
 
-function auditTables(schema) {
-  return [...schema.tables.values()].filter((table) => table.audit);
+function auditTables(schema, excludedTables = new Set()) {
+  return [...schema.tables.values()].filter((table) => table.audit && !excludedTables.has(table.name));
 }
 
 function quotedList(values) {
   return `[${values.map((value) => `'${value.replaceAll("'", "\\'")}'`).join(", ")}]`;
 }
 
-function generateAuditEvents(schema, options) {
+function generateAuditEvents(schema, options, excludedTables = new Set()) {
   let output = use(options.namespace, options.database);
-  for (const table of auditTables(schema)) {
+  for (const table of auditTables(schema, excludedTables)) {
     const omitted = [...DEFAULT_OMIT_FIELDS];
     const redacted = [];
     for (const field of table.fields.values()) {

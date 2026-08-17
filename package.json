@@ -2,21 +2,28 @@
   "name": "rebase-surreal-compiler",
   "version": "0.2.0",
   "private": true,
-  "description": "SurrealQL-first Schema-as-Code compiler for ownership, DAG RBAC, RLS, and reactive views.",
+  "description": "Declarative SurrealDB compiler, resource-gated edge runtime, and schema-driven development workbench.",
   "scripts": {
     "build": "node --env-file=.env compile.js",
-    "check": "node --env-file=.env compile.js --check"
+    "check": "node --env-file=.env compile.js --check",
+    "gateway": "node --env-file=.env gateway/server.js",
+    "workbench": "node --env-file=.env dev-tools/workbench.js",
+    "populate": "node --env-file=.env dev-tools/populate.js",
+    "probe": "node dev-tools/probe.js all",
+    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1109.0",
     "@faker-js/faker": "^9.9.0",
+    "@hono/node-server": "^2.1.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "hono": "^4.13.1",
     "json-schema-faker": "^0.5.9",
     "seedrandom": "^3.0.5",
-    "simple-statistics": "^7.9.3",
     "surrealdb": "^2.0.8"
   }
 }

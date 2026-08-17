@@ -203,16 +203,6 @@ DEFINE EVENT OVERWRITE upward_propagation_trigger ON TABLE groups WHEN $event TH
 -- INITIALIZATION
 CREATE groups:root SET
     name = 'System Admins',
-    role = ['node_create', 'node_select', 'node_update', 'node_delete'],
-    capabilities = [
-        'email_config:get',
-        'email_config:manage',
-        'email_config:delete',
-        'message:send',
-        'file:get',
-        'file:put',
-        'file:delete',
-        'function:invoke'
-    ];
+    role = ['node_create', 'node_select', 'node_update', 'node_delete'];
 
 DEFINE INDEX OVERWRITE idx_groups_capabilities ON groups FIELDS capabilities.*;

@@ -1,212 +1,97 @@
 # ReBase
 
-ReBase contains a SurrealQL compiler and a minimal native Node REPL for post-deployment development. There is no web application, profile registry, notebook loader, generator CLI, or workflow framework.
+ReBase compiles SurrealDB tables, graph-derived authorization, reader propagation, audit events, reactive views, and a capability-gated edge runtime. SurrealDB is the source of truth; the gateway is only for authenticated external effects, durable jobs, and webhooks.
+
+`ARCHITECTURE.md` is the canonical engineering reference.
 
 ## Layout
 
 ```text
-framework/                 Shared authorization and access contracts
-framework/audit.surql      Fire-and-forget mutation and action audit storage
-src/                       Compiler implementation
-designs/<name>/            Project SurrealQL
-designs/<name>/data/       Project-owned JSON Schemas
-dev-tools/repl-adv.js      Native JavaScript and SurrealQL REPL
-scripts/data.js            Deterministic generation, validation, DAG inspection, and optional casting
-scripts/materialize.js     SurrealDB-native create-as-you-go relationship materialization
-scripts/benchmark.js       Query classification, timing, and plan analysis
-scripts/database.js        Explicit database reset, clearing, and metadata operations
-scripts/schema.js           Schema loading and Surreal CLI validation
-scripts/inspect.js           Live metadata and DAG inspection
-queries/                   Manual SurrealQL examples
+framework/                  Shared auth, access, audit, and edge tables
+src/                        Deterministic schema compiler
+gateway/                    HTTP gateway, worker, providers, and queues
+designs/<name>/schema.surql Business tables and native field rules
+designs/<name>/views.surql  Capability-scoped aggregate views
+designs/<name>/data/        Scalar fake-data JSON Schemas
+designs/<name>/edge/        Self-describing edge handlers
+dev-tools/workbench.js      Interactive development shell
+dev-tools/populate.js       Schema-driven random data populator
+dev-tools/probe.js          Disposable live verification
 ```
 
-## Compiler
+## Commands
 
 ```bash
-node --env-file=.env compile.js --project designs/test
-node --env-file=.env compile.js --project designs/test --check
+npm run build
+npm run check
+npm run probe
+npm run verify
+npm run gateway
+npm run workbench
+npm run populate -- --table all --count 100
 ```
 
-Validate and deploy the generated `build/<design>/schema.surql` using `surreal validate` and `surreal sql`. Import mode is not appropriate because it disables normal event and field processing.
+The compiler emits only `build/<project>/schema.surql` and copied `edge/` handlers. It does not create operation catalogs, schema registries, manifests, or compatibility artifacts.
 
-## Native REPL
+## Database Security
 
-```bash
-node --env-file=.env dev-tools/repl-adv.js
+Every business table receives one model:
+
+```surql
+FOR select WHERE '<table>_select' IN $auth.permissions
+  AND (!!visibility
+    OR readers_index CONTAINS <string>$auth.id
+    OR <string>owned_by IN $auth.z_access_index)
 ```
 
-JavaScript is evaluated by Node normally. Input beginning with a SurrealQL statement keyword is executed as SQL. End direct SQL with `;`; multiline SQL is supported.
+Create and update require the table capability plus a resulting owner that is the actor, a direct parent group, or a dominated principal. Delete excludes direct parent groups and requires self ownership or domination. `owned_by` also enforces one-way delegation: an owner may delegate upward to an accessible group, but cannot reclaim it merely through parent-group membership.
 
-The JavaScript context contains:
+`visibility` is an ordinary boolean business field. An absent field evaluates false and never bypasses the table select capability.
+
+Only `readers_index` is materialized. A scalar strict business `REFERENCE` inherits the referenced owner and readers. Arrays are excluded unless their comment contains `@rebase-readers`; marked arrays must also declare `REFERENCE`. Declarations containing `user` or `groups` never contribute readers. Groups are the sharing primitive; there is no `shared_with` model.
+
+The compiler emits a non-materialized `rebase_reader_sources` field and cycle guard. Cyclic reader graphs fail with `REBASE_READER_CYCLE`, preventing stale access after revocation. Views intentionally use only their source-table capability and do not inject row ACLs.
+
+## Edge Handlers
+
+An edge function is one camelCase filename and one capability:
 
 ```js
-db; // currently active SurrealDB session
-sql; // query helper returning the cleaned final result
-vars; // ordinary object, also the default SQL bindings object
-tools; // namespaced reusable functions
-```
-
-Examples:
-
-```js
-vars.limit = 10;
-vars.users = await sql("SELECT * FROM user LIMIT $limit;", vars);
-console.table(vars.users);
-```
-
-Direct SQL is also valid:
-
-```surrealql
-SELECT id, email FROM user LIMIT 10;
-```
-
-The only custom commands are:
-
-```text
-.as user:alice       switch to an independent record-authenticated session
-.admin               switch back to the administrator
-.benchmark on        analyze every direct SELECT
-.benchmark off       disable automatic analysis
-.benchmark once      analyze only the next direct SELECT
-```
-
-At startup the REPL defines a temporary record access method that signs in an existing record without changing passwords or login fields. Normal exit removes it. After an abnormal termination, clean it up manually:
-
-```surrealql
-REMOVE ACCESS personifier ON DATABASE;
-```
-
-## Deterministic Data
-
-JSON Schemas belong to their design, for example:
-
-```text
-designs/test/data/user.schema.json
-designs/test/data/groups.schema.json
-designs/test/data/test_primitive.schema.json
-```
-
-Generate plain payload JSON while keeping relationships explicit:
-
-```js
-const config = {
-  cwd: "designs/test",
-  seed: "manual-1",
-  anchors: { groups: ["groups:root"] },
-  datasets: {
-    groups: { schema: "data/groups.schema.json", count: 5, batchSize: 2 },
-    user: { schema: "data/user.schema.json", count: 20, batchSize: 5 },
-    test_primitive: { schema: "data/test_primitive.schema.json", count: 100 },
+module.exports = {
+  mode: "job",
+  records: {
+    config: "email_brevo_config",
+    profile: "email_campaign_profile",
   },
-  relations: [
-    {
-      from: "groups.id",
-      to: "groups.parents[]",
-      cardinality: { min: 1, max: 2 },
-    },
-    { from: "groups.id", to: "user.parents[]" },
-    { from: "user.id", to: "test_primitive.owned_by" },
-  ],
+  timeoutMs: 60_000,
+  maxAttempts: 5,
+  async execute({ auth, records, args, providers, signal, execution }) {
+    // Validate scalar args beside the behavior that uses them.
+  },
 };
-
-vars.data = await tools.data.generateData({ config });
-tools.data.validateData({ data: vars.data, config });
 ```
 
-`generateData()` uses JSON Schema Faker, Faker, AJV formats, and seeded randomness. It deliberately omits IDs and declared relation targets, returning only portable payloads. Runtime count overrides do not require editing the design config:
+The gateway validates the capability, record slots, ID syntax, declared tables, cardinality, and row access before invocation. `args` are raw JSON validated by the handler. Handlers receive authorized records, not a privileged database connection.
 
-```js
-vars.data = tools.data.generateData({
-  config,
-  counts: { user: 25, test_primitive: 100000 },
-});
+```json
+{
+  "records": {
+    "config": "email_brevo_config:production",
+    "profile": "email_campaign_profile:weekly"
+  },
+  "args": { "subject": "Hello" },
+  "requestId": "optional-correlation-id"
+}
 ```
 
-Datasets with database unique indexes declare the corresponding payload paths once, for example `unique: ["email"]`. JSF retries collisions before any database write.
+Routes are `GET /healthz`, `POST /v1/edge/:capability`, `GET /v1/jobs/:job`, `POST /v1/jobs/:job/cancel`, and `POST /v1/webhooks/:capability`.
 
-The `omit` lists in a design config describe optional relation-shaped fields that are intentionally left for a later materializer. Payload generation remains plain JSON and does not connect to SurrealDB.
+Jobs retain idempotency, transactional outbox delivery, leases, retries, cancellation, worker reauthorization, terminal state, and bounded logs. Webhooks retain raw-body verification, receipt leases, and deduplication.
 
-Materialize complete records in dependency batches:
+## Development Tools
 
-```js
-vars.native = tools.data.castData({
-  data: vars.data,
-  rules: [
-    { path: "test_primitive[].a_datetime", type: "datetime" },
-    { path: "test_primitive[].a_decimal", type: "decimal" },
-  ],
-});
+`npm run populate` reads topology from the compiled Surreal schema and scalar rules from `data/*.schema.json`. It samples committed records with keyset pagination into bounded reservoirs, inserts dependency-aware batches, and prints a replay seed.
 
-await tools.materialize.materializeData({
-  db,
-  data: vars.native,
-  config,
-});
-```
+`npm run workbench` provides `.build`, `.deploy`, `.populate`, `.as <email> <password>`, `.query`, `.sample`, `.edge`, and `.probe`.
 
-The materializer uses direct SurrealDB `CREATE` operations inside one query per batch. IDs are generated natively. Each relation selects only records committed before the current batch, so generated references cannot form cycles. Existing roots such as `groups:root` are declared once through `config.anchors`; small per-dataset `batchSize` values create deeper self-referencing DAGs without making large resource datasets slow.
-
-`validateData()` validates the projected payload schemas. Final IDs, references, database assertions, computed fields, and events are validated by SurrealDB during materialization.
-
-## Native SurrealDB Values
-
-Generation stays database-independent. Cast only immediately before SDK writes:
-
-```js
-const native = tools.data.castData({
-  data: vars.data,
-  rules: [
-    { path: "user[].parents[]", type: "record" },
-    { path: "invoice[].amount", type: "decimal" },
-  ],
-});
-```
-
-Supported casts are `record`, `datetime`, `decimal`, and `uuid`.
-
-## Benchmarking
-
-Automatic mode prints one-sample timing and `EXPLAIN FULL` scan/index information for direct SELECT statements. It does not store hidden reports.
-
-For deliberate measurements, assign the result yourself:
-
-```js
-vars.report = await tools.benchmark.benchmark({
-  db,
-  query: "SELECT id FROM test_primitive WHERE owned_by = $owner LIMIT 50;",
-  vars,
-  warmups: 3,
-  samples: 20,
-});
-```
-
-Reports contain the SQL, normalized fingerprint, timing percentiles, returned rows, query classification, scan/index analysis, and raw plan.
-
-## Query Examples
-
-`queries/` contains ordinary SurrealQL files for authorization, cycles, graph inspection, and benchmark shapes. They are intentionally not discovered or parsed by tooling; inspect and paste what is useful.
-
-## Audit history
-
-Tables opt in with a native comment marker:
-
-```surrealql
-DEFINE TABLE invoice SCHEMAFULL COMMENT '@rebase-audit';
-DEFINE FIELD api_key ON invoice TYPE option<string> COMMENT '@rebase-audit-redact';
-```
-
-`user` and `groups` use the same marker in `framework/auth.surql`; they are not
-audited merely because they are framework tables. Mutation history is
-fire-and-forget (`ASYNC RETRY 0`) and best-effort. It never rolls back the
-business write and is not a queue or retry mechanism.
-
-External workers write `audit_action` with UUIDv7 IDs and a flexible `data`
-object. Keep provider secrets out of queue messages and audit payloads unless
-they have been deliberately redacted. UUIDv7 IDs are time ordered, so archive
-and purge workers can use bounded record-ID ranges after verifying an R2
-archive. Because UUIDv7 has random trailing bits, use padded ID boundaries plus
-an exact `at` predicate as shown in `queries/audit.surql`.
-
-## Maintenance Rule
-
-Persistent behavior belongs in SurrealQL or standard JSON Schema. Runtime orchestration belongs in native JavaScript. Add a library capability only when it is reusable computation, not workflow convenience.
+`npm run probe` starts disposable SurrealDB and verifies ownership, visibility, reader derivation and revocation, DAG behavior, cycle rejection, handler contracts, request execution, durable jobs, worker execution, webhook verification, deduplication, schema-driven population, and replay-seed determinism.

@@ -24,10 +24,6 @@
           "test_primitive_create",
           "test_primitive_update",
           "test_primitive_delete",
-          "setting_select",
-          "setting_create",
-          "setting_update",
-          "setting_delete",
           "test_relation_select",
           "test_relation_create",
           "test_relation_update",
@@ -39,7 +35,15 @@
           "test_tree_select",
           "test_tree_create",
           "test_tree_update",
-          "test_tree_delete"
+          "test_tree_delete",
+          "email_brevo_config_select",
+          "email_brevo_config_create",
+          "email_brevo_config_update",
+          "email_brevo_config_delete",
+          "email_campaign_profile_select",
+          "email_campaign_profile_create",
+          "email_campaign_profile_update",
+          "email_campaign_profile_delete"
         ]
       }
     },
@@ -48,14 +52,9 @@
       "default": [],
       "items": {
         "enum": [
-          "email_config:get",
-          "email_config:manage",
-          "email_config:delete",
-          "message:send",
-          "file:get",
-          "file:put",
-          "file:delete",
-          "function:invoke"
+          "sendMail",
+          "campaignMail",
+          "campaignWebhook"
         ]
       }
     },
