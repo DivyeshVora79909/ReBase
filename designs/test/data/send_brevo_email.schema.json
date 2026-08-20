@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "owned_by", "config", "to", "subject"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^send_brevo_email:[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "config": { "type": "string", "pattern": "^email_brevo_config:[a-z0-9-]+$" },
+    "to": {
+      "type": "array",
+      "items": { "type": "string", "format": "email" },
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true
+    },
+    "subject": { "type": "string", "minLength": 1 },
+    "html": { "type": "string" },
+    "text": { "type": "string" }
+  }
+}

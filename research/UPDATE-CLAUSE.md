@@ -41,6 +41,39 @@ Field permissions are non-throwing filters:
 
 Field permissions are suitable for server-managed or deliberately ignored writes. They are not suitable when the API must receive an explicit authorization failure or when several fields must be governed atomically.
 
+### Machine-controlled `VALUE` fields recompute on row mutation
+
+An isolated SurrealDB `3.2.0` probe defined token fields with each of these
+permission forms:
+
+```surql
+DEFINE FIELD token ON t TYPE uuid VALUE rand::uuid::v7() PERMISSIONS NONE;
+DEFINE FIELD token ON t TYPE uuid VALUE rand::uuid::v7()
+    PERMISSIONS FOR select NONE FOR create WHERE true FOR update NONE;
+```
+
+Both forms behaved the same: `VALUE` ran during creation, during an unrelated
+single-record update, during a table update, and when a caller supplied an
+explicit token. The stored value was a fresh UUIDv7 in every case. `PERMISSIONS
+NONE` also hid the field from the record user's returned row and silently
+discarded caller input; privileged server-side access can still use the value
+for an access/signup condition.
+
+This makes a field-only machine-controlled token sufficient:
+
+```surql
+DEFINE FIELD invite_token ON user
+    TYPE uuid
+    VALUE rand::uuid::v7()
+    PERMISSIONS NONE;
+```
+
+The token therefore rotates on every mutation that produces a new row version,
+including permission-propagation updates and the password-setting update used by
+signup. The expiry remains an independent, visible, administrator-controlled
+field. A denied field write still cannot set the token; the `VALUE` expression
+remains the only producer of token values.
+
 ### Events and rollback
 
 Synchronous event blocks with `THROW` return an error and roll back the complete statement. This held for both a single-row update and a bulk update: when one row triggered the event, no rows in the statement were changed.

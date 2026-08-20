@@ -8,20 +8,10 @@ const addFormats = require("ajv-formats");
 const { faker } = require("@faker-js/faker");
 const jsf = require("json-schema-faker");
 const seedrandom = require("seedrandom");
-const { RecordId, Surreal } = require("surrealdb");
-const { queryResult } = require("../gateway/runtime/utils");
+const { RecordId, Surreal, Uuid } = require("surrealdb");
+const { uuidv7 } = require("uuidv7");
+const { queryResult } = require("../gateway/utils");
 const { parseSchema } = require("../src/schema");
-
-const MANAGED_FIELDS = new Set([
-  "created_at",
-  "created_by",
-  "readers_index",
-  "rebase_reader_sources",
-  "system_ping",
-  "updated_at",
-  "updated_by",
-  "z_access_index",
-]);
 
 function seedNumber(seed) {
   return crypto
@@ -38,11 +28,13 @@ function identifier(value, label) {
   return value;
 }
 
-function recordId(value) {
+function recordId(value, uuid = false) {
   const text = String(value);
   const separator = text.indexOf(":");
   if (separator < 1) throw new Error(`Invalid record id: ${text}`);
-  return new RecordId(text.slice(0, separator), text.slice(separator + 1));
+  const id = text.slice(separator + 1);
+  const uuidText = /[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i.exec(id)?.[0];
+  return new RecordId(text.slice(0, separator), uuidText ? new Uuid(uuidText) : id);
 }
 
 function nativeRecords(value, field, property = {}) {
@@ -96,7 +88,7 @@ class Reservoir {
 
 function parseArgs(argv) {
   const options = {
-    project: process.env.REBASE_PROJECT || "test",
+    project: "test",
     table: "all",
     count: 25,
     batchSize: 100,
@@ -112,6 +104,11 @@ function parseArgs(argv) {
       return argv[index];
     };
     if (option === "--project") options.project = next();
+    else if (option === "--source") options.sourceDir = next();
+    else if (option === "--build") options.buildDir = next();
+    else if (option === "--endpoint") options.endpoint = next();
+    else if (option === "--namespace" || option === "--ns") options.namespace = next();
+    else if (option === "--database" || option === "--db") options.database = next();
     else if (option === "--table") options.table = next();
     else if (option === "--count") options.count = Number(next());
     else if (option === "--batch-size") options.batchSize = Number(next());
@@ -139,6 +136,11 @@ function usage() {
 
 Options:
   --project <name|dir>       Design name or directory (default: test)
+  --source <directory>       Explicit design source directory
+  --build <directory>        Explicit compiled artifact directory
+  --endpoint <url>           SurrealDB WebSocket endpoint
+  --namespace <name>         Required target namespace
+  --database <name>          Required target database
   --table <name|all>        Populate one table or every data schema
   --count <n>               Records per table (default: 25)
   --batch-size <n>          Insert batch size (default: 100)
@@ -191,14 +193,14 @@ async function loadReservoir(db, table, reservoir, pageSize) {
   }
 }
 
-function generationSchema(schema, table, tableDefinition, pools, random) {
+function generationSchema(schema, table, tableDefinition, pools, random, principals) {
   const generated = structuredClone(schema);
   generated.properties ||= {};
   const required = new Set(generated.required || []);
   const blocked = [];
   for (const [name, property] of Object.entries(generated.properties)) {
     const field = tableDefinition.fields.get(name);
-    if (name === "id" || MANAGED_FIELDS.has(name)) continue;
+    if (name === "id") continue;
     if (
       /PERMISSIONS[\s\S]*FOR\s+create\s*,\s*update\s+NONE/i.test(
         field?.definition || "",
@@ -210,8 +212,8 @@ function generationSchema(schema, table, tableDefinition, pools, random) {
     }
     if (name === "owned_by") {
       const owners = [
-        ...(pools.get("user")?.values || []),
-        ...(pools.get("groups")?.values || []),
+        ...(pools.get(principals.user)?.values || []),
+        ...(pools.get(principals.group)?.values || []),
       ];
       if (!owners.length) blocked.push(`${table}.owned_by`);
       else {
@@ -249,10 +251,10 @@ function generationSchema(schema, table, tableDefinition, pools, random) {
       delete generated.properties[name];
     }
   }
-  if (table === "groups" || table === "user") {
+  if (table === principals.group || table === principals.user) {
     const parents = [
-      ...(pools.get("groups")?.values || []),
-      ...(pools.get("user")?.values || []),
+      ...(pools.get(principals.group)?.values || []),
+      ...(pools.get(principals.user)?.values || []),
     ];
     if (!parents.length) blocked.push(`${table}.parents`);
     else
@@ -269,7 +271,7 @@ function generationSchema(schema, table, tableDefinition, pools, random) {
 
 async function populate(options) {
   options = {
-    project: process.env.REBASE_PROJECT || "test",
+    project: "test",
     table: "all",
     count: 25,
     batchSize: 100,
@@ -278,6 +280,9 @@ async function populate(options) {
     ...options,
   };
   const { sourceDir, buildDir, name } = projectPaths(options.project, options);
+  if (!options.namespace || !options.database) {
+    throw new Error("populate requires explicit namespace and database");
+  }
   const compiledPath = path.join(buildDir, "schema.surql");
   if (!fs.existsSync(compiledPath))
     throw new Error(`Compiled schema not found: ${compiledPath}`);
@@ -285,6 +290,13 @@ async function populate(options) {
   if (!dataSchemas.size)
     throw new Error(`No data schemas found in ${path.join(sourceDir, "data")}`);
   const parsed = parseSchema(fs.readFileSync(compiledPath, "utf8"), "");
+  const principalEntries = [...parsed.tables.values()]
+    .filter((table) => table.principalKind)
+    .map((table) => [table.principalKind, table.name]);
+  const principals = Object.fromEntries(principalEntries);
+  if (!principals.user || !principals.group) {
+    throw new Error("Compiled schema must mark one user and one group principal table");
+  }
   let tables =
     options.table === "all"
       ? [...dataSchemas.keys()].filter((table) => parsed.tables.has(table))
@@ -296,7 +308,7 @@ async function populate(options) {
       throw new Error(`Compiled table not found: ${table}`);
   }
   tables.sort((left, right) => {
-    const rank = (value) => (value === "groups" ? 0 : value === "user" ? 1 : 2);
+    const rank = (value) => (value === principals.group ? 0 : value === principals.user ? 1 : 2);
     return rank(left) - rank(right) || left.localeCompare(right);
   });
 
@@ -328,11 +340,11 @@ async function populate(options) {
     password: options.password || process.env.SURREAL_PASS,
   });
   await db.use({
-    namespace: options.namespace || process.env.SURREAL_NAMESPACE,
-    database: options.database || process.env.SURREAL_DATABASE,
+    namespace: options.namespace,
+    database: options.database,
   });
   try {
-    const targetTables = new Set(["groups", "user"]);
+    const targetTables = new Set([principals.group, principals.user]);
     for (const table of tables) {
       for (const field of parsed.tables.get(table).fields.values()) {
         for (const target of field.recordType?.targets || [])
@@ -364,6 +376,7 @@ async function populate(options) {
           definition,
           pools,
           random,
+          principals,
         );
         if (prepared.blocked.length) {
           blockers.set(table, prepared.blocked);
@@ -373,7 +386,10 @@ async function populate(options) {
         const rows = [];
         for (let index = 0; index < size; index += 1) {
           serial += 1;
-          const id = `${table}:fake${seedNumber(`${seed}:${serial}`).toString(36)}${serial.toString(36)}`;
+          const uuidId = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+)?id\s+ON\s+(?:TABLE\s+)?\S+\s+TYPE\s+uuid\b/i.test(
+            definition.fields.get("id")?.definition || "",
+          );
+          const id = `${table}:${uuidId ? uuidv7() : `fake${seedNumber(`${seed}:${serial}`).toString(36)}${serial.toString(36)}`}`;
           const document = jsf.generate(prepared.schema);
           document.id = id;
           if (!validators.get(table)(document)) {
@@ -383,7 +399,7 @@ async function populate(options) {
           }
           const data = Object.fromEntries(
             Object.entries(document)
-              .filter(([name]) => name !== "id" && !MANAGED_FIELDS.has(name))
+              .filter(([name]) => name !== "id")
               .map(([name, value]) => [
                 name,
                 nativeRecords(
@@ -393,7 +409,7 @@ async function populate(options) {
                 ),
               ]),
           );
-          rows.push({ id: recordId(id), idText: id, data });
+          rows.push({ id: recordId(id, uuidId), idText: id, data });
         }
         const transaction = await db.beginTransaction();
         try {
@@ -441,7 +457,7 @@ if (require.main === module) {
           console.log(`${table}: ${count}`);
       })
       .catch((error) => {
-        console.error(`Population failed: ${error.message}`);
+        console.error(`Population failed: ${error.stack || error.message}`);
         process.exitCode = 1;
       });
 }

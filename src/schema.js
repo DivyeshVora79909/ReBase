@@ -10,6 +10,8 @@ function parseSchema(schemaSource, viewsSource) {
       table.definition = statement;
       table.comment = [table.comment, extractComment(statement)].filter(Boolean).join(" ");
       table.audit = /@rebase-audit(?![-\w])/i.test(table.comment);
+      table.principalKind = extractPrincipalKind(table.comment, table.name);
+      table.effectProcess = extractEffectProcess(table.comment, table.name);
       tables.set(tableMatch[1], table);
     }
     const fieldMatch = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\s+ON\s+(?:TABLE\s+)?([A-Za-z0-9_]+)/i.exec(statement);
@@ -24,8 +26,18 @@ function parseSchema(schemaSource, viewsSource) {
       comment: fieldComment,
       auditOmit: /@rebase-audit-omit\b/i.test(fieldComment),
       auditRedact: /@rebase-audit-redact\b/i.test(fieldComment),
+      changeLog: /@rebase-change-log\b/i.test(fieldComment),
       inheritReaders: /@rebase-readers\b/i.test(fieldComment),
+      effectInput: /@rebase-effect-input\b/i.test(fieldComment),
+      effectOutput: /@rebase-effect-output\b/i.test(fieldComment),
+      auditPolicy: parseAuditPolicy(fieldComment),
     });
+  }
+
+  for (const table of tables.values()) {
+    const fieldPolicies = [...table.fields.values()].map((field) => field.auditPolicy);
+    const markedField = fieldPolicies.some((policy) => policy.marked);
+    table.audit = table.audit || markedField;
   }
 
   const views = [];
@@ -51,6 +63,48 @@ function parseSchema(schemaSource, viewsSource) {
   return { tables, views, rawViews: viewsSource };
 }
 
+function extractPrincipalKind(comment, tableName) {
+  const matches = [...String(comment || "").matchAll(/@rebase-principal\s*[:=]?\s*(user|group)\b/gi)]
+    .map((match) => match[1].toLowerCase());
+  const unique = [...new Set(matches)];
+  if (unique.length > 1) throw new Error(`Conflicting principal markers on table ${tableName}`);
+  return unique[0] || null;
+}
+
+function extractEffectProcess(comment, tableName) {
+  const matches = [...String(comment || "").matchAll(/@rebase-effect\s*[:=]?\s*(sync|async)\b/gi)]
+    .map((match) => match[1].toLowerCase());
+  const unique = [...new Set(matches)];
+  if (unique.length > 1) throw new Error(`Conflicting effect process markers on table ${tableName}`);
+  return unique[0] || null;
+}
+
+function parseAuditPolicy(comment = "") {
+  const normalized = String(comment);
+  const policy = {
+    marked: false,
+    include: false,
+    exclude: false,
+    redact: false,
+    change: false,
+  };
+  if (/@rebase-audit\b/i.test(normalized)) policy.marked = true;
+  if (/@rebase-audit-omit\b/i.test(normalized)) {
+    policy.marked = true;
+    policy.exclude = true;
+  }
+  if (/@rebase-audit-redact\b/i.test(normalized)) {
+    policy.marked = true;
+    policy.redact = true;
+  }
+  if (/@rebase-change-log\b/i.test(normalized)) policy.change = true;
+  for (const match of normalized.matchAll(/@rebase-audit\s*[:=]?\s*(include|exclude|redact|change)\b/gi)) {
+    policy.marked = true;
+    policy[match[1].toLowerCase()] = true;
+  }
+  return policy;
+}
+
 function extractComment(statement) {
   const match = /\bCOMMENT\s+(['"])([\s\S]*?)\1\s*;?\s*$/i.exec(statement);
   return match ? match[2] : "";
@@ -71,4 +125,4 @@ function resolveRecordTargets(schema, sourceTable, expression) {
   return currentTables;
 }
 
-module.exports = { parseSchema, resolveRecordTargets };
+module.exports = { extractEffectProcess, extractPrincipalKind, parseAuditPolicy, parseSchema, resolveRecordTargets };

@@ -110,6 +110,21 @@ These SurrealDB 3.2.x behaviors caused silent failures during testing. All have 
 - **Bug:** Reusing output folders could retain old `optimizer.json` or `manifest.json` files even though the compiler no longer generates them.
 - **Fix:** Compiler now explicitly cleans known legacy artifacts from output directories before writing new schema.
 
+### F. Field Change Detection and Array Deltas
+
+An isolated SurrealDB `3.2.0` probe compared direct structural `!=`,
+`crypto::sha256(<string>value)`, and `value::diff()` over repeated nested
+object comparisons. Direct `!=` was consistently the fastest path: roughly
+2x faster than hashing for the tested 10-500 element values, while
+`value::diff()` was comparable to hashing and returns JSON Patch operations
+rather than a previous-value snapshot.
+
+`array::complement(before, after)` is useful only for set-like arrays. It loses
+ordering and duplicate-count changes; `array::difference()` is symmetric and
+includes additions. ReBase change logs therefore use direct structural `!=`
+for detection and retain the complete previous value for a marked array or
+object.
+
 ---
 
 ## 6. Final Architecture Decisions

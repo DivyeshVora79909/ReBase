@@ -24,27 +24,24 @@ function generateAuditEvents(schema, options, excludedTables = new Set()) {
   let output = use(options.namespace, options.database);
   for (const table of auditTables(schema, excludedTables)) {
     const omitted = [...DEFAULT_OMIT_FIELDS];
-    const redacted = [];
+    const trackedChanges = [];
     for (const field of table.fields.values()) {
-      if (field.auditOmit && !omitted.includes(field.name))
+      const policy = field.auditPolicy || {};
+      if ((field.auditOmit || policy.exclude || policy.redact || policy.change) && !omitted.includes(field.name))
         omitted.push(field.name);
-      if (field.auditRedact) {
-        redacted.push(field.name);
-        if (!omitted.includes(field.name)) omitted.push(field.name);
-      }
+      if (field.auditRedact || policy.redact || policy.change) trackedChanges.push(field.name);
     }
     const omitExpression = quotedList([...new Set(omitted)]);
-    const redactExpression = quotedList([...new Set(redacted)]);
-    const retries = process.env.AUDIT_EVENT_RETRIES || "0";
+    const trackedExpression = quotedList([...new Set(trackedChanges)]);
     output += `DEFINE EVENT OVERWRITE rebase_audit_${table.name} ON TABLE ${table.name}\n`;
-    output += `    ASYNC RETRY ${retries} MAXDEPTH 0\n`;
+    output += "    ASYNC RETRY 0 MAXDEPTH 0\n";
     output += "    WHEN $event IN ['CREATE', 'UPDATE', 'DELETE'] THEN {\n";
     output += "        LET $audit_now = time::now();\n";
     output += `        LET $audit_before = IF $event = 'CREATE' THEN NONE ELSE object::remove($before, ${omitExpression}) END;\n`;
     output += `        LET $audit_after = IF $event = 'DELETE' THEN NONE ELSE object::remove($after, ${omitExpression}) END;\n`;
-    output += `        LET $changed_redacted = ${redactExpression}.filter(|$field| ($before[$field] ?? NONE) != ($after[$field] ?? NONE));\n`;
+    output += `        LET $changed_tracked = ${trackedExpression}.filter(|$field| ($before[$field] ?? NONE) != ($after[$field] ?? NONE));\n`;
     output +=
-      "        IF $event != 'UPDATE' OR $audit_before != $audit_after OR $changed_redacted {\n";
+      "        IF $event != 'UPDATE' OR $audit_before != $audit_after OR $changed_tracked {\n";
     output +=
       "            CREATE type::record('audit_mutation', rand::uuid::v7($audit_now)) CONTENT {\n";
     output += "                at: $audit_now,\n";
@@ -53,7 +50,7 @@ function generateAuditEvents(schema, options, excludedTables = new Set()) {
     output +=
       "                target: IF $event = 'DELETE' THEN $before.id ELSE $after.id END,\n";
     output += "                actor: $auth,\n";
-    output += "                changed_fields: $changed_redacted,\n";
+    output += "                changed_fields: $changed_tracked,\n";
     output += "                before: $audit_before,\n";
     output += "                after: $audit_after\n";
     output += "            };\n";
@@ -63,4 +60,36 @@ function generateAuditEvents(schema, options, excludedTables = new Set()) {
   return output;
 }
 
-module.exports = { auditTables, generateAuditEvents };
+function changeLogFields(table) {
+  return [...table.fields.values()].filter((field) => field.changeLog);
+}
+
+function generateChangeLogEvents(schema, options) {
+  let output = use(options.namespace, options.database);
+  for (const table of schema.tables.values()) {
+    const fields = changeLogFields(table);
+    if (!fields.length) continue;
+    const names = quotedList(fields.map((field) => field.name));
+    const changed = fields
+      .map((field) => `($before.${field.name} ?? NONE) != ($after.${field.name} ?? NONE)`)
+      .join(" OR ");
+    output += `DEFINE EVENT OVERWRITE rebase_change_log_${table.name} ON TABLE ${table.name}\n`;
+    output += "    ASYNC RETRY 0 MAXDEPTH 0\n";
+    output += `    WHEN $event = 'UPDATE' AND (${changed}) THEN {\n`;
+    output += `        LET $changed = ${names}.filter(|$field| ($before[$field] ?? NONE) != ($after[$field] ?? NONE));\n`;
+    output += "        IF $changed {\n";
+    output += "            LET $change_now = time::now();\n";
+    output += "            CREATE type::record('change_logs', rand::uuid::v7($change_now)) CONTENT {\n";
+    output += "                target: $after.id,\n";
+    output += "                at: $change_now,\n";
+    output += `                table_name: '${table.name}',\n`;
+    output += "                before: object::from_entries($changed.map(|$field| [$field, $before[$field] ?? NONE])),\n";
+    output += "                actor: $auth\n";
+    output += "            };\n";
+    output += "        };\n";
+    output += "    };\n\n";
+  }
+  return output;
+}
+
+module.exports = { auditTables, changeLogFields, generateAuditEvents, generateChangeLogEvents };

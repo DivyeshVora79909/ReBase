@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "owned_by", "a_string", "a_decimal"],
+  "required": ["id", "owned_by", "a_string", "a_decimal", "a_datetime"],
   "properties": {
     "id": { "type": "string", "pattern": "^test_primitive:[a-z0-9-]+$" },
     "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },

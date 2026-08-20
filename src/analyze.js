@@ -2,7 +2,12 @@ const EXTENSION_TABLES = new Set(["user", "groups"]);
 const { contributesReaders } = require("./readers");
 
 function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
-  validateSystemExtensions(schema, EXTENSION_TABLES);
+  const extensionTables = new Set(
+    [...schema.tables.values()]
+      .filter((table) => table.principalKind)
+      .map((table) => table.name),
+  );
+  validateSystemExtensions(schema, extensionTables.size ? extensionTables : EXTENSION_TABLES);
   const reverseReferences = new Map();
   for (const table of schema.tables.values()) {
     for (const field of table.fields.values()) {

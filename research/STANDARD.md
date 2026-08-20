@@ -1,13 +1,29 @@
 # ReBase Architecture Standard
 
-Status: Canonical target architecture
+Status: Authorization/graph reference; runtime sections are historical
 
 Audience: maintainers, contributors, and coding agents
 
-This document defines the intended ReBase model. It is the primary reference for
-architectural decisions. Current code may temporarily differ while the migration
-is in progress. A difference between the repository and this document is a
-migration task, not permission to silently redefine the model.
+The current implementation contract is [../ARCHITECTURE.md](../ARCHITECTURE.md).
+This document remains the detailed reference for authorization, graph, audit,
+and compiler decisions. Its capability, generic-job, and outbox sections are
+preserved as rejected/historical alternatives.
+
+## Blank-Sheet Redesign Addendum
+
+The edge-function and durable-job sections below describe the pre-redesign
+capability runtime. For the unreleased blank-sheet architecture, the following
+research documents are the current decision record and supersede those sections
+where they conflict:
+
+- [BLANK-SHEET-ARCHITECTURE-CONTRACT.md](./BLANK-SHEET-ARCHITECTURE-CONTRACT.md)
+- [HANDLER-REGISTRY-DISPATCH-FINDINGS.md](./HANDLER-REGISTRY-DISPATCH-FINDINGS.md)
+- [SYNC-EVENT-SNAPSHOT-FINDINGS.md](./SYNC-EVENT-SNAPSHOT-FINDINGS.md)
+- [REFERENCE-AUTHORIZATION-FINDINGS.md](./REFERENCE-AUTHORIZATION-FINDINGS.md)
+- [UUIDV7-RECORD-ID-FINDINGS.md](./UUIDV7-RECORD-ID-FINDINGS.md)
+
+The blank-sheet runtime redesign is now implemented. The addendum keeps this
+file useful for the existing authorization and graph invariants.
 
 The goal is a small, algorithmic system that a solo developer can understand and
 maintain. ReBase uses SurrealDB as the source of truth for data shape, graph

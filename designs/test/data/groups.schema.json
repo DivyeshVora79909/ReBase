@@ -40,21 +40,18 @@
           "email_brevo_config_create",
           "email_brevo_config_update",
           "email_brevo_config_delete",
-          "email_campaign_profile_select",
-          "email_campaign_profile_create",
-          "email_campaign_profile_update",
-          "email_campaign_profile_delete"
-        ]
-      }
-    },
-    "capabilities": {
-      "type": "array",
-      "default": [],
-      "items": {
-        "enum": [
-          "sendMail",
-          "campaignMail",
-          "campaignWebhook"
+          "file_storage_config_select",
+          "file_storage_config_create",
+          "file_storage_config_update",
+          "file_storage_config_delete",
+          "file_access_grant_select",
+          "file_access_grant_create",
+          "file_access_grant_update",
+          "file_access_grant_delete",
+          "send_brevo_email_select",
+          "send_brevo_email_create",
+          "send_brevo_email_update",
+          "send_brevo_email_delete"
         ]
       }
     },

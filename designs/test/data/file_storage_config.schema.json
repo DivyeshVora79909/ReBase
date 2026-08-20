@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "owned_by", "bucket", "credential_ref"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^file_storage_config:[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "provider": { "type": "string", "default": "local-storage" },
+    "bucket": { "type": "string", "minLength": 2 },
+    "credential_ref": { "type": "string", "pattern": "^secret:[A-Za-z0-9._/@-]+$" },
+    "default_expiry_seconds": { "type": "integer", "minimum": 1, "default": 900 }
+  }
+}

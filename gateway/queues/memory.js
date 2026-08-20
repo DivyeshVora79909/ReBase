@@ -6,6 +6,7 @@ function createMemoryQueue(options = {}) {
   let consumer = null;
   let closed = false;
   let timer = null;
+  let draining = null;
   let sequence = 0;
 
   function schedule() {
@@ -36,14 +37,22 @@ function createMemoryQueue(options = {}) {
   }
 
   async function drain() {
-    if (!consumer || closed) return;
-    const now = Date.now();
-    const due = pending.filter((message) => message.availableAt <= now);
-    for (const message of due) pending.splice(pending.indexOf(message), 1);
-    for (const message of due) await deliver(message);
-    if (pending.length) {
-      const delay = Math.max(0, Math.min(...pending.map((message) => message.availableAt)) - Date.now());
-      timer = setTimeout(async () => { timer = null; await drain(); }, delay);
+    if (draining) return draining;
+    if (!consumer || closed) return undefined;
+    draining = (async () => {
+      const now = Date.now();
+      const due = pending.filter((message) => message.availableAt <= now);
+      for (const message of due) pending.splice(pending.indexOf(message), 1);
+      for (const message of due) await deliver(message);
+      if (pending.length && !timer) {
+        const delay = Math.max(0, Math.min(...pending.map((message) => message.availableAt)) - Date.now());
+        timer = setTimeout(async () => { timer = null; await drain(); }, delay);
+      }
+    })();
+    try {
+      return await draining;
+    } finally {
+      draining = null;
     }
   }
 
@@ -68,7 +77,9 @@ function createMemoryQueue(options = {}) {
       return async () => { consumer = null; };
     },
     async flush() {
-      while (pending.some((message) => message.availableAt <= Date.now())) await drain();
+      do {
+        await drain();
+      } while (draining || pending.some((message) => message.availableAt <= Date.now()));
     },
     async close() {
       closed = true;

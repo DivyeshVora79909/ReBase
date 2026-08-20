@@ -25,7 +25,8 @@ function generateViews(schema, options, systemTables = new Set(["user", "groups"
       events += `DEFINE EVENT OVERWRITE ping_${view.name}_${groupKey} ON TABLE ${view.name} WHEN $event != 'NONE' THEN {\n`;
       events += `    LET $target = $after.${groupKey} ?? $before.${groupKey};\n`;
       events += "    IF $target {\n";
-      events += "        IF record::tb($target) IN ['user', 'groups'] { UPDATE $target; }\n";
+      const principalNames = options.principalTables || ["user", "groups"];
+      events += `        IF record::tb($target) IN [${principalNames.map((name) => `'${name}'`).join(", ")}] { UPDATE $target; }\n`;
       events += "        ELSE { UPDATE $target SET system_ping = time::now(); };\n";
       events += "    };\n};\n\n";
       for (const target of targets) {

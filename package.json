@@ -2,15 +2,17 @@
   "name": "rebase-surreal-compiler",
   "version": "0.2.0",
   "private": true,
-  "description": "Declarative SurrealDB compiler, resource-gated edge runtime, and schema-driven development workbench.",
+  "description": "Declarative SurrealDB compiler, table-keyed effect runtime, and schema-driven development workbench.",
   "scripts": {
-    "build": "node --env-file=.env compile.js",
-    "check": "node --env-file=.env compile.js --check",
-    "gateway": "node --env-file=.env gateway/server.js",
+    "build": "node dev-tools/compiler/cli.js",
+    "check": "node dev-tools/compiler/cli.js --check",
+    "server": "node --env-file=.env gateway/server.js",
     "workbench": "node --env-file=.env dev-tools/workbench.js",
     "populate": "node --env-file=.env dev-tools/populate.js",
     "probe": "node dev-tools/probe.js all",
-    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe"
+    "probe:architecture": "node dev-tools/architecture-probe.js",
+    "probe:runtime": "node dev-tools/runtime-probe.js",
+    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:architecture && npm run probe:runtime && npm run probe"
   },
   "engines": {
     "node": ">=20"
