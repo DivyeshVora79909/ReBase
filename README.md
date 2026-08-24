@@ -2,7 +2,9 @@
 
 ReBase compiles SurrealDB authorization, validation, audit, views, and table-keyed external effects. Clients use SurrealDB directly; the Hono runtime only performs work that requires privileged provider access.
 
-[ARCHITECTURE.md](./ARCHITECTURE.md) defines the current runtime contract. The measured SurrealDB behavior behind it remains in `research/`.
+[`research/rebase/architecture.md`](./research/rebase/architecture.md) defines
+the current runtime contract. [`research/README.md`](./research/README.md)
+indexes project decisions separately from measured SurrealDB behavior.
 
 ## Layout
 
@@ -28,7 +30,7 @@ npm run workbench
 npm run populate -- --table all --count 100
 ```
 
-The compiler emits only `build/<project>/schema.surql` and validated `table-handlers/` modules. It does not emit operation catalogs, manifests, generic job schemas, or compatibility artifacts.
+The compiler emits `build/<project>/schema.surql`, a private `runtime-contracts.json`, and validated `table-handlers/` modules. It does not emit tenant operation catalogs, generic job schemas, or compatibility artifacts.
 
 Runtime event generation is explicit because namespace and database are deployment context:
 
@@ -73,21 +75,26 @@ Its handler is keyed only by table name:
 ```js
 module.exports = {
   table: "file_access_grant",
-  process: "sync",
-  outputs: ["effect_state", "access_url"],
-  async execute({ context, record, load, providers, signal }) {
-    return { patch: { effect_state: "succeeded", access_url: "..." } };
+  async execute({ record, load, providers, signal, trigger }) {
+    return { outcome: "success", patch: { access_url: "..." } };
   },
 };
 ```
 
 The test design provides the reference examples:
 
-- `email_brevo_config`: credential/configuration storage with hidden secret reference fields.
-- `send_brevo_email`: committed async record, SQS-compatible delivery, retry state, reconciliation, and webhook patching.
-- `file_storage_config` plus `file_access_grant`: synchronous issuance of a bounded external URL/token.
+- `email_brevo_config`: credential/configuration storage with a required opaque API key hidden from normal reads.
+- `send_brevo_email`: committed async record, BullMQ delivery, retry/reconciliation, scheduling, and webhook patching.
+- `file_storage_config` plus `file_access_grant`: synchronous issuance of a bounded external URL/token using a required hidden credential.
 
 `npm run probe:runtime` verifies generated sync and async events against a disposable SurrealDB, including duplicate claims, retry recovery, reconciliation, wake authentication, and webhooks.
+
+The runtime uses Redis/BullMQ locally and exposes three transport lanes:
+`task`, `schedule`, and `webhook`. SQS deployments provide
+`REBASE_SQS_TASK_QUEUE_URL`, `REBASE_SQS_SCHEDULE_QUEUE_URL`,
+`REBASE_SQS_WEBHOOK_QUEUE_URL` plus the matching
+`REBASE_SQS_DEAD_LETTER_*` URLs. Queue payloads remain only
+`{ namespace, database, id }`.
 
 ## Development Tools
 

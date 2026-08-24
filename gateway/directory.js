@@ -16,21 +16,43 @@ function fixedStoreDirectory(store, context = {}) {
       return store;
     },
     async close() {},
+    size() { return 1; },
   };
+}
+
+function wrapStore(entry, store) {
+  return new Proxy(store, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (typeof value !== "function" || property === "close") return value;
+      return async (...args) => {
+        entry.active += 1;
+        entry.usedAt = Date.now();
+        try {
+          return await value.apply(target, args);
+        } finally {
+          entry.active -= 1;
+          entry.usedAt = Date.now();
+        }
+      };
+    },
+  });
 }
 
 function createStoreDirectory({ connect, idleMs = 15 * 60 * 1000, maxContexts = 1000 }) {
   const contexts = new Map();
 
   async function closeEntry(key, entry) {
+    if (entry.active > 0 || contexts.get(key) !== entry) return false;
     contexts.delete(key);
     const resolved = await entry.promise.catch(() => null);
     await resolved?.close?.();
+    return true;
   }
 
-  async function sweep() {
+  async function sweep(exceptKey) {
     const now = Date.now();
-    const idle = [...contexts].filter(([, entry]) => now - entry.usedAt > idleMs);
+    const idle = [...contexts].filter(([key, entry]) => key !== exceptKey && entry.active === 0 && now - entry.usedAt > idleMs);
     for (const [key, entry] of idle) await closeEntry(key, entry);
   }
 
@@ -38,26 +60,35 @@ function createStoreDirectory({ connect, idleMs = 15 * 60 * 1000, maxContexts = 
     async forContext(namespace, database) {
       const key = contextKey(namespace, database);
       let entry = contexts.get(key);
-      if (!entry) {
-        await sweep();
-        if (contexts.size >= maxContexts) {
-          throw new Error(`SurrealDB context limit reached: ${maxContexts}`);
-        }
-        entry = {
-          usedAt: Date.now(),
-          promise: Promise.resolve(connect({ namespace, database })).catch((error) => {
-            contexts.delete(key);
-            throw error;
-          }),
-        };
-        contexts.set(key, entry);
+      if (entry) {
+        entry.usedAt = Date.now();
+        return entry.promise;
       }
-      entry.usedAt = Date.now();
+      await sweep();
+      entry = contexts.get(key);
+      if (entry) {
+        entry.usedAt = Date.now();
+        return entry.promise;
+      }
+      if (contexts.size >= maxContexts) throw new Error(`SurrealDB context limit reached: ${maxContexts}`);
+      entry = { active: 0, usedAt: Date.now(), promise: null };
+      contexts.set(key, entry);
+      entry.promise = (async () => {
+        const store = await connect({ namespace, database });
+        return wrapStore(entry, store);
+      })().catch((error) => {
+        if (contexts.get(key) === entry) contexts.delete(key);
+        throw error;
+      });
       return entry.promise;
     },
     async close() {
-      for (const [key, entry] of [...contexts]) await closeEntry(key, entry);
+      for (const [key, entry] of [...contexts]) {
+        await entry.promise.catch(() => null);
+        await closeEntry(key, entry);
+      }
     },
+    async sweep() { return sweep(); },
     size() { return contexts.size; },
   };
 }

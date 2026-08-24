@@ -43,11 +43,31 @@ async function connectDatabase(options = {}) {
     sessionEndpoint(options.endpoint || process.env.SURREAL_ENDPOINT),
     timeoutMs,
   );
-  await db.signin({
-    username: options.username || process.env.SURREAL_USER,
-    password: options.password || process.env.SURREAL_PASS,
-  });
-  await db.use({ namespace, database });
+  const operation = async () => {
+    await db.signin({
+      username: options.username || process.env.SURREAL_USER,
+      password: options.password || process.env.SURREAL_PASS,
+    });
+    await db.use({ namespace, database });
+  };
+  let timer;
+  try {
+    await Promise.race([
+      operation(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const error = new Error(`SurrealDB authentication/context setup timed out after ${timeoutMs}ms`);
+          error.code = "SURREAL_SETUP_TIMEOUT";
+          reject(error);
+        }, timeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    await db.close().catch(() => {});
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   return { db, namespace, database, close: () => db.close() };
 }
 

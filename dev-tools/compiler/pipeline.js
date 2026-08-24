@@ -6,7 +6,7 @@ const { generateIndexes } = require("../../src/generators/indexes");
 const { generateReferenceAssertions } = require("../../src/generators/references");
 const { generateCascades, generateReaderCycleGuards, generateViews } = require("../../src/generators/reactivity");
 const { generateRootPermissions, generateSecurity } = require("../../src/generators/security");
-const { generateEffectEvents } = require("../../src/generators/effects");
+const { generateEffectEvents, generateLifecycleFields, generateRuntimeContracts } = require("../../src/generators/effects");
 const { parseSchema } = require("../../src/schema");
 const { bindFrameworkPrincipals, detectSelectPolicy, discoverPrincipalTables } = require("./principals");
 const { contextStatement, materialSources, partitionSource } = require("./materials");
@@ -79,6 +79,7 @@ function generateBundle(materials, options = {}) {
     ["downward propagation", generateCascades(analysis, generatedOptions)],
     ["indexes", indexes.sql],
     ["computed view fields", views.computed],
+    ["effect lifecycle fields", generateLifecycleFields(schema)],
     ["table effect events", generateEffectEvents(schema, generatedOptions)],
   ];
   if (frameworkSeedSource) sections.push(["framework bootstrap", frameworkSeedSource]);
@@ -96,6 +97,7 @@ function generateBundle(materials, options = {}) {
     views,
     indexes,
     seedSource,
+    contracts: generateRuntimeContracts(schema),
   };
 }
 
@@ -140,23 +142,29 @@ function checkCopiedTree(sourceDir, outputDir) {
   }
 }
 
-function writeArtifacts({ outputDir, bundle, copies = [] }, { check = false } = {}) {
+function writeArtifacts({ outputDir, bundle, contracts, copies = [] }, { check = false } = {}) {
   const trees = copies.filter((value) => value?.sourceDir && value?.outputDir);
   const schemaPath = path.join(outputDir, "schema.surql");
+  const contractPath = path.join(outputDir, "runtime-contracts.json");
+  const contractSource = `${JSON.stringify(contracts || { tables: {} }, null, 2)}\n`;
   if (check) {
     if (!fs.existsSync(schemaPath) || fs.readFileSync(schemaPath, "utf8") !== bundle) {
       throw new Error(`Generated output is stale: ${schemaPath}`);
     }
+    if (!fs.existsSync(contractPath) || fs.readFileSync(contractPath, "utf8") !== contractSource) {
+      throw new Error(`Generated output is stale: ${contractPath}`);
+    }
     for (const tree of trees) checkCopiedTree(tree.sourceDir, tree.outputDir);
-    return { schemaPath, copied: [] };
+    return { schemaPath, contractPath, copied: [] };
   }
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(schemaPath, bundle);
+  fs.writeFileSync(contractPath, contractSource);
   const copied = trees.flatMap((tree) => {
     fs.rmSync(tree.outputDir, { recursive: true, force: true });
     return copyTree(tree.sourceDir, tree.outputDir).map((file) => path.join(path.basename(tree.outputDir), file));
   });
-  return { schemaPath, copied };
+  return { schemaPath, contractPath, copied };
 }
 
 module.exports = {

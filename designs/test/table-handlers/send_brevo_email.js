@@ -4,11 +4,8 @@ function invalid(code, message) {
 
 module.exports = {
   table: "send_brevo_email",
-  process: "async",
-  timeoutMs: 30000,
-  outputs: ["effect_state", "provider_reference", "provider_state", "result", "error_code", "error_message"],
 
-  async execute({ record, load, providers, context }) {
+  async execute({ record, load, providers }) {
     const config = await load(record.config);
     if (!config) throw invalid("CONFIG_UNAVAILABLE", "Email configuration is unavailable");
     const provider = providers.email.forResource(config);
@@ -19,29 +16,25 @@ module.exports = {
     });
     return {
       patch: {
-        effect_state: "succeeded",
         provider_reference: result.messageId,
         provider_state: "accepted",
         result: { provider: result.provider, accepted: result.accepted },
       },
-      context,
+      outcome: "success",
     };
   },
 
-  async verify({ request, rawBody, providers }) {
+  async verifyWebhook({ request, rawBody, providers }) {
     const verified = await providers.email.verifyWebhook({ request, rawBody });
-    return verified ? {
-      ...verified,
-      database: verified.args.database,
-      namespace: verified.args.namespace,
-      payload: verified.args,
-    } : false;
+    return verified ? { ...verified, payload: verified.args } : false;
   },
 
-  async webhook({ payload, patch }) {
+  async correlateWebhook({ verified }) {
+    const payload = verified?.payload;
     if (!payload?.id) throw invalid("WEBHOOK_ID_REQUIRED", "Webhook effect id is required");
-    return patch(payload.id, {
-      provider_state: String(payload.status || payload.type || "updated"),
-    });
+    return {
+      id: payload.id,
+      patch: { provider_state: String(payload.status || payload.type || "updated") },
+    };
   },
 };

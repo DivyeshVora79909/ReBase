@@ -19,24 +19,32 @@ function parseArgs(argv) {
     const option = argv[index];
     const next = () => {
       index += 1;
-      if (argv[index] === undefined) throw new Error(`Missing value for ${option}`);
+      if (argv[index] === undefined)
+        throw new Error(`Missing value for ${option}`);
       return argv[index];
     };
     if (option === "--endpoint") options.endpoint = next();
-    else if (option === "--namespace" || option === "--ns") options.namespace = next();
-    else if (option === "--database" || option === "--db") options.database = next();
+    else if (option === "--namespace" || option === "--ns")
+      options.namespace = next();
+    else if (option === "--database" || option === "--db")
+      options.database = next();
     else if (option === "--project") options.project = next();
     else if (option === "--help" || option === "-h") options.help = true;
     else throw new Error(`Unknown option: ${option}`);
   }
-  if ((options.namespace && !options.database) || (!options.namespace && options.database)) {
+  if (
+    (options.namespace && !options.database) ||
+    (!options.namespace && options.database)
+  ) {
     throw new Error("--namespace and --database must be supplied together");
   }
   return options;
 }
 
 function sourceDir(options) {
-  return options.project.includes(path.sep) ? options.project : path.join("designs", options.project);
+  return options.project.includes(path.sep)
+    ? options.project
+    : path.join("designs", options.project);
 }
 
 function buildDir(options) {
@@ -46,26 +54,40 @@ function buildDir(options) {
 async function connectAdmin(options) {
   const db = new Surreal();
   await db.connect(options.endpoint);
-  await db.signin({ username: process.env.SURREAL_USER, password: process.env.SURREAL_PASS });
+  await db.signin({
+    username: process.env.SURREAL_USER,
+    password: process.env.SURREAL_PASS,
+  });
   await db.use({ namespace: options.namespace, database: options.database });
   return db;
 }
 
 function json(value) {
-  try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 function runBuild(options) {
-  const result = spawnSync(process.execPath, [
-    path.join("dev-tools", "compiler", "cli.js"),
-    "--project", sourceDir(options),
-    "--namespace", options.namespace,
-    "--database", options.database,
-  ], {
-    cwd: root,
-    env: process.env,
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.join("dev-tools", "compiler", "cli.js"),
+      "--project",
+      sourceDir(options),
+      "--namespace",
+      options.namespace,
+      "--database",
+      options.database,
+    ],
+    {
+      cwd: root,
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
   process.stdout.write(result.stdout || "");
   process.stderr.write(result.stderr || "");
   if (result.status !== 0) throw new Error("Build failed");
@@ -74,10 +96,16 @@ function runBuild(options) {
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
-    console.log("Usage: node dev-tools/workbench.js [--endpoint URL] [--namespace NS --database DB] [--project NAME|DIR]");
+    console.log(
+      "Usage: node dev-tools/workbench.js [--endpoint URL] [--namespace NS --database DB] [--project NAME|DIR]",
+    );
     return;
   }
-  const prompt = readline.createInterface({ input: stdin, output: stdout, prompt: "rebase> " });
+  const prompt = readline.createInterface({
+    input: stdin,
+    output: stdout,
+    prompt: "rebase> ",
+  });
   options.namespace ||= (await prompt.question("Namespace: ")).trim();
   options.database ||= (await prompt.question("Database: ")).trim();
   if (!options.namespace || !options.database) {
@@ -91,7 +119,10 @@ async function main(argv = process.argv.slice(2)) {
   try {
     for await (const line of prompt) {
       const input = line.trim();
-      if (!input) { prompt.prompt(); continue; }
+      if (!input) {
+        prompt.prompt();
+        continue;
+      }
       try {
         if (input === ".help") {
           console.log(`Commands:
@@ -126,10 +157,16 @@ async function main(argv = process.argv.slice(2)) {
           console.log(json(result));
         } else if (input.startsWith(".as ")) {
           const [, email, password] = input.split(/\s+/);
-          if (!email || !password) throw new Error(".as requires email and password");
+          if (!email || !password)
+            throw new Error(".as requires email and password");
           const session = new Surreal();
           await session.connect(options.endpoint);
-          const auth = await session.signin({ namespace: options.namespace, database: options.database, access: "account", variables: { email, password } });
+          const auth = await session.signin({
+            namespace: options.namespace,
+            database: options.database,
+            access: "account",
+            variables: { email, password },
+          });
           await actor?.close().catch(() => {});
           actor = session;
           console.log(`Authenticated ${email}`);
@@ -138,11 +175,22 @@ async function main(argv = process.argv.slice(2)) {
           console.log(json(result));
         } else if (input.startsWith(".sample ")) {
           const [, table, limit = "10"] = input.split(/\s+/);
-          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table || "")) throw new Error("Invalid table");
-          console.log(json(await (actor || admin).query(`SELECT * FROM ${table} LIMIT ${Math.min(100, Math.max(1, Number(limit)))};`)));
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table || ""))
+            throw new Error("Invalid table");
+          console.log(
+            json(
+              await (actor || admin).query(
+                `SELECT * FROM ${table} LIMIT ${Math.min(100, Math.max(1, Number(limit)))};`,
+              ),
+            ),
+          );
         } else if (input.startsWith(".probe")) {
           const command = input.split(/\s+/)[1] || "all";
-          const result = spawnSync(process.execPath, [path.join("dev-tools", "probe.js"), command], { cwd: root, env: process.env, encoding: "utf8" });
+          const result = spawnSync(
+            process.execPath,
+            [path.join("dev-tools", "probe.js"), command],
+            { cwd: root, env: process.env, encoding: "utf8" },
+          );
           process.stdout.write(result.stdout || "");
           process.stderr.write(result.stderr || "");
         } else console.log("Unknown command. Type .help.");
@@ -158,6 +206,10 @@ async function main(argv = process.argv.slice(2)) {
   }
 }
 
-if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });
+if (require.main === module)
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 
 module.exports = { main, parseArgs };

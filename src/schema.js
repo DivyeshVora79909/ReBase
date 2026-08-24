@@ -12,6 +12,11 @@ function parseSchema(schemaSource, viewsSource) {
       table.audit = /@rebase-audit(?![-\w])/i.test(table.comment);
       table.principalKind = extractPrincipalKind(table.comment, table.name);
       table.effectProcess = extractEffectProcess(table.comment, table.name);
+      table.effectTimeoutMs = extractEffectTimeout(table.comment, table.name);
+      table.effectProviders = extractEffectProviders(table.comment);
+      table.effectMutableInputs = /@rebase-mutable-inputs\b/i.test(table.comment);
+      table.webhook = extractWebhook(table.comment, table.name);
+      table.webhookAccountPath = extractWebhookAccountPath(table.comment, table.name);
       tables.set(tableMatch[1], table);
     }
     const fieldMatch = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\s+ON\s+(?:TABLE\s+)?([A-Za-z0-9_]+)/i.exec(statement);
@@ -30,6 +35,8 @@ function parseSchema(schemaSource, viewsSource) {
       inheritReaders: /@rebase-readers\b/i.test(fieldComment),
       effectInput: /@rebase-effect-input\b/i.test(fieldComment),
       effectOutput: /@rebase-effect-output\b/i.test(fieldComment),
+      webhookEvent: /@rebase-webhook-event\b/i.test(fieldComment),
+      webhookOrder: /@rebase-webhook-order\b/i.test(fieldComment),
       auditPolicy: parseAuditPolicy(fieldComment),
     });
   }
@@ -79,6 +86,41 @@ function extractEffectProcess(comment, tableName) {
   return unique[0] || null;
 }
 
+function extractEffectTimeout(comment, tableName) {
+  const matches = [...String(comment || "").matchAll(/@rebase-timeout\s*[:=]?\s*(\d+)\s*(ms|s)?\b/gi)]
+    .map((match) => Number(match[1]) * (match[2]?.toLowerCase() === "s" ? 1000 : 1));
+  const unique = [...new Set(matches)];
+  if (unique.length > 1) throw new Error(`Conflicting @rebase-timeout markers on table ${tableName}`);
+  const timeout = unique[0] || null;
+  if (timeout !== null && (!Number.isInteger(timeout) || timeout < 1 || timeout > 300000)) {
+    throw new Error(`Invalid @rebase-timeout on table ${tableName}`);
+  }
+  return timeout;
+}
+
+function extractEffectProviders(comment) {
+  return [...new Set(
+    [...String(comment || "").matchAll(/@rebase-provider\s*[:=]?\s*([A-Za-z][A-Za-z0-9_-]*)\b/gi)]
+      .map((match) => match[1].toLowerCase()),
+  )].sort();
+}
+
+function extractWebhook(comment, tableName) {
+  const matches = [...String(comment || "").matchAll(/@rebase-webhook\s*[:=]?\s*([A-Za-z][A-Za-z0-9_-]*)\/([A-Za-z][A-Za-z0-9_-]*)\b/gi)]
+    .map((match) => ({ provider: match[1].toLowerCase(), route: match[2].toLowerCase() }));
+  const unique = new Map(matches.map((value) => [`${value.provider}/${value.route}`, value]));
+  if (unique.size > 1) throw new Error(`Conflicting @rebase-webhook markers on table ${tableName}`);
+  return [...unique.values()][0] || null;
+}
+
+function extractWebhookAccountPath(comment, tableName) {
+  const matches = [...String(comment || "").matchAll(/@rebase-webhook-account\s*[:=]?\s*([A-Za-z_][A-Za-z0-9_.]*)\b/gi)]
+    .map((match) => match[1]);
+  const unique = [...new Set(matches)];
+  if (unique.length > 1) throw new Error(`Conflicting @rebase-webhook-account markers on table ${tableName}`);
+  return unique[0] || null;
+}
+
 function parseAuditPolicy(comment = "") {
   const normalized = String(comment);
   const policy = {
@@ -125,4 +167,14 @@ function resolveRecordTargets(schema, sourceTable, expression) {
   return currentTables;
 }
 
-module.exports = { extractEffectProcess, extractPrincipalKind, parseAuditPolicy, parseSchema, resolveRecordTargets };
+module.exports = {
+  extractEffectProcess,
+  extractEffectProviders,
+  extractEffectTimeout,
+  extractPrincipalKind,
+  extractWebhook,
+  extractWebhookAccountPath,
+  parseAuditPolicy,
+  parseSchema,
+  resolveRecordTargets,
+};

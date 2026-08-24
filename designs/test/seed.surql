@@ -1,3 +1,4 @@
 USE NS main DB main;
 
--- Keep credentials and environment-specific bootstrap records outside compiled schemas.
+-- Provider credentials are entered manually in authorized configuration rows.
+-- Deployment bootstrap remains separate from tenant data.

@@ -11,8 +11,10 @@
     "populate": "node --env-file=.env dev-tools/populate.js",
     "probe": "node dev-tools/probe.js all",
     "probe:architecture": "node dev-tools/architecture-probe.js",
+    "probe:compiler": "node dev-tools/compiler-probe.js",
     "probe:runtime": "node dev-tools/runtime-probe.js",
-    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:architecture && npm run probe:runtime && npm run probe"
+    "probe:queues": "node dev-tools/queue-probe.js",
+    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe"
   },
   "engines": {
     "node": ">=20"
@@ -23,9 +25,13 @@
     "@hono/node-server": "^2.1.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "bullmq": "6.2.0",
+    "cron-parser": "5.4.0",
     "hono": "^4.13.1",
+    "ioredis": "6.0.0",
     "json-schema-faker": "^0.5.9",
     "seedrandom": "^3.0.5",
-    "surrealdb": "^2.0.8"
+    "surrealdb": "^2.0.8",
+    "uuidv7": "1.2.1"
   }
 }

@@ -97,14 +97,12 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
   if ((context.runtimeUrl && !context.runtimeSecret) || (!context.runtimeUrl && context.runtimeSecret)) {
     throw new Error("--runtime-url and --runtime-secret must be supplied together");
   }
-  if (context.runtimeUrl && (!context.namespace || !context.database)) {
-    throw new Error("runtime event generation requires --namespace and --database");
-  }
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
-  const tableHandlers = validateTableHandlers(projectDir, result.schema);
+  const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
   const artifacts = writeArtifacts({
     outputDir,
     bundle: result.bundle,
+    contracts: result.contracts,
     copies: fs.existsSync(path.join(projectDir, "table-handlers"))
       ? [{ sourceDir: path.join(projectDir, "table-handlers"), outputDir: path.join(outputDir, "table-handlers") }]
       : [],

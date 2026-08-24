@@ -59,31 +59,36 @@ DEFINE FIELD e_guard ON test_tree TYPE bool VALUE {
 DEFINE TABLE OVERWRITE email_brevo_config SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD label ON email_brevo_config TYPE string;
 DEFINE FIELD visibility ON email_brevo_config TYPE bool DEFAULT false;
-DEFINE FIELD technical_owner ON email_brevo_config TYPE option<record<user | groups>> DEFAULT NONE REFERENCE ON DELETE REJECT;
 DEFINE FIELD from_email ON email_brevo_config TYPE string ASSERT string::is_email($value);
 DEFINE FIELD from_name ON email_brevo_config TYPE string;
 DEFINE FIELD reply_to ON email_brevo_config TYPE option<string> DEFAULT NONE ASSERT $value = NONE OR string::is_email($value);
-DEFINE FIELD api_secret_ref ON email_brevo_config TYPE string
+DEFINE FIELD api_key ON email_brevo_config TYPE string
+    VALUE {
+        IF $value = NONE OR $value.len() = 0 { THROW "VALIDATION_ERR: API key is required"; };
+        RETURN $value;
+    }
     PERMISSIONS FOR select NONE FOR create, update WHERE true
     COMMENT '@rebase-audit-redact';
 DEFINE FIELD compliance_note ON email_brevo_config TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select NONE FOR create, update WHERE true
     COMMENT '@rebase-audit-redact';
-DEFINE FIELD sending_enabled ON email_brevo_config TYPE bool DEFAULT false;
 DEFINE FIELD account_key ON email_brevo_config TYPE string READONLY;
-DEFINE FIELD last_verified_at ON email_brevo_config TYPE option<datetime> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE;
 
 -- 7. TABLE-KEYED EFFECT EXAMPLES
 DEFINE TABLE OVERWRITE file_storage_config SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD provider ON file_storage_config TYPE string DEFAULT 'local-storage';
 DEFINE FIELD bucket ON file_storage_config TYPE string;
-DEFINE FIELD credential_ref ON file_storage_config TYPE string
-    PERMISSIONS FOR select NONE
+DEFINE FIELD visibility ON file_storage_config TYPE bool DEFAULT false;
+DEFINE FIELD credential ON file_storage_config TYPE string
+    VALUE {
+        IF $value = NONE OR $value.len() = 0 { THROW "VALIDATION_ERR: Storage credential is required"; };
+        RETURN $value;
+    }
+    PERMISSIONS FOR select NONE FOR create, update WHERE true
     COMMENT '@rebase-audit-redact';
 DEFINE FIELD default_expiry_seconds ON file_storage_config TYPE int DEFAULT 900 ASSERT $value > 0;
 
-DEFINE TABLE OVERWRITE file_access_grant SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync';
+DEFINE TABLE OVERWRITE file_access_grant SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-mutable-inputs @rebase-provider storage @rebase-timeout 10s';
 DEFINE FIELD id ON file_access_grant TYPE uuid DEFAULT rand::uuid::v7();
 DEFINE FIELD storage_config ON file_access_grant TYPE record<file_storage_config>
     REFERENCE ON DELETE REJECT
@@ -91,10 +96,6 @@ DEFINE FIELD storage_config ON file_access_grant TYPE record<file_storage_config
 DEFINE FIELD object_key ON file_access_grant TYPE string COMMENT '@rebase-effect-input';
 DEFINE FIELD expires_in ON file_access_grant TYPE int DEFAULT 900 ASSERT $value > 0
     COMMENT '@rebase-effect-input';
-DEFINE FIELD effect_state ON file_access_grant TYPE string DEFAULT 'pending'
-    ASSERT $value IN ['pending', 'succeeded', 'failed']
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
 DEFINE FIELD access_url ON file_access_grant TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
@@ -110,29 +111,16 @@ DEFINE FIELD provider_reference ON file_access_grant TYPE option<string> DEFAULT
 DEFINE FIELD provider_state ON file_access_grant TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
-DEFINE FIELD object_size ON file_access_grant TYPE option<int> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD object_etag ON file_access_grant TYPE option<string> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD completed_at ON file_access_grant TYPE option<datetime> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-
-DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async';
+DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async @rebase-provider email @rebase-timeout 30s @rebase-webhook local/status @rebase-webhook-account config.account_key';
 DEFINE FIELD id ON send_brevo_email TYPE uuid DEFAULT rand::uuid::v7();
 DEFINE FIELD config ON send_brevo_email TYPE record<email_brevo_config>
-    REFERENCE ON DELETE REJECT READONLY;
+    REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD to ON send_brevo_email TYPE array<string>
-    ASSERT $value.len() > 0 AND array::all($value, |$email| string::is_email($email)) READONLY;
-DEFINE FIELD subject ON send_brevo_email TYPE string ASSERT $value.len() > 0 READONLY;
-DEFINE FIELD html ON send_brevo_email TYPE option<string> DEFAULT NONE READONLY;
-DEFINE FIELD text ON send_brevo_email TYPE option<string> DEFAULT NONE READONLY;
-DEFINE FIELD effect_state ON send_brevo_email TYPE string DEFAULT 'pending'
-    ASSERT $value IN ['pending', 'processing', 'waiting', 'succeeded', 'failed']
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
+    ASSERT $value.len() > 0 AND array::all($value, |$email| string::is_email($email)) READONLY
+    COMMENT '@rebase-effect-input';
+DEFINE FIELD subject ON send_brevo_email TYPE string ASSERT $value.len() > 0 READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD html ON send_brevo_email TYPE option<string> DEFAULT NONE READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD text ON send_brevo_email TYPE option<string> DEFAULT NONE READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD provider_reference ON send_brevo_email TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
@@ -142,9 +130,9 @@ DEFINE FIELD provider_state ON send_brevo_email TYPE option<string> DEFAULT NONE
 DEFINE FIELD result ON send_brevo_email TYPE option<object> FLEXIBLE DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
-DEFINE FIELD error_code ON send_brevo_email TYPE option<string> DEFAULT NONE
+DEFINE FIELD webhook_event_id ON send_brevo_email TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD error_message ON send_brevo_email TYPE option<string> DEFAULT NONE
+    COMMENT '@rebase-effect-output @rebase-webhook-event';
+DEFINE FIELD webhook_event_at ON send_brevo_email TYPE option<datetime> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
+    COMMENT '@rebase-effect-output @rebase-webhook-order';

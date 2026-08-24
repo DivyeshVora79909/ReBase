@@ -359,7 +359,7 @@ async function securityProbe(options) {
         CREATE test_primitive:hidden_reference SET owned_by = user:bob, a_string = 'hidden', a_decimal = 1dec;
         CREATE test_relation:derived SET owned_by = user:bob, a_primitive = test_primitive:scalar_source, a_primitive_array = [test_primitive:array_source], a_polymorphic = user:bob;
         CREATE test_multiref:principal_refs SET owned_by = user:bob, a_name = 'principal', a_creator = user:alice, a_owning_group = groups:team;
-        CREATE email_brevo_config:public SET owned_by = user:bob, label = 'Public', visibility = true, from_email = 'from@example.com', from_name = 'From', api_secret_ref = 'secret:x', account_key = 'public';
+        CREATE email_brevo_config:public SET owned_by = user:bob, label = 'Public', visibility = true, from_email = 'from@example.com', from_name = 'From', api_key = 'client-brevo-key', account_key = 'public';
         CREATE test_primitive:change_log_live SET owned_by = user:alice, a_string = 'live', a_decimal = 1dec;
         CREATE test_primitive:change_log_deleted SET owned_by = user:alice, a_string = 'deleted', a_decimal = 1dec;
         CREATE change_logs:probe_resource CONTENT { at: time::now(), table_name: 'test_primitive', target: test_primitive:change_log_live, actor: NONE, before: { a_string: 'before' } };

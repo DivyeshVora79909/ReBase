@@ -69,19 +69,17 @@ This document records the measured execution model, failure semantics, timing, r
 
 ---
 
-## 6. Architecture Recommendations
+## 6. Engineering implications
 
-1. **Fixed Delay Background Jobs**:
-   ```surrealql
-   DEFINE EVENT process_order ON orders WHEN $event = "CREATE" ASYNC RETRY 3 THEN {
-       SLEEP 2s;
-       -- idempotent task
-   };
-   ```
-2. **Exponential Backoff / Dead-Letter Queue**:
-   Use a dedicated `jobs` table (`{ status, attempts, run_at, payload }`) polled by an external worker (Node/Go/Rust/Python) executing:
-   ```surrealql
-   UPDATE jobs SET status = 'PROCESSING' WHERE status = 'PENDING' AND run_at <= time::now() LIMIT 50;
-   ```
-3. **Recursive Pipelines**:
-   Always pair self-triggering events with both a terminating condition (`WHEN $after.step < 10`) and a `MAXDEPTH` constraint.
+- A fixed-delay event is possible:
+  ```surrealql
+  DEFINE EVENT process_order ON orders WHEN $event = "CREATE" ASYNC RETRY 3 THEN {
+      SLEEP 2s;
+      -- idempotent task
+  };
+  ```
+- Exponential backoff, persistent attempt counts, and dead-letter handling need
+  an external worker/managed queue because failed event transactions roll back
+  their own state.
+- Any self-triggering event needs both a terminating `WHEN` condition and a
+  `MAXDEPTH` bound.
