@@ -83,9 +83,9 @@ module.exports = {
 
 The test design provides the reference examples:
 
-- `email_brevo_config`: credential/configuration storage with a required opaque API key hidden from normal reads.
+- `email_brevo_config`: configuration storage with a required API-key field hidden from normal reads.
 - `send_brevo_email`: committed async record, BullMQ delivery, retry/reconciliation, scheduling, and webhook patching.
-- `file_storage_config` plus `file_access_grant`: synchronous issuance of a bounded external URL/token using a required hidden credential.
+- `file_storage_config` plus `file_access_grant`: synchronous issuance of a bounded external URL/token using required hidden S3-compatible fields.
 
 `npm run probe:runtime` verifies generated sync and async events against a disposable SurrealDB, including duplicate claims, retry recovery, reconciliation, wake authentication, and webhooks.
 
@@ -95,6 +95,17 @@ The runtime uses Redis/BullMQ locally and exposes three transport lanes:
 `REBASE_SQS_WEBHOOK_QUEUE_URL` plus the matching
 `REBASE_SQS_DEAD_LETTER_*` URLs. Queue payloads remain only
 `{ namespace, database, id }`.
+
+Provider selection defaults to `REBASE_PROVIDER=local`; set it to `real` for
+real provider calls, or override it with `startServer({ provider: "real" })`.
+Provider credentials are never read from environment variables. They are
+required, typed fields on the strict configuration rows and hidden from normal
+client reads. The real adapter consumes `email_brevo_config.api_key` directly,
+and maps `file_storage_config.access_key_id`, `secret_access_key`, `endpoint`,
+`region`, and `bucket` to the S3-compatible SDK. Custom adapters can be supplied
+without changing the server:
+`startServer({ provider: createCloudProvider, providerOptions })` or by passing
+a ready provider object.
 
 ## Development Tools
 

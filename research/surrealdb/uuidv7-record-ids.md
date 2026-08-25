@@ -65,6 +65,14 @@ RETURN (SELECT * FROM $id)[0];
 CREATE type::record($compiled_table, rand::uuid::v7()) CONTENT $content;
 ```
 
+When a UUID-typed record ID is printed, SurrealDB includes the UUID type tag:
+`table:u'01...'` (JSON serializers may display the quote as `u"01..."`).
+This is canonical formatting, not an extra character in the UUID and not a
+duplicate conversion. Casting the UUID to `<string>` or concatenating it first
+changes the key to a string record ID (`table:\`01...\``); do not do that for
+typed UUID tables. `type::record(table, rand::uuid::v7())` is the correct
+dynamic-table construction.
+
 Never accept a free-form external table string; select the table from the
 compiled registry.
 
@@ -100,11 +108,10 @@ fields for business ordering.
 
 ## ReBase compatibility rules
 
-The compiler generates the explicit UUIDv7 `id` field for effect tables, rejects
-incompatible custom key types unless explicitly opted out, validates locators as
-record values, extracts the handler table with a strict parser, retains
-namespace/database in infrastructure envelopes, and never treats a new UUID as
-a retry strategy.
+The compiler does not add an application-managed `id` field to effect tables.
+SurrealDB generates ordinary record keys, and the returned key is carried as the
+locator. UUIDv7 remains a supported SurrealDB capability for schemas that
+explicitly choose it, but it is not a ReBase requirement or retry strategy.
 
-Run the architecture probe before SurrealDB upgrades. The explicit default is
-the primary fallback if implicit typed-ID generation changes.
+Run the architecture probe before SurrealDB upgrades. The probe documents typed
+UUID behavior independently of the project's ordinary-key default.

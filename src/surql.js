@@ -74,13 +74,6 @@ function splitTopLevel(value, separator = ",") {
   return parts.filter(Boolean);
 }
 
-function scopeSource(source, namespace, database) {
-  const scoped = `USE NS ${namespace} DB ${database};`;
-  const usePattern = /\bUSE\s+NS\s+[^\s;]+\s+DB\s+[^\s;]+\s*;/gi;
-  if (usePattern.test(source)) return source.replace(usePattern, scoped);
-  return `${scoped}\n\n${source}`;
-}
-
 function findTopLevelKeyword(source, keyword, fromIndex = 0) {
   const upperKeyword = keyword.toUpperCase();
   let quote = null;
@@ -174,7 +167,6 @@ module.exports = {
   extractClauseExpression,
   findTopLevelKeyword,
   parseRecordType,
-  scopeSource,
   splitStatements,
   splitTopLevel,
 };

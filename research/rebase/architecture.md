@@ -119,15 +119,14 @@ client mutation
 The event must send a bounded provisional snapshot because a separate runtime
 connection cannot read the uncommitted record. A plain `CREATE ... RETURN AFTER`
 does not include a nested event update on SurrealDB 3.2.0; generated sync helpers
-must allocate the ID and re-select:
+capture the returned ID and re-select:
 
 ```surql
-LET $id = type::record('file_access_grant', rand::uuid::v7());
-CREATE ONLY $id SET
+LET $created = CREATE ONLY file_access_grant SET
     owned_by = $auth,
     object_key = $object_key,
     expires_in = $expires_in;
-RETURN (SELECT * FROM $id)[0];
+RETURN (SELECT * FROM $created.id)[0];
 ```
 
 Mutable synchronous inputs require the explicit `@rebase-mutable-inputs`
@@ -173,11 +172,8 @@ share a transaction.
 
 ## Locators and IDs
 
-Every effect table uses:
-
-```surql
-DEFINE FIELD id ON effect TYPE uuid DEFAULT rand::uuid::v7();
-```
+Effect tables do not declare an application-managed `id` field. SurrealDB
+generates the record key; runtime locators preserve that returned key verbatim.
 
 Infrastructure boundaries use the full locator `{ namespace, database, id }`.
 The record ID contains the table and selects the handler, but it is scoped to a
@@ -197,9 +193,9 @@ Provider configuration model:
 
 - make harmless configuration metadata selectable under normal row policy;
 - hide credential fields with field permissions and redact them from audit data;
-- require the authorized owner to store opaque provider credential material
-  directly in the typed configuration row; there is no `env:` or `secret:`
-  naming contract and no platform fallback;
+- require the authorized owner to store provider fields directly in the typed
+  configuration row; there is no `env:` or `secret:` naming contract and no
+  platform fallback;
 - for shared integrations, keep the configuration row owned by `groups:root`
   and make only its harmless metadata visible; clients can reference the row
   while the credential field evaluates to `NONE` in their session;
@@ -301,35 +297,14 @@ The test design intentionally covers the broad examples:
   independently of the runtime; otherwise it adds activation and cache drift.
 - **Central execution table:** may later support platform observability or
   cross-tenant rate limiting, but should not replace typed effect tables.
-- **Capability/operation catalog:** rejected because direct database writes
-  already provide authentication, authorization, and schema validation.
+- **Capability/operation catalog:** rejected while direct typed database writes
+  provide the required authentication, authorization, and validation boundary.
+  A separate command gateway is justified only for behavior that cannot be
+  represented by that boundary; its security requirements live in
+  [`runtime-dispatch.md`](./runtime-dispatch.md).
 - **Queue mechanics in tenant rows:** rejected while the managed queue owns
   retries, visibility, redrive, and dead-letter transport.
 - **Separate handler per invocation source:** rejected because record state, not
   caller identity, determines behavior.
 - **External API transactional claims:** impossible; use idempotency,
   reconciliation, or the durable async path.
-
-## Superseded capability-gateway model
-
-Earlier ReBase research described named edge functions such as
-`campaignMail`/`campaignMailV2`, capability grants, request records, an outbox,
-leases, and a gateway contract separating named record slots from raw scalar
-arguments. That model remains a useful comparison, but is not the current
-source of truth:
-
-- direct SurrealDB writes now provide the ordinary authentication,
-  authorization, validation, and effect record contract;
-- table-keyed handlers replace a namespace/database operation catalog;
-- provider work is selected from the effect record table, not a client-supplied
-  capability string;
-- the managed queue owns transport retry/visibility/redrive;
-- schema markers and handler modules replace operation JSON Schemas;
-- breaking behavior changes use a new table or manually versioned handler, not a
-  historical payload migration registry.
-
-The old model’s security lessons still apply: preserve raw webhook bodies before
-signature verification, resolve every requested context record under the same
-row policy as direct database access, avoid existence-leaking errors, keep
-provider credentials out of scalar client arguments, and reauthorize work when
-the product requires revocation to stop pending execution.

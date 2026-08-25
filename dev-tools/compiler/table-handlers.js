@@ -2,11 +2,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { loadTableHandlers } = require("../../gateway/handlers");
 
-function isUuidId(field) {
-  const definition = field?.definition || "";
-  return /\bTYPE\s+uuid\b/i.test(definition) && /\brand::uuid::v7\s*\(/i.test(definition);
-}
-
 function deniedPermissions(field) {
   const definition = field?.definition || "";
   const allDenied = /\bPERMISSIONS\s+NONE\b/i.test(definition);
@@ -28,9 +23,6 @@ function deniesClientCreateAndUpdate(field) {
 }
 
 function validateEffectTable(table) {
-  if (!isUuidId(table.fields.get("id"))) {
-    throw new Error(`Effect table ${table.name} requires an id TYPE uuid with rand::uuid::v7()`);
-  }
   const reserved = new Set([
     "rebase_cancel_requested", "rebase_lease_token", "rebase_lease_until", "rebase_outcome",
     "rebase_wake_at", "rebase_finished_at", "rebase_error", "rebase_status",

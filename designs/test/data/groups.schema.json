@@ -2,18 +2,21 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "name", "parents", "role"],
+  "required": ["name", "parents", "role"],
   "properties": {
-    "id": { "type": "string", "pattern": "^groups:[a-z0-9-]+$" },
     "name": { "type": "string", "minLength": 2 },
     "parents": {
       "type": "array",
       "items": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
-      "default": []
+      "minItems": 1,
+      "maxItems": 5,
+      "uniqueItems": true
     },
     "role": {
       "type": "array",
-      "default": [],
+      "minItems": 0,
+      "maxItems": 8,
+      "uniqueItems": true,
       "items": {
         "enum": [
           "node_create",
@@ -57,12 +60,16 @@
     },
     "a_associated_primitive": {
       "type": "string",
-      "pattern": "^test_primitive:[a-z0-9-]+$"
+      "pattern": "^test_primitive:[a-z0-9-]+$",
+      "x-rebase-optional-probability": 0.35
     },
     "a_partner_groups": {
       "type": "array",
       "items": { "type": "string", "pattern": "^groups:[a-z0-9-]+$" },
-      "default": []
+      "minItems": 0,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "x-rebase-optional-probability": 0.35
     }
   }
 }

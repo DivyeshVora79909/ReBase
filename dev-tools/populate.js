@@ -9,7 +9,6 @@ const { faker } = require("@faker-js/faker");
 const jsf = require("json-schema-faker");
 const seedrandom = require("seedrandom");
 const { RecordId, Surreal, Uuid } = require("surrealdb");
-const { uuidv7 } = require("uuidv7");
 const { queryResult } = require("../gateway/utils");
 const { parseSchema } = require("../src/schema");
 
@@ -28,7 +27,7 @@ function identifier(value, label) {
   return value;
 }
 
-function recordId(value, uuid = false) {
+function recordId(value) {
   const text = String(value);
   const separator = text.indexOf(":");
   if (separator < 1) throw new Error(`Invalid record id: ${text}`);
@@ -262,11 +261,29 @@ function generationSchema(schema, table, tableDefinition, pools, random, princip
         type: "array",
         minItems: 1,
         maxItems: 5,
+        uniqueItems: true,
         items: { enum: parents },
       };
   }
   generated.required = [...required];
   return { blocked, schema: generated, random };
+}
+
+function rowGenerationSchema(schema, random) {
+  const generated = structuredClone(schema);
+  const required = new Set(generated.required || []);
+  for (const [name, property] of Object.entries(generated.properties || {})) {
+    const probability = Number(property["x-rebase-optional-probability"]);
+    delete property["x-rebase-optional-probability"];
+    if (required.has(name) || !Number.isFinite(probability)) continue;
+    if (probability < 0 || probability > 1) {
+      throw new Error(`Optional probability for ${name} must be between 0 and 1`);
+    }
+    if (random() < probability) required.add(name);
+    else delete generated.properties[name];
+  }
+  generated.required = [...required];
+  return generated;
 }
 
 async function populate(options) {
@@ -320,7 +337,7 @@ async function populate(options) {
     random,
     alwaysFakeOptionals: false,
     optionalsProbability: 0.65,
-    useDefaultValue: true,
+    useDefaultValue: false,
     failOnInvalidTypes: true,
   });
   const ajv = new Ajv({ allErrors: true, strict: false });
@@ -362,7 +379,6 @@ async function populate(options) {
 
     const remaining = new Map(tables.map((table) => [table, options.count]));
     const created = Object.fromEntries(tables.map((table) => [table, 0]));
-    let serial = 0;
     while ([...remaining.values()].some(Boolean)) {
       let progressed = false;
       const blockers = new Map();
@@ -385,13 +401,7 @@ async function populate(options) {
         const size = Math.min(pending, options.batchSize);
         const rows = [];
         for (let index = 0; index < size; index += 1) {
-          serial += 1;
-          const uuidId = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+)?id\s+ON\s+(?:TABLE\s+)?\S+\s+TYPE\s+uuid\b/i.test(
-            definition.fields.get("id")?.definition || "",
-          );
-          const id = `${table}:${uuidId ? uuidv7() : `fake${seedNumber(`${seed}:${serial}`).toString(36)}${serial.toString(36)}`}`;
-          const document = jsf.generate(prepared.schema);
-          document.id = id;
+          const document = jsf.generate(rowGenerationSchema(prepared.schema, random));
           if (!validators.get(table)(document)) {
             throw new Error(
               `Generated invalid ${table}: ${ajv.errorsText(validators.get(table).errors)}`,
@@ -409,20 +419,26 @@ async function populate(options) {
                 ),
               ]),
           );
-          rows.push({ id: recordId(id, uuidId), idText: id, data });
+          rows.push({ data });
         }
         const transaction = await db.beginTransaction();
         try {
-          await transaction.query(
-            "FOR $row IN $rows { CREATE $row.id CONTENT $row.data; };",
-            { rows },
-          );
+          const inserted = queryResult(await transaction.query(
+            `INSERT INTO ${identifier(table, "table")} $rows RETURN AFTER;`,
+            { rows: rows.map((row) => row.data) },
+          ));
+          if (!Array.isArray(inserted) || inserted.length !== rows.length) {
+            throw new Error(`SurrealDB returned ${inserted?.length || 0} rows for ${rows.length} inserts`);
+          }
+          rows.forEach((row, index) => {
+            row.idText = String(inserted[index].id);
+            row.id = recordId(row.idText);
+          });
           await transaction.commit();
         } catch (error) {
           await transaction.cancel().catch(() => {});
-          const ids = rows.map((row) => row.idText).join(", ");
           throw new Error(
-            `Unable to insert ${table} batch (${ids}): ${error.message}`,
+            `Unable to insert ${table} batch: ${error.message}`,
             { cause: error },
           );
         }

@@ -1,6 +1,3 @@
--- ==============================================================================
--- LEVEL 0: INDEPENDENT ANCHORS
--- ==============================================================================
 USE NS main DB main;
 
 DEFINE TABLE org SCHEMAFULL;
@@ -46,9 +43,6 @@ DEFINE FIELD d1_avg_cogs ON item TYPE decimal VALUE {
 };
 
 
--- ==============================================================================
--- LEVEL 1: INTENTS
--- ==============================================================================
 DEFINE TABLE payment SCHEMAFULL;
 DEFINE FIELD a_from ON payment TYPE record<org | treasury | acc | tax_account> REFERENCE ON DELETE REJECT;
 DEFINE FIELD a_to ON payment TYPE record<org | treasury | acc | tax_account> REFERENCE ON DELETE REJECT;
@@ -102,9 +96,6 @@ DEFINE FIELD e_guard ON adjustment_note TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 2: BRANCHES
--- ==============================================================================
 DEFINE TABLE payment_allocation SCHEMAFULL;
 DEFINE FIELD a_payment ON payment_allocation TYPE record<payment> REFERENCE ON DELETE CASCADE;
 DEFINE FIELD a_invoice ON payment_allocation TYPE record<invoice> REFERENCE ON DELETE CASCADE;
@@ -159,9 +150,6 @@ DEFINE FIELD e_guard ON invoice_line TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 3: LEAVES
--- ==============================================================================
 DEFINE TABLE sl SCHEMAFULL;
 DEFINE FIELD a_from ON sl TYPE record<warehouse | stock_acc | invoice_line> REFERENCE ON DELETE REJECT;
 DEFINE FIELD a_to ON sl TYPE record<warehouse | stock_acc | invoice_line> REFERENCE ON DELETE REJECT;
@@ -219,9 +207,6 @@ DEFINE FIELD e_guard ON tax_line TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 4: THE DELTAS
--- ==============================================================================
 DEFINE TABLE adjustment_line SCHEMAFULL;
 DEFINE FIELD a_note ON adjustment_line TYPE record<adjustment_note> REFERENCE ON DELETE CASCADE;
 DEFINE FIELD a_target ON adjustment_line TYPE record<invoice_line | tax_line | sl> REFERENCE ON DELETE REJECT;

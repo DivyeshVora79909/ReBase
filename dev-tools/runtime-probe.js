@@ -13,6 +13,7 @@ const { createRuntimeApp } = require("../gateway/app");
 const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
 const { loadTableHandlers } = require("../gateway/handlers");
 const { createLocalProviders } = require("../gateway/providers/local");
+const { createRealProviders } = require("../gateway/providers/real");
 const { createBullMqPort } = require("../gateway/queues/bullmq");
 const { createRuntime } = require("../gateway/runtime");
 const { createTableStore } = require("../gateway/store");
@@ -101,7 +102,38 @@ async function waitFor(check, message, timeoutMs = 6000) {
   throw new Error(`${resolvedMessage}${last ? `: ${JSON.stringify(last)}` : ""}`);
 }
 
+async function realProviderMappingProbe() {
+  let request;
+  const providers = createRealProviders({
+    fetch: async (url, options) => {
+      request = { url, options };
+      return new Response(JSON.stringify({ messageId: "probe-message" }), { status: 201 });
+    },
+  });
+  const email = await providers.email.forTable("email_brevo_config").sendMessage({
+    config: { api_key: "database-api-key", from_email: "from@example.com", from_name: "Probe" },
+    message: { to: ["to@example.com"], subject: "Probe", text: "Body" },
+  });
+  assert.equal(request.options.headers["api-key"], "database-api-key");
+  assert.deepEqual(email.accepted, ["to@example.com"]);
+  const grant = await providers.storage.createAccessGrant({
+    config: {
+      provider: "s3-compatible",
+      bucket: "probe",
+      access_key_id: "database-access-key",
+      secret_access_key: "database-secret",
+      endpoint: "https://storage.example.com",
+      region: "probe-1",
+    },
+    objectKey: "probe.txt",
+    expiresIn: 60,
+  });
+  assert.equal(grant.provider, "s3-compatible");
+  assert.match(grant.accessUrl, /probe\/probe\.txt/);
+}
+
 async function main() {
+  await realProviderMappingProbe();
   const runtimePort = await freePort();
   const redis = await startRedis();
   const state = await startDatabase(runtimePort);
@@ -173,15 +205,15 @@ async function main() {
     await state.db.query(generated.bundle);
     await assert.rejects(
       state.db.query("CREATE file_storage_config:missing_credential SET owned_by = groups:root, bucket = 'probe';"),
-      /credential|field|schema|required/i,
+      /access_key_id|secret_access_key|endpoint|region|field|schema|required/i,
     );
     await assert.rejects(
-      state.db.query("CREATE email_brevo_config:missing_api_key SET owned_by = groups:root, label = 'Missing', from_email = 'missing@example.com', from_name = 'Missing', account_key = 'missing';"),
+      state.db.query("CREATE email_brevo_config:missing_api_key SET owned_by = groups:root, label = 'Missing', from_email = 'missing@example.com', from_name = 'Missing', provider_account_id = 'missing';"),
       /api_key|field|schema|required/i,
     );
     await state.db.query(`
-      CREATE file_storage_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590da' SET owned_by = groups:root, bucket = 'probe', visibility = true, credential = 'client-storage-credential';
-      CREATE email_brevo_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590db' SET owned_by = groups:root, label = 'Probe', visibility = true, from_email = 'from@example.com', from_name = 'Probe', api_key = 'client-brevo-api-key', account_key = 'probe';
+      CREATE file_storage_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590da' SET owned_by = groups:root, bucket = 'probe', visibility = true, access_key_id = 'client-storage-id', secret_access_key = 'client-storage-secret', endpoint = 'https://storage.local', region = 'local';
+      CREATE email_brevo_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590db' SET owned_by = groups:root, label = 'Probe', visibility = true, from_email = 'from@example.com', from_name = 'Probe', api_key = 'client-brevo-api-key', provider_account_id = 'probe';
       CREATE groups:runtime_clients SET name = 'Runtime Clients', parents = [groups:root], role = [
         'send_brevo_email_create', 'send_brevo_email_select', 'send_brevo_email_update',
         'email_brevo_config_select', 'file_storage_config_select'
@@ -189,7 +221,7 @@ async function main() {
       CREATE user:runtime_client SET name = 'Runtime Client', email = 'runtime-client@example.com',
         password = crypto::argon2::generate('runtime-password'), parents = [groups:runtime_clients], login_access = true;
       CREATE email_brevo_config:runtime_client SET owned_by = groups:root, label = 'Client Probe', visibility = true,
-        from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key', account_key = 'runtime-client';
+        from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key', provider_account_id = 'runtime-client';
     `);
 
     const storageId = "file_storage_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590da'";
@@ -246,9 +278,12 @@ async function main() {
       assert.equal(queryResult(await client.query(
         "RETURN type::is_none(email_brevo_config:runtime_client.api_key);",
       )), true);
-      const visibleStorage = queryResult(await client.query(`SELECT id, bucket, credential FROM ${storageId};`))[0];
+      const visibleStorage = queryResult(await client.query(`SELECT id, bucket, access_key_id, secret_access_key, endpoint, region FROM ${storageId};`))[0];
       assert.equal(String(visibleStorage.id).split(":", 1)[0], "file_storage_config");
-      assert.equal(visibleStorage.credential, undefined);
+      assert.equal(visibleStorage.access_key_id, undefined);
+      assert.equal(visibleStorage.secret_access_key, undefined);
+      assert.equal(visibleStorage.endpoint, undefined);
+      assert.equal(visibleStorage.region, undefined);
       await client.query("UPDATE email_brevo_config:runtime_client SET api_key = 'client-must-not-write';");
       assert.equal(queryResult(await state.db.query("RETURN email_brevo_config:runtime_client.api_key;")), "customer-brevo-api-key");
       const clientCreated = queryResult(await client.query(`

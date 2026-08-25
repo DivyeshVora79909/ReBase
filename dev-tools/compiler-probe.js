@@ -20,7 +20,6 @@ function schema(effect = "") {
 function validEffect(extra = "") {
   return `
     DEFINE TABLE delivery SCHEMAFULL COMMENT '@rebase-effect async @rebase-provider email @rebase-timeout 2s';
-    DEFINE FIELD id ON delivery TYPE uuid DEFAULT rand::uuid::v7();
     DEFINE FIELD payload ON delivery TYPE string READONLY COMMENT '@rebase-effect-input';
     DEFINE FIELD result ON delivery TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
@@ -31,9 +30,8 @@ function validEffect(extra = "") {
 function webhookEffect(table = "delivery", route = "status") {
   return `
     DEFINE TABLE account SCHEMAFULL;
-    DEFINE FIELD account_key ON account TYPE string READONLY;
-    DEFINE TABLE ${table} SCHEMAFULL COMMENT '@rebase-effect async @rebase-provider email @rebase-webhook local/${route} @rebase-webhook-account config.account_key';
-    DEFINE FIELD id ON ${table} TYPE uuid DEFAULT rand::uuid::v7();
+    DEFINE FIELD provider_account_id ON account TYPE string READONLY;
+    DEFINE TABLE ${table} SCHEMAFULL COMMENT '@rebase-effect async @rebase-provider email @rebase-webhook local/${route} @rebase-webhook-account config.provider_account_id';
     DEFINE FIELD config ON ${table} TYPE record<account> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
     DEFINE FIELD result ON ${table} TYPE option<string> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
     DEFINE FIELD webhook_event_id ON ${table} TYPE option<string> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-webhook-event';

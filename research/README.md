@@ -8,12 +8,12 @@ information kind so an agent can load only the material needed for a task.
 | Area                         | Responsibility                                                                                                                                                                                                  |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`surrealdb/`](./surrealdb/) | Measured SurrealDB behavior, documented engine semantics, probes, limits, and performance evidence. These files describe what the database does; they do not define the whole ReBase product architecture.      |
-| [`rebase/`](./rebase/)       | Adopted ReBase policy and target architecture: authorization, compiler behavior, edge runtime, scheduling, and development contracts. These files describe what ReBase chooses to do using the engine behavior. |
+| [`rebase/`](./rebase/)       | Adopted ReBase policy and target architecture: authorization, compiler behavior, effect runtime, scheduling, and development contracts. These files describe what ReBase chooses to do using the engine behavior. |
 
 ## ReBase documents
 
 - [`rebase/architecture.md`](./rebase/architecture.md) — canonical end-to-end
-  edge/effect architecture and ownership boundaries.
+  effect architecture and ownership boundaries.
 - [`rebase/runtime-dispatch.md`](./rebase/runtime-dispatch.md) — table-keyed
   handler registry, common handler contract, invocation adapters, and runtime
   security boundary.
@@ -26,9 +26,6 @@ information kind so an agent can load only the material needed for a task.
 - [`rebase/compiler-development.md`](./rebase/compiler-development.md) —
   compiler pipeline, schema-derived generation, workbench/population, and
   verification rules.
-- [`rebase/legacy-gateway-alternative.md`](./rebase/legacy-gateway-alternative.md)
-  — preserved named-capability/outbox gateway design, explicitly historical.
-
 ## SurrealDB documents
 
 - [`surrealdb/access-definitions.md`](./surrealdb/access-definitions.md) —

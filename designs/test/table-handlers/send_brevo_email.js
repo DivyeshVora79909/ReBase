@@ -5,14 +5,14 @@ function invalid(code, message) {
 module.exports = {
   table: "send_brevo_email",
 
-  async execute({ record, load, providers }) {
+  async execute({ record, load, providers, signal }) {
     const config = await load(record.config);
-    if (!config) throw invalid("CONFIG_UNAVAILABLE", "Email configuration is unavailable");
     const provider = providers.email.forResource(config);
     const result = await provider.sendMessage({
       config,
       idempotencyKey: String(record.id),
       message: { to: record.to, subject: record.subject, html: record.html, text: record.text },
+      signal,
     });
     return {
       patch: {

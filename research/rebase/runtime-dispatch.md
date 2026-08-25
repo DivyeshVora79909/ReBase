@@ -76,6 +76,14 @@ Invariants:
   fresh effect IDs, so each emitted occurrence is intentionally a new logical
   submission.
 
+If a future integration cannot be represented as a typed SurrealDB write and
+needs a distinct command authorization boundary, it may justify a separate
+gateway. That boundary must resolve every referenced record under the same row
+policy as direct database access, return a generic unavailable result for
+missing or unauthorized records, and reauthorize at execution time when access
+revocation is intended to stop pending work. Provider credentials remain in
+typed configuration records rather than arbitrary scalar command arguments.
+
 The handler may freely transform database shape into SDK input. ReBase does not
 require the SurrealQL schema to mirror a provider SDK object.
 
@@ -179,7 +187,8 @@ validation.
 - no namespace/database behavior catalog;
 - no handler key composed from process or event type;
 - no universal `edge_execution` record for typed effects;
-- no operation/schema discovery API;
+- no operation/schema discovery API or capability catalog while typed effect
+  writes cover the command;
 - no unrestricted privileged database object passed to ordinary handlers;
 - no dynamic registry until independently deployed plugins create a real need;
 - no implicit handler-version routing by tenant context.

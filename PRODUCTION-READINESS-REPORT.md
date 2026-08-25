@@ -8,29 +8,29 @@ Updated after the runtime/compiler reboot. Tested with Node `22.23.2`, SurrealDB
 
 ## Architecture
 
-| Component | Responsibility |
-| --- | --- |
-| Compiler | Classifies SurrealQL material, discovers principals/effects, generates authorization/audit/references/views/lifecycle/events, validates handlers, and emits `schema.surql`, `runtime-contracts.json`, and handlers. |
-| SurrealDB | Authentication, authorization, strict schema/reference validation, audit/change logs, typed effects, lifecycle truth, sync rollback, schedule cursors, and webhook ordering facts. |
-| Hono kernel | Authenticated wakes, handler lookup, conditional leases, token-fenced finalization, bounded patches, webhook correlation, and readiness. |
-| BullMQ/Redis | Three transport lanes (`task`, `schedule`, `webhook`), delay, retry, stalls, concurrency, deduplication, and durable lane-specific dead letters. |
-| Reconciler | Startup and periodic scans of configured namespace/database contexts; republishes executable locators without querying queue membership. |
-| Providers | Local deterministic email/storage examples only. Production adapters remain separate work. |
+| Component    | Responsibility                                                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compiler     | Classifies SurrealQL material, discovers principals/effects, generates authorization/audit/references/views/lifecycle/events, validates handlers, and emits `schema.surql`, `runtime-contracts.json`, and handlers. |
+| SurrealDB    | Authentication, authorization, strict schema/reference validation, audit/change logs, typed effects, lifecycle truth, sync rollback, schedule cursors, and webhook ordering facts.                                  |
+| Hono kernel  | Authenticated wakes, handler lookup, conditional leases, token-fenced finalization, bounded patches, webhook correlation, and readiness.                                                                            |
+| BullMQ/Redis | Three transport lanes (`task`, `schedule`, `webhook`), delay, retry, stalls, concurrency, deduplication, and durable lane-specific dead letters.                                                                    |
+| Reconciler   | Startup and periodic scans of configured namespace/database contexts; republishes executable locators without querying queue membership.                                                                            |
+| Providers    | Local deterministic email/storage examples only. Production adapters remain separate work.                                                                                                                          |
 
 ## Coverage Matrix
 
-| Area | Scenarios | Status |
-| --- | --- | --- |
-| Compiler | deterministic build/check, context-neutral contracts, lifecycle generation, schedule typing, handler discovery/aliases, missing/duplicate/unknown handlers, collisions, mutable inputs, writable outputs, webhook contracts | **PASS** |
-| SurrealDB framework | auth/invites, ownership/delegation, parent DAG, readers, references, row/field permissions, audit/change logs, views, UUIDv7, sync snapshot/rollback | **PASS** |
-| Async kernel | record-user creation, atomic claim, duplicate delivery, retries, terminal failures, ambiguous-result reconciliation, cancellation, stale-token fencing, patch allowlists, reference-scoped loads | **PASS** |
-| BullMQ | all lanes, internal job IDs, delay/retry, durable DLQs, readiness, timing restoration from SurrealDB | **PASS** |
-| SQS port | all-lane API shape, delay clamping, receive counts, visibility retry, invalid locator DLQ, retry exhaustion, scheduling, health | **PASS** with injected client |
-| Scheduling | cursor initialization, fresh unlinked UUIDv7 occurrences, concurrent schedulers, repeat exhaustion, coalesce/skip/all misfires, cancellation, lost Redis delayed job recovery | **PASS** |
-| Webhooks | raw-body HMAC, timestamp replay bound, provider account match, event dedupe, reverse ordering, table correlation, bad signatures | **PASS** for local adapter |
-| HTTP/startup | liveness/readiness, body/content limits, HMAC/bearer policy, context allowlist, real child process, missing config, port conflict, unavailable Redis, production local-provider rejection, SIGTERM | **PASS** |
-| Multi-context | concurrent connection deduplication, failed creation eviction, idle-safe tracking, configured context allowlist | **PASS** |
-| Real providers/cloud | Brevo, object storage, real AWS SQS, managed Redis/Valkey/Dragonfly, Surreal Cloud | **UNTESTED** |
+| Area                 | Scenarios                                                                                                                                                                                                                   | Status                        |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Compiler             | deterministic build/check, context-neutral contracts, lifecycle generation, schedule typing, handler discovery/aliases, missing/duplicate/unknown handlers, collisions, mutable inputs, writable outputs, webhook contracts | **PASS**                      |
+| SurrealDB framework  | auth/invites, ownership/delegation, parent DAG, readers, references, row/field permissions, audit/change logs, views, UUIDv7, sync snapshot/rollback                                                                        | **PASS**                      |
+| Async kernel         | record-user creation, atomic claim, duplicate delivery, retries, terminal failures, ambiguous-result reconciliation, cancellation, stale-token fencing, patch allowlists, reference-scoped loads                            | **PASS**                      |
+| BullMQ               | all lanes, internal job IDs, delay/retry, durable DLQs, readiness, timing restoration from SurrealDB                                                                                                                        | **PASS**                      |
+| SQS port             | all-lane API shape, delay clamping, receive counts, visibility retry, invalid locator DLQ, retry exhaustion, scheduling, health                                                                                             | **PASS** with injected client |
+| Scheduling           | cursor initialization, fresh unlinked UUIDv7 occurrences, concurrent schedulers, repeat exhaustion, coalesce/skip/all misfires, cancellation, lost Redis delayed job recovery                                               | **PASS**                      |
+| Webhooks             | raw-body HMAC, timestamp replay bound, provider account match, event dedupe, reverse ordering, table correlation, bad signatures                                                                                            | **PASS** for local adapter    |
+| HTTP/startup         | liveness/readiness, body/content limits, HMAC/bearer policy, context allowlist, real child process, missing config, port conflict, unavailable Redis, production local-provider rejection, SIGTERM                          | **PASS**                      |
+| Multi-context        | concurrent connection deduplication, failed creation eviction, idle-safe tracking, configured context allowlist                                                                                                             | **PASS**                      |
+| Real providers/cloud | Brevo, object storage, real AWS SQS, managed Redis/Valkey/Dragonfly, Surreal Cloud                                                                                                                                          | **UNTESTED**                  |
 
 ## Remaining Production Blockers
 

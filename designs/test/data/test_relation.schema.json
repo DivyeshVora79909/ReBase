@@ -2,9 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "owned_by", "a_primitive"],
+  "required": ["owned_by", "a_primitive"],
   "properties": {
-    "id": { "type": "string", "pattern": "^test_relation:[a-z0-9-]+$" },
     "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
     "a_primitive": {
       "type": "string",
@@ -12,12 +11,15 @@
     },
     "a_polymorphic": {
       "type": "string",
-      "pattern": "^(test_primitive|user):[a-z0-9-]+$"
+      "pattern": "^(test_primitive|user):[a-z0-9-]+$",
+      "x-rebase-optional-probability": 0.55
     },
     "a_primitive_array": {
       "type": "array",
       "items": { "type": "string", "pattern": "^test_primitive:[a-z0-9-]+$" },
-      "default": []
+      "minItems": 0,
+      "maxItems": 5,
+      "uniqueItems": true
     },
     "a_poly_array": {
       "type": "array",
@@ -25,7 +27,10 @@
         "type": "string",
         "pattern": "^(test_primitive|groups):[a-z0-9-]+$"
       },
-      "default": []
+      "minItems": 0,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "x-rebase-optional-probability": 0.35
     }
   }
 }

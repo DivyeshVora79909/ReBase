@@ -43,7 +43,7 @@ function generateAuditEvents(schema, options, excludedTables = new Set()) {
     output +=
       "        IF $event != 'UPDATE' OR $audit_before != $audit_after OR $changed_tracked {\n";
     output +=
-      "            CREATE type::record('audit_mutation', rand::uuid::v7($audit_now)) CONTENT {\n";
+      "            CREATE audit_mutation CONTENT {\n";
     output += "                at: $audit_now,\n";
     output += "                event: $event,\n";
     output += `                table_name: '${table.name}',\n`;
@@ -79,7 +79,7 @@ function generateChangeLogEvents(schema, options) {
     output += `        LET $changed = ${names}.filter(|$field| ($before[$field] ?? NONE) != ($after[$field] ?? NONE));\n`;
     output += "        IF $changed {\n";
     output += "            LET $change_now = time::now();\n";
-    output += "            CREATE type::record('change_logs', rand::uuid::v7($change_now)) CONTENT {\n";
+    output += "            CREATE change_logs CONTENT {\n";
     output += "                target: $after.id,\n";
     output += "                at: $change_now,\n";
     output += `                table_name: '${table.name}',\n`;

@@ -1,13 +1,5 @@
--- ==============================================================================
--- FILE 06: TABLE FIELDS (CRM ONTOLOGY & DAG STRUCTURE)
--- ==============================================================================
 USE NS main DB main;
 
--- ==============================================================================
--- LEVEL 0: CLASSIFICATION SETS (Stateless Lookups & Enums)
--- ==============================================================================
--- These are user-configurable states. They have no backend validation logic attached,
--- ensuring the system graph remains pure and unaffected by client-side definitions.
 
 DEFINE TABLE lifecycle_status SCHEMAFULL;
 DEFINE FIELD a_name ON lifecycle_status TYPE string;
@@ -72,10 +64,6 @@ DEFINE TABLE unit SCHEMAFULL;
 DEFINE FIELD a_name ON unit TYPE string;
 
 
--- ==============================================================================
--- LEVEL 1: INDEPENDENT ANCHORS
--- ==============================================================================
--- The root nodes of the graph. These entities exist independently.
 
 DEFINE TABLE organization SCHEMAFULL;
 DEFINE FIELD a_name ON organization TYPE string;
@@ -130,9 +118,6 @@ DEFINE FIELD a_name ON tag TYPE string;
 DEFINE FIELD a_hex_color ON tag TYPE string DEFAULT '#000000';
 
 
--- ==============================================================================
--- LEVEL 2: RELATIONAL BRANCHES (DAG Setup)
--- ==============================================================================
 
 DEFINE TABLE stage SCHEMAFULL;
 DEFINE FIELD a_name ON stage TYPE string;
@@ -166,9 +151,6 @@ DEFINE FIELD e_guard ON opportunity TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 3: TRANSACTIONAL TREES
--- ==============================================================================
 
 DEFINE TABLE quote SCHEMAFULL;
 DEFINE FIELD a_quote_number ON quote TYPE string;
@@ -187,14 +169,12 @@ DEFINE FIELD a_status ON order TYPE option<record<order_status>> REFERENCE ON DE
 DEFINE FIELD a_currency ON order TYPE option<record<currency>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 
 DEFINE FIELD e_guard ON order TYPE bool VALUE {
-    -- Ensure absolute mathematical graph topology
     IF $this.a_parent != NONE AND $this.a_organization != NONE {
         LET $parent_org = 
             IF record::tb($this.a_parent) = 'quote' THEN $this.a_parent.a_opportunity.a_organization 
             ELSE IF record::tb($this.a_parent) = 'opportunity' THEN $this.a_parent.a_organization 
             ELSE NONE END;
 
-        -- We only throw if the parent explicitly had an organization and it doesn't match the order's billing organization.
         IF $parent_org != NONE AND $parent_org != $this.a_organization {
             THROW "DAG FRACTURE: The Order's Organization does not match the Parent's (Quote/Opportunity) Organization.";
         };
@@ -203,9 +183,6 @@ DEFINE FIELD e_guard ON order TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 4: MATHEMATICAL LINES (Dependent Child Entities)
--- ==============================================================================
 
 DEFINE TABLE opportunity_line SCHEMAFULL;
 DEFINE FIELD a_opportunity ON opportunity_line TYPE record<opportunity> REFERENCE ON DELETE CASCADE;
@@ -255,9 +232,6 @@ DEFINE FIELD e_guard ON order_line TYPE bool VALUE {
 } ASSERT $value = true;
 
 
--- ==============================================================================
--- LEVEL 5: POLYMORPHIC GRAPH LEAVES (Cross-Cutting Edges)
--- ==============================================================================
 
 DEFINE TABLE task SCHEMAFULL;
 DEFINE FIELD a_target ON task TYPE record<person | organization | opportunity | quote | order | campaign> REFERENCE ON DELETE CASCADE;

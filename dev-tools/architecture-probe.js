@@ -203,7 +203,6 @@ async function uuidProbe(db) {
 async function synchronousEventProbe(db, receiverPort, state) {
   await db.query(`
     DEFINE TABLE sync_effect SCHEMAFULL;
-    DEFINE FIELD id ON sync_effect TYPE uuid;
     DEFINE FIELD name ON sync_effect TYPE string;
     DEFINE FIELD provider_id ON sync_effect TYPE option<string> DEFAULT NONE;
     DEFINE FIELD observer_count ON sync_effect TYPE option<int> DEFAULT NONE;
@@ -220,7 +219,6 @@ async function synchronousEventProbe(db, receiverPort, state) {
       };
 
     DEFINE TABLE rollback_effect SCHEMAFULL;
-    DEFINE FIELD id ON rollback_effect TYPE uuid;
     DEFINE FIELD name ON rollback_effect TYPE string;
     DEFINE EVENT rollback_effect_create ON rollback_effect
       WHEN $event = 'CREATE'
@@ -234,7 +232,6 @@ async function synchronousEventProbe(db, receiverPort, state) {
       };
 
     DEFINE TABLE missing_handler_effect SCHEMAFULL;
-    DEFINE FIELD id ON missing_handler_effect TYPE uuid;
     DEFINE EVENT missing_handler_effect_create ON missing_handler_effect
       WHEN $event = 'CREATE'
       THEN http::post(
@@ -244,9 +241,9 @@ async function synchronousEventProbe(db, receiverPort, state) {
       );
   `);
   const syncResponse = await db.query(`
-    LET $id = type::record('sync_effect', rand::uuid::v7());
-    CREATE ONLY $id SET name = 'snapshot' RETURN AFTER;
-    RETURN (SELECT * FROM $id)[0];
+    LET $created = CREATE ONLY sync_effect SET name = 'snapshot' RETURN AFTER;
+    RETURN $created;
+    RETURN (SELECT * FROM $created.id)[0];
   `);
   const created = syncResponse[1];
   const committed = syncResponse[2];
@@ -255,7 +252,8 @@ async function synchronousEventProbe(db, receiverPort, state) {
     console.error("sync committed", committed);
     console.error("sync snapshots", state.snapshots);
   }
-  assert.match(String(created.id), /^sync_effect:u["']/);
+  assert.match(String(created.id), /^sync_effect:/);
+  assert.equal(String(created.id).includes(":u'"), false);
   assert.equal(created.snapshot_name, undefined);
   assert.equal(committed.snapshot_name, "snapshot");
   assert.equal(committed.observer_count, 0);

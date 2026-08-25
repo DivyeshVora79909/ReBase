@@ -19,12 +19,11 @@ JSON Schema
 
 Implementation ownership:
 
-- `scripts/data.js`: database-independent generation, validation, casting, and
-  DAG inspection;
-- `scripts/materialize.js`: SurrealDB-specific writes/materialization;
+- `dev-tools/populate.js`: generation, AJV validation, native casting,
+  dependency analysis, batching, and SurrealDB materialization;
 - `designs/<name>/data/*.schema.json`: scalar shape contracts;
-- `suite.config.js`: counts, anchors, dependency declarations, uniqueness hints,
-  omission lists, and batch sizes.
+- the compiled SurrealDB schema: reference topology, required dependencies,
+  generated fields, assertions, and write-time integrity.
 
 JSON Schema and SurrealDB validate different projections. AJV validates generated
 scalar payloads while omitting database-generated IDs and relation targets.

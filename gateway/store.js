@@ -34,15 +34,6 @@ function createTableStore(database) {
     )));
   }
 
-  async function patch(id, patchValue, allowedFields = Object.keys(patchValue || {})) {
-    const assignments = patchAssignments(patchValue, allowedFields);
-    if (!assignments.length) return load(id);
-    return clean(queryResult(await db.query(
-      `RETURN (UPDATE type::record($id) SET ${assignments.join(", ")} RETURN AFTER)[0];`,
-      { id: String(id), patch: patchValue },
-    )));
-  }
-
   async function claim(id, { token, leaseUntil, outcome = "pending" }) {
     const outcomeCondition = outcomePredicate(outcome);
     return clean(queryResult(await db.query(`
@@ -123,15 +114,6 @@ function createTableStore(database) {
     `, {
       id: String(id), lease_token: String(token), wake_at: new Date(wakeAt).toISOString(), error,
     })));
-  }
-
-  async function release(id, token) {
-    return clean(queryResult(await db.query(`
-      RETURN (UPDATE type::record($id)
-        SET rebase_lease_token = NONE, rebase_lease_until = NONE
-        WHERE rebase_lease_token = type::uuid($lease_token)
-        RETURN AFTER)[0];
-    `, { id: String(id), lease_token: String(token) })));
   }
 
   async function pending(tables, lane = "task", { deep = false } = {}) {
@@ -252,7 +234,7 @@ function createTableStore(database) {
     });
     if (emit && !contentAssignments.length) throw new Error("Scheduled occurrence content cannot be empty");
     const occurrence = emit
-      ? `LET $occurrence = IF $source != NONE THEN CREATE ONLY type::record('${table}', rand::uuid::v7()) SET ${contentAssignments.join(", ")} RETURN AFTER ELSE NONE END;`
+      ? `LET $occurrence = IF $source != NONE THEN CREATE ONLY ${table} SET ${contentAssignments.join(", ")} RETURN AFTER ELSE NONE END;`
       : "LET $occurrence = NONE;";
     return clean(queryResult(await db.query(`
       BEGIN TRANSACTION;
@@ -291,9 +273,7 @@ function createTableStore(database) {
     health,
     initializeSchedule,
     load,
-    patch,
     pending,
-    release,
     retry,
   };
 }

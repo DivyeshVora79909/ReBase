@@ -1,6 +1,6 @@
 -- Append an operational action from a trusted worker/admin session.
 LET $now = time::now();
-CREATE type::record('audit_action', rand::uuid::v7($now)) CONTENT {
+CREATE audit_action CONTENT {
     at: $now,
     source: 'cloudflare.worker',
     action: 'example.completed',

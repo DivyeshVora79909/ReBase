@@ -177,16 +177,6 @@ function partitionSource(materials, name) {
   return (materials.partitions.get(name) || []).map((item) => item.source.trim()).filter(Boolean).join("\n\n");
 }
 
-function sourceByGroupAndType(materials, groups, types) {
-  const acceptedGroups = new Set(Array.isArray(groups) ? groups : [groups]);
-  const acceptedTypes = new Set(Array.isArray(types) ? types : [types]);
-  return materials.statements
-    .filter((item) => acceptedGroups.has(item.file.group) && acceptedTypes.has(item.type))
-    .map((item) => item.source.trim())
-    .filter(Boolean)
-    .join("\n\n");
-}
-
 module.exports = {
   classifyMaterials,
   classifyStatement,
@@ -200,6 +190,5 @@ module.exports = {
   partitionSource,
   readMaterialFiles,
   removeMarkedSections,
-  sourceByGroupAndType,
   stripLeadingComments,
 };

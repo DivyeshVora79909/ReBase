@@ -92,6 +92,12 @@ Faker/AJV. They are not gateway request contracts. SurrealDB validates the final
 record, including native types, assertions, references, permissions, events, and
 computed fields.
 
+Fixture schemas do not copy SurrealDB `DEFAULT` values into generated payloads;
+omitted fields exercise the database default. Arrays declare `minItems`,
+`maxItems`, and `uniqueItems` where appropriate. An optional fixture field may
+use the local `x-rebase-optional-probability` extension (0 to 1) to control its
+presence; this extension is consumed only by `dev-tools/populate.js`.
+
 Population uses:
 
 - keyset pagination of committed candidate IDs;
@@ -117,7 +123,8 @@ The REPL is a small manual orchestrator with explicit runtime context:
 .deploy
 .populate [table] [count]
 .as <email> <password>
-.edge <function> {...}
+.query <surql>
+.sample <table> [limit]
 .probe [security|data|all]
 ```
 

@@ -75,12 +75,19 @@ invariant rather than replacing it, and only alters top-level record fields.
 
 ### Required hidden scalar fields
 
-On SurrealDB 3.2.0, `TYPE string` alone does not reject an omitted field during
-`CREATE`. A required credential therefore uses a `VALUE` guard that throws when
-`$value = NONE` or empty, then returns the value unchanged. The guard still
-permits ordinary updates that omit the field because SurrealDB supplies the
-stored value to the field expression. This keeps missing provider credentials a
-database validation error instead of a queue-time failure.
+Required provider fields are declared as ordinary strict scalar fields with an
+assertion, for example:
+
+```surql
+DEFINE FIELD api_key ON email_brevo_config TYPE string
+    ASSERT $value.len() > 0
+    PERMISSIONS FOR select NONE FOR create, update WHERE true;
+```
+
+SurrealDB rejects an omitted or empty value at record creation/update before a
+job can reach the runtime. The provider adapter therefore reads the flattened
+field directly; it does not parse credential objects, apply fallbacks, or run a
+second required-field validator.
 
 ## Permissions are not validators
 
@@ -119,9 +126,9 @@ Recommended configuration boundary:
 
 1. expose harmless provider metadata under normal row access;
 2. hide API keys/tokens with field `PERMISSIONS NONE`;
-3. store the provider credential as a required opaque field on the authorized
-   configuration row, when the product deliberately keeps credentials in its
-   own database;
+3. store each provider credential component as a required protected field on
+   the authorized configuration row, when the product deliberately keeps
+   credentials in its own database;
 4. let privileged handlers load declared credential fields. Queue locators and
    sync snapshots carry configuration record IDs, never credential values.
 

@@ -172,9 +172,10 @@ dependency graph, so ownership transfer and reader revocation converge correctly
 
 The cycle guard implementation is small:
 
-- `reactivity.js` contains the cycle event generator (~26 source lines).
-- `security.js` emits the computed dependency field and source expressions.
-- `compiler.js` adds one generated section.
+- `src/generators/reactivity.js` contains the cycle event generator.
+- `src/generators/security.js` emits the computed dependency field and source
+  expressions.
+- `dev-tools/compiler/pipeline.js` adds the generated section.
 - A typical build generates 3 `rebase_reader_sources` fields, 3 cycle events,
   ~24 generated lines, and ~2 KB of SurrealQL.
 - No gateway, handler, queue, or API behavior depends on the guard.

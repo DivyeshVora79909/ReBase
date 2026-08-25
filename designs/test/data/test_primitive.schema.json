@@ -2,19 +2,18 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "owned_by", "a_string", "a_decimal", "a_datetime"],
+  "required": ["owned_by", "a_string", "a_decimal", "a_datetime"],
   "properties": {
-    "id": { "type": "string", "pattern": "^test_primitive:[a-z0-9-]+$" },
     "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
     "a_string": { "type": "string", "minLength": 2 },
-    "a_int": { "type": "integer", "default": 0 },
-    "a_decimal": { "type": "number", "minimum": 0 },
-    "a_bool": { "type": "boolean", "default": false },
+    "a_int": { "type": "integer", "minimum": -100, "maximum": 100, "x-rebase-optional-probability": 0.8 },
+    "a_decimal": { "type": "number", "minimum": 0, "maximum": 10000 },
+    "a_bool": { "type": "boolean", "x-rebase-optional-probability": 0.7 },
     "a_datetime": { "type": "string", "format": "date-time" },
-    "a_object": { "type": "object", "default": {} },
+    "a_object": { "type": "object", "maxProperties": 4, "x-rebase-optional-probability": 0.45 },
     "a_enum": {
       "enum": ["pending", "active", "archived"],
-      "default": "pending"
+      "x-rebase-optional-probability": 0.65
     }
   }
 }

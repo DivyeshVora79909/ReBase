@@ -76,15 +76,14 @@ include fields written by the nested event update. A later `SELECT` in the same
 database request did include the committed patch:
 
 ```surql
-LET $id = type::record('file_access_grant', rand::uuid::v7());
-CREATE ONLY $id SET
+LET $created = CREATE ONLY file_access_grant SET
     owned_by = $auth,
     object = $object,
     expires_in = $expires_in;
-RETURN (SELECT * FROM $id)[0];
+RETURN (SELECT * FROM $created.id)[0];
 ```
 
-Generated synchronous create/refresh helpers must allocate a stable ID and
+Generated synchronous create/refresh helpers capture SurrealDB's returned ID and
 re-select. Applications must not assume plain `RETURN AFTER` contains the event
 result.
 
