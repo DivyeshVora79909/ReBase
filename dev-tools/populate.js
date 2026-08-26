@@ -8,9 +8,15 @@ const addFormats = require("ajv-formats");
 const { faker } = require("@faker-js/faker");
 const jsf = require("json-schema-faker");
 const seedrandom = require("seedrandom");
-const { RecordId, Surreal, Uuid } = require("surrealdb");
+const { RecordId, Uuid } = require("surrealdb");
+const { connectDatabase } = require("../gateway/connection");
 const { queryResult } = require("../gateway/utils");
 const { parseSchema } = require("../src/schema");
+const {
+  assertConnectionConfiguration,
+  loadEnvironment,
+  resolveConfiguration,
+} = require("../config/environment");
 
 function seedNumber(seed) {
   return crypto
@@ -134,12 +140,13 @@ function usage() {
   console.log(`Usage: node dev-tools/populate.js [options]
 
 Options:
+  --env-file <path>          Load connection values from an environment profile
   --project <name|dir>       Design name or directory (default: test)
   --source <directory>       Explicit design source directory
   --build <directory>        Explicit compiled artifact directory
   --endpoint <url>           SurrealDB WebSocket endpoint
-  --namespace <name>         Required target namespace
-  --database <name>          Required target database
+  --namespace <name>         Override profile namespace
+  --database <name>          Override profile database
   --table <name|all>        Populate one table or every data schema
   --count <n>               Records per table (default: 25)
   --batch-size <n>          Insert batch size (default: 100)
@@ -297,9 +304,25 @@ async function populate(options) {
     ...options,
   };
   const { sourceDir, buildDir, name } = projectPaths(options.project, options);
-  if (!options.namespace || !options.database) {
-    throw new Error("populate requires explicit namespace and database");
-  }
+  const configuration = options.configuration || resolveConfiguration({}, options);
+  options.endpoint ||= configuration.surreal.endpoint;
+  options.username ||= configuration.surreal.username;
+  options.password ||= configuration.surreal.password;
+  options.connectTimeoutMs ||= configuration.surreal.connectTimeoutMs;
+  options.namespace ||= configuration.surreal.defaultContext?.namespace;
+  options.database ||= configuration.surreal.defaultContext?.database;
+  assertConnectionConfiguration({
+    ...configuration,
+    surreal: {
+      ...configuration.surreal,
+      endpoint: options.endpoint,
+      username: options.username,
+      password: options.password,
+      defaultContext: options.namespace && options.database
+        ? { namespace: options.namespace, database: options.database }
+        : undefined,
+    },
+  });
   const compiledPath = path.join(buildDir, "schema.surql");
   if (!fs.existsSync(compiledPath))
     throw new Error(`Compiled schema not found: ${compiledPath}`);
@@ -346,20 +369,15 @@ async function populate(options) {
     [...dataSchemas].map(([table, schema]) => [table, ajv.compile(schema)]),
   );
 
-  const db = new Surreal();
-  await db.connect(
-    options.endpoint ||
-      process.env.SURREAL_ENDPOINT ||
-      "ws://127.0.0.1:8000/rpc",
-  );
-  await db.signin({
-    username: options.username || process.env.SURREAL_USER,
-    password: options.password || process.env.SURREAL_PASS,
-  });
-  await db.use({
+  const connection = await connectDatabase({
+    endpoint: options.endpoint,
+    username: options.username,
+    password: options.password,
     namespace: options.namespace,
     database: options.database,
+    connectTimeoutMs: options.connectTimeoutMs,
   });
+  const db = connection.db;
   try {
     const targetTables = new Set([principals.group, principals.user]);
     for (const table of tables) {
@@ -458,12 +476,14 @@ async function populate(options) {
     }
     return { project: name, seed, created };
   } finally {
-    await db.close();
+    await connection.close();
   }
 }
 
 if (require.main === module) {
-  const options = parseArgs(process.argv.slice(2));
+  const loaded = loadEnvironment(process.argv.slice(2));
+  const options = parseArgs(loaded.args);
+  options.configuration = resolveConfiguration(loaded.values, options);
   if (options.help) usage();
   else
     populate(options)

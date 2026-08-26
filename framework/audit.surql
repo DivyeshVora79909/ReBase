@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 -- Append-only operational history. These tables are deliberately outside the
 -- compiler's ownership, reader, cascade, and reactive systems.
 DEFINE TABLE audit_mutation SCHEMAFULL PERMISSIONS NONE;

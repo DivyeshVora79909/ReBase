@@ -18,7 +18,7 @@ const DEFAULT_POLICIES = Object.freeze({
 function redisOptions(options = {}) {
   return {
     enableReadyCheck: true,
-    connectTimeout: options.connectTimeoutMs || Number(process.env.REBASE_REDIS_CONNECT_TIMEOUT_MS) || 5000,
+    connectTimeout: options.connectTimeoutMs || 5000,
     maxRetriesPerRequest: null,
     ...(options.redisOptions || {}),
   };
@@ -41,7 +41,8 @@ async function withDeadline(operation, timeoutMs, message) {
 
 function createConnection(options = {}) {
   if (options.connection) return { connection: options.connection, owned: false };
-  const url = options.url || process.env.REBASE_REDIS_URL || "redis://127.0.0.1:6379";
+  const url = options.url;
+  if (!url) throw new Error("BullMQ requires a Redis URL");
   const connection = new IORedis(url, redisOptions(options));
   connection.on("error", (error) => options.onError?.(error));
   return { connection, owned: true };
@@ -66,7 +67,7 @@ async function replaceFinished(queue, jobId) {
 }
 
 function createBullMqPort(options = {}) {
-  const prefix = options.prefix || process.env.REBASE_QUEUE_PREFIX || "rebase";
+  const prefix = options.prefix || "rebase";
   const { connection, owned } = createConnection(options);
   const queues = new Map(LANES.map((lane) => [
     lane,
@@ -194,7 +195,7 @@ function createBullMqPort(options = {}) {
     try {
       await withDeadline(
         () => worker.waitUntilReady(),
-        options.startupTimeoutMs || Number(process.env.REBASE_QUEUE_STARTUP_TIMEOUT_MS) || 10000,
+        options.startupTimeoutMs || 10000,
         `${lane} BullMQ worker startup timed out`,
       );
     } catch (error) {
@@ -246,7 +247,7 @@ function createBullMqPort(options = {}) {
     try {
       const pong = await withDeadline(
         () => connection.ping(),
-        options.healthTimeoutMs || Number(process.env.REBASE_QUEUE_HEALTH_TIMEOUT_MS) || 2000,
+        options.healthTimeoutMs || 2000,
         "Redis health check timed out",
       );
       const lanes = {};
@@ -255,7 +256,7 @@ function createBullMqPort(options = {}) {
       await Promise.all([...deadLetters].map(async ([lane, queue]) => {
         deadLetterCounts[lane] = await withDeadline(
           () => queue.getJobCounts("wait", "active", "delayed", "failed"),
-          options.healthTimeoutMs || Number(process.env.REBASE_QUEUE_HEALTH_TIMEOUT_MS) || 2000,
+          options.healthTimeoutMs || 2000,
           `${lane} dead-letter health check timed out`,
         );
       }));

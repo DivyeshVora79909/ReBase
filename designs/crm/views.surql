@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 
 DEFINE TABLE OVERWRITE v_task_target AS SELECT a_target AS target, count() AS total_tasks FROM task GROUP BY target;
 DEFINE TABLE OVERWRITE v_activity_target AS SELECT a_target AS target, count() AS total_activities FROM activity GROUP BY target;

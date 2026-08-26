@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 -- USER
 DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
     FOR create WHERE 'node_create' IN $auth.permissions

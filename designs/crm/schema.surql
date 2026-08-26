@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 
 DEFINE TABLE lifecycle_status SCHEMAFULL;
 DEFINE FIELD a_name ON lifecycle_status TYPE string;

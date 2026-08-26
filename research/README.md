@@ -19,6 +19,8 @@ information kind so an agent can load only the material needed for a task.
   security boundary.
 - [`rebase/scheduler.md`](./rebase/scheduler.md) — schedules, reconciliation,
   wake delivery, and rejected scheduler alternatives.
+- [`rebase/session-lifecycle.md`](./rebase/session-lifecycle.md) — system-user
+  token renewal, WebSocket reconnect authentication, and record-token expiry.
 - [`rebase/authorization.md`](./rebase/authorization.md) — principal DAG,
   ownership, readers, views, and audit policy.
 - [`rebase/parents-field.md`](./rebase/parents-field.md) — principal-parent

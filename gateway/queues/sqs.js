@@ -9,13 +9,6 @@ const {
 
 const DEFAULT_POLICY = Object.freeze({ attempts: 5, batchSize: 10, waitTimeSeconds: 20, visibilityTimeout: 300 });
 
-function environmentQueueUrls(prefix) {
-  return Object.fromEntries(LANES.map((lane) => [
-    lane,
-    process.env[`${prefix}_${lane.toUpperCase()}_QUEUE_URL`],
-  ]));
-}
-
 function requireUrls(values, label) {
   const missing = LANES.filter((lane) => !values[lane]);
   if (missing.length) throw new Error(`${label} requires URLs for lanes: ${missing.join(", ")}`);
@@ -32,16 +25,14 @@ function createSqsQueue(options = {}) {
     SendMessageCommand,
   } = require("@aws-sdk/client-sqs");
   const queueUrls = requireUrls({
-    ...environmentQueueUrls("REBASE_SQS"),
     ...(options.queueUrls || {}),
   }, "SQS delivery port");
   const deadLetterQueueUrls = requireUrls({
-    ...environmentQueueUrls("REBASE_SQS_DEAD_LETTER"),
     ...(options.deadLetterQueueUrls || {}),
   }, "SQS dead-letter port");
   const client = options.client || new SQSClient({
-    region: options.region || process.env.AWS_REGION,
-    endpoint: options.endpoint || process.env.SQS_ENDPOINT,
+    region: options.region,
+    endpoint: options.endpoint,
   });
   const workers = new Map();
   let closed = false;

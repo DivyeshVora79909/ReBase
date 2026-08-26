@@ -8,6 +8,7 @@ const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
 const { Surreal } = require("surrealdb");
 const { populate } = require("./populate");
+const { resolveConfiguration } = require("../config/environment");
 
 function queryResult(response) {
   if (!Array.isArray(response)) return response;
@@ -487,11 +488,13 @@ async function dataProbe(options) {
         project: "test",
         sourceDir: path.resolve(__dirname, "../designs/test"),
         buildDir: setupState.buildDir,
-        endpoint: options.endpoint,
-        username: "root",
-        password: "root",
-        namespace: options.namespace,
-        database: `${options.database}_${suffix}`,
+        configuration: resolveConfiguration({
+          SURREAL_ENDPOINT: options.endpoint,
+          SURREAL_USER: "root",
+          SURREAL_PASS: "root",
+          SURREAL_NAMESPACE: options.namespace,
+          SURREAL_DATABASE: `${options.database}_${suffix}`,
+        }),
         table: "all",
         count: 3,
         batchSize: 2,

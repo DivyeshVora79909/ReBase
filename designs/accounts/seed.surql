@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 
 DEFINE TABLE OVERWRITE v_sl_matrix_in AS 
     SELECT 

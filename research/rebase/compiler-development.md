@@ -81,9 +81,11 @@ npm run check
 node dev-tools/compiler/cli.js --print-raw
 ```
 
-The compiler can generate runtime events only when explicit namespace, database,
-runtime URL, and wake secret arguments are supplied. This keeps the material
-compiler context-free and makes deployment context visible.
+The compiler can generate runtime events only when a complete environment profile
+supplies a namespace/database context and runtime URL/secret. Without those
+values the generated schema remains context-neutral and contains no
+deployment-specific event calls. Use `--env-file` to select a profile; explicit
+compiler flags remain one-off overrides.
 
 ## Development data
 
@@ -128,7 +130,8 @@ The REPL is a small manual orchestrator with explicit runtime context:
 .probe [security|data|all]
 ```
 
-It does not require fixed namespace/database values in environment variables.
+It reads the selected profile and supports `.use <namespace> <database>` to
+switch the active context without restarting the process.
 Static cookbook scripts, operation discovery, and a monolithic scenario graph
 are not target architecture.
 

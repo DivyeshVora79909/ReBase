@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     SIGNUP (
         UPDATE user SET 

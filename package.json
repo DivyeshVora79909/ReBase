@@ -6,15 +6,16 @@
   "scripts": {
     "build": "node dev-tools/compiler/cli.js",
     "check": "node dev-tools/compiler/cli.js --check",
-    "server": "node --env-file=.env gateway/server.js",
-    "workbench": "node --env-file=.env dev-tools/workbench.js",
-    "populate": "node --env-file=.env dev-tools/populate.js",
+    "server": "node gateway/server.js",
+    "workbench": "node dev-tools/workbench.js",
+    "populate": "node dev-tools/populate.js",
     "probe": "node dev-tools/probe.js all",
     "probe:architecture": "node dev-tools/architecture-probe.js",
     "probe:compiler": "node dev-tools/compiler-probe.js",
+    "probe:environment": "node dev-tools/environment-probe.js",
     "probe:runtime": "node dev-tools/runtime-probe.js",
     "probe:queues": "node dev-tools/queue-probe.js",
-    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe"
+    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:environment && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe"
   },
   "engines": {
     "node": ">=20"

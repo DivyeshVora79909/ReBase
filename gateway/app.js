@@ -81,7 +81,8 @@ function createRuntimeApp({
   resolveWebhookContext,
   bodyLimitBytes = 256 * 1024,
   requestTimeoutMs = 30000,
-  allowBearer = process.env.NODE_ENV !== "production",
+  allowBearer = true,
+  debug = false,
 }) {
   if (!Number.isInteger(bodyLimitBytes) || bodyLimitBytes < 1024) throw new Error("bodyLimitBytes must be at least 1024 bytes");
   if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 300000) throw new Error("requestTimeoutMs must be between 1 and 300000ms");
@@ -212,7 +213,7 @@ function createRuntimeApp({
 
   app.notFound((c) => c.json({ ok: false, error: { code: "NOT_FOUND", message: "Route not found" } }, 404));
   app.onError((error, c) => {
-    if (process.env.REBASE_DEBUG) console.error("runtime app error", error.stack || error);
+    if (debug) console.error("runtime app error", error.stack || error);
     const response = publicError(error);
     return c.json(response.body, response.status);
   });

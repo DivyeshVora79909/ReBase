@@ -18,6 +18,11 @@ const { createQueue } = require("./queues");
 const { createReconciler } = require("./reconciler");
 const { createRuntime } = require("./runtime");
 const { createTableStore } = require("./store");
+const {
+  loadEnvironment,
+  resolveConfiguration,
+  assertConnectionConfiguration,
+} = require("../config/environment");
 
 function readContracts(projectDir) {
   const contractPath = path.join(projectDir, "runtime-contracts.json");
@@ -30,39 +35,35 @@ function readContracts(projectDir) {
   };
 }
 
-function contextsFromEnvironment(value = process.env.REBASE_CONTEXTS) {
-  if (!value) return [];
-  let parsed;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    throw new Error("REBASE_CONTEXTS must be valid JSON");
-  }
-  if (!Array.isArray(parsed))
-    throw new Error("REBASE_CONTEXTS must be a JSON array");
-  return parsed.map((context) => {
-    if (!context?.namespace || !context?.database)
-      throw new Error(
-        "Every REBASE_CONTEXTS entry requires namespace and database",
-      );
-    return {
-      namespace: String(context.namespace),
-      database: String(context.database),
-    };
-  });
-}
-
 async function startServer(options = {}) {
-  const environment =
-    options.environment || process.env.NODE_ENV || "development";
+  const config = options.config || resolveConfiguration({}, options);
+  const databaseOptions = options.databaseOptions || {};
+  const optionContext = options.defaultContext || (
+    options.namespace && options.database
+      ? { namespace: options.namespace, database: options.database }
+      : undefined
+  );
+  const connectionConfig = {
+    ...config,
+    surreal: {
+      ...config.surreal,
+      ...databaseOptions,
+      endpoint: options.endpoint ?? databaseOptions.endpoint ?? config.surreal.endpoint,
+      username: options.username ?? databaseOptions.username ?? config.surreal.username,
+      password: options.password ?? databaseOptions.password ?? config.surreal.password,
+      defaultContext: optionContext || config.surreal.defaultContext,
+    },
+  };
+  if (!options.stores && !options.database) assertConnectionConfiguration(connectionConfig);
+  const environment = options.environment || config.environment;
   const allowBearer =
     environment === "production"
       ? false
       : (options.allowBearer ?? environment === "development");
-  const wakeSecret = options.wakeSecret || process.env.REBASE_WAKE_SECRET;
+  const wakeSecret = options.wakeSecret || config.runtime.wakeSecret;
   if (!wakeSecret) throw new Error("REBASE_WAKE_SECRET is required");
-  const hostname = options.hostname || process.env.HOST || "127.0.0.1";
-  const port = Number(options.port ?? process.env.REBASE_PORT ?? 8788);
+  const hostname = options.hostname || config.server.host;
+  const port = Number(options.port ?? config.server.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new Error("REBASE_PORT must be a valid TCP port");
   const projectDir =
@@ -76,16 +77,32 @@ async function startServer(options = {}) {
   const providerSelection =
     options.providers ??
     options.provider ??
-    process.env.REBASE_PROVIDER ??
-    DEFAULT_PROVIDER_ADAPTER;
-  const providers = resolveProviderAdapter(
-    providerSelection,
-    options.providerOptions,
-  );
+    config.provider.selection ?? DEFAULT_PROVIDER_ADAPTER;
+  const providers = resolveProviderAdapter(providerSelection, {
+    emailWebhookSecret: config.webhooks?.emailSecret,
+    storageWebhookSecret: config.webhooks?.storageSecret,
+    ...(config.provider.options || {}),
+    ...(options.providerOptions || {}),
+  });
   if (environment === "production" && providers.developmentOnly) {
     throw new Error("Development-only providers are not allowed in production");
   }
-  const queue = options.queue || createQueue(options.queueOptions || {});
+  const queueOptions = options.queueOptions || {};
+  const queue = options.queue || createQueue({
+    provider: options.queueProvider ?? queueOptions.provider ?? config.queue.provider,
+    bullmq: {
+      ...config.queue,
+      url: config.queue.redisUrl,
+      ...queueOptions,
+      ...(queueOptions.redis || {}),
+      ...(options.queueOptions?.bullmq || {}),
+    },
+    sqs: {
+      ...config.queue.sqs,
+      ...queueOptions,
+      ...(options.queueOptions?.sqs || {}),
+    },
+  });
   const stores =
     options.stores ||
     (options.database
@@ -94,25 +111,23 @@ async function startServer(options = {}) {
           options.database,
         )
       : createSurrealStoreDirectory({
-          databaseOptions: options.databaseOptions,
+          databaseOptions: {
+            ...connectionConfig.surreal,
+            ...databaseOptions,
+          },
         }));
   const runtimeOptions = { ...(options.runtimeOptions || {}) };
   let defaultContext = options.defaultContext || {
-    namespace: process.env.REBASE_NAMESPACE,
-    database: process.env.REBASE_DATABASE,
+    namespace: options.namespace ?? config.surreal.defaultContext?.namespace,
+    database: options.database ?? config.surreal.defaultContext?.database,
   };
-  const configuredContexts =
-    options.contexts ||
-    contextsFromEnvironment() ||
-    (defaultContext.namespace && defaultContext.database
-      ? [defaultContext]
-      : []);
-  if (
-    !configuredContexts.length &&
-    defaultContext.namespace &&
-    defaultContext.database
-  )
+  const configuredContexts = [...(options.contexts ?? config.surreal.contexts ?? [])];
+  if (defaultContext.namespace && defaultContext.database && !configuredContexts.some(
+    (context) => context.namespace === defaultContext.namespace
+      && context.database === defaultContext.database,
+  )) {
     configuredContexts.push(defaultContext);
+  }
   if (
     (!defaultContext.namespace || !defaultContext.database) &&
     configuredContexts.length === 1
@@ -150,9 +165,7 @@ async function startServer(options = {}) {
       runtime,
       contexts: configuredContexts,
       intervalMs:
-        options.reconcileIntervalMs ||
-        Number(process.env.REBASE_RECONCILE_INTERVAL_MS) ||
-        30 * 60 * 1000,
+        options.reconcileIntervalMs ?? config.server.reconcileIntervalMs,
       onError: options.onReconcileError,
     });
     stopReconciler = reconciler.start({
@@ -168,8 +181,9 @@ async function startServer(options = {}) {
       readinessContexts: configuredContexts,
       resolveWebhookContext: options.resolveWebhookContext,
       allowBearer,
-      bodyLimitBytes: options.bodyLimitBytes,
-      requestTimeoutMs: options.requestTimeoutMs,
+      bodyLimitBytes: options.bodyLimitBytes ?? config.server.bodyLimitBytes,
+      requestTimeoutMs: options.requestTimeoutMs ?? config.server.requestTimeoutMs,
+      debug: options.debug ?? config.server.debug,
     });
     server = serve({ fetch: app.fetch, hostname, port });
     if (!server.listening)
@@ -213,7 +227,9 @@ async function startServer(options = {}) {
 }
 
 if (require.main === module) {
-  startServer()
+  const loaded = loadEnvironment(process.argv.slice(2));
+  const config = resolveConfiguration(loaded.values);
+  startServer({ config })
     .then((server) => {
       const shutdown = async (signal) => {
         try {
@@ -238,4 +254,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { contextsFromEnvironment, readContracts, startServer };
+module.exports = { readContracts, startServer };

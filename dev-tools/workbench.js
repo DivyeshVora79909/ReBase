@@ -7,12 +7,13 @@ const readline = require("node:readline/promises");
 const { stdin, stdout } = require("node:process");
 const { Surreal } = require("surrealdb");
 const { populate } = require("./populate");
+const { connectDatabase, sessionEndpoint } = require("../gateway/connection");
+const { loadEnvironment, resolveConfiguration, assertConnectionConfiguration } = require("../config/environment");
 
 const root = path.resolve(__dirname, "..");
 
 function parseArgs(argv) {
   const options = {
-    endpoint: process.env.SURREAL_ENDPOINT || "ws://127.0.0.1:8000/rpc",
     project: "test",
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -52,14 +53,16 @@ function buildDir(options) {
 }
 
 async function connectAdmin(options) {
-  const db = new Surreal();
-  await db.connect(options.endpoint);
-  await db.signin({
-    username: process.env.SURREAL_USER,
-    password: process.env.SURREAL_PASS,
-  });
-  await db.use({ namespace: options.namespace, database: options.database });
-  return db;
+  return (await connectDatabase(options)).db;
+}
+
+async function switchContext({ admin, actor, options, connect = connectAdmin }, namespace, database) {
+  if (!namespace || !database) throw new Error(".use requires namespace and database");
+  await actor?.close().catch(() => {});
+  await admin?.close().catch(() => {});
+  options.namespace = namespace;
+  options.database = database;
+  return { admin: await connect(options), actor: null };
 }
 
 function json(value) {
@@ -71,20 +74,13 @@ function json(value) {
 }
 
 function runBuild(options) {
-  const result = spawnSync(
-    process.execPath,
-    [
-      path.join("dev-tools", "compiler", "cli.js"),
-      "--project",
-      sourceDir(options),
-      "--namespace",
-      options.namespace,
-      "--database",
-      options.database,
-    ],
+  const args = [path.join("dev-tools", "compiler", "cli.js"), "--project", sourceDir(options)];
+  if (options.namespace && options.database) args.push("--namespace", options.namespace, "--database", options.database);
+  if (options.envFile) args.push("--env-file", options.envFile);
+  const result = spawnSync(process.execPath, args,
     {
       cwd: root,
-      env: process.env,
+      env: options.environment,
       encoding: "utf8",
     },
   );
@@ -94,10 +90,20 @@ function runBuild(options) {
 }
 
 async function main(argv = process.argv.slice(2)) {
-  const options = parseArgs(argv);
+  const loaded = loadEnvironment(argv);
+  const options = parseArgs(loaded.args);
+  const configuration = resolveConfiguration(loaded.values, options);
+  options.endpoint = configuration.surreal.endpoint;
+  options.username = configuration.surreal.username;
+  options.password = configuration.surreal.password;
+  options.connectTimeoutMs = configuration.surreal.connectTimeoutMs;
+  options.namespace ||= configuration.surreal.defaultContext?.namespace;
+  options.database ||= configuration.surreal.defaultContext?.database;
+  options.environment = loaded.values;
+  options.envFile = loaded.file || "";
   if (options.help) {
     console.log(
-      "Usage: node dev-tools/workbench.js [--endpoint URL] [--namespace NS --database DB] [--project NAME|DIR]",
+      "Usage: node dev-tools/workbench.js --env-file PATH [--endpoint URL] [--namespace NS --database DB] [--project NAME|DIR]",
     );
     return;
   }
@@ -112,7 +118,8 @@ async function main(argv = process.argv.slice(2)) {
     prompt.close();
     throw new Error("Namespace and database are required");
   }
-  const admin = await connectAdmin(options);
+  assertConnectionConfiguration({ ...configuration, surreal: { ...configuration.surreal, defaultContext: { namespace: options.namespace, database: options.database } } });
+  let admin = await connectAdmin(options);
   let actor = null;
   console.log("ReBase workbench. Type .help for commands.");
   prompt.prompt();
@@ -129,12 +136,18 @@ async function main(argv = process.argv.slice(2)) {
   .build                         Compile the current project
   .deploy                        Apply build/<project>/schema.surql
   .populate [table] [count]      Generate valid random data from data/*.schema.json
+  .use <namespace> <database>    Switch the active database context
   .as <email> <password>         Authenticate a working actor
   .query <surql>                 Run a query as the current actor or admin
   .sample <table> [limit]        Inspect a bounded sample
   .probe [security|data|all]      Run disposable live probes
   .quit                          Exit`);
         } else if (input === ".quit" || input === ".exit") break;
+        else if (input.startsWith(".use ")) {
+          const [, namespace, database] = input.split(/\s+/);
+          ({ admin, actor } = await switchContext({ admin, actor, options }, namespace, database));
+          console.log(`Using ${namespace}/${database}`);
+        }
         else if (input === ".build") runBuild(options);
         else if (input === ".deploy") {
           const file = path.join(buildDir(options), "schema.surql");
@@ -149,10 +162,11 @@ async function main(argv = process.argv.slice(2)) {
             count: Number(count),
             batchSize: 100,
             endpoint: options.endpoint,
-            username: process.env.SURREAL_USER,
-            password: process.env.SURREAL_PASS,
+            username: options.username,
+            password: options.password,
             namespace: options.namespace,
             database: options.database,
+            configuration,
           });
           console.log(json(result));
         } else if (input.startsWith(".as ")) {
@@ -160,7 +174,7 @@ async function main(argv = process.argv.slice(2)) {
           if (!email || !password)
             throw new Error(".as requires email and password");
           const session = new Surreal();
-          await session.connect(options.endpoint);
+          await session.connect(sessionEndpoint(options.endpoint));
           const auth = await session.signin({
             namespace: options.namespace,
             database: options.database,
@@ -189,7 +203,7 @@ async function main(argv = process.argv.slice(2)) {
           const result = spawnSync(
             process.execPath,
             [path.join("dev-tools", "probe.js"), command],
-            { cwd: root, env: process.env, encoding: "utf8" },
+            { cwd: root, env: options.environment, encoding: "utf8" },
           );
           process.stdout.write(result.stdout || "");
           process.stderr.write(result.stderr || "");
@@ -212,4 +226,4 @@ if (require.main === module)
     process.exitCode = 1;
   });
 
-module.exports = { main, parseArgs };
+module.exports = { main, parseArgs, switchContext };

@@ -2,6 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { loadEnvironment, resolveConfiguration } = require("../../config/environment");
 const { loadMaterials } = require("./materials");
 const { validateTableHandlers } = require("./table-handlers");
 const {
@@ -47,7 +48,8 @@ Material inputs:
   --framework <directory>     Framework SurrealQL root (default: framework)
   --output <directory>        Build artifact directory (default: build/<project>)
 
-Compilation context:
+  Compilation context:
+  --env-file <path>           Load deployment values from an environment profile
   --namespace <name>          Optional target namespace
   --database <name>           Optional target database
   --runtime-url <url>         Generate effect events for this runtime
@@ -56,6 +58,23 @@ Compilation context:
   --no-root-permissions       Skip generated root permission bootstrap
   --check                     Verify generated artifacts without writing them
   --help                      Show this help`;
+}
+
+function deploymentNotice(configuration) {
+  const context = [configuration.surreal.namespace, configuration.surreal.database];
+  const runtime = [configuration.runtime.url, configuration.runtime.wakeSecret];
+  const messages = [];
+  if (context.some(Boolean) && !context.every(Boolean)) {
+    messages.push("incomplete namespace/database context omitted");
+  } else if (!context.some(Boolean)) {
+    messages.push("namespace/database context absent; artifacts are context-neutral");
+  }
+  if (runtime.some(Boolean) && !runtime.every(Boolean)) {
+    messages.push("incomplete runtime binding omitted");
+  } else if (!runtime.some(Boolean)) {
+    messages.push("runtime binding absent; effect events are omitted");
+  }
+  return messages.length ? `ReBase compiler: ${messages.join("; ")}` : null;
 }
 
 function resolveDirectory(root, value) {
@@ -85,17 +104,20 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     ],
     print: rawArgs.printRaw,
   });
+  const configuration = rawArgs.configuration || resolveConfiguration({}, rawArgs);
   const context = {
-    namespace: rawArgs.namespace,
-    database: rawArgs.database,
-    runtimeUrl: rawArgs.runtimeUrl,
-    runtimeSecret: rawArgs.runtimeSecret,
+    namespace: rawArgs.namespace || configuration.surreal.defaultContext?.namespace,
+    database: rawArgs.database || configuration.surreal.defaultContext?.database,
+    runtimeUrl: rawArgs.runtimeUrl || configuration.runtime.url,
+    runtimeSecret: rawArgs.runtimeSecret || configuration.runtime.wakeSecret,
   };
   if ((context.namespace && !context.database) || (!context.namespace && context.database)) {
-    throw new Error("--namespace and --database must be supplied together");
+    context.namespace = undefined;
+    context.database = undefined;
   }
   if ((context.runtimeUrl && !context.runtimeSecret) || (!context.runtimeUrl && context.runtimeSecret)) {
-    throw new Error("--runtime-url and --runtime-secret must be supplied together");
+    context.runtimeUrl = undefined;
+    context.runtimeSecret = undefined;
   }
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
   const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
@@ -115,15 +137,20 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     projectDir,
     tableHandlerCount: tableHandlers.tables.length,
     materialFileCount: materials.files.length,
+    configuration,
   };
 }
 
 function main(argv = process.argv.slice(2)) {
-  const args = parseArgs(argv);
+  const loaded = loadEnvironment(argv);
+  const args = parseArgs(loaded.args);
+  args.configuration = resolveConfiguration(loaded.values, args);
   if (args.help) {
     console.log(usage());
     return null;
   }
+  const notice = deploymentNotice(args.configuration);
+  if (notice) console.error(notice);
   return compileFromArgs(args);
 }
 
@@ -143,4 +170,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { compileFromArgs, main, parseArgs, usage };
+module.exports = { compileFromArgs, deploymentNotice, main, parseArgs, usage };

@@ -111,7 +111,44 @@
     </aside>
 
     <script>
-      const ws = new WebSocket("ws://127.0.0.1:8000/rpc");
+      const parameters = new URLSearchParams(window.location.search);
+      const visualizerConfig = {
+        endpoint: parameters.get("endpoint"),
+        namespace: parameters.get("namespace"),
+        database: parameters.get("database"),
+        user: parameters.get("user"),
+        password: parameters.get("password"),
+        root: parameters.get("root") || "groups:root",
+      };
+      const missingConfig = [
+        "endpoint",
+        "namespace",
+        "database",
+        "user",
+        "password",
+      ].filter((name) => !visualizerConfig[name]);
+      if (missingConfig.length) {
+        document.getElementById("inspector-body").innerHTML =
+          `<p class="text-error">Missing connection parameters: ${missingConfig.join(", ")}</p>`;
+        throw new Error("Visualizer connection parameters are required");
+      }
+      try {
+        const endpoint = new URL(visualizerConfig.endpoint);
+        if (!["ws:", "wss:"].includes(endpoint.protocol))
+          throw new Error("WebSocket endpoint required");
+      } catch {
+        document.getElementById("inspector-body").innerHTML =
+          `<p class="text-error">The endpoint must be a valid ws:// or wss:// URL.</p>`;
+        throw new Error("Invalid visualizer endpoint");
+      }
+      if (
+        !/^[A-Za-z_][A-Za-z0-9_]*:[A-Za-z0-9_-]+$/.test(visualizerConfig.root)
+      ) {
+        document.getElementById("inspector-body").innerHTML =
+          `<p class="text-error">Invalid root record parameter.</p>`;
+        throw new Error("Invalid visualizer root record");
+      }
+      const ws = new WebSocket(visualizerConfig.endpoint);
       let rpcId = 1,
         pending = {},
         cy = null;
@@ -150,7 +187,7 @@
 
         try {
           const q = `
-                LET $root = groups:root;
+                LET $root = ${visualizerConfig.root};
                 LET $nodes = array::distinct([$root, $root.dominates].flatten());
                 LET $rows = array::flatten([
                     (SELECT id, parents, name FROM user WHERE id IN $nodes),
@@ -329,8 +366,13 @@
           document.getElementById("btn-sidebar-toggle").classList.add("hidden");
         });
       ws.onopen = async () => {
-        await rpc("signin", [{ user: "root", pass: "root" }]);
-        await rpc("use", ["main", "main"]);
+        await rpc("signin", [
+          { user: visualizerConfig.user, pass: visualizerConfig.password },
+        ]);
+        await rpc("use", [
+          visualizerConfig.namespace,
+          visualizerConfig.database,
+        ]);
         loadGraph();
       };
     </script>

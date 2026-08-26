@@ -10,6 +10,7 @@ const { spawn } = require("node:child_process");
 const { serve } = require("@hono/node-server");
 const { Surreal } = require("surrealdb");
 const { createRuntimeApp } = require("../gateway/app");
+const { connectDatabase } = require("../gateway/connection");
 const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
 const { loadTableHandlers } = require("../gateway/handlers");
 const { createLocalProviders } = require("../gateway/providers/local");
@@ -203,6 +204,23 @@ async function main() {
   let runtimeChild;
   try {
     await state.db.query(generated.bundle);
+    await state.db.query("DEFINE USER rebase_session_probe ON ROOT PASSWORD 'session-probe-password' ROLES OWNER DURATION FOR TOKEN 1s, FOR SESSION NONE;");
+    const renewableAdmin = await connectDatabase({
+      endpoint: state.endpoint,
+      username: "rebase_session_probe",
+      password: "session-probe-password",
+      namespace: state.namespace,
+      database: state.database,
+      expiryMargin: 0,
+      reconnect: false,
+    });
+    try {
+      assert.deepEqual(queryResult(await renewableAdmin.db.query("RETURN 1;")), 1);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      assert.deepEqual(queryResult(await renewableAdmin.db.query("RETURN 1;")), 1);
+    } finally {
+      await renewableAdmin.close();
+    }
     await assert.rejects(
       state.db.query("CREATE file_storage_config:missing_credential SET owned_by = groups:root, bucket = 'probe';"),
       /access_key_id|secret_access_key|endpoint|region|field|schema|required/i,
@@ -642,21 +660,34 @@ async function main() {
       SURREAL_ENDPOINT: state.endpoint,
       SURREAL_USER: "root",
       SURREAL_PASS: "root",
-      REBASE_NAMESPACE: state.namespace,
-      REBASE_DATABASE: state.database,
+      SURREAL_NAMESPACE: state.namespace,
+      SURREAL_DATABASE: state.database,
       REBASE_WAKE_SECRET: secret,
       REBASE_REDIS_URL: redis.url,
       REBASE_QUEUE_PREFIX: `rebase-server-probe-${Date.now().toString(36)}`,
       REBASE_PORT: String(childPort),
+      REBASE_BODY_LIMIT_BYTES: "2048",
       REBASE_EMAIL_WEBHOOK_SECRET: secret,
       REBASE_STORAGE_WEBHOOK_SECRET: secret,
     };
-    runtimeChild = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."), env: childEnvironment, stdio: ["ignore", "ignore", "pipe"],
+    const runtimeProfile = path.join(redis.directory, "runtime.env");
+    fs.writeFileSync(runtimeProfile, Object.entries(childEnvironment)
+      .filter(([name]) => /^(?:SURREAL_|REBASE_|NODE_ENV$|AWS_REGION$|SQS_ENDPOINT$)/.test(name))
+      .map(([name, profileValue]) => `${name}=${profileValue}`)
+      .join("\n"));
+    const inheritedEnvironment = Object.fromEntries(Object.entries(process.env)
+      .filter(([name]) => !/^(?:SURREAL_|REBASE_|NODE_ENV$|AWS_REGION$|SQS_ENDPOINT$)/.test(name)));
+    runtimeChild = spawn(process.execPath, ["gateway/server.js", "--env-file", runtimeProfile], {
+      cwd: path.resolve(__dirname, ".."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
     });
     await waitForPort(childPort, runtimeChild, "ReBase server");
     assert.equal((await fetch(`http://127.0.0.1:${childPort}/healthz`)).status, 200);
     await waitFor(async () => (await fetch(`http://127.0.0.1:${childPort}/readyz`)).status === 200, "real server did not become ready");
+    assert.equal((await fetch(`http://127.0.0.1:${childPort}/internal/wake/task`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ padding: "x".repeat(3000) }),
+    })).status, 413);
 
     const conflicting = spawn(process.execPath, ["gateway/server.js"], {
       cwd: path.resolve(__dirname, ".."),

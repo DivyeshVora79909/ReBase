@@ -35,6 +35,7 @@ SELECT
   ORDER BY id DESC 
   LIMIT 1;
 
+-- UTC cron schedule: every minute, repeat twice, coalesce misfires
 CREATE send_brevo_email SET 
   owned_by = groups:root, 
   config = email_brevo_config:prod, 
@@ -42,9 +43,9 @@ CREATE send_brevo_email SET
   subject = 'Cron Test: Automated Email', 
   text = 'This email was triggered automatically by the ReBase cron scheduler.',
   schedule = {
-    cron: '* * * * *',      -- Standard 5-field UTC cron (every minute)
-    repeat: 2,              -- Run exactly 2 times then finish
-    misfire: 'coalesce'     -- If server was down, execute once on recovery
+    cron: '* * * * *',
+    repeat: 2,
+    misfire: 'coalesce'
   };
 
 SELECT 

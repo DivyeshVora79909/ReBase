@@ -25,10 +25,23 @@ designs/<name>/table-handlers Table-keyed effect handlers
 npm run build
 npm run check
 npm run verify
-npm run server
-npm run workbench
-npm run populate -- --table all --count 100
+npm run server -- --env-file .env.local
+npm run workbench -- --env-file .env.local
+npm run populate -- --env-file .env.local --table all --count 100
 ```
+
+Commands read one explicit environment profile. For example:
+
+```bash
+node gateway/server.js --env-file .env.local
+node dev-tools/compiler/cli.js --env-file .env.cloud
+node dev-tools/populate.js --env-file .env.local --count 100
+node dev-tools/workbench.js --env-file .env.local
+```
+
+Profiles use `SURREAL_NAMESPACE` and `SURREAL_DATABASE` for the default context.
+Use `--namespace` and `--database` for one-off command overrides. Provider API
+credentials remain typed fields in SurrealDB configuration records.
 
 The compiler emits `build/<project>/schema.surql`, a private `runtime-contracts.json`, and validated `table-handlers/` modules. It does not emit tenant operation catalogs, generic job schemas, or compatibility artifacts.
 
@@ -37,10 +50,7 @@ Runtime event generation is explicit because namespace and database are deployme
 ```bash
 node dev-tools/compiler/cli.js \
   --project designs/test \
-  --namespace tenant \
-  --database app \
-  --runtime-url https://runtime.internal \
-  --runtime-secret "$REBASE_WAKE_SECRET"
+  --env-file .env.cloud
 ```
 
 ## Database Security

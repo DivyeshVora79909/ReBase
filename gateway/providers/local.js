@@ -7,14 +7,8 @@ function createLocalProviders(options = {}) {
     ...DEFAULT_EMAIL_TABLES,
     ...(options.emailTables || {}),
   };
-  const emailWebhookSecret =
-    options.emailWebhookSecret ||
-    options.webhookSecret ||
-    process.env.REBASE_EMAIL_WEBHOOK_SECRET;
-  const storageWebhookSecret =
-    options.storageWebhookSecret ||
-    options.webhookSecret ||
-    process.env.REBASE_STORAGE_WEBHOOK_SECRET;
+  const emailWebhookSecret = options.emailWebhookSecret || options.webhookSecret;
+  const storageWebhookSecret = options.storageWebhookSecret || options.webhookSecret;
   function verifyWebhook(request, rawBody, secret) {
     const signature = (request.headers.get("x-rebase-signature") || "").replace(
       /^sha256=/i,

@@ -1,6 +1,6 @@
 # Production Readiness Report
 
-Updated after the runtime/compiler reboot. Tested with Node `22.23.2`, SurrealDB `3.2.0`, disposable Redis, disposable in-memory SurrealDB, local providers, and an injected AWS SQS client.
+Updated after the runtime/compiler reboot and unified environment-profile work. Tested with Node `22.23.2`, SurrealDB `3.2.0`, disposable Redis, disposable in-memory SurrealDB, local providers, and an injected AWS SQS client.
 
 ## Verdict
 
@@ -16,6 +16,7 @@ Updated after the runtime/compiler reboot. Tested with Node `22.23.2`, SurrealDB
 | BullMQ/Redis | Three transport lanes (`task`, `schedule`, `webhook`), delay, retry, stalls, concurrency, deduplication, and durable lane-specific dead letters.                                                                    |
 | Reconciler   | Startup and periodic scans of configured namespace/database contexts; republishes executable locators without querying queue membership.                                                                            |
 | Providers    | Local deterministic email/storage examples only. Production adapters remain separate work.                                                                                                                          |
+| Configuration | One explicit `.env.*` profile is resolved at each executable boundary; provider credentials remain in strict SurrealDB records.                                                                                      |
 
 ## Coverage Matrix
 
@@ -30,6 +31,7 @@ Updated after the runtime/compiler reboot. Tested with Node `22.23.2`, SurrealDB
 | Webhooks             | raw-body HMAC, timestamp replay bound, provider account match, event dedupe, reverse ordering, table correlation, bad signatures                                                                                            | **PASS** for local adapter    |
 | HTTP/startup         | liveness/readiness, body/content limits, HMAC/bearer policy, context allowlist, real child process, missing config, port conflict, unavailable Redis, production local-provider rejection, SIGTERM                          | **PASS**                      |
 | Multi-context        | concurrent connection deduplication, failed creation eviction, idle-safe tracking, configured context allowlist                                                                                                             | **PASS**                      |
+| Environment profiles | file parsing, precedence, canonical names, neutral/complete compiler profiles, stale profile-bound checks, profile-only server startup, dynamic workbench context contract, visualizer configuration                         | **PASS**                      |
 | Real providers/cloud | Brevo, object storage, real AWS SQS, managed Redis/Valkey/Dragonfly, Surreal Cloud                                                                                                                                          | **UNTESTED**                  |
 
 ## Remaining Production Blockers
@@ -46,6 +48,7 @@ Updated after the runtime/compiler reboot. Tested with Node `22.23.2`, SurrealDB
 npm run build
 npm run check
 surreal validate build/test/schema.surql
+npm run probe:environment
 npm run probe:compiler
 npm run probe:architecture
 npm run probe:queues

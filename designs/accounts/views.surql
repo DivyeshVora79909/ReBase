@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 DEFINE TABLE OVERWRITE v_pay_to AS SELECT a_to AS node, math::sum(a_amount) AS amount, math::sum(a_amount * a_fx_rate) AS val FROM payment WHERE d2_p_to = 1 GROUP BY node;
 DEFINE TABLE OVERWRITE v_pay_from AS SELECT a_from AS node, math::sum(a_amount) AS amount, math::sum(a_amount * a_fx_rate) AS val FROM payment WHERE d1_p_from = 1 GROUP BY node;
 

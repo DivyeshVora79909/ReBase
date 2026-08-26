@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 DEFINE TABLE org SCHEMAFULL;
 DEFINE FIELD a_name ON org TYPE string;
 DEFINE FIELD a_currency ON org TYPE string DEFAULT 'USD';

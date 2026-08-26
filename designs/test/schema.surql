@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 -- 1. SYSTEM TABLES (Reactivity Registration via Lateral Data Links)
 DEFINE TABLE OVERWRITE user SCHEMAFULL COMMENT '@rebase-principal user';
 DEFINE FIELD a_favorite_primitive ON user TYPE option<record<test_primitive>> REFERENCE ON DELETE REJECT DEFAULT NONE;

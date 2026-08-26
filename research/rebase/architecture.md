@@ -271,6 +271,18 @@ The compiler must:
 7. copy validated table handlers into the build artifact;
 8. keep deterministic output and architecture probes in the upgrade gate.
 
+Deployment configuration is supplied through an explicit environment profile.
+`SURREAL_NAMESPACE` and `SURREAL_DATABASE` select the default database context;
+`REBASE_RUNTIME_URL` and `REBASE_WAKE_SECRET` enable generated runtime events.
+Either pair may be omitted for context-neutral compilation. Partial pairs are
+ignored with a concise compiler notice. Runtime modules receive resolved config
+objects and do not read process environment directly.
+
+Gateway database connections use the SDK authentication provider so finite
+system-user JWTs renew before expiry and authentication is restored after a
+WebSocket reconnect. Record-access clients have a separate lifecycle described
+in [`session-lifecycle.md`](./session-lifecycle.md).
+
 It must not generate an operation catalog, universal job schema, namespace-
 specific behavior registry, duplicated queue mechanics, or a second client CRUD
 authorization layer.

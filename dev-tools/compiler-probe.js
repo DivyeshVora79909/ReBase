@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { compileFromArgs } = require("./compiler/cli");
+const { compileFromArgs, main: compilerMain } = require("./compiler/cli");
 
 const ROOT = path.resolve(__dirname, "..");
 const FRAMEWORK = path.join(ROOT, "framework");
@@ -87,6 +87,43 @@ async function main() {
     const first = fs.readFileSync(path.join(output, "schema.surql"), "utf8");
     compile(valid, output, { runtimeUrl: "https://runtime.internal", runtimeSecret: "probe-secret" });
     assert.equal(fs.readFileSync(path.join(output, "schema.surql"), "utf8"), first);
+
+    const profile = path.join(temp, ".env.profile");
+    fs.writeFileSync(profile, [
+      "SURREAL_NAMESPACE=profile_ns",
+      "SURREAL_DATABASE=profile_db",
+      "REBASE_RUNTIME_URL=https://profile-runtime.internal",
+      "REBASE_WAKE_SECRET=profile-secret",
+    ].join("\n"));
+    const profiled = compilerMain([
+      "--env-file", profile,
+      "--project", valid,
+      "--framework", FRAMEWORK,
+      "--output", path.join(temp, "profile-build"),
+    ]);
+    assert.match(profiled.bundle, /USE NS profile_ns DB profile_db/);
+    assert.match(profiled.bundle, /profile-runtime\.internal/);
+    const secondProfile = path.join(temp, ".env.second-profile");
+    fs.writeFileSync(secondProfile, [
+      "SURREAL_NAMESPACE=profile_two",
+      "SURREAL_DATABASE=profile_db",
+      "REBASE_RUNTIME_URL=https://profile-runtime.internal",
+      "REBASE_WAKE_SECRET=profile-secret",
+    ].join("\n"));
+    assert.throws(() => compilerMain([
+      "--env-file", secondProfile,
+      "--project", valid,
+      "--framework", FRAMEWORK,
+      "--output", path.join(temp, "profile-build"),
+      "--check",
+    ]), /stale/i);
+    const neutral = compilerMain([
+      "--project", valid,
+      "--framework", FRAMEWORK,
+      "--output", path.join(temp, "neutral-build"),
+    ]);
+    assert.doesNotMatch(neutral.bundle, /-- REBASE: context/);
+    assert.doesNotMatch(neutral.bundle, /internal\/wake/);
 
     const cases = [
       ["missing handler", schema(validEffect()), null, /table-handlers|handler/i],

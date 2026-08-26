@@ -1,5 +1,3 @@
-USE NS main DB main;
-
 -- 1. SYSTEM TABLE VIEWS (Testing reactivity upward from custom data to system)
 DEFINE TABLE OVERWRITE v_user_fav_prim AS 
     SELECT a_favorite_primitive AS primitive, count() AS total_users 
