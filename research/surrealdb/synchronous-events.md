@@ -76,10 +76,13 @@ include fields written by the nested event update. A later `SELECT` in the same
 database request did include the committed patch:
 
 ```surql
-LET $created = CREATE ONLY file_access_grant SET
+LET $created = CREATE ONLY test_attachment SET
     owned_by = $auth,
-    object = $object,
-    expires_in = $expires_in;
+    storage_config = $storage_config,
+    attached_to = $attached_to,
+    file_name = $file_name,
+    media_type = $media_type,
+    byte_length_limit = $byte_length_limit;
 RETURN (SELECT * FROM $created.id)[0];
 ```
 

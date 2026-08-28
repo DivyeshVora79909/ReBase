@@ -50,7 +50,7 @@ The compiler derives, rather than duplicates:
 - existence assertions and native delete policies;
 - ownership, access indexes, readers, views, audit, and change logs;
 - effect process, input/output fields, handlers, and generated events;
-- UUIDv7 IDs and indexes;
+- SurrealDB-generated record IDs and runtime indexes;
 - seed dependency ordering and population pools.
 
 Reference assertions apply to top-level record fields. Required scalars use

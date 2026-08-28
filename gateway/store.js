@@ -34,6 +34,11 @@ function createTableStore(database) {
     )));
   }
 
+  async function execute(statement, variables = {}) {
+    if (typeof statement !== "string" || !statement.trim()) throw new Error("Store statement is required");
+    return clean(queryResult(await db.query(statement, variables)));
+  }
+
   async function claim(id, { token, leaseUntil, outcome = "pending" }) {
     const outcomeCondition = outcomePredicate(outcome);
     return clean(queryResult(await db.query(`
@@ -133,41 +138,6 @@ function createTableStore(database) {
     return (Array.isArray(value) ? value : []).map(recordIdString);
   }
 
-  async function applyWebhook(id, {
-    eventField,
-    eventId,
-    orderField,
-    orderedAt,
-    patch: patchValue,
-    allowedFields,
-  }) {
-    const fields = new Set(allowedFields || []);
-    fields.add(eventField);
-    fields.add(orderField);
-    const normalized = {
-      ...(patchValue || {}),
-      [eventField]: String(eventId),
-    };
-    delete normalized[orderField];
-    const assignments = patchAssignments(normalized, [...fields]);
-    assignments.push(`${identifier(orderField)} = type::datetime($ordered_at)`);
-    return clean(queryResult(await db.query(`
-      LET $before = (SELECT ${identifier(eventField)}, ${identifier(orderField)} FROM type::record($id))[0];
-      LET $applied = (UPDATE type::record($id)
-        SET ${assignments.join(", ")}
-        WHERE (${identifier(eventField)} = NONE OR ${identifier(eventField)} != $event_id)
-          AND (${identifier(orderField)} = NONE OR ${identifier(orderField)} < type::datetime($ordered_at))
-        RETURN AFTER)[0];
-      RETURN {
-        applied: $applied,
-        duplicate: $applied = NONE AND $before != NONE AND $before.${identifier(eventField)} = $event_id,
-        stale: $applied = NONE AND $before != NONE AND $before.${identifier(eventField)} != $event_id
-      };
-    `, {
-      id: String(id), patch: normalized, event_id: String(eventId), ordered_at: new Date(orderedAt).toISOString(),
-    })));
-  }
-
   async function initializeSchedule(id, nextAt) {
     return clean(queryResult(await db.query(`
       RETURN (UPDATE type::record($id)
@@ -265,8 +235,8 @@ function createTableStore(database) {
   return {
     advanceSchedule,
     ambiguous,
-    applyWebhook,
     claim,
+    execute,
     finalize,
     finishSchedule,
     failSchedule,

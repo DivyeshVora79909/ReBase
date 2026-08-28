@@ -16,7 +16,7 @@ the scheduler:
 1. copies the input fields and `owned_by` into a fresh record in the same effect
    table;
 2. clears schedule-only fields and sets the new record to `pending`;
-3. generates a new UUIDv7;
+3. lets SurrealDB generate a fresh occurrence record ID;
 4. lets the normal async event, queue, handler, webhook, and reconciliation path
    process the occurrence.
 
@@ -50,7 +50,7 @@ boundary.
 An async database event sends a best-effort wake containing only:
 
 ```json
-{ "namespace": "...", "database": "...", "id": "table:u'...'" }
+{ "namespace": "...", "database": "...", "id": "table:generated-id" }
 ```
 
 The runtime coalesces duplicate wakes for one context and publishes the locator

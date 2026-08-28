@@ -325,20 +325,10 @@ function resolveConfiguration(values = {}, overrides = {}) {
       ),
       options: overrides.providerOptions || {},
     },
-    webhooks: {
-      emailSecret: value(
-        values,
-        overrides,
-        "REBASE_EMAIL_WEBHOOK_SECRET",
-        "emailWebhookSecret",
-      ),
-      storageSecret: value(
-        values,
-        overrides,
-        "REBASE_STORAGE_WEBHOOK_SECRET",
-        "storageWebhookSecret",
-      ),
+    storage: {
+      bucket: value(values, overrides, "REBASE_STORAGE_BUCKET", "storageBucket"),
     },
+    webhooks: {},
   };
 }
 

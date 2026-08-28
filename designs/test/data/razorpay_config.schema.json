@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["owned_by", "label", "key_id", "key_secret", "webhook_secret"],
+  "properties": {
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "label": { "type": "string", "minLength": 1 },
+    "visibility": { "type": "boolean", "x-rebase-optional-probability": 0.45 },
+    "key_id": { "type": "string", "minLength": 1 },
+    "key_secret": { "type": "string", "minLength": 1 },
+    "webhook_secret": { "type": "string", "minLength": 1 }
+  }
+}

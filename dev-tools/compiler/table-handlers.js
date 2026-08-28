@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { loadTableHandlers } = require("../../gateway/handlers");
+const { loadWebhookHandlers } = require("../../gateway/webhooks");
 
 function deniedPermissions(field) {
   const definition = field?.definition || "";
@@ -39,6 +40,16 @@ function validateEffectTable(table) {
   }
   const inputs = [...table.fields.values()].filter((field) => field.effectInput);
   const mutableInputs = inputs.filter((field) => !isImmutableAfterCreate(field));
+  const events = table.effectEvents?.length ? table.effectEvents : ["CREATE"];
+  if (table.effectProcess === "async" && (events.length !== 1 || events[0] !== "CREATE")) {
+    throw new Error(`${table.name} asynchronous effects support only CREATE events`);
+  }
+  if (events.includes("UPDATE") && !inputs.length) {
+    throw new Error(`${table.name} UPDATE effects require at least one @rebase-effect-input field`);
+  }
+  if (events.includes("UPDATE") && !mutableInputs.length) {
+    throw new Error(`${table.name} UPDATE effects require at least one mutable effect input`);
+  }
   if (table.effectProcess === "async" && table.effectMutableInputs) {
     throw new Error(`${table.name} cannot use @rebase-mutable-inputs without an implemented generation policy`);
   }
@@ -54,25 +65,14 @@ function validateTableHandlers(projectDir, schema, runtimeContracts = { tables: 
     if (effectTables.length) throw new Error("Effect tables require a table-handlers directory");
     return { get() { return null; }, list() { return []; }, tables: [] };
   }
+  for (const table of effectTables) validateEffectTable(table);
   const contracts = new Map(Object.entries(runtimeContracts.tables || {}));
-  const webhookRoutes = new Map();
-  for (const [table, contract] of contracts) {
-    if (!contract.webhook) continue;
-    const key = `${contract.webhook.provider}/${contract.webhook.route}`;
-    if (webhookRoutes.has(key)) throw new Error(`Duplicate webhook route ${key}: ${webhookRoutes.get(key)}, ${table}`);
-    webhookRoutes.set(key, table);
-  }
   const handlers = loadTableHandlers(directory, { contracts });
   for (const table of effectTables) {
-    validateEffectTable(table);
     const handler = handlers.get(table.name);
     if (!handler) throw new Error(`Effect table ${table.name} has no table handler`);
     if (handler.process && handler.process !== table.effectProcess) {
       throw new Error(`${table.name} process mismatch: schema=${table.effectProcess}, handler=${handler.process}`);
-    }
-    const contract = contracts.get(table.name);
-    if (contract?.webhook && (!handler.verifyWebhook || !handler.correlateWebhook)) {
-      throw new Error(`${table.name} webhook contract requires verifyWebhook() and correlateWebhook()`);
     }
   }
   for (const handler of handlers.list()) {
@@ -81,7 +81,17 @@ function validateTableHandlers(projectDir, schema, runtimeContracts = { tables: 
       if (!table?.effectProcess) throw new Error(`Table handler ${tableName} has no @rebase-effect declaration`);
     }
   }
+  for (const table of schema.tables.values()) {
+    if (!table.effectProcess && table.effectEvents?.length) {
+      throw new Error(`${table.name} declares @rebase-events without @rebase-effect`);
+    }
+  }
   return handlers;
 }
 
-module.exports = { validateEffectTable, validateTableHandlers };
+function validateWebhookHandlers(projectDir) {
+  const directory = path.join(projectDir, "webhook-handlers");
+  return loadWebhookHandlers(directory);
+}
+
+module.exports = { validateEffectTable, validateTableHandlers, validateWebhookHandlers };

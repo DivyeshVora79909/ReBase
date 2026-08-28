@@ -36,7 +36,8 @@ compiler copies validated modules into the build artifact and rejects:
 - an effect table without a handler;
 - a handler for a non-effect or unknown table;
 - duplicate table keys;
-- missing `execute`, incompatible aliases, or unsupported module shape;
+- a missing declared event handler, incompatible aliases, or unsupported module
+  shape;
 - handler-authored process/output/timeout metadata that duplicates the compiled contract;
 - generated events targeting a table outside the registry.
 
@@ -54,8 +55,10 @@ Current conceptual shape:
 ```js
 module.exports = {
   table: "send_brevo_email",
-  async execute({ record, load, providers, signal, trigger }) {
-    return { outcome: "success", patch: { provider_reference: "..." } };
+  on: {
+    async CREATE({ record, load, providers, signal, trigger }) {
+      return { outcome: "success", patch: { provider_reference: "..." } };
+    },
   },
 };
 ```
@@ -123,10 +126,13 @@ transport; other providers implement the same lane-aware port.
 
 ### Provider webhook
 
-The route cannot dispatch from an untrusted tenant ID. It first verifies the raw
-body/signature and replay rules, derives the provider event ID, correlates an
-indexed provider object or signed token, and verifies the provider account. Only
-then may it invoke table-specific reconciliation/patch logic.
+The route cannot dispatch from an untrusted tenant ID. For Razorpay, the order
+contains an opaque authenticated route capsule in provider metadata. Inbound
+processing extracts and opens that capsule, loads its referenced configuration,
+verifies the raw-body signature, and checks the provider order/payment against
+the routed local record before invoking event-specific persistence logic. A
+provider without returned metadata may instead use an indexed provider object
+ID, but namespace/database values in an unverified payload are never trusted.
 
 ### Reconciliation and scheduling
 
@@ -151,7 +157,7 @@ Use:
 - state-driven no-op behavior for terminal records;
 - stable provider idempotency based on the immutable async effect ID;
 - provider reconciliation for ambiguous outcomes;
-- allowlisted patches and provider/account correlation.
+- allowlisted patches and authenticated route/configuration correlation.
 
 Managed queue retry counters are not duplicated into tenant effect rows. Store
 only business state the client or handler needs to understand the effect.

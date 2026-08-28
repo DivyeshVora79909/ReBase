@@ -61,24 +61,15 @@ function withRequestTimeout(timeoutMs, operation) {
   return Promise.race([operation(), timeout]).finally(() => clearTimeout(timer));
 }
 
-function webhookTable(handlers, provider, route) {
-  const matches = handlers.tables.filter((table) => {
-    const webhook = handlers.contracts?.get(table)?.webhook || handlers.get(table)?.contract?.webhook;
-    return webhook?.provider === provider && webhook?.route === route;
-  });
-  if (matches.length !== 1) throw new RuntimeError("WEBHOOK_ROUTE_NOT_FOUND", `No unique webhook route for ${provider}/${route}`, 404);
-  return matches[0];
-}
-
 function createRuntimeApp({
   runtime,
   handlers,
+  webhooks,
   queue,
   providers,
   wakeSecret,
   defaultContext = {},
   readinessContexts = [],
-  resolveWebhookContext,
   bodyLimitBytes = 256 * 1024,
   requestTimeoutMs = 30000,
   allowBearer = true,
@@ -87,13 +78,11 @@ function createRuntimeApp({
   if (!Number.isInteger(bodyLimitBytes) || bodyLimitBytes < 1024) throw new Error("bodyLimitBytes must be at least 1024 bytes");
   if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 300000) throw new Error("requestTimeoutMs must be between 1 and 300000ms");
   const app = new Hono();
-  const webhookTables = handlers.tables.filter((table) => {
-    const contract = handlers.contracts?.get(table) || handlers.get(table)?.contract;
-    return Boolean(contract?.webhook);
-  });
-  const webhookRouting = Boolean(webhookTables.length === 0
-    || typeof resolveWebhookContext === "function"
-    || (readinessContexts.length <= 1 && defaultContext.namespace && defaultContext.database));
+  const webhookProviders = webhooks?.providers || [];
+  const webhookRouting = webhookProviders.every((provider) => (
+    typeof providers?.webhooks?.[provider]?.extractRoute === "function"
+    && typeof providers?.webhooks?.[provider]?.verify === "function"
+  ));
   app.use("*", bodyLimit({
     maxSize: bodyLimitBytes,
     onError() { throw new RuntimeError("BODY_TOO_LARGE", "Request body is too large", 413); },
@@ -124,10 +113,6 @@ function createRuntimeApp({
     const requiredProviders = [...new Set(handlers.tables.flatMap((table) => (
       handlers.contracts?.get(table)?.providers || handlers.get(table)?.contract?.providers || []
     )))].sort();
-    const webhookProviders = [...new Set(handlers.tables.flatMap((table) => {
-      const contract = handlers.contracts?.get(table) || handlers.get(table)?.contract;
-      return contract?.webhook?.provider ? [contract.webhook.provider] : [];
-    }))].sort();
     let providerHealth;
     try {
       providerHealth = typeof providers?.health === "function"
@@ -146,7 +131,7 @@ function createRuntimeApp({
       contexts,
       handlers: { ok: contracts, tables: handlers.tables },
       providers: providerHealth,
-      webhooks: { ok: Boolean(webhookRouting), tables: webhookTables },
+      webhooks: { ok: Boolean(webhookRouting), providers: webhookProviders },
     }, ok ? 200 : 503);
   });
 
@@ -173,42 +158,19 @@ function createRuntimeApp({
     return c.json({ ok: true, queued: result }, 202);
   });
 
-  app.post("/webhooks/:provider/:route", async (c) => {
+  app.post("/webhooks/:provider", async (c) => {
     const rawBody = await readBody(c, bodyLimitBytes);
-    const provider = c.req.param("provider");
-    const route = c.req.param("route");
-    const handlerTable = webhookTable(handlers, provider, route);
-    const payload = isJsonContentType(c.req.header("content-type"))
-      ? parseJson(rawBody, "INVALID_WEBHOOK")
-      : null;
-    const handler = handlers.get(handlerTable);
-    const verified = await withRequestTimeout(requestTimeoutMs, () => handler.verifyWebhook({
-      request: c.req.raw,
-      rawBody,
-      payload,
-      providers,
-    }));
-    if (!verified) throw new RuntimeError("INVALID_WEBHOOK", "Invalid webhook signature or payload", 401);
-    if (!webhookRouting) {
-      throw new RuntimeError(
-        "WEBHOOK_CONTEXT_ROUTING_REQUIRED",
-        "Webhook context routing is not configured for this deployment",
-        503,
-      );
+    const provider = c.req.param("provider").toLowerCase();
+    if (!webhooks?.providers?.includes(provider)) {
+      throw new RuntimeError("WEBHOOK_PROVIDER_NOT_FOUND", `No webhook handler for ${provider}`, 404);
     }
-    const context = typeof resolveWebhookContext === "function"
-      ? await resolveWebhookContext({ provider, route, request: c.req.raw, rawBody, verified })
-      : defaultContext;
+    if (!webhookRouting) throw new RuntimeError("WEBHOOK_PROVIDER_UNAVAILABLE", "Webhook provider is unavailable", 503);
     const result = await withRequestTimeout(requestTimeoutMs, () => runtime.webhook({
-      namespace: context?.namespace,
-      database: context?.database,
-      handlerTable,
-      payload,
-      rawBody,
+      provider,
       request: c.req.raw,
-      verified,
+      rawBody,
     }));
-    return c.json({ ok: true, data: result }, result.accepted ? 202 : 200);
+    return c.json({ ok: true, data: result }, 200);
   });
 
   app.notFound((c) => c.json({ ok: false, error: { code: "NOT_FOUND", message: "Route not found" } }, 404));
@@ -227,5 +189,4 @@ module.exports = {
   readBody,
   requireJsonContentType,
   verifyInternal,
-  webhookTable,
 };

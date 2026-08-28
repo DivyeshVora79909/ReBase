@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { loadEnvironment, resolveConfiguration } = require("../../config/environment");
 const { loadMaterials } = require("./materials");
-const { validateTableHandlers } = require("./table-handlers");
+const { validateTableHandlers, validateWebhookHandlers } = require("./table-handlers");
 const {
   generateBundle,
   writeArtifacts,
@@ -121,13 +121,19 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
   }
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
   const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
+  const webhookHandlers = validateWebhookHandlers(projectDir);
+  result.contracts.webhooks = webhookHandlers.contract();
+  const copies = [];
+  for (const directory of ["table-handlers", "webhook-handlers"]) {
+    if (fs.existsSync(path.join(projectDir, directory))) {
+      copies.push({ sourceDir: path.join(projectDir, directory), outputDir: path.join(outputDir, directory) });
+    }
+  }
   const artifacts = writeArtifacts({
     outputDir,
     bundle: result.bundle,
     contracts: result.contracts,
-    copies: fs.existsSync(path.join(projectDir, "table-handlers"))
-      ? [{ sourceDir: path.join(projectDir, "table-handlers"), outputDir: path.join(outputDir, "table-handlers") }]
-      : [],
+    copies,
   }, { check: rawArgs.check });
   removeLegacyArtifacts(outputDir, rawArgs.check);
   return {
@@ -136,6 +142,7 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     outputDir,
     projectDir,
     tableHandlerCount: tableHandlers.tables.length,
+    webhookHandlerCount: webhookHandlers.list().length,
     materialFileCount: materials.files.length,
     configuration,
   };
@@ -162,6 +169,7 @@ if (require.main === module) {
     console.log(`ReBase compiled ${result.schema.tables.size} tables and ${result.schema.views.length} views.`);
     console.log(`Material files: ${result.materialFileCount}`);
     console.log(`Table handlers: ${result.tableHandlerCount}`);
+    console.log(`Webhook handlers: ${result.webhookHandlerCount}`);
     console.log(`Output: ${relativeOutput}`);
     console.log(`Schema: ${path.join(relativeOutput, "schema.surql")}`);
   } catch (error) {

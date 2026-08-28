@@ -3,6 +3,8 @@ const path = require("node:path");
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const PROCESSES = new Set(["sync", "async"]);
+const EVENTS = Object.freeze(["CREATE", "UPDATE", "DELETE"]);
+const EVENT_SET = new Set(EVENTS);
 
 function filesRecursive(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -19,7 +21,6 @@ function normalizeImplementation(implementation, label, contracts = new Map()) {
   if (!tables.length || tables.some((table) => !IDENTIFIER.test(table || ""))) {
     throw new Error(`Table handler requires a valid table or tables export: ${label}`);
   }
-  if (typeof implementation.execute !== "function") throw new Error(`${tables[0]} requires execute()`);
   const contractValues = tables.map((table) => contracts.get(table)).filter(Boolean);
   if (contracts.size && contractValues.length !== tables.length) {
     throw new Error(`${tables[0]} handler has no compiled runtime contract`);
@@ -41,6 +42,7 @@ function normalizeImplementation(implementation, label, contracts = new Map()) {
   if (contractValues.length > 1) {
     const comparable = (contract) => JSON.stringify({
       process: contract.process,
+      events: contract.events,
       timeoutMs: contract.timeoutMs,
       inputFields: contract.inputFields,
       optionalInputs: contract.optionalInputs,
@@ -49,7 +51,6 @@ function normalizeImplementation(implementation, label, contracts = new Map()) {
       providers: contract.providers,
       mutableInputs: contract.mutableInputs,
       schedule: contract.schedule,
-      webhook: contract.webhook,
     });
     if (contractValues.some((contract) => comparable(contract) !== comparable(contractValues[0]))) {
       throw new Error(`${tables[0]} aliases must have equivalent compiled contracts`);
@@ -59,29 +60,38 @@ function normalizeImplementation(implementation, label, contracts = new Map()) {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) {
     throw new Error(`${tables[0]}.timeoutMs must be between 1 and 300000`);
   }
-  const verifyWebhook = implementation.verifyWebhook || implementation.verify;
-  const correlateWebhook = implementation.correlateWebhook || implementation.webhook;
-  if (verifyWebhook !== undefined && typeof verifyWebhook !== "function") {
-    throw new Error(`${tables[0]}.verifyWebhook must be a function`);
-  }
-  if (correlateWebhook !== undefined && typeof correlateWebhook !== "function") {
-    throw new Error(`${tables[0]}.correlateWebhook must be a function`);
-  }
-  if (correlateWebhook && !verifyWebhook) {
-    throw new Error(`${tables[0]}.correlateWebhook requires verifyWebhook()`);
-  }
   const contract = contractValues[0] || {};
-  const immutableImplementation = Object.freeze(implementation);
+  if (!implementation?.on || typeof implementation.on !== "object" || Array.isArray(implementation.on)) {
+    throw new Error(`${tables[0]} requires an on event map`);
+  }
+  const exportedEvents = Object.keys(implementation.on).map((event) => event.toUpperCase());
+  const invalidEvent = exportedEvents.find((event) => !EVENT_SET.has(event));
+  if (invalidEvent) throw new Error(`${tables[0]} has an invalid event handler: ${invalidEvent}`);
+  if (new Set(exportedEvents).size !== exportedEvents.length) {
+    throw new Error(`${tables[0]} has duplicate event handlers`);
+  }
+  const declaredEvents = contract.events?.length ? contract.events : exportedEvents;
+  const missingEvent = declaredEvents.find((event) => typeof implementation.on[event] !== "function");
+  if (missingEvent) throw new Error(`${tables[0]} requires on.${missingEvent}()`);
+  const undeclaredEvent = exportedEvents.find((event) => !declaredEvents.includes(event));
+  if (contractValues.length && undeclaredEvent) {
+    throw new Error(`${tables[0]}.on.${undeclaredEvent} is not declared by @rebase-events`);
+  }
+  if (implementation.reconcile !== undefined && typeof implementation.reconcile !== "function") {
+    throw new Error(`${tables[0]}.reconcile must be a function`);
+  }
+  const on = Object.freeze(Object.fromEntries(declaredEvents.map((event) => [event, implementation.on[event]])));
+  const immutableImplementation = Object.freeze({ ...implementation, on });
   return Object.freeze({
     file: label,
     implementation: immutableImplementation,
     process: processType,
+    events: Object.freeze([...declaredEvents]),
+    on,
     table: tables[0],
     tables: Object.freeze([...new Set(tables)]),
     timeoutMs,
     contract,
-    verifyWebhook,
-    correlateWebhook,
     reconcile: implementation.reconcile,
   });
 }
@@ -145,6 +155,7 @@ function tableFromId(id) {
 }
 
 module.exports = {
+  EVENTS,
   createHandlerRegistry,
   loadTableHandlers,
   normalizeHandler,

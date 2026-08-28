@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["owned_by", "config", "amount_paise"],
+  "properties": {
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "config": { "type": "string", "pattern": "^razorpay_config:[a-z0-9-]+$" },
+    "amount_paise": { "type": "integer", "minimum": 100, "maximum": 1000000000 },
+    "currency": { "type": "string", "enum": ["INR"], "x-rebase-optional-probability": 0.8 }
+  }
+}

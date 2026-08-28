@@ -73,9 +73,9 @@ Strict schema fields, assertions, references, field permissions, and record visi
 An effect table declares its adapter on the table and its sync snapshot/output boundaries on fields:
 
 ```surql
-DEFINE TABLE file_access_grant SCHEMAFULL COMMENT '@rebase-effect sync';
-DEFINE FIELD object_key ON file_access_grant TYPE string COMMENT '@rebase-effect-input';
-DEFINE FIELD access_url ON file_access_grant TYPE option<string>
+DEFINE TABLE test_attachment SCHEMAFULL COMMENT '@rebase-effect sync';
+DEFINE FIELD file_name ON test_attachment TYPE string READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD access_url ON test_attachment TYPE option<string>
   PERMISSIONS FOR select WHERE true FOR create, update NONE
   COMMENT '@rebase-effect-output';
 ```
@@ -84,9 +84,11 @@ Its handler is keyed only by table name:
 
 ```js
 module.exports = {
-  table: "file_access_grant",
-  async execute({ record, load, providers, signal, trigger }) {
-    return { outcome: "success", patch: { access_url: "..." } };
+  table: "test_attachment",
+  on: {
+    async CREATE({ record, load, providers, signal }) {
+      return { outcome: "success", patch: { access_url: "..." } };
+    },
   },
 };
 ```
@@ -94,8 +96,9 @@ module.exports = {
 The test design provides the reference examples:
 
 - `email_brevo_config`: configuration storage with a required API-key field hidden from normal reads.
-- `send_brevo_email`: committed async record, BullMQ delivery, retry/reconciliation, scheduling, and webhook patching.
-- `file_storage_config` plus `file_access_grant`: synchronous issuance of a bounded external URL/token using required hidden S3-compatible fields.
+- `send_brevo_email`: committed async record, BullMQ delivery, retry/reconciliation, and scheduling.
+- `file_storage_config` plus `test_attachment`: a deterministic, typed file entity that issues S3-compatible upload/download grants and removes the object on deletion.
+- `razorpay_config` plus `razorpay_order`: synchronous Razorpay Test Mode order creation with required database-owned credentials and a signed `order.paid` webhook that updates the same order row.
 
 `npm run probe:runtime` verifies generated sync and async events against a disposable SurrealDB, including duplicate claims, retry recovery, reconciliation, wake authentication, and webhooks.
 
@@ -111,8 +114,13 @@ real provider calls, or override it with `startServer({ provider: "real" })`.
 Provider credentials are never read from environment variables. They are
 required, typed fields on the strict configuration rows and hidden from normal
 client reads. The real adapter consumes `email_brevo_config.api_key` directly,
-and maps `file_storage_config.access_key_id`, `secret_access_key`, `endpoint`,
-`region`, and `bucket` to the S3-compatible SDK. Custom adapters can be supplied
+maps `file_storage_config.access_key_id`, `secret_access_key`, `endpoint`, and
+`region` to the S3-compatible SDK. `REBASE_STORAGE_BUCKET` is one shared
+deployment-profile value for every namespace/database; the object key already
+contains a namespace/database hash so records remain isolated. The adapter maps
+`razorpay_config.key_id` and `key_secret` to the Razorpay Orders API. Razorpay
+webhook secrets are loaded
+from the referenced configuration row after account/context resolution. Custom adapters can be supplied
 without changing the server:
 `startServer({ provider: createCloudProvider, providerOptions })` or by passing
 a ready provider object.

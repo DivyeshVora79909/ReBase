@@ -56,13 +56,12 @@ This is clearer and less dependent on implicit behavior.
 -- ordinary create: schema default supplies UUIDv7
 CREATE send_brevo_email SET ...;
 
--- sync helper: stable ID enables re-select after event patch
-LET $id = type::record('file_access_grant', rand::uuid::v7());
-CREATE ONLY $id SET ...;
-RETURN (SELECT * FROM $id)[0];
+-- sync helper: use the ID returned by SurrealDB to re-select the event patch
+LET $created = CREATE ONLY test_attachment SET ...;
+RETURN (SELECT * FROM $created.id)[0];
 
--- trusted runtime/scheduler
-CREATE type::record($compiled_table, rand::uuid::v7()) CONTENT $content;
+-- trusted scheduler: use the created record returned by SurrealDB
+LET $occurrence = CREATE ONLY send_brevo_email CONTENT $content;
 ```
 
 When a UUID-typed record ID is printed, SurrealDB includes the UUID type tag:
@@ -91,9 +90,10 @@ a new effect. Reuse the effect ID for the same immutable async submission; use
 `effect ID + generation` for mutable sync effects. Store a separate provider
 key if the provider has its own idempotency namespace.
 
-A scheduled occurrence is a fresh ordinary effect with a new UUIDv7. It does not
-require a template reference or deterministic compound ID. Repeated alarms are
-repeated submissions handled by the effect/provider idempotency policy.
+A scheduled occurrence is a fresh ordinary effect with a SurrealDB-generated
+record ID. It does not require a template reference or deterministic compound
+ID. Repeated alarms are repeated submissions handled by the effect/provider
+idempotency policy.
 
 ## Ordering limits
 

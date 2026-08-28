@@ -13,6 +13,8 @@ const { createRuntimeApp } = require("../gateway/app");
 const { connectDatabase } = require("../gateway/connection");
 const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
 const { loadTableHandlers } = require("../gateway/handlers");
+const { createWebhookRouteCodec } = require("../gateway/webhook-routes");
+const { loadWebhookHandlers } = require("../gateway/webhooks");
 const { createLocalProviders } = require("../gateway/providers/local");
 const { createRealProviders } = require("../gateway/providers/real");
 const { createBullMqPort } = require("../gateway/queues/bullmq");
@@ -103,11 +105,43 @@ async function waitFor(check, message, timeoutMs = 6000) {
   throw new Error(`${resolvedMessage}${last ? `: ${JSON.stringify(last)}` : ""}`);
 }
 
+function recordId(record) {
+  assert(record?.id, "Created record is missing an ID");
+  return String(record.id);
+}
+
+async function createAndReload(db, table, assignments, variables = {}) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) throw new Error(`Invalid probe table: ${table}`);
+  return queryResult(await db.query(`
+    LET $created = CREATE ONLY ${table} SET ${assignments};
+    RETURN (SELECT * FROM $created.id)[0];
+  `, variables));
+}
+
+async function createId(db, table, assignments, variables = {}) {
+  return recordId(await createAndReload(db, table, assignments, variables));
+}
+
 async function realProviderMappingProbe() {
-  let request;
+  const requests = [];
+  const missingBucket = createRealProviders({ fetch: async () => new Response("{}", { status: 200 }) });
+  const missingBucketHealth = await missingBucket.health({ required: ["storage"] });
+  assert.equal(missingBucketHealth.ok, false);
+  assert.deepEqual(missingBucketHealth.missingConfiguration, ["REBASE_STORAGE_BUCKET"]);
+  await assert.rejects(
+    missingBucket.storage.createAccessGrant({ config: {}, objectKey: "probe.txt", expiresIn: 60 }),
+    /REBASE_STORAGE_BUCKET/,
+  );
   const providers = createRealProviders({
+    storageBucket: "shared-probe",
     fetch: async (url, options) => {
-      request = { url, options };
+      requests.push({ url, options });
+      if (String(url).endsWith("/orders")) {
+        return new Response(JSON.stringify({
+          id: "order_probe", amount: 100, amount_paid: 0, amount_due: 100,
+          attempts: 0, currency: "INR", receipt: "rb_probe", status: "created", created_at: 1_700_000_000,
+        }), { status: 200 });
+      }
       return new Response(JSON.stringify({ messageId: "probe-message" }), { status: 201 });
     },
   });
@@ -115,12 +149,12 @@ async function realProviderMappingProbe() {
     config: { api_key: "database-api-key", from_email: "from@example.com", from_name: "Probe" },
     message: { to: ["to@example.com"], subject: "Probe", text: "Body" },
   });
-  assert.equal(request.options.headers["api-key"], "database-api-key");
+  assert.equal(requests[0].options.headers["api-key"], "database-api-key");
   assert.deepEqual(email.accepted, ["to@example.com"]);
   const grant = await providers.storage.createAccessGrant({
     config: {
       provider: "s3-compatible",
-      bucket: "probe",
+      bucket: "ignored-tenant-bucket",
       access_key_id: "database-access-key",
       secret_access_key: "database-secret",
       endpoint: "https://storage.example.com",
@@ -130,7 +164,21 @@ async function realProviderMappingProbe() {
     expiresIn: 60,
   });
   assert.equal(grant.provider, "s3-compatible");
-  assert.match(grant.accessUrl, /probe\/probe\.txt/);
+  assert.match(grant.accessUrl, /shared-probe\/probe\.txt/);
+  const upload = await providers.storage.createUploadGrant({
+    config: {
+      provider: "s3-compatible", access_key_id: "database-access-key",
+      secret_access_key: "database-secret", endpoint: "https://storage.example.com", region: "probe-1",
+    },
+    objectKey: "probe-upload", contentType: "text/plain", contentLength: 0,
+    expiresIn: 60, id: "test_attachment:probe",
+  });
+  assert.match(upload.uploadUrl, /shared-probe\/probe-upload/);
+  const order = await providers.payment.forResource({ key_id: "database-key", key_secret: "database-secret" }).createOrder({
+    amount: 100, currency: "INR", receipt: "rb_probe", notes: {},
+  });
+  assert.equal(requests.at(-1).options.headers.authorization, `Basic ${Buffer.from("database-key:database-secret").toString("base64")}`);
+  assert.equal(order.id, "order_probe");
 }
 
 async function main() {
@@ -148,6 +196,8 @@ async function main() {
   });
   const contracts = new Map(Object.entries(generated.contracts.tables));
   const handlers = loadTableHandlers("designs/test/table-handlers", { contracts });
+  const webhooks = loadWebhookHandlers("designs/test/webhook-handlers");
+  const routeCodec = createWebhookRouteCodec(secret);
   const queueErrors = [];
   const queue = createBullMqPort({
     url: redis.url,
@@ -155,11 +205,14 @@ async function main() {
     onError: (error) => queueErrors.push(error.message),
     onFailed: ({ lane, error }) => queueErrors.push(`${lane}:${error.message}`),
   });
-  const providers = createLocalProviders({ webhookSecret: secret });
+  const providers = createLocalProviders();
   const originalProvider = providers.email.forResource.bind(providers.email);
   let emailCalls = 0;
   let failNextEmail = false;
   let failPermanently = false;
+  let razorpayRoute;
+  let storageDeletes = 0;
+  let failStorageDelete = false;
   providers.email.forResource = (resource) => {
     const provider = originalProvider(resource);
     return {
@@ -177,14 +230,33 @@ async function main() {
       },
     };
   };
+  const originalPayment = providers.payment.forResource.bind(providers.payment);
+  providers.payment.forResource = (resource) => {
+    const provider = originalPayment(resource);
+    return {
+      ...provider,
+      async createOrder(input) {
+        razorpayRoute = input.notes?.rebase_route;
+        return provider.createOrder(input);
+      },
+    };
+  };
+  const originalDeleteObject = providers.storage.deleteObject.bind(providers.storage);
+  providers.storage.deleteObject = async (input) => {
+    storageDeletes += 1;
+    if (failStorageDelete) throw Object.assign(new Error("Storage delete failed"), { code: "STORAGE_DELETE_FAILED" });
+    return originalDeleteObject(input);
+  };
   const store = createTableStore({ db: state.db });
   const stores = fixedStoreDirectory(store, state);
   const runtime = createRuntime({
     handlers,
+    webhooks,
     providers,
     queue,
     stores,
     contracts,
+    routeCodec,
     options: {
       leaseMs: 5000,
       allowedContexts: [{ namespace: state.namespace, database: state.database }],
@@ -196,7 +268,7 @@ async function main() {
   const stops = [];
   for (const lane of ["task", "schedule", "webhook"]) stops.push(await queue.start(lane, (delivery) => runtime.consume(lane, delivery)));
   const app = createRuntimeApp({
-    runtime, handlers, providers, queue, wakeSecret: secret,
+    runtime, handlers, webhooks, providers, queue, wakeSecret: secret,
     defaultContext: { namespace: state.namespace, database: state.database },
     allowBearer: true,
   });
@@ -222,66 +294,137 @@ async function main() {
       await renewableAdmin.close();
     }
     await assert.rejects(
-      state.db.query("CREATE file_storage_config:missing_credential SET owned_by = groups:root, bucket = 'probe';"),
+      state.db.query("CREATE file_storage_config:missing_credential SET owned_by = groups:root;"),
       /access_key_id|secret_access_key|endpoint|region|field|schema|required/i,
     );
     await assert.rejects(
-      state.db.query("CREATE email_brevo_config:missing_api_key SET owned_by = groups:root, label = 'Missing', from_email = 'missing@example.com', from_name = 'Missing', provider_account_id = 'missing';"),
+      state.db.query("CREATE email_brevo_config:missing_api_key SET owned_by = groups:root, label = 'Missing', from_email = 'missing@example.com', from_name = 'Missing';"),
       /api_key|field|schema|required/i,
     );
+    await assert.rejects(
+      state.db.query("CREATE razorpay_config:missing_secret SET owned_by = groups:root, label = 'Missing', key_id = 'key';"),
+      /key_secret|webhook_secret|field|schema|required/i,
+    );
+    const storage = await createAndReload(state.db, "file_storage_config", `
+      owned_by = groups:root, visibility = true,
+      access_key_id = 'client-storage-id', secret_access_key = 'client-storage-secret',
+      endpoint = 'https://storage.local', region = 'local'
+    `);
+    const storageId = recordId(storage);
+    const emailConfig = await createAndReload(state.db, "email_brevo_config", `
+      owned_by = groups:root, label = 'Probe', visibility = true,
+      from_email = 'from@example.com', from_name = 'Probe', api_key = 'client-brevo-api-key'
+    `);
+    const emailConfigId = recordId(emailConfig);
+    const razorpayConfig = await createAndReload(state.db, "razorpay_config", `
+      owned_by = groups:root, label = 'Probe', visibility = true,
+      key_id = 'client-razorpay-key', key_secret = 'client-razorpay-secret',
+      webhook_secret = 'razorpay-webhook-secret'
+    `);
+    const razorpayConfigId = recordId(razorpayConfig);
     await state.db.query(`
-      CREATE file_storage_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590da' SET owned_by = groups:root, bucket = 'probe', visibility = true, access_key_id = 'client-storage-id', secret_access_key = 'client-storage-secret', endpoint = 'https://storage.local', region = 'local';
-      CREATE email_brevo_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590db' SET owned_by = groups:root, label = 'Probe', visibility = true, from_email = 'from@example.com', from_name = 'Probe', api_key = 'client-brevo-api-key', provider_account_id = 'probe';
       CREATE groups:runtime_clients SET name = 'Runtime Clients', parents = [groups:root], role = [
         'send_brevo_email_create', 'send_brevo_email_select', 'send_brevo_email_update',
-        'email_brevo_config_select', 'file_storage_config_select'
+        'email_brevo_config_select', 'file_storage_config_select', 'razorpay_config_select'
       ];
       CREATE user:runtime_client SET name = 'Runtime Client', email = 'runtime-client@example.com',
         password = crypto::argon2::generate('runtime-password'), parents = [groups:runtime_clients], login_access = true;
       CREATE email_brevo_config:runtime_client SET owned_by = groups:root, label = 'Client Probe', visibility = true,
-        from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key', provider_account_id = 'runtime-client';
+        from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key';
     `);
 
-    const storageId = "file_storage_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590da'";
-    const emailConfigId = "email_brevo_config:u'0198c6c4-bd70-7d6d-8a7a-87bb773590db'";
-    const syncId = "file_access_grant:u'0198c6c4-bd70-7d6d-8a7a-87bb773590dc'";
+    const target = await createAndReload(state.db, "test_primitive", `
+      owned_by = groups:root, a_string = 'Attachment target', a_decimal = 0dec
+    `);
+    const targetId = recordId(target);
+    const attachment = await createAndReload(state.db, "test_attachment", `
+      owned_by = groups:root, storage_config = type::record($storage_id),
+      attached_to = type::record($target_id), file_name = 'invoice.pdf',
+      media_type = 'application/pdf', byte_length_limit = 0, access_duration = 60
+    `, { storage_id: storageId, target_id: targetId });
+    const attachmentId = recordId(attachment);
+    assert.equal(attachmentId.includes(":u'"), false);
+    assert.match(attachment.access_url, /storage\.local\/upload/);
+    assert.match(attachment.object_key, /^rebase\/[a-f0-9]{24}\/test_attachment\/[a-f0-9]{32}$/);
+    const syncId = attachmentId;
+    const beforeSync = {
+      ...attachment,
+      id: syncId,
+      access_mode: "upload",
+    };
     const sync = await runtime.sync({
       namespace: state.namespace, database: state.database, id: syncId,
-      record: { id: syncId, storage_config: storageId, object_key: "invoice/direct.pdf", expires_in: 60 },
+      event: "UPDATE",
+      before: beforeSync,
+      after: { ...beforeSync, access_mode: "download" },
     });
     assert.equal(sync.outcome, "success");
     assert.match(sync.patch.access_url, /storage\.local\/access/);
 
-    const automaticSyncId = "file_access_grant:u'0198c6c4-bd70-7d6d-8a7a-87bb773590dd'";
     const automaticSync = queryResult(await state.db.query(`
-      CREATE ONLY ${automaticSyncId} SET owned_by = groups:root, storage_config = ${storageId}, object_key = 'invoice/automatic.pdf', expires_in = 60;
-      RETURN (SELECT * FROM ${automaticSyncId})[0];
-    `));
+      UPDATE type::record($id) SET access_mode = 'download', access_duration = 120;
+      RETURN (SELECT * FROM type::record($id))[0];
+    `, { id: attachmentId }));
     assert.match(automaticSync.access_url, /storage\.local\/access/);
 
-    const automaticId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590de'";
-    await state.db.query(`CREATE ${automaticId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Automatic';`);
+    const deleteTarget = await createAndReload(state.db, "test_primitive", `
+      owned_by = groups:root, a_string = 'Delete target', a_decimal = 0dec
+    `);
+    const deleteTargetId = recordId(deleteTarget);
+    const deleteCandidate = await createAndReload(state.db, "test_attachment", `
+      owned_by = groups:root, storage_config = type::record($storage_id),
+      attached_to = type::record($delete_target_id), file_name = 'delete-me.txt',
+      media_type = 'text/plain', byte_length_limit = 0, access_duration = 60
+    `, { storage_id: storageId, delete_target_id: deleteTargetId });
+    const deleteCandidateId = recordId(deleteCandidate);
+    failStorageDelete = true;
+    await assert.rejects(
+      state.db.query("DELETE type::record($id);", { id: deleteCandidateId }),
+      /STORAGE_DELETE_FAILED|REBASE_SYNC_EFFECT_FAILED|effect/i,
+    );
+    assert(await store.load(deleteCandidateId));
+    failStorageDelete = false;
+    await state.db.query("DELETE type::record($id);", { id: deleteCandidateId });
+    assert.equal(await store.load(deleteCandidateId), undefined);
+    assert(storageDeletes >= 2);
+
+    const razorpayOrder = await createAndReload(state.db, "razorpay_order", `
+      owned_by = groups:root, config = type::record($config_id),
+      amount_paise = 100, currency = 'INR'
+    `, { config_id: razorpayConfigId });
+    const razorpayId = recordId(razorpayOrder);
+    assert.equal(razorpayId.includes(":u'"), false);
+    assert.match(razorpayOrder.provider_order_id, /^order_/);
+    assert.equal(razorpayOrder.status, "created");
+    assert(razorpayOrder.provider_created_at);
+
+    const automatic = await createAndReload(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Automatic'
+    `, { config_id: emailConfigId });
+    const automaticId = recordId(automatic);
     let automaticLast;
-    const automatic = await waitFor(async () => {
+    const automaticFinished = await waitFor(async () => {
       const row = await store.load(automaticId);
       automaticLast = row;
       if (process.env.REBASE_DEBUG && row) console.error("automatic", row);
       return row?.rebase_outcome === "succeeded" ? row : null;
     }, () => `automatic async effect did not finish (${JSON.stringify({ automaticLast, wakeCalls, queueErrors })})`);
-    assert.equal(automatic.rebase_status, "succeeded");
-    assert(automatic.provider_reference);
+    assert.equal(automaticFinished.rebase_status, "succeeded");
+    assert(automaticFinished.provider_reference);
 
     await state.db.query("REMOVE EVENT rebase_effect_send_brevo_email ON TABLE send_brevo_email;");
-    const duplicateId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590df'";
-    await state.db.query(`CREATE ${duplicateId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Duplicate';`);
+    const duplicate = await createAndReload(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Duplicate'
+    `, { config_id: emailConfigId });
+    const duplicateId = recordId(duplicate);
     const callsBefore = emailCalls;
-    const duplicate = await Promise.all([
+    const duplicateResults = await Promise.all([
       runtime.execute({ namespace: state.namespace, database: state.database, id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
       runtime.execute({ namespace: state.namespace, database: state.database, id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
     ]);
     assert.equal(emailCalls, callsBefore + 1);
-    assert(duplicate.some((result) => result.state === "succeeded"));
-    assert(duplicate.some((result) => result.state === "busy"));
+    assert(duplicateResults.some((result) => result.state === "succeeded"));
+    assert(duplicateResults.some((result) => result.state === "busy"));
 
     const client = new Surreal();
     await client.connect(state.endpoint);
@@ -292,11 +435,19 @@ async function main() {
       variables: { email: "runtime-client@example.com", password: "runtime-password" },
     });
     try {
-      const clientId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e4'";
+      const clientCreated = queryResult(await client.query(`
+        CREATE ONLY send_brevo_email SET
+          owned_by = user:runtime_client,
+          config = email_brevo_config:runtime_client,
+          to = ['client@example.com'],
+          subject = 'Client lifecycle'
+        RETURN AFTER;
+      `));
+      const clientId = recordId(clientCreated);
       assert.equal(queryResult(await client.query(
         "RETURN type::is_none(email_brevo_config:runtime_client.api_key);",
       )), true);
-      const visibleStorage = queryResult(await client.query(`SELECT id, bucket, access_key_id, secret_access_key, endpoint, region FROM ${storageId};`))[0];
+      const visibleStorage = queryResult(await client.query(`SELECT id, access_key_id, secret_access_key, endpoint, region FROM ${storageId};`))[0];
       assert.equal(String(visibleStorage.id).split(":", 1)[0], "file_storage_config");
       assert.equal(visibleStorage.access_key_id, undefined);
       assert.equal(visibleStorage.secret_access_key, undefined);
@@ -304,31 +455,20 @@ async function main() {
       assert.equal(visibleStorage.region, undefined);
       await client.query("UPDATE email_brevo_config:runtime_client SET api_key = 'client-must-not-write';");
       assert.equal(queryResult(await state.db.query("RETURN email_brevo_config:runtime_client.api_key;")), "customer-brevo-api-key");
-      const clientCreated = queryResult(await client.query(`
-        CREATE ONLY ${clientId} SET
-          owned_by = user:runtime_client,
-          config = email_brevo_config:runtime_client,
-          to = ['client@example.com'],
-          subject = 'Client lifecycle',
-          rebase_cancel_requested = true,
-          rebase_outcome = 'succeeded',
-          rebase_lease_token = rand::uuid::v7(),
-          rebase_lease_until = time::now() + 1h
-        RETURN AFTER;
-      `));
       assert.notEqual(clientCreated.rebase_cancel_requested, true);
       assert.equal(clientCreated.rebase_outcome, undefined);
       assert.equal(clientCreated.rebase_lease_token, undefined);
       assert.equal(clientCreated.rebase_status, "pending");
       assert.equal((await runtime.execute({ namespace: state.namespace, database: state.database, id: clientId })).state, "succeeded");
 
-      const cancelId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e5'";
-      await client.query(`CREATE ONLY ${cancelId} SET owned_by = user:runtime_client, config = email_brevo_config:runtime_client,
-        to = ['client@example.com'], subject = 'Client cancel';`);
-      const cancelled = queryResult(await client.query(`UPDATE ${cancelId} SET rebase_cancel_requested = true RETURN AFTER;`))[0];
+      const cancelCreated = queryResult(await client.query(`CREATE ONLY send_brevo_email SET
+        owned_by = user:runtime_client, config = email_brevo_config:runtime_client,
+        to = ['client@example.com'], subject = 'Client cancel' RETURN AFTER;`));
+      const cancelId = recordId(cancelCreated);
+      const cancelled = queryResult(await client.query("RETURN (UPDATE type::record($id) SET rebase_cancel_requested = true RETURN AFTER)[0];", { id: cancelId }));
       assert.equal(cancelled.rebase_cancel_requested, true);
       assert.equal(cancelled.rebase_status, "cancelled");
-      const monotonic = queryResult(await client.query(`UPDATE ${cancelId} SET rebase_cancel_requested = false RETURN AFTER;`))[0];
+      const monotonic = queryResult(await client.query("RETURN (UPDATE type::record($id) SET rebase_cancel_requested = false RETURN AFTER)[0];", { id: cancelId }));
       assert.equal(monotonic.rebase_cancel_requested, true);
       await assert.rejects(
         client.query(`CREATE send_brevo_email SET owned_by = user:runtime_client, config = email_brevo_config:runtime_client,
@@ -339,8 +479,9 @@ async function main() {
       await client.close();
     }
 
-    const retryId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e0'";
-    await state.db.query(`CREATE ${retryId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Retry';`);
+    const retryId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Retry'
+    `, { config_id: emailConfigId });
     failNextEmail = true;
     const firstRetry = await runtime.execute({ namespace: state.namespace, database: state.database, id: retryId }, { attempts: 1, maxAttempts: 3 });
     assert.equal(firstRetry.action, "retry");
@@ -353,8 +494,11 @@ async function main() {
     ambiguousHandlers.unregister("send_brevo_email");
     ambiguousHandlers.register({
       ...emailImplementation,
-      async execute() {
-        return { outcome: "ambiguous", retryAfterMs: 1000, patch: { provider_state: "unknown" } };
+      on: {
+        ...emailImplementation.on,
+        async CREATE() {
+          return { outcome: "ambiguous", retryAfterMs: 1000, patch: { provider_state: "unknown" } };
+        },
       },
       async reconcile() {
         return { outcome: "success", patch: { provider_state: "reconciled" } };
@@ -371,8 +515,9 @@ async function main() {
         allowedContexts: [{ namespace: state.namespace, database: state.database }],
       },
     });
-    const ambiguousId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e7'";
-    await state.db.query(`CREATE ${ambiguousId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Ambiguous';`);
+    const ambiguousId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Ambiguous'
+    `, { config_id: emailConfigId });
     assert.equal((await ambiguousRuntime.execute({ namespace: state.namespace, database: state.database, id: ambiguousId })).state, "ambiguous");
     await state.db.query(`UPDATE ${ambiguousId} SET rebase_wake_at = time::now();`);
     assert.equal((await ambiguousRuntime.reconcileWebhook({
@@ -384,8 +529,9 @@ async function main() {
     assert.equal(reconciledAmbiguous.rebase_outcome, "succeeded");
     assert.equal(reconciledAmbiguous.provider_state, "reconciled");
 
-    const deadId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e6'";
-    await state.db.query(`CREATE ${deadId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Dead letter';`);
+    const deadId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Dead letter'
+    `, { config_id: emailConfigId });
     failPermanently = true;
     await runtime.enqueue("task", { namespace: state.namespace, database: state.database, id: deadId }, { attempts: 1 });
     await waitFor(async () => (await store.load(deadId))?.rebase_outcome === "failed", "permanent failure was not persisted");
@@ -396,15 +542,18 @@ async function main() {
       "permanent failure was not dead-lettered");
     failPermanently = false;
 
-    const staleId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e1'";
-    await state.db.query(`CREATE ${staleId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Fence';`);
+    const staleId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Fence'
+    `, { config_id: emailConfigId });
     const staleToken = crypto.randomUUID();
     assert(await store.claim(staleId, { token: staleToken, leaseUntil: Date.now() + 5000, outcome: "pending" }));
     await state.db.query(`UPDATE ${staleId} SET rebase_lease_token = rand::uuid::v7();`);
     assert.equal(await store.finalize(staleId, staleToken, {}, contracts.get("send_brevo_email").patchFields, "succeeded"), undefined);
 
-    const cancelledId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e2'";
-    await state.db.query(`CREATE ${cancelledId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Cancelled'; UPDATE ${cancelledId} SET rebase_cancel_requested = true;`);
+    const cancelledId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Cancelled'
+    `, { config_id: emailConfigId });
+    await state.db.query("UPDATE type::record($id) SET rebase_cancel_requested = true;", { id: cancelledId });
     const cancelledCalls = emailCalls;
     assert.equal((await runtime.execute({ namespace: state.namespace, database: state.database, id: cancelledId })).state, "cancelled");
     assert.equal(emailCalls, cancelledCalls);
@@ -451,63 +600,78 @@ async function main() {
       body,
     })).status, 401);
 
-    const webhookBody = JSON.stringify({ id: automaticId, provider: "local", account: "probe", status: "delivered", timestamp: new Date().toISOString() });
-    const webhookSignature = crypto.createHmac("sha256", secret).update(webhookBody).digest("hex");
-    const webhookHeaders = { "content-type": "application/json", "x-rebase-signature": webhookSignature, "x-rebase-event-id": "delivery-1" };
-    const webhook = await app.request("http://runtime/webhooks/local/status", { method: "POST", headers: webhookHeaders, body: webhookBody });
-    if (webhook.status !== 202) console.error("webhook response", webhook.status, await webhook.clone().text());
-    assert.equal(webhook.status, 202);
-    const delivered = await store.load(automaticId);
-    assert.equal(delivered.provider_state, "delivered");
-    assert.equal(delivered.webhook_event_id, "delivery-1");
-    const duplicateWebhook = await app.request("http://runtime/webhooks/local/status", { method: "POST", headers: webhookHeaders, body: webhookBody });
-    assert.equal(duplicateWebhook.status, 200);
-    const olderBody = JSON.stringify({ id: automaticId, provider: "local", account: "probe", status: "processing", timestamp: new Date(Date.now() - 1000).toISOString() });
-    const olderHeaders = {
-      "content-type": "application/json",
-      "x-rebase-signature": crypto.createHmac("sha256", secret).update(olderBody).digest("hex"),
-      "x-rebase-event-id": "delivery-older",
-    };
-    const olderWebhook = await app.request("http://runtime/webhooks/local/status", { method: "POST", headers: olderHeaders, body: olderBody });
-    assert.equal(olderWebhook.status, 200);
-    assert.equal((await olderWebhook.json()).data.stale, true);
-    const afterOlder = await store.load(automaticId);
-    assert.equal(afterOlder.provider_state, "delivered");
-    assert.equal(afterOlder.webhook_event_id, "delivery-1");
-    const rawWebhookBody = JSON.stringify({ id: automaticId, provider: "local", account: "probe", status: "raw-body", timestamp: new Date().toISOString() });
-    const rawWebhook = await app.request("http://runtime/webhooks/local/status", {
-      method: "POST",
-      headers: {
-        "content-type": "application/octet-stream",
-        "x-rebase-signature": crypto.createHmac("sha256", secret).update(rawWebhookBody).digest("hex"),
-        "x-rebase-event-id": "delivery-raw-body",
+    assert(razorpayRoute);
+    const razorpayCreatedAt = Math.floor(Date.now() / 1000);
+    const razorpayBody = JSON.stringify({
+      event: "order.paid",
+      created_at: razorpayCreatedAt,
+      payload: {
+        order: { entity: {
+          id: razorpayOrder.provider_order_id,
+          amount: razorpayOrder.amount_paise,
+          currency: razorpayOrder.currency,
+          status: "paid",
+          notes: { rebase_route: razorpayRoute },
+          created_at: razorpayCreatedAt,
+        } },
+        payment: { entity: {
+          id: "pay_probe",
+          order_id: razorpayOrder.provider_order_id,
+          amount: razorpayOrder.amount_paise,
+          currency: razorpayOrder.currency,
+          status: "captured",
+          method: "card",
+          created_at: razorpayCreatedAt,
+        } },
       },
-      body: rawWebhookBody,
     });
-    assert.equal(rawWebhook.status, 202);
-    assert.equal((await store.load(automaticId)).provider_state, "raw-body");
-    const wrongAccountBody = JSON.stringify({ id: automaticId, provider: "local", account: "other", status: "bounced", timestamp: new Date().toISOString() });
-    const wrongAccountHeaders = {
+    const razorpayHeaders = {
       "content-type": "application/json",
-      "x-rebase-signature": crypto.createHmac("sha256", secret).update(wrongAccountBody).digest("hex"),
-      "x-rebase-event-id": "delivery-wrong-account",
+      "x-razorpay-event-id": "razorpay-event-1",
+      "x-razorpay-signature": crypto.createHmac("sha256", "razorpay-webhook-secret").update(razorpayBody).digest("hex"),
     };
-    assert.equal((await app.request("http://runtime/webhooks/local/status", {
-      method: "POST", headers: wrongAccountHeaders, body: wrongAccountBody,
-    })).status, 403);
-    const replayBody = JSON.stringify({ id: automaticId, provider: "local", account: "probe", status: "late", timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() });
-    const replayHeaders = {
-      "content-type": "application/json",
-      "x-rebase-signature": crypto.createHmac("sha256", secret).update(replayBody).digest("hex"),
-      "x-rebase-event-id": "delivery-replay",
-    };
-    assert.equal((await app.request("http://runtime/webhooks/local/status", { method: "POST", headers: replayHeaders, body: replayBody })).status, 401);
-    assert.equal((await app.request("http://runtime/webhooks/local/status", {
-      method: "POST", headers: { ...webhookHeaders, "x-rebase-signature": "invalid" }, body: webhookBody,
+    const razorpayWebhook = await app.request("http://runtime/webhooks/razorpay", {
+      method: "POST", headers: razorpayHeaders, body: razorpayBody,
+    });
+    if (razorpayWebhook.status !== 200) console.error("razorpay webhook", razorpayWebhook.status, await razorpayWebhook.clone().text());
+    assert.equal(razorpayWebhook.status, 200);
+    const paidOrder = await store.load(razorpayId);
+    assert.equal(paidOrder.status, "paid");
+    const paymentRows = queryResult(await state.db.query("SELECT * FROM razorpay_payment WHERE provider_payment_id = 'pay_probe';"));
+    assert.equal(paymentRows.length, 1);
+    assert.equal(paymentRows[0].status, "captured");
+    assert.equal(paymentRows[0].order, razorpayId);
+    assert.equal((await app.request("http://runtime/webhooks/razorpay", {
+      method: "POST", headers: razorpayHeaders, body: razorpayBody,
+    })).status, 200);
+    assert.equal(queryResult(await state.db.query("SELECT id FROM razorpay_payment WHERE provider_payment_id = 'pay_probe';")).length, 1);
+    assert.equal((await app.request("http://runtime/webhooks/razorpay", {
+      method: "POST", headers: { ...razorpayHeaders, "x-razorpay-signature": "invalid" }, body: razorpayBody,
     })).status, 401);
+    const mismatchedBody = JSON.stringify({
+      event: "order.paid",
+      created_at: razorpayCreatedAt,
+      payload: {
+        order: { entity: {
+          id: "order_other", amount: razorpayOrder.amount_paise, currency: razorpayOrder.currency,
+          status: "paid", notes: { rebase_route: razorpayRoute }, created_at: razorpayCreatedAt,
+        } },
+        payment: { entity: {
+          id: "pay_other", order_id: "order_other", amount: razorpayOrder.amount_paise,
+          currency: razorpayOrder.currency, status: "captured", created_at: razorpayCreatedAt,
+        } },
+      },
+    });
+    assert.equal((await app.request("http://runtime/webhooks/razorpay", {
+      method: "POST",
+      headers: { ...razorpayHeaders, "x-razorpay-signature": crypto.createHmac("sha256", "razorpay-webhook-secret").update(mismatchedBody).digest("hex") },
+      body: mismatchedBody,
+    })).status, 400);
 
-    const scheduleId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590e3'";
-    await state.db.query(`CREATE ${scheduleId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'], subject = 'Scheduled', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'coalesce' };`);
+    const scheduleId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Scheduled',
+      schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'coalesce' }
+    `, { config_id: emailConfigId });
     await runtime.enqueue("schedule", { namespace: state.namespace, database: state.database, id: scheduleId });
     await waitFor(async () => (await store.load(scheduleId))?.rebase_schedule_next_at, "schedule did not initialize");
     await state.db.query(`UPDATE ${scheduleId} SET rebase_schedule_next_at = time::now();`);
@@ -524,9 +688,10 @@ async function main() {
     assert.equal(scheduleRows.length, 2);
     assert.equal(scheduleRows.filter((row) => row.schedule === undefined).length, 1);
 
-    const concurrentScheduleId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f0'";
-    await state.db.query(`CREATE ${concurrentScheduleId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'Concurrent schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'all' };`);
+    const concurrentScheduleId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'Concurrent schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'all' }
+    `, { config_id: emailConfigId });
     await runtime.schedule({ namespace: state.namespace, database: state.database, id: concurrentScheduleId });
     await state.db.query(`UPDATE ${concurrentScheduleId} SET rebase_schedule_next_at = time::now();`);
     const concurrentSchedules = await Promise.all(Array.from({ length: 8 }, () => (
@@ -535,20 +700,22 @@ async function main() {
     assert.equal(concurrentSchedules.flatMap((result) => result.occurrences || []).length, 1);
     assert.equal(queryResult(await state.db.query("SELECT id FROM send_brevo_email WHERE subject = 'Concurrent schedule';")).length, 2);
 
-    const coalesceId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f1'";
-    await state.db.query(`CREATE ${coalesceId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'Coalesce schedule', schedule = { cron: '* * * * *', repeat: 2, skip: [], misfire: 'coalesce' };
-      UPDATE ${coalesceId} SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;`);
+    const coalesceId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'Coalesce schedule', schedule = { cron: '* * * * *', repeat: 2, skip: [], misfire: 'coalesce' }
+    `, { config_id: emailConfigId });
+    await state.db.query("UPDATE type::record($id) SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;", { id: coalesceId });
     const coalesced = await runtime.schedule({ namespace: state.namespace, database: state.database, id: coalesceId });
     assert.equal(coalesced.occurrences.length, 1);
     const coalesceSource = await store.load(coalesceId);
     assert.equal(coalesceSource.rebase_schedule_index, 1);
     assert(new Date(coalesceSource.rebase_schedule_next_at).getTime() > Date.now());
 
-    const skipId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f2'";
-    await state.db.query(`CREATE ${skipId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'Skip schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'skip' };
-      UPDATE ${skipId} SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;`);
+    const skipId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'Skip schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'skip' }
+    `, { config_id: emailConfigId });
+    await state.db.query("UPDATE type::record($id) SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;", { id: skipId });
     const skipped = await runtime.schedule({ namespace: state.namespace, database: state.database, id: skipId });
     assert.equal(skipped.occurrences.length, 0);
     const skipSource = await store.load(skipId);
@@ -556,18 +723,20 @@ async function main() {
     assert(new Date(skipSource.rebase_schedule_next_at).getTime() > Date.now());
     assert.equal(queryResult(await state.db.query("SELECT id FROM send_brevo_email WHERE subject = 'Skip schedule';")).length, 1);
 
-    const allId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f3'";
-    await state.db.query(`CREATE ${allId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'All schedule', schedule = { cron: '* * * * *', repeat: 3, skip: [], misfire: 'all' };
-      UPDATE ${allId} SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;`);
+    const allId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'All schedule', schedule = { cron: '* * * * *', repeat: 3, skip: [], misfire: 'all' }
+    `, { config_id: emailConfigId });
+    await state.db.query("UPDATE type::record($id) SET rebase_schedule_next_at = time::now() - 5m, rebase_schedule_index = 0;", { id: allId });
     const allRuns = await runtime.schedule({ namespace: state.namespace, database: state.database, id: allId });
     assert.equal(allRuns.occurrences.length, 3);
     assert.equal((await store.load(allId)).rebase_outcome, "succeeded");
     assert.equal(queryResult(await state.db.query("SELECT id FROM send_brevo_email WHERE subject = 'All schedule';")).length, 4);
 
-    const cancelledScheduleId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f4'";
-    await state.db.query(`CREATE ${cancelledScheduleId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'Cancelled schedule', schedule = { cron: '* * * * *', repeat: 2, skip: [], misfire: 'coalesce' };`);
+    const cancelledScheduleId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'Cancelled schedule', schedule = { cron: '* * * * *', repeat: 2, skip: [], misfire: 'coalesce' }
+    `, { config_id: emailConfigId });
     await runtime.schedule({ namespace: state.namespace, database: state.database, id: cancelledScheduleId });
     await state.db.query(`UPDATE ${cancelledScheduleId} SET rebase_cancel_requested = true;`);
     assert.equal((await runtime.schedule({ namespace: state.namespace, database: state.database, id: cancelledScheduleId })).state, "cancelled");
@@ -575,9 +744,10 @@ async function main() {
     assert(cancelledSchedule.rebase_schedule_finished_at);
     assert.equal(cancelledSchedule.rebase_outcome, undefined);
 
-    const recoveredScheduleId = "send_brevo_email:u'0198c6c4-bd70-7d6d-8a7a-87bb773590f5'";
-    await state.db.query(`CREATE ${recoveredScheduleId} SET owned_by = groups:root, config = ${emailConfigId}, to = ['to@example.com'],
-      subject = 'Recovered schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'coalesce' };`);
+    const recoveredScheduleId = await createId(state.db, "send_brevo_email", `
+      owned_by = groups:root, config = type::record($config_id), to = ['to@example.com'],
+      subject = 'Recovered schedule', schedule = { cron: '* * * * *', repeat: 1, skip: [], misfire: 'coalesce' }
+    `, { config_id: emailConfigId });
     await runtime.schedule({ namespace: state.namespace, database: state.database, id: recoveredScheduleId });
     const lostJobs = (await queue.queues.get("schedule").getJobs(["delayed", "wait", "prioritized"]))
       .filter((job) => job.data?.id === recoveredScheduleId);
@@ -637,22 +807,21 @@ async function main() {
 
     const ready = await app.request("http://runtime/readyz");
     assert.equal(ready.status, 200);
-    const ambiguousWebhookRoutingApp = createRuntimeApp({
+    const missingWebhookAdapterProviders = { ...providers, webhooks: {} };
+    const missingWebhookRoutingApp = createRuntimeApp({
       runtime,
       handlers,
-      providers,
+      webhooks,
+      providers: missingWebhookAdapterProviders,
       queue,
       wakeSecret: secret,
       defaultContext: { namespace: state.namespace, database: state.database },
-      readinessContexts: [
-        { namespace: state.namespace, database: state.database },
-        { namespace: state.namespace, database: state.database },
-      ],
+      readinessContexts: [{ namespace: state.namespace, database: state.database }],
       allowBearer: true,
     });
-    const ambiguousWebhookReadiness = await ambiguousWebhookRoutingApp.request("http://runtime/readyz");
-    assert.equal(ambiguousWebhookReadiness.status, 503);
-    assert.equal((await ambiguousWebhookReadiness.json()).webhooks.ok, false);
+    const missingWebhookReadiness = await missingWebhookRoutingApp.request("http://runtime/readyz");
+    assert.equal(missingWebhookReadiness.status, 503);
+    assert.equal((await missingWebhookReadiness.json()).webhooks.ok, false);
 
     const childPort = await freePort();
     const childEnvironment = {
@@ -667,8 +836,6 @@ async function main() {
       REBASE_QUEUE_PREFIX: `rebase-server-probe-${Date.now().toString(36)}`,
       REBASE_PORT: String(childPort),
       REBASE_BODY_LIMIT_BYTES: "2048",
-      REBASE_EMAIL_WEBHOOK_SECRET: secret,
-      REBASE_STORAGE_WEBHOOK_SECRET: secret,
     };
     const runtimeProfile = path.join(redis.directory, "runtime.env");
     fs.writeFileSync(runtimeProfile, Object.entries(childEnvironment)

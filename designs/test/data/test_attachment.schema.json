@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["owned_by", "storage_config", "attached_to", "file_name", "media_type", "byte_length_limit"],
+  "properties": {
+    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "storage_config": { "type": "string", "pattern": "^file_storage_config:[a-z0-9-]+$" },
+    "attached_to": { "type": "string", "pattern": "^(test_primitive|test_tree):[a-z0-9-]+$" },
+    "file_name": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "media_type": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "byte_length_limit": { "type": "integer", "minimum": 0, "maximum": 5368709120 },
+    "access_mode": { "type": "string", "enum": ["upload", "download"], "x-rebase-optional-probability": 0.8 },
+    "access_duration": { "type": "integer", "minimum": 1, "maximum": 604800, "x-rebase-optional-probability": 0.8 }
+  }
+}

@@ -66,12 +66,10 @@ DEFINE FIELD api_key ON email_brevo_config TYPE string ASSERT $value.len() > 0
 DEFINE FIELD compliance_note ON email_brevo_config TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select NONE FOR create, update WHERE true
     COMMENT '@rebase-audit-redact';
-DEFINE FIELD provider_account_id ON email_brevo_config TYPE string READONLY;
 
 -- 7. TABLE-KEYED EFFECT EXAMPLES
 DEFINE TABLE OVERWRITE file_storage_config SCHEMAFULL COMMENT '@rebase-audit';
 DEFINE FIELD provider ON file_storage_config TYPE string DEFAULT 'local-storage';
-DEFINE FIELD bucket ON file_storage_config TYPE string ASSERT $value.len() > 0;
 DEFINE FIELD visibility ON file_storage_config TYPE bool DEFAULT false;
 DEFINE FIELD access_key_id ON file_storage_config TYPE string ASSERT $value.len() > 0
     PERMISSIONS FOR select NONE FOR create, update WHERE true
@@ -87,29 +85,37 @@ DEFINE FIELD region ON file_storage_config TYPE string ASSERT $value.len() > 0
     COMMENT '@rebase-audit-redact';
 DEFINE FIELD default_expiry_seconds ON file_storage_config TYPE int DEFAULT 900 ASSERT $value > 0 AND $value <= 604800;
 
-DEFINE TABLE OVERWRITE file_access_grant SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-mutable-inputs @rebase-provider storage @rebase-timeout 10s';
-DEFINE FIELD storage_config ON file_access_grant TYPE record<file_storage_config>
-    REFERENCE ON DELETE REJECT
-    COMMENT '@rebase-effect-input';
-DEFINE FIELD object_key ON file_access_grant TYPE string ASSERT $value.len() > 0 COMMENT '@rebase-effect-input';
-DEFINE FIELD expires_in ON file_access_grant TYPE int DEFAULT 900 ASSERT $value > 0 AND $value <= 604800
-    COMMENT '@rebase-effect-input';
-DEFINE FIELD access_url ON file_access_grant TYPE option<string> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD access_token ON file_access_grant TYPE option<string> DEFAULT NONE
-    PERMISSIONS FOR select NONE FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD expires_at ON file_access_grant TYPE option<datetime> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD provider_reference ON file_access_grant TYPE option<string> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output';
-DEFINE FIELD provider_state ON file_access_grant TYPE option<string> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output @rebase-change-log';
-DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async @rebase-provider email @rebase-timeout 30s @rebase-webhook local/status @rebase-webhook-account config.provider_account_id';
+DEFINE TABLE OVERWRITE razorpay_config SCHEMAFULL COMMENT '@rebase-audit';
+DEFINE FIELD label ON razorpay_config TYPE string ASSERT $value.len() > 0;
+DEFINE FIELD visibility ON razorpay_config TYPE bool DEFAULT false;
+DEFINE FIELD key_id ON razorpay_config TYPE string ASSERT $value.len() > 0 READONLY;
+DEFINE FIELD key_secret ON razorpay_config TYPE string ASSERT $value.len() > 0
+    PERMISSIONS FOR select NONE FOR create, update WHERE true
+    COMMENT '@rebase-audit-redact';
+DEFINE FIELD webhook_secret ON razorpay_config TYPE string ASSERT $value.len() > 0
+    PERMISSIONS FOR select NONE FOR create, update WHERE true
+    COMMENT '@rebase-audit-redact';
+
+DEFINE TABLE OVERWRITE test_attachment SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-events CREATE UPDATE DELETE @rebase-mutable-inputs @rebase-provider storage @rebase-timeout 10s';
+DEFINE FIELD storage_config ON test_attachment TYPE record<file_storage_config>
+    REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD attached_to ON test_attachment TYPE record<test_primitive | test_tree>
+    REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD file_name ON test_attachment TYPE string ASSERT $value.len() > 0 AND $value.len() <= 255 READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD media_type ON test_attachment TYPE string ASSERT $value.len() > 0 AND $value.len() <= 255 READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD byte_length_limit ON test_attachment TYPE int ASSERT $value >= 0 READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD access_mode ON test_attachment TYPE string ASSERT $value IN ['upload', 'download'] DEFAULT 'upload' COMMENT '@rebase-effect-input';
+DEFINE FIELD access_duration ON test_attachment TYPE int DEFAULT 900 ASSERT $value > 0 AND $value <= 604800 COMMENT '@rebase-effect-input';
+DEFINE FIELD object_key ON test_attachment TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
+DEFINE FIELD access_url ON test_attachment TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-audit-omit';
+DEFINE FIELD access_headers ON test_attachment TYPE option<object> FLEXIBLE DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-audit-omit';
+DEFINE FIELD access_expires_at ON test_attachment TYPE option<datetime> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
+
+DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async @rebase-provider email @rebase-timeout 30s';
 DEFINE FIELD config ON send_brevo_email TYPE record<email_brevo_config>
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD to ON send_brevo_email TYPE array<string>
@@ -127,9 +133,40 @@ DEFINE FIELD provider_state ON send_brevo_email TYPE option<string> DEFAULT NONE
 DEFINE FIELD result ON send_brevo_email TYPE option<object> FLEXIBLE DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
-DEFINE FIELD webhook_event_id ON send_brevo_email TYPE option<string> DEFAULT NONE
+DEFINE TABLE OVERWRITE razorpay_order SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-provider payment @rebase-timeout 15s';
+DEFINE FIELD config ON razorpay_order TYPE record<razorpay_config>
+    REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD amount_paise ON razorpay_order TYPE int ASSERT $value >= 100 AND $value <= 1000000000 READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD currency ON razorpay_order TYPE string DEFAULT 'INR' ASSERT $value = 'INR' READONLY COMMENT '@rebase-effect-input';
+DEFINE FIELD provider_order_id ON razorpay_order TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
+DEFINE FIELD receipt ON razorpay_order TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
+DEFINE FIELD status ON razorpay_order TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output @rebase-webhook-event';
-DEFINE FIELD webhook_event_at ON send_brevo_email TYPE option<datetime> DEFAULT NONE
-    PERMISSIONS FOR select WHERE true FOR create, update NONE
-    COMMENT '@rebase-effect-output @rebase-webhook-order';
+    COMMENT '@rebase-effect-output @rebase-change-log';
+DEFINE FIELD provider_created_at ON razorpay_order TYPE option<datetime> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
+
+DEFINE TABLE OVERWRITE razorpay_payment SCHEMAFULL COMMENT '@rebase-audit';
+DEFINE FIELD order ON razorpay_payment TYPE record<razorpay_order> REFERENCE ON DELETE REJECT READONLY;
+DEFINE FIELD provider_payment_id ON razorpay_payment TYPE string ASSERT $value.len() > 0 READONLY;
+DEFINE FIELD status ON razorpay_payment TYPE string ASSERT $value.len() > 0
+    PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-change-log';
+DEFINE FIELD amount_paise ON razorpay_payment TYPE int ASSERT $value >= 0
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+DEFINE FIELD currency ON razorpay_payment TYPE string ASSERT $value.len() > 0
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+DEFINE FIELD method ON razorpay_payment TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+DEFINE FIELD provider_created_at ON razorpay_payment TYPE datetime
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+DEFINE FIELD error_code ON razorpay_payment TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+DEFINE FIELD error_description ON razorpay_payment TYPE option<string> DEFAULT NONE
+    PERMISSIONS FOR select WHERE true FOR create, update NONE;
+
+DEFINE INDEX OVERWRITE idx_razorpay_order_provider_order_id ON TABLE razorpay_order FIELDS provider_order_id UNIQUE;
+DEFINE INDEX OVERWRITE idx_razorpay_order_receipt ON TABLE razorpay_order FIELDS receipt UNIQUE;
+DEFINE INDEX OVERWRITE idx_razorpay_payment_provider_payment_id ON TABLE razorpay_payment FIELDS provider_payment_id UNIQUE;
+DEFINE INDEX OVERWRITE idx_test_attachment_attached_to ON TABLE test_attachment FIELDS attached_to UNIQUE;

@@ -10,6 +10,8 @@ const {
   fixedStoreDirectory,
 } = require("./directory");
 const { loadTableHandlers } = require("./handlers");
+const { createWebhookRouteCodec } = require("./webhook-routes");
+const { loadWebhookHandlers } = require("./webhooks");
 const {
   DEFAULT_PROVIDER_ADAPTER,
   resolveProviderAdapter,
@@ -32,6 +34,7 @@ function readContracts(projectDir) {
   return {
     contractPath,
     contracts: new Map(Object.entries(parsed.tables || {})),
+    webhookContracts: new Map(Object.entries(parsed.webhooks || {})),
   };
 }
 
@@ -74,14 +77,18 @@ async function startServer(options = {}) {
   const handlers =
     options.handlers ||
     loadTableHandlers(path.join(projectDir, "table-handlers"), loaded);
+  const webhooks = options.webhooks || loadWebhookHandlers(
+    path.join(projectDir, "webhook-handlers"),
+    { contracts: loaded.webhookContracts },
+  );
   const providerSelection =
     options.providers ??
     options.provider ??
     config.provider.selection ?? DEFAULT_PROVIDER_ADAPTER;
+  const storageBucket = options.storageBucket ?? config.storage?.bucket;
   const providers = resolveProviderAdapter(providerSelection, {
-    emailWebhookSecret: config.webhooks?.emailSecret,
-    storageWebhookSecret: config.webhooks?.storageSecret,
     ...(config.provider.options || {}),
+    ...(storageBucket ? { storageBucket } : {}),
     ...(options.providerOptions || {}),
   });
   if (environment === "production" && providers.developmentOnly) {
@@ -142,12 +149,15 @@ async function startServer(options = {}) {
     );
   }
   runtimeOptions.allowedContexts ||= configuredContexts;
+  const routeCodec = options.routeCodec || createWebhookRouteCodec(wakeSecret);
   const runtime = createRuntime({
     handlers,
+    webhooks,
     providers,
     queue,
     stores,
     contracts: loaded.contracts,
+    routeCodec,
     options: runtimeOptions,
   });
   const workerStops = [];
@@ -173,13 +183,13 @@ async function startServer(options = {}) {
     });
     app = createRuntimeApp({
       handlers,
+      webhooks,
       providers,
       queue,
       runtime,
       wakeSecret,
       defaultContext,
       readinessContexts: configuredContexts,
-      resolveWebhookContext: options.resolveWebhookContext,
       allowBearer,
       bodyLimitBytes: options.bodyLimitBytes ?? config.server.bodyLimitBytes,
       requestTimeoutMs: options.requestTimeoutMs ?? config.server.requestTimeoutMs,
@@ -216,6 +226,7 @@ async function startServer(options = {}) {
     close,
     contracts: loaded.contracts,
     handlers,
+    webhooks,
     hostname,
     port: listeningPort,
     queue,

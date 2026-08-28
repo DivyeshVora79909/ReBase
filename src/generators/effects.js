@@ -33,6 +33,21 @@ function changedExpression(fields) {
     .join(" OR ");
 }
 
+function snapshotExpression(source, fields) {
+  return `{ id: ${source}.id, owned_by: ${source}.owned_by${fields.length ? ", " : ""}${fields
+    .map((field) => `${field}: ${source}.${field}`)
+    .join(", ")} }`;
+}
+
+function eventPredicate(events, inputFields) {
+  const predicates = events.map((event) => {
+    if (event !== "UPDATE") return `$event = '${event}'`;
+    const changed = changedExpression(inputFields);
+    return changed ? `($event = 'UPDATE' AND (${changed}))` : "$event = 'UPDATE'";
+  });
+  return predicates.length === 1 ? predicates[0] : `(${predicates.join(" OR ")})`;
+}
+
 function lifecycleFields(table) {
   const name = identifier(table.name);
   const output = [];
@@ -98,16 +113,13 @@ function generateEffectEvents(schema, options = {}) {
       .filter((field) => field.effectInput)
       .map((field) => field.name);
     const outputFields = [...table.fields.values()]
-      .filter((field) => field.effectOutput && !/^rebase_/.test(field.name) && !field.webhookEvent && !field.webhookOrder);
-    const changed = changedExpression(inputFields);
-    const when = table.effectProcess === "sync" && changed
-      ? `$event = 'CREATE' OR ($event = 'UPDATE' AND (${changed}))`
-      : "$event = 'CREATE'";
-    const snapshotFields = [
-      "id: $after.id",
-      "owned_by: $after.owned_by",
-      ...inputFields.map((field) => `${field}: $after.${field}`),
-    ];
+      .filter((field) => field.effectOutput && !/^rebase_/.test(field.name));
+    const events = table.effectEvents?.length ? table.effectEvents : ["CREATE"];
+    const when = eventPredicate(events, inputFields);
+    const snapshotFields = [...new Set([
+      ...inputFields,
+      ...outputFields.map((field) => field.name),
+    ])];
     const patchFields = outputFields.map((field) => `${field.name}: ${outputExpression(field)}`);
     const auth = `{ authorization: ${quote(`Bearer ${options.runtimeSecret}`)} }`;
     let body;
@@ -116,11 +128,12 @@ function generateEffectEvents(schema, options = {}) {
         LET $response = http::post(${quote(`${options.runtimeUrl}/internal/sync`)}, {
             namespace: session::ns(),
             database: session::db(),
-            id: <string>$after.id,
+            id: <string>(IF $event = 'DELETE' THEN $before.id ELSE $after.id END),
             event: $event,
-            record: { ${snapshotFields.join(", ")} }
+            before: IF $event = 'CREATE' THEN NONE ELSE ${snapshotExpression("$before", snapshotFields)} END,
+            after: IF $event = 'DELETE' THEN NONE ELSE ${snapshotExpression("$after", snapshotFields)} END
         }, ${auth});
-        IF $response.outcome = 'success' AND $response.patch {
+        IF $response.outcome = 'success' AND $event != 'DELETE' AND $response.patch {
             UPDATE $after.id MERGE { ${patchFields.join(", ")} };
         } ELSE IF $response.outcome != NONE AND $response.outcome != 'success' {
             THROW 'REBASE_SYNC_EFFECT_FAILED';
@@ -166,28 +179,6 @@ const MACHINE_FIELDS = Object.freeze([
   "rebase_schedule_finished_at",
 ]);
 
-function webhookAccountPath(table, schema = { tables: new Map() }) {
-  if (!table.webhook) return null;
-  if (!table.webhookAccountPath) throw new Error(`${table.name} webhook requires @rebase-webhook-account`);
-  const segments = table.webhookAccountPath.split(".");
-  if (segments.length < 1 || segments.length > 2) {
-    throw new Error(`${table.name} webhook account path must be a field or one reference plus a field`);
-  }
-  const root = table.fields.get(segments[0]);
-  if (!root) throw new Error(`${table.name} webhook account path starts with an unknown field: ${segments[0]}`);
-  if (segments.length === 2) {
-    if (!root.recordType || root.recordType.isArray) {
-      throw new Error(`${table.name}.${segments[0]} must be a scalar record reference for webhook account resolution`);
-    }
-    for (const target of root.recordType.targets) {
-      if (!schema.tables.get(target)?.fields.has(segments[1])) {
-        throw new Error(`${table.name} webhook account path field is missing: ${target}.${segments[1]}`);
-      }
-    }
-  }
-  return segments;
-}
-
 function runtimeContractFor(table, schema = { tables: new Map() }) {
   const fields = [...table.fields.values()];
   const inputDefinitions = fields.filter((field) => field.effectInput);
@@ -197,7 +188,7 @@ function runtimeContractFor(table, schema = { tables: new Map() }) {
     .map((field) => field.name)
     .sort();
   const patchFields = fields
-    .filter((field) => field.effectOutput && !field.webhookEvent && !field.webhookOrder)
+    .filter((field) => field.effectOutput)
     .map((field) => field.name)
     .sort();
   const references = fields
@@ -209,21 +200,13 @@ function runtimeContractFor(table, schema = { tables: new Map() }) {
       targets: [...field.recordType.targets].sort(),
     }))
     .sort((left, right) => left.field.localeCompare(right.field));
-  const webhookEvents = fields.filter((field) => field.webhookEvent).map((field) => field.name);
-  const webhookOrders = fields.filter((field) => field.webhookOrder).map((field) => field.name);
-  if (table.webhook && webhookEvents.length !== 1) {
-    throw new Error(`${table.name} webhook requires exactly one @rebase-webhook-event field`);
-  }
-  if (table.webhook && webhookOrders.length !== 1) {
-    throw new Error(`${table.name} webhook requires exactly one @rebase-webhook-order field`);
-  }
   return {
     process: table.effectProcess,
+    events: [...(table.effectEvents || ["CREATE"])],
     timeoutMs: table.effectTimeoutMs || (table.effectProcess === "sync" ? 10000 : 60000),
     triggers: [
       table.effectProcess === "sync" ? "sync" : "task",
       ...(table.effectProcess === "async" ? ["schedule"] : []),
-      ...(table.webhook ? ["webhook"] : []),
     ],
     inputFields: inputs,
     optionalInputs,
@@ -240,12 +223,6 @@ function runtimeContractFor(table, schema = { tables: new Map() }) {
       timezone: "UTC",
       granularity: "minute",
     } : null,
-    webhook: table.webhook ? {
-      ...table.webhook,
-      eventField: webhookEvents[0],
-      orderField: webhookOrders[0],
-      accountPath: webhookAccountPath(table, schema),
-    } : null,
   };
 }
 
@@ -254,7 +231,7 @@ function generateRuntimeContracts(schema) {
   for (const table of [...schema.tables.values()].sort((left, right) => left.name.localeCompare(right.name))) {
     if (table.effectProcess) tables[table.name] = runtimeContractFor(table, schema);
   }
-  return { tables };
+  return { tables, webhooks: {} };
 }
 
 module.exports = {

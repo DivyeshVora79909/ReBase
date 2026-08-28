@@ -43,6 +43,7 @@ function main() {
         "SURREAL_DATABASE=profile-db",
         "REBASE_RUNTIME_URL=http://runtime",
         "REBASE_WAKE_SECRET=wake-secret",
+        "REBASE_STORAGE_BUCKET=profile-bucket",
       ].join("\n"),
     );
     const loaded = loadEnvironment(["--env-file", file, "--count", "2"], {
@@ -70,18 +71,21 @@ function main() {
     });
     assert.equal(config.runtime.url, "http://runtime");
     assert.equal(config.runtime.wakeSecret, "wake-secret");
-    assert.equal(config.webhooks.emailSecret, undefined);
+    assert.equal(config.storage.bucket, "profile-bucket");
+    assert.deepEqual(config.webhooks, {});
     const flagConfig = resolveConfiguration(loaded.values, {
       namespace: "flag-ns",
       database: "flag-db",
       runtimeUrl: "http://flag-runtime",
       runtimeSecret: "flag-secret",
+      storageBucket: "flag-bucket",
     });
     assert.deepEqual(flagConfig.surreal.defaultContext, {
       namespace: "flag-ns",
       database: "flag-db",
     });
     assert.equal(flagConfig.runtime.wakeSecret, "flag-secret");
+    assert.equal(flagConfig.storage.bucket, "flag-bucket");
     assertConnectionConfiguration(config);
 
     const neutral = resolveConfiguration({

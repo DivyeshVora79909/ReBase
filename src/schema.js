@@ -12,11 +12,10 @@ function parseSchema(schemaSource, viewsSource) {
       table.audit = /@rebase-audit(?![-\w])/i.test(table.comment);
       table.principalKind = extractPrincipalKind(table.comment, table.name);
       table.effectProcess = extractEffectProcess(table.comment, table.name);
+      table.effectEvents = extractEffectEvents(table.comment, table.name, table.effectProcess);
       table.effectTimeoutMs = extractEffectTimeout(table.comment, table.name);
       table.effectProviders = extractEffectProviders(table.comment);
       table.effectMutableInputs = /@rebase-mutable-inputs\b/i.test(table.comment);
-      table.webhook = extractWebhook(table.comment, table.name);
-      table.webhookAccountPath = extractWebhookAccountPath(table.comment, table.name);
       tables.set(tableMatch[1], table);
     }
     const fieldMatch = /\bDEFINE\s+FIELD\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\s+ON\s+(?:TABLE\s+)?([A-Za-z0-9_]+)/i.exec(statement);
@@ -35,8 +34,6 @@ function parseSchema(schemaSource, viewsSource) {
       inheritReaders: /@rebase-readers\b/i.test(fieldComment),
       effectInput: /@rebase-effect-input\b/i.test(fieldComment),
       effectOutput: /@rebase-effect-output\b/i.test(fieldComment),
-      webhookEvent: /@rebase-webhook-event\b/i.test(fieldComment),
-      webhookOrder: /@rebase-webhook-order\b/i.test(fieldComment),
       auditPolicy: parseAuditPolicy(fieldComment),
     });
   }
@@ -86,6 +83,27 @@ function extractEffectProcess(comment, tableName) {
   return unique[0] || null;
 }
 
+function extractEffectEvents(comment, tableName, process) {
+  const markers = [...String(comment || "").matchAll(/@rebase-events\b([^@]*)/gi)];
+  if (!markers.length) return process ? ["CREATE"] : [];
+  const declarations = markers.map((match) => {
+    const events = String(match[1] || "")
+      .split(/[\s,|]+/)
+      .filter(Boolean)
+      .map((event) => event.toUpperCase());
+    const invalid = events.find((event) => !["CREATE", "UPDATE", "DELETE"].includes(event));
+    if (invalid) throw new Error(`Invalid @rebase-events value on table ${tableName}: ${invalid}`);
+    if (!events.length) throw new Error(`@rebase-events on table ${tableName} requires at least one event`);
+    return [...new Set(events)].sort((left, right) => (
+      ["CREATE", "UPDATE", "DELETE"].indexOf(left) - ["CREATE", "UPDATE", "DELETE"].indexOf(right)
+    ));
+  });
+  if (new Set(declarations.map((events) => events.join(","))).size > 1) {
+    throw new Error(`Conflicting @rebase-events markers on table ${tableName}`);
+  }
+  return declarations[0];
+}
+
 function extractEffectTimeout(comment, tableName) {
   const matches = [...String(comment || "").matchAll(/@rebase-timeout\s*[:=]?\s*(\d+)\s*(ms|s)?\b/gi)]
     .map((match) => Number(match[1]) * (match[2]?.toLowerCase() === "s" ? 1000 : 1));
@@ -103,22 +121,6 @@ function extractEffectProviders(comment) {
     [...String(comment || "").matchAll(/@rebase-provider\s*[:=]?\s*([A-Za-z][A-Za-z0-9_-]*)\b/gi)]
       .map((match) => match[1].toLowerCase()),
   )].sort();
-}
-
-function extractWebhook(comment, tableName) {
-  const matches = [...String(comment || "").matchAll(/@rebase-webhook\s*[:=]?\s*([A-Za-z][A-Za-z0-9_-]*)\/([A-Za-z][A-Za-z0-9_-]*)\b/gi)]
-    .map((match) => ({ provider: match[1].toLowerCase(), route: match[2].toLowerCase() }));
-  const unique = new Map(matches.map((value) => [`${value.provider}/${value.route}`, value]));
-  if (unique.size > 1) throw new Error(`Conflicting @rebase-webhook markers on table ${tableName}`);
-  return [...unique.values()][0] || null;
-}
-
-function extractWebhookAccountPath(comment, tableName) {
-  const matches = [...String(comment || "").matchAll(/@rebase-webhook-account\s*[:=]?\s*([A-Za-z_][A-Za-z0-9_.]*)\b/gi)]
-    .map((match) => match[1]);
-  const unique = [...new Set(matches)];
-  if (unique.length > 1) throw new Error(`Conflicting @rebase-webhook-account markers on table ${tableName}`);
-  return unique[0] || null;
 }
 
 function parseAuditPolicy(comment = "") {
@@ -168,12 +170,11 @@ function resolveRecordTargets(schema, sourceTable, expression) {
 }
 
 module.exports = {
+  extractEffectEvents,
   extractEffectProcess,
   extractEffectProviders,
   extractEffectTimeout,
   extractPrincipalKind,
-  extractWebhook,
-  extractWebhookAccountPath,
   parseAuditPolicy,
   parseSchema,
   resolveRecordTargets,

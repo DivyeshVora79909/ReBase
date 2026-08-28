@@ -60,8 +60,8 @@ An effect table represents one externally meaningful operation and its current
 user-facing projection. It is simultaneously the validated request and current
 result, but it is not a transport queue or immutable attempt ledger.
 
-Examples include `send_brevo_email`, `razorpay_payment`, and
-`file_access_grant`. An effect table declares, directly or through markers:
+Examples include `send_brevo_email`, `razorpay_order`, and
+`test_attachment`. An effect table declares, directly or through markers:
 
 ```text
 table name
@@ -72,11 +72,11 @@ record references and delete policies
 optional provider, timeout, schedule, and webhook declarations
 ```
 
-Common fields are domain-dependent, but normally include a UUIDv7 `id`,
-`owned_by`, timestamps, provider correlation, bounded result and error fields,
-and optional scheduling fields. Async tables receive compiler-owned `rebase_*`
-lease, wake, cancellation, outcome, error, cursor, and computed-status facts;
-queue attempts remain in BullMQ.
+Common fields are domain-dependent, but normally include a SurrealDB-generated
+record ID, `owned_by`, timestamps, provider correlation, bounded result and
+error fields, and optional scheduling fields. Async tables receive
+compiler-owned `rebase_*` lease, wake, cancellation, outcome, error, cursor,
+and computed-status facts; queue attempts remain in BullMQ.
 
 ## System flow
 
@@ -122,10 +122,13 @@ does not include a nested event update on SurrealDB 3.2.0; generated sync helper
 capture the returned ID and re-select:
 
 ```surql
-LET $created = CREATE ONLY file_access_grant SET
+LET $created = CREATE ONLY test_attachment SET
     owned_by = $auth,
-    object_key = $object_key,
-    expires_in = $expires_in;
+    storage_config = $storage_config,
+    attached_to = $attached_to,
+    file_name = $file_name,
+    media_type = $media_type,
+    byte_length_limit = $byte_length_limit;
 RETURN (SELECT * FROM $created.id)[0];
 ```
 
@@ -196,6 +199,9 @@ Provider configuration model:
 - require the authorized owner to store provider fields directly in the typed
   configuration row; there is no `env:` or `secret:` naming contract and no
   platform fallback;
+- keep the physical object-storage bucket in the deployment profile as one
+  shared `REBASE_STORAGE_BUCKET` value; namespace/database hashing in object
+  keys provides tenant isolation without repeating the bucket in every row;
 - for shared integrations, keep the configuration row owned by `groups:root`
   and make only its harmless metadata visible; clients can reference the row
   while the credential field evaluates to `NONE` in their session;
@@ -225,8 +231,10 @@ Webhooks are external input adapters, not handler identities. The route must:
 1. preserve the raw body;
 2. verify the provider’s official signature, timestamp, and replay rules;
 3. derive a provider event/deduplication key;
-4. correlate an indexed provider object ID or signed opaque token;
-5. verify the provider account matches the referenced configuration;
+4. open a runtime-authenticated route capsule or correlate an indexed provider
+   object ID;
+5. load the capsule's referenced configuration and verify the provider
+   signature with that configuration;
 6. apply an idempotent, allowlisted patch;
 7. acknowledge only after the local update is durably accepted.
 
@@ -239,8 +247,9 @@ and preferably a private network.
 
 A schedule is a time-based input adapter over an ordinary effect. At the due
 time it copies validated inputs and `owned_by` into a fresh record in the same
-effect table, clears schedule-only fields, assigns a new UUIDv7, and lets the
-normal async path run. The occurrence does not require a template reference.
+effect table, clears schedule-only fields, lets SurrealDB generate its record
+ID, and then follows the normal async path. The occurrence does not require a
+template reference.
 
 Repeated alarms are repeated submissions. Provider idempotency or an
 effect-specific policy decides whether they are harmless or intentionally
@@ -262,7 +271,8 @@ The compiler must:
 
 1. discover storage/effect declarations from SurrealQL syntax and markers;
 2. validate each effect table against exactly one table handler;
-3. generate UUIDv7 effect IDs, lifecycle fields, field permissions, and indexes;
+3. let SurrealDB generate effect IDs and generate lifecycle fields, field
+   permissions, and indexes;
 4. generate record-reference assertions;
 5. generate bounded sync snapshot and async locator events when deployment
    context is supplied;
@@ -300,8 +310,8 @@ authorization layer.
 The test design intentionally covers the broad examples:
 
 - `email_brevo_config`: selectable configuration with hidden credentials;
-- `send_brevo_email`: durable async effect, queue/retry/reconciliation/webhook;
-- `file_storage_config` and `file_access_grant`: inline bounded URL/token issuance.
+- `send_brevo_email`: durable async effect, queue/retry/reconciliation/schedule;
+- `file_storage_config` and `test_attachment`: inline bounded URL/token issuance.
 
 ## Alternatives retained for future evidence
 

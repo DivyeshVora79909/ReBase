@@ -27,24 +27,8 @@ function validEffect(extra = "") {
   `;
 }
 
-function webhookEffect(table = "delivery", route = "status") {
-  return `
-    DEFINE TABLE account SCHEMAFULL;
-    DEFINE FIELD provider_account_id ON account TYPE string READONLY;
-    DEFINE TABLE ${table} SCHEMAFULL COMMENT '@rebase-effect async @rebase-provider email @rebase-webhook local/${route} @rebase-webhook-account config.provider_account_id';
-    DEFINE FIELD config ON ${table} TYPE record<account> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
-    DEFINE FIELD result ON ${table} TYPE option<string> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
-    DEFINE FIELD webhook_event_id ON ${table} TYPE option<string> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-webhook-event';
-    DEFINE FIELD webhook_event_at ON ${table} TYPE option<datetime> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-webhook-order';
-  `;
-}
-
-function webhookHandler(table) {
-  return `module.exports = { table: '${table}', async execute() { return { outcome: 'success', patch: {} }; }, async verifyWebhook() { return false; }, async correlateWebhook() { return {}; } };\n`;
-}
-
 function handler(table = "delivery", body = "return { outcome: 'success', patch: { result: record.payload } };") {
-  return `module.exports = { table: '${table}', async execute({ record }) { ${body} } };\n`;
+  return `module.exports = { table: '${table}', on: { async CREATE({ record }) { ${body} } } };\n`;
 }
 
 function project(root, source, handlers = [handler()]) {
@@ -77,6 +61,7 @@ async function main() {
       runtimeSecret: "probe-secret",
     });
     assert.equal(result.contracts.tables.delivery.process, "async");
+    assert.deepEqual(result.contracts.tables.delivery.events, ["CREATE"]);
     assert.deepEqual(result.contracts.tables.delivery.patchFields, ["result"]);
     assert.match(result.bundle, /session::ns\(\)/);
     assert.match(result.bundle, /session::db\(\)/);
@@ -133,12 +118,9 @@ async function main() {
       ["mutable async input", schema(validEffect().replace("TYPE string READONLY", "TYPE string")), [handler()], /inputs must be READONLY/i],
       ["client writable output", schema(validEffect().replace("PERMISSIONS FOR select WHERE true FOR create, update NONE", "PERMISSIONS FULL")), [handler()], /deny client create and update/i],
       ["create writable readonly output", schema(validEffect().replace("PERMISSIONS FOR select WHERE true FOR create, update NONE", "READONLY")), [handler()], /deny client create and update/i],
-      ["webhook without event fields", schema(validEffect().replace("@rebase-timeout 2s", "@rebase-timeout 2s @rebase-webhook local/status")), [handler()], /webhook requires exactly one/i],
-      ["webhook without account", schema(validEffect().replace("@rebase-timeout 2s", "@rebase-timeout 2s @rebase-webhook local/status")
-        .concat("DEFINE FIELD webhook_event_id ON delivery TYPE option<string> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-webhook-event'; DEFINE FIELD webhook_event_at ON delivery TYPE option<datetime> DEFAULT NONE PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output @rebase-webhook-order';")),
-      [webhookHandler("delivery")], /webhook requires @rebase-webhook-account/i],
-      ["duplicate webhook route", schema(`${webhookEffect("delivery", "status")} ${webhookEffect("delivery_two", "status")}`),
-      [webhookHandler("delivery"), webhookHandler("delivery_two")], /duplicate webhook route/i],
+      ["async update event", schema(validEffect().replace("@rebase-effect async", "@rebase-effect async @rebase-events CREATE UPDATE")), [handler()], /support only CREATE/i],
+      ["missing event handler", schema(validEffect().replace("@rebase-effect async", "@rebase-effect sync @rebase-events CREATE DELETE")), [handler()], /on\.DELETE/i],
+      ["undeclared event handler", schema(validEffect()), [`module.exports = { table: 'delivery', on: { async CREATE() { return { outcome: 'success' }; }, async UPDATE() { return { outcome: 'success' }; } } };\n`], /not declared/i],
     ];
     for (const [name, source, handlers, expected] of cases) {
       const directory = path.join(temp, name.replaceAll(" ", "-"));
@@ -152,12 +134,12 @@ async function main() {
     });
     mutableRegistry.unregister("delivery");
     assert.equal(mutableRegistry.get("delivery"), null);
-    mutableRegistry.register({ table: "delivery", async execute() { return { outcome: "success", patch: {} }; } });
+    mutableRegistry.register({ table: "delivery", on: { async CREATE() { return { outcome: "success", patch: {} }; } } });
     assert(mutableRegistry.get("delivery"));
     const frozenRegistry = require("../gateway/handlers").loadTableHandlers(path.join(valid, "table-handlers"), {
       contracts: new Map(Object.entries(result.contracts.tables)),
     });
-    assert.throws(() => frozenRegistry.register({ table: "delivery", async execute() {} }), /frozen/i);
+    assert.throws(() => frozenRegistry.register({ table: "delivery", on: { async CREATE() {} } }), /frozen/i);
     console.log("compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed");
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
