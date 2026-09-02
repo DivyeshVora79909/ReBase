@@ -36,13 +36,13 @@ that pattern and has been changed to the connection authentication provider.
 
 ## Record Access Sessions
 
-The generated `account` access method currently uses:
+The generated `account_password` and `account_code` access methods currently use:
 
 ```surql
 DURATION FOR SESSION 8h, FOR TOKEN 1h
 ```
 
-It does not declare `WITH REFRESH`. A record-access sign-in therefore returns an
+They do not declare `WITH REFRESH`. A record-access sign-in therefore returns an
 access JWT without a refresh token. In a one-second-token test, the WebSocket
 remained connected after expiry, but subsequent queries failed as anonymous.
 This is expected for browser/client actor sessions: the client must sign in

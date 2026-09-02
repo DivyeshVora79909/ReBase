@@ -137,7 +137,7 @@ async function main(argv = process.argv.slice(2)) {
   .deploy                        Apply build/<project>/schema.surql
   .populate [table] [count]      Generate valid random data from data/*.schema.json
   .use <namespace> <database>    Switch the active database context
-  .as <email> <password>         Authenticate a working actor
+  .as <identifier> <password>    Authenticate a working actor
   .query <surql>                 Run a query as the current actor or admin
   .sample <table> [limit]        Inspect a bounded sample
   .probe [security|data|all]      Run disposable live probes
@@ -170,20 +170,20 @@ async function main(argv = process.argv.slice(2)) {
           });
           console.log(json(result));
         } else if (input.startsWith(".as ")) {
-          const [, email, password] = input.split(/\s+/);
-          if (!email || !password)
-            throw new Error(".as requires email and password");
+          const [, identifier, password] = input.split(/\s+/);
+          if (!identifier || !password)
+            throw new Error(".as requires an identifier and password");
           const session = new Surreal();
           await session.connect(sessionEndpoint(options.endpoint));
           const auth = await session.signin({
             namespace: options.namespace,
             database: options.database,
-            access: "account",
-            variables: { email, password },
+            access: "account_password",
+            variables: { identifier, password },
           });
           await actor?.close().catch(() => {});
           actor = session;
-          console.log(`Authenticated ${email}`);
+          console.log(`Authenticated ${identifier}`);
         } else if (input.startsWith(".query ")) {
           const result = await (actor || admin).query(input.slice(7));
           console.log(json(result));

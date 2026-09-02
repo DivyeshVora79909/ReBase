@@ -72,32 +72,14 @@ update retained `true`. This gives a materialized boolean plus monotonic client
 cancellation without trusting the create payload. `npm run probe:runtime` keeps
 this behavior in the upgrade gate.
 
-An explicit client-supplied token is overwritten when the field is actually
+An explicit client-supplied secret is overwritten when the field is actually
 materialized by an allowed privileged mutation. A record user can see neither a
 `PERMISSIONS NONE` field nor a field denied for select; a privileged runtime may
-read it for an access/signup predicate.
-
-### Consequence for machine-controlled invite tokens
-
-The safe invariant is:
-
-```surql
-DEFINE FIELD invite_token ON user TYPE uuid
-    VALUE rand::uuid::v7()
-    PERMISSIONS NONE;
-```
-
-This prevents client reads/writes, but it does not by itself prove that every
-record-user row mutation rotates the token. If rotation on every mutation is a
-security requirement, use one of these explicit designs:
-
-1. a synchronous/async machine event that performs a guarded internal update;
-2. a server-only mutation path that always writes/materializes the token;
-3. a version-pinned probe confirming the exact permission context for the
-   deployment’s real table permissions and update shapes.
-
-Signup must compare the hidden token inside the database access query and should
-not treat a client-visible field projection as the source of truth.
+read it for an access predicate. ReBase now keeps challenge and password hashes
+in private authentication tables instead of placing a machine-controlled code
+on the principal row. This avoids relying on a hidden field being rotated by
+every unrelated user mutation. Challenge redemption compares the hash inside
+`account_code`, and no client-visible projection is used as the source of truth.
 
 ## Event rollback
 

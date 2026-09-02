@@ -23,12 +23,14 @@ function generateOAuthAccess(principals, options = {}) {
         IF $verification.verified != true OR !string::is_email($verification.email ?? "") {
             RETURN NONE;
         };
-        RETURN SELECT id FROM ${user}
-            WHERE email = string::lowercase($verification.email)
-              AND login_access = true;
+        LET $identity = (SELECT VALUE principal FROM authentication_email
+            WHERE address = string::lowercase(string::trim($verification.email))
+              AND principal.login_access = true)[0];
+        IF $identity = NONE { RETURN NONE; };
+        RETURN (SELECT VALUE id FROM ${user} WHERE id = $identity AND login_access = true)[0];
     }
     AUTHENTICATE {
-        IF !$auth.login_access { RETURN NONE; };
+        IF !$auth OR !$auth.login_access { RETURN NONE; };
         RETURN $auth;
     }
     DURATION FOR SESSION 8h, FOR TOKEN 1h;`;

@@ -136,6 +136,7 @@ async function main() {
       ["missing event handler", schema(validEffect().replace("@rebase-effect async", "@rebase-effect sync @rebase-events CREATE DELETE")), [handler()], /on\.DELETE/i],
       ["undeclared event handler", schema(validEffect()), [`module.exports = { table: 'delivery', on: { async CREATE() { return { outcome: 'success' }; }, async UPDATE() { return { outcome: 'success' }; } } };\n`], /not declared/i],
       ["invalid adapter marker", schema(validEffect().replace("sendDelivery", "send-delivery")), [handler()], /invalid @rebase-adapter/i],
+      ["retired provider marker", schema(validEffect().replace("@rebase-adapter sendDelivery", "@rebase-provider sendDelivery")), [handler()], /retired.*rebase-provider|rebase-adapter/i],
     ];
     for (const [name, source, handlers, expected] of cases) {
       const directory = path.join(temp, name.replaceAll(" ", "-"));

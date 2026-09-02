@@ -14,6 +14,8 @@ information kind so an agent can load only the material needed for a task.
 
 - [`rebase/architecture.md`](./rebase/architecture.md) — canonical end-to-end
   effect architecture and ownership boundaries.
+- [`rebase/authentication.md`](./rebase/authentication.md) — typed delivery
+  identities, challenge redemption, password sign-in, and stateless OAuth.
 - [`rebase/runtime-dispatch.md`](./rebase/runtime-dispatch.md) — table-keyed
   handler registry, common handler contract, invocation adapters, and runtime
   security boundary.
@@ -50,8 +52,14 @@ information kind so an agent can load only the material needed for a task.
 - [`surrealdb/engine-performance.md`](./surrealdb/engine-performance.md) —
   query plans, ACL routing, catalog scaling, schema-definition cost, and
   data-generation performance.
+- [`surrealdb/reference-permission-performance.md`](./surrealdb/reference-permission-performance.md) —
+  on-disk comparison of table-scan permissions, reverse references, closure
+  arrays, skew, write cost, and delete semantics.
 - [`surrealdb/data-generation.md`](./surrealdb/data-generation.md) —
   schema-driven fixture generation and dependency-batch findings.
+- [`surrealdb/schema-temporal-fact-check.md`](./surrealdb/schema-temporal-fact-check.md) — catalog access, dynamic tables, materialized-view dependencies, temporal grouping, statistics, and domain probes.
+- [`rebase/domain-suite-plan.md`](./rebase/domain-suite-plan.md) — corrected mutable reactive-calculation architecture for accounts, CRM, warehouse, HRM, temporal views, and cron declarations.
+- [`rebase/all-in-one-suite-plan.md`](./rebase/all-in-one-suite-plan.md) — composition, canonical shared entities, cross-domain dependency order, calculation crons, and the staged verification plan for one suite build.
 
 ## Evidence conventions
 

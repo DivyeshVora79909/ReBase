@@ -30,6 +30,10 @@ promises.
 
 ## Query-plan benchmarks
 
+The focused on-disk authorization/reference benchmark and its reproduction
+commands are maintained in
+[`reference-permission-performance.md`](./reference-permission-performance.md).
+
 ### ACL width crossover
 
 | Rows | ACL width `m` | Native scan | Scalar OR fan-out | Filter/sort composite index |

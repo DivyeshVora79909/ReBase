@@ -118,6 +118,9 @@ function extractEffectTimeout(comment, tableName) {
 
 function extractEffectAdapters(comment, tableName = "unknown") {
   const source = String(comment || "");
+  if (/@rebase-provider\b/i.test(source)) {
+    throw new Error(`Retired @rebase-provider marker on table ${tableName}; use @rebase-adapter`);
+  }
   const names = [...source.matchAll(/@rebase-adapter\s*[:=]?\s*([^\s@]+)/gi)]
     .map((match) => match[1]);
   const markerCount = [...source.matchAll(/@rebase-adapter\b/gi)].length;

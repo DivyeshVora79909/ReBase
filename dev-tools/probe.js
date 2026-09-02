@@ -100,25 +100,10 @@ async function signIn(endpoint, namespace, database, identifier, password) {
   const tokens = await db.signin({
     namespace,
     database,
-    access: "account",
+    access: "account_password",
     variables: { identifier, password },
   });
   return { db, token: tokens.access };
-}
-
-async function signUp(endpoint, namespace, database, _email, password, invite) {
-  const db = new Surreal();
-  await db.connect(endpoint);
-  try {
-    return await db.signup({
-      namespace,
-      database,
-      access: "account",
-      variables: { password, invite },
-    });
-  } finally {
-    await db.close();
-  }
 }
 
 function rows(response) {
@@ -151,15 +136,21 @@ async function securityProbe(options) {
     await db.query(`
       CREATE groups:team SET name = 'Team', parents = [groups:root], role = $permissions;
       CREATE groups:other SET name = 'Other', parents = [groups:root], role = $permissions;
-      CREATE user:alice SET name = 'Alice', email = 'alice@example.com', username = 'Alice_User', password = crypto::argon2::generate('password123'), parents = [groups:team], login_access = true;
-      CREATE user:bob SET name = 'Bob', email = 'bob@example.com', password = crypto::argon2::generate('password123'), parents = [groups:other], login_access = true;
+      CREATE user:alice SET name = 'Alice', username = 'Alice_User', password = crypto::argon2::generate('password123'), parents = [groups:team], login_access = true;
+      CREATE user:bob SET name = 'Bob', password = crypto::argon2::generate('password123'), parents = [groups:other], login_access = true;
+      CREATE authentication_email:alice SET principal = user:alice, address = 'alice@example.com', verified_revision = 1;
+      CREATE authentication_email:bob SET principal = user:bob, address = 'bob@example.com', verified_revision = 1;
     `, { permissions });
+    await db.query(`
+      UPDATE authentication_email:alice SET verified_revision = revision, verified_at = time::now();
+      UPDATE authentication_email:bob SET verified_revision = revision, verified_at = time::now();
+    `);
     await assert.rejects(
-      db.query("CREATE user:empty_parent SET name = 'Empty', email = 'empty@example.com', parents = [];"),
+      db.query("CREATE user:empty_parent SET name = 'Empty', parents = [];"),
       /parents|assert|validation/i,
     );
     await assert.rejects(
-      db.query("CREATE user:missing_parent SET name = 'Missing', email = 'missing@example.com', parents = [groups:missing];"),
+      db.query("CREATE user:missing_parent SET name = 'Missing', parents = [groups:missing];"),
       /parents|assert|validation|exists/i,
     );
     await assert.rejects(
@@ -173,14 +164,14 @@ async function securityProbe(options) {
       assert.equal(rows(await db.query("SELECT VALUE username FROM user:alice;"))[0], "alice_user");
       assert(aliceByUsername.token);
       await assert.rejects(
-        db.query("CREATE user:duplicate_username SET name = 'Duplicate', email = 'duplicate@example.com', username = 'alice_user', parents = [groups:root];"),
+        db.query("CREATE user:duplicate_username SET name = 'Duplicate', username = 'alice_user', parents = [groups:root];"),
         /unique|index|username/i,
       );
       await db.query(`
-        CREATE user:username_claim_1 SET name = 'Claim 1', email = 'claim-1@example.com', parents = [groups:root];
-        CREATE user:username_claim_2 SET name = 'Claim 2', email = 'claim-2@example.com', parents = [groups:root];
-        CREATE user:username_claim_3 SET name = 'Claim 3', email = 'claim-3@example.com', parents = [groups:root];
-        CREATE user:username_claim_4 SET name = 'Claim 4', email = 'claim-4@example.com', parents = [groups:root];
+        CREATE user:username_claim_1 SET name = 'Claim 1', parents = [groups:root];
+        CREATE user:username_claim_2 SET name = 'Claim 2', parents = [groups:root];
+        CREATE user:username_claim_3 SET name = 'Claim 3', parents = [groups:root];
+        CREATE user:username_claim_4 SET name = 'Claim 4', parents = [groups:root];
       `);
       const usernameClaims = await Promise.allSettled([
         db.query("UPDATE user:username_claim_1 SET username = 'shared_name';"),
@@ -194,151 +185,67 @@ async function securityProbe(options) {
       assert(aliceActor.permissions.includes("test_primitive_create"));
       assert(aliceActor.z_access_index.includes("groups:team"));
       const defaultParent = rows(await alice.db.query(
-        `CREATE user:alice_child SET
-          name = 'Alice Child',
-          email = 'alice-child@example.com',
-          invite_token = type::uuid('00000000-0000-4000-8000-000000000000'),
-          invite_expires_at = d'2100-01-01T00:00:00Z'
-        RETURN AFTER;`,
+        "CREATE user:alice_child SET name = 'Alice Child' RETURN AFTER;",
       ))[0];
       assert.deepEqual(defaultParent.parents.map(String), ["user:alice"]);
-      assert.equal(defaultParent.invite_token, undefined);
-      assert.equal(new Date(defaultParent.invite_expires_at).getTime(), new Date("2100-01-01T00:00:00Z").getTime());
-      const generatedInvite = rows(await db.query(`
-        SELECT
-          <string>invite_token AS invite_token,
-          <string>invite_expires_at AS invite_expires_at
-        FROM user:alice_child;
-      `))[0];
-      assert.equal(generatedInvite.invite_token, "NONE");
-      assert.equal(new Date(generatedInvite.invite_expires_at).getTime(), new Date("2100-01-01T00:00:00Z").getTime());
 
-      // A machine/admin mutation can receive the generated value in its
-      // RETURN AFTER snapshot. Ordinary SELECT remains unable to read it.
-      const initialAdminInvite = rows(await db.query(`
-        UPDATE user:alice_child SET name = name RETURN AFTER;
-      `))[0];
-      const initialAdminToken = String(initialAdminInvite.invite_token);
-      assert.match(initialAdminToken, /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-
-      await alice.db.query(`
-        UPDATE user:alice_child SET invite_expires_at = d'2099-01-01T00:00:00Z';
-      `);
-      const extendedInviteSnapshot = rows(await db.query(`
-        UPDATE user:alice_child SET name = name RETURN AFTER;
-      `))[0];
-      const extendedInvite = {
-        ...extendedInviteSnapshot,
-        invite_token: String(extendedInviteSnapshot.invite_token),
-      };
-      assert.notEqual(extendedInvite.invite_token, initialAdminToken);
-      assert.match(extendedInvite.invite_token, /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-      assert.equal(new Date(extendedInvite.invite_expires_at).getTime(), new Date("2099-01-01T00:00:00Z").getTime());
-
-      const aliceInviteBeforeSelfUpdateSnapshot = rows(await db.query(`
-        UPDATE user:alice SET name = name RETURN AFTER;
-      `))[0];
-      const aliceInviteBeforeSelfUpdate = {
-        ...aliceInviteBeforeSelfUpdateSnapshot,
-        invite_token: String(aliceInviteBeforeSelfUpdateSnapshot.invite_token),
-      };
-      await alice.db.query(`
-        UPDATE user:alice SET invite_expires_at = d'2099-01-01T00:00:00Z';
-      `);
-      const aliceInviteAfterSelfUpdateSnapshot = rows(await db.query(`
-        UPDATE user:alice SET name = name RETURN AFTER;
-      `))[0];
-      const aliceInviteAfterSelfUpdate = {
-        ...aliceInviteAfterSelfUpdateSnapshot,
-        invite_token: String(aliceInviteAfterSelfUpdateSnapshot.invite_token),
-      };
-      assert.notEqual(aliceInviteAfterSelfUpdate.invite_token, aliceInviteBeforeSelfUpdate.invite_token);
-      assert.equal(
-        new Date(aliceInviteAfterSelfUpdate.invite_expires_at).getTime(),
-        new Date(aliceInviteBeforeSelfUpdate.invite_expires_at).getTime(),
+      // Identity addresses are separate records. Changing one fences its
+      // verification and any outstanding challenge without changing the
+      // authorization graph or the password credential.
+      const identityBefore = rows(await db.query(
+        "SELECT id, address, revision, verified_revision FROM authentication_email:alice;",
+      ))[0];
+      assert.equal(identityBefore.address, "alice@example.com");
+      assert.equal(identityBefore.verified_revision, 1);
+      await alice.db.query(
+        "UPDATE authentication_email:alice SET address = 'alice-renamed@example.com';",
       );
-      await signUp(
-        options.endpoint,
-        options.namespace,
-        options.database,
-        "alice@example.com",
-        "replacement-password",
-        aliceInviteAfterSelfUpdate.invite_token,
-      );
+      let identityAfter = identityBefore;
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        identityAfter = rows(await db.query(
+          "SELECT id, address, revision, verified_revision FROM authentication_email:alice;",
+        ))[0];
+        if (identityAfter?.address === "alice-renamed@example.com" && identityAfter.revision > identityBefore.revision) break;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      assert.equal(identityAfter.address, "alice-renamed@example.com");
+      assert(identityAfter.revision > identityBefore.revision);
+      assert.equal(identityAfter.verified_revision, undefined);
       await assert.rejects(
-        signIn(options.endpoint, options.namespace, options.database, "alice@example.com", "password123"),
+        signIn(options.endpoint, options.namespace, options.database, "alice-renamed@example.com", "password123"),
         /signin|authentication|access|record/i,
       );
-      const resetAlice = await signIn(
+      await db.query(
+        "UPDATE authentication_email:alice SET verified_revision = revision, verified_at = time::now();",
+      );
+      const renamedAlice = await signIn(
         options.endpoint,
         options.namespace,
         options.database,
-        "alice_user",
-        "replacement-password",
+        "alice-renamed@example.com",
+        "password123",
       );
-      assert(resetAlice.token);
-      await resetAlice.db.close();
-
-      await signUp(
-        options.endpoint,
-        options.namespace,
-        options.database,
-        "alice-child@example.com",
-        "child-password",
-        extendedInvite.invite_token,
-      );
-      const claimed = await signIn(
-        options.endpoint,
-        options.namespace,
-        options.database,
-        "alice-child@example.com",
-        "child-password",
-      );
-      assert(claimed.token);
-      await claimed.db.close();
-      const claimedInviteSnapshot = rows(await db.query(`
-        UPDATE user:alice_child SET name = name RETURN AFTER;
-      `))[0];
-      const claimedInvite = {
-        ...claimedInviteSnapshot,
-        invite_token: String(claimedInviteSnapshot.invite_token),
-      };
-      assert.notEqual(claimedInvite.invite_token, extendedInvite.invite_token);
-      assert.equal(
-        new Date(claimedInvite.invite_expires_at).getTime(),
-        new Date(extendedInvite.invite_expires_at).getTime(),
-      );
-      await assert.rejects(
-        signUp(
-          options.endpoint,
-          options.namespace,
-          options.database,
-          "alice-child@example.com",
-          "second-child-password",
-          extendedInvite.invite_token,
-        ),
-        /signup|authentication|access|record/i,
-      );
+      assert(renamedAlice.token);
+      await renamedAlice.db.close();
       await alice.db.query(
-        "CREATE user:alice_team_child SET name = 'Alice Team Child', email = 'alice-team-child@example.com', parents = [groups:team];",
+        "CREATE user:alice_team_child SET name = 'Alice Team Child', parents = [groups:team];",
       );
       const visibleParent = rows(await db.query(
         "SELECT * FROM user:alice_team_child;",
       ))[0];
       assert.deepEqual(visibleParent.parents.map(String), ["groups:team"]);
       await assert.rejects(
-        alice.db.query("CREATE user:alice_empty_child SET name = 'Alice Empty Child', email = 'alice-empty-child@example.com', parents = [];"),
+        alice.db.query("CREATE user:alice_empty_child SET name = 'Alice Empty Child', parents = [];"),
         /parents|assert|validation/i,
       );
       await assert.rejects(
-        alice.db.query("CREATE user:alice_hidden_child SET name = 'Alice Hidden Child', email = 'alice-hidden-child@example.com', parents = [groups:other];"),
+        alice.db.query("CREATE user:alice_hidden_child SET name = 'Alice Hidden Child', parents = [groups:other];"),
         /parents|assert|validation|exists/i,
       );
       await db.query(`
         CREATE groups:other_child SET name = 'Other Child', parents = [groups:other], role = [];
         CREATE user:mixed_parent_child SET
           name = 'Mixed Parent Child',
-          email = 'mixed-parent-child@example.com',
           parents = [user:alice, groups:other];
       `);
       assert.equal(rows(await alice.db.query("SELECT id FROM groups:other;")).length, 0);
@@ -484,25 +391,32 @@ async function securityProbe(options) {
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
       assert(audited);
-      await db.query("UPDATE user:alice SET email = 'alice-renamed@example.com'; UPDATE groups:team SET role = ['node_select'];");
-      let changeLogs = [];
+      await db.query("UPDATE authentication_email:alice SET address = 'alice-final@example.com'; UPDATE groups:team SET role = ['node_select'];");
+      let identityChangeLogs = [];
+      let userChangeLogs = [];
       for (let attempt = 0; attempt < 40; attempt += 1) {
-        changeLogs = rows(await db.query("SELECT before FROM change_logs WHERE target = user:alice;"));
-        if (changeLogs.some((entry) => entry.before?.email === "alice@example.com")
-          && changeLogs.some((entry) => Array.isArray(entry.before?.permissions))) break;
+        identityChangeLogs = rows(await db.query("SELECT before FROM change_logs WHERE target = authentication_email:alice;"));
+        userChangeLogs = rows(await db.query("SELECT before FROM change_logs WHERE target = user:alice;"));
+        if (identityChangeLogs.some((entry) => entry.before?.address === "alice-renamed@example.com")
+          && userChangeLogs.some((entry) => Array.isArray(entry.before?.permissions))) break;
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
-      assert(changeLogs.some((entry) => entry.before?.email === "alice@example.com"));
-      assert(changeLogs.some((entry) => Array.isArray(entry.before?.permissions)));
+      assert(identityChangeLogs.some((entry) => entry.before?.address === "alice-renamed@example.com"));
+      assert(userChangeLogs.some((entry) => Array.isArray(entry.before?.permissions)));
       const aliceVisibleLogs = rows(await alice.db.query("SELECT target FROM change_logs WHERE target = user:alice;"));
+      const aliceVisibleIdentityLogs = rows(await alice.db.query("SELECT target FROM change_logs WHERE target = authentication_email:alice;"));
       const bobVisibleLogs = rows(await bob.db.query("SELECT target FROM change_logs WHERE target = user:alice;"));
-      assert(aliceVisibleLogs.length >= 2);
+      const bobVisibleIdentityLogs = rows(await bob.db.query("SELECT target FROM change_logs WHERE target = authentication_email:alice;"));
+      assert(aliceVisibleLogs.length >= 1);
       assert(aliceVisibleLogs.every((entry) => String(entry.target) === "user:alice"));
+      assert(aliceVisibleIdentityLogs.length >= 1);
+      assert(aliceVisibleIdentityLogs.every((entry) => String(entry.target) === "authentication_email:alice"));
       assert.equal(bobVisibleLogs.length, 0);
+      assert.equal(bobVisibleIdentityLogs.length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_resource;")).length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_deleted;")).length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_group;")).length, 1);
-      console.log("security: account identifiers, invite reset, ownership, readers, revocation, DAGs, views, audit, and change logs passed");
+      console.log("security: authentication identities, ownership, readers, revocation, DAGs, views, audit, and change logs passed");
     } finally {
       await aliceByUsername.db.close();
       await alice.db.close();

@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { once } = require("node:events");
 const { serve } = require("@hono/node-server");
-const { createAccountService } = require("./accounts");
+const { createAuthenticationService } = require("./authentication");
 const { createRuntimeApp } = require("./app");
 const {
   createSurrealStoreDirectory,
@@ -14,6 +14,7 @@ const { loadTableHandlers } = require("./handlers");
 const { createOAuthVerifier } = require("./oauth");
 const { createMemoryRateLimiter, createRedisRateLimiter } = require("./rate-limit");
 const { createResendPlatformEmailAdapter } = require("./providers/resend-platform-email.adapter");
+const { createTwilioSmsAdapter } = require("./providers/twilio-sms.adapter");
 const { createWebhookRouteCodec } = require("./webhook-routes");
 const { loadWebhookHandlers } = require("./webhooks");
 const { createAdapters, createWebhookAdapters } = require("./providers");
@@ -38,6 +39,48 @@ function readContracts(projectDir) {
     principals: parsed.principals,
     webhookContracts: new Map(Object.entries(parsed.webhooks || {})),
   };
+}
+
+function configuredText(value) {
+  if (value === undefined || value === null) return undefined;
+  const normalized = String(value).trim();
+  return normalized || undefined;
+}
+
+function createPlatformEmail(config = {}, options = {}) {
+  const apiKey = configuredText(config.resendApiKey);
+  if (!apiKey) return null;
+  return createResendPlatformEmailAdapter({
+    apiKey,
+    from: configuredText(config.from),
+    fetch: options.fetch,
+  });
+}
+
+function createPlatformSms(config = {}, options = {}) {
+  const accountSid = configuredText(config.accountSid);
+  const authToken = configuredText(config.authToken);
+  const apiKeySid = configuredText(config.apiKeySid);
+  const apiKeySecret = configuredText(config.apiKeySecret);
+  const from = configuredText(config.from);
+  const supplied = [accountSid, authToken, apiKeySid, apiKeySecret, from].some(Boolean);
+  if (!supplied) return null;
+  const missing = [];
+  if (!accountSid) missing.push("REBASE_PLATFORM_SMS_TWILIO_ACCOUNT_SID");
+  if (!from) missing.push("REBASE_PLATFORM_SMS_TWILIO_FROM");
+  const apiKeySupplied = Boolean(apiKeySid || apiKeySecret);
+  if (apiKeySupplied && !apiKeySid) missing.push("REBASE_PLATFORM_SMS_TWILIO_API_KEY_SID");
+  if (apiKeySupplied && !apiKeySecret) missing.push("REBASE_PLATFORM_SMS_TWILIO_API_KEY_SECRET");
+  if (!apiKeySupplied && !authToken) missing.push("REBASE_PLATFORM_SMS_TWILIO_AUTH_TOKEN");
+  if (missing.length) throw new Error(`Incomplete Twilio SMS configuration: ${missing.join(", ")}`);
+  return createTwilioSmsAdapter({
+    accountSid,
+    authToken,
+    apiKeySid,
+    apiKeySecret,
+    from,
+    fetch: options.fetch,
+  });
 }
 
 async function startServer(options = {}) {
@@ -88,15 +131,12 @@ async function startServer(options = {}) {
     path.join(projectDir, "webhook-handlers"),
     { contracts: loaded.webhookContracts },
   );
-  const sendPlatformEmail = options.sendPlatformEmail === undefined
-    ? (config.platformEmail?.resendApiKey
-        ? createResendPlatformEmailAdapter({
-            apiKey: config.platformEmail.resendApiKey,
-            from: config.platformEmail.from,
-            fetch: options.fetch,
-          })
-        : null)
-    : options.sendPlatformEmail;
+  const sendEmail = options.sendEmail === undefined
+    ? createPlatformEmail(config.platformEmail, options)
+    : options.sendEmail;
+  const sendSms = options.sendSms === undefined
+    ? createPlatformSms(config.platformSms, options)
+    : options.sendSms;
   const oauth = options.oauth || createOAuthVerifier(options.oauthProviders, {
     onError: options.onOAuthError,
   });
@@ -165,7 +205,7 @@ async function startServer(options = {}) {
   }
   let rateLimiter = options.rateLimiter;
   let ownsRateLimiter = false;
-  if (rateLimiter === undefined && sendPlatformEmail) {
+  if (rateLimiter === undefined && (sendEmail || sendSms)) {
     if (config.queue.redis.url) {
       rateLimiter = createRedisRateLimiter({
         url: config.queue.redis.url,
@@ -177,26 +217,27 @@ async function startServer(options = {}) {
     } else {
       if (!options.queue) await queue.close().catch(() => {});
       if (!options.stores) await stores.close?.().catch(() => {});
-      throw new Error("REBASE_QUEUE_REDIS_URL is required for production account recovery rate limiting");
+      throw new Error("REBASE_QUEUE_REDIS_URL is required for production authentication rate limiting");
     }
     ownsRateLimiter = true;
   }
-  if (sendPlatformEmail && !loaded.principals?.user && !options.accounts) {
+  if ((sendEmail || sendSms) && !loaded.principals?.user && !options.authentication) {
     if (ownsRateLimiter) await rateLimiter.close?.().catch(() => {});
     if (!options.queue) await queue.close().catch(() => {});
     if (!options.stores) await stores.close?.().catch(() => {});
-    throw new Error("Compiled principal metadata is required for account recovery");
+    throw new Error("Compiled principal metadata is required for authentication challenges");
   }
-  const accounts = options.accounts || (loaded.principals?.user
-    ? createAccountService({
+  const authentication = options.authentication || (loaded.principals?.user
+    ? createAuthenticationService({
         stores,
         principals: loaded.principals,
         allowedContexts: configuredContexts,
-        sendEmail: sendPlatformEmail,
+        sendEmail,
+        sendSms,
         rateLimiter,
-        inviteTtlMs: config.accounts?.recovery?.inviteTtlMs,
-        rateLimits: config.accounts?.recovery,
-        onError: options.onRecoveryError,
+        challengeTtlMs: config.authentication?.challengeTtlMs,
+        rateLimits: config.authentication?.rateLimits,
+        onError: options.onAuthenticationError,
       })
     : null);
   runtimeOptions.allowedContexts ||= configuredContexts;
@@ -242,7 +283,7 @@ async function startServer(options = {}) {
         storageBucket,
         requiresStorageBucket: options.adapters === undefined,
       },
-      accounts,
+      authentication,
       oauth,
       queue,
       runtime,
@@ -284,7 +325,7 @@ async function startServer(options = {}) {
   };
   return {
     app,
-    accounts,
+    authentication,
     close,
     contracts: loaded.contracts,
     handlers,
@@ -293,7 +334,8 @@ async function startServer(options = {}) {
     oauth,
     adapters,
     webhookAdapters,
-    sendPlatformEmail,
+    sendEmail,
+    sendSms,
     port: listeningPort,
     queue,
     rateLimiter,
@@ -332,4 +374,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { readContracts, startServer };
+module.exports = { createPlatformEmail, createPlatformSms, readContracts, startServer };

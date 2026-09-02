@@ -4,6 +4,10 @@
 
 The current authorization model is correct and fast for record lookups and explicitly selective queries, but the unqualified default select shape does not scale as a count/list operation. SurrealDB uses a `TableScan` for the generated visibility/readers/owner OR predicate. The existing `owned_by` and `readers_index.*` indexes are used when the query supplies an explicit owner or reader condition, but they do not turn the complete authorization predicate into one indexed access path.
 
+The dedicated on-disk reference comparison, including reverse-key plans and
+selectivity crossover, is in
+[`reference-permission-performance.md`](./reference-permission-performance.md).
+
 This is acceptable for bounded pages, direct record access, and queries with a business filter. It is not acceptable to expose unrestricted `COUNT`, export, or deep offset pagination over large tables to ordinary record users without a separate query/index design.
 
 ## Scope And Environment

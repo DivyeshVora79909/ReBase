@@ -89,14 +89,14 @@ async function rootConnection(endpoint) {
   return db;
 }
 
-async function actorConnection(endpoint, email) {
+async function actorConnection(endpoint, identifier) {
   const db = new Surreal();
   await db.connect(endpoint);
   await db.signin({
     namespace: NAMESPACE,
     database: DATABASE,
-    access: "account",
-    variables: { email, password: PASSWORD },
+    access: "account_password",
+    variables: { identifier, password: PASSWORD },
   });
   return db;
 }
@@ -317,10 +317,14 @@ async function defineBenchmark(root) {
     CREATE groups:bench_narrow SET name = 'Narrow', parents = [groups:root], role = $permissions;
     CREATE groups:bench_wide SET name = 'Wide', parents = [groups:root], role = $permissions;
     CREATE groups:bench_other SET name = 'Other', parents = [groups:root], role = $permissions;
-    CREATE user:bench_narrow SET name = 'Narrow', email = 'narrow@example.com',
+    CREATE user:bench_narrow SET name = 'Narrow',
       password = crypto::argon2::generate($password), parents = [groups:bench_narrow], login_access = true;
-    CREATE user:bench_wide SET name = 'Wide', email = 'wide@example.com',
+    CREATE user:bench_wide SET name = 'Wide',
       password = crypto::argon2::generate($password), parents = [groups:bench_wide], login_access = true;
+    CREATE authentication_email:bench_narrow SET principal = user:bench_narrow, address = 'narrow@example.com', verified_revision = 1;
+    CREATE authentication_email:bench_wide SET principal = user:bench_wide, address = 'wide@example.com', verified_revision = 1;
+    UPDATE authentication_email:bench_narrow SET verified_revision = revision, verified_at = time::now();
+    UPDATE authentication_email:bench_wide SET verified_revision = revision, verified_at = time::now();
   `, { permissions, password: PASSWORD });
   for (let offset = 0; offset < 100; offset += 20) {
     await root.query(`

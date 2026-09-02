@@ -29,7 +29,11 @@ function createOAuthVerifier(adapters = {}, options = {}) {
         const email = result?.verified === true ? normalizeEmail(result.email) : null;
         return email ? { verified: true, email } : { verified: false };
       } catch (error) {
-        options.onError?.({ provider: name, code: String(error?.code || "OAUTH_VERIFICATION_FAILED") });
+        try {
+          options.onError?.({ provider: name, code: String(error?.code || "OAUTH_VERIFICATION_FAILED") });
+        } catch {
+          // Error hooks are observational and must not change the auth result.
+        }
         return { verified: false };
       }
     },

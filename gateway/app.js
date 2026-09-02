@@ -78,7 +78,7 @@ function createRuntimeApp({
   adapters,
   webhookAdapters,
   adapterConfiguration = {},
-  accounts,
+  authentication,
   oauth,
   runtimeSecret,
   defaultContext = {},
@@ -140,15 +140,15 @@ function createRuntimeApp({
       missing: missingAdapters,
       missingConfiguration,
     };
-    const accountHealth = typeof accounts?.health === "function"
-      ? await accounts.health()
+    const authenticationHealth = typeof authentication?.health === "function"
+      ? await authentication.health()
       : { ok: true, enabled: false };
     const oauthHealth = typeof oauth?.health === "function"
       ? await oauth.health()
       : { ok: true, configuredProviders: [] };
     const workers = LANES.every((lane) => queueHealth.lanes?.[lane] === true);
     const ok = queueHealth.ok && workers && surreal && contracts && adapterHealth.ok
-      && webhookRouting && accountHealth.ok && oauthHealth.ok;
+      && webhookRouting && authenticationHealth.ok && oauthHealth.ok;
     return c.json({
       ok,
       queue: { ...queueHealth, workers },
@@ -158,28 +158,29 @@ function createRuntimeApp({
       handlers: { ok: contracts, tables: handlers.tables },
       adapters: adapterHealth,
       webhooks: { ok: Boolean(webhookRouting), providers: webhookProviders },
-      accounts: accountHealth,
+      authentication: authenticationHealth,
       oauth: oauthHealth,
     }, ok ? 200 : 503);
   });
 
-  app.post("/anonymous/accounts/recovery", async (c) => {
+  app.post("/anonymous/authentication/challenges", async (c) => {
     requireJsonContentType(c);
     const rawBody = await readBody(c, bodyLimitBytes);
     const body = parseJson(rawBody);
-    if (!accounts?.requestRecovery) {
-      throw new RuntimeError("ACCOUNT_RECOVERY_UNAVAILABLE", "Account recovery is not configured", 503);
+    if (!authentication?.requestChallenge) {
+      throw new RuntimeError("AUTHENTICATION_DELIVERY_UNAVAILABLE", "Authentication delivery is not configured", 503);
     }
-    const result = await withRequestTimeout(requestTimeoutMs, () => accounts.requestRecovery({
+    const result = await withRequestTimeout(requestTimeoutMs, () => authentication.requestChallenge({
       namespace: body.namespace,
       database: body.database,
-      identifier: body.identifier ?? body.email,
+      identifier: body.identifier,
+      channel: body.channel,
       clientAddress: requestClientAddress(c),
     }));
     if (result.rateLimited) {
       const retryAfter = Math.max(1, Math.ceil(result.retryAfterMs / 1000));
       c.header("retry-after", String(retryAfter));
-      return c.json({ ok: false, error: { code: "RATE_LIMITED", message: "Too many recovery requests" } }, 429);
+      return c.json({ ok: false, error: { code: "RATE_LIMITED", message: "Too many authentication requests" } }, 429);
     }
     return c.json({ ok: true }, 202);
   });

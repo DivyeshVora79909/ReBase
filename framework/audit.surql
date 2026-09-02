@@ -14,22 +14,32 @@ DEFINE INDEX idx_audit_mutation_target ON audit_mutation COLUMNS target;
 -- Small, client-facing state history for fields marked with
 -- @rebase-change-log. This is independent from table-level mutation audit.
 -- Framework targets use the existing node_select permission; business targets
--- use the select permission named by the target table. Deleted targets fail the
--- existence check and therefore expose no historical row to record users.
+-- use the select permission named by the target table. Authentication identity
+-- history is visible only to its principal (or a dominating administrator),
+-- because identity rows are owned through `principal` rather than `owned_by`.
+-- Deleted targets fail the existence check and therefore expose no history.
 DEFINE TABLE change_logs SCHEMAFULL PERMISSIONS
     FOR select WHERE record::exists(target)
         AND (
-            IF record::tb(target) IN ['user', 'groups'] 
-            THEN 'node_select'
-            ELSE string::concat(record::tb(target), '_select')
-            END
-        ) IN $auth.permissions
-        AND <string>(
-            IF record::tb(target) IN ['user', 'groups']
-            THEN target
-            ELSE target.owned_by
-            END
-        ) IN $auth.z_access_index
+            (
+                record::tb(target) IN ['authentication_email', 'authentication_phone']
+                AND (target.principal = $auth OR target.principal IN $auth.dominates)
+            )
+            OR (
+                (
+                    IF record::tb(target) IN ['user', 'groups']
+                    THEN 'node_select'
+                    ELSE string::concat(record::tb(target), '_select')
+                    END
+                ) IN $auth.permissions
+                AND <string>(
+                    IF record::tb(target) IN ['user', 'groups']
+                    THEN target
+                    ELSE target.owned_by
+                    END
+                ) IN $auth.z_access_index
+            )
+        )
     FOR create, update, delete NONE;
 DEFINE FIELD at ON change_logs TYPE datetime;
 DEFINE FIELD table_name ON change_logs TYPE string;

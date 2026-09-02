@@ -46,10 +46,14 @@ function main() {
         "REBASE_STORAGE_BUCKET=profile-bucket",
         "REBASE_PLATFORM_EMAIL_RESEND_API_KEY=profile-resend-key",
         "REBASE_PLATFORM_EMAIL_FROM=ReBase <onboarding@resend.dev>",
-        "REBASE_RECOVERY_RATE_LIMIT_WINDOW_MS=60000",
-        "REBASE_RECOVERY_RATE_LIMIT_IP=8",
-        "REBASE_RECOVERY_RATE_LIMIT_IDENTIFIER=2",
-        "REBASE_RECOVERY_INVITE_TTL_MS=3600000",
+        "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS=600000",
+        "REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS=60000",
+        "REBASE_AUTHENTICATION_RATE_LIMIT_IP=8",
+        "REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER=2",
+        "REBASE_PLATFORM_SMS_TWILIO_ACCOUNT_SID=ACprofile",
+        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SID=SKprofile",
+        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SECRET=profile-twilio-secret",
+        "REBASE_PLATFORM_SMS_TWILIO_FROM=+10000000000",
       ].join("\n"),
     );
     const loaded = loadEnvironment(["--env-file", file, "--count", "2"], {
@@ -82,11 +86,18 @@ function main() {
       resendApiKey: "profile-resend-key",
       from: "ReBase <onboarding@resend.dev>",
     });
-    assert.deepEqual(config.accounts.recovery, {
+    assert.equal(config.authentication.challengeTtlMs, 600000);
+    assert.deepEqual(config.authentication.rateLimits, {
       windowMs: 60000,
       ip: 8,
       identifier: 2,
-      inviteTtlMs: 3600000,
+    });
+    assert.deepEqual(config.platformSms, {
+      accountSid: "ACprofile",
+      authToken: undefined,
+      apiKeySid: "SKprofile",
+      apiKeySecret: "profile-twilio-secret",
+      from: "+10000000000",
     });
     assert.deepEqual(config.webhooks, {});
     const flagConfig = resolveConfiguration(loaded.values, {
@@ -102,14 +113,14 @@ function main() {
     });
     assert.equal(flagConfig.runtime.secret, "flag-secret");
     assert.equal(flagConfig.storage.bucket, "flag-bucket");
-    const nestedRecovery = resolveConfiguration({}, {
-      accounts: { recovery: { windowMs: 2000, ip: 4, identifier: 1, inviteTtlMs: 120000 } },
+    const nestedAuthentication = resolveConfiguration({}, {
+      authentication: { challengeTtlMs: 120000, windowMs: 2000, ip: 4, identifier: 1 },
     });
-    assert.deepEqual(nestedRecovery.accounts.recovery, {
+    assert.equal(nestedAuthentication.authentication.challengeTtlMs, 120000);
+    assert.deepEqual(nestedAuthentication.authentication.rateLimits, {
       windowMs: 2000,
       ip: 4,
       identifier: 1,
-      inviteTtlMs: 120000,
     });
     assertConnectionConfiguration(config);
 

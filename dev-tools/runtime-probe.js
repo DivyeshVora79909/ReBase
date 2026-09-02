@@ -9,7 +9,7 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { serve } = require("@hono/node-server");
 const { Surreal } = require("surrealdb");
-const { createAccountService } = require("../gateway/accounts");
+const { createAuthenticationService } = require("../gateway/authentication");
 const { createRuntimeApp } = require("../gateway/app");
 const { connectDatabase } = require("../gateway/connection");
 const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
@@ -124,7 +124,7 @@ async function createId(db, table, assignments, variables = {}) {
   return recordId(await createAndReload(db, table, assignments, variables));
 }
 
-async function accountSignin(endpoint, namespace, database, identifier, password, access = "account", variables = {}) {
+async function passwordSignin(endpoint, namespace, database, identifier, password, access = "account_password", variables = {}) {
   const client = new Surreal();
   await client.connect(endpoint);
   try {
@@ -132,32 +132,17 @@ async function accountSignin(endpoint, namespace, database, identifier, password
       namespace,
       database,
       access,
-      variables: access === "account"
+      variables: access === "account_password"
         ? { identifier, password, ...variables }
         : variables,
     });
     return { client, token };
   } catch (error) {
     if (process.env.REBASE_RUNTIME_PROBE_DEBUG) {
-      console.error("record signin failed", { access, variableNames: Object.keys(access === "account" ? { identifier, password, ...variables } : variables) });
+      console.error("record signin failed", { access, variableNames: Object.keys(access === "account_password" ? { identifier, password, ...variables } : variables) });
     }
     await client.close();
     throw error;
-  }
-}
-
-async function accountSignup(endpoint, namespace, database, invite, password) {
-  const client = new Surreal();
-  await client.connect(endpoint);
-  try {
-    return await client.signup({
-      namespace,
-      database,
-      access: "account",
-      variables: { invite, password },
-    });
-  } finally {
-    await client.close();
   }
 }
 
@@ -312,18 +297,27 @@ async function main() {
   const store = createTableStore({ db: state.db });
   const stores = fixedStoreDirectory(store, state);
   const platformMessages = [];
-  const recoveryRateLimiter = createMemoryRateLimiter();
-  const accounts = createAccountService({
+  const platformSmsMessages = [];
+  let nextChallengeCode = 100000;
+  const authenticationRateLimiter = createMemoryRateLimiter();
+  const authentication = createAuthenticationService({
     stores,
     principals: generated.contracts.principals,
     allowedContexts: [{ namespace: state.namespace, database: state.database }],
     async sendEmail(message) { platformMessages.push(structuredClone(message)); return { id: `mail-${platformMessages.length}` }; },
-    rateLimiter: recoveryRateLimiter,
+    async sendSms(message) { platformSmsMessages.push(structuredClone(message)); return { id: `sms-${platformSmsMessages.length}` }; },
+    generateCode() {
+      const code = String(nextChallengeCode);
+      nextChallengeCode = nextChallengeCode >= 999999 ? 100000 : nextChallengeCode + 1;
+      return code;
+    },
+    rateLimiter: authenticationRateLimiter,
     rateLimits: { windowMs: 60000, ip: 20, identifier: 2 },
   });
   const oauth = createOAuthVerifier({
     mock: createMockOAuthAdapter({
       "existing-user-token": "oauth-client@example.com",
+      "unverified-user-token": "oauth-unverified@example.com",
       "missing-user-token": "oauth-missing@example.com",
     }),
   });
@@ -347,7 +341,7 @@ async function main() {
   const stops = [];
   for (const lane of ["task", "schedule", "webhook"]) stops.push(await queue.start(lane, (delivery) => runtime.consume(lane, delivery)));
   const app = createRuntimeApp({
-    runtime, handlers, webhooks, adapters, webhookAdapters, accounts, oauth, queue, runtimeSecret: secret,
+    runtime, handlers, webhooks, adapters, webhookAdapters, authentication, oauth, queue, runtimeSecret: secret,
     defaultContext: { namespace: state.namespace, database: state.database },
     allowBearer: true,
   });
@@ -406,91 +400,229 @@ async function main() {
         'send_brevo_email_create', 'send_brevo_email_select', 'send_brevo_email_update',
         'email_brevo_config_select', 'file_storage_config_select', 'razorpay_config_select'
       ];
-      CREATE user:runtime_client SET name = 'Runtime Client', email = 'runtime-client@example.com',
-        password = crypto::argon2::generate('runtime-password'), parents = [groups:runtime_clients], login_access = true;
-      CREATE user:recovery_client SET name = 'Recovery Client', email = 'recovery-client@example.com', username = 'recovery_user',
-        password = crypto::argon2::generate('recovery-password'), parents = [groups:runtime_clients], login_access = true;
-      CREATE user:oauth_client SET name = 'OAuth Client', email = 'oauth-client@example.com',
+      CREATE user:runtime_client SET name = 'Runtime Client', parents = [groups:runtime_clients], login_access = true;
+      CREATE user:recovery_client SET name = 'Recovery Client', username = 'recovery_user',
         parents = [groups:runtime_clients], login_access = true;
+      CREATE user:oauth_client SET name = 'OAuth Client',
+        parents = [groups:runtime_clients], login_access = true;
+      CREATE user:oauth_unverified SET name = 'OAuth Unverified',
+        parents = [groups:runtime_clients], login_access = true;
+      CREATE user:no_delivery SET name = 'No Delivery', username = 'no_delivery_user',
+        password = crypto::argon2::generate('no-delivery-password'),
+        parents = [groups:runtime_clients], login_access = true;
+      CREATE authentication_email:runtime_client SET principal = user:runtime_client, address = 'runtime-client@example.com';
+      CREATE authentication_email:recovery_client SET principal = user:recovery_client, address = 'recovery-client@example.com';
+      CREATE authentication_email:oauth_client SET principal = user:oauth_client, address = 'oauth-client@example.com';
+      CREATE authentication_email:oauth_unverified SET principal = user:oauth_unverified, address = 'oauth-unverified@example.com';
       CREATE email_brevo_config:runtime_client SET owned_by = groups:root, label = 'Client Probe', visibility = true,
         from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key';
     `);
 
-    const recoveryRequest = {
+    await assert.rejects(
+      passwordSignin(state.endpoint, state.namespace, state.database, "no_delivery_user", "no-delivery-password"),
+      /signin|authentication|access|record/i,
+    );
+
+    const challengeRequest = {
       namespace: state.namespace,
       database: state.database,
       identifier: "RECOVERY_USER",
     };
-    const recoveryResponse = await app.request("http://runtime/anonymous/accounts/recovery", {
+    const challengeResponse = await app.request("http://runtime/anonymous/authentication/challenges", {
       method: "POST",
       headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
-      body: JSON.stringify(recoveryRequest),
+      body: JSON.stringify(challengeRequest),
     });
-    assert.equal(recoveryResponse.status, 202);
-    const genericRecoveryBody = await recoveryResponse.json();
-    assert.deepEqual(genericRecoveryBody, { ok: true });
+    assert.equal(challengeResponse.status, 202);
+    assert.deepEqual(await challengeResponse.json(), { ok: true });
     assert.equal(platformMessages.length, 1);
     assert.deepEqual(platformMessages[0].to, ["recovery-client@example.com"]);
-    const recoveryToken = platformMessages[0].text.match(/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i)?.[0];
-    assert(recoveryToken);
-    assert.equal(
-      queryResult(await state.db.query("RETURN <string>user:recovery_client.invite_token;")),
-      recoveryToken,
+    const emailCode = platformMessages[0].text.match(/\b\d{6}\b/)?.[0];
+    assert(emailCode);
+    await assert.rejects(
+      passwordSignin(
+        state.endpoint,
+        state.namespace,
+        state.database,
+        "recovery-client@example.com",
+        "recovery-password",
+      ),
+      /signin|authentication|access|record/i,
     );
-    const stillValid = await accountSignin(
+    const activated = await passwordSignin(
       state.endpoint,
       state.namespace,
       state.database,
-      "recovery-client@example.com",
-      "recovery-password",
+      "recovery_user",
+      null,
+      "account_code",
+      { identifier: "recovery_user", code: emailCode, password_action: "set", new_password: "recovered-password" },
     );
-    await stillValid.client.close();
-    await accountSignup(state.endpoint, state.namespace, state.database, recoveryToken, "recovered-password");
-    await assert.rejects(
-      accountSignin(state.endpoint, state.namespace, state.database, "recovery-client@example.com", "recovery-password"),
-      /signin|authentication|access|record/i,
-    );
-    const recovered = await accountSignin(
+    assert(activated.token.access);
+    await activated.client.close();
+    const recovered = await passwordSignin(
       state.endpoint,
       state.namespace,
       state.database,
       "recovery_user",
       "recovered-password",
     );
+    assert(recovered.token.access);
     await recovered.client.close();
 
-    const missingRecovery = await app.request("http://runtime/anonymous/accounts/recovery", {
+    await state.db.query("CREATE authentication_phone:recovery_phone SET principal = user:recovery_client, number = '+917990910580', priority = 10;");
+    const phoneResponse = await app.request("http://runtime/anonymous/authentication/challenges", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.11" },
+      body: JSON.stringify({ ...challengeRequest, identifier: "+917990910580" }),
+    });
+    assert.equal(phoneResponse.status, 202);
+    const phoneCode = platformSmsMessages.at(-1)?.body.match(/\b\d{6}\b/)?.[0];
+    assert(phoneCode);
+    const phoneLogin = await passwordSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      null,
+      null,
+      "account_code",
+      { identifier: "+917990910580", code: phoneCode, password_action: "keep" },
+    );
+    assert(phoneLogin.token.access);
+    await phoneLogin.client.close();
+
+    // Failed code submissions consume attempts, and the sixth submission is
+    // rejected even when the code is otherwise correct.
+    const attemptResponse = await app.request("http://runtime/anonymous/authentication/challenges", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.15" },
+      body: JSON.stringify({ ...challengeRequest, identifier: "runtime-client@example.com" }),
+    });
+    assert.equal(attemptResponse.status, 202);
+    const attemptCode = platformMessages.at(-1)?.text.match(/\b\d{6}\b/)?.[0];
+    assert(attemptCode);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await assert.rejects(
+        passwordSignin(state.endpoint, state.namespace, state.database, null, null, "account_code", {
+          identifier: "runtime-client@example.com", code: "000000", password_action: "keep",
+        }),
+        /signin|authentication|access|record/i,
+      );
+    }
+    const attemptState = queryResult(await state.db.query(
+      "SELECT attempts, consumed_at FROM authentication_challenge WHERE target = authentication_email:runtime_client;",
+    ))[0];
+    assert.equal(attemptState.attempts, 5);
+    await assert.rejects(
+      passwordSignin(state.endpoint, state.namespace, state.database, null, null, "account_code", {
+        identifier: "runtime-client@example.com", code: attemptCode, password_action: "keep",
+      }),
+      /signin|authentication|access|record/i,
+    );
+
+    // A challenge is a single-use capability: concurrent correct redemptions
+    // have exactly one winner.
+    const concurrentResponse = await app.request("http://runtime/anonymous/authentication/challenges", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.16" },
+      body: JSON.stringify({ ...challengeRequest, identifier: "oauth-client@example.com" }),
+    });
+    assert.equal(concurrentResponse.status, 202);
+    const concurrentCode = platformMessages.at(-1)?.text.match(/\b\d{6}\b/)?.[0];
+    assert(concurrentCode);
+    const concurrent = await Promise.allSettled([
+      passwordSignin(state.endpoint, state.namespace, state.database, null, null, "account_code", {
+        identifier: "oauth-client@example.com", code: concurrentCode, password_action: "keep",
+      }),
+      passwordSignin(state.endpoint, state.namespace, state.database, null, null, "account_code", {
+        identifier: "oauth-client@example.com", code: concurrentCode, password_action: "keep",
+      }),
+    ]);
+    assert.equal(concurrent.filter((entry) => entry.status === "fulfilled").length, 1);
+    assert.equal(concurrent.filter((entry) => entry.status === "rejected").length, 1);
+    for (const entry of concurrent) if (entry.status === "fulfilled") await entry.value.client.close();
+
+    // Expired challenges fail without changing the identity state.
+    const expiredResponse = await app.request("http://runtime/anonymous/authentication/challenges", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.17" },
+      body: JSON.stringify({ ...challengeRequest, identifier: "oauth-unverified@example.com" }),
+    });
+    assert.equal(expiredResponse.status, 202);
+    const expiredCode = platformMessages.at(-1)?.text.match(/\b\d{6}\b/)?.[0];
+    await state.db.query("UPDATE authentication_challenge SET expires_at = time::now() - 1s WHERE target = authentication_email:oauth_unverified;");
+    await assert.rejects(
+      passwordSignin(state.endpoint, state.namespace, state.database, null, null, "account_code", {
+        identifier: "oauth-unverified@example.com", code: expiredCode, password_action: "keep",
+      }),
+      /signin|authentication|access|record/i,
+    );
+
+    const messagesBeforeMissing = platformMessages.length;
+    const missingRecovery = await app.request("http://runtime/anonymous/authentication/challenges", {
       method: "POST",
       headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
-      body: JSON.stringify({ ...recoveryRequest, identifier: "missing-user@example.com" }),
+      body: JSON.stringify({ ...challengeRequest, identifier: "missing-user@example.com" }),
     });
     assert.equal(missingRecovery.status, 202);
-    assert.deepEqual(await missingRecovery.json(), genericRecoveryBody);
-    assert.equal(platformMessages.length, 1);
-    const disallowedRecovery = await app.request("http://runtime/anonymous/accounts/recovery", {
+    assert.deepEqual(await missingRecovery.json(), { ok: true });
+    assert.equal(platformMessages.length, messagesBeforeMissing);
+    const disallowedRecovery = await app.request("http://runtime/anonymous/authentication/challenges", {
       method: "POST",
       headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
-      body: JSON.stringify({ ...recoveryRequest, namespace: "outside" }),
+      body: JSON.stringify({ ...challengeRequest, namespace: "outside" }),
     });
     assert.equal(disallowedRecovery.status, 202);
-    assert.deepEqual(await disallowedRecovery.json(), genericRecoveryBody);
-    assert.equal(platformMessages.length, 1);
-    const rateLimitedRequest = JSON.stringify({ ...recoveryRequest, identifier: "rate-limit@example.com" });
+    assert.deepEqual(await disallowedRecovery.json(), { ok: true });
+    assert.equal(platformMessages.length, messagesBeforeMissing);
+    const rateLimitedRequest = JSON.stringify({ ...challengeRequest, identifier: "rate-limit@example.com" });
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      assert.equal((await app.request("http://runtime/anonymous/accounts/recovery", {
+      assert.equal((await app.request("http://runtime/anonymous/authentication/challenges", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+        headers: { "content-type": "application/json", "x-real-ip": "192.0.2.12" },
         body: rateLimitedRequest,
       })).status, 202);
     }
-    const rateLimited = await app.request("http://runtime/anonymous/accounts/recovery", {
+    const rateLimited = await app.request("http://runtime/anonymous/authentication/challenges", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.12" },
       body: rateLimitedRequest,
     });
     assert.equal(rateLimited.status, 429);
     assert(Number(rateLimited.headers.get("retry-after")) >= 1);
 
+    // A provider-verified email is sufficient for the stateless OAuth path;
+    // it does not require a second local challenge or an OAuth table row.
+    const unverifiedOAuth = await passwordSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      null,
+      null,
+      "oauth",
+      { provider: "mock", oauth_token: "unverified-user-token" },
+    );
+    assert.equal(String(queryResult(await unverifiedOAuth.client.query("RETURN $auth.id;"))), "user:oauth_unverified");
+    await unverifiedOAuth.client.close();
+
+    const oauthChallenge = await app.request("http://runtime/anonymous/authentication/challenges", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.13" },
+      body: JSON.stringify({ ...challengeRequest, identifier: "oauth-client@example.com" }),
+    });
+    assert.equal(oauthChallenge.status, 202);
+    const oauthCode = platformMessages.at(-1)?.text.match(/\b\d{6}\b/)?.[0];
+    assert(oauthCode);
+    const oauthActivation = await passwordSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      null,
+      null,
+      "account_code",
+      { identifier: "oauth-client@example.com", code: oauthCode, password_action: "keep" },
+    );
+    await oauthActivation.client.close();
     assert.throws(() => createOAuthVerifier({ invalid: {} }), /must be a function/);
     assert.deepEqual(await oauth.verify("unknown", "token"), { verified: false });
     assert.deepEqual(await oauth.verify("mock", ""), { verified: false });
@@ -506,7 +638,7 @@ async function main() {
       body: oauthBody,
     });
     assert.deepEqual(await verifiedOAuth.json(), { verified: true, email: "oauth-client@example.com" });
-    const oauthLogin = await accountSignin(
+    const oauthLogin = await passwordSignin(
       state.endpoint,
       state.namespace,
       state.database,
@@ -519,7 +651,7 @@ async function main() {
     await oauthLogin.client.close();
     const userCountBeforeFailedOAuth = queryResult(await state.db.query("RETURN (SELECT VALUE id FROM user).len();"));
     await assert.rejects(
-      accountSignin(
+      passwordSignin(
         state.endpoint,
         state.namespace,
         state.database,
@@ -633,8 +765,21 @@ async function main() {
     await client.signin({
       namespace: state.namespace,
       database: state.database,
-      access: "account",
-      variables: { email: "runtime-client@example.com", password: "runtime-password" },
+      access: "account_code",
+      variables: {
+        identifier: "runtime-client@example.com",
+        code: (await (async () => {
+          const response = await app.request("http://runtime/anonymous/authentication/challenges", {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-real-ip": "192.0.2.14" },
+            body: JSON.stringify({ namespace: state.namespace, database: state.database, identifier: "runtime-client@example.com" }),
+          });
+          assert.equal(response.status, 202);
+          return platformMessages.at(-1).text.match(/\b\d{6}\b/)?.[0];
+        })()),
+        password_action: "set",
+        new_password: "runtime-password",
+      },
     });
     try {
       const clientCreated = queryResult(await client.query(`
@@ -1132,12 +1277,12 @@ async function main() {
     runtimeChild.kill("SIGTERM");
     assert.equal(await waitForExit(runtimeChild), 0);
     runtimeChild = null;
-    console.log("runtime: queues, lifecycle fencing, recovery, OAuth signin, effects, schedules, webhooks, readiness, and context races passed");
+    console.log("runtime: queues, lifecycle fencing, authentication challenges, OAuth signin, effects, schedules, webhooks, readiness, and context races passed");
   } finally {
     await stopChild(runtimeChild);
     await new Promise((resolve) => httpServer.close(resolve));
     await Promise.all(stops.map((stop) => stop?.()));
-    await recoveryRateLimiter.close();
+    await authenticationRateLimiter.close();
     await queue.close();
     await state.db.close().catch(() => {});
     await stopChild(state.child);

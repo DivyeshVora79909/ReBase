@@ -2,13 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["email", "name", "parents"],
+  "required": ["name", "parents"],
   "properties": {
-    "email": {
-      "type": "string",
-      "format": "email",
-      "faker": "internet.email"
-    },
     "name": {
       "type": "string",
       "faker": "person.fullName"

@@ -95,29 +95,44 @@ scheduler/reconciler
   -> due or unfinished effect IDs -> same managed queue and handler
 ```
 
-## Account access adapters
+## Authentication access adapters
 
-The principal row remains the only account identity. Email and optional
-username are normalized in SurrealDB and protected by native unique indexes.
-Account signin accepts either identifier. Invite redemption and password
-recovery use the same unique, expiring `invite_token`; recovery rotates that
-token and extends its deadline without clearing the current password. This
-keeps an unauthenticated request from disabling a valid login before the email
-recipient proves possession of the token.
+Authorization and authentication are deliberately separate. A principal row
+contains an optional password and username, while typed identity rows live in
+`authentication_email` and `authentication_phone`. Each identity has a native
+unique address/number, a revision, and private verification markers. There is
+no authentication-specific identity count or final-identity guard. Creating,
+deleting, or changing an address increments the principal revision and fences
+pending challenges; administrators use normal graph permissions and a principal
+may edit its own identity only with a recent record token.
 
-Anonymous recovery accepts only contexts from the deployment allowlist, applies
-per-address and hashed context/identifier limits, and returns one generic
-response for existing, absent, and disallowed records. Platform-owned recovery
-email is configured in the deployment profile and is separate from tenant BYOC
-email configuration records.
+`authentication_challenge` stores only an Argon2 hash, attempt count, expiry,
+identity revision, and principal revision. The anonymous gateway endpoint
+`POST /anonymous/authentication/challenges` normalizes an email, E.164 phone,
+or username, applies per-address and context/identifier limits, and delivers a
+six-digit code through the explicitly injected platform adapter. It returns a
+generic `202` for absent or disallowed identities. The `account_code` access
+method atomically consumes a valid challenge, marks the identity verified, and
+can keep, set, or clear the optional password. There is no database `SIGNUP`
+method: administrators author principals and delivery identities, and the
+recipient proves possession of an identity.
 
-OAuth is signin-only. A generated record access method sends the opaque provider
-token to an authenticated internal runtime endpoint. An injected provider
-adapter returns only `{ verified, email }`; SurrealDB then selects an existing,
-login-enabled principal in the current namespace/database. The runtime stores
-no provider subject, creates no principal, consumes no invite, and provisions no
-namespace or database. Builds without a complete runtime binding omit the OAuth
-access method.
+`account_password` accepts a verified email, phone, or username plus a password.
+Password presence is never used as the authenticated-state flag: a principal
+must still have a delivery identity, and local code authentication is only
+available through a currently issued email/SMS challenge. Platform mail
+is a deployment-owned Resend adapter, separate from tenant BYOC credentials;
+Twilio SMS is an optional explicit adapter with the
+`REBASE_PLATFORM_SMS_TWILIO_*` profile keys.
+
+OAuth is signin-only and stateless. A generated record access method sends the
+opaque provider token to an authenticated internal runtime endpoint. An
+allowlisted verifier returns only `{ verified, email }`; SurrealDB then matches
+that email to an existing local identity in the current namespace/database. The
+provider's verified-email assertion is the proof for this path, so a local OTP
+is not required.
+No provider subject, OAuth table, principal, or tenant context is stored or
+created. Builds without a complete runtime binding omit the OAuth access method.
 
 The detailed registry and adapter contract is in
 [`runtime-dispatch.md`](./runtime-dispatch.md). Engine transaction facts are in
@@ -287,7 +302,7 @@ distinct. Detailed timing, catch-up, and optional heap strategies are in
 | Owner | Responsibilities |
 | --- | --- |
 | SurrealDB | Authentication, table/row/field authorization, schema/assertions/references, sync transaction, async notification trigger, audit, current effect and schedule records. |
-| Hono runtime | Internal wake authentication, stateless OAuth verification, rate-limited recovery mail, registry lookup, privileged declared-reference loading, provider SDK calls, queue adapters, webhook verification, reconciliation orchestration, operational telemetry. |
+| Hono runtime | Internal wake authentication, stateless OAuth verification, rate-limited authentication challenge delivery, registry lookup, privileged declared-reference loading, provider SDK calls, queue adapters, webhook verification, reconciliation orchestration, operational telemetry. |
 | Managed queue | Delivery retry, visibility timeout, redrive, dead-letter transport, and queue-level concurrency. |
 | Provider | External object state, signatures/webhooks, provider idempotency, expiry/revocation, and reconciliation APIs. |
 

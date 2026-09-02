@@ -14,10 +14,10 @@ const DEFAULTS = Object.freeze({
   bodyLimitBytes: 256 * 1024,
   requestTimeoutMs: 30000,
   platformEmailFrom: "ReBase <onboarding@resend.dev>",
-  recoveryRateLimitWindowMs: 15 * 60 * 1000,
-  recoveryRateLimitIp: 10,
-  recoveryRateLimitIdentifier: 3,
-  recoveryInviteTtlMs: 24 * 60 * 60 * 1000,
+  authenticationChallengeTtlMs: 10 * 60 * 1000,
+  authenticationRateLimitWindowMs: 15 * 60 * 1000,
+  authenticationRateLimitIp: 10,
+  authenticationRateLimitIdentifier: 3,
   queueDriver: "bullmq",
   debug: false,
 });
@@ -164,7 +164,8 @@ function pair(
 }
 
 function resolveConfiguration(values = {}, overrides = {}) {
-  const recoveryOverrides = overrides.accounts?.recovery || overrides.recovery || overrides;
+  const authenticationOverrides = overrides.authentication || {};
+  const platformSmsOverrides = overrides.platformSms || {};
   const environment = String(
     value(values, overrides, "NODE_ENV", "environment") || DEFAULTS.environment,
   );
@@ -337,37 +338,69 @@ function resolveConfiguration(values = {}, overrides = {}) {
           || DEFAULTS.platformEmailFrom,
       ),
     },
-    accounts: {
-      recovery: {
+    authentication: {
+      challengeTtlMs: numberValue(
+        values,
+        authenticationOverrides,
+        "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS",
+        "challengeTtlMs",
+        DEFAULTS.authenticationChallengeTtlMs,
+      ),
+      rateLimits: {
         windowMs: numberValue(
           values,
-          recoveryOverrides,
-          "REBASE_RECOVERY_RATE_LIMIT_WINDOW_MS",
+          authenticationOverrides,
+          "REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS",
           "windowMs",
-          DEFAULTS.recoveryRateLimitWindowMs,
+          DEFAULTS.authenticationRateLimitWindowMs,
         ),
         ip: numberValue(
           values,
-          recoveryOverrides,
-          "REBASE_RECOVERY_RATE_LIMIT_IP",
+          authenticationOverrides,
+          "REBASE_AUTHENTICATION_RATE_LIMIT_IP",
           "ip",
-          DEFAULTS.recoveryRateLimitIp,
+          DEFAULTS.authenticationRateLimitIp,
         ),
         identifier: numberValue(
           values,
-          recoveryOverrides,
-          "REBASE_RECOVERY_RATE_LIMIT_IDENTIFIER",
+          authenticationOverrides,
+          "REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER",
           "identifier",
-          DEFAULTS.recoveryRateLimitIdentifier,
-        ),
-        inviteTtlMs: numberValue(
-          values,
-          recoveryOverrides,
-          "REBASE_RECOVERY_INVITE_TTL_MS",
-          "inviteTtlMs",
-          DEFAULTS.recoveryInviteTtlMs,
+          DEFAULTS.authenticationRateLimitIdentifier,
         ),
       },
+    },
+    platformSms: {
+      accountSid: platformSmsOverrides.accountSid ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_SMS_TWILIO_ACCOUNT_SID",
+        "platformSmsTwilioAccountSid",
+      ),
+      authToken: platformSmsOverrides.authToken ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_SMS_TWILIO_AUTH_TOKEN",
+        "platformSmsTwilioAuthToken",
+      ),
+      apiKeySid: platformSmsOverrides.apiKeySid ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SID",
+        "platformSmsTwilioApiKeySid",
+      ),
+      apiKeySecret: platformSmsOverrides.apiKeySecret ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SECRET",
+        "platformSmsTwilioApiKeySecret",
+      ),
+      from: platformSmsOverrides.from ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_SMS_TWILIO_FROM",
+        "platformSmsTwilioFrom",
+      ),
     },
     webhooks: {},
   };

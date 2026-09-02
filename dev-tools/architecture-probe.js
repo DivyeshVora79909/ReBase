@@ -102,14 +102,14 @@ async function connectExistingRoot(endpoint, namespace, database) {
   return db;
 }
 
-async function signIn(endpoint, namespace, database, email, password) {
+async function signIn(endpoint, namespace, database, identifier, password) {
   const db = new Surreal();
   await db.connect(endpoint);
   await db.signin({
     namespace,
     database,
-    access: "account",
-    variables: { email, password },
+    access: "account_password",
+    variables: { identifier, password },
   });
   return db;
 }
@@ -356,10 +356,10 @@ async function referenceAuthorizationProbe(db, endpoint, namespace, database) {
         };
       };
 
-    DEFINE ACCESS account ON DATABASE TYPE RECORD
+    DEFINE ACCESS account_password ON DATABASE TYPE RECORD
       SIGNIN (
         SELECT * FROM principal
-        WHERE email = $email
+        WHERE email = $identifier
           AND crypto::argon2::compare(password, $password)
       )
       AUTHENTICATE { RETURN $auth; }
@@ -599,7 +599,7 @@ async function principalCompilerProbe(db, namespace, database) {
     });
     assert.match(generated.bundle, /record<employee \| department>/);
     assert.match(generated.bundle, /CREATE department:root/);
-    assert.match(generated.bundle, /SELECT id from employee/i);
+    assert.match(generated.bundle, /SELECT\s+(?:VALUE\s+)?id\s+FROM\s+employee/i);
     assert.doesNotMatch(generated.bundle, /record<user \| groups>/);
     assert.doesNotMatch(generated.bundle, /groups:root/);
     assert.match(

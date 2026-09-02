@@ -68,34 +68,48 @@ Create and update require the matching table permission and an allowed resulting
 
 Strict schema fields, assertions, references, field permissions, and record visibility remain in SurrealDB. The runtime receives either a compiler-selected provisional snapshot or a committed record locator; it is not another client authorization layer.
 
-## Account Access
+## Authentication
 
-The compiled principal table supports normalized optional usernames. Account
-signin accepts either an email address or username. Nullable usernames use a
-native unique index; no application-side uniqueness event or identity table is
-required.
+Authentication is separate from authorization and from the optional password
+credential. A principal can have typed identity rows across
+`authentication_email` and `authentication_phone`; authentication does not add
+a separate identity-presence or count guard. An identity is usable for signin
+only after it has been verified by a short-lived, single-use
+`authentication_challenge`. Address changes invalidate that identity and all
+outstanding challenges through a database revision fence; they do not alter the
+authorization graph. Passwords may be absent until the recipient completes a
+delivered challenge; OAuth is the other supported password-independent path.
 
-`POST /anonymous/accounts/recovery` accepts a configured namespace, database,
-and email/username identifier. It returns the same `202` response for present,
-missing, and disallowed accounts, rate-limits both the client address and a
-hashed context/identifier key, and emails a rotated one-time invite token. The
-existing password remains valid until that token is redeemed, so an anonymous
-request cannot lock the account.
+`account_password` accepts a normalized email, phone number, or username and a
+password, but requires a currently verified identity. `account_code` consumes a
+six-digit challenge atomically, verifies its identity, and may keep, set, or
+clear the password. There is no `SIGNUP` flow; administrators create
+principals and delivery identities, while the recipient proves possession
+through the challenge flow.
 
-Platform recovery mail is an infrastructure exception to tenant BYOC credentials.
-Enable the direct Resend adapter with `REBASE_PLATFORM_EMAIL_RESEND_API_KEY`;
-tenant email integrations continue to use strict configuration rows. The default sender is
-`ReBase <onboarding@resend.dev>` until a verified domain is configured.
+`POST /anonymous/authentication/challenges` accepts a namespace, database, and
+email, phone, or username identifier. It always returns the same `202` response
+for present, missing, and disallowed identities, applies per-address and
+context/identifier rate limits, and delivers through the platform Resend or
+Twilio adapter. The code hash is private to SurrealDB and is never returned by
+the endpoint. Configure platform mail with
+`REBASE_PLATFORM_EMAIL_RESEND_API_KEY`; the default sender is
+`ReBase <onboarding@resend.dev>` until a verified domain is configured. Phone
+delivery uses the explicit `REBASE_PLATFORM_SMS_TWILIO_*` keys.
 
-When a runtime URL and wake secret are supplied at compilation, the compiler
+When a runtime URL and runtime secret are supplied at compilation, the compiler
 also emits the `oauth` record access method. It calls the authenticated,
 stateless `/internal/oauth` verifier and selects an existing principal by the
 returned verified email. OAuth has `SIGNIN` only: it never creates a user,
-redeems an invite, provisions a namespace/database, or stores provider identity.
+provisions a namespace/database, or stores provider identity.
 OAuth verifier functions are explicitly allowlisted and injected into the server;
-no OAuth provider is enabled by default. SurrealDB reserves `$token`, so the SDK
-signin boundary uses `variables: { provider, oauth_token }`; the internal HTTP
-verifier receives the normalized `{ provider, token }` body.
+no OAuth provider is enabled by default. OAuth is signin-only and stateless: a
+provider token is verified at request time, its email is matched to an existing
+local email identity (the provider proof supplies verification), and no provider
+subject or OAuth row is stored.
+SurrealDB reserves `$token`, so the SDK signin boundary uses
+`variables: { provider, oauth_token }`; the internal HTTP verifier receives the
+normalized `{ provider, token }` body.
 
 ## Table Effects
 

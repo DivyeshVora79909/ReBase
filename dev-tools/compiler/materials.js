@@ -82,7 +82,7 @@ function removeMarkedSections(source, ranges) {
 
 function stripLeadingComments(statement) {
   return statement
-    .replace(/^\s*(?:(?:--[^\n]*(?:\n|$))|(?:\/\*[\s\S]*?\*\/\s*))+/g, "")
+    .replace(/^(?:\s*(?:--[^\r\n]*(?:\r?\n|$)|\/\*[\s\S]*?\*\/))*\s*/g, "")
     .trim();
 }
 

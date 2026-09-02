@@ -2,7 +2,9 @@
 
 const assert = require("node:assert/strict");
 const { ADAPTER_NAMES, createAdapters } = require("../gateway/providers");
+const { createPlatformEmail, createPlatformSms } = require("../gateway/server");
 const { createResendPlatformEmailAdapter } = require("../gateway/providers/resend-platform-email.adapter");
+const { createTwilioSmsAdapter } = require("../gateway/providers/twilio-sms.adapter");
 
 async function main() {
   const requests = [];
@@ -149,8 +151,139 @@ async function main() {
   }), { id: "platform-message", provider: "resend" });
   assert.equal(platformRequests[0].options.headers.authorization, "Bearer platform-resend-key");
   assert.equal(JSON.parse(platformRequests[0].options.body).from, "ReBase <onboarding@resend.dev>");
+  await assert.rejects(
+    createResendPlatformEmailAdapter({
+      apiKey: "platform-resend-key",
+      fetch: async () => { throw new Error("network down"); },
+    })({ to: ["owner@example.com"], subject: "Unavailable", text: "Token" }),
+    (error) => error.code === "PLATFORM_EMAIL_UNAVAILABLE" && error.retryable === true && error.status === 503,
+  );
+  await assert.rejects(
+    createResendPlatformEmailAdapter({
+      apiKey: "platform-resend-key",
+      fetch: async () => new Response(JSON.stringify({ error: "bad request" }), { status: 400 }),
+    })({ to: ["owner@example.com"], subject: "Rejected", text: "Token" }),
+    (error) => error.code === "PLATFORM_EMAIL_FAILED" && error.retryable === false && error.status === 400,
+  );
+  await assert.rejects(
+    createResendPlatformEmailAdapter({
+      apiKey: "platform-resend-key",
+      fetch: async () => new Response("{}", { status: 200 }),
+    })({ to: ["owner@example.com"], subject: "Malformed", text: "Token" }),
+    (error) => error.code === "PLATFORM_EMAIL_RESPONSE_INVALID" && error.retryable === true,
+  );
 
-  console.log("adapters: static registry, flat mappings, normalization, retries, shared bucket, and overrides passed");
+  const twilioRequests = [];
+  const sendTwilioSms = createTwilioSmsAdapter({
+    accountSid: "AC123",
+    apiKeySid: "SK123",
+    apiKeySecret: "twilio-api-secret",
+    authToken: "account-token-not-used",
+    from: "+17372508034",
+    fetch: async (url, options) => {
+      twilioRequests.push({ url, options });
+      return new Response(JSON.stringify({
+        sid: "SM123", status: "queued", to: "+917990910580", from: "+17372508034",
+      }), { status: 201, headers: { "content-type": "application/json" } });
+    },
+  });
+  assert.deepEqual(await sendTwilioSms({
+    to: "+917990910580",
+    body: "sms_appointment_reminders",
+    statusCallback: "https://runtime.invalid/twilio/status",
+  }), {
+    provider: "twilio",
+    messageId: "SM123",
+    status: "queued",
+    to: "+917990910580",
+    from: "+17372508034",
+  });
+  assert.equal(twilioRequests[0].url, "https://api.twilio.com/2010-04-01/Accounts/AC123/Messages.json");
+  assert.equal(
+    twilioRequests[0].options.headers.authorization,
+    `Basic ${Buffer.from("SK123:twilio-api-secret").toString("base64")}`,
+  );
+  assert.equal(twilioRequests[0].options.headers["content-type"], "application/x-www-form-urlencoded");
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(String(twilioRequests[0].options.body))), {
+    To: "+917990910580",
+    From: "+17372508034",
+    Body: "sms_appointment_reminders",
+    StatusCallback: "https://runtime.invalid/twilio/status",
+  });
+
+  const accountAuthRequests = [];
+  const accountAuthSms = createTwilioSmsAdapter({
+    accountSid: "AC456",
+    authToken: "account-token",
+    from: "+17372508034",
+    fetch: async (url, options) => {
+      accountAuthRequests.push({ url, options });
+      return new Response(JSON.stringify({ sid: "SM456" }), { status: 201 });
+    },
+  });
+  await accountAuthSms({ to: "+917990910580", body: "sms_2fa" });
+  assert.equal(
+    accountAuthRequests[0].options.headers.authorization,
+    `Basic ${Buffer.from("AC456:account-token").toString("base64")}`,
+  );
+
+  const twilioRetry = createTwilioSmsAdapter({
+    accountSid: "AC123", authToken: "token", from: "+17372508034",
+    fetch: async () => new Response(JSON.stringify({ code: 20429, message: "rate limited" }), { status: 429 }),
+  });
+  await assert.rejects(
+    twilioRetry({ to: "+917990910580", body: "sms_2fa" }),
+    (error) => error.code === "TWILIO_REQUEST_FAILED" && error.retryable === true && error.providerCode === 20429,
+  );
+  await assert.rejects(
+    createTwilioSmsAdapter({ accountSid: "AC123", from: "+17372508034", fetch: async () => new Response("{}") })({
+      to: "+917990910580", body: "sms_2fa",
+    }),
+    (error) => error.code === "TWILIO_NOT_CONFIGURED" && error.status === 503,
+  );
+
+  assert.equal(createPlatformEmail({ resendApiKey: "   " }), null);
+  const factoryEmailRequests = [];
+  const factoryEmail = createPlatformEmail({
+    resendApiKey: "  platform-key  ",
+    from: "  ReBase <onboarding@resend.dev>  ",
+  }, {
+    fetch: async (url, options) => {
+      factoryEmailRequests.push({ url, options });
+      return new Response(JSON.stringify({ id: "factory-email" }), { status: 200 });
+    },
+  });
+  assert(factoryEmail);
+  await factoryEmail({ to: ["probe@example.com"], subject: "Factory", text: "Body" });
+  assert.equal(factoryEmailRequests[0].options.headers.authorization, "Bearer platform-key");
+  assert.equal(JSON.parse(factoryEmailRequests[0].options.body).from, "ReBase <onboarding@resend.dev>");
+
+  assert.equal(createPlatformSms({}, { fetch }), null);
+  assert.throws(
+    () => createPlatformSms({ accountSid: "AC123", from: "+10000000000" }, { fetch }),
+    /Incomplete Twilio SMS configuration.*AUTH_TOKEN/,
+  );
+  assert.throws(
+    () => createPlatformSms({ accountSid: "AC123", apiKeySid: "SK123", from: "+10000000000" }, { fetch }),
+    /Incomplete Twilio SMS configuration.*API_KEY_SECRET/,
+  );
+  const factorySmsRequests = [];
+  const factorySms = createPlatformSms({
+    accountSid: " AC123 ",
+    authToken: " account-token ",
+    from: " +10000000000 ",
+  }, {
+    fetch: async (url, options) => {
+      factorySmsRequests.push({ url, options });
+      return new Response(JSON.stringify({ sid: "factory-sms", status: "queued" }), { status: 201 });
+    },
+  });
+  assert(factorySms);
+  await factorySms({ to: "+917990910580", body: "Factory" });
+  assert.equal(factorySmsRequests[0].options.headers.authorization,
+    `Basic ${Buffer.from("AC123:account-token").toString("base64")}`);
+
+  console.log("adapters: static registry, flat mappings, normalization, retries, shared bucket, overrides, and platform factories passed");
 }
 
 if (require.main === module) main().catch((error) => {
