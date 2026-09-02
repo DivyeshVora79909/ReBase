@@ -1,47 +1,49 @@
-const { createLocalProviders } = require("./local");
-const { createRealProviders } = require("./real");
+const { createBrevoEmailAdapter } = require("./brevo-email.adapter");
+const { createRazorpayOrderAdapter } = require("./razorpay-order.adapter");
+const { createRazorpayWebhookAdapter } = require("./razorpay-webhook.adapter");
+const { createS3StorageAdapters } = require("./s3-storage.adapter");
 
-const DEFAULT_PROVIDER_ADAPTER = "local";
-const PROVIDER_FACTORIES = Object.freeze({
-  local: createLocalProviders,
-  real: createRealProviders,
-});
+const ADAPTER_NAMES = Object.freeze([
+  "sendBrevoEmail",
+  "createS3UploadGrant",
+  "createS3AccessGrant",
+  "deleteS3Object",
+  "createRazorpayOrder",
+]);
 
-function assertProviderAdapter(adapter, label = "provider") {
-  if (!adapter || typeof adapter !== "object" || Array.isArray(adapter)) {
-    throw new Error(`${label} adapter must be an object`);
+function assertFunctionOverrides(overrides = {}) {
+  for (const [name, adapter] of Object.entries(overrides)) {
+    if (!ADAPTER_NAMES.includes(name)) throw new Error(`Unknown adapter override: ${name}`);
+    if (typeof adapter !== "function") throw new Error(`Adapter override ${name} must be a function`);
   }
-  if (typeof adapter.kind !== "string" || !adapter.kind.trim()) {
-    throw new Error(`${label} adapter requires a non-empty kind`);
-  }
-  if (typeof adapter.developmentOnly !== "boolean") {
-    throw new Error(`${label} adapter requires developmentOnly boolean`);
-  }
-  if (typeof adapter.health !== "function") {
-    throw new Error(`${label} adapter requires health()`);
-  }
-  return adapter;
+  return overrides;
 }
 
-function resolveProviderAdapter(selection = DEFAULT_PROVIDER_ADAPTER, options = {}) {
-  if (selection && typeof selection === "object") {
-    return assertProviderAdapter(selection);
-  }
-
-  const name = typeof selection === "string"
-    ? selection.trim().toLowerCase()
-    : null;
-  const factory = name ? PROVIDER_FACTORIES[name] : selection;
-  if (typeof factory !== "function") {
-    throw new Error(`Unsupported provider adapter: ${String(selection)}`);
-  }
-
-  return assertProviderAdapter(factory(options), name || factory.name || "custom provider");
+function createAdapters(options = {}) {
+  const storage = createS3StorageAdapters({
+    bucket: options.storageBucket,
+    createClient: options.createS3Client,
+    getSignedUrl: options.getSignedUrl,
+  });
+  return Object.freeze({
+    sendBrevoEmail: createBrevoEmailAdapter({ fetch: options.fetch, endpoint: options.brevoEndpoint }),
+    ...storage,
+    createRazorpayOrder: createRazorpayOrderAdapter({ fetch: options.fetch, endpoint: options.razorpayEndpoint }),
+    ...assertFunctionOverrides(options.overrides),
+  });
 }
 
-module.exports = {
-  DEFAULT_PROVIDER_ADAPTER,
-  assertProviderAdapter,
-  createProviderAdapter: resolveProviderAdapter,
-  resolveProviderAdapter,
-};
+function createWebhookAdapters(options = {}) {
+  const adapters = {
+    razorpay: createRazorpayWebhookAdapter(),
+    ...(options.overrides || {}),
+  };
+  for (const [provider, adapter] of Object.entries(adapters)) {
+    if (typeof adapter?.extractRoute !== "function" || typeof adapter?.verify !== "function") {
+      throw new Error(`Webhook adapter ${provider} requires extractRoute() and verify()`);
+    }
+  }
+  return Object.freeze(adapters);
+}
+
+module.exports = { ADAPTER_NAMES, createAdapters, createWebhookAdapters };

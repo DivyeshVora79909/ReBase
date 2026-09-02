@@ -4,18 +4,19 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { once } = require("node:events");
 const { serve } = require("@hono/node-server");
+const { createAccountService } = require("./accounts");
 const { createRuntimeApp } = require("./app");
 const {
   createSurrealStoreDirectory,
   fixedStoreDirectory,
 } = require("./directory");
 const { loadTableHandlers } = require("./handlers");
+const { createOAuthVerifier } = require("./oauth");
+const { createMemoryRateLimiter, createRedisRateLimiter } = require("./rate-limit");
+const { createResendPlatformEmailAdapter } = require("./providers/resend-platform-email.adapter");
 const { createWebhookRouteCodec } = require("./webhook-routes");
 const { loadWebhookHandlers } = require("./webhooks");
-const {
-  DEFAULT_PROVIDER_ADAPTER,
-  resolveProviderAdapter,
-} = require("./providers");
+const { createAdapters, createWebhookAdapters } = require("./providers");
 const { createQueue } = require("./queues");
 const { createReconciler } = require("./reconciler");
 const { createRuntime } = require("./runtime");
@@ -34,6 +35,7 @@ function readContracts(projectDir) {
   return {
     contractPath,
     contracts: new Map(Object.entries(parsed.tables || {})),
+    principals: parsed.principals,
     webhookContracts: new Map(Object.entries(parsed.webhooks || {})),
   };
 }
@@ -63,16 +65,21 @@ async function startServer(options = {}) {
     environment === "production"
       ? false
       : (options.allowBearer ?? environment === "development");
-  const wakeSecret = options.wakeSecret || config.runtime.wakeSecret;
-  if (!wakeSecret) throw new Error("REBASE_WAKE_SECRET is required");
+  const runtimeSecret = options.runtimeSecret || config.runtime.secret;
+  if (!runtimeSecret) throw new Error("REBASE_RUNTIME_SECRET is required");
   const hostname = options.hostname || config.server.host;
   const port = Number(options.port ?? config.server.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535)
-    throw new Error("REBASE_PORT must be a valid TCP port");
+    throw new Error("REBASE_HTTP_PORT must be a valid TCP port");
   const projectDir =
     options.projectDir || path.resolve("build", options.project || "test");
   const loaded = options.contracts
-    ? { contracts: options.contracts, contractPath: options.contractPath }
+    ? {
+        contracts: options.contracts,
+        contractPath: options.contractPath,
+        principals: options.principals,
+        webhookContracts: options.webhookContracts || new Map(),
+      }
     : readContracts(projectDir);
   const handlers =
     options.handlers ||
@@ -81,27 +88,35 @@ async function startServer(options = {}) {
     path.join(projectDir, "webhook-handlers"),
     { contracts: loaded.webhookContracts },
   );
-  const providerSelection =
-    options.providers ??
-    options.provider ??
-    config.provider.selection ?? DEFAULT_PROVIDER_ADAPTER;
-  const storageBucket = options.storageBucket ?? config.storage?.bucket;
-  const providers = resolveProviderAdapter(providerSelection, {
-    ...(config.provider.options || {}),
-    ...(storageBucket ? { storageBucket } : {}),
-    ...(options.providerOptions || {}),
+  const sendPlatformEmail = options.sendPlatformEmail === undefined
+    ? (config.platformEmail?.resendApiKey
+        ? createResendPlatformEmailAdapter({
+            apiKey: config.platformEmail.resendApiKey,
+            from: config.platformEmail.from,
+            fetch: options.fetch,
+          })
+        : null)
+    : options.sendPlatformEmail;
+  const oauth = options.oauth || createOAuthVerifier(options.oauthProviders, {
+    onError: options.onOAuthError,
   });
-  if (environment === "production" && providers.developmentOnly) {
-    throw new Error("Development-only providers are not allowed in production");
-  }
+  const storageBucket = options.storageBucket ?? config.storage?.bucket;
+  const adapters = options.adapters || createAdapters({
+    ...(options.adapterOptions || {}),
+    fetch: options.fetch,
+    storageBucket,
+    overrides: options.adapterOverrides,
+  });
+  const webhookAdapters = options.webhookAdapters || createWebhookAdapters({
+    overrides: options.webhookAdapterOverrides,
+  });
   const queueOptions = options.queueOptions || {};
   const queue = options.queue || createQueue({
-    provider: options.queueProvider ?? queueOptions.provider ?? config.queue.provider,
+    driver: options.queueDriver ?? queueOptions.driver ?? config.queue.driver,
     bullmq: {
       ...config.queue,
-      url: config.queue.redisUrl,
+      ...config.queue.redis,
       ...queueOptions,
-      ...(queueOptions.redis || {}),
       ...(options.queueOptions?.bullmq || {}),
     },
     sqs: {
@@ -148,12 +163,49 @@ async function startServer(options = {}) {
       "At least one configured namespace/database context is required in production",
     );
   }
+  let rateLimiter = options.rateLimiter;
+  let ownsRateLimiter = false;
+  if (rateLimiter === undefined && sendPlatformEmail) {
+    if (config.queue.redis.url) {
+      rateLimiter = createRedisRateLimiter({
+        url: config.queue.redis.url,
+        prefix: `${config.queue.prefix}:anonymous`,
+        connectTimeoutMs: config.queue.redis.connectTimeoutMs,
+      });
+    } else if (environment !== "production") {
+      rateLimiter = createMemoryRateLimiter();
+    } else {
+      if (!options.queue) await queue.close().catch(() => {});
+      if (!options.stores) await stores.close?.().catch(() => {});
+      throw new Error("REBASE_QUEUE_REDIS_URL is required for production account recovery rate limiting");
+    }
+    ownsRateLimiter = true;
+  }
+  if (sendPlatformEmail && !loaded.principals?.user && !options.accounts) {
+    if (ownsRateLimiter) await rateLimiter.close?.().catch(() => {});
+    if (!options.queue) await queue.close().catch(() => {});
+    if (!options.stores) await stores.close?.().catch(() => {});
+    throw new Error("Compiled principal metadata is required for account recovery");
+  }
+  const accounts = options.accounts || (loaded.principals?.user
+    ? createAccountService({
+        stores,
+        principals: loaded.principals,
+        allowedContexts: configuredContexts,
+        sendEmail: sendPlatformEmail,
+        rateLimiter,
+        inviteTtlMs: config.accounts?.recovery?.inviteTtlMs,
+        rateLimits: config.accounts?.recovery,
+        onError: options.onRecoveryError,
+      })
+    : null);
   runtimeOptions.allowedContexts ||= configuredContexts;
-  const routeCodec = options.routeCodec || createWebhookRouteCodec(wakeSecret);
+  const routeCodec = options.routeCodec || createWebhookRouteCodec(runtimeSecret);
   const runtime = createRuntime({
     handlers,
     webhooks,
-    providers,
+    adapters,
+    webhookAdapters,
     queue,
     stores,
     contracts: loaded.contracts,
@@ -184,10 +236,17 @@ async function startServer(options = {}) {
     app = createRuntimeApp({
       handlers,
       webhooks,
-      providers,
+      adapters,
+      webhookAdapters,
+      adapterConfiguration: {
+        storageBucket,
+        requiresStorageBucket: options.adapters === undefined,
+      },
+      accounts,
+      oauth,
       queue,
       runtime,
-      wakeSecret,
+      runtimeSecret,
       defaultContext,
       readinessContexts: configuredContexts,
       allowBearer,
@@ -204,6 +263,7 @@ async function startServer(options = {}) {
   } catch (error) {
     await stopReconciler?.().catch(() => {});
     await Promise.all(workerStops.map((stop) => stop?.().catch(() => {})));
+    if (ownsRateLimiter) await rateLimiter.close?.().catch(() => {});
     if (!options.queue) await queue.close().catch(() => {});
     if (!options.stores) await stores.close?.().catch(() => {});
     throw error;
@@ -216,6 +276,7 @@ async function startServer(options = {}) {
       await new Promise((resolve) => server.close(resolve));
       await stopReconciler?.();
       await Promise.all(workerStops.map((stop) => stop?.()));
+      if (ownsRateLimiter) await rateLimiter.close?.();
       if (!options.queue) await queue.close();
       if (!options.stores) await stores.close?.();
     })();
@@ -223,13 +284,19 @@ async function startServer(options = {}) {
   };
   return {
     app,
+    accounts,
     close,
     contracts: loaded.contracts,
     handlers,
     webhooks,
     hostname,
+    oauth,
+    adapters,
+    webhookAdapters,
+    sendPlatformEmail,
     port: listeningPort,
     queue,
+    rateLimiter,
     reconciler,
     runtime,
     stores,

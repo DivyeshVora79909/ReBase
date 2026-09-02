@@ -592,6 +592,11 @@ async function principalCompilerProbe(db, namespace, database) {
       context: { namespace, database },
     });
     assert.deepEqual(generated.principals, { user: "employee", group: "department" });
+    assert.deepEqual(generated.contracts.principals, {
+      user: "employee",
+      group: "department",
+      root: "department:root",
+    });
     assert.match(generated.bundle, /record<employee \| department>/);
     assert.match(generated.bundle, /CREATE department:root/);
     assert.match(generated.bundle, /SELECT id from employee/i);

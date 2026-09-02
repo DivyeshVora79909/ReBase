@@ -28,6 +28,8 @@ for data shape, authorization, reference validity, and user-facing effect state.
    idempotency keys, and provider reconciliation provide safety.
 9. External APIs are never transactionally atomic with SurrealDB.
 10. SurrealDB-version-sensitive behavior remains probe-gated.
+11. Anonymous recovery and OAuth verification are narrow access adapters. They
+    do not create tenant contexts or introduce a second identity store.
 
 ## Independent execution axes
 
@@ -92,6 +94,30 @@ provider webhook
 scheduler/reconciler
   -> due or unfinished effect IDs -> same managed queue and handler
 ```
+
+## Account access adapters
+
+The principal row remains the only account identity. Email and optional
+username are normalized in SurrealDB and protected by native unique indexes.
+Account signin accepts either identifier. Invite redemption and password
+recovery use the same unique, expiring `invite_token`; recovery rotates that
+token and extends its deadline without clearing the current password. This
+keeps an unauthenticated request from disabling a valid login before the email
+recipient proves possession of the token.
+
+Anonymous recovery accepts only contexts from the deployment allowlist, applies
+per-address and hashed context/identifier limits, and returns one generic
+response for existing, absent, and disallowed records. Platform-owned recovery
+email is configured in the deployment profile and is separate from tenant BYOC
+email configuration records.
+
+OAuth is signin-only. A generated record access method sends the opaque provider
+token to an authenticated internal runtime endpoint. An injected provider
+adapter returns only `{ verified, email }`; SurrealDB then selects an existing,
+login-enabled principal in the current namespace/database. The runtime stores
+no provider subject, creates no principal, consumes no invite, and provisions no
+namespace or database. Builds without a complete runtime binding omit the OAuth
+access method.
 
 The detailed registry and adapter contract is in
 [`runtime-dispatch.md`](./runtime-dispatch.md). Engine transaction facts are in
@@ -261,7 +287,7 @@ distinct. Detailed timing, catch-up, and optional heap strategies are in
 | Owner | Responsibilities |
 | --- | --- |
 | SurrealDB | Authentication, table/row/field authorization, schema/assertions/references, sync transaction, async notification trigger, audit, current effect and schedule records. |
-| Hono runtime | Internal wake authentication, registry lookup, privileged declared-reference loading, provider SDK calls, queue adapters, webhook verification, reconciliation orchestration, operational telemetry. |
+| Hono runtime | Internal wake authentication, stateless OAuth verification, rate-limited recovery mail, registry lookup, privileged declared-reference loading, provider SDK calls, queue adapters, webhook verification, reconciliation orchestration, operational telemetry. |
 | Managed queue | Delivery retry, visibility timeout, redrive, dead-letter transport, and queue-level concurrency. |
 | Provider | External object state, signatures/webhooks, provider idempotency, expiry/revocation, and reconciliation APIs. |
 
@@ -276,14 +302,14 @@ The compiler must:
 4. generate record-reference assertions;
 5. generate bounded sync snapshot and async locator events when deployment
    context is supplied;
-6. emit a private runtime contract that drives patch allowlists, reference
-   loading, schedules, webhooks, and reconciliation;
+6. emit a private runtime contract that drives principal discovery, patch
+   allowlists, reference loading, schedules, webhooks, and reconciliation;
 7. copy validated table handlers into the build artifact;
 8. keep deterministic output and architecture probes in the upgrade gate.
 
 Deployment configuration is supplied through an explicit environment profile.
 `SURREAL_NAMESPACE` and `SURREAL_DATABASE` select the default database context;
-`REBASE_RUNTIME_URL` and `REBASE_WAKE_SECRET` enable generated runtime events.
+`REBASE_RUNTIME_URL` and `REBASE_RUNTIME_SECRET` enable generated runtime events.
 Either pair may be omitted for context-neutral compilation. Partial pairs are
 ignored with a concise compiler notice. Runtime modules receive resolved config
 objects and do not read process environment directly.
@@ -303,7 +329,8 @@ authorization layer.
 2. Add one strongly typed effect table shaped for its request and current result.
 3. Mark handler inputs and runtime-owned outputs.
 4. Add one `table-handlers/<table>.js` module.
-5. Add the provider adapter behind `gateway/providers/`.
+5. Add a self-describing named adapter under `gateway/providers/` and export it
+   from the static `createAdapters()` registry.
 6. Build; validation must reject handler/table/process/output drift.
 7. Add a disposable probe for provider transformation and failure semantics.
 

@@ -94,14 +94,19 @@ async function connect(endpoint, namespace, database) {
   return db;
 }
 
-async function signIn(endpoint, namespace, database, email, password) {
+async function signIn(endpoint, namespace, database, identifier, password) {
   const db = new Surreal();
   await db.connect(endpoint);
-  const tokens = await db.signin({ namespace, database, access: "account", variables: { email, password } });
+  const tokens = await db.signin({
+    namespace,
+    database,
+    access: "account",
+    variables: { identifier, password },
+  });
   return { db, token: tokens.access };
 }
 
-async function signUp(endpoint, namespace, database, email, password, invite) {
+async function signUp(endpoint, namespace, database, _email, password, invite) {
   const db = new Surreal();
   await db.connect(endpoint);
   try {
@@ -109,7 +114,7 @@ async function signUp(endpoint, namespace, database, email, password, invite) {
       namespace,
       database,
       access: "account",
-      variables: { email, password, invite },
+      variables: { password, invite },
     });
   } finally {
     await db.close();
@@ -146,7 +151,7 @@ async function securityProbe(options) {
     await db.query(`
       CREATE groups:team SET name = 'Team', parents = [groups:root], role = $permissions;
       CREATE groups:other SET name = 'Other', parents = [groups:root], role = $permissions;
-      CREATE user:alice SET name = 'Alice', email = 'alice@example.com', password = crypto::argon2::generate('password123'), parents = [groups:team], login_access = true;
+      CREATE user:alice SET name = 'Alice', email = 'alice@example.com', username = 'Alice_User', password = crypto::argon2::generate('password123'), parents = [groups:team], login_access = true;
       CREATE user:bob SET name = 'Bob', email = 'bob@example.com', password = crypto::argon2::generate('password123'), parents = [groups:other], login_access = true;
     `, { permissions });
     await assert.rejects(
@@ -163,7 +168,28 @@ async function securityProbe(options) {
     );
     const alice = await signIn(options.endpoint, options.namespace, options.database, "alice@example.com", "password123");
     const bob = await signIn(options.endpoint, options.namespace, options.database, "bob@example.com", "password123");
+    const aliceByUsername = await signIn(options.endpoint, options.namespace, options.database, "ALICE_USER", "password123");
     try {
+      assert.equal(rows(await db.query("SELECT VALUE username FROM user:alice;"))[0], "alice_user");
+      assert(aliceByUsername.token);
+      await assert.rejects(
+        db.query("CREATE user:duplicate_username SET name = 'Duplicate', email = 'duplicate@example.com', username = 'alice_user', parents = [groups:root];"),
+        /unique|index|username/i,
+      );
+      await db.query(`
+        CREATE user:username_claim_1 SET name = 'Claim 1', email = 'claim-1@example.com', parents = [groups:root];
+        CREATE user:username_claim_2 SET name = 'Claim 2', email = 'claim-2@example.com', parents = [groups:root];
+        CREATE user:username_claim_3 SET name = 'Claim 3', email = 'claim-3@example.com', parents = [groups:root];
+        CREATE user:username_claim_4 SET name = 'Claim 4', email = 'claim-4@example.com', parents = [groups:root];
+      `);
+      const usernameClaims = await Promise.allSettled([
+        db.query("UPDATE user:username_claim_1 SET username = 'shared_name';"),
+        db.query("UPDATE user:username_claim_2 SET username = 'shared_name';"),
+        db.query("UPDATE user:username_claim_3 SET username = 'shared_name';"),
+        db.query("UPDATE user:username_claim_4 SET username = 'shared_name';"),
+      ]);
+      assert.equal(rows(await db.query("SELECT id FROM user WHERE username = 'shared_name';")).length, 1);
+      assert(usernameClaims.filter((claim) => claim.status === "rejected").length >= 3);
       const aliceActor = rows(await db.query("SELECT id, permissions, z_access_index FROM user:alice;"))[0];
       assert(aliceActor.permissions.includes("test_primitive_create"));
       assert(aliceActor.z_access_index.includes("groups:team"));
@@ -231,17 +257,27 @@ async function securityProbe(options) {
         new Date(aliceInviteAfterSelfUpdate.invite_expires_at).getTime(),
         new Date(aliceInviteBeforeSelfUpdate.invite_expires_at).getTime(),
       );
-      await assert.rejects(
-        signUp(
-          options.endpoint,
-          options.namespace,
-          options.database,
-          "alice@example.com",
-          "replacement-password",
-          aliceInviteAfterSelfUpdate.invite_token,
-        ),
-        /signup|authentication|access|record/i,
+      await signUp(
+        options.endpoint,
+        options.namespace,
+        options.database,
+        "alice@example.com",
+        "replacement-password",
+        aliceInviteAfterSelfUpdate.invite_token,
       );
+      await assert.rejects(
+        signIn(options.endpoint, options.namespace, options.database, "alice@example.com", "password123"),
+        /signin|authentication|access|record/i,
+      );
+      const resetAlice = await signIn(
+        options.endpoint,
+        options.namespace,
+        options.database,
+        "alice_user",
+        "replacement-password",
+      );
+      assert(resetAlice.token);
+      await resetAlice.db.close();
 
       await signUp(
         options.endpoint,
@@ -466,8 +502,9 @@ async function securityProbe(options) {
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_resource;")).length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_deleted;")).length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM change_logs:probe_group;")).length, 1);
-      console.log("security: ownership, visibility, principal exclusion, readers, revocation, DAGs, views, audit, and change logs passed");
+      console.log("security: account identifiers, invite reset, ownership, readers, revocation, DAGs, views, audit, and change logs passed");
     } finally {
+      await aliceByUsername.db.close();
       await alice.db.close();
       await bob.db.close();
     }
@@ -490,8 +527,8 @@ async function dataProbe(options) {
         buildDir: setupState.buildDir,
         configuration: resolveConfiguration({
           SURREAL_ENDPOINT: options.endpoint,
-          SURREAL_USER: "root",
-          SURREAL_PASS: "root",
+          SURREAL_USERNAME: "root",
+          SURREAL_PASSWORD: "root",
           SURREAL_NAMESPACE: options.namespace,
           SURREAL_DATABASE: `${options.database}_${suffix}`,
         }),

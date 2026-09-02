@@ -2,15 +2,16 @@ DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     SIGNUP (
         UPDATE user SET 
             password = crypto::argon2::generate($password)
-        WHERE email = string::lowercase($email) 
-          AND password = NONE
-          AND invite_token = type::uuid($invite)
+        WHERE invite_token = type::uuid($invite)
           AND invite_expires_at >= time::now()
           AND $password.len() >= 8
     )
     SIGNIN (
-        SELECT id from user 
-        WHERE email = string::lowercase($email) 
+        SELECT id FROM user
+        WHERE (
+            email = string::lowercase(string::trim($identifier ?? $email ?? ""))
+            OR username = string::lowercase(string::trim($identifier ?? $email ?? ""))
+        )
           AND crypto::argon2::compare(password ?? "", $password)
     )
     AUTHENTICATE {

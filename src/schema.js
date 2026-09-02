@@ -14,7 +14,7 @@ function parseSchema(schemaSource, viewsSource) {
       table.effectProcess = extractEffectProcess(table.comment, table.name);
       table.effectEvents = extractEffectEvents(table.comment, table.name, table.effectProcess);
       table.effectTimeoutMs = extractEffectTimeout(table.comment, table.name);
-      table.effectProviders = extractEffectProviders(table.comment);
+      table.effectAdapters = extractEffectAdapters(table.comment, table.name);
       table.effectMutableInputs = /@rebase-mutable-inputs\b/i.test(table.comment);
       tables.set(tableMatch[1], table);
     }
@@ -116,11 +116,15 @@ function extractEffectTimeout(comment, tableName) {
   return timeout;
 }
 
-function extractEffectProviders(comment) {
-  return [...new Set(
-    [...String(comment || "").matchAll(/@rebase-provider\s*[:=]?\s*([A-Za-z][A-Za-z0-9_-]*)\b/gi)]
-      .map((match) => match[1].toLowerCase()),
-  )].sort();
+function extractEffectAdapters(comment, tableName = "unknown") {
+  const source = String(comment || "");
+  const names = [...source.matchAll(/@rebase-adapter\s*[:=]?\s*([^\s@]+)/gi)]
+    .map((match) => match[1]);
+  const markerCount = [...source.matchAll(/@rebase-adapter\b/gi)].length;
+  if (names.length !== markerCount) throw new Error(`Invalid @rebase-adapter marker on table ${tableName}`);
+  const invalid = names.find((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
+  if (invalid) throw new Error(`Invalid @rebase-adapter value on table ${tableName}: ${invalid}`);
+  return [...new Set(names)].sort();
 }
 
 function parseAuditPolicy(comment = "") {
@@ -172,7 +176,7 @@ function resolveRecordTargets(schema, sourceTable, expression) {
 module.exports = {
   extractEffectEvents,
   extractEffectProcess,
-  extractEffectProviders,
+  extractEffectAdapters,
   extractEffectTimeout,
   extractPrincipalKind,
   parseAuditPolicy,

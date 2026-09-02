@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { getConnInfo } = require("@hono/node-server/conninfo");
 const { Hono } = require("hono");
 const { bodyLimit } = require("hono/body-limit");
 const { RuntimeError, publicError } = require("./errors");
@@ -61,13 +62,25 @@ function withRequestTimeout(timeoutMs, operation) {
   return Promise.race([operation(), timeout]).finally(() => clearTimeout(timer));
 }
 
+function requestClientAddress(c) {
+  try {
+    return getConnInfo(c).remote.address || "unknown";
+  } catch {
+    return c.req.header("x-real-ip") || c.req.header("x-forwarded-for")?.split(",", 1)[0]?.trim() || "unknown";
+  }
+}
+
 function createRuntimeApp({
   runtime,
   handlers,
   webhooks,
   queue,
-  providers,
-  wakeSecret,
+  adapters,
+  webhookAdapters,
+  adapterConfiguration = {},
+  accounts,
+  oauth,
+  runtimeSecret,
   defaultContext = {},
   readinessContexts = [],
   bodyLimitBytes = 256 * 1024,
@@ -80,8 +93,8 @@ function createRuntimeApp({
   const app = new Hono();
   const webhookProviders = webhooks?.providers || [];
   const webhookRouting = webhookProviders.every((provider) => (
-    typeof providers?.webhooks?.[provider]?.extractRoute === "function"
-    && typeof providers?.webhooks?.[provider]?.verify === "function"
+    typeof webhookAdapters?.[provider]?.extractRoute === "function"
+    && typeof webhookAdapters?.[provider]?.verify === "function"
   ));
   app.use("*", bodyLimit({
     maxSize: bodyLimitBytes,
@@ -110,19 +123,32 @@ function createRuntimeApp({
       const contract = handlers.contracts?.get(table) || handlers.get(table)?.contract;
       return Boolean(handlers.get(table)?.process && contract?.patchFields);
     });
-    const requiredProviders = [...new Set(handlers.tables.flatMap((table) => (
-      handlers.contracts?.get(table)?.providers || handlers.get(table)?.contract?.providers || []
+    const requiredAdapters = [...new Set(handlers.tables.flatMap((table) => (
+      handlers.contracts?.get(table)?.adapters || handlers.get(table)?.contract?.adapters || []
     )))].sort();
-    let providerHealth;
-    try {
-      providerHealth = typeof providers?.health === "function"
-        ? await providers.health({ required: requiredProviders, webhookProviders })
-        : { ok: requiredProviders.every((name) => providers?.[name]), missing: requiredProviders.filter((name) => !providers?.[name]) };
-    } catch (error) {
-      providerHealth = { ok: false, error: error.message, missing: requiredProviders };
-    }
+    const missingAdapters = requiredAdapters.filter((name) => typeof adapters?.[name] !== "function");
+    const needsStorageBucket = requiredAdapters.some((name) => (
+      name === "createS3UploadGrant" || name === "createS3AccessGrant" || name === "deleteS3Object"
+    ));
+    const missingConfiguration = needsStorageBucket && adapterConfiguration.requiresStorageBucket
+      && !adapterConfiguration.storageBucket
+      ? ["REBASE_STORAGE_BUCKET"]
+      : [];
+    const adapterHealth = {
+      ok: missingAdapters.length === 0 && missingConfiguration.length === 0,
+      required: requiredAdapters,
+      missing: missingAdapters,
+      missingConfiguration,
+    };
+    const accountHealth = typeof accounts?.health === "function"
+      ? await accounts.health()
+      : { ok: true, enabled: false };
+    const oauthHealth = typeof oauth?.health === "function"
+      ? await oauth.health()
+      : { ok: true, configuredProviders: [] };
     const workers = LANES.every((lane) => queueHealth.lanes?.[lane] === true);
-    const ok = queueHealth.ok && workers && surreal && contracts && providerHealth.ok && webhookRouting;
+    const ok = queueHealth.ok && workers && surreal && contracts && adapterHealth.ok
+      && webhookRouting && accountHealth.ok && oauthHealth.ok;
     return c.json({
       ok,
       queue: { ...queueHealth, workers },
@@ -130,15 +156,56 @@ function createRuntimeApp({
       surrealErrors,
       contexts,
       handlers: { ok: contracts, tables: handlers.tables },
-      providers: providerHealth,
+      adapters: adapterHealth,
       webhooks: { ok: Boolean(webhookRouting), providers: webhookProviders },
+      accounts: accountHealth,
+      oauth: oauthHealth,
     }, ok ? 200 : 503);
+  });
+
+  app.post("/anonymous/accounts/recovery", async (c) => {
+    requireJsonContentType(c);
+    const rawBody = await readBody(c, bodyLimitBytes);
+    const body = parseJson(rawBody);
+    if (!accounts?.requestRecovery) {
+      throw new RuntimeError("ACCOUNT_RECOVERY_UNAVAILABLE", "Account recovery is not configured", 503);
+    }
+    const result = await withRequestTimeout(requestTimeoutMs, () => accounts.requestRecovery({
+      namespace: body.namespace,
+      database: body.database,
+      identifier: body.identifier ?? body.email,
+      clientAddress: requestClientAddress(c),
+    }));
+    if (result.rateLimited) {
+      const retryAfter = Math.max(1, Math.ceil(result.retryAfterMs / 1000));
+      c.header("retry-after", String(retryAfter));
+      return c.json({ ok: false, error: { code: "RATE_LIMITED", message: "Too many recovery requests" } }, 429);
+    }
+    return c.json({ ok: true }, 202);
+  });
+
+  app.post("/internal/oauth", async (c) => {
+    requireJsonContentType(c);
+    const rawBody = await readBody(c, bodyLimitBytes);
+    if (!verifyInternal(c.req.raw, rawBody, runtimeSecret, { allowBearer })) {
+      throw new RuntimeError("INVALID_OAUTH_AUTH", "Invalid internal OAuth authentication", 401);
+    }
+    const body = parseJson(rawBody);
+    const result = typeof oauth?.verify === "function"
+      ? await withRequestTimeout(requestTimeoutMs, () => oauth.verify(
+          body.provider,
+          body.token,
+        ))
+      : { verified: false };
+    return c.json(result?.verified === true && result.email
+      ? { verified: true, email: result.email }
+      : { verified: false });
   });
 
   app.post("/internal/sync", async (c) => {
     requireJsonContentType(c);
     const rawBody = await readBody(c, bodyLimitBytes);
-    if (!verifyInternal(c.req.raw, rawBody, wakeSecret, { allowBearer })) {
+    if (!verifyInternal(c.req.raw, rawBody, runtimeSecret, { allowBearer })) {
       throw new RuntimeError("INVALID_WAKE_AUTH", "Invalid internal wake authentication", 401);
     }
     const result = await withRequestTimeout(requestTimeoutMs, () => runtime.sync(parseJson(rawBody)));
@@ -150,7 +217,7 @@ function createRuntimeApp({
     if (!LANES.includes(lane)) throw new RuntimeError("INVALID_QUEUE_LANE", "Invalid queue lane", 404);
     requireJsonContentType(c);
     const rawBody = await readBody(c, bodyLimitBytes);
-    if (!verifyInternal(c.req.raw, rawBody, wakeSecret, { allowBearer })) {
+    if (!verifyInternal(c.req.raw, rawBody, runtimeSecret, { allowBearer })) {
       throw new RuntimeError("INVALID_WAKE_AUTH", "Invalid internal wake authentication", 401);
     }
     const locator = assertLocator(parseJson(rawBody));
@@ -188,5 +255,6 @@ module.exports = {
   parseJson,
   readBody,
   requireJsonContentType,
+  requestClientAddress,
   verifyInternal,
 };

@@ -37,13 +37,19 @@ function main() {
       file,
       [
         "SURREAL_ENDPOINT=ws://profile/rpc",
-        "SURREAL_USER=profile-user",
-        "SURREAL_PASS=profile-secret",
+        "SURREAL_USERNAME=profile-user",
+        "SURREAL_PASSWORD=profile-secret",
         "SURREAL_NAMESPACE=profile-ns",
         "SURREAL_DATABASE=profile-db",
         "REBASE_RUNTIME_URL=http://runtime",
-        "REBASE_WAKE_SECRET=wake-secret",
+        "REBASE_RUNTIME_SECRET=runtime-secret",
         "REBASE_STORAGE_BUCKET=profile-bucket",
+        "REBASE_PLATFORM_EMAIL_RESEND_API_KEY=profile-resend-key",
+        "REBASE_PLATFORM_EMAIL_FROM=ReBase <onboarding@resend.dev>",
+        "REBASE_RECOVERY_RATE_LIMIT_WINDOW_MS=60000",
+        "REBASE_RECOVERY_RATE_LIMIT_IP=8",
+        "REBASE_RECOVERY_RATE_LIMIT_IDENTIFIER=2",
+        "REBASE_RECOVERY_INVITE_TTL_MS=3600000",
       ].join("\n"),
     );
     const loaded = loadEnvironment(["--env-file", file, "--count", "2"], {
@@ -70,8 +76,18 @@ function main() {
       database: "override-db",
     });
     assert.equal(config.runtime.url, "http://runtime");
-    assert.equal(config.runtime.wakeSecret, "wake-secret");
+    assert.equal(config.runtime.secret, "runtime-secret");
     assert.equal(config.storage.bucket, "profile-bucket");
+    assert.deepEqual(config.platformEmail, {
+      resendApiKey: "profile-resend-key",
+      from: "ReBase <onboarding@resend.dev>",
+    });
+    assert.deepEqual(config.accounts.recovery, {
+      windowMs: 60000,
+      ip: 8,
+      identifier: 2,
+      inviteTtlMs: 3600000,
+    });
     assert.deepEqual(config.webhooks, {});
     const flagConfig = resolveConfiguration(loaded.values, {
       namespace: "flag-ns",
@@ -84,15 +100,24 @@ function main() {
       namespace: "flag-ns",
       database: "flag-db",
     });
-    assert.equal(flagConfig.runtime.wakeSecret, "flag-secret");
+    assert.equal(flagConfig.runtime.secret, "flag-secret");
     assert.equal(flagConfig.storage.bucket, "flag-bucket");
+    const nestedRecovery = resolveConfiguration({}, {
+      accounts: { recovery: { windowMs: 2000, ip: 4, identifier: 1, inviteTtlMs: 120000 } },
+    });
+    assert.deepEqual(nestedRecovery.accounts.recovery, {
+      windowMs: 2000,
+      ip: 4,
+      identifier: 1,
+      inviteTtlMs: 120000,
+    });
     assertConnectionConfiguration(config);
 
     const neutral = resolveConfiguration({
       REBASE_RUNTIME_URL: "http://partial",
     });
     assert.equal(neutral.runtime.url, "http://partial");
-    assert.equal(neutral.runtime.wakeSecret, undefined);
+    assert.equal(neutral.runtime.secret, undefined);
     assert.throws(
       () => assertConnectionConfiguration(neutral),
       /Missing configuration/,
@@ -104,11 +129,15 @@ function main() {
     assert.equal(partialContext.surreal.namespace, "only-ns");
     const contextsOnly = resolveConfiguration({
       SURREAL_ENDPOINT: "ws://contexts/rpc",
-      SURREAL_USER: "user",
-      SURREAL_PASS: "pass",
-      REBASE_CONTEXTS: '[{"namespace":"tenant","database":"app"}]',
+      SURREAL_USERNAME: "user",
+      SURREAL_PASSWORD: "pass",
+      REBASE_ALLOWED_CONTEXTS: '[{"namespace":"tenant","database":"app"}]',
     });
     assertConnectionConfiguration(contextsOnly);
+    const testRecordValues = resolveConfiguration({
+      REBASE_TEST_RECORD__EMAIL_BREVO_CONFIG__API_KEY: "documentation-only-secret",
+    });
+    assert.equal(JSON.stringify(testRecordValues).includes("documentation-only-secret"), false);
     assert.throws(
       () => loadEnvironment(["--env-file", path.join(directory, "missing")]),
       /not found/i,
@@ -119,6 +148,9 @@ function main() {
       "utf8",
     );
     assert.match(visualizer, /URLSearchParams/);
+    assert.match(visualizer, /finalQueryResult/);
+    assert.match(visualizer, /statements\.at\(-1\)/);
+    assert.doesNotMatch(visualizer, /res\.result\[0\]/);
     assert.doesNotMatch(visualizer, /ws:\/\/127\.0\.0\.1:8000/);
     assert.doesNotMatch(visualizer, /pass:\s*"root"/);
     assert.doesNotMatch(visualizer, /rpc\("use", \["main", "main"\]\)/);

@@ -49,7 +49,7 @@ The compiler derives, rather than duplicates:
 - record reference cardinality and targets;
 - existence assertions and native delete policies;
 - ownership, access indexes, readers, views, audit, and change logs;
-- effect process, input/output fields, handlers, and generated events;
+- effect process, exact named adapters, input/output fields, handlers, and generated events;
 - SurrealDB-generated record IDs and runtime indexes;
 - seed dependency ordering and population pools.
 
@@ -63,15 +63,16 @@ exception; see [`parents-field.md`](./parents-field.md).
 An effect table must map to exactly one table-keyed handler. The compiler checks
 process type, handler existence, input/output markers, declared output types,
 and copied artifact parity. It rejects writable runtime outputs, missing output
-fields, unknown handlers, and mismatched table declarations. Details live in
+fields, unknown handlers, invalid adapter identifiers, and mismatched table
+declarations. Repeat
+`@rebase-adapter <functionName>` for each function the handler may receive. Details live in
 [`runtime-dispatch.md`](./runtime-dispatch.md).
 
 ## Build artifact and CLI
 
 The artifact contains the compiled `schema.surql` and copied handler modules. It
-does not contain operation catalogs, manifests, generic job schemas, or legacy
-compatibility files. `--check` compares generated schema and copied trees; the
-compiler cleans known legacy artifacts before writing.
+does not contain operation catalogs, manifests, or generic job schemas.
+`--check` compares generated schema and copied trees.
 
 Useful commands:
 

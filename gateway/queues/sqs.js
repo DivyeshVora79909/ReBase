@@ -185,12 +185,12 @@ function createSqsQueue(options = {}) {
       )));
       return {
         ok: !closed,
-        provider: "sqs",
+        driver: "sqs",
         lanes: Object.fromEntries(LANES.map((lane) => [lane, workers.has(lane) && !workers.get(lane).stopped])),
         deadLetters: { ok: true },
       };
     } catch (error) {
-      return { ok: false, provider: "sqs", error: error.message, lanes: {}, deadLetters: { ok: false } };
+      return { ok: false, driver: "sqs", error: error.message, lanes: {}, deadLetters: { ok: false } };
     }
   }
 
@@ -204,7 +204,7 @@ function createSqsQueue(options = {}) {
   }
 
   return {
-    provider: "sqs",
+    driver: "sqs",
     publish,
     pollOnce,
     start,

@@ -8,7 +8,7 @@ const { nextCronDate, isExhausted, normalizeSchedule, occurrenceContent, planOcc
 const LANES = new Set(["task", "schedule", "webhook"]);
 const HANDLER_OUTCOMES = new Set(["success", "retry", "failed", "ambiguous", "ignore"]);
 
-function createRuntime({ database, stores, queue, handlers, webhooks, providers, contracts, routeCodec, options = {} }) {
+function createRuntime({ database, stores, queue, handlers, webhooks, adapters, webhookAdapters, contracts, routeCodec, options = {} }) {
   const directory = stores || {
     async forContext() { return database.store || database; },
   };
@@ -37,7 +37,20 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
     const handler = table && handlers.get(table);
     if (!table || !handler) throw new RuntimeError("TABLE_HANDLER_NOT_FOUND", `No handler for ${table || id}`, 404);
     const contract = contractMap instanceof Map ? contractMap.get(table) : contractMap.tables?.[table];
-    return { table, handler, contract: contract || handler.contract || {} };
+    const resolvedContract = contract || handler.contract || {};
+    const scopedAdapters = {};
+    for (const name of resolvedContract.adapters || []) {
+      if (typeof adapters?.[name] !== "function") {
+        throw new RuntimeError("ADAPTER_NOT_FOUND", `Required adapter is unavailable: ${name}`, 503);
+      }
+      scopedAdapters[name] = adapters[name];
+    }
+    return {
+      table,
+      handler,
+      contract: resolvedContract,
+      adapters: Object.freeze(scopedAdapters),
+    };
   }
 
   function boundedPatch(contract, value) {
@@ -151,7 +164,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
 
   async function sync({ namespace, database: databaseName, id, event, before = null, after = null }) {
     assertContext(namespace, databaseName);
-    const { table, handler, contract } = resolve(id);
+    const { table, handler, contract, adapters: scopedAdapters } = resolve(id);
     if (contract.process !== "sync" && handler.process !== "sync") {
       throw new RuntimeError("TABLE_PROCESS_MISMATCH", `${table} is not synchronous`, 409);
     }
@@ -174,7 +187,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
         before,
         after,
         load: scopedLoad(store, record, contract),
-        providers,
+        adapters: scopedAdapters,
         routes: routeTools(context, record, contract),
         trigger: "sync",
       });
@@ -208,7 +221,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
     const normalizedLocator = assertLocator(locator);
     const { namespace, database: databaseName, id } = normalizedLocator;
     assertContext(namespace, databaseName);
-    const { table, handler, contract } = resolve(id);
+    const { table, handler, contract, adapters: scopedAdapters } = resolve(id);
     if (contract.process !== "async" && handler.process !== "async") {
       throw new RuntimeError("TABLE_PROCESS_MISMATCH", `${table} is not asynchronous`, 409);
     }
@@ -228,7 +241,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
         context,
         record: claimed,
         load: scopedLoad(store, claimed, contract),
-        providers,
+        adapters: scopedAdapters,
         routes: routeTools(context, claimed, contract),
         trigger: "task",
         attempts: delivery.attempts,
@@ -361,7 +374,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
 
   async function webhook({ provider, request, rawBody }) {
     if (!routeCodec) throw new RuntimeError("WEBHOOK_ROUTING_UNAVAILABLE", "Webhook routing is not configured", 503);
-    const adapter = providers?.webhooks?.[provider];
+    const adapter = webhookAdapters?.[provider];
     if (!adapter || typeof adapter.extractRoute !== "function" || typeof adapter.verify !== "function") {
       throw new RuntimeError("WEBHOOK_PROVIDER_NOT_FOUND", `No webhook provider for ${provider}`, 404);
     }
@@ -384,7 +397,6 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
       record,
       route,
       verified,
-      providers,
       store,
       signal,
     }));
@@ -392,7 +404,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
 
   async function reconcileWebhook(locator, delivery = {}) {
     const { namespace, database: databaseName, id } = locator;
-    const { handler, contract, table } = resolve(id);
+    const { handler, contract, table, adapters: scopedAdapters } = resolve(id);
     if (typeof handler.reconcile !== "function") return { action: "ack", state: "recorded" };
     const store = await storeFor(namespace, databaseName);
     const record = await store.load(id);
@@ -408,7 +420,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, providers,
         context,
         record: claimed,
         load: scopedLoad(store, claimed, contract),
-        providers,
+        adapters: scopedAdapters,
         routes: routeTools(context, claimed, contract),
         trigger: "webhook",
         attempts: delivery.attempts,

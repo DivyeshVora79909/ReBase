@@ -23,5 +23,5 @@ SET owned_by = user:replace_me
 RETURN AFTER;
 
 CREATE user:admin
-SET email = 'divy.r.vora14@gmail.com', name = 'Divyesh Vora', password = crypto::argon2::generate('password'), parents = [groups:root], login_access = true
+SET email = 'divy.r.vora14@gmail.com', name = 'Divyesh Vora', password = crypto::argon2::generate('password'), parents = [groups:root], login_access = true, username = 'divyeshvora_123'
 RETURN AFTER;

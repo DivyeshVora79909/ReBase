@@ -13,8 +13,12 @@ const DEFAULTS = Object.freeze({
   queuePrefix: "rebase",
   bodyLimitBytes: 256 * 1024,
   requestTimeoutMs: 30000,
-  provider: "local",
-  queueProvider: "bullmq",
+  platformEmailFrom: "ReBase <onboarding@resend.dev>",
+  recoveryRateLimitWindowMs: 15 * 60 * 1000,
+  recoveryRateLimitIp: 10,
+  recoveryRateLimitIdentifier: 3,
+  recoveryInviteTtlMs: 24 * 60 * 60 * 1000,
+  queueDriver: "bullmq",
   debug: false,
 });
 
@@ -126,14 +130,14 @@ function parseContexts(raw) {
   try {
     parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
-    throw new Error("REBASE_CONTEXTS must be valid JSON");
+    throw new Error("REBASE_ALLOWED_CONTEXTS must be valid JSON");
   }
   if (!Array.isArray(parsed))
-    throw new Error("REBASE_CONTEXTS must be a JSON array");
+    throw new Error("REBASE_ALLOWED_CONTEXTS must be a JSON array");
   return parsed.map((context) => {
     if (!context?.namespace || !context?.database) {
       throw new Error(
-        "Every REBASE_CONTEXTS entry requires namespace and database",
+        "Every REBASE_ALLOWED_CONTEXTS entry requires namespace and database",
       );
     }
     return {
@@ -160,6 +164,7 @@ function pair(
 }
 
 function resolveConfiguration(values = {}, overrides = {}) {
+  const recoveryOverrides = overrides.accounts?.recovery || overrides.recovery || overrides;
   const environment = String(
     value(values, overrides, "NODE_ENV", "environment") || DEFAULTS.environment,
   );
@@ -173,14 +178,11 @@ function resolveConfiguration(values = {}, overrides = {}) {
   );
   const runtimePair = pair(
     values,
-    {
-      ...overrides,
-      wakeSecret: overrides.wakeSecret ?? overrides.runtimeSecret,
-    },
+    overrides,
     "REBASE_RUNTIME_URL",
-    "REBASE_WAKE_SECRET",
+    "REBASE_RUNTIME_SECRET",
     "runtimeUrl",
-    "wakeSecret",
+    "runtimeSecret",
   );
   const defaultContext =
     overrides.defaultContext ||
@@ -189,7 +191,7 @@ function resolveConfiguration(values = {}, overrides = {}) {
       : undefined);
   const configuredContexts =
     overrides.contexts ||
-    parseContexts(value(values, overrides, "REBASE_CONTEXTS", "contexts"));
+    parseContexts(value(values, overrides, "REBASE_ALLOWED_CONTEXTS", "contexts"));
   const contexts = [...configuredContexts];
   if (
     defaultContext &&
@@ -205,12 +207,12 @@ function resolveConfiguration(values = {}, overrides = {}) {
     environment,
     server: {
       host: String(
-        value(values, overrides, "HOST", "hostname") || DEFAULTS.host,
+        value(values, overrides, "REBASE_HTTP_HOST", "hostname") || DEFAULTS.host,
       ),
       port: numberValue(
         values,
         overrides,
-        "REBASE_PORT",
+        "REBASE_HTTP_PORT",
         "port",
         DEFAULTS.port,
       ),
@@ -224,29 +226,29 @@ function resolveConfiguration(values = {}, overrides = {}) {
       bodyLimitBytes: numberValue(
         values,
         overrides,
-        "REBASE_BODY_LIMIT_BYTES",
+        "REBASE_HTTP_BODY_LIMIT_BYTES",
         "bodyLimitBytes",
         DEFAULTS.bodyLimitBytes,
       ),
       requestTimeoutMs: numberValue(
         values,
         overrides,
-        "REBASE_REQUEST_TIMEOUT_MS",
+        "REBASE_HTTP_REQUEST_TIMEOUT_MS",
         "requestTimeoutMs",
         DEFAULTS.requestTimeoutMs,
       ),
       debug: booleanValue(
         values,
         overrides,
-        "REBASE_DEBUG",
+        "REBASE_HTTP_DEBUG",
         "debug",
         DEFAULTS.debug,
       ),
     },
     surreal: {
       endpoint: value(values, overrides, "SURREAL_ENDPOINT", "endpoint"),
-      username: value(values, overrides, "SURREAL_USER", "username"),
-      password: value(values, overrides, "SURREAL_PASS", "password"),
+      username: value(values, overrides, "SURREAL_USERNAME", "username"),
+      password: value(values, overrides, "SURREAL_PASSWORD", "password"),
       namespace: surrealPair.left,
       database: surrealPair.right,
       connectTimeoutMs: numberValue(
@@ -259,24 +261,26 @@ function resolveConfiguration(values = {}, overrides = {}) {
       defaultContext,
       contexts,
     },
-    runtime: { url: runtimePair.left, wakeSecret: runtimePair.right },
+    runtime: { url: runtimePair.left, secret: runtimePair.right },
     queue: {
-      provider: String(
-        value(values, overrides, "REBASE_QUEUE_PROVIDER", "queueProvider") ||
-          DEFAULTS.queueProvider,
+      driver: String(
+        value(values, overrides, "REBASE_QUEUE_DRIVER", "queueDriver") ||
+          DEFAULTS.queueDriver,
       ),
-      redisUrl: value(values, overrides, "REBASE_REDIS_URL", "redisUrl"),
       prefix: String(
         value(values, overrides, "REBASE_QUEUE_PREFIX", "queuePrefix") ||
           DEFAULTS.queuePrefix,
       ),
-      connectTimeoutMs: numberValue(
-        values,
-        overrides,
-        "REBASE_REDIS_CONNECT_TIMEOUT_MS",
-        "redisConnectTimeoutMs",
-        DEFAULTS.redisConnectTimeoutMs,
-      ),
+      redis: {
+        url: value(values, overrides, "REBASE_QUEUE_REDIS_URL", "redisUrl"),
+        connectTimeoutMs: numberValue(
+          values,
+          overrides,
+          "REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS",
+          "redisConnectTimeoutMs",
+          DEFAULTS.redisConnectTimeoutMs,
+        ),
+      },
       startupTimeoutMs: numberValue(
         values,
         overrides,
@@ -318,15 +322,52 @@ function resolveConfiguration(values = {}, overrides = {}) {
         ),
       },
     },
-    provider: {
-      selection: String(
-        value(values, overrides, "REBASE_PROVIDER", "provider") ||
-          DEFAULTS.provider,
-      ),
-      options: overrides.providerOptions || {},
-    },
     storage: {
       bucket: value(values, overrides, "REBASE_STORAGE_BUCKET", "storageBucket"),
+    },
+    platformEmail: {
+      resendApiKey: overrides.platformEmail?.resendApiKey ?? value(
+        values,
+        overrides,
+        "REBASE_PLATFORM_EMAIL_RESEND_API_KEY",
+        "platformEmailResendApiKey",
+      ),
+      from: overrides.platformEmail?.from ?? String(
+        value(values, overrides, "REBASE_PLATFORM_EMAIL_FROM", "platformEmailFrom")
+          || DEFAULTS.platformEmailFrom,
+      ),
+    },
+    accounts: {
+      recovery: {
+        windowMs: numberValue(
+          values,
+          recoveryOverrides,
+          "REBASE_RECOVERY_RATE_LIMIT_WINDOW_MS",
+          "windowMs",
+          DEFAULTS.recoveryRateLimitWindowMs,
+        ),
+        ip: numberValue(
+          values,
+          recoveryOverrides,
+          "REBASE_RECOVERY_RATE_LIMIT_IP",
+          "ip",
+          DEFAULTS.recoveryRateLimitIp,
+        ),
+        identifier: numberValue(
+          values,
+          recoveryOverrides,
+          "REBASE_RECOVERY_RATE_LIMIT_IDENTIFIER",
+          "identifier",
+          DEFAULTS.recoveryRateLimitIdentifier,
+        ),
+        inviteTtlMs: numberValue(
+          values,
+          recoveryOverrides,
+          "REBASE_RECOVERY_INVITE_TTL_MS",
+          "inviteTtlMs",
+          DEFAULTS.recoveryInviteTtlMs,
+        ),
+      },
     },
     webhooks: {},
   };
@@ -340,10 +381,10 @@ function assertConnectionConfiguration(config, { requireContext = true } = {}) {
   const surreal = config?.surreal || {};
   const missing = [];
   if (!surreal.endpoint) missing.push("SURREAL_ENDPOINT");
-  if (!surreal.username) missing.push("SURREAL_USER");
-  if (!surreal.password) missing.push("SURREAL_PASS");
+  if (!surreal.username) missing.push("SURREAL_USERNAME");
+  if (!surreal.password) missing.push("SURREAL_PASSWORD");
   if (requireContext && !surreal.defaultContext && !surreal.contexts?.length) {
-    missing.push("SURREAL_NAMESPACE and SURREAL_DATABASE (or REBASE_CONTEXTS)");
+    missing.push("SURREAL_NAMESPACE and SURREAL_DATABASE (or REBASE_ALLOWED_CONTEXTS)");
   }
   if (missing.length)
     throw new Error(`Missing configuration: ${missing.join(", ")}`);

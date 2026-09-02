@@ -48,7 +48,7 @@ function normalizeImplementation(implementation, label, contracts = new Map()) {
       optionalInputs: contract.optionalInputs,
       patchFields: contract.patchFields,
       references: contract.references,
-      providers: contract.providers,
+      adapters: contract.adapters,
       mutableInputs: contract.mutableInputs,
       schedule: contract.schedule,
     });

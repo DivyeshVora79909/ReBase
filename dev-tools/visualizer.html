@@ -168,12 +168,18 @@
           ws.send(JSON.stringify({ id, method, params }));
         });
 
-      const query = async (sql) => {
-        const res = await rpc("query", [sql]);
+      const finalQueryResult = (response) => {
+        const statements = Array.isArray(response) ? response : [];
+        const last = statements.at(-1);
+        if (!last || typeof last !== "object") return [];
+        if (last.status === "ERR") throw new Error(last.detail || "Visualizer query failed");
+        return Array.isArray(last.result) ? last.result : (last.result ?? []);
+      };
+
+      const query = async (sql, variables = {}) => {
+        const res = await rpc("query", [sql, variables]);
         if (res.error) throw new Error(res.error.message);
-        const last = res.result.at(-1);
-        if (last.status === "ERR") throw new Error(last.detail);
-        return last.result;
+        return finalQueryResult(res.result);
       };
       const hashColor = (str) => {
         let hash = 0;
@@ -187,12 +193,10 @@
 
         try {
           const q = `
-                LET $root = ${visualizerConfig.root};
-                LET $nodes = array::distinct([$root, $root.dominates].flatten());
-                LET $rows = array::flatten([
-                    (SELECT id, parents, name FROM user WHERE id IN $nodes),
-                    (SELECT id, parents, name FROM groups WHERE id IN $nodes)
-                ]);
+                LET $groups = SELECT id, parents, name, 'groups' AS kind FROM groups;
+                LET $users = SELECT id, parents, name, 'user' AS kind FROM user LIMIT 100;
+                LET $rows = array::flatten([$groups, $users]);
+                LET $nodes = $rows.map(|$row| $row.id);
                 LET $edges = array::flatten(
                     $rows.map(|$row| {
                         ($row.parents ?? []).filter(|$p| $p IN $nodes).map(|$p| {
@@ -204,7 +208,7 @@
                     nodes: $rows.map(|$row| { 
                         data: { 
                             id: <string>$row.id, 
-                            table: record::tb($row.id),
+                            table: $row.kind,
                             label: <string>$row.id + "\\n(" + ($row.name ?? "unnamed") + ")" 
                         } 
                     }),
@@ -333,7 +337,7 @@
             h.innerText = node.id();
             b.innerHTML = `<span class="loading loading-spinner text-primary block mx-auto mt-10"></span>`;
 
-            query(`SELECT * FROM ${node.id()}`).then((data) => {
+            query("SELECT * FROM type::record($id)", { id: node.id() }).then((data) => {
               b.innerHTML = "";
               if (data[0])
                 b.appendChild(

@@ -262,13 +262,13 @@ function createBullMqPort(options = {}) {
       }));
       return {
         ok: pong === "PONG" && !closed,
-        provider: "bullmq",
+        driver: "bullmq",
         lanes,
         deadLetters: { ok: true, counts: deadLetterCounts },
         prefix,
       };
     } catch (error) {
-      return { ok: false, provider: "bullmq", error: error.message, lanes: {}, deadLetters: { ok: false }, prefix };
+      return { ok: false, driver: "bullmq", error: error.message, lanes: {}, deadLetters: { ok: false }, prefix };
     }
   }
 
@@ -282,7 +282,7 @@ function createBullMqPort(options = {}) {
   }
 
   return {
-    provider: "bullmq",
+    driver: "bullmq",
     prefix,
     publish,
     start,

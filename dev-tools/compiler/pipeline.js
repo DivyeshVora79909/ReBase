@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { analyzeSchema } = require("../../src/analyze");
 const { generateAuditEvents, generateChangeLogEvents } = require("../../src/generators/audit");
+const { generateOAuthAccess } = require("../../src/generators/access");
 const { generateIndexes } = require("../../src/generators/indexes");
 const { generateReferenceAssertions } = require("../../src/generators/references");
 const { generateCascades, generateReaderCycleGuards, generateViews } = require("../../src/generators/reactivity");
@@ -68,6 +69,7 @@ function generateBundle(materials, options = {}) {
     ["context", contextStatement(context)],
     ["raw schema", projectSchema],
     ["raw framework", frameworkSource],
+    ["oauth access", generateOAuthAccess(principals, generatedOptions)],
     ["record reference assertions", generateReferenceAssertions(projectOnlySchema, context)],
     ["raw views", viewsSource],
     ["ownership, RLS, and flags", generateSecurity(schema, generatedOptions, analysis.systemTables)],
@@ -97,7 +99,7 @@ function generateBundle(materials, options = {}) {
     views,
     indexes,
     seedSource,
-    contracts: generateRuntimeContracts(schema),
+    contracts: generateRuntimeContracts(schema, principals),
   };
 }
 

@@ -11,11 +11,13 @@ function receipt(context) {
 module.exports = {
   table: "razorpay_order",
   on: {
-    async CREATE({ context, record, load, providers, routes, signal }) {
+    async CREATE({ context, record, load, adapters, routes, signal }) {
       const config = await load(record.config);
       const providerReceipt = receipt(context);
       const route = routes.seal("razorpay", { config: record.config });
-      const order = await providers.payment.forResource(config).createOrder({
+      const order = await adapters.createRazorpayOrder({
+        keyId: config.key_id,
+        keySecret: config.key_secret,
         amount: record.amount_paise,
         currency: record.currency,
         receipt: providerReceipt,

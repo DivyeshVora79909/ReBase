@@ -9,14 +9,16 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { serve } = require("@hono/node-server");
 const { Surreal } = require("surrealdb");
+const { createAccountService } = require("../gateway/accounts");
 const { createRuntimeApp } = require("../gateway/app");
 const { connectDatabase } = require("../gateway/connection");
 const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
 const { loadTableHandlers } = require("../gateway/handlers");
 const { createWebhookRouteCodec } = require("../gateway/webhook-routes");
 const { loadWebhookHandlers } = require("../gateway/webhooks");
-const { createLocalProviders } = require("../gateway/providers/local");
-const { createRealProviders } = require("../gateway/providers/real");
+const { createWebhookAdapters } = require("../gateway/providers");
+const { createMockOAuthAdapter, createOAuthVerifier } = require("../gateway/oauth");
+const { createMemoryRateLimiter, createRedisRateLimiter } = require("../gateway/rate-limit");
 const { createBullMqPort } = require("../gateway/queues/bullmq");
 const { createRuntime } = require("../gateway/runtime");
 const { createTableStore } = require("../gateway/store");
@@ -122,69 +124,112 @@ async function createId(db, table, assignments, variables = {}) {
   return recordId(await createAndReload(db, table, assignments, variables));
 }
 
-async function realProviderMappingProbe() {
-  const requests = [];
-  const missingBucket = createRealProviders({ fetch: async () => new Response("{}", { status: 200 }) });
-  const missingBucketHealth = await missingBucket.health({ required: ["storage"] });
-  assert.equal(missingBucketHealth.ok, false);
-  assert.deepEqual(missingBucketHealth.missingConfiguration, ["REBASE_STORAGE_BUCKET"]);
+async function accountSignin(endpoint, namespace, database, identifier, password, access = "account", variables = {}) {
+  const client = new Surreal();
+  await client.connect(endpoint);
+  try {
+    const token = await client.signin({
+      namespace,
+      database,
+      access,
+      variables: access === "account"
+        ? { identifier, password, ...variables }
+        : variables,
+    });
+    return { client, token };
+  } catch (error) {
+    if (process.env.REBASE_RUNTIME_PROBE_DEBUG) {
+      console.error("record signin failed", { access, variableNames: Object.keys(access === "account" ? { identifier, password, ...variables } : variables) });
+    }
+    await client.close();
+    throw error;
+  }
+}
+
+async function accountSignup(endpoint, namespace, database, invite, password) {
+  const client = new Surreal();
+  await client.connect(endpoint);
+  try {
+    return await client.signup({
+      namespace,
+      database,
+      access: "account",
+      variables: { invite, password },
+    });
+  } finally {
+    await client.close();
+  }
+}
+
+async function adapterScopeProbe() {
+  const contract = {
+    process: "sync",
+    events: ["CREATE"],
+    timeoutMs: 1000,
+    inputFields: ["payload"],
+    optionalInputs: [],
+    patchFields: [],
+    references: [],
+    adapters: ["sendBrevoEmail"],
+  };
+  let receivedAdapters;
+  const handler = {
+    process: "sync",
+    timeoutMs: 1000,
+    contract,
+    on: {
+      async CREATE(input) {
+        receivedAdapters = Object.keys(input.adapters);
+        return { outcome: "success", patch: {} };
+      },
+    },
+  };
+  const handlers = {
+    contracts: new Map([["scope_probe", contract]]),
+    tables: ["scope_probe"],
+    get(table) { return table === "scope_probe" ? handler : null; },
+  };
+  const stores = {
+    async forContext() { return { async load() { return null; } }; },
+  };
+  const options = { allowedContexts: [{ namespace: "scope", database: "probe" }] };
+  const snapshot = { id: "scope_probe:one", payload: "value" };
+  const runtime = createRuntime({
+    handlers,
+    stores,
+    contracts: handlers.contracts,
+    adapters: { sendBrevoEmail: async () => {}, deleteS3Object: async () => {} },
+    options,
+  });
+  assert.equal((await runtime.sync({
+    namespace: "scope", database: "probe", id: snapshot.id,
+    event: "CREATE", before: null, after: snapshot,
+  })).outcome, "success");
+  assert.deepEqual(receivedAdapters, ["sendBrevoEmail"]);
+  const missing = createRuntime({
+    handlers, stores, contracts: handlers.contracts, adapters: {}, options,
+  });
   await assert.rejects(
-    missingBucket.storage.createAccessGrant({ config: {}, objectKey: "probe.txt", expiresIn: 60 }),
-    /REBASE_STORAGE_BUCKET/,
+    missing.sync({
+      namespace: "scope", database: "probe", id: snapshot.id,
+      event: "CREATE", before: null, after: snapshot,
+    }),
+    (error) => error.code === "ADAPTER_NOT_FOUND",
   );
-  const providers = createRealProviders({
-    storageBucket: "shared-probe",
-    fetch: async (url, options) => {
-      requests.push({ url, options });
-      if (String(url).endsWith("/orders")) {
-        return new Response(JSON.stringify({
-          id: "order_probe", amount: 100, amount_paid: 0, amount_due: 100,
-          attempts: 0, currency: "INR", receipt: "rb_probe", status: "created", created_at: 1_700_000_000,
-        }), { status: 200 });
-      }
-      return new Response(JSON.stringify({ messageId: "probe-message" }), { status: 201 });
-    },
-  });
-  const email = await providers.email.forTable("email_brevo_config").sendMessage({
-    config: { api_key: "database-api-key", from_email: "from@example.com", from_name: "Probe" },
-    message: { to: ["to@example.com"], subject: "Probe", text: "Body" },
-  });
-  assert.equal(requests[0].options.headers["api-key"], "database-api-key");
-  assert.deepEqual(email.accepted, ["to@example.com"]);
-  const grant = await providers.storage.createAccessGrant({
-    config: {
-      provider: "s3-compatible",
-      bucket: "ignored-tenant-bucket",
-      access_key_id: "database-access-key",
-      secret_access_key: "database-secret",
-      endpoint: "https://storage.example.com",
-      region: "probe-1",
-    },
-    objectKey: "probe.txt",
-    expiresIn: 60,
-  });
-  assert.equal(grant.provider, "s3-compatible");
-  assert.match(grant.accessUrl, /shared-probe\/probe\.txt/);
-  const upload = await providers.storage.createUploadGrant({
-    config: {
-      provider: "s3-compatible", access_key_id: "database-access-key",
-      secret_access_key: "database-secret", endpoint: "https://storage.example.com", region: "probe-1",
-    },
-    objectKey: "probe-upload", contentType: "text/plain", contentLength: 0,
-    expiresIn: 60, id: "test_attachment:probe",
-  });
-  assert.match(upload.uploadUrl, /shared-probe\/probe-upload/);
-  const order = await providers.payment.forResource({ key_id: "database-key", key_secret: "database-secret" }).createOrder({
-    amount: 100, currency: "INR", receipt: "rb_probe", notes: {},
-  });
-  assert.equal(requests.at(-1).options.headers.authorization, `Basic ${Buffer.from("database-key:database-secret").toString("base64")}`);
-  assert.equal(order.id, "order_probe");
 }
 
 async function main() {
-  await realProviderMappingProbe();
+  await adapterScopeProbe();
   const runtimePort = await freePort();
   const redis = await startRedis();
+  const redisRateLimiter = createRedisRateLimiter({
+    url: redis.url,
+    prefix: `rebase-rate-probe-${Date.now().toString(36)}`,
+  });
+  assert.equal((await redisRateLimiter.consume("account", { limit: 1, windowMs: 60000 })).allowed, true);
+  assert.equal((await redisRateLimiter.consume("account", { limit: 1, windowMs: 60000 })).allowed, false);
+  assert.equal((await redisRateLimiter.health()).ok, true);
+  await redisRateLimiter.close();
   const state = await startDatabase(runtimePort);
   const secret = "runtime-probe-secret";
   const materials = loadMaterials({ groups: [
@@ -205,54 +250,88 @@ async function main() {
     onError: (error) => queueErrors.push(error.message),
     onFailed: ({ lane, error }) => queueErrors.push(`${lane}:${error.message}`),
   });
-  const providers = createLocalProviders();
-  const originalProvider = providers.email.forResource.bind(providers.email);
   let emailCalls = 0;
   let failNextEmail = false;
   let failPermanently = false;
   let razorpayRoute;
   let storageDeletes = 0;
   let failStorageDelete = false;
-  providers.email.forResource = (resource) => {
-    const provider = originalProvider(resource);
-    return {
-      ...provider,
-      async sendMessage(input) {
-        emailCalls += 1;
-        if (failPermanently) {
-          throw Object.assign(new Error("Permanent provider failure"), { code: "PROVIDER_REJECTED", status: 400 });
-        }
-        if (failNextEmail) {
-          failNextEmail = false;
-          throw Object.assign(new Error("Temporary provider failure"), { code: "PROVIDER_TEMPORARY", retryable: true });
-        }
-        return provider.sendMessage(input);
-      },
-    };
-  };
-  const originalPayment = providers.payment.forResource.bind(providers.payment);
-  providers.payment.forResource = (resource) => {
-    const provider = originalPayment(resource);
-    return {
-      ...provider,
-      async createOrder(input) {
-        razorpayRoute = input.notes?.rebase_route;
-        return provider.createOrder(input);
-      },
-    };
-  };
-  const originalDeleteObject = providers.storage.deleteObject.bind(providers.storage);
-  providers.storage.deleteObject = async (input) => {
-    storageDeletes += 1;
-    if (failStorageDelete) throw Object.assign(new Error("Storage delete failed"), { code: "STORAGE_DELETE_FAILED" });
-    return originalDeleteObject(input);
-  };
+  const adapters = Object.freeze({
+    async sendBrevoEmail(input) {
+      emailCalls += 1;
+      if (failPermanently) {
+        throw Object.assign(new Error("Permanent adapter failure"), { code: "ADAPTER_REJECTED", status: 400 });
+      }
+      if (failNextEmail) {
+        failNextEmail = false;
+        throw Object.assign(new Error("Temporary adapter failure"), { code: "ADAPTER_TEMPORARY", retryable: true });
+      }
+      return {
+        provider: "brevo",
+        messageId: crypto.createHash("sha256").update(String(input.idempotencyKey)).digest("hex").slice(0, 24),
+        accepted: input.to,
+      };
+    },
+    async createS3UploadGrant(input) {
+      return {
+        provider: input.provider,
+        uploadUrl: `https://storage.local/upload/${encodeURIComponent(input.objectKey)}`,
+        headers: { "content-type": input.contentType, "content-length": String(input.contentLength) },
+        expiresAt: new Date(Date.now() + input.expiresIn * 1000).toISOString(),
+      };
+    },
+    async createS3AccessGrant(input) {
+      return {
+        provider: input.provider,
+        accessUrl: `https://storage.local/access/${encodeURIComponent(input.objectKey)}`,
+        expiresAt: new Date(Date.now() + input.expiresIn * 1000).toISOString(),
+      };
+    },
+    async deleteS3Object() {
+      storageDeletes += 1;
+      if (failStorageDelete) throw Object.assign(new Error("Storage delete failed"), { code: "STORAGE_DELETE_FAILED" });
+      return { deleted: true };
+    },
+    async createRazorpayOrder(input) {
+      razorpayRoute = input.notes?.rebase_route;
+      return {
+        provider: "razorpay",
+        id: `order_${crypto.createHash("sha256").update(input.receipt).digest("hex").slice(0, 18)}`,
+        amount: input.amount,
+        amountPaid: 0,
+        amountDue: input.amount,
+        attempts: 0,
+        currency: input.currency,
+        receipt: input.receipt,
+        status: "created",
+        createdAt: new Date().toISOString(),
+      };
+    },
+  });
+  const webhookAdapters = createWebhookAdapters();
   const store = createTableStore({ db: state.db });
   const stores = fixedStoreDirectory(store, state);
+  const platformMessages = [];
+  const recoveryRateLimiter = createMemoryRateLimiter();
+  const accounts = createAccountService({
+    stores,
+    principals: generated.contracts.principals,
+    allowedContexts: [{ namespace: state.namespace, database: state.database }],
+    async sendEmail(message) { platformMessages.push(structuredClone(message)); return { id: `mail-${platformMessages.length}` }; },
+    rateLimiter: recoveryRateLimiter,
+    rateLimits: { windowMs: 60000, ip: 20, identifier: 2 },
+  });
+  const oauth = createOAuthVerifier({
+    mock: createMockOAuthAdapter({
+      "existing-user-token": "oauth-client@example.com",
+      "missing-user-token": "oauth-missing@example.com",
+    }),
+  });
   const runtime = createRuntime({
     handlers,
     webhooks,
-    providers,
+    adapters,
+    webhookAdapters,
     queue,
     stores,
     contracts,
@@ -268,7 +347,7 @@ async function main() {
   const stops = [];
   for (const lane of ["task", "schedule", "webhook"]) stops.push(await queue.start(lane, (delivery) => runtime.consume(lane, delivery)));
   const app = createRuntimeApp({
-    runtime, handlers, webhooks, providers, queue, wakeSecret: secret,
+    runtime, handlers, webhooks, adapters, webhookAdapters, accounts, oauth, queue, runtimeSecret: secret,
     defaultContext: { namespace: state.namespace, database: state.database },
     allowBearer: true,
   });
@@ -329,9 +408,132 @@ async function main() {
       ];
       CREATE user:runtime_client SET name = 'Runtime Client', email = 'runtime-client@example.com',
         password = crypto::argon2::generate('runtime-password'), parents = [groups:runtime_clients], login_access = true;
+      CREATE user:recovery_client SET name = 'Recovery Client', email = 'recovery-client@example.com', username = 'recovery_user',
+        password = crypto::argon2::generate('recovery-password'), parents = [groups:runtime_clients], login_access = true;
+      CREATE user:oauth_client SET name = 'OAuth Client', email = 'oauth-client@example.com',
+        parents = [groups:runtime_clients], login_access = true;
       CREATE email_brevo_config:runtime_client SET owned_by = groups:root, label = 'Client Probe', visibility = true,
         from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key';
     `);
+
+    const recoveryRequest = {
+      namespace: state.namespace,
+      database: state.database,
+      identifier: "RECOVERY_USER",
+    };
+    const recoveryResponse = await app.request("http://runtime/anonymous/accounts/recovery", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+      body: JSON.stringify(recoveryRequest),
+    });
+    assert.equal(recoveryResponse.status, 202);
+    const genericRecoveryBody = await recoveryResponse.json();
+    assert.deepEqual(genericRecoveryBody, { ok: true });
+    assert.equal(platformMessages.length, 1);
+    assert.deepEqual(platformMessages[0].to, ["recovery-client@example.com"]);
+    const recoveryToken = platformMessages[0].text.match(/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i)?.[0];
+    assert(recoveryToken);
+    assert.equal(
+      queryResult(await state.db.query("RETURN <string>user:recovery_client.invite_token;")),
+      recoveryToken,
+    );
+    const stillValid = await accountSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      "recovery-client@example.com",
+      "recovery-password",
+    );
+    await stillValid.client.close();
+    await accountSignup(state.endpoint, state.namespace, state.database, recoveryToken, "recovered-password");
+    await assert.rejects(
+      accountSignin(state.endpoint, state.namespace, state.database, "recovery-client@example.com", "recovery-password"),
+      /signin|authentication|access|record/i,
+    );
+    const recovered = await accountSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      "recovery_user",
+      "recovered-password",
+    );
+    await recovered.client.close();
+
+    const missingRecovery = await app.request("http://runtime/anonymous/accounts/recovery", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+      body: JSON.stringify({ ...recoveryRequest, identifier: "missing-user@example.com" }),
+    });
+    assert.equal(missingRecovery.status, 202);
+    assert.deepEqual(await missingRecovery.json(), genericRecoveryBody);
+    assert.equal(platformMessages.length, 1);
+    const disallowedRecovery = await app.request("http://runtime/anonymous/accounts/recovery", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+      body: JSON.stringify({ ...recoveryRequest, namespace: "outside" }),
+    });
+    assert.equal(disallowedRecovery.status, 202);
+    assert.deepEqual(await disallowedRecovery.json(), genericRecoveryBody);
+    assert.equal(platformMessages.length, 1);
+    const rateLimitedRequest = JSON.stringify({ ...recoveryRequest, identifier: "rate-limit@example.com" });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      assert.equal((await app.request("http://runtime/anonymous/accounts/recovery", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+        body: rateLimitedRequest,
+      })).status, 202);
+    }
+    const rateLimited = await app.request("http://runtime/anonymous/accounts/recovery", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": "192.0.2.10" },
+      body: rateLimitedRequest,
+    });
+    assert.equal(rateLimited.status, 429);
+    assert(Number(rateLimited.headers.get("retry-after")) >= 1);
+
+    assert.throws(() => createOAuthVerifier({ invalid: {} }), /must be a function/);
+    assert.deepEqual(await oauth.verify("unknown", "token"), { verified: false });
+    assert.deepEqual(await oauth.verify("mock", ""), { verified: false });
+    const oauthBody = JSON.stringify({ provider: "mock", token: "existing-user-token" });
+    assert.equal((await app.request("http://runtime/internal/oauth", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: oauthBody,
+    })).status, 401);
+    const verifiedOAuth = await app.request("http://runtime/internal/oauth", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${secret}` },
+      body: oauthBody,
+    });
+    assert.deepEqual(await verifiedOAuth.json(), { verified: true, email: "oauth-client@example.com" });
+    const oauthLogin = await accountSignin(
+      state.endpoint,
+      state.namespace,
+      state.database,
+      null,
+      null,
+      "oauth",
+      { provider: "mock", oauth_token: "existing-user-token" },
+    );
+    assert.equal(String(queryResult(await oauthLogin.client.query("RETURN $auth.id;"))), "user:oauth_client");
+    await oauthLogin.client.close();
+    const userCountBeforeFailedOAuth = queryResult(await state.db.query("RETURN (SELECT VALUE id FROM user).len();"));
+    await assert.rejects(
+      accountSignin(
+        state.endpoint,
+        state.namespace,
+        state.database,
+        null,
+        null,
+        "oauth",
+        { provider: "mock", oauth_token: "missing-user-token" },
+      ),
+      /signin|authentication|access|record/i,
+    );
+    assert.equal(
+      queryResult(await state.db.query("RETURN (SELECT VALUE id FROM user).len();")),
+      userCountBeforeFailedOAuth,
+    );
 
     const target = await createAndReload(state.db, "test_primitive", `
       owned_by = groups:root, a_string = 'Attachment target', a_decimal = 0dec
@@ -406,7 +608,7 @@ async function main() {
     const automaticFinished = await waitFor(async () => {
       const row = await store.load(automaticId);
       automaticLast = row;
-      if (process.env.REBASE_DEBUG && row) console.error("automatic", row);
+      if (process.env.REBASE_RUNTIME_PROBE_DEBUG && row) console.error("automatic", row);
       return row?.rebase_outcome === "succeeded" ? row : null;
     }, () => `automatic async effect did not finish (${JSON.stringify({ automaticLast, wakeCalls, queueErrors })})`);
     assert.equal(automaticFinished.rebase_status, "succeeded");
@@ -506,7 +708,7 @@ async function main() {
     });
     const ambiguousRuntime = createRuntime({
       handlers: ambiguousHandlers,
-      providers,
+      adapters,
       queue: { async publish() { return { jobId: "probe", duplicate: false }; } },
       stores,
       contracts,
@@ -588,9 +790,10 @@ async function main() {
     const productionAuthApp = createRuntimeApp({
       runtime,
       handlers,
-      providers,
+      adapters,
+      webhookAdapters,
       queue,
-      wakeSecret: secret,
+      runtimeSecret: secret,
       defaultContext: { namespace: state.namespace, database: state.database },
       allowBearer: false,
     });
@@ -676,7 +879,7 @@ async function main() {
     await waitFor(async () => (await store.load(scheduleId))?.rebase_schedule_next_at, "schedule did not initialize");
     await state.db.query(`UPDATE ${scheduleId} SET rebase_schedule_next_at = time::now();`);
     const directSchedule = await runtime.schedule({ namespace: state.namespace, database: state.database, id: scheduleId });
-    if (process.env.REBASE_DEBUG) console.error("direct schedule", directSchedule);
+    if (process.env.REBASE_RUNTIME_PROBE_DEBUG) console.error("direct schedule", directSchedule);
     let scheduleLast;
     const scheduled = await waitFor(async () => {
       const row = await store.load(scheduleId);
@@ -807,14 +1010,45 @@ async function main() {
 
     const ready = await app.request("http://runtime/readyz");
     assert.equal(ready.status, 200);
-    const missingWebhookAdapterProviders = { ...providers, webhooks: {} };
+    const missingAdapterApp = createRuntimeApp({
+      runtime,
+      handlers,
+      webhooks,
+      adapters: { ...adapters, sendBrevoEmail: undefined },
+      webhookAdapters,
+      queue,
+      runtimeSecret: secret,
+      defaultContext: { namespace: state.namespace, database: state.database },
+      readinessContexts: [{ namespace: state.namespace, database: state.database }],
+      allowBearer: true,
+    });
+    const missingAdapterReadiness = await missingAdapterApp.request("http://runtime/readyz");
+    assert.equal(missingAdapterReadiness.status, 503);
+    assert.deepEqual((await missingAdapterReadiness.json()).adapters.missing, ["sendBrevoEmail"]);
+    const missingBucketApp = createRuntimeApp({
+      runtime,
+      handlers,
+      webhooks,
+      adapters,
+      webhookAdapters,
+      adapterConfiguration: { requiresStorageBucket: true },
+      queue,
+      runtimeSecret: secret,
+      defaultContext: { namespace: state.namespace, database: state.database },
+      readinessContexts: [{ namespace: state.namespace, database: state.database }],
+      allowBearer: true,
+    });
+    const missingBucketReadiness = await missingBucketApp.request("http://runtime/readyz");
+    assert.equal(missingBucketReadiness.status, 503);
+    assert.deepEqual((await missingBucketReadiness.json()).adapters.missingConfiguration, ["REBASE_STORAGE_BUCKET"]);
     const missingWebhookRoutingApp = createRuntimeApp({
       runtime,
       handlers,
       webhooks,
-      providers: missingWebhookAdapterProviders,
+      adapters,
+      webhookAdapters: {},
       queue,
-      wakeSecret: secret,
+      runtimeSecret: secret,
       defaultContext: { namespace: state.namespace, database: state.database },
       readinessContexts: [{ namespace: state.namespace, database: state.database }],
       allowBearer: true,
@@ -827,15 +1061,16 @@ async function main() {
     const childEnvironment = {
       ...process.env,
       SURREAL_ENDPOINT: state.endpoint,
-      SURREAL_USER: "root",
-      SURREAL_PASS: "root",
+      SURREAL_USERNAME: "root",
+      SURREAL_PASSWORD: "root",
       SURREAL_NAMESPACE: state.namespace,
       SURREAL_DATABASE: state.database,
-      REBASE_WAKE_SECRET: secret,
-      REBASE_REDIS_URL: redis.url,
+      REBASE_RUNTIME_SECRET: secret,
+      REBASE_QUEUE_REDIS_URL: redis.url,
       REBASE_QUEUE_PREFIX: `rebase-server-probe-${Date.now().toString(36)}`,
-      REBASE_PORT: String(childPort),
-      REBASE_BODY_LIMIT_BYTES: "2048",
+      REBASE_STORAGE_BUCKET: "runtime-probe-bucket",
+      REBASE_HTTP_PORT: String(childPort),
+      REBASE_HTTP_BODY_LIMIT_BYTES: "2048",
     };
     const runtimeProfile = path.join(redis.directory, "runtime.env");
     fs.writeFileSync(runtimeProfile, Object.entries(childEnvironment)
@@ -863,29 +1098,32 @@ async function main() {
     });
     assert.notEqual(await waitForExit(conflicting), 0);
 
-    const missingSecretEnvironment = { ...childEnvironment, REBASE_PORT: String(await freePort()) };
-    delete missingSecretEnvironment.REBASE_WAKE_SECRET;
+    const missingSecretEnvironment = { ...childEnvironment, REBASE_HTTP_PORT: String(await freePort()) };
+    delete missingSecretEnvironment.REBASE_RUNTIME_SECRET;
     const missingSecret = spawn(process.execPath, ["gateway/server.js"], {
       cwd: path.resolve(__dirname, ".."), env: missingSecretEnvironment, stdio: ["ignore", "ignore", "ignore"],
     });
     assert.notEqual(await waitForExit(missingSecret), 0);
 
-    const productionLocal = spawn(process.execPath, ["gateway/server.js"], {
+    const productionPort = await freePort();
+    const productionServer = spawn(process.execPath, ["gateway/server.js"], {
       cwd: path.resolve(__dirname, ".."),
-      env: { ...childEnvironment, NODE_ENV: "production", REBASE_PORT: String(await freePort()), REBASE_QUEUE_PREFIX: `${childEnvironment.REBASE_QUEUE_PREFIX}-production` },
+      env: { ...childEnvironment, NODE_ENV: "production", REBASE_HTTP_PORT: String(productionPort), REBASE_QUEUE_PREFIX: `${childEnvironment.REBASE_QUEUE_PREFIX}-production` },
       stdio: ["ignore", "ignore", "ignore"],
     });
-    assert.notEqual(await waitForExit(productionLocal), 0);
+    await waitForPort(productionPort, productionServer, "production ReBase server");
+    assert.equal((await fetch(`http://127.0.0.1:${productionPort}/healthz`)).status, 200);
+    await stopChild(productionServer);
 
     const unavailableRedis = spawn(process.execPath, ["gateway/server.js"], {
       cwd: path.resolve(__dirname, ".."),
       env: {
         ...childEnvironment,
-        REBASE_PORT: String(await freePort()),
-        REBASE_REDIS_URL: `redis://127.0.0.1:${await freePort()}`,
+        REBASE_HTTP_PORT: String(await freePort()),
+        REBASE_QUEUE_REDIS_URL: `redis://127.0.0.1:${await freePort()}`,
         REBASE_QUEUE_PREFIX: `${childEnvironment.REBASE_QUEUE_PREFIX}-unavailable`,
         REBASE_QUEUE_STARTUP_TIMEOUT_MS: "300",
-        REBASE_REDIS_CONNECT_TIMEOUT_MS: "200",
+        REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS: "200",
       },
       stdio: ["ignore", "ignore", "ignore"],
     });
@@ -894,11 +1132,12 @@ async function main() {
     runtimeChild.kill("SIGTERM");
     assert.equal(await waitForExit(runtimeChild), 0);
     runtimeChild = null;
-    console.log("runtime: BullMQ lanes, lifecycle fencing, sync/async, retry, cancellation, schedule, webhook, readiness, and context races passed");
+    console.log("runtime: queues, lifecycle fencing, recovery, OAuth signin, effects, schedules, webhooks, readiness, and context races passed");
   } finally {
     await stopChild(runtimeChild);
     await new Promise((resolve) => httpServer.close(resolve));
     await Promise.all(stops.map((stop) => stop?.()));
+    await recoveryRateLimiter.close();
     await queue.close();
     await state.db.close().catch(() => {});
     await stopChild(state.child);
@@ -909,7 +1148,7 @@ async function main() {
 
 if (require.main === module) main().then(
   () => process.exit(0),
-  (error) => { console.error(`runtime: FAIL: ${process.env.REBASE_DEBUG ? error.stack : error.message}`); process.exit(1); },
+  (error) => { console.error(`runtime: FAIL: ${process.env.REBASE_RUNTIME_PROBE_DEBUG ? error.stack : error.message}`); process.exit(1); },
 );
 
 module.exports = { main };

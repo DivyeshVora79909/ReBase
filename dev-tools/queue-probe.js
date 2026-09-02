@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const assert = require("node:assert/strict");
+const { createQueue } = require("../gateway/queues");
 const { createSqsQueue } = require("../gateway/queues/sqs");
 
 function fakeSqs() {
@@ -81,7 +82,11 @@ async function main() {
   await port.schedule("tenant/app/schedule", locator, new Date(Date.now() + 60_000));
   assert(client.commands.some((command) => command.name === "SendMessageCommand"
     && command.input.QueueUrl === "schedule-url" && command.input.DelaySeconds > 0));
-  assert.equal((await port.health()).ok, true);
+  const health = await port.health();
+  assert.equal(health.ok, true);
+  assert.equal(health.driver, "sqs");
+  assert.equal(port.driver, "sqs");
+  assert.throws(() => createQueue({ driver: "unknown" }), /Unsupported queue driver/);
   await port.close();
   console.log("queues: SQS lane port, delay, retry, dead-letter, invalid locator, schedule, and health passed");
 }

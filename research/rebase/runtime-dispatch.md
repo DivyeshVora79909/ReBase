@@ -56,8 +56,17 @@ Current conceptual shape:
 module.exports = {
   table: "send_brevo_email",
   on: {
-    async CREATE({ record, load, providers, signal, trigger }) {
-      return { outcome: "success", patch: { provider_reference: "..." } };
+    async CREATE({ record, load, adapters, signal, trigger }) {
+      const config = await load(record.config);
+      const result = await adapters.sendBrevoEmail({
+        apiKey: config.api_key,
+        fromEmail: config.from_email,
+        fromName: config.from_name,
+        to: record.to,
+        subject: record.subject,
+        signal,
+      });
+      return { outcome: "success", patch: { provider_reference: result.messageId } };
     },
   },
 };
@@ -65,8 +74,8 @@ module.exports = {
 
 Invariants:
 
-- input is already schema-valid, but the handler still validates provider/domain
-  facts it alone understands;
+- input is already schema-valid; the handler maps record fields to the external
+  API and handles only external facts that SurrealDB cannot establish;
 - the handler does not trust expanded client or queue objects;
 - only declared root references can be loaded;
 - required opaque credential fields on configuration rows are available only
@@ -87,8 +96,16 @@ missing or unauthorized records, and reauthorize at execution time when access
 revocation is intended to stop pending work. Provider credentials remain in
 typed configuration records rather than arbitrary scalar command arguments.
 
-The handler may freely transform database shape into SDK input. ReBase does not
-require the SurrealQL schema to mirror a provider SDK object.
+The handler may freely transform database shape into flat named-adapter input.
+ReBase does not require the SurrealQL schema to mirror an external SDK object.
+The compiler emits exact adapter names from repeatable `@rebase-adapter` markers;
+the runtime freezes a per-handler scope and rejects missing declared functions.
+
+Provider-specific trial behavior is recorded separately from the handler
+contract. In particular, a Twilio trial can reject custom SMS text even when
+credentials and routing are valid; see
+[`twilio-trial-sms.md`](./twilio-trial-sms.md). Such provider policy belongs in
+the adapter result/error mapping, not in generic schema or runtime dispatch.
 
 ## Invocation adapters
 
@@ -122,7 +139,7 @@ SurrealDB ASYNC event after commit
 
 The envelope contains no secrets, expanded references, receipt state, or client
 payload. BullMQ/Redis owns local delivery retry, stalls, delay, and dead-letter
-transport; other providers implement the same lane-aware port.
+transport; other queue drivers implement the same lane-aware port.
 
 ### Provider webhook
 

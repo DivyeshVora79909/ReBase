@@ -16,6 +16,14 @@ DEFINE TABLE OVERWRITE user SCHEMAFULL PERMISSIONS
         IF !string::is_email($clean_email) { THROW "VALIDATION_ERR: Invalid email"; };
         RETURN string::lowercase($clean_email);
     } COMMENT '@rebase-change-log';
+    DEFINE FIELD OVERWRITE username ON user TYPE option<string> DEFAULT NONE VALUE {
+        IF $value = NONE { RETURN NONE; };
+        LET $clean_username = string::lowercase(string::trim($value));
+        IF !string::matches($clean_username, /^[a-z0-9][a-z0-9_.-]{8,31}$/) {
+            THROW "VALIDATION_ERR: Invalid username";
+        };
+        RETURN $clean_username;
+    } COMMENT '@rebase-change-log';
 
     DEFINE FIELD OVERWRITE login_access ON user TYPE bool DEFAULT true PERMISSIONS FOR update WHERE id != $auth;
     DEFINE FIELD OVERWRITE password ON user TYPE option<string> PERMISSIONS NONE COMMENT '@rebase-audit-redact';
@@ -80,6 +88,8 @@ DEFINE FIELD OVERWRITE dominates ON user TYPE array<record<user | groups>> VALUE
         COMMENT '@rebase-audit-omit';
 
     DEFINE INDEX OVERWRITE idx_user_email ON user COLUMNS email UNIQUE;
+    DEFINE INDEX OVERWRITE idx_user_username ON user COLUMNS username UNIQUE;
+    DEFINE INDEX OVERWRITE idx_user_invite_token ON user COLUMNS invite_token UNIQUE;
 
 -- GROUPS
 DEFINE TABLE OVERWRITE groups SCHEMAFULL PERMISSIONS

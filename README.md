@@ -12,7 +12,7 @@ indexes project decisions separately from measured SurrealDB behavior.
 framework/                    Shared auth, access, and audit SurrealQL
 src/                          Schema parser, analysis, and generators
 dev-tools/compiler/           Stateless compiler stages and CLI
-gateway/                      Hono runtime, providers, and queue adapters
+gateway/                      Hono runtime, named service adapters, and queue drivers
 designs/<name>/schema.surql   Business and effect tables
 designs/<name>/views.surql    Aggregate views
 designs/<name>/data/          Development data JSON Schemas
@@ -68,12 +68,45 @@ Create and update require the matching table permission and an allowed resulting
 
 Strict schema fields, assertions, references, field permissions, and record visibility remain in SurrealDB. The runtime receives either a compiler-selected provisional snapshot or a committed record locator; it is not another client authorization layer.
 
+## Account Access
+
+The compiled principal table supports normalized optional usernames. Account
+signin accepts either an email address or username. Nullable usernames use a
+native unique index; no application-side uniqueness event or identity table is
+required.
+
+`POST /anonymous/accounts/recovery` accepts a configured namespace, database,
+and email/username identifier. It returns the same `202` response for present,
+missing, and disallowed accounts, rate-limits both the client address and a
+hashed context/identifier key, and emails a rotated one-time invite token. The
+existing password remains valid until that token is redeemed, so an anonymous
+request cannot lock the account.
+
+Platform recovery mail is an infrastructure exception to tenant BYOC credentials.
+Enable the direct Resend adapter with `REBASE_PLATFORM_EMAIL_RESEND_API_KEY`;
+tenant email integrations continue to use strict configuration rows. The default sender is
+`ReBase <onboarding@resend.dev>` until a verified domain is configured.
+
+When a runtime URL and wake secret are supplied at compilation, the compiler
+also emits the `oauth` record access method. It calls the authenticated,
+stateless `/internal/oauth` verifier and selects an existing principal by the
+returned verified email. OAuth has `SIGNIN` only: it never creates a user,
+redeems an invite, provisions a namespace/database, or stores provider identity.
+OAuth verifier functions are explicitly allowlisted and injected into the server;
+no OAuth provider is enabled by default. SurrealDB reserves `$token`, so the SDK
+signin boundary uses `variables: { provider, oauth_token }`; the internal HTTP
+verifier receives the normalized `{ provider, token }` body.
+
 ## Table Effects
 
 An effect table declares its adapter on the table and its sync snapshot/output boundaries on fields:
 
 ```surql
-DEFINE TABLE test_attachment SCHEMAFULL COMMENT '@rebase-effect sync';
+DEFINE TABLE test_attachment SCHEMAFULL COMMENT '
+  @rebase-effect sync
+  @rebase-adapter createS3UploadGrant
+  @rebase-adapter createS3AccessGrant
+  @rebase-adapter deleteS3Object';
 DEFINE FIELD file_name ON test_attachment TYPE string READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD access_url ON test_attachment TYPE option<string>
   PERMISSIONS FOR select WHERE true FOR create, update NONE
@@ -86,8 +119,20 @@ Its handler is keyed only by table name:
 module.exports = {
   table: "test_attachment",
   on: {
-    async CREATE({ record, load, providers, signal }) {
-      return { outcome: "success", patch: { access_url: "..." } };
+    async CREATE({ record, load, adapters, signal }) {
+      const config = await load(record.storage_config);
+      const grant = await adapters.createS3UploadGrant({
+        accessKeyId: config.access_key_id,
+        secretAccessKey: config.secret_access_key,
+        endpoint: config.endpoint,
+        region: config.region,
+        objectKey: "...",
+        contentType: record.media_type,
+        contentLength: record.byte_length_limit,
+        expiresIn: record.access_duration,
+        signal,
+      });
+      return { outcome: "success", patch: { access_url: grant.uploadUrl } };
     },
   },
 };
@@ -102,28 +147,32 @@ The test design provides the reference examples:
 
 `npm run probe:runtime` verifies generated sync and async events against a disposable SurrealDB, including duplicate claims, retry recovery, reconciliation, wake authentication, and webhooks.
 
-The runtime uses Redis/BullMQ locally and exposes three transport lanes:
+The runtime selects a queue driver with `REBASE_QUEUE_DRIVER=bullmq|sqs` and
+exposes three transport lanes:
 `task`, `schedule`, and `webhook`. SQS deployments provide
 `REBASE_SQS_TASK_QUEUE_URL`, `REBASE_SQS_SCHEDULE_QUEUE_URL`,
 `REBASE_SQS_WEBHOOK_QUEUE_URL` plus the matching
 `REBASE_SQS_DEAD_LETTER_*` URLs. Queue payloads remain only
 `{ namespace, database, id }`.
 
-Provider selection defaults to `REBASE_PROVIDER=local`; set it to `real` for
-real provider calls, or override it with `startServer({ provider: "real" })`.
-Provider credentials are never read from environment variables. They are
-required, typed fields on the strict configuration rows and hidden from normal
-client reads. The real adapter consumes `email_brevo_config.api_key` directly,
+There is no provider mode. `createAdapters()` statically composes the five named
+functions available in this build, and runtime contracts inject only the
+functions named by each table's repeatable `@rebase-adapter` markers. Missing
+functions fail closed. Tests and embedding code can replace exact names through
+`startServer({ adapters })` or `createAdapters({ overrides })`; arbitrary names
+are rejected.
+
+Tenant credentials are never read from environment variables. They are required,
+typed fields on strict configuration rows and hidden from normal client reads.
+`sendBrevoEmail` consumes `email_brevo_config.api_key` directly,
 maps `file_storage_config.access_key_id`, `secret_access_key`, `endpoint`, and
 `region` to the S3-compatible SDK. `REBASE_STORAGE_BUCKET` is one shared
-deployment-profile value for every namespace/database; the object key already
-contains a namespace/database hash so records remain isolated. The adapter maps
+profile value for every namespace/database; the object key contains a
+namespace/database hash so records remain isolated. `createRazorpayOrder` maps
 `razorpay_config.key_id` and `key_secret` to the Razorpay Orders API. Razorpay
-webhook secrets are loaded
-from the referenced configuration row after account/context resolution. Custom adapters can be supplied
-without changing the server:
-`startServer({ provider: createCloudProvider, providerOptions })` or by passing
-a ready provider object.
+webhook secrets are loaded from the referenced configuration row after the
+signed route capsule resolves its context. Webhook adapters remain a separate
+static map because raw-body signatures cannot be dispatched from request data.
 
 ## Development Tools
 

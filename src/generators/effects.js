@@ -213,7 +213,7 @@ function runtimeContractFor(table, schema = { tables: new Map() }) {
     patchFields,
     machineFields: table.effectProcess === "async" ? [...MACHINE_FIELDS] : [],
     references,
-    providers: [...(table.effectProviders || [])],
+    adapters: [...(table.effectAdapters || [])],
     mutableInputs: table.effectMutableInputs === true,
     schedule: table.effectProcess === "async" ? {
       field: "schedule",
@@ -226,12 +226,20 @@ function runtimeContractFor(table, schema = { tables: new Map() }) {
   };
 }
 
-function generateRuntimeContracts(schema) {
+function generateRuntimeContracts(schema, principals) {
   const tables = {};
   for (const table of [...schema.tables.values()].sort((left, right) => left.name.localeCompare(right.name))) {
     if (table.effectProcess) tables[table.name] = runtimeContractFor(table, schema);
   }
-  return { tables, webhooks: {} };
+  return {
+    principals: principals ? {
+      user: principals.user,
+      group: principals.group,
+      root: `${principals.group}:root`,
+    } : undefined,
+    tables,
+    webhooks: {},
+  };
 }
 
 module.exports = {

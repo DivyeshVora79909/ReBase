@@ -62,7 +62,7 @@ Material inputs:
 
 function deploymentNotice(configuration) {
   const context = [configuration.surreal.namespace, configuration.surreal.database];
-  const runtime = [configuration.runtime.url, configuration.runtime.wakeSecret];
+  const runtime = [configuration.runtime.url, configuration.runtime.secret];
   const messages = [];
   if (context.some(Boolean) && !context.every(Boolean)) {
     messages.push("incomplete namespace/database context omitted");
@@ -79,15 +79,6 @@ function deploymentNotice(configuration) {
 
 function resolveDirectory(root, value) {
   return path.resolve(root, value);
-}
-
-function removeLegacyArtifacts(outputDir, check) {
-  for (const name of ["edge", "optimizer.json", "manifest.json", "operations.json", "schemas"]) {
-    const target = path.join(outputDir, name);
-    if (!fs.existsSync(target)) continue;
-    if (check) throw new Error(`Generated output contains legacy artifact: ${target}`);
-    fs.rmSync(target, { recursive: true, force: true });
-  }
 }
 
 function compileFromArgs(rawArgs, root = process.cwd()) {
@@ -109,7 +100,7 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     namespace: rawArgs.namespace || configuration.surreal.defaultContext?.namespace,
     database: rawArgs.database || configuration.surreal.defaultContext?.database,
     runtimeUrl: rawArgs.runtimeUrl || configuration.runtime.url,
-    runtimeSecret: rawArgs.runtimeSecret || configuration.runtime.wakeSecret,
+    runtimeSecret: rawArgs.runtimeSecret || configuration.runtime.secret,
   };
   if ((context.namespace && !context.database) || (!context.namespace && context.database)) {
     context.namespace = undefined;
@@ -135,7 +126,6 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     contracts: result.contracts,
     copies,
   }, { check: rawArgs.check });
-  removeLegacyArtifacts(outputDir, rawArgs.check);
   return {
     ...result,
     artifacts,

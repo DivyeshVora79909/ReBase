@@ -14,8 +14,9 @@
     "probe:compiler": "node dev-tools/compiler-probe.js",
     "probe:environment": "node dev-tools/environment-probe.js",
     "probe:runtime": "node dev-tools/runtime-probe.js",
+    "probe:adapters": "node dev-tools/adapter-probe.js",
     "probe:queues": "node dev-tools/queue-probe.js",
-    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:environment && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe"
+    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:environment && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe:adapters && npm run probe"
   },
   "engines": {
     "node": ">=20"

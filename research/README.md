@@ -21,6 +21,9 @@ information kind so an agent can load only the material needed for a task.
   wake delivery, and rejected scheduler alternatives.
 - [`rebase/session-lifecycle.md`](./rebase/session-lifecycle.md) — system-user
   token renewal, WebSocket reconnect authentication, and record-token expiry.
+- [`rebase/twilio-trial-sms.md`](./rebase/twilio-trial-sms.md) — measured Twilio
+  trial SMS restrictions, template error `572006`, credential/sender probes,
+  and ReBase adapter implications.
 - [`rebase/authorization.md`](./rebase/authorization.md) — principal DAG,
   ownership, readers, views, and audit policy.
 - [`rebase/parents-field.md`](./rebase/parents-field.md) — principal-parent

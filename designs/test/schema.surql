@@ -96,7 +96,7 @@ DEFINE FIELD webhook_secret ON razorpay_config TYPE string ASSERT $value.len() >
     PERMISSIONS FOR select NONE FOR create, update WHERE true
     COMMENT '@rebase-audit-redact';
 
-DEFINE TABLE OVERWRITE test_attachment SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-events CREATE UPDATE DELETE @rebase-mutable-inputs @rebase-provider storage @rebase-timeout 10s';
+DEFINE TABLE OVERWRITE test_attachment SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-events CREATE UPDATE DELETE @rebase-mutable-inputs @rebase-adapter createS3UploadGrant @rebase-adapter createS3AccessGrant @rebase-adapter deleteS3Object @rebase-timeout 10s';
 DEFINE FIELD storage_config ON test_attachment TYPE record<file_storage_config>
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD attached_to ON test_attachment TYPE record<test_primitive | test_tree>
@@ -115,7 +115,7 @@ DEFINE FIELD access_headers ON test_attachment TYPE option<object> FLEXIBLE DEFA
 DEFINE FIELD access_expires_at ON test_attachment TYPE option<datetime> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
 
-DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async @rebase-provider email @rebase-timeout 30s';
+DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-audit @rebase-effect async @rebase-adapter sendBrevoEmail @rebase-timeout 30s';
 DEFINE FIELD config ON send_brevo_email TYPE record<email_brevo_config>
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD to ON send_brevo_email TYPE array<string>
@@ -133,7 +133,7 @@ DEFINE FIELD provider_state ON send_brevo_email TYPE option<string> DEFAULT NONE
 DEFINE FIELD result ON send_brevo_email TYPE option<object> FLEXIBLE DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
-DEFINE TABLE OVERWRITE razorpay_order SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-provider payment @rebase-timeout 15s';
+DEFINE TABLE OVERWRITE razorpay_order SCHEMAFULL COMMENT '@rebase-audit @rebase-effect sync @rebase-adapter createRazorpayOrder @rebase-timeout 15s';
 DEFINE FIELD config ON razorpay_order TYPE record<razorpay_config>
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD amount_paise ON razorpay_order TYPE int ASSERT $value >= 100 AND $value <= 1000000000 READONLY COMMENT '@rebase-effect-input';

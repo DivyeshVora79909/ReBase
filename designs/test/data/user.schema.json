@@ -13,6 +13,11 @@
       "type": "string",
       "faker": "person.fullName"
     },
+    "username": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{8,31}$",
+      "x-rebase-optional-probability": 0.65
+    },
     "parents": {
       "type": "array",
       "items": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },

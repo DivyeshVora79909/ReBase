@@ -19,7 +19,7 @@ function schema(effect = "") {
 
 function validEffect(extra = "") {
   return `
-    DEFINE TABLE delivery SCHEMAFULL COMMENT '@rebase-effect async @rebase-provider email @rebase-timeout 2s';
+    DEFINE TABLE delivery SCHEMAFULL COMMENT '@rebase-effect async @rebase-adapter sendDelivery @rebase-timeout 2s';
     DEFINE FIELD payload ON delivery TYPE string READONLY COMMENT '@rebase-effect-input';
     DEFINE FIELD result ON delivery TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-effect-output';
@@ -61,10 +61,23 @@ async function main() {
       runtimeSecret: "probe-secret",
     });
     assert.equal(result.contracts.tables.delivery.process, "async");
+    assert.deepEqual(result.contracts.principals, {
+      user: "user",
+      group: "groups",
+      root: "groups:root",
+    });
     assert.deepEqual(result.contracts.tables.delivery.events, ["CREATE"]);
     assert.deepEqual(result.contracts.tables.delivery.patchFields, ["result"]);
+    assert.deepEqual(result.contracts.tables.delivery.adapters, ["sendDelivery"]);
     assert.match(result.bundle, /session::ns\(\)/);
     assert.match(result.bundle, /session::db\(\)/);
+    const oauthAccess = result.bundle.match(/-- REBASE: oauth access\n([\s\S]*?)(?=\n-- REBASE:)/)?.[1] || "";
+    assert.match(oauthAccess, /DEFINE ACCESS OVERWRITE oauth/);
+    assert.match(oauthAccess, /internal\/oauth/);
+    assert.match(oauthAccess, /token: \$oauth_token/);
+    assert.doesNotMatch(oauthAccess, /provider_token/);
+    assert.match(oauthAccess, /login_access = true/);
+    assert.doesNotMatch(oauthAccess, /\b(?:SIGNUP|CREATE|UPDATE|UPSERT|INSERT)\b/);
     assert.match(result.bundle, /TYPE option<\{ cron: string/);
     assert.match(result.bundle, /rebase_lease_token[\s\S]*PERMISSIONS FOR select, create, update NONE/);
     assert.doesNotMatch(result.bundle, /USE NS source_only DB source_only/);
@@ -78,7 +91,7 @@ async function main() {
       "SURREAL_NAMESPACE=profile_ns",
       "SURREAL_DATABASE=profile_db",
       "REBASE_RUNTIME_URL=https://profile-runtime.internal",
-      "REBASE_WAKE_SECRET=profile-secret",
+      "REBASE_RUNTIME_SECRET=profile-secret",
     ].join("\n"));
     const profiled = compilerMain([
       "--env-file", profile,
@@ -93,7 +106,7 @@ async function main() {
       "SURREAL_NAMESPACE=profile_two",
       "SURREAL_DATABASE=profile_db",
       "REBASE_RUNTIME_URL=https://profile-runtime.internal",
-      "REBASE_WAKE_SECRET=profile-secret",
+      "REBASE_RUNTIME_SECRET=profile-secret",
     ].join("\n"));
     assert.throws(() => compilerMain([
       "--env-file", secondProfile,
@@ -109,6 +122,7 @@ async function main() {
     ]);
     assert.doesNotMatch(neutral.bundle, /-- REBASE: context/);
     assert.doesNotMatch(neutral.bundle, /internal\/wake/);
+    assert.doesNotMatch(neutral.bundle, /DEFINE ACCESS OVERWRITE oauth/);
 
     const cases = [
       ["missing handler", schema(validEffect()), null, /table-handlers|handler/i],
@@ -121,6 +135,7 @@ async function main() {
       ["async update event", schema(validEffect().replace("@rebase-effect async", "@rebase-effect async @rebase-events CREATE UPDATE")), [handler()], /support only CREATE/i],
       ["missing event handler", schema(validEffect().replace("@rebase-effect async", "@rebase-effect sync @rebase-events CREATE DELETE")), [handler()], /on\.DELETE/i],
       ["undeclared event handler", schema(validEffect()), [`module.exports = { table: 'delivery', on: { async CREATE() { return { outcome: 'success' }; }, async UPDATE() { return { outcome: 'success' }; } } };\n`], /not declared/i],
+      ["invalid adapter marker", schema(validEffect().replace("sendDelivery", "send-delivery")), [handler()], /invalid @rebase-adapter/i],
     ];
     for (const [name, source, handlers, expected] of cases) {
       const directory = path.join(temp, name.replaceAll(" ", "-"));
