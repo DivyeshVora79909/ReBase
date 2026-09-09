@@ -90,6 +90,7 @@ function classifyStatement(statement) {
   const sql = stripLeadingComments(statement);
   if (/^USE\s+/i.test(sql)) return "context";
   if (/^DEFINE\s+TABLE\b[\s\S]*\bAS\s+SELECT\b/i.test(sql)) return "views";
+  if (/^DEFINE\s+EVENT\b/i.test(sql)) return "events";
   if (/^(?:CREATE|UPDATE|UPSERT|INSERT|RELATE|DELETE)\b/i.test(sql)) return "seed";
   if (/^(?:DEFINE|REMOVE|ALTER)\b/i.test(sql)) return "schema";
   return "raw";
@@ -101,7 +102,7 @@ function classifyMaterials(files) {
     const extracted = extractMarkedSections(file.source);
     const sections = extracted.sections;
     for (const [name, source] of sections) {
-      const type = ["seed", "migration", "schema", "views", "framework"].includes(name)
+      const type = ["seed", "migration", "schema", "views", "events", "framework"].includes(name)
         ? name
         : "raw";
       statements.push({ file, section: name, type, source, explicit: true });
@@ -121,6 +122,7 @@ function classifyMaterials(files) {
     ["context", []],
     ["schema", []],
     ["views", []],
+    ["events", []],
     ["seed", []],
     ["migration", []],
     ["framework", []],

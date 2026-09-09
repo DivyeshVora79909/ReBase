@@ -58,8 +58,14 @@ information kind so an agent can load only the material needed for a task.
 - [`surrealdb/data-generation.md`](./surrealdb/data-generation.md) —
   schema-driven fixture generation and dependency-batch findings.
 - [`surrealdb/schema-temporal-fact-check.md`](./surrealdb/schema-temporal-fact-check.md) — catalog access, dynamic tables, materialized-view dependencies, temporal grouping, statistics, and domain probes.
+- [`surrealdb/temporal-integrity-dimensional-fact-check.md`](./surrealdb/temporal-integrity-dimensional-fact-check.md) — focused measurements and design boundaries for historical replay, changefeeds, state-lane references, polymorphism, and sparse dimensions.
+- [`surrealdb/accounts-transaction-concurrency-fact-check.md`](./surrealdb/accounts-transaction-concurrency-fact-check.md) — on-disk fact checks for read-only views, synchronous guard rollback, mutable position OCC anchors, temporal replay, references, and Accounts dimensions.
 - [`rebase/domain-suite-plan.md`](./rebase/domain-suite-plan.md) — corrected mutable reactive-calculation architecture for accounts, CRM, warehouse, HRM, temporal views, and cron declarations.
 - [`rebase/all-in-one-suite-plan.md`](./rebase/all-in-one-suite-plan.md) — composition, canonical shared entities, cross-domain dependency order, calculation crons, and the staged verification plan for one suite build.
+- [`rebase/calculation-engine-expansion-plan.md`](./rebase/calculation-engine-expansion-plan.md) — product-level expansion plan for independent domains, lifecycle lanes, temporal policies, currency, tax composition, communications, and staged implementation.
+- [`rebase/accounts-movement-architecture-plan.md`](./rebase/accounts-movement-architecture-plan.md) — Accounts-only target architecture for money, inventory, service capacity, claims, settlement, tax components, adjustments, positions, and temporal integrity.
+- [`rebase/all-in-one-suite-architecture.mmd`](./rebase/all-in-one-suite-architecture.mmd) — conceptual Mermaid graph of the shared kernel, domain packages, reactive pipeline, lifecycle lanes, temporal replay, and typed crons.
+- [`rebase/accounts-movement-architecture.mmd`](./rebase/accounts-movement-architecture.mmd) — Accounts movement graph showing typed primitives, positions, claims, tax components, and reactive boundaries.
 
 ## Evidence conventions
 

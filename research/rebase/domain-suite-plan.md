@@ -123,7 +123,7 @@ append-only posting workflow at this stage.
 
 ### Make currency a dimension, not an inferred scalar
 
-The current `org.a_currency`, `tax_account.a_currency`, and
+The old `org.a_currency`, `tax_account.a_currency`, and
 `payment.a_fx_rate` combination cannot describe both sides of a cross-currency
 calculation. Normalize the independent dimensions:
 
@@ -134,10 +134,12 @@ calculation. Normalize the independent dimensions:
 - every monetary source row: amount, transaction currency, rate policy, and
   any explicit rounding input.
 
-If a transfer has different source and destination amounts/currencies, use a
-small `payment_leg` relation (or two explicit typed legs). Do not compress the
-conversion into one `a_currency` chosen with `??`. A payment allocation must
-state which currency it allocates and how it converts.
+If a transfer has different source and destination amounts/currencies, use the
+Accounts kernel's `money_exchange` fact with two explicit typed legs and one
+immutable `fx_rate` snapshot. Ordinary `money_movement` remains same-currency;
+do not compress conversion into one `a_currency` chosen with `??`. A payment
+allocation currently targets an ordinary movement and therefore remains
+same-currency until a dedicated exchange-settlement contract is added.
 
 Derived base amounts, currency differences, balances, and statistics remain
 `VALUE` fields and may be recalculated when a mutable rate or source amount

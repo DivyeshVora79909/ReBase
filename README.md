@@ -17,14 +17,19 @@ designs/<name>/schema.surql   Business and effect tables
 designs/<name>/views.surql    Aggregate views
 designs/<name>/data/          Development data JSON Schemas
 designs/<name>/table-handlers Table-keyed effect handlers
+designs/all-in-one/             Composed calculation suite (core + accounts;
+                                future CRM/HRM domains are sibling directories)
 ```
 
 ## Commands
 
 ```bash
 npm run build
+npm run build:all-in-one
 npm run check
+npm run check:all-in-one
 npm run verify
+npm run probe:accounts
 npm run server -- --env-file .env.local
 npm run workbench -- --env-file .env.local
 npm run populate -- --env-file .env.local --table all --count 100

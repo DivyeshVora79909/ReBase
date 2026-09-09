@@ -1,0 +1,194 @@
+%% Suite target architecture. Core + Accounts are implemented in
+%% designs/all-in-one; CRM/HRM and other domain nodes are future extensions.
+flowchart TB
+  Client["MetaSol / client UI"]
+  Runtime["Stateless runtime and compiled descriptors"]
+  Compiler["Profile compiler\nprovenance + dependency analysis"]
+  Client --> Runtime
+  Runtime --> Compiler
+
+  subgraph Kernel["Shared typed calculation kernel"]
+    Principal["user / groups\nauthorization graph"]
+    Party["organization / party"]
+    Currency["currency + FX pairs"]
+    Item["item catalog"]
+    Service["service catalog"]
+    Tax["tax components\nVAT / GST / TDS / TCS"]
+    Time["effective_at + timezone\nbucket policy"]
+    Revision["optional revisions\nfor effective replay"]
+  end
+
+  Compiler --> Kernel
+  Principal --> Party
+  Party --> Currency
+  Item --> Currency
+  Service --> Currency
+  Tax --> Currency
+  Time --> Revision
+
+  subgraph CRM["CRM domain"]
+    Person["person"]
+    Opportunity["opportunity / pipeline"]
+    Quote["quote"]
+    Order["order"]
+    CrmLine["order line\nitem | service"]
+    Person --> Opportunity --> Quote --> Order --> CrmLine
+  end
+
+  subgraph Commerce["Ecommerce domain"]
+    Cart["cart"]
+    Fulfillment["fulfillment / return"]
+    Cart --> Fulfillment
+  end
+
+  subgraph Warehouse["Warehouse and inventory"]
+    Location["warehouse / location"]
+    Movement["inventory movement"]
+    Stock["stock projections"]
+    Location --> Movement --> Stock
+  end
+
+  subgraph Manufacturing["Manufacturing domain"]
+    Bom["BOM / component"]
+    WorkOrder["work order"]
+    Production["consume / produce movement"]
+    Bom --> WorkOrder --> Production
+  end
+
+  subgraph Accounts["Accounts and finance"]
+    Invoice["invoice"]
+    InvoiceLine["invoice line\nitem | service"]
+    Payment["money movement / exchange legs"]
+    Allocation["allocation"]
+    Treasury["treasury balance"]
+    Invoice --> InvoiceLine --> Allocation
+    Payment --> Allocation --> Treasury
+  end
+
+  subgraph HRM["HRM domain"]
+    Employment["employment / assignment"]
+    Attendance["attendance fact"]
+    TimeViews["day / month / year views"]
+    Employment --> Attendance --> TimeViews
+  end
+
+  subgraph Marketing["Marketing domain"]
+    Campaign["campaign / audience"]
+    Attribution["attribution fact"]
+    Campaign --> Attribution
+  end
+
+  subgraph Productivity["Productivity domain"]
+    Project["project / task"]
+    TimeEntry["time entry"]
+    Project --> TimeEntry
+  end
+
+  subgraph Communications["Communications edge"]
+    Template["message template\ncompiled variables"]
+    Message["message request"]
+    Delivery["email / SMS effect lifecycle"]
+    Template --> Message --> Delivery
+  end
+
+  Party --> Person
+  Party --> Opportunity
+  Party --> Order
+  Currency --> CrmLine
+  Item -. "record<item | service>" .-> CrmLine
+  Service -. "record<item | service>" .-> CrmLine
+  Item -. "stockable reference" .-> Movement
+  Currency --> Movement
+  Item -. "component" .-> Bom
+  Movement --> Production
+  Order --> Invoice
+  CrmLine --> InvoiceLine
+  Currency --> InvoiceLine
+  Tax --> InvoiceLine
+  Movement --> Invoice
+  Principal --> Employment
+  Principal --> Project
+  Person --> Template
+  Invoice --> Template
+  Attendance --> Template
+  Cart --> Order
+  Fulfillment --> Movement
+
+  subgraph Reactive["Database-owned reactive pipeline"]
+    A["a_* authoritative facts"]
+    D["d_* direct derivations and shadows"]
+    E["e_* synchronous guards"]
+    V["v_* sparse materialized aggregates"]
+    Ping["reverse invalidation\nold + new targets"]
+    Repair["bounded replay / rebuild / repair"]
+    A --> D --> V
+    A --> E
+    V --> Ping --> D
+    Revision --> Repair
+    Ping --> E
+    Repair --> V
+  end
+
+  CRM --> A
+  Commerce --> A
+  Warehouse --> A
+  Manufacturing --> A
+  Accounts --> A
+  HRM --> A
+  Marketing --> A
+  Productivity --> A
+  Communications --> A
+  E --> Runtime
+
+  subgraph Lifecycle["Explicit lifecycle lanes"]
+    Draft["draft_* staging\ninert to canonical views"]
+    Canonical["canonical source\nparticipates in guards/views"]
+    Void["void/deleted/archive\nprovenance only"]
+    Promote["generated promote/archive action"]
+    Draft --> Promote --> Canonical
+    Canonical --> Promote --> Void
+  end
+
+  Draft -. "opaque origin ID" .-> Void
+  Promote --> E
+
+  subgraph Temporal["Temporal policy"]
+    Current["current-state policy"]
+    Replay["effective-time replay"]
+    Checkpoint["checkpoint / segment summary\nfuture specialization"]
+    Current --> Replay --> Checkpoint
+  end
+
+  Time --> Temporal
+  Accounts --> Replay
+  Warehouse --> Replay
+  HRM --> Replay
+
+  subgraph Scheduling["Typed calculation scheduling"]
+    Cron["calculation_cron\ncompiled target + window"]
+    Run["idempotent run record"]
+    Cron --> Run
+  end
+
+  TimeViews --> Cron
+  V --> Cron
+  Cron --> Runtime
+
+  subgraph Observation["Post-commit observation"]
+    Changefeed["changefeed"]
+    Audit["audit / revision history"]
+    Changefeed --> Repair
+    Audit --> Repair
+  end
+
+  A --> Changefeed
+  A --> Audit
+
+  classDef source fill:#e8f5e9,stroke:#2e7d32,color:#102a13;
+  classDef derived fill:#e3f2fd,stroke:#1565c0,color:#0d2742;
+  classDef guard fill:#fff3e0,stroke:#ef6c00,color:#4a2400;
+  classDef lane fill:#f3e5f5,stroke:#7b1fa2,color:#32103f;
+  class A,Canonical source;
+  class D,V,TimeViews,Stock,Treasury,Attribution,TimeEntry derived;
+  class E,Ping,Repair guard;
+  class Draft,Void,Promote lane;

@@ -37,6 +37,7 @@ function generateBundle(materials, options = {}) {
   const rawFrameworkSource = [
     materialSources(materials, "framework", "schema"),
     materialSources(materials, "framework", "raw"),
+    materialSources(materials, "framework", "events"),
   ].filter(Boolean).join("\n\n");
   const projectSelectPolicy = detectSelectPolicy(materials.combined);
   const principalSource = materialSources(materials, "project", "schema");
@@ -45,6 +46,7 @@ function generateBundle(materials, options = {}) {
   const frameworkSource = bindFrameworkPrincipals(rawFrameworkSource, principals);
   const schemaSource = materialSources(materials, "project", "schema");
   const projectRawSource = materialSources(materials, "project", "raw");
+  const projectEventsSource = materialSources(materials, "project", "events");
   const projectSchema = [schemaSource, projectRawSource].filter(Boolean).join("\n\n");
   const projectOnlySchema = parseSchema(projectSchema, "");
   const viewsSource = partitionSource(materials, "views");
@@ -68,6 +70,7 @@ function generateBundle(materials, options = {}) {
   const sections = [
     ["context", contextStatement(context)],
     ["raw schema", projectSchema],
+    ["project events", projectEventsSource],
     ["raw framework", frameworkSource],
     ["oauth access", generateOAuthAccess(principals, generatedOptions)],
     ["record reference assertions", generateReferenceAssertions(projectOnlySchema, context)],

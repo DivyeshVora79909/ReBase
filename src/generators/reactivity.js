@@ -41,8 +41,10 @@ function generateViews(schema, options, systemTables = new Set(["user", "groups"
 function generateCascades(analysis, options) {
   let output = use(options.namespace, options.database);
   for (const [targetTable, references] of analysis.reverseReferences.entries()) {
-    if (analysis.systemTables.has(targetTable)) continue;
-    const businessReferences = references.filter((reference) => !reference.sourceIsSystem);
+    if (analysis.systemTables.has(targetTable) || schemaInternal(analysis, targetTable)) continue;
+    const businessReferences = references.filter(
+      (reference) => !reference.sourceIsSystem && !reference.sourceIsInternal,
+    );
     if (!businessReferences.length) continue;
     output += `DEFINE EVENT OVERWRITE rebase_cascade_downward ON TABLE ${targetTable}\n`;
     output += "    WHEN $event = 'UPDATE' AND ($before.owned_by != $after.owned_by OR $before.readers_index != $after.readers_index) THEN {\n";
@@ -59,7 +61,7 @@ function generateCascades(analysis, options) {
 function generateReaderCycleGuards(schema, options, systemTables) {
   let output = use(options.namespace, options.database);
   for (const table of schema.tables.values()) {
-    if (systemTables.has(table.name)) continue;
+    if (systemTables.has(table.name) || table.internal) continue;
     const fields = [...table.fields.values()].filter((field) =>
       contributesReaders(field, systemTables),
     );
@@ -81,6 +83,10 @@ function generateReaderCycleGuards(schema, options, systemTables) {
     output += "};\n\n";
   }
   return output;
+}
+
+function schemaInternal(analysis, tableName) {
+  return analysis.internalTables?.has(tableName) || false;
 }
 
 module.exports = { generateCascades, generateReaderCycleGuards, generateViews };

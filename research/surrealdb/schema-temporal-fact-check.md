@@ -9,6 +9,10 @@ This note records the disposable probes used while planning the accounts, CRM,
 warehouse, HRM, and temporal-cron schemas. It separates behavior observed on
 the pinned local binary from product choices that still need schema work.
 
+The companion [`temporal-integrity-dimensional-fact-check.md`](./temporal-integrity-dimensional-fact-check.md)
+turns these findings into the focused historical-replay, lifecycle-lane, and
+multi-dimensional design boundary for the all-in-one suite.
+
 ## Catalog And Table Existence
 
 ### `type::table()` is a cast, not an existence check
@@ -232,7 +236,7 @@ Observed edge behavior:
 | --- | --- |
 | `math::sum([1,2,3])` | `6` |
 | `math::mean([1,2,3])` | `2` |
-| `math::variance([1,2,3])` | `1` (population-style result in this version) |
+| `math::variance([1,2,3])` | `1` (sample-style result, using the `n - 1` denominator in the documented examples) |
 | `math::sum([])` | `0` |
 | `math::mean([])` | `NULL` |
 | `math::variance([])` | `NULL` |

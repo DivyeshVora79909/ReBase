@@ -5,7 +5,9 @@
   "description": "Declarative SurrealDB compiler, table-keyed effect runtime, and schema-driven development workbench.",
   "scripts": {
     "build": "node dev-tools/compiler/cli.js",
+    "build:all-in-one": "node dev-tools/compiler/cli.js --project designs/all-in-one --output build/all-in-one",
     "check": "node dev-tools/compiler/cli.js --check",
+    "check:all-in-one": "node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one",
     "server": "node gateway/server.js",
     "workbench": "node dev-tools/workbench.js",
     "populate": "node dev-tools/populate.js",
@@ -18,7 +20,8 @@
     "probe:adapters": "node dev-tools/adapter-probe.js",
     "probe:queues": "node dev-tools/queue-probe.js",
     "probe:reference-permissions": "node dev-tools/reference-permission-performance.js",
-    "verify": "npm run check && surreal validate build/test/schema.surql && npm run probe:environment && npm run probe:authentication && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe:adapters && npm run probe"
+    "probe:accounts": "node dev-tools/accounts-probe.js",
+    "verify": "npm run check && npm run check:all-in-one && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && npm run probe:environment && npm run probe:authentication && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:runtime && npm run probe:adapters && npm run probe:accounts && npm run probe"
   },
   "engines": {
     "node": ">=20"

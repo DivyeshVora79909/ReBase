@@ -1,9 +1,20 @@
 # All-in-One Reactive Calculation Suite
 
-Status: planning only; no schema, compiler, runtime, or generated artifact
-changes are made by this document.
+Status: composition plan with an implemented Accounts slice. The
+`designs/all-in-one/` profile currently contains `core` and `accounts`; CRM,
+HRM, warehouse, manufacturing, ecommerce, and productivity remain future
+sibling domains.
 
-Last reviewed: 2026-09-04
+Last reviewed: 2026-09-08
+
+For the deeper product decisions behind lifecycle lanes, temporal replay,
+currency/tax composition, communications, and domain boundaries, see
+[`calculation-engine-expansion-plan.md`](./calculation-engine-expansion-plan.md).
+The Accounts-only movement and primitive-algebra target is specified in
+[`accounts-movement-architecture-plan.md`](./accounts-movement-architecture-plan.md),
+with its graph in [`accounts-movement-architecture.mmd`](./accounts-movement-architecture.mmd).
+Engine measurements and limits are recorded in
+[`../surrealdb/temporal-integrity-dimensional-fact-check.md`](../surrealdb/temporal-integrity-dimensional-fact-check.md).
 
 This plan describes how the current test, CRM, accounts, warehouse, and future
 HRM material become one ReBase suite. It follows the corrected product model:
@@ -11,6 +22,13 @@ ReBase is a mutable, reactive calculation graph. Authoritative records remain
 editable when permissions allow; `VALUE` derivations, materialized views, and
 synchronous `e_*` guards keep the graph coherent and reject invalid resulting
 state.
+
+The first implementation slice is now present in `designs/all-in-one/`:
+`core/schema.surql` owns the principal pair, while the Accounts schema, views,
+and synchronous events implement the movement/position kernel and exact
+effective-time prefix replay. Its compiler support is covered by
+`check:all-in-one` and `probe:accounts`. Checkpoint/block-summary optimization
+and the future sibling domains described below remain planned work.
 
 The suite is not an event-sourced ledger, an immutable transaction log, or a
 second application database. SurrealDB transactions provide atomicity for a

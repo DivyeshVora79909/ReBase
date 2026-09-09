@@ -37,6 +37,10 @@ function generateSecurity(schema, options, systemTables) {
   const [userTable, groupTable] = options.principalTables || ["user", "groups"];
   for (const table of schema.tables.values()) {
     if (systemTables.has(table.name)) continue;
+    if (table.internal) {
+      output += `DEFINE TABLE OVERWRITE ${table.name} SCHEMAFULL PERMISSIONS NONE;\n\n`;
+      continue;
+    }
     const ownerAccess = "(owned_by = $auth OR owned_by IN $auth.parent_groups OR owned_by IN $auth.dominates)";
     const selectPredicate = tableSelectPredicate(table.name, { selectPolicy: options.selectPolicy });
     output += `DEFINE TABLE OVERWRITE ${table.name} SCHEMAFULL PERMISSIONS\n`;
@@ -75,7 +79,7 @@ function generateSecurity(schema, options, systemTables) {
 function generateRootPermissions(schema, options, systemTables) {
   const permissions = ["node_create", "node_select", "node_update", "node_delete"];
   for (const table of schema.tables.values()) {
-    if (systemTables.has(table.name)) continue;
+    if (systemTables.has(table.name) || table.internal) continue;
     for (const operation of ["select", "create", "update", "delete"]) {
       permissions.push(`${table.name}_${operation}`);
     }

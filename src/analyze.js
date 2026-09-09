@@ -9,6 +9,9 @@ function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
   );
   validateSystemExtensions(schema, extensionTables.size ? extensionTables : EXTENSION_TABLES);
   const reverseReferences = new Map();
+  const internalTables = new Set(
+    [...schema.tables.values()].filter((table) => table.internal).map((table) => table.name),
+  );
   for (const table of schema.tables.values()) {
     for (const field of table.fields.values()) {
       if (!contributesReaders(field, frameworkTables)) continue;
@@ -23,11 +26,12 @@ function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
           sourceTable: table.name,
           sourceField: field.name,
           sourceIsSystem: frameworkTables.has(table.name),
+          sourceIsInternal: internalTables.has(table.name),
         });
       }
     }
   }
-  return { reverseReferences, systemTables: frameworkTables };
+  return { reverseReferences, systemTables: frameworkTables, internalTables };
 }
 
 function validateSystemExtensions(schema, extensionTables) {

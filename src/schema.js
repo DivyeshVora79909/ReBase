@@ -10,6 +10,7 @@ function parseSchema(schemaSource, viewsSource) {
       table.definition = statement;
       table.comment = [table.comment, extractComment(statement)].filter(Boolean).join(" ");
       table.audit = /@rebase-audit(?![-\w])/i.test(table.comment);
+      table.internal = /@rebase-internal\b/i.test(table.comment);
       table.principalKind = extractPrincipalKind(table.comment, table.name);
       table.effectProcess = extractEffectProcess(table.comment, table.name);
       table.effectEvents = extractEffectEvents(table.comment, table.name, table.effectProcess);
@@ -23,6 +24,8 @@ function parseSchema(schemaSource, viewsSource) {
     const [, fieldName, tableName] = fieldMatch;
     if (!tables.has(tableName)) tables.set(tableName, { name: tableName, fields: new Map(), definitions: [] });
     const fieldComment = extractComment(statement);
+    const computed = /\bCOMPUTED\b/i.test(statement);
+    const derived = /\b(?:VALUE|COMPUTED)\b/i.test(statement);
     tables.get(tableName).fields.set(fieldName, {
       name: fieldName,
       definition: statement,
@@ -32,6 +35,8 @@ function parseSchema(schemaSource, viewsSource) {
       auditRedact: /@rebase-audit-redact\b/i.test(fieldComment),
       changeLog: /@rebase-change-log\b/i.test(fieldComment),
       inheritReaders: /@rebase-readers\b/i.test(fieldComment),
+      derived,
+      computed,
       effectInput: /@rebase-effect-input\b/i.test(fieldComment),
       effectOutput: /@rebase-effect-output\b/i.test(fieldComment),
       auditPolicy: parseAuditPolicy(fieldComment),
