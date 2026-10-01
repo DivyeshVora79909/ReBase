@@ -1,0 +1,62 @@
+{
+  "packet": "H7 immediate assembly",
+  "status": "passed focused disposable-profile gates",
+  "date": "2026-09-29",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "One immutable recipe version has exactly two typed count-unit input roles and two typed count-unit output roles. One complete batch creates the four stable managed children; drafts contribute no stock and expose no child output.",
+    "A stock-account-owned gross-input root aggregates batch input demand at each exact timestamp. Each input validator compares the gross demand in [T,T+1ns) with stock available before T. The stock-history membership is dependent so earlier stock edits and deletion revalidate later batches.",
+    "A managed output child owns a dated output-use capacity root. An optional typed stock_out.assembly_output link adds only an output-capacity use; the stock_out remains the single physical stock debit. The link is writable at creation and READONLY afterward, including omission for ordinary stock_out rows."
+  ],
+  "result": {
+    "observed": [
+      "Incomplete drafts create no managed legs and do not change stock; changing to complete creates both input and both output roles with stable source/role IDs.",
+      "A duplicate create using the completed batch ID rejects with full source/child/root snapshot equality; repeating the complete state update preserves the same child IDs and summaries.",
+      "A recipe with both inputs and both outputs on the same stock account reconstructs 10 opening stock plus net movement -6 and gross input 6, with the two input roles aggregated on the separate gross root.",
+      "Zero-prior same-time input 1/output 1 rejects despite net stock delta 0. A 6+6 same-time demand against opening 10 rejects atomically; repeating with reverse record-ID order also rejects atomically.",
+      "The nanosecond interval fixture accepts input at T and at T+750us with a replenishment at T+500us, while the oracle observes exact-T demand 6 and hypothetical 1ms-range demand 12. Earlier as-of stock remains 6.",
+      "Reducing or deleting an earlier stock_in grant, backdating a completed batch before that grant, and reducing/dating/removing an output already used by stock_out all reject with full snapshot equality.",
+      "A linked dispatch consumes output capacity and posts one stock debit. Clearing or changing the link after creation rejects; mismatched output/source account rejects. An ordinary unlinked stock_out succeeds.",
+      "Removing and re-completing an unused output-producing batch prunes and restores its two output children with stable role identities. Source rows independently reconstruct stock, gross input, and output-use roots."
+    ],
+    "limits": [
+      "This is a bounded H7 immediate-assembly profile/probe, not a production migration or general recipe interpreter. It has exactly two input roles and two output roles, one entity, integer count quantities, and no user formula or array manifest.",
+      "A partial set of child roles cannot be created through public writes: all role children are fixed by the required-output recipe and their tables deny direct writes. Draft state is the supported incomplete form.",
+      "The output-use link covers only stock_out consumption of a managed assembly output. It does not implement general lot tracking, substitutions, work-in-process stages, or H8 behavior.",
+      "The exact [T,T+1ns) behavior is demonstrated on SurrealDB 3.2.0 only. The H7 feasibility record remains a separate pre-code checkpoint."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/h7-assembly-probe.js", "result": "passed" },
+    { "command": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8'))\"", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 72 tables, 0 views, 23 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 72 tables, 0 views, 23 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "npm run probe:accounting-h7-assembly", "result": "passed on local in-memory SurrealDB 3.2.0" },
+    { "command": "npm run probe:stock-timestamp-guard", "result": "passed" },
+    { "command": "npm run probe:accounting-h5b", "result": "passed" },
+    { "command": "npm run probe:accounting-h5c", "result": "passed" },
+    { "command": "npm run probe:accounting-h6a", "result": "passed" },
+    { "command": "npm run probe:accounting-h6b", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, exact intervals, tie order, and rollback" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "fingerprints": {
+    "designs/all-in-accounting/core/schema.surql": "5f1211153118d1546a1cfd254e5ed488f189cc6dc4db2e8379f54dad79804322",
+    "designs/all-in-accounting/movements/stock.surql": "906b98556bba4aff617655208526f6bbb234208c6ff5619cf29780d55834dc20",
+    "designs/all-in-accounting/movements/zz-assembly.surql": "2dfc5c65fb0df66a651aa193a372228fa1eebda9b05f7b241dd62b53ad710c71",
+    "dev-tools/accounting/h7-assembly-probe.js": "a87c23d7c95a3c60692eeab45922a04165dacd1e1c5e95affec177356884be4e",
+    "package.json": "15e9539c9c300cf4ccb7905601b7eec03e32b794c996aeea2b0ae316c4cff0f3",
+    "dev-tools/compiler/cli.js": "57bbbddcc75d8d3d5cc867e199c7b5ccf4f79db22c80564d39db9c50f66b2be5",
+    "dev-tools/compiler/pipeline.js": "912635738df1bd737fe03ad07384378955187dd28cabf01eafb5b76c606fbac4",
+    "src/schema.js": "5b17050ae5c767921048178e264a9c28b5f5d67882cbf6654e6ebfc7519de942",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "build/all-in-accounting/schema.surql": "d551008ee331ee32684facced6856cf914d7456eb8f2f3bb605e7bbeeb5fbd1c"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "id": "H3c-bounded-ancestry-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "result": "pass",
+  "packet": "H3c fixture-only ten-level typed ancestry proof",
+  "scope": {
+    "changed": [
+      "dev-tools/accounting/h3c-fixture/fixture.surql",
+      "dev-tools/accounting/h3c-probe.js",
+      "designs/rebase-system/evidence/2026-09-29-h3c-bounded-ancestry.json"
+    ],
+    "productionSchemaChanged": false,
+    "coreEngineChanged": false,
+    "compiledFixture": "framework + designs/all-in-accounting + dev-tools/accounting/h3c-fixture, loaded only into disposable in-memory SurrealDB"
+  },
+  "shape": {
+    "levels": 10,
+    "countingRule": "one h3c_header + eight h3c_package records + one h3c_delivery record on each complete path",
+    "parentUnion": "h3c_package.parent is record<h3c_header | h3c_package>; both target tables expose identically typed one-hop line, invoice, claim, customer, entity, currency, direction, dispatch date, recognition date, source quantity, available quantity, depth and root shadows",
+    "sourceAnchor": "h3c_header.line is an actual managed sales_invoice_line from sales_invoice_issue and stock_out",
+    "branches": "one main eight-package path plus one bounded sibling branch beginning after package level five, each with an entered partial delivery quantity",
+    "tree": "only h3c_delivery contributes to h3c_header.z_deliveries; header guard checks source/available capacity and uniform/value tags"
+  },
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "observed": "50 tables, 0 views, 14 material files, 2 table handlers",
+      "elapsedSeconds": 0.55
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass",
+      "observed": "50 tables, 0 views, 14 material files, 2 table handlers",
+      "elapsedSeconds": 0.5
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass",
+      "observed": "build/all-in-accounting/schema.surql: OK",
+      "elapsedSeconds": 0.29
+    },
+    {
+      "command": "node dev-tools/accounting/h3c-probe.js --validate-only",
+      "result": "pass",
+      "observed": "isolated combined fixture compiled as 53 tables, 15 materials and natively validated from a temporary schema file",
+      "elapsedSeconds": 0.62
+    },
+    {
+      "command": "node dev-tools/accounting/h3c-probe.js",
+      "result": "pass",
+      "observed": "H3c fixture: ten typed levels, bounded branch, reactive reparent and rollback passed",
+      "elapsedSeconds": 7.55,
+      "coverage": [
+        "oracle walks every delivery to its real sales invoice line and physical dispatch and counts exactly ten actual records",
+        "two bounded entered partial leaves publish exactly two active positions and their summed quantity, with canonical invoice/customer/entity/currency/direction/capacity tags",
+        "incomplete typed ancestry, absent parent, uniform-wrong document/direction on an empty root, and mixed document/direction on a populated root reject with whole-graph rollback",
+        "compatible package-level reparent moves both descendant leaf positions and quantities from old header root to new header root",
+        "incompatible package-level reparent below a different invoice rejects with old/new roots and descendants unchanged",
+        "partial delivery quantity edit and header available-capacity edit refresh descendants and root quantity/tags",
+        "sales invoice issue recognition date and physical dispatch date edits propagate through all typed levels",
+        "leaf deletion removes exactly one position, and recreation restores it",
+        "source issue deletion while headers reference the managed line rejects and restores the whole graph",
+        "reducing real billed-line capacity below the two leaf contributions rejects at the final header guard and restores issue, line, dispatch, all ancestors, leaves and roots"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "elapsedSeconds": 0.04
+    }
+  ],
+  "independentLeadRerun": {
+    "result": "pass",
+    "elapsedSeconds": 6.17,
+    "commands": [
+      {
+        "command": "npm run build:all-in-accounting",
+        "result": "pass",
+        "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+        "elapsedSeconds": 0.41
+      },
+      {
+        "command": "npm run check:all-in-accounting",
+        "result": "pass",
+        "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+        "elapsedSeconds": 0.43
+      },
+      {
+        "command": "surreal validate build/all-in-accounting/schema.surql",
+        "result": "pass",
+        "observed": "build/all-in-accounting/schema.surql: OK",
+        "elapsedSeconds": 0.12
+      },
+      {
+        "command": "node dev-tools/accounting/h3c-probe.js --validate-only",
+        "result": "pass",
+        "observed": "isolated combined fixture: 53 tables and 15 materials, native validation passed",
+        "elapsedSeconds": 0.54
+      },
+      {
+        "command": "node dev-tools/accounting/h3c-probe.js",
+        "result": "pass",
+        "observed": "H3c fixture: ten typed levels, bounded branch, reactive reparent and rollback passed",
+        "elapsedSeconds": 4.68
+      },
+      {
+        "command": "git diff --check",
+        "result": "pass"
+      }
+    ]
+  },
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "dev-tools/accounting/h3c-fixture/fixture.surql": "97a1826f99c3c0e7f2ba867a6a7a9475138a07412a412b8499e1c6d0aa8763df",
+      "dev-tools/accounting/h3c-probe.js": "7fc703682a31e5a59cac070d5a88a57e358f50c8ba0e83f0f1bedbc26dc7de79",
+      "designs/all-in-accounting/claims/invoices.surql": "f08dfcfcf7a36e6e717702e0c4621db8c6d67c9f1f6ec10bcab7fe8386f2b54e",
+      "dev-tools/accounting/core-probe.js": "f365c2f77206823018e51ffacf70428de9b33c4dfd852c3f879c37dcb827f3b9",
+      "build/all-in-accounting/schema.surql": "d92555ca5c53507424d05714ef794a6b04d4f1059783b769f9a48a612721d41b",
+      "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+      "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8"
+    },
+    "compiledFixtureBundle": "224143b00986a181a3b9a9e25d2ca00f0017f05f6520e7b2e07ae9575a100498"
+  },
+  "reusedBoundaryEvidence": {
+    "record": "2026-09-29-h3a-sales-tax.json",
+    "coverage": "managed sales tax role add/remove and issue deletion are exercised by the accounting-core H3a probe; H3c does not add another managed tax child fixture"
+  },
+  "limits": [
+    "This is a correctness fixture in disposable in-memory SurrealDB, not a production consignment or package schema, throughput result, or populated migration.",
+    "The branch is deliberately bounded to two leaf records; unbounded descendant fan-out, contention and operational depth limits remain unmeasured.",
+    "The fixture shows one-hop typed shadow propagation for one concrete sales chain; it does not make arbitrary nested dereferences reactive.",
+    "Cross-table duplicate-event prevention is not proved by table-local record IDs and remains a separate domain contract.",
+    "Independent payment dates and managed tax role removal were covered in the earlier H3a/H3b accounting-core probes rather than duplicated in this isolated ancestry fixture."
+  ],
+  "next": "H4a: parent-only fixed/proportional tax components and versioned source rules, scoped separately from this fixture."
+}

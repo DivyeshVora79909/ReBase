@@ -1,0 +1,51 @@
+{
+  "packet": "All-in-accounting treasury complete-timestamp floor prerequisite",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "The all-in-accounting treasury_account balance floor now uses complete-timestamp instant_min; this is a profile guard change only.",
+    "Cash allocation capacity remains a positive-only allocated.max_prefix cap; stock and invoice outstanding guards were not changed.",
+    "Historical A1/A2 evidence is preserved. Claim receivable/payable use instant_min from H4b5a, while claim recognized_credit remains strict-prefix."
+  ],
+  "probe": {
+    "command": "npm run probe:treasury-timestamp-guard",
+    "result": "passed",
+    "output": "Treasury complete-timestamp floor, tie-order independence, and atomic overdraw controls passed",
+    "checks": [
+      "A same-time incoming 5 is inserted before an outgoing 5 whose cash_transfer record ID sorts earlier. The final balance and instant_min are zero; the strict min_prefix is -5, reproducing the old false rejection condition.",
+      "The same-time outgoing 6 against an incoming 5 rejects and restores the full transfer/account snapshot; the target balance remains 5.",
+      "An outgoing 1 before a later incoming 5 rejects atomically even though the final balance would be positive; the later incoming remains unchanged.",
+      "The opposite same-time record-ID order also accepts incoming 5 and outgoing 5 with zero final balance and zero instant_min."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/treasury-timestamp-probe.js", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 61 tables, 0 views; 19 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 61 tables, 0 views; 19 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "npm run probe:treasury-timestamp-guard", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, adjacent intervals, tie-order independence and rollback" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/core/schema.surql": "566a4ba3f55bd897745e1a7daa732c1acd360c64c9a80bc9304b93a755ff8c4e",
+    "dev-tools/accounting/treasury-timestamp-probe.js": "aa9ff4b78e72b1b63887445d2d4762bc7129bbcf75da2415269f443e6d7830f5",
+    "package.json": "062991fee7ee5ef54e3bc7cf4baece8acd363bd4903c1ed3b127fa426613425b",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "This guard prerequisite does not implement tax remittance; H4b5b remittance remains separate work after review.",
+    "Invoice outstanding.min_prefix remains a complete-timestamp policy gap; same-time invoice settlement is unsupported until corrected and tested.",
+    "Stock quantity.min_prefix is deferred to H5 with gross source-availability and self-funding checks.",
+    "Positive-only settled, allocated, and billed capacity caps continue to use max_prefix. recognized_credit.min_prefix remains unchanged.",
+    "The evidence applies to the disposable all-in-accounting profile and makes no production migration claim."
+  ]
+}

@@ -236,7 +236,7 @@ DEFINE FIELD a_target ON task TYPE record<person | organization | opportunity | 
 DEFINE FIELD a_subject ON task TYPE string;
 DEFINE FIELD a_description ON task TYPE string DEFAULT "";
 DEFINE FIELD a_due_date ON task TYPE option<datetime> DEFAULT NONE;
-DEFINE FIELD a_assigned_to ON task TYPE option<record<user>> REFERENCE ON DELETE REJECT DEFAULT NONE;
+DEFINE FIELD a_assigned_to ON task TYPE option<record<rebase_user>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 DEFINE FIELD a_status ON task TYPE option<record<task_status>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 DEFINE FIELD a_priority ON task TYPE option<record<priority>> REFERENCE ON DELETE REJECT DEFAULT NONE;
 

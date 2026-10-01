@@ -1,0 +1,90 @@
+{
+  "packet": "H6a ordered resource pairs and entered currency exchange",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "exchange_pair is keyed by authorization owner, economic entity, and ordered given/received resource identities. Identical resources reject; inverse orientation is a separately stored pair.",
+    "cash_exchange executes currency-to-currency pairs only. It requires positive entered amounts at each currency precision, correctly oriented treasury accounts, and matching pair/account/execution entity and owner. Given currency is debited and received currency credited once; pair history records both entered quantities.",
+    "cash_exchange_reversal is a separate optional full reversal, at most one per source. Its treasury legs and swapped amounts derive from the source. Pair history subtracts the original oriented given/received source quantities. Equality with source effective time is accepted.",
+    "Pair reported rate is a read-only SELECT projection of net entered received sum divided by net entered given sum when the denominator is positive; it is NONE at zero denominator. Quote rows do not enter pair history.",
+    "Item and service pair identities are accepted for identity-only use. Their execution, conversion, fees, quote-derived execution, and production migration are not covered."
+  ],
+  "probe": {
+    "command": "npm run probe:accounting-h6a",
+    "result": "passed",
+    "output": "Accounting H6a ordered pairs, entered currency exchange, asymmetric full reversals, rate projection, atomicity, and source-row oracles passed",
+    "checks": [
+      "Same-resource and duplicate ordered pair writes reject atomically. Two independent Surreal client sessions race duplicate pair creation; exactly one succeeds and one loses to the unique index. Inverse, other-entity, and same-entity/different-owner pairs are permitted as distinct identities.",
+      "JPY-to-USD execution verifies precision-zero entered quantity; fractional precision-zero and fractional USD amounts, zero amounts, and item/service execution reject.",
+      "Two same-time USD-to-EUR exchanges are inserted in reverse lexical ID order. Treasury balances, complete-time floors, and pair totals match independent row reconstructions.",
+      "Wrong orientation, economic entity, and pair owner reject atomically. A treasury floor failure rolls back both treasury legs and the pair-history contribution.",
+      "A quote remains in currency_exchange with zero usage and no contribution to entered pair history.",
+      "An asymmetric 100 USD / 90 EUR execution is fully reversed. The oracle proves pair history subtracts original source orientation while reversal treasury legs use the inverse amounts. Duplicate and before-source reversals reject.",
+      "A typed source_effective_at dependency makes a source date edit that would predate its reversal reject with full snapshot equality. Equality is accepted. A valid source amount edit refreshes derived reversal legs and leaves pair and treasury roots correct.",
+      "A June 2 tree-before query is compared with a source-row oracle. Reversal rekey, reversal delete/re-add with stable ID, execution delete/re-add, and fully reversed zero-denominator projection are checked.",
+      "Independent row oracles reconstruct every treasury sum and complete-time minimum, each pair's oriented net quantities, as-of pair quantities, and the ratio projection. Failed writes compare full snapshots including facts and both treasury roots."
+    ]
+  },
+  "commands": [
+    {
+      "command": "node --check dev-tools/accounting/h6a-probe.js",
+      "result": "passed after independent-session concurrency case"
+    },
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "passed; 67 tables, 0 views, 22 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed; 67 tables, 0 views, 22 materials"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed; schema OK"
+    },
+    {
+      "command": "npm run probe:accounting-h6a",
+      "result": "passed with two-client pair uniqueness race"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "passed; H3b/H3a/H2/H1/A1/A2 controls"
+    },
+    {
+      "command": "npm run probe:accounting-h5c",
+      "result": "passed; standalone cash refund controls"
+    },
+    {
+      "command": "node -e \"JSON.parse(require('node:fs').readFileSync('package.json','utf8'))\"",
+      "result": "passed"
+    },
+    {
+      "command": "node -e \"JSON.parse(require('node:fs').readFileSync('designs/rebase-system/evidence/2026-09-29-h6a-resource-exchange.json','utf8'))\"",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/movements/exchange.surql": "d16db324982cbd0958c061dcff24d403013bfae81fbe7bf2d99429d653355467",
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/movements/cash.surql": "334986926f09a83b624afa57456eeb7b7a5e9bd3dc3c24438049b46a0dfe9840",
+    "dev-tools/accounting/h6a-probe.js": "88fcc9293655a0c3ab2de39e3e6868ae43107d31dbdc3b60502fd38545ec5620",
+    "package.json": "20d660e80eab84afcaec066e8b037d395dd0936143ea42946aef8fd59f8dafdd",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/security.js": "7ec9a4e1e65abeaf0401632002ee5c640a473e0fef2a425437410ca3dfb3e053",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "The all-in-accounting compiler rejects a self-derived dependency on exchange_pair.z_history because it is not a typed record reference. The rate therefore remains a read-only query projection over the maintained pair summary, not a materialized field.",
+    "Only SurrealDB 3.2.0 disposable-profile behavior was exercised. Item/service execution, H6b quote-derived execution, fees, partial reversals, and production migration remain unverified."
+  ]
+}

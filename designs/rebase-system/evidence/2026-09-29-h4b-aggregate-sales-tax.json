@@ -1,0 +1,97 @@
+{
+  "packet": "H4b1 aggregate sales invoice tax component",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "scope": [
+    "One explicitly selected immutable proportional sales-tax rule version on one sales invoice issue.",
+    "Basis is the sum of currency-rounded sales_invoice_line amounts in an input-only invoice root.",
+    "One tree-less basis child and one stable tax child are source-owned siblings of the issue.",
+    "Tax child posts customer receivable, invoice outstanding, and tax-authority payable; no cash or physical stock posting is added."
+  ],
+  "mechanism": {
+    "input_root": "sales_invoice.z_taxable_input",
+    "basis_table": "sales_invoice_aggregate_tax_basis",
+    "output_table": "sales_invoice_aggregate_tax_component",
+    "feedback_boundary": "Tax output references the tree-less basis row. It does not contribute to z_taxable_input; the issue invoice reference remains plain.",
+    "output_identity": "Issue-owned stable (source, role) IDs for each aggregate basis and tax component."
+  },
+  "rounding": {
+    "positive_precision": "fn::accounting::currency_round uses math::fixed(value, precision).",
+    "zero_precision": "fn::accounting::currency_round uses math::round(value) when precision is zero.",
+    "probe": "At JPY precision 0, a 13.5 line amount rounds to 14 and its 10% aggregate tax rounds to 1.",
+    "engine_observation": "SurrealDB 3.2.0 rejected math::fixed(value, 0) with: Incorrect arguments for function math::fixed(). The second argument must be an integer greater than 0. The helper handles zero precision without broadening this observation beyond the tested version."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b",
+    "result": "passed",
+    "checks": [
+      "Inputs 3.334 and 4.444 produce line children 3.33 and 4.44 and aggregate basis 7.77; rounding the raw combined total would produce 7.78.",
+      "Independent reconstruction checks input basis, aggregate tax, customer receivable, invoice outstanding, and tax-authority payable.",
+      "Line edit, removal, and addition refresh the basis and amount while retaining stable basis/tax IDs.",
+      "Explicit version selection updates the result without changing output IDs.",
+      "Positive rates rounded to zero, fixed rules on the aggregate route, multiple aggregate components, invalid date, account, currency, precision-zero foreign currency, and key mismatches reject atomically.",
+      "A downstream customer net ceiling rejects an issue line edit and restores the source, basis, tax output, and affected roots.",
+      "Aggregate component removal, re-addition, and issue deletion prune children and restore roots.",
+      "Physical stock balance and treasury balance remain equal to their pre-tax snapshots."
+    ],
+    "no_eligible_input_case": "Not structurally available in the current sales issue schema: lines are required and every sales invoice line is eligible for this basis; there is no eligibility discriminator."
+  },
+  "regression_controls": [
+    {
+      "command": "npm run probe:accounting-h4a",
+      "result": "passed; fixed/proportional parent-local and H3a manual paths remain working"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "passed"
+    }
+  ],
+  "gates": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "passed; 53 tables, 0 views"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed; SurrealDB 3.2.0"
+    },
+    {
+      "command": "node --check dev-tools/accounting/h4b-probe.js",
+      "result": "passed"
+    }
+  ],
+  "limits": [
+    "Fixture-only accounting profile proof; no production migration is claimed.",
+    "One aggregate proportional component per sales invoice issue; current schema has one issue per sales invoice.",
+    "No statutory interpretation, recoverability, tax-on-tax, withholding, collection, offsets, remittance, purchase-rule migration, or multi-document grouping.",
+    "Currency precision is inherited from the invoice currency. A different currency identity is rejected; there is no independent rule precision field to mismatch against the same currency."
+  ],
+  "fingerprints": {
+    "designs/all-in-accounting/claims/adjustments.surql": "65cca458d79a82294b0533266f49edd56b123a2ddd06a99bd6d809c3e4204384",
+    "designs/all-in-accounting/claims/invoices.surql": "9febc3ec237593f2409544b4097cbf8803663630fa9e426bcaa9b5f0565cb132",
+    "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+    "designs/all-in-accounting/claims/standalone.surql": "c1ab8d71ec8f14b89f2dcedc8c6822e97232084cf6b125e9ef618bf2975538d4",
+    "designs/all-in-accounting/claims/tax-rules.surql": "cd109c58ff40edc5e6b3d7d1c8ecd138436088c9f24a6fa275cee84c30df9cd5",
+    "designs/all-in-accounting/core/schema.surql": "cae621012a11cd48f24b5bb5b89ca28ca9650f5840883200afae17a977cd18be",
+    "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+    "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+    "src/analyze.js": "c8c5dd8257dc5efe312f68d07aa32f0839805c7ffd953286cd1aa4a50e1b63ee",
+    "src/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "src/tree-contract.js": "9b66357f0361af045638c7f7ae2f8bb97efecebcc018d498fc219c0dbc9cb3dd",
+    "src/schema.js": "5b17050ae5c767921048178e264a9c28b5f5d67882cbf6654e6ebfc7519de942",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/accounting/h4b-probe.js": "e3a44e145fb234e366ab90fa607f1749186f5f70d8a4567dcfef71f9bbbcecc4",
+    "dev-tools/accounting/h4a-probe.js": "d6b830599742835bf218cf38798d33860adfa850badf46b7e7d1deb2549106b5",
+    "dev-tools/accounting/core-probe.js": "f365c2f77206823018e51ffacf70428de9b33c4dfd852c3f879c37dcb827f3b9",
+    "package.json": "25d793b0f8f81e78d164fae7d58ef77a95caadad22c8dc7ef04094417bbd6e37",
+    "build/all-in-accounting/schema.surql": "1dad1735ad6aae21357289affd221527dcfc3613db3edfef65a7271843a3db5b"
+  }
+}

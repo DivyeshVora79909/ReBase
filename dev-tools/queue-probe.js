@@ -1,99 +1,51 @@
 #!/usr/bin/env node
 
 const assert = require("node:assert/strict");
-const { createQueue } = require("../gateway/queues");
-const { createSqsQueue } = require("../gateway/queues/sqs");
+const crypto = require("node:crypto");
+const { DEFAULT_ADMISSION, DEFAULT_POLICY } = require("../gateway/queues/bullmq");
+const {
+  assertOperationEnvelope,
+  assertPriority,
+  assertWorkEnvelope,
+  normalizeDecision,
+  operationEnvelope,
+  receiptEnvelope,
+  workEnvelopeKey,
+} = require("../gateway/queues/port");
 
-function fakeSqs() {
-  const commands = [];
-  const receives = new Map();
-  let message = 0;
-  return {
-    commands,
-    enqueue(queueUrl, messages) {
-      const batches = receives.get(queueUrl) || [];
-      batches.push(messages);
-      receives.set(queueUrl, batches);
-    },
-    async send(command) {
-      const name = command.constructor.name;
-      commands.push({ name, input: command.input });
-      if (name === "SendMessageCommand") return { MessageId: `message-${++message}` };
-      if (name === "ReceiveMessageCommand") {
-        const batches = receives.get(command.input.QueueUrl) || [];
-        return { Messages: batches.shift() || [] };
-      }
-      if (name === "GetQueueAttributesCommand") return { Attributes: { QueueArn: "arn:probe" } };
-      return {};
-    },
-    destroy() {},
-  };
-}
-
-function message(body, receiveCount = 1, id = "source") {
-  return {
-    MessageId: id,
-    ReceiptHandle: `receipt-${id}`,
-    Body: body,
-    Attributes: { ApproximateReceiveCount: String(receiveCount) },
-  };
-}
-
-async function main() {
-  const client = fakeSqs();
-  const queueUrls = { task: "task-url", schedule: "schedule-url", webhook: "webhook-url" };
-  const deadLetterQueueUrls = { task: "task-dead", schedule: "schedule-dead", webhook: "webhook-dead" };
-  const port = createSqsQueue({
-    client,
-    queueUrls,
-    deadLetterQueueUrls,
-    policies: { task: { attempts: 3, waitTimeSeconds: 0 } },
-  });
+function main() {
   const locator = { namespace: "tenant", database: "app", id: "send_brevo_email:one" };
-
-  await port.publish("task", locator, { delayMs: 2_000_000, jobId: "domain:event:1" });
-  const published = client.commands.find((command) => command.name === "SendMessageCommand");
-  assert.equal(published.input.DelaySeconds, 900);
-  assert.deepEqual(JSON.parse(published.input.MessageBody), locator);
-
-  client.enqueue("task-url", [message(JSON.stringify(locator), 1, "ack")]);
-  assert.equal(await port.pollOnce("task", async (delivery) => {
-    assert.deepEqual(delivery.locator, locator);
-    assert.equal(delivery.attempts, 1);
-    return { action: "ack" };
-  }), 1);
-  assert(client.commands.some((command) => command.name === "DeleteMessageCommand" && command.input.ReceiptHandle === "receipt-ack"));
-
-  client.enqueue("task-url", [message(JSON.stringify(locator), 1, "retry")]);
-  await port.pollOnce("task", async () => ({ action: "retry", delayMs: 2500 }));
-  assert(client.commands.some((command) => command.name === "ChangeMessageVisibilityCommand"
-    && command.input.ReceiptHandle === "receipt-retry" && command.input.VisibilityTimeout === 3));
-
-  client.enqueue("task-url", [message(JSON.stringify(locator), 3, "exhausted")]);
-  await port.pollOnce("task", async () => ({ action: "retry", delayMs: 1000 }));
-  assert(client.commands.some((command) => command.name === "SendMessageCommand"
-    && command.input.QueueUrl === "task-dead" && command.input.MessageBody.includes("retry-exhausted")));
-
-  client.enqueue("task-url", [message("not-json", 1, "invalid")]);
-  await port.pollOnce("task", async () => ({ action: "ack" }));
-  assert(client.commands.some((command) => command.name === "SendMessageCommand"
-    && command.input.QueueUrl === "task-dead" && command.input.MessageBody.includes("invalid-locator")));
-
-  await port.schedule("tenant/app/schedule", locator, new Date(Date.now() + 60_000));
-  assert(client.commands.some((command) => command.name === "SendMessageCommand"
-    && command.input.QueueUrl === "schedule-url" && command.input.DelaySeconds > 0));
-  const health = await port.health();
-  assert.equal(health.ok, true);
-  assert.equal(health.driver, "sqs");
-  assert.equal(port.driver, "sqs");
-  assert.throws(() => createQueue({ driver: "unknown" }), /Unsupported queue driver/);
-  await port.close();
-  console.log("queues: SQS lane port, delay, retry, dead-letter, invalid locator, schedule, and health passed");
+  const record = { execution_id: crypto.randomUUID(), revision: crypto.randomUUID() };
+  const envelope = operationEnvelope(locator, record);
+  assert.deepEqual(assertWorkEnvelope(envelope), envelope);
+  assert.deepEqual(assertOperationEnvelope(envelope), envelope);
+  assert.match(workEnvelopeKey(envelope), /^w-[A-Za-z0-9_-]+$/);
+  assert.notEqual(workEnvelopeKey(envelope), workEnvelopeKey({ ...envelope, revision: crypto.randomUUID() }));
+  assert.equal(assertPriority(undefined), 50);
+  assert.equal(assertPriority(10), 10);
+  assert.equal(assertPriority(100), 100);
+  assert.equal(assertPriority(undefined, "receipt"), 1);
+  const receipt = receiptEnvelope({ namespace: "tenant", database: "app", id: "provider_receipt:one" }, crypto.randomUUID());
+  assert.deepEqual(Object.keys(receipt).sort(), ["kind", "locator", "revision", "version"]);
+  assert.equal(assertPriority(undefined, receipt.kind), 1);
+  assert.throws(() => assertPriority(0), /Priority/);
+  assert.throws(() => assertPriority(101), /Priority/);
+  assert.throws(() => assertWorkEnvelope({ ...envelope, priority: 10 }), /envelope/);
+  assert.deepEqual(normalizeDecision({ action: "retry", delayMs: 25 }), { action: "retry", delayMs: 25 });
+  assert.equal(normalizeDecision({ action: "dead-letter", reason: "x" }).reason, "x");
+  assert.deepEqual(DEFAULT_ADMISSION, { maxLiveHints: 1000, receiptReserve: 100 });
+  assert.equal(DEFAULT_POLICY.concurrency, 8);
+  assert.equal(DEFAULT_POLICY.attempts, 5);
+  console.log("queues: versioned work identity, positive priority, shared admission defaults, and decisions passed");
 }
 
-if (require.main === module) main().catch((error) => {
-  console.error(`queues: FAIL: ${error.stack || error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`queues: FAIL: ${error.stack || error.message}`);
+    process.exitCode = 1;
+  }
+}
 
 module.exports = { main };

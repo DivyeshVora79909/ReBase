@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { loadEnvironment, resolveConfiguration } = require("../../config/environment");
+const { resolveConfiguration, validateConfiguration } = require("../../config/environment");
 const { loadMaterials } = require("./materials");
 const { validateTableHandlers, validateWebhookHandlers } = require("./table-handlers");
 const {
@@ -27,10 +27,6 @@ function parseArgs(argv) {
     if (option === "--project" || option === "--source") args.projectDir = next();
     else if (option === "--framework") args.frameworkDir = next();
     else if (option === "--output") args.outputDir = next();
-    else if (option === "--namespace" || option === "--ns") args.namespace = next();
-    else if (option === "--database" || option === "--db") args.database = next();
-    else if (option === "--runtime-url") args.runtimeUrl = next();
-    else if (option === "--runtime-secret") args.runtimeSecret = next();
     else if (option === "--check") args.check = true;
     else if (option === "--print-raw") args.printRaw = true;
     else if (option === "--no-root-permissions") args.rootPermissions = false;
@@ -41,19 +37,13 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  return `Usage: node dev-tools/compiler/cli.js [options]
+  return `Usage: node [--env-file PATH] dev-tools/compiler/cli.js [options]
 
 Material inputs:
   --project <directory>       Project SurrealQL root (default: designs/test)
   --framework <directory>     Framework SurrealQL root (default: framework)
   --output <directory>        Build artifact directory (default: build/<project>)
-
-  Compilation context:
-  --env-file <path>           Load deployment values from an environment profile
-  --namespace <name>          Optional target namespace
-  --database <name>           Optional target database
-  --runtime-url <url>         Generate effect events for this runtime
-  --runtime-secret <secret>   Internal wake credential embedded in generated events
+  Runtime context and event credentials come from the loaded process profile.
   --print-raw                 Print the combined source material before compiling
   --no-root-permissions       Skip generated root permission bootstrap
   --check                     Verify generated artifacts without writing them
@@ -64,14 +54,10 @@ function deploymentNotice(configuration) {
   const context = [configuration.surreal.namespace, configuration.surreal.database];
   const runtime = [configuration.runtime.url, configuration.runtime.secret];
   const messages = [];
-  if (context.some(Boolean) && !context.every(Boolean)) {
-    messages.push("incomplete namespace/database context omitted");
-  } else if (!context.some(Boolean)) {
+  if (!context.some(Boolean)) {
     messages.push("namespace/database context absent; artifacts are context-neutral");
   }
-  if (runtime.some(Boolean) && !runtime.every(Boolean)) {
-    messages.push("incomplete runtime binding omitted");
-  } else if (!runtime.some(Boolean)) {
+  if (!runtime.some(Boolean)) {
     messages.push("runtime binding absent; effect events are omitted");
   }
   return messages.length ? `ReBase compiler: ${messages.join("; ")}` : null;
@@ -82,6 +68,20 @@ function resolveDirectory(root, value) {
 }
 
 function compileFromArgs(rawArgs, root = process.cwd()) {
+  for (const key of [
+    "endpoint",
+    "username",
+    "password",
+    "namespace",
+    "database",
+    "runtimeUrl",
+    "runtimeSecret",
+    "environment",
+  ]) {
+    if (Object.hasOwn(rawArgs, key)) {
+      throw new Error(`${key} is process-profile configuration and cannot be overridden`);
+    }
+  }
   const projectDir = resolveDirectory(root, rawArgs.projectDir);
   const frameworkDir = resolveDirectory(root, rawArgs.frameworkDir);
   const outputDir = resolveDirectory(
@@ -95,21 +95,15 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     ],
     print: rawArgs.printRaw,
   });
-  const configuration = rawArgs.configuration || resolveConfiguration({}, rawArgs);
+  const configuration = validateConfiguration(
+    rawArgs.configuration || resolveConfiguration(process.env),
+  );
   const context = {
-    namespace: rawArgs.namespace || configuration.surreal.defaultContext?.namespace,
-    database: rawArgs.database || configuration.surreal.defaultContext?.database,
-    runtimeUrl: rawArgs.runtimeUrl || configuration.runtime.url,
-    runtimeSecret: rawArgs.runtimeSecret || configuration.runtime.secret,
+    namespace: configuration.surreal.defaultContext?.namespace,
+    database: configuration.surreal.defaultContext?.database,
+    runtimeUrl: configuration.runtime.url,
+    runtimeSecret: configuration.runtime.secret,
   };
-  if ((context.namespace && !context.database) || (!context.namespace && context.database)) {
-    context.namespace = undefined;
-    context.database = undefined;
-  }
-  if ((context.runtimeUrl && !context.runtimeSecret) || (!context.runtimeUrl && context.runtimeSecret)) {
-    context.runtimeUrl = undefined;
-    context.runtimeSecret = undefined;
-  }
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
   const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
   const webhookHandlers = validateWebhookHandlers(projectDir);
@@ -124,6 +118,7 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
     outputDir,
     bundle: result.bundle,
     contracts: result.contracts,
+    lifecycleMigration: result.lifecycleMigration,
     copies,
   }, { check: rawArgs.check });
   return {
@@ -138,14 +133,13 @@ function compileFromArgs(rawArgs, root = process.cwd()) {
   };
 }
 
-function main(argv = process.argv.slice(2)) {
-  const loaded = loadEnvironment(argv);
-  const args = parseArgs(loaded.args);
-  args.configuration = resolveConfiguration(loaded.values, args);
+function main(argv = process.argv.slice(2), environment = process.env) {
+  const args = parseArgs(argv);
   if (args.help) {
     console.log(usage());
     return null;
   }
+  args.configuration = resolveConfiguration(environment);
   const notice = deploymentNotice(args.configuration);
   if (notice) console.error(notice);
   return compileFromArgs(args);
@@ -162,6 +156,8 @@ if (require.main === module) {
     console.log(`Webhook handlers: ${result.webhookHandlerCount}`);
     console.log(`Output: ${relativeOutput}`);
     console.log(`Schema: ${path.join(relativeOutput, "schema.surql")}`);
+    console.log(`One-shot upgrade batches: ${path.join(relativeOutput, "migrate-one-shot-backfill.surql")}`);
+    console.log(`One-shot upgrade finalizer: ${path.join(relativeOutput, "migrate-one-shot-finalize.surql")}`);
   } catch (error) {
     console.error(`ReBase compilation failed: ${error.message}`);
     process.exitCode = 1;

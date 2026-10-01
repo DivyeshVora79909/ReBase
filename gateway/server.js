@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 const fs = require("node:fs");
+const { createServer } = require("node:http");
 const path = require("node:path");
 const { once } = require("node:events");
-const { serve } = require("@hono/node-server");
 const { createAuthenticationService } = require("./authentication");
+const { createAuthenticationPayloadCipher } = require("./authentication-payload");
 const { createRuntimeApp } = require("./app");
 const {
   createSurrealStoreDirectory,
@@ -13,8 +14,6 @@ const {
 const { loadTableHandlers } = require("./handlers");
 const { createOAuthVerifier } = require("./oauth");
 const { createMemoryRateLimiter, createRedisRateLimiter } = require("./rate-limit");
-const { createResendPlatformEmailAdapter } = require("./providers/resend-platform-email.adapter");
-const { createTwilioSmsAdapter } = require("./providers/twilio-sms.adapter");
 const { createWebhookRouteCodec } = require("./webhook-routes");
 const { loadWebhookHandlers } = require("./webhooks");
 const { createAdapters, createWebhookAdapters } = require("./providers");
@@ -23,9 +22,9 @@ const { createReconciler } = require("./reconciler");
 const { createRuntime } = require("./runtime");
 const { createTableStore } = require("./store");
 const {
-  loadEnvironment,
   resolveConfiguration,
   assertConnectionConfiguration,
+  validateConfiguration,
 } = require("../config/environment");
 
 function readContracts(projectDir) {
@@ -41,79 +40,42 @@ function readContracts(projectDir) {
   };
 }
 
-function configuredText(value) {
-  if (value === undefined || value === null) return undefined;
-  const normalized = String(value).trim();
-  return normalized || undefined;
-}
-
-function createPlatformEmail(config = {}, options = {}) {
-  const apiKey = configuredText(config.resendApiKey);
-  if (!apiKey) return null;
-  return createResendPlatformEmailAdapter({
-    apiKey,
-    from: configuredText(config.from),
-    fetch: options.fetch,
-  });
-}
-
-function createPlatformSms(config = {}, options = {}) {
-  const accountSid = configuredText(config.accountSid);
-  const authToken = configuredText(config.authToken);
-  const apiKeySid = configuredText(config.apiKeySid);
-  const apiKeySecret = configuredText(config.apiKeySecret);
-  const from = configuredText(config.from);
-  const supplied = [accountSid, authToken, apiKeySid, apiKeySecret, from].some(Boolean);
-  if (!supplied) return null;
-  const missing = [];
-  if (!accountSid) missing.push("REBASE_PLATFORM_SMS_TWILIO_ACCOUNT_SID");
-  if (!from) missing.push("REBASE_PLATFORM_SMS_TWILIO_FROM");
-  const apiKeySupplied = Boolean(apiKeySid || apiKeySecret);
-  if (apiKeySupplied && !apiKeySid) missing.push("REBASE_PLATFORM_SMS_TWILIO_API_KEY_SID");
-  if (apiKeySupplied && !apiKeySecret) missing.push("REBASE_PLATFORM_SMS_TWILIO_API_KEY_SECRET");
-  if (!apiKeySupplied && !authToken) missing.push("REBASE_PLATFORM_SMS_TWILIO_AUTH_TOKEN");
-  if (missing.length) throw new Error(`Incomplete Twilio SMS configuration: ${missing.join(", ")}`);
-  return createTwilioSmsAdapter({
-    accountSid,
-    authToken,
-    apiKeySid,
-    apiKeySecret,
-    from,
-    fetch: options.fetch,
-  });
-}
-
 async function startServer(options = {}) {
-  const config = options.config || resolveConfiguration({}, options);
-  const databaseOptions = options.databaseOptions || {};
-  const optionContext = options.defaultContext || (
-    options.namespace && options.database
-      ? { namespace: options.namespace, database: options.database }
-      : undefined
-  );
-  const connectionConfig = {
-    ...config,
-    surreal: {
-      ...config.surreal,
-      ...databaseOptions,
-      endpoint: options.endpoint ?? databaseOptions.endpoint ?? config.surreal.endpoint,
-      username: options.username ?? databaseOptions.username ?? config.surreal.username,
-      password: options.password ?? databaseOptions.password ?? config.surreal.password,
-      defaultContext: optionContext || config.surreal.defaultContext,
-    },
-  };
-  if (!options.stores && !options.database) assertConnectionConfiguration(connectionConfig);
-  const environment = options.environment || config.environment;
-  const allowBearer =
-    environment === "production"
-      ? false
-      : (options.allowBearer ?? environment === "development");
-  const runtimeSecret = options.runtimeSecret || config.runtime.secret;
+  for (const key of [
+    "environment",
+    "allowBearer",
+    "endpoint",
+    "username",
+    "password",
+    "databaseOptions",
+    "namespace",
+    "defaultContext",
+    "contexts",
+    "runtimeSecret",
+    "hostname",
+    "port",
+    "queueDriver",
+    "queueOptions",
+    "storageBucket",
+    "authenticationPayloadSecret",
+    "reconcileIntervalMs",
+    "bodyLimitBytes",
+    "requestTimeoutMs",
+    "debug",
+  ]) {
+    if (Object.hasOwn(options, key)) {
+      throw new Error(`${key} is process-profile configuration and cannot be overridden`);
+    }
+  }
+  const config = validateConfiguration(options.config || resolveConfiguration(process.env));
+  if (!options.stores && !options.database) assertConnectionConfiguration(config);
+  const connectionConfig = config;
+  const environment = config.environment;
+  const allowBearer = environment === "development";
+  const runtimeSecret = config.runtime.secret;
   if (!runtimeSecret) throw new Error("REBASE_RUNTIME_SECRET is required");
-  const hostname = options.hostname || config.server.host;
-  const port = Number(options.port ?? config.server.port);
-  if (!Number.isInteger(port) || port < 0 || port > 65535)
-    throw new Error("REBASE_HTTP_PORT must be a valid TCP port");
+  const hostname = config.server.host;
+  const port = config.server.port;
   const projectDir =
     options.projectDir || path.resolve("build", options.project || "test");
   const loaded = options.contracts
@@ -131,38 +93,42 @@ async function startServer(options = {}) {
     path.join(projectDir, "webhook-handlers"),
     { contracts: loaded.webhookContracts },
   );
-  const sendEmail = options.sendEmail === undefined
-    ? createPlatformEmail(config.platformEmail, options)
-    : options.sendEmail;
-  const sendSms = options.sendSms === undefined
-    ? createPlatformSms(config.platformSms, options)
-    : options.sendSms;
+  const authenticationPayloadSecret = config.authentication.payloadSecret;
+  if (loaded.principals?.user && environment === "production"
+    && !authenticationPayloadSecret && !options.authenticationPayloadCipher) {
+    throw new Error("REBASE_AUTHENTICATION_PAYLOAD_SECRET is required in production");
+  }
+  if (loaded.principals?.user && environment === "production"
+    && authenticationPayloadSecret && Buffer.byteLength(String(authenticationPayloadSecret)) < 32) {
+    throw new Error("REBASE_AUTHENTICATION_PAYLOAD_SECRET must be at least 32 bytes in production");
+  }
+  const authenticationPayloadCipher = options.authenticationPayloadCipher
+    || createAuthenticationPayloadCipher(authenticationPayloadSecret || runtimeSecret);
   const oauth = options.oauth || createOAuthVerifier(options.oauthProviders, {
     onError: options.onOAuthError,
   });
-  const storageBucket = options.storageBucket ?? config.storage?.bucket;
-  const adapters = options.adapters || createAdapters({
+  const storageBucket = config.storage.bucket;
+  const adapterSet = options.adapters || createAdapters({
     ...(options.adapterOptions || {}),
     fetch: options.fetch,
     storageBucket,
+    authenticationPayloadCipher,
     overrides: options.adapterOverrides,
+  });
+  const adapters = Object.freeze({
+    ...adapterSet,
+    openAuthenticationPayload: adapterSet.openAuthenticationPayload || authenticationPayloadCipher.open,
   });
   const webhookAdapters = options.webhookAdapters || createWebhookAdapters({
     overrides: options.webhookAdapterOverrides,
   });
-  const queueOptions = options.queueOptions || {};
   const queue = options.queue || createQueue({
-    driver: options.queueDriver ?? queueOptions.driver ?? config.queue.driver,
     bullmq: {
-      ...config.queue,
-      ...config.queue.redis,
-      ...queueOptions,
-      ...(options.queueOptions?.bullmq || {}),
-    },
-    sqs: {
-      ...config.queue.sqs,
-      ...queueOptions,
-      ...(options.queueOptions?.sqs || {}),
+      url: config.queue.redis.url,
+      prefix: config.queue.prefix,
+      connectTimeoutMs: config.queue.redis.connectTimeoutMs,
+      startupTimeoutMs: config.queue.startupTimeoutMs,
+      healthTimeoutMs: config.queue.healthTimeoutMs,
     },
   });
   const stores =
@@ -173,17 +139,11 @@ async function startServer(options = {}) {
           options.database,
         )
       : createSurrealStoreDirectory({
-          databaseOptions: {
-            ...connectionConfig.surreal,
-            ...databaseOptions,
-          },
+          databaseOptions: connectionConfig.surreal,
         }));
   const runtimeOptions = { ...(options.runtimeOptions || {}) };
-  let defaultContext = options.defaultContext || {
-    namespace: options.namespace ?? config.surreal.defaultContext?.namespace,
-    database: options.database ?? config.surreal.defaultContext?.database,
-  };
-  const configuredContexts = [...(options.contexts ?? config.surreal.contexts ?? [])];
+  let defaultContext = config.surreal.defaultContext || {};
+  const configuredContexts = [...config.surreal.contexts];
   if (defaultContext.namespace && defaultContext.database && !configuredContexts.some(
     (context) => context.namespace === defaultContext.namespace
       && context.database === defaultContext.database,
@@ -205,7 +165,7 @@ async function startServer(options = {}) {
   }
   let rateLimiter = options.rateLimiter;
   let ownsRateLimiter = false;
-  if (rateLimiter === undefined && (sendEmail || sendSms)) {
+  if (rateLimiter === undefined && loaded.principals?.user) {
     if (config.queue.redis.url) {
       rateLimiter = createRedisRateLimiter({
         url: config.queue.redis.url,
@@ -221,26 +181,20 @@ async function startServer(options = {}) {
     }
     ownsRateLimiter = true;
   }
-  if ((sendEmail || sendSms) && !loaded.principals?.user && !options.authentication) {
-    if (ownsRateLimiter) await rateLimiter.close?.().catch(() => {});
-    if (!options.queue) await queue.close().catch(() => {});
-    if (!options.stores) await stores.close?.().catch(() => {});
-    throw new Error("Compiled principal metadata is required for authentication challenges");
-  }
   const authentication = options.authentication || (loaded.principals?.user
     ? createAuthenticationService({
         stores,
         principals: loaded.principals,
         allowedContexts: configuredContexts,
-        sendEmail,
-        sendSms,
+        sealAuthenticationPayload: authenticationPayloadCipher.seal,
         rateLimiter,
         challengeTtlMs: config.authentication?.challengeTtlMs,
         rateLimits: config.authentication?.rateLimits,
         onError: options.onAuthenticationError,
       })
     : null);
-  runtimeOptions.allowedContexts ||= configuredContexts;
+  runtimeOptions.allowedContexts = configuredContexts;
+  runtimeOptions.terminalTaskRetentionMs = config.server.terminalTaskRetentionDays * 24 * 60 * 60 * 1000;
   const routeCodec = options.routeCodec || createWebhookRouteCodec(runtimeSecret);
   const runtime = createRuntime({
     handlers,
@@ -259,16 +213,11 @@ async function startServer(options = {}) {
   let server;
   let app;
   try {
-    for (const lane of ["task", "schedule", "webhook"]) {
-      workerStops.push(
-        await queue.start(lane, (delivery) => runtime.consume(lane, delivery)),
-      );
-    }
+    workerStops.push(await queue.start((delivery) => runtime.consume(delivery)));
     reconciler = createReconciler({
       runtime,
       contexts: configuredContexts,
-      intervalMs:
-        options.reconcileIntervalMs ?? config.server.reconcileIntervalMs,
+      intervalMs: config.server.reconcileIntervalMs,
       onError: options.onReconcileError,
     });
     stopReconciler = reconciler.start({
@@ -291,11 +240,17 @@ async function startServer(options = {}) {
       defaultContext,
       readinessContexts: configuredContexts,
       allowBearer,
-      bodyLimitBytes: options.bodyLimitBytes ?? config.server.bodyLimitBytes,
-      requestTimeoutMs: options.requestTimeoutMs ?? config.server.requestTimeoutMs,
-      debug: options.debug ?? config.server.debug,
+      // Generated SurrealDB events authenticate with the shared runtime secret.
+      allowInternalBearer: true,
+      bodyLimitBytes: config.server.bodyLimitBytes,
+      requestTimeoutMs: config.server.requestTimeoutMs,
+      debug: config.server.debug,
     });
-    server = serve({ fetch: app.fetch, hostname, port });
+    server = createServer(app);
+    server.requestTimeout = config.server.requestTimeoutMs;
+    server.headersTimeout = Math.max(1000, Math.min(60000, server.requestTimeout));
+    server.keepAliveTimeout = 5000;
+    server.listen(port, hostname);
     if (!server.listening)
       await Promise.race([
         once(server, "listening"),
@@ -334,8 +289,6 @@ async function startServer(options = {}) {
     oauth,
     adapters,
     webhookAdapters,
-    sendEmail,
-    sendSms,
     port: listeningPort,
     queue,
     rateLimiter,
@@ -347,31 +300,38 @@ async function startServer(options = {}) {
 }
 
 if (require.main === module) {
-  const loaded = loadEnvironment(process.argv.slice(2));
-  const config = resolveConfiguration(loaded.values);
-  startServer({ config })
-    .then((server) => {
-      const shutdown = async (signal) => {
-        try {
-          await server.close();
-          process.exitCode = 0;
-        } catch (error) {
-          console.error(error);
-          process.exitCode = 1;
-        } finally {
-          if (signal) process.exit();
-        }
-      };
-      process.once("SIGTERM", () => shutdown("SIGTERM"));
-      process.once("SIGINT", () => shutdown("SIGINT"));
-      console.log(
-        `ReBase runtime listening on http://${server.hostname}:${server.port}`,
-      );
-    })
-    .catch((error) => {
-      console.error(error);
-      process.exitCode = 1;
-    });
+  const applicationArgs = process.argv.slice(2);
+  if (applicationArgs.length) {
+    console.error(
+      `Unexpected runtime arguments: ${applicationArgs.join(" ")}. Use Node options before gateway/server.js; configuration is read from process.env.`,
+    );
+    process.exitCode = 1;
+  } else {
+    const config = resolveConfiguration(process.env);
+    startServer({ config })
+      .then((server) => {
+        const shutdown = async (signal) => {
+          try {
+            await server.close();
+            process.exitCode = 0;
+          } catch (error) {
+            console.error(error);
+            process.exitCode = 1;
+          } finally {
+            if (signal) process.exit();
+          }
+        };
+        process.once("SIGTERM", () => shutdown("SIGTERM"));
+        process.once("SIGINT", () => shutdown("SIGINT"));
+        console.log(
+          `ReBase runtime listening on http://${server.hostname}:${server.port}`,
+        );
+      })
+      .catch((error) => {
+        console.error(error);
+        process.exitCode = 1;
+      });
+  }
 }
 
-module.exports = { createPlatformEmail, createPlatformSms, readContracts, startServer };
+module.exports = { readContracts, startServer };

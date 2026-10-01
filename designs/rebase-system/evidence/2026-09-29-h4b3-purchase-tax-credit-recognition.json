@@ -1,0 +1,99 @@
+{
+  "packet": "H4b3 purchase tax credit recognition",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "H2 purchase_receipt.tax_amount remains the sole explicitly assessed purchase-tax fact and continues to post receivable, supplier payable, and purchase-invoice outstanding immediately.",
+    "purchase_tax_credit_policy_version selects one immutable policy key/version scoped to a tax_claim_account and a valid_from/valid_until interval; it contains no rate or legal interpreter.",
+    "One independently editable purchase_tax_credit_recognition fact references exactly one receipt and one policy version, carries a positive currency-precision amount, and is effective no earlier than the receipt and within the selected policy interval.",
+    "Recognition publishes only recognized_credit through a distinct slot on the existing claim_account.z_history. It does not change receivable, payable, net, supplier/invoice amounts, cash, or stock."
+  ],
+  "mechanism": {
+    "immutable_policy_version": "Native READONLY fields and unique (tax_claim_account, policy_key, version) identity; policy scope is the selected claim account, with explicit interval only.",
+    "recognition_identity": "Independent fact row with unique receipt reference (one current recognition per receipt); users edit/remove the fact directly.",
+    "tracked_receipt_dependencies": [
+      "assessed_tax_amount derives from receipt.tax_amount and declares @rebase-depends receipt.tax_amount; lowering the assessment below recognition refreshes the dependent and rejects atomically.",
+      "receipt_at, tax_claim_account, economic_entity, and currency derive from the receipt with declared one-hop dependencies and drive date/dimension validation.",
+      "A REJECT reference prevents deleting a receipt while its recognition fact exists."
+    ],
+    "account_guard": "claim_account validation rejects a negative recognized_credit.min_prefix independently of receivable/payable/net guards.",
+    "precision": "Recognition amount must equal currency_round(amount, currency.precision); zero-place currency rounding uses math::round and does not call H2's math::fixed(..., 0) path."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b3",
+    "result": "passed",
+    "elapsed_seconds": 3.067,
+    "output": "Accounting H4b3 purchase recognition, tracked assessment bound, stable lifecycle, and isolated measure passed",
+    "checks": [
+      "Base 100 and assessed tax 18 produce H2 supplier payable 118, tax-account receivable 18, purchase-invoice outstanding 118, and stock quantity 10 before recognition; recognized_credit starts at zero.",
+      "A selected fixture policy and explicit recognition amount 12 publish recognized_credit=12 while all H2 effects and net remain unchanged; no cash is created.",
+      "Zero, negative, excess-precision, above-assessment, before-receipt, and outside-policy amounts/dates reject.",
+      "A nonmatching tax identity with matching entity and currency, wrong entity, and wrong currency each reject.",
+      "A duplicate current recognition for the receipt rejects; selected policy interval edits reject; receipt deletion while recognition exists rejects.",
+      "Reducing assessed receipt tax from 18 below recognized amount 12 rejects atomically and restores exact source, recognition, claim-account, invoice, stock, and cash snapshots.",
+      "Editing recognition from 12 to 15 preserves the fact ID and changes only recognized_credit; removing it returns recognized_credit to zero without changing H2 effects.",
+      "After recognition removal, deleting the receipt unwinds its H2 receivable/payable/outstanding/stock memberships and leaves cash unchanged."
+    ]
+  },
+  "regression_controls": [
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "passed",
+      "elapsed_seconds": 18.822,
+      "output": "Accounting H3b receipt settlement, H3a sales tax, H2 receipt and net bounds, H1 fixtures, and A1/A2 oracles passed"
+    },
+    {
+      "command": "npm run probe:accounting-h4b2",
+      "result": "passed",
+      "elapsed_seconds": 8.065,
+      "output": "Accounting H4b2 compound dependency, refresh, stable cleanup, atomic guards, and no cash/stock effects passed"
+    },
+    {
+      "command": "npm run probe:accounting-h4b",
+      "result": "passed",
+      "elapsed_seconds": 5.196,
+      "output": "Accounting H4b aggregate basis, stable output, atomic guards, and no cash/stock effects passed"
+    },
+    {
+      "command": "npm run probe:accounting-h4a",
+      "result": "passed",
+      "elapsed_seconds": 5.500,
+      "output": "Accounting H4a fixed/proportional versions, parent-only calculation, rollback and H3a manual path passed"
+    }
+  ],
+  "gates": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "passed; 56 tables, 0 views",
+      "elapsed_seconds": 0.285
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed; 56 tables, 0 views",
+      "elapsed_seconds": 0.274
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed; build/all-in-accounting/schema.surql: OK",
+      "elapsed_seconds": 0.245
+    }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/claims/purchase-tax-credit.surql": "a456a410084598ee30e70f8454792ee805c9faa1300703a4dd0647280bad320e",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+    "designs/all-in-accounting/core/schema.surql": "0ec0ff00b3e2a5c4c905f61cce921e392393c43d0a8adc214d3ab208ce27255f",
+    "dev-tools/accounting/h4b3-probe.js": "10f61b981f695a0fe0e76bcece8ba2f7999ceab58e6d186a7582af9f6ff4023e",
+    "package.json": "bcdfe39a2d861be0c2835bc69cee28eb22feaaeaaf6469713e8a808da5f14177"
+  },
+  "limits": [
+    "This is a fixture-only fact/recognition path. Invoice presence, tax account labels, and selected policy keys do not imply legal recoverability, statutory eligibility, or legal completeness.",
+    "H2 assessed receivable remains immediate and distinct from recognized_credit; recognition does not post another receivable, alter net, or imply cash or stock.",
+    "Only one current recognition per purchase receipt is supported. Partial or staged recognitions, reversals, residual/rounding allocation, multiple policy dimensions, offsets, withholding, collection, remittance, and production migration are later work.",
+    "SurrealDB 3.2.0 H2 math::fixed(..., 0) behavior remains a separate known limitation; this packet's recognition precision helper avoids that call for zero-place currencies."
+  ]
+}

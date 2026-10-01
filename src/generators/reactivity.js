@@ -2,7 +2,7 @@ const { resolveRecordTargets } = require("../schema");
 const { contributesReaders } = require("../readers");
 const { readerSourceExpression, use } = require("./security");
 
-function generateViews(schema, options, systemTables = new Set(["user", "groups"])) {
+function generateViews(schema, options, systemTables = new Set(["rebase_user", "rebase_group"])) {
   let definitions = schema.rawViews.trimEnd();
   let events = use(options.namespace, options.database);
   let computed = use(options.namespace, options.database);
@@ -22,10 +22,10 @@ function generateViews(schema, options, systemTables = new Set(["user", "groups"
         ? resolveRecordTargets(schema, view.sourceTable, expression).filter((target) => !systemTables.has(target))
         : [];
       if (!targets.length) continue;
-      events += `DEFINE EVENT OVERWRITE ping_${view.name}_${groupKey} ON TABLE ${view.name} WHEN $event != 'NONE' THEN {\n`;
+      events += `DEFINE EVENT OVERWRITE ping_${view.name}_${groupKey} ON TABLE ${view.name} WHEN $event != 'NONE' AND $before != $after THEN {\n`;
       events += `    LET $target = $after.${groupKey} ?? $before.${groupKey};\n`;
       events += "    IF $target {\n";
-      const principalNames = options.principalTables || ["user", "groups"];
+      const principalNames = options.principalTables || ["rebase_user", "rebase_group"];
       events += `        IF record::tb($target) IN [${principalNames.map((name) => `'${name}'`).join(", ")}] { UPDATE $target; }\n`;
       events += "        ELSE { UPDATE $target SET system_ping = time::now(); };\n";
       events += "    };\n};\n\n";
@@ -41,13 +41,13 @@ function generateViews(schema, options, systemTables = new Set(["user", "groups"
 function generateCascades(analysis, options) {
   let output = use(options.namespace, options.database);
   for (const [targetTable, references] of analysis.reverseReferences.entries()) {
-    if (analysis.systemTables.has(targetTable) || schemaInternal(analysis, targetTable)) continue;
+    if (analysis.systemTables.has(targetTable)) continue;
     const businessReferences = references.filter(
-      (reference) => !reference.sourceIsSystem && !reference.sourceIsInternal,
+      (reference) => !reference.sourceIsSystem,
     );
     if (!businessReferences.length) continue;
     output += `DEFINE EVENT OVERWRITE rebase_cascade_downward ON TABLE ${targetTable}\n`;
-    output += "    WHEN $event = 'UPDATE' AND ($before.owned_by != $after.owned_by OR $before.readers_index != $after.readers_index) THEN {\n";
+    output += "    WHEN $event = 'UPDATE' AND $before.owned_by != $after.owned_by THEN {\n";
     for (const [index, reference] of businessReferences.entries()) {
       const variable = `$targets_${index + 1}`;
       output += `    LET ${variable} = $after.id<~(${reference.sourceTable} FIELD ${reference.sourceField});\n`;
@@ -61,7 +61,7 @@ function generateCascades(analysis, options) {
 function generateReaderCycleGuards(schema, options, systemTables) {
   let output = use(options.namespace, options.database);
   for (const table of schema.tables.values()) {
-    if (systemTables.has(table.name) || table.internal) continue;
+    if (systemTables.has(table.name)) continue;
     const fields = [...table.fields.values()].filter((field) =>
       contributesReaders(field, systemTables),
     );
@@ -79,14 +79,10 @@ function generateReaderCycleGuards(schema, options, systemTables) {
     output += `    WHEN $event IN ['CREATE', 'UPDATE'] AND (${changed}) THEN {\n`;
     output += `    LET $sources = array::distinct(${combined}).filter(|$source| $source != NONE);\n`;
     output += "    LET $reachable = array::flatten($sources.{..+collect}.rebase_reader_sources);\n";
-    output += "    IF $after.id IN $reachable { THROW 'REBASE_READER_CYCLE'; };\n";
+    output += "    IF $after.id IN $sources OR $after.id IN $reachable { THROW 'REBASE_READER_CYCLE'; };\n";
     output += "};\n\n";
   }
   return output;
-}
-
-function schemaInternal(analysis, tableName) {
-  return analysis.internalTables?.has(tableName) || false;
 }
 
 module.exports = { generateCascades, generateReaderCycleGuards, generateViews };

@@ -7,10 +7,8 @@ function objectKey(context) {
     .digest("hex")
     .slice(0, 24);
   const record = crypto
-    .createHash("sha256")
-    .update(String(context.id))
-    .digest("hex")
-    .slice(0, 32);
+    .randomBytes(16)
+    .toString("hex");
   return `rebase/${scope}/${context.table}/${record}`;
 }
 
@@ -22,15 +20,6 @@ module.exports = {
     },
     async UPDATE(input) {
       return issueAccess(input, input.before.object_key);
-    },
-    async DELETE({ before, load, adapters, signal }) {
-      const config = await load(before.storage_config);
-      await adapters.deleteS3Object({
-        ...storageArguments(config),
-        objectKey: before.object_key,
-        signal,
-      });
-      return { outcome: "success", patch: {} };
     },
   },
 };

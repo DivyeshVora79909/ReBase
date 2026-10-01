@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": ["owned_by", "a_string", "a_decimal", "a_datetime"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
     "a_string": { "type": "string", "minLength": 2 },
     "a_int": { "type": "integer", "minimum": -100, "maximum": 100, "x-rebase-optional-probability": 0.8 },
     "a_decimal": { "type": "number", "minimum": 0, "maximum": 10000 },

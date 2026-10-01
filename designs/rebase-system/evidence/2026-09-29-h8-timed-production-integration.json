@@ -1,0 +1,72 @@
+{
+  "packet": "H8 bounded timed production integration",
+  "run_date": "2026-09-29",
+  "engine": "SurrealDB 3.2.0",
+  "result": "passed",
+  "profile": {
+    "name": "all-in-accounting",
+    "tables": 76,
+    "materials": 24,
+    "native_schema_validation": "passed"
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/h8-timed-production-probe.js", "result": "passed" },
+    { "command": "node -e \"JSON.parse(require('fs').readFileSync('package.json'))\"", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed", "output": "76 tables, 24 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed", "output": "76 tables, 24 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed" },
+    { "command": "npm run probe:accounting-h8", "result": "passed", "output": "H8 timed production probe passed: reservations, exact-end stock, gross input, cancellation, output use, date shifts, and source-row oracles" },
+    { "command": "npm run probe:accounting-h7-gross-input", "result": "passed" },
+    { "command": "npm run probe:accounting-h7-assembly", "result": "passed" },
+    { "command": "npm run probe:stock-timestamp-guard", "result": "passed", "note": "H5a regression fixture now seeds prior stock for donor accounts so the H8 available floor does not begin from negative availability." },
+    { "command": "npm run probe:accounting-h5b", "result": "passed" },
+    { "command": "npm run probe:accounting-h6a", "result": "passed" },
+    { "command": "npm run probe:accounting-h6b", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed", "output": "4665 timestamp/delta sequences, 57909 binary folds; 777 missing-measure sequences, 3477 folds; compiled intervals and rollback passed" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "model": {
+    "recipe": "One immutable count-unit recipe version with exactly two input and two output roles plus a fixed positive duration.",
+    "run": "draft, scheduled, or cancelled. The planned end is computed as planned_start plus immutable duration while creating managed role rows; the run exposes no writable end field.",
+    "scheduled_inputs": "Each input role reduces free available at planned_start, reduces physical quantity at end, leaves available unchanged at end, and adds gross input at end for the pre-end physical stock guard.",
+    "outputs": "Each output role adds physical quantity and free availability at end and owns a capacity root consumed by a typed stock_out link.",
+    "cancellation": "Cancellation before or at start removes effects. Cancellation after start and before end releases the hold at cancellation time without physical consumption or output. Cancellation at or after end rejects.",
+    "shared_stock_writers": "Stock movements, purchase receipts, and H7 assembly input/output now add quantity and available deltas together; stock quantity minimum remains physical-only and available has a separate complete-time nonnegative guard."
+  },
+  "coverage": [
+    "Draft has no managed children or stock/reservation/gross-demand effect.",
+    "Overlapping reservations beyond opening availability reject in both source ID orders with complete snapshots unchanged.",
+    "Ordinary stock_out cannot spend held availability; same-account output cannot fund gross input at the run end.",
+    "Mid-run as-of quantity and available are independently checked; exact-end input consumption, output grant, and reservation coalescing match a source-row oracle.",
+    "Start-date edits refresh stable child end dates; earlier opening stock reduction/deletion revalidates and rejects atomically when it strands a scheduled run.",
+    "Before-start, exact-start, and after-start cancellation behavior and as-of totals are checked; at/after-end cancellation rejects.",
+    "Typed production output stock_out usage succeeds within capacity. Run quantity reduction, cancellation, deletion, consumer unlink, and output-date movement that strand usage reject with full snapshot equality.",
+    "Duplicate run retry and repeated scheduling preserve stable managed child identities and all roots.",
+    "Independent oracles rebuild physical quantity, free availability, gross input, and output-use capacity from source rows."
+  ],
+  "engine_observations": [
+    "On SurrealDB 3.2.0, marking the run end projection READONLY made a valid planned_start edit fail during rebase_refresh because an internal refresh attempted to update a readonly field.",
+    "A writable VALUE projection could be overridden directly by a caller. The production route therefore stores no run-level end_at; schemafull rejects an injected end_at, and managed role dates are computed from planned_start plus immutable duration."
+  ],
+  "limitations": [
+    "This is a bounded integration fixture, not a production migration or a general recipe language.",
+    "No valuation, work-in-progress cost, workforce, arbitrary recipe DAG, or variable-duration route is included.",
+    "Gross-input capacity is aggregated per stock account at the exact completion timestamp against strictly pre-end physical stock; this does not trace individual lots or define a generalized source-selection model.",
+    "Only one optional production output reference is supported per stock_out, and a stock_out cannot link both H7 and H8 output rows."
+  ],
+  "sha256": {
+    "designs/all-in-accounting/core/schema.surql": "452e093e9c1632d7a8f8b0e56854a37ad0660826022e03bf90cbb17d9f86e43d",
+    "designs/all-in-accounting/movements/stock.surql": "fa807c6c049d4231bd8f22fb8f7b4eccc534269b985514525c3aadd03b42cbad",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "e62fb065187a005be401db92385e468973ee1183d5b43c55b9fdd4c77d38d7f6",
+    "designs/all-in-accounting/movements/zz-assembly.surql": "656b1dace8ab3799f8e7c12957ea449c0e5745bf201f97dd049cb422615699e6",
+    "designs/all-in-accounting/movements/zz-timed-production.surql": "5ef9d2ab27a6648f0a70182d60b65ef17d3a65f167b8ca465c3c93382d1dd57f",
+    "dev-tools/accounting/h8-timed-production-probe.js": "175d32bb063d8b6ed2a3bf65091c9c30202dc382b58cc8502dace849f69aa5a2",
+    "dev-tools/accounting/stock-timestamp-probe.js": "7cc2717e5dd2e89ef61746ca4ce694914ee6d428624d13248b420a7a7f7f2a7e",
+    "package.json": "0a540baebd95ce5d4a86dd93a78f2390bfe6d30df00d211a3d9003a07db1848a",
+    "build/all-in-accounting/schema.surql": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc"
+  }
+}

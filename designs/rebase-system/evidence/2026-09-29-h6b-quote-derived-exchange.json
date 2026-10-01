@@ -1,0 +1,101 @@
+{
+  "packet": "H6b explicit quote-derived currency exchange",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "currency_exchange requires one explicit typed exchange_pair with matching ordered currency identities and authorization owner. Multiple quotes may exist for a pair; each transfer explicitly selects its quote and never infers a latest quote.",
+    "cash_fx_transfer reuses the existing quote-derived route. It requires a positive given amount at source-currency precision and a positive currency_round result at destination precision. It posts the treasury legs once, historical quote use once, and quoted_given/quoted_received to exchange_pair history. Quote-derived pair quantities remain separate from H6a executed_given/executed_received.",
+    "cash_fx_transfer_reversal is an optional full inverse with at most one reversal per source. It reverses treasury legs and net pair quote volumes using the source's current derived rounded amount. It does not reverse or reduce currency_exchange.z_usage.",
+    "Quote, transfer, reversal, treasury, and pair changes are covered only in the disposable profile. No second FX path is added."
+  ],
+  "probe": {
+    "command": "npm run probe:accounting-h6b",
+    "result": "passed",
+    "output": "Accounting H6b explicit quote selection, currency-rounded transfers, separate pair history, historical quote usage, full reversals, and source-row oracles passed",
+    "checks": [
+      "Unbound, wrong-orientation, wrong-owner, and noncurrency quotes reject atomically. A transfer explicitly uses the older selected quote even when a newer quote for the same pair already exists.",
+      "Wrong transfer account orientation, entity, and owner reject. A transfer dated before its selected quote rejects; a valid unreversed transfer moved before that quote is also rejected with full snapshot equality. Source precision is reconstructed from the referenced source currency row, and destination rounding precision from the referenced destination currency row, including precision-zero JPY.",
+      "Destination conversion uses fn::accounting::currency_round. A valid USD-to-JPY transfer confirms precision-zero output; a positive source amount that rounds to zero JPY rejects with the entire graph unchanged.",
+      "A treasury-floor downstream guard failure rolls back both cash legs, the selected quote-use member, and the ordered-pair history member. Transfer date-before-quote and source date edits that would move an existing source after its reversal reject atomically. A valid source amount edit refreshes reversal derived amounts and all roots.",
+      "A valid unreversed transfer is deleted and re-added at the same stable ID; the independent oracle checks treasury, pair, and quote-use roots after both removal and re-addition. Reversal deletion and stable-ID re-addition also refresh net quote volumes and treasury positions while quote usage remains positive historical usage.",
+      "Same-time transfer IDs are inserted out of lexical order. Independent source-row oracles reconstruct treasury sums and complete-time floors, rounded transfer outputs and residuals, pair quoted totals, and quote historical usage. A pair as-of summary is compared with transfer/reversal facts.",
+      "Quote-derived rows leave H6a executed measures and its execution-rate projection unchanged. Failed writes assert full snapshot equality across quote usage, pair history, transfers, reversals, and treasury roots."
+    ],
+    "final_hardening": [
+      "A valid unreversed transfer's effective_at edit before its explicitly selected quote rejects atomically with complete snapshot equality.",
+      "An unreversed transfer deletion and stable-ID re-addition each run the independent treasury, pair, quote-use, and FX output oracle.",
+      "The independent rounding oracle resolves source and destination precision from the referenced currency records, not quote precision fields."
+    ]
+  },
+  "commands": [
+    {
+      "command": "node --check dev-tools/accounting/h6b-probe.js",
+      "result": "passed after final probe hardening"
+    },
+    {
+      "command": "node --check dev-tools/accounting/h6a-probe.js",
+      "result": "passed"
+    },
+    {
+      "command": "node --check dev-tools/accounting/core-probe.js",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "passed; 68 tables, 0 views, 22 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed; 68 tables, 0 views, 22 materials"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed; schema OK"
+    },
+    {
+      "command": "npm run probe:accounting-h6b",
+      "result": "passed after final probe hardening; no schema changes since the full serial gate chain"
+    },
+    {
+      "command": "npm run probe:accounting-h6a",
+      "result": "passed against H6b schema"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "passed; H3b/H3a/H2/H1/A1/A2 controls"
+    },
+    {
+      "command": "npm run probe:accounting-h5c",
+      "result": "passed; standalone cash-refund controls"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed after final probe hardening"
+    }
+  ],
+  "prior_checkpoint_note": "The H6a evidence JSON remains unchanged as the H6a checkpoint. Four of its nine prior source hashes now describe the earlier checkpoint and are historical after H6b: movements/exchange.surql, movements/cash.surql, dev-tools/accounting/h6a-probe.js, and package.json. The H6a probe was rerun and passed under the current H6b schema.",
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/movements/cash.surql": "682bc6e475c1b619a6e9d19fa0a25cae747721298346feee5203f188923e5967",
+    "designs/all-in-accounting/movements/exchange.surql": "d472e433f52e075d7c586920e1a858dd38091f4d32c4ddccc20dab2a8ee21ecb",
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/claims/invoices.surql": "9bed09d04a22ae2c37c5d13f73f421af8e7f298da0c1fb204f6ea53c15fc43e0",
+    "dev-tools/accounting/h6b-probe.js": "ee3582e481fbc853d7648f6eb255d939f7782989213d71c3e9c845cd35d2474d",
+    "dev-tools/accounting/h6a-probe.js": "8f6c57066a917862228d34c1b9769bfa80c391fb20f5c3e64d7598d25f8675ea",
+    "dev-tools/accounting/core-probe.js": "84235b1b7466ee183148dfedb70c75d8dc6b2d9378d84d050c61f64f5fa8e31e",
+    "package.json": "538769e9cc1ffebf7f585c25edd9442f260260a89561b76f8122c1df471bf330",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/security.js": "7ec9a4e1e65abeaf0401632002ee5c640a473e0fef2a425437410ca3dfb3e053",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "H6b requires an explicitly selected quote bound to the ordered pair; quote selection policy and latest-quote inference are intentionally absent.",
+    "Only currency-to-currency execution and full one-per-source reversal are covered. Fees, partial reversal, item/service execution, statutory interpretation, and production migration remain unverified.",
+    "The result is specific to the disposable all-in-accounting profile on SurrealDB 3.2.0."
+  ]
+}

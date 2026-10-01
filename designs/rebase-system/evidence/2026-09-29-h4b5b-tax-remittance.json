@@ -1,0 +1,72 @@
+{
+  "packet": "H4b5b treasury-backed remittance of direct tax-account payable",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "One explicit tax_claim_remittance fact references exactly one actual cash_out and one claim_account whose opponent is a tax_account.",
+    "The positive amount is currency-precision exact; source and claim account must share economic entity and currency, and cash_out.to_party must equal claim_account.opponent.",
+    "The fact reduces claim payable by amount and increases net by amount, while adding allocated by amount exactly once to the existing cash_out.z_allocations root.",
+    "The cash_out remains the sole treasury debit. The remittance adds no treasury membership, extra cash row, invoice/stock effect, or duplicate allocation pool.",
+    "Multiple remittance facts can share one cash_out only within its existing positive-only allocated.max_prefix capacity."
+  ],
+  "mechanism": {
+    "fact": "Typed REJECT references to cash_out and claim_account; source_at is derived with @rebase-depends on cash_out.effective_at.",
+    "claim_effect": "At effective_at the fact posts payable -amount and net +amount to the selected claim_account.z_history.",
+    "cash_capacity_effect": "The same fact posts allocated +amount once to cash_out.z_allocations. Existing cash_out allocation cap and claim payable floor validate the two roots atomically.",
+    "cash_effect": "No treasury membership is emitted by the fact; cash_out already posts the one real treasury debit."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b5b",
+    "result": "passed",
+    "output": "Accounting H4b5b tax payable remittance, shared capacities, lifecycle, rollback, and no-duplicate-cash passed",
+    "checks": [
+      "Direct payable 12 plus actual cash_out 12 plus explicit remittance 12 at exactly the cash-out effective_at leaves claim payable 0, cash_out allocated 12, and treasury balance -12 exactly once; equal source/remittance time is accepted.",
+      "Independent row reconstruction verifies claim payable/net, cash_out allocation, and treasury balance from explicit payable, remittance, and cash_out rows.",
+      "Two remittances of 6 and 4 share a cash_out of 10 successfully; a further 0.01 rejects with complete snapshot equality, isolating the cash-source cap while payable remains sufficient.",
+      "A payable of 7, cash_out of 12, and remittance of 8 rejects under the claim payable floor while the separate cash-out allocation capacity remains unused.",
+      "Zero, negative, excess-precision amount 1.001, wrong typed source, before-cash-out date, entity mismatch, currency mismatch, cash-out party mismatch, and non-tax claim opponent reject with full snapshot equality.",
+      "Amount edit over capacity and effective-time rekey before cash-out reject atomically. After a valid remittance amount edit to 11, reducing cash_out.amount to 10 rejects with full snapshot equality. Moving cash_out.effective_at after an existing remittance rejects through the tracked source_at dependency.",
+      "Valid amount and effective-time edits preserve the remittance ID; source or claim-account deletion rejects while referenced; deletion removes claim/allocation effects; re-addition at the same ID restores them without another treasury debit."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/h4b5b-probe.js", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 62 tables, 0 views; 20 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 62 tables, 0 views; 20 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "npm run probe:accounting-h4b5b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b5a", "result": "passed" },
+    { "command": "npm run probe:treasury-timestamp-guard", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, adjacent intervals, tie-order independence and rollback" },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4a", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/claims/tax-remittance.surql": "f1c2a6784398d366b0bf35f200563409c235a03bbc1a66ed0a52dba2673d517f",
+    "designs/all-in-accounting/core/schema.surql": "566a4ba3f55bd897745e1a7daa732c1acd360c64c9a80bc9304b93a755ff8c4e",
+    "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+    "designs/all-in-accounting/claims/standalone.surql": "c1ab8d71ec8f14b89f2dcedc8c6822e97232084cf6b125e9ef618bf2975538d4",
+    "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+    "dev-tools/accounting/h4b5b-probe.js": "3e10586fea69ed4b2c06d4622665f85f7c39819f6ee6c2151fee1ba48ff2c380",
+    "package.json": "eefa812254b277daba254076f37006e1d37c31b6cb952fe8785daeff0e637db2",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "The fact settles direct claim_account tax payables; existing payable_cash_allocation still targets standalone payable records and was not migrated.",
+    "The route records an explicit amount and claims no statutory rate, legal remittance duty, eligibility interpretation, or cross-account netting permission.",
+    "Invoice outstanding complete-time guard and stock quantity guard are not changed; stock-floor work remains H5. No production migration is claimed."
+  ]
+}

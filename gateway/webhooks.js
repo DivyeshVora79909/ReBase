@@ -24,6 +24,9 @@ function normalizeImplementation(implementation, label) {
     if (!EVENT.test(event)) throw new Error(`${provider} has an invalid webhook event: ${event}`);
     if (typeof handler !== "function") throw new Error(`${provider}.${event} webhook handler must be a function`);
   }
+  if (typeof implementation.validate !== "function") {
+    throw new Error(`${provider} webhook handler requires validate() for pre-acceptance correlation checks`);
+  }
   const on = Object.freeze(Object.fromEntries(entries));
   return Object.freeze({
     file: label,
@@ -31,6 +34,7 @@ function normalizeImplementation(implementation, label) {
     provider,
     events: Object.freeze(entries.map(([event]) => event).sort()),
     on,
+    validate: implementation.validate,
   });
 }
 

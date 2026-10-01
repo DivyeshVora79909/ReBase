@@ -1,19 +1,22 @@
+const crypto = require("node:crypto");
 const IORedis = require("ioredis");
 const { Queue, Worker } = require("bullmq");
 const {
-  LANES,
-  assertLane,
-  assertLocator,
-  locatorKey,
+  createAtomicAdmissionBackendFactory,
+  parseCapacityResult,
+} = require("./atomic-admission");
+const {
+  assertPriority,
+  assertWorkEnvelope,
   normalizeDecision,
-  scheduleKey,
+  workEnvelopeKey,
 } = require("./port");
 
-const DEFAULT_POLICIES = Object.freeze({
-  task: { attempts: 5, backoffMs: 1000, concurrency: 8 },
-  schedule: { attempts: 8, backoffMs: 1000, concurrency: 2 },
-  webhook: { attempts: 5, backoffMs: 1000, concurrency: 4 },
-});
+const DEFAULT_POLICY = Object.freeze({ attempts: 5, backoffMs: 1000, concurrency: 8 });
+const DEFAULT_ADMISSION = Object.freeze({ maxLiveHints: 1000, receiptReserve: 100 });
+const DEFAULT_DEAD_LETTER_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_DEAD_LETTER_PRUNE_INTERVAL_MS = 60 * 1000;
+const DEFAULT_DEAD_LETTER_PRUNE_BATCH_SIZE = 1000;
 
 function redisOptions(options = {}) {
   return {
@@ -41,120 +44,153 @@ async function withDeadline(operation, timeoutMs, message) {
 
 function createConnection(options = {}) {
   if (options.connection) return { connection: options.connection, owned: false };
-  const url = options.url;
-  if (!url) throw new Error("BullMQ requires a Redis URL");
-  const connection = new IORedis(url, redisOptions(options));
+  if (!options.url) throw new Error("BullMQ requires a Redis URL");
+  const connection = new IORedis(options.url, redisOptions(options));
   connection.on("error", (error) => options.onError?.(error));
   return { connection, owned: true };
 }
 
-function policyFor(options, lane) {
-  return {
-    ...DEFAULT_POLICIES[lane],
-    ...(options.policies?.[lane] || {}),
-  };
-}
-
-async function replaceFinished(queue, jobId) {
-  const existing = await queue.getJob(jobId);
-  if (!existing) return null;
-  const state = await existing.getState();
-  if (["completed", "failed"].includes(state)) {
-    await existing.remove().catch(() => {});
-    return null;
-  }
-  return { job: existing, state };
-}
-
 function createBullMqPort(options = {}) {
   const prefix = options.prefix || "rebase";
+  const policy = { ...DEFAULT_POLICY, ...(options.policy || {}) };
+  const admission = { ...DEFAULT_ADMISSION, ...(options.admission || {}) };
+  if (!Number.isSafeInteger(admission.maxLiveHints) || admission.maxLiveHints < 2) {
+    throw new Error("BullMQ maxLiveHints must be an integer of at least two");
+  }
+  if (!Number.isSafeInteger(admission.receiptReserve) || admission.receiptReserve < 0
+    || admission.receiptReserve >= admission.maxLiveHints) {
+    throw new Error("BullMQ receiptReserve must be below maxLiveHints");
+  }
+  const deadLetterRetentionMs = options.deadLetterRetentionMs ?? DEFAULT_DEAD_LETTER_RETENTION_MS;
+  const deadLetterPruneIntervalMs = options.deadLetterPruneIntervalMs ?? DEFAULT_DEAD_LETTER_PRUNE_INTERVAL_MS;
+  const deadLetterPruneBatchSize = options.deadLetterPruneBatchSize ?? DEFAULT_DEAD_LETTER_PRUNE_BATCH_SIZE;
+  if (!Number.isSafeInteger(deadLetterRetentionMs) || deadLetterRetentionMs < 1) {
+    throw new Error("BullMQ deadLetterRetentionMs must be a positive safe integer");
+  }
+  if (!Number.isSafeInteger(deadLetterPruneIntervalMs) || deadLetterPruneIntervalMs < 1) {
+    throw new Error("BullMQ deadLetterPruneIntervalMs must be a positive safe integer");
+  }
+  if (!Number.isSafeInteger(deadLetterPruneBatchSize) || deadLetterPruneBatchSize < 1) {
+    throw new Error("BullMQ deadLetterPruneBatchSize must be a positive safe integer");
+  }
   const { connection, owned } = createConnection(options);
-  const queues = new Map(LANES.map((lane) => [
-    lane,
-    new Queue(lane, { connection, prefix }),
-  ]));
-  const deadLetters = new Map(LANES.map((lane) => [
-    lane,
-    new Queue(`${lane}-dead`, { connection, prefix }),
-  ]));
-  const workers = new Map();
+  const queue = new Queue("operations", {
+    connection,
+    prefix,
+  }, createAtomicAdmissionBackendFactory(admission));
+  const deadLetterQueue = new Queue("operations-dead", { connection, prefix });
+  const workers = new Set();
   let closed = false;
+  let deadLetterPruneTimer;
+  let deadLetterPrunePending = null;
 
-  function queueFor(lane) {
-    return queues.get(assertLane(lane));
+  async function replaceFinished(jobId) {
+    const existing = await queue.getJob(jobId);
+    if (!existing) return null;
+    const state = await existing.getState();
+    if (["completed", "failed"].includes(state)) {
+      await existing.remove().catch(() => {});
+      return null;
+    }
+    return { job: existing, state };
   }
 
-  async function publish(lane, locator, publishOptions = {}) {
+  async function liveCount() {
+    const counts = await queue.getJobCounts("wait", "paused", "prioritized", "delayed", "active");
+    return Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0);
+  }
+
+  async function publish(envelope, publishOptions = {}) {
     if (closed) throw new Error("BullMQ queue is closed");
-    const normalized = assertLocator(locator);
-    const queue = queueFor(lane);
-    const policy = policyFor(options, lane);
-    const jobId = publishOptions.jobId ? `m-${scheduleKey(publishOptions.jobId)}` : locatorKey(normalized);
-    const existing = await replaceFinished(queue, jobId);
-    if (existing) return { jobId, duplicate: true, state: existing.state };
+    const normalized = assertWorkEnvelope(envelope);
+    const jobId = workEnvelopeKey(normalized);
     const requestedDelay = Number(publishOptions.delayMs || 0);
     if (!Number.isFinite(requestedDelay) || requestedDelay < 0) {
       throw new Error("BullMQ delivery delay must be a finite non-negative number");
     }
     const delay = Math.max(0, Math.floor(requestedDelay));
+    const priority = assertPriority(publishOptions.priority, normalized.kind);
+    if (closed) throw new Error("BullMQ queue is closed");
+    const existing = await replaceFinished(jobId);
+    if (existing) return { jobId, duplicate: true, state: existing.state };
     const job = await queue.add("delivery", normalized, {
       jobId,
       delay,
       attempts: publishOptions.attempts || policy.attempts,
       backoff: { type: "rebase" },
-      priority: publishOptions.priority,
+      priority,
       removeOnComplete: { age: 3600, count: 1000 },
       removeOnFail: { age: 7 * 86400, count: 5000 },
     });
-    return { jobId: job.id, duplicate: false };
+    const capacity = parseCapacityResult(job.id);
+    if (capacity) {
+      return { jobId, queued: false, state: "capacity", ...capacity };
+    }
+    return { jobId: job.id, queued: true, duplicate: false };
   }
 
-  async function deadLetter(lane, job, decision) {
-    await deadLetters.get(lane).add("dead-letter", {
-      locator: assertLocator(job.data),
+  async function deadLetter(job, reason) {
+    const data = {
+      envelope: assertWorkEnvelope(job.data),
       sourceJobId: job.id,
       attempts: job.attemptsMade + 1,
-      reason: decision.reason,
+      reason: String(reason || "QUEUE_RETRY_EXHAUSTED"),
       failedAt: new Date().toISOString(),
-    }, {
-      jobId: `${job.id}-${job.attemptsMade + 1}`,
+    };
+    const deadId = `d-${crypto.createHash("sha256").update(`${job.id}:${data.attempts}`).digest("base64url")}`;
+    await deadLetterQueue.add("dead-letter", data, {
+      jobId: deadId,
       removeOnComplete: { age: 30 * 86400, count: 10000 },
     });
   }
 
-  async function enqueueDeadLetter(lane, job, decision) {
-    try {
-      await deadLetter(lane, job, decision);
-      return true;
-    } catch (error) {
-      options.onError?.(error);
-      return false;
-    }
+  function pruneDeadLetters() {
+    if (closed) return Promise.resolve(0);
+    if (deadLetterPrunePending) return deadLetterPrunePending;
+    deadLetterPrunePending = deadLetterQueue.clean(
+      deadLetterRetentionMs,
+      deadLetterPruneBatchSize,
+      "wait",
+    ).then((jobIds) => jobIds.length).catch((error) => {
+      try {
+        options.onError?.(error);
+      } catch {
+        // Cleanup reporting must not produce an unhandled rejection.
+      }
+      return 0;
+    }).finally(() => {
+      deadLetterPrunePending = null;
+    });
+    return deadLetterPrunePending;
   }
+
+  function requestDeadLetterPrune() {
+    void pruneDeadLetters();
+  }
+
+  deadLetterPruneTimer = setInterval(requestDeadLetterPrune, deadLetterPruneIntervalMs);
+  deadLetterPruneTimer.unref?.();
+  requestDeadLetterPrune();
 
   const deadLetteredJobs = new Set();
 
-  async function start(lane, consumer) {
+  async function start(consumer) {
     if (closed) throw new Error("BullMQ queue is closed");
-    assertLane(lane);
-    if (typeof consumer !== "function") throw new Error(`${lane} consumer must be a function`);
-    if (workers.has(lane)) throw new Error(`${lane} BullMQ worker already started`);
-    const policy = policyFor(options, lane);
-    const worker = new Worker(lane, async (job, token) => {
+    if (typeof consumer !== "function") throw new Error("Operation consumer must be a function");
+    if (workers.size) throw new Error("BullMQ operation worker already started");
+    const worker = new Worker("operations", async (job) => {
+      const envelope = assertWorkEnvelope(job.data);
       const decision = normalizeDecision(await consumer({
         attempts: job.attemptsMade + 1,
         maxAttempts: job.opts.attempts || policy.attempts,
         jobId: job.id,
-        lane,
-        locator: assertLocator(job.data),
+        envelope,
+        kind: envelope.kind,
+        locator: envelope.locator,
         receivedAt: new Date().toISOString(),
       }));
       if (decision.action === "dead-letter") {
-        if (!await enqueueDeadLetter(lane, job, decision)) {
-          const error = new Error("ReBase dead-letter delivery failed");
-          error.code = "REBASE_DLQ_UNAVAILABLE";
-          throw error;
-        }
+        await deadLetter(job, decision.reason);
         return { deadLettered: true, reason: decision.reason };
       }
       if (decision.action === "retry") {
@@ -180,14 +216,14 @@ function createBullMqPort(options = {}) {
     });
     worker.on("error", (error) => options.onError?.(error));
     worker.on("failed", async (job, error) => {
-      options.onFailed?.({ lane, job, error });
+      options.onFailed?.({ job, error });
       if (!job || job.attemptsMade < (job.opts.attempts || policy.attempts)) return;
-      const key = `${lane}:${job.id}:${job.attemptsMade}`;
+      const key = `${job.id}:${job.attemptsMade}`;
       if (deadLetteredJobs.has(key)) return;
       deadLetteredJobs.add(key);
       if (deadLetteredJobs.size > 10000) deadLetteredJobs.delete(deadLetteredJobs.values().next().value);
       try {
-        await enqueueDeadLetter(lane, job, { action: "dead-letter", reason: error?.code || "QUEUE_RETRY_EXHAUSTED" });
+        await deadLetter(job, error?.code || "QUEUE_RETRY_EXHAUSTED");
       } catch (deadLetterError) {
         options.onError?.(deadLetterError);
       }
@@ -196,51 +232,17 @@ function createBullMqPort(options = {}) {
       await withDeadline(
         () => worker.waitUntilReady(),
         options.startupTimeoutMs || 10000,
-        `${lane} BullMQ worker startup timed out`,
+        "BullMQ operation worker startup timed out",
       );
     } catch (error) {
       await worker.close(true).catch(() => {});
       throw error;
     }
-    workers.set(lane, worker);
+    workers.add(worker);
     return async () => {
-      const current = workers.get(lane);
-      if (current !== worker) return;
-      workers.delete(lane);
+      if (!workers.delete(worker)) return;
       await worker.close();
     };
-  }
-
-  async function schedule(key, locator, dueAt, scheduleOptions = {}) {
-    if (closed) throw new Error("BullMQ queue is closed");
-    const date = new Date(dueAt);
-    if (Number.isNaN(date.getTime())) throw new Error("Schedule dueAt must be a valid datetime");
-    const requestedAttempts = scheduleOptions.attempts == null ? policyFor(options, "schedule").attempts : Number(scheduleOptions.attempts);
-    if (!Number.isSafeInteger(requestedAttempts) || requestedAttempts < 1) {
-      throw new Error("Schedule attempts must be a positive integer");
-    }
-    const jobId = `s-${scheduleKey(key)}-${date.getTime()}`;
-    const queue = queueFor("schedule");
-    const existing = await replaceFinished(queue, jobId);
-    if (existing) return { jobId, duplicate: true, state: existing.state };
-    const policy = policyFor(options, "schedule");
-    const job = await queue.add("schedule", assertLocator(locator), {
-      jobId,
-      delay: Math.max(0, date.getTime() - Date.now()),
-      attempts: requestedAttempts,
-      backoff: { type: "rebase" },
-      removeOnComplete: { age: 3600, count: 1000 },
-      removeOnFail: { age: 7 * 86400, count: 5000 },
-    });
-    return { jobId: job.id, duplicate: false };
-  }
-
-  async function removeSchedule(key) {
-    const prefixId = `s-${scheduleKey(key)}-`;
-    const jobs = await queueFor("schedule").getJobs(["wait", "delayed", "prioritized"]);
-    const matching = jobs.filter((job) => String(job.id).startsWith(prefixId));
-    await Promise.all(matching.map((job) => job.remove().catch(() => {})));
-    return matching.length > 0;
   }
 
   async function health() {
@@ -250,34 +252,30 @@ function createBullMqPort(options = {}) {
         options.healthTimeoutMs || 2000,
         "Redis health check timed out",
       );
-      const lanes = {};
-      for (const [lane, worker] of workers) lanes[lane] = worker.isRunning();
-      const deadLetterCounts = {};
-      await Promise.all([...deadLetters].map(async ([lane, queue]) => {
-        deadLetterCounts[lane] = await withDeadline(
-          () => queue.getJobCounts("wait", "active", "delayed", "failed"),
-          options.healthTimeoutMs || 2000,
-          `${lane} dead-letter health check timed out`,
-        );
-      }));
+      const counts = await withDeadline(() => queue.getJobCounts("wait", "paused", "prioritized", "delayed", "active"), options.healthTimeoutMs || 2000, "Queue health check timed out");
+      const deadLetterCounts = await withDeadline(() => deadLetterQueue.getJobCounts("wait", "active", "delayed", "failed"), options.healthTimeoutMs || 2000, "Dead-letter health check timed out");
       return {
         ok: pong === "PONG" && !closed,
         driver: "bullmq",
-        lanes,
+        worker: [...workers].some((worker) => worker.isRunning()),
+        liveHints: Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0),
+        admission: { ...admission },
         deadLetters: { ok: true, counts: deadLetterCounts },
         prefix,
       };
     } catch (error) {
-      return { ok: false, driver: "bullmq", error: error.message, lanes: {}, deadLetters: { ok: false }, prefix };
+      return { ok: false, driver: "bullmq", error: error.message, worker: false, deadLetters: { ok: false }, prefix };
     }
   }
 
   async function close() {
     if (closed) return;
+    clearInterval(deadLetterPruneTimer);
     closed = true;
-    await Promise.all([...workers.values()].map((worker) => worker.close()));
+    await Promise.all([...workers].map((worker) => worker.close()));
     workers.clear();
-    await Promise.all([...queues.values(), ...deadLetters.values()].map((queue) => queue.close()));
+    await Promise.all([queue.close(), deadLetterQueue.close()]);
+    // The best-effort pruner may be queued while Redis is offline; do not wait on it during shutdown.
     if (owned) await connection.quit().catch(() => connection.disconnect());
   }
 
@@ -286,15 +284,21 @@ function createBullMqPort(options = {}) {
     prefix,
     publish,
     start,
-    schedule,
-    removeSchedule,
     async reconcile() { return health(); },
     health,
     close,
-    queues,
-    deadLetters,
+    queue,
+    deadLetterQueue,
     connection,
   };
 }
 
-module.exports = { DEFAULT_POLICIES, createBullMqPort, withDeadline };
+module.exports = {
+  DEFAULT_ADMISSION,
+  DEFAULT_DEAD_LETTER_PRUNE_BATCH_SIZE,
+  DEFAULT_DEAD_LETTER_PRUNE_INTERVAL_MS,
+  DEFAULT_DEAD_LETTER_RETENTION_MS,
+  DEFAULT_POLICY,
+  createBullMqPort,
+  withDeadline,
+};

@@ -1,38 +1,13 @@
-const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const PRINCIPAL_TABLES = Object.freeze({ user: "rebase_user", group: "rebase_group" });
+const PRINCIPAL_NAMES = Object.freeze([PRINCIPAL_TABLES.user, PRINCIPAL_TABLES.group]);
 
-function discoverPrincipalTables(schema) {
-  const found = { user: [], group: [] };
-  for (const table of schema.tables.values()) {
-    if (table.principalKind) found[table.principalKind].push(table.name);
-  }
-  for (const kind of ["user", "group"]) {
-    if (found[kind].length !== 1) {
-      throw new Error(
-        `Expected exactly one @rebase-principal ${kind} table, found ${found[kind].length}`,
-      );
+function validatePrincipalTables(schema) {
+  for (const table of PRINCIPAL_NAMES) {
+    if (!schema.tables.has(table)) {
+      throw new Error(`Framework schema must define fixed principal table ${table}`);
     }
   }
-  if (found.user[0] === found.group[0]) {
-    throw new Error("User and group principal tables must be different");
-  }
-  return Object.freeze({ user: found.user[0], group: found.group[0] });
-}
-
-function replaceToken(source, token, replacement) {
-  if (!IDENTIFIER.test(replacement)) throw new Error(`Invalid principal table: ${replacement}`);
-  return source.replace(new RegExp(`\\b${token}\\b`, "g"), replacement);
-}
-
-function bindFrameworkPrincipals(source, principals) {
-  const placeholders = {
-    user: "__REBASE_PRINCIPAL_USER__",
-    group: "__REBASE_PRINCIPAL_GROUP__",
-  };
-  let output = replaceToken(source, "user", placeholders.user);
-  output = replaceToken(output, "groups", placeholders.group);
-  output = output.replaceAll(placeholders.user, principals.user);
-  output = output.replaceAll(placeholders.group, principals.group);
-  return output;
+  return PRINCIPAL_TABLES;
 }
 
 function detectSelectPolicy(source) {
@@ -43,8 +18,4 @@ function detectSelectPolicy(source) {
   return unique[0] || "readers";
 }
 
-module.exports = {
-  bindFrameworkPrincipals,
-  detectSelectPolicy,
-  discoverPrincipalTables,
-};
+module.exports = { PRINCIPAL_NAMES, PRINCIPAL_TABLES, detectSelectPolicy, validatePrincipalTables };

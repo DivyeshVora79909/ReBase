@@ -1,0 +1,116 @@
+{
+  "packet": "H4b2 finite compound sales invoice tax dependency",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "One compound proportional sales-tax component on a sales invoice issue, depending on exactly one H4b1 aggregate proportional tax output from that issue.",
+    "The H4b1 basis is the sum of currency-rounded pre-tax sales_invoice_line amounts.",
+    "tax1 = currency_round(basis * selected aggregate rate); tax2 = currency_round((basis + already-rounded tax1.amount) * selected compound rate).",
+    "The issue owns sibling outputs. The compound output posts its own customer receivable, invoice outstanding, and selected tax-authority payable; it adds no cash or stock effect."
+  ],
+  "mechanism": {
+    "input": "compound_tax_components carries tax_key, tax_claim_account, rule_version, and predecessor_tax_key; the key is matched to the issue's sole aggregate component.",
+    "typed_dependencies": [
+      "sales_invoice_compound_tax_component.basis references sales_invoice_aggregate_tax_basis.",
+      "sales_invoice_compound_tax_component.predecessor references sales_invoice_aggregate_tax_component and declares @rebase-depends predecessor.amount."
+    ],
+    "output_identity": "Stable issue-owned (source, role) ID: compound:tax:<tax_key>.",
+    "refresh_order": "The required-output recipe emits aggregate basis, aggregate tax, then compound tax. The managed table is registered before aggregate tax and basis tables, so obsolete compound output is deleted before its REJECT-protected predecessor and basis. Removal and issue deletion probes passed.",
+    "typed_source_reference_limit": "SurrealDB 3.2.0 rejects REFERENCE on nested sales_invoice_issue.compound_tax_components.*.predecessor. The source therefore selects its predecessor with a component key; the managed compound child constructs the same-issue typed output reference."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b2",
+    "result": "passed",
+    "checks": [
+      "Rounded line amounts 3.33 and 4.44 produce basis 7.77; the raw combined amount would round to 7.78.",
+      "Independent reconstruction verifies the basis, aggregate tax1, compound tax2, customer receivable, invoice outstanding, and both tax-authority payables.",
+      "The full source/output/root oracle and physical stock/treasury snapshots are rechecked after issue creation, each successful line/rule edit, compound-only removal/re-addition, paired component removal/re-addition, and issue deletion.",
+      "Line edit, removal, and addition refresh both outputs; aggregate version/amount changes refresh compound output with no compound source edit.",
+      "Aggregate and compound version changes retain their stable output IDs; exact selected versions are stored on output rows.",
+      "Positive compound rates that round to zero, missing/self/reverse/foreign predecessor keys, duplicate components/keys, missing aggregate predecessor, fixed rules, and key/account/currency/date mismatches reject atomically.",
+      "A downstream customer net ceiling rejects a line edit and restores the source, all derived children, and all affected roots.",
+      "Compound-only removal/re-addition retains its predecessor and preserves its output ID; removing both components deletes the compound before its predecessor, and issue deletion prunes every child/root.",
+      "Physical stock and treasury snapshots remain unchanged."
+    ],
+    "predecessor_scope": "Only an aggregate tax key from the same issue can be selected. Self/reverse and cross-issue record references are not representable in the source input; invalid keys reject, and the managed output stores a typed same-issue reference."
+  },
+  "regression_controls": [
+    {
+      "command": "npm run probe:accounting-h4b",
+      "result": "passed; H4b1 aggregate basis and H4a/manual routes remain working"
+    },
+    {
+      "command": "npm run probe:accounting-h4a",
+      "result": "passed; fixed/proportional parent-local tax and H3a manual routes remain working"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "passed"
+    },
+    {
+      "command": "node dev-tools/accounting/h3c-probe.js --validate-only",
+      "result": "passed; 57 tables, 16 materials"
+    },
+    {
+      "command": "node dev-tools/accounting/h3c-probe.js",
+      "result": "passed; ten typed levels, bounded branch, reactive reparent and rollback"
+    }
+  ],
+  "gates": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "passed; 54 tables, 0 views"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed; SurrealDB 3.2.0"
+    },
+    {
+      "command": "node --check dev-tools/accounting/h4b2-probe.js",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "limits": [
+    "Disposable in-memory correctness fixture only; no production migration or deployed-profile cutover is claimed.",
+    "Exactly one aggregate proportional predecessor and one compound proportional component per sales invoice issue; no general DAG, arbitrary expression, cycles, compound-to-compound dependency, or multi-document grouping.",
+    "No statutory interpretation, recoverability, withholding/collection, offsets, remittance, purchase tax migration, or tax-law claim is made.",
+    "The nested source input stores a predecessor tax key because this SurrealDB version rejects nested REFERENCE fields; the managed output itself uses a typed reference."
+  ],
+  "fingerprints": {
+    "designs/all-in-accounting/claims/adjustments.surql": "65cca458d79a82294b0533266f49edd56b123a2ddd06a99bd6d809c3e4204384",
+    "designs/all-in-accounting/claims/invoices.surql": "ed1cbaf284935741b42e55a757c6ff071b81d26250680828f23bb93a1d5a3821",
+    "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+    "designs/all-in-accounting/claims/standalone.surql": "c1ab8d71ec8f14b89f2dcedc8c6822e97232084cf6b125e9ef618bf2975538d4",
+    "designs/all-in-accounting/claims/tax-rules.surql": "cd109c58ff40edc5e6b3d7d1c8ecd138436088c9f24a6fa275cee84c30df9cd5",
+    "designs/all-in-accounting/core/schema.surql": "cae621012a11cd48f24b5bb5b89ca28ca9650f5840883200afae17a977cd18be",
+    "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+    "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+    "src/analyze.js": "c8c5dd8257dc5efe312f68d07aa32f0839805c7ffd953286cd1aa4a50e1b63ee",
+    "src/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "src/tree-contract.js": "9b66357f0361af045638c7f7ae2f8bb97efecebcc018d498fc219c0dbc9cb3dd",
+    "src/schema.js": "5b17050ae5c767921048178e264a9c28b5f5d67882cbf6654e6ebfc7519de942",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/accounting/h4b2-probe.js": "e747f54e25f03ea53e396ad65933268019fd443d6bdf8fa9bd6d5d3f80a62727",
+    "dev-tools/accounting/h4b-probe.js": "e3a44e145fb234e366ab90fa607f1749186f5f70d8a4567dcfef71f9bbbcecc4",
+    "dev-tools/accounting/h4a-probe.js": "d6b830599742835bf218cf38798d33860adfa850badf46b7e7d1deb2549106b5",
+    "dev-tools/accounting/core-probe.js": "f365c2f77206823018e51ffacf70428de9b33c4dfd852c3f879c37dcb827f3b9",
+    "package.json": "1939c06feb9151e69352958e1d0a938811634a9ab52e0163f8ea27a4501ea7bd",
+    "build/all-in-accounting/schema.surql": "f68d0fcc91bef55174d8299e05a471edaec9bb85369fc20a27a72ce7a15b721c"
+  }
+}

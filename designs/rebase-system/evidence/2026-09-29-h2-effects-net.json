@@ -1,0 +1,69 @@
+{
+  "id": "H2-effects-net-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "result": "pass",
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "observed": "48 tables, 0 views, 14 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "pass",
+      "independentLeadRerun": true,
+      "coverage": [
+        "one purchase receipt updates stock quantity, supplier payable, tax-credit receivable and invoice outstanding",
+        "six declared deltas coalesce to one active position per affected owner root",
+        "all current receivable/payable publishers emit signed net measures",
+        "optional net floor and ceiling use complete-timestamp instant extrema",
+        "same-time receivable/payable changes pass in both record-id orders",
+        "historical peak and trough limits, limit changes and unbounded roots",
+        "authoritative-input receipt and claim oracles across create, edit, date move and delete",
+        "entity, counterparty, currency, resource and unit guards",
+        "a failed net guard rolls back all four affected roots",
+        "no duplicate stock_in, purchase_invoice_issue or invoice-line effect"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "elapsedSeconds": 23.6,
+  "elapsedNote": "Observed wall time for the independent five-command verification sequence, rounded to one decimal second.",
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "designs/all-in-accounting/core/schema.surql": "cae621012a11cd48f24b5bb5b89ca28ca9650f5840883200afae17a977cd18be",
+      "designs/all-in-accounting/claims/standalone.surql": "c1ab8d71ec8f14b89f2dcedc8c6822e97232084cf6b125e9ef618bf2975538d4",
+      "designs/all-in-accounting/claims/adjustments.surql": "65cca458d79a82294b0533266f49edd56b123a2ddd06a99bd6d809c3e4204384",
+      "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+      "designs/all-in-accounting/claims/invoices.surql": "5454ee7425fbb2179c47ff670fc1f8db5ab8e8ef09a91d86bc8709b4a0646867",
+      "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+      "dev-tools/accounting/core-probe.js": "bb6be20c929bb5266b4189abc2095004a2d2c559669f76f376d4df4750a37952",
+      "designs/all-in-accounting/implementation-handoff.md": "92d9f7dd8e08306cd24e4972b5ea05ccb3351a4c9d4091745268f758f9b7646d"
+    }
+  },
+  "limits": [
+    "The invoice tax amount is captured from the source document; tax-law/rate/version correctness is deferred to H4.",
+    "The in-memory fixture proves this source and its four roots, not a production migration, document locking, variable tax components, or throughput.",
+    "Current cash-allocation variants target purchase_invoice_issue; this direct purchase_receipt invoice root is not yet cash-settleable through that route. Integrate the settlement lifecycle in the later document/settlement packets without duplicating receipt effects."
+  ],
+  "next": "H3 multi-hop document and tax participation, retaining the cash-allocation integration seam and bounded H1 migration as explicit open work."
+}

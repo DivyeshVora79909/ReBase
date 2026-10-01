@@ -5,6 +5,9 @@ Last verified: 2026-09-04
 Tested: SurrealDB 3.2.0, Node 22.23.2, Linux x86_64
 Storage: temporary on-disk RocksDB databases; no `mem://` datastore was used
 
+Historical evidence: current calculation policy is the [v2 temporal contract](../rebase/temporal-trees.md).
+The engine measurements remain useful; the older proposed suite architecture is superseded.
+
 This note records the disposable probes used while planning the accounts, CRM,
 warehouse, HRM, and temporal-cron schemas. It separates behavior observed on
 the pinned local binary from product choices that still need schema work.

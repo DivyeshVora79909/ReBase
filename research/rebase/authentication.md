@@ -53,17 +53,17 @@ provider names to verifier functions; an absent or invalid entry fails closed.
 `POST /anonymous/authentication/challenges` takes `namespace`, `database`, an
 `identifier`, and an optional `channel` (`email`, `phone`, or `username`).
 Username requests choose the highest-priority configured identity for which a
-delivery adapter exists. The endpoint returns the same `202 {"ok":true}` for
-missing, invisible, and disallowed identities. A configured rate limiter keys
-both the client address and a hash of context/channel/identifier. Delivery is
-injected as a platform Resend or Twilio function; tenant provider credentials
-remain strict SurrealDB record fields.
+channel is enabled by the fixed private delivery policy. The endpoint returns
+the same `202 {"ok":true}` for missing, invisible, and disallowed identities.
+A configured rate limiter keys both the client address and a hash of
+context/channel/identifier. Delivery is a queued operation using protected
+typed Brevo or Twilio credentials; the caller cannot select the configuration.
 
-The endpoint never returns a challenge code. The service writes the hash and
-the revision fence first, then sends the code. Missing or disallowed identities
-still receive the privacy-preserving `202`; database, limiter, timeout, and
-provider failures return a generic `503` and are reported only through the
-server error hook.
+The endpoint never returns a challenge code. The service atomically writes the
+hash, revision fence, nonce, and an encrypted delivery task. Before sending,
+the worker checks current account and identity revisions, expiry, single-use
+state, and nonce. Production encryption uses a stable secret of at least 32
+bytes, separate from the bearer secret stored in generated database events.
 
 ## Lifecycle and recovery
 

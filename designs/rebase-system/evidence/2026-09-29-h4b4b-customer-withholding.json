@@ -1,0 +1,76 @@
+{
+  "packet": "H4b4b customer-withheld TDS receipt",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "One customer_withholding fact references exactly one actual sales_invoice_cash_allocation targeting one sales_invoice_issue; a unique index allows at most one fact per allocation.",
+    "The fact amount is explicit, positive, currency-precision exact, and effective no earlier than the invoice issue or allocation and within the selected immutable account-scoped policy version.",
+    "The fact reduces customer receivable/net and sales invoice outstanding by its amount and adds the same amount as receivable/net to the policy-selected tax claim account.",
+    "The fact creates no treasury movement and no cash-in allocation capacity membership; actual cash remains the cash_in and ordinary sales_invoice_cash_allocation.",
+    "The selected tax claim account may differ from an invoice-time tax payable account; it must match the invoice entity/currency and have a tax_account opponent.",
+    "The path is separate from purchase receipt recognized_credit and adds no sales_invoice_tax_component."
+  ],
+  "mechanism": {
+    "policy_version": "Immutable READONLY tax_claim_account, policy_key, version, valid_from and valid_until fields; unique identity is (tax_claim_account, policy_key, version).",
+    "withholding_fact": "A user-managed fact has typed REJECT references to the actual allocation and selected policy. Derived issue, invoice, customer, tax account and date fields declare direct one-hop @rebase-depends edges.",
+    "effects": "At effective_at the fact posts customer receivable -amount/net -amount, sales_invoice outstanding -amount and selected tax claim receivable +amount/net +amount.",
+    "capacity": "Ordinary cash allocation contributes 90 to cash_in.z_allocations and reduces customer/invoice by 90. The distinct withholding fact relies on the shared customer claim and invoice outstanding floors for remaining settlement capacity; it does not add to the cash source pool.",
+    "invoice_tax_control": "The fixture includes one explicit invoice-time sales_invoice_tax_component with fixture-only key tcs_fixture_only. It continues posting its customer/invoice amount and one tax payable; the withholding fact posts only a distinct tax receivable. The fixture key carries no legal meaning."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b4b",
+    "result": "passed",
+    "output": "Accounting H4b4b customer-withheld TDS, allocation-linked claims, rollback, and cash/stock isolation passed",
+    "checks": [
+      "A 90 base line plus one entered 10 invoice-time tax component opens customer receivable and invoice outstanding 100; exactly one managed sales_invoice_tax_component posts tax payable 10.",
+      "Actual cash_in and allocation of 90 leave customer receivable and invoice outstanding 10, treasury +90, and 90 allocated in the cash-in source pool.",
+      "Explicit withholding of 10 clears the remaining customer receivable and invoice outstanding, records tax-account receivable 10, leaves invoice tax payable exactly 10 once, and leaves treasury +90 and cash allocation capacity 90.",
+      "Independent row reconstruction checks customer receivable, invoice outstanding, invoice tax payable, withholding tax receivable, cash, source allocation capacity, and stock.",
+      "Zero, excess precision, duplicate allocation fact, amount 11 over-clear, wrong source type, invalid source party/entity/currency, mismatched policy entity/currency, policy with non-tax opponent, expired policy, and pre-invoice/allocation date reject with exact source, policy, output, cash, stock and root snapshots unchanged.",
+      "Mutation of selected immutable policy version rejects. Moving allocation or invoice issue date past the existing fact date rejects and rolls back the parent/source graph.",
+      "Failed amount edit over-clears and rolls back; valid amount edit preserves fact ID; removal and re-addition at the same ID update/restore claims while treasury, cash allocation pool, stock and invoice-time tax component remain unchanged.",
+      "Deleting the allocation while the fact exists rejects, so cleanup cannot strand the withholding fact."
+    ]
+  },
+  "commands": [
+    { "command": "npm run build:all-in-accounting", "result": "passed; 60 tables, 0 views" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 60 tables, 0 views" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "node --check dev-tools/accounting/h4b4b-probe.js", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4a", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/claims/customer-withholding.surql": "f68869d63d42e7ec6170a5d141616a7c4cf15b8ad8823c7fd56a8c42698eeb0a",
+    "designs/all-in-accounting/claims/invoices.surql": "ed1cbaf284935741b42e55a757c6ff071b81d26250680828f23bb93a1d5a3821",
+    "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+    "designs/all-in-accounting/claims/purchase-tax-credit.surql": "a456a410084598ee30e70f8454792ee805c9faa1300703a4dd0647280bad320e",
+    "designs/all-in-accounting/claims/supplier-withholding.surql": "e96774b81c741a8108aca30feecea1bf641b5a016ad7c69b6c5e4611fa18484f",
+    "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+    "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+    "designs/all-in-accounting/core/schema.surql": "0ec0ff00b3e2a5c4c905f61cce921e392393c43d0a8adc214d3ab208ce27255f",
+    "dev-tools/accounting/h4b4b-probe.js": "9cafc13fa36c470292983f0f7be991a017a96006f283ff0bd30f021c1325f7a5",
+    "dev-tools/accounting/h4b4a-probe.js": "d17a691e6ab9595bb85af8af7c229af215b1e38eb98b31cc588b021b5f3a9d86",
+    "package.json": "af5a11cc4006677f7ebc57ef0685ea4395eca75a695bedad4158974efbb3ca2a",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "The amount is explicitly entered and policy-versioned; there is no formula, statutory interpretation, legal eligibility claim, or inferred withholding rate.",
+    "This is one current withholding fact per cash allocation; staged TDS, reversals, multiple withholding reasons per allocation, and remittance are later work.",
+    "The invoice-time tax row is a fixture-only entered component used to prove it remains exactly once; no TCS timing or legal semantics are claimed.",
+    "H4b4a payer-side supplier withholding is preserved as a separate account-scoped recipe and passed its regression probe."
+  ]
+}

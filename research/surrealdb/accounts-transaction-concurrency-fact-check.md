@@ -1,7 +1,11 @@
 # Accounts Movement And Concurrency Fact Check
 
-Status: measured engine behavior and adopted Accounts design boundaries
+Status: historical measured engine behavior; pre-v2 design choices are superseded
 Last reviewed: 2026-09-08
+
+Current policy and reproduction commands: [temporal calculation contract](../rebase/temporal-trees.md).
+References below to positions, replay, immutable dates, or adoption describe the
+original experiment, not the current Accounts schema.
 
 This document records the raw SurrealDB behaviors that constrain the Accounts
 movement redesign. It is deliberately narrower than the all-in-one suite
@@ -10,9 +14,9 @@ events, concurrent movement writes, temporal replay, polymorphic references,
 and the delete behavior needed by money, inventory, service, and tax facts.
 
 The raw-material measurements were first isolated from the application
-schema. The current Accounts probe also applies the adopted replay event to a
-disposable copy of the all-in-one schema, so implementation regressions are
-covered without treating the probe database as production data.
+schema. The original Accounts probe applied the replay event to a disposable
+all-in-one schema. It has since been replaced by source-reconstructed AVL probes;
+the observations below remain engine evidence, not a second implementation contract.
 
 ## Executive findings
 

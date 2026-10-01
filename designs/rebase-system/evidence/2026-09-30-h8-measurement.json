@@ -1,0 +1,570 @@
+{
+  "id": "h8-bounded-measurement-2026-09-30",
+  "recordedAt": "2026-09-30T03:16:57.096Z",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64",
+    "engine": "SurrealKV"
+  },
+  "schemaSha256": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069",
+  "contract": "CREATE ONLY one scheduled split-recipe production_run, batch_count=1, four distinct stock owners, two managed inputs and two managed outputs; rejected variant batch_count=200 at the same date",
+  "sizes": [
+    {
+      "priorRuns": 2,
+      "repeats": 3
+    },
+    {
+      "priorRuns": 8,
+      "repeats": 3
+    }
+  ],
+  "observations": [
+    {
+      "priorRuns": 2,
+      "repeat": 1,
+      "serverStartMs": 481.839,
+      "schemaImportMs": 45444.707,
+      "fixtureMs": 1152.8,
+      "successfulCreateMs": 657.987,
+      "rejectedCreateMs": 522.333,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 6,
+        "outputs": 6
+      },
+      "before": {
+        "sourceRows": 2,
+        "managedRows": 8,
+        "activeNodeSlots": 18,
+        "rootSummaryCounts": [
+          5,
+          2,
+          5,
+          2,
+          2,
+          0,
+          2,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          644,
+          523,
+          644,
+          523,
+          665,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 3,
+        "managedRows": 12,
+        "activeNodeSlots": 26,
+        "rootSummaryCounts": [
+          7,
+          3,
+          7,
+          3,
+          3,
+          0,
+          3,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          643,
+          522,
+          643,
+          522,
+          664,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5142532
+    },
+    {
+      "priorRuns": 2,
+      "repeat": 2,
+      "serverStartMs": 424.649,
+      "schemaImportMs": 45726.428,
+      "fixtureMs": 1280.817,
+      "successfulCreateMs": 631.835,
+      "rejectedCreateMs": 559.953,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 6,
+        "outputs": 6
+      },
+      "before": {
+        "sourceRows": 2,
+        "managedRows": 8,
+        "activeNodeSlots": 18,
+        "rootSummaryCounts": [
+          5,
+          2,
+          5,
+          2,
+          2,
+          0,
+          2,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          644,
+          523,
+          644,
+          523,
+          665,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 3,
+        "managedRows": 12,
+        "activeNodeSlots": 26,
+        "rootSummaryCounts": [
+          7,
+          3,
+          7,
+          3,
+          3,
+          0,
+          3,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          643,
+          522,
+          643,
+          522,
+          664,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5142387
+    },
+    {
+      "priorRuns": 2,
+      "repeat": 3,
+      "serverStartMs": 453.736,
+      "schemaImportMs": 45669.544,
+      "fixtureMs": 1148.293,
+      "successfulCreateMs": 653.887,
+      "rejectedCreateMs": 642.528,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 6,
+        "outputs": 6
+      },
+      "before": {
+        "sourceRows": 2,
+        "managedRows": 8,
+        "activeNodeSlots": 18,
+        "rootSummaryCounts": [
+          5,
+          2,
+          5,
+          2,
+          2,
+          0,
+          2,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          644,
+          523,
+          644,
+          523,
+          665,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 3,
+        "managedRows": 12,
+        "activeNodeSlots": 26,
+        "rootSummaryCounts": [
+          7,
+          3,
+          7,
+          3,
+          3,
+          0,
+          3,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          643,
+          522,
+          643,
+          522,
+          664,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5142537
+    },
+    {
+      "priorRuns": 8,
+      "repeat": 1,
+      "serverStartMs": 448.561,
+      "schemaImportMs": 45277.077,
+      "fixtureMs": 5230.624,
+      "successfulCreateMs": 776.162,
+      "rejectedCreateMs": 781.337,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 10,
+        "outputs": 10
+      },
+      "before": {
+        "sourceRows": 8,
+        "managedRows": 32,
+        "activeNodeSlots": 66,
+        "rootSummaryCounts": [
+          17,
+          8,
+          17,
+          8,
+          8,
+          0,
+          8,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          646,
+          523,
+          646,
+          523,
+          673,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 9,
+        "managedRows": 36,
+        "activeNodeSlots": 74,
+        "rootSummaryCounts": [
+          19,
+          9,
+          19,
+          9,
+          9,
+          0,
+          9,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          645,
+          522,
+          645,
+          522,
+          672,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5837756
+    },
+    {
+      "priorRuns": 8,
+      "repeat": 2,
+      "serverStartMs": 483.944,
+      "schemaImportMs": 45888.391,
+      "fixtureMs": 5336.053,
+      "successfulCreateMs": 764.636,
+      "rejectedCreateMs": 1106.482,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 10,
+        "outputs": 10
+      },
+      "before": {
+        "sourceRows": 8,
+        "managedRows": 32,
+        "activeNodeSlots": 66,
+        "rootSummaryCounts": [
+          17,
+          8,
+          17,
+          8,
+          8,
+          0,
+          8,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          646,
+          523,
+          646,
+          523,
+          673,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 9,
+        "managedRows": 36,
+        "activeNodeSlots": 74,
+        "rootSummaryCounts": [
+          19,
+          9,
+          19,
+          9,
+          9,
+          0,
+          9,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          645,
+          522,
+          645,
+          522,
+          672,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5837886
+    },
+    {
+      "priorRuns": 8,
+      "repeat": 3,
+      "serverStartMs": 481.629,
+      "schemaImportMs": 45426.097,
+      "fixtureMs": 5006.55,
+      "successfulCreateMs": 766.264,
+      "rejectedCreateMs": 797.384,
+      "rejectionClass": "stock capacity guard",
+      "rejectionMessage": "Error while processing event rebase_refresh: An error occurred: ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY",
+      "changedRows": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 10,
+        "outputs": 10
+      },
+      "before": {
+        "sourceRows": 8,
+        "managedRows": 32,
+        "activeNodeSlots": 66,
+        "rootSummaryCounts": [
+          17,
+          8,
+          17,
+          8,
+          8,
+          0,
+          8,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          646,
+          523,
+          646,
+          523,
+          673,
+          61,
+          665,
+          61
+        ]
+      },
+      "after": {
+        "sourceRows": 9,
+        "managedRows": 36,
+        "activeNodeSlots": 74,
+        "rootSummaryCounts": [
+          19,
+          9,
+          19,
+          9,
+          9,
+          0,
+          9,
+          0
+        ],
+        "rootSummaryJsonBytes": [
+          645,
+          522,
+          645,
+          522,
+          672,
+          61,
+          664,
+          61
+        ]
+      },
+      "rejectedSnapshotUnchanged": true,
+      "observedConflictRetries": 0,
+      "databaseDirectoryBytesAfterShutdown": 5837757
+    }
+  ],
+  "metricScope": {
+    "durations": "client-observed milliseconds; setup, schema import, fixture, successful and rejected SQL separately",
+    "activeNodeSlots": "non-null live tree-node fields on selected stock and H8 managed rows",
+    "rootSummaryCounts": "four stock history and four gross-input root summary counts in account ID order",
+    "rootSummaryJsonBytes": "UTF-8 JSON representation of each returned summary, not persisted bytes",
+    "changedRows": "rows whose returned JSON changed, including inserts; not internal storage writes",
+    "databaseDirectoryBytesAfterShutdown": "total local SurrealKV files for entire schema and fixture; not per-operation bytes or write amplification",
+    "retries": "serial run observed zero transaction-conflict retries; contention variance unmeasured",
+    "dependencyVisits": "unmeasured: no direct visit counter exposed by this probe",
+    "internalWrites": "unmeasured: SQL and directory footprint do not expose engine write count",
+    "operationBytes": "unmeasured: no isolated persisted-byte delta or engine write-byte counter"
+  },
+  "execution": {
+    "command": "node dev-tools/accounting/h8-measurement-probe.js > designs/rebase-system/evidence/2026-09-30-h8-measurement.json",
+    "sampleOrder": "2 prior runs x 3, then 8 prior runs x 3; fresh disposable SurrealKV process and database each sample",
+    "probeSha256": "3603baad78455568198326db8bab8ee59e36fd0f9e64d70b1be933e29b317d36",
+    "auditSchemaSha256": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069",
+    "generatedSchemaMatchesAudit": true,
+    "h8DomainSourceSha256": "5ef9d2ab27a6648f0a70182d60b65ef17d3a65f167b8ca465c3c93382d1dd57f",
+    "auditH8DomainSourceSha256": "5ef9d2ab27a6648f0a70182d60b65ef17d3a65f167b8ca465c3c93382d1dd57f"
+  },
+  "summary": [
+    {
+      "priorRuns": 2,
+      "successfulCreateMs": {
+        "min": 631.835,
+        "median": 653.887,
+        "max": 657.987
+      },
+      "rejectedCreateMs": {
+        "min": 522.333,
+        "median": 559.953,
+        "max": 642.528
+      },
+      "schemaImportMs": {
+        "min": 45444.707,
+        "median": 45669.544,
+        "max": 45726.428
+      },
+      "fixtureMs": {
+        "min": 1148.293,
+        "median": 1152.8,
+        "max": 1280.817
+      },
+      "databaseDirectoryBytesAfterShutdown": {
+        "min": 5142387,
+        "median": 5142532,
+        "max": 5142537
+      },
+      "changedRowsOnSuccessfulCreate": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 6,
+        "outputs": 6
+      },
+      "liveNodeSlotsBefore": 18,
+      "liveNodeSlotsAfter": 26,
+      "sumRootSummaryJsonBytesBefore": 3786,
+      "sumRootSummaryJsonBytesAfter": 3780,
+      "independentSourceOraclePassed": true,
+      "rejectedSnapshotUnchanged": true
+    },
+    {
+      "priorRuns": 8,
+      "successfulCreateMs": {
+        "min": 764.636,
+        "median": 766.264,
+        "max": 776.162
+      },
+      "rejectedCreateMs": {
+        "min": 781.337,
+        "median": 797.384,
+        "max": 1106.482
+      },
+      "schemaImportMs": {
+        "min": 45277.077,
+        "median": 45426.097,
+        "max": 45888.391
+      },
+      "fixtureMs": {
+        "min": 5006.55,
+        "median": 5230.624,
+        "max": 5336.053
+      },
+      "databaseDirectoryBytesAfterShutdown": {
+        "min": 5837756,
+        "median": 5837757,
+        "max": 5837886
+      },
+      "changedRowsOnSuccessfulCreate": {
+        "accounts": 4,
+        "stockIn": 0,
+        "recipes": 0,
+        "runs": 1,
+        "inputs": 10,
+        "outputs": 10
+      },
+      "liveNodeSlotsBefore": 66,
+      "liveNodeSlotsAfter": 74,
+      "sumRootSummaryJsonBytesBefore": 3798,
+      "sumRootSummaryJsonBytesAfter": 3792,
+      "independentSourceOraclePassed": true,
+      "rejectedSnapshotUnchanged": true
+    }
+  ],
+  "limitations": [
+    "The measured operation uses one fixed four-owner recipe; the two sizes vary prior scheduled runs, not recipe fan-out.",
+    "The SQL response exposes no dependency visit counter, internal record-write count, or operation write bytes. Those metrics remain unmeasured.",
+    "The after-shutdown directory size includes schema, opening stock, all prior runs, successful target, and rejected attempt. It is not an operation byte delta.",
+    "Returned-row differences include tree pointer or summary changes. They are not an engine physical-write count.",
+    "Root summary JSON byte width is response serialization width, not persisted storage bytes.",
+    "Serial attempts observed zero retries. No contention trial or throughput/capacity certification was attempted."
+  ]
+}

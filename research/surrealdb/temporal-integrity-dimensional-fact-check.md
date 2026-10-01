@@ -3,6 +3,9 @@
 Status: measured engine behavior plus explicit design consequences
 Last reviewed: 2026-09-04
 
+Historical evidence: current suite policy is the [v2 temporal contract](../rebase/temporal-trees.md).
+Replay/state-lane proposals below are not adopted v2 requirements.
+
 This note is the evidence boundary for the expanded calculation suite. It
 answers the engine questions that affect mutable reactive records, historical
 corrections, state lanes, and multi-dimensional aggregates. It does not claim

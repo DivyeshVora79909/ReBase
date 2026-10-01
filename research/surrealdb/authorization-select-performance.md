@@ -2,7 +2,21 @@
 
 ## Verdict
 
-The current authorization model is correct and fast for record lookups and explicitly selective queries, but the unqualified default select shape does not scale as a count/list operation. SurrealDB uses a `TableScan` for the generated visibility/readers/owner OR predicate. The existing `owned_by` and `readers_index.*` indexes are used when the query supplies an explicit owner or reader condition, but they do not turn the complete authorization predicate into one indexed access path.
+The latency and plan results below are a pre-C4 baseline. That run used
+`readers_index CONTAINS <string>$auth.id`; C4 changed the generated reader
+predicate to `readers_index CONTAINSANY $auth.z_access_index` so direct user and
+group access indexes are both considered. The benchmark harness now uses the
+C4 predicate, but its measurements have not been rerun. Treat the numbers here
+as historical evidence for the old predicate until a fresh run records the new
+query shape.
+
+In the measured baseline, the authorization model was correct and fast for
+record lookups and explicitly selective queries, but the unqualified default
+select shape did not scale as a count/list operation. SurrealDB used a
+`TableScan` for the generated visibility/readers/owner OR predicate. The
+existing `owned_by` and `readers_index.*` indexes were used when the query
+supplied an explicit owner or reader condition, but they did not turn the
+complete authorization predicate into one indexed access path.
 
 The dedicated on-disk reference comparison, including reverse-key plans and
 selectivity crossover, is in
@@ -34,13 +48,17 @@ For long runs, set `REBASE_PERF_OUTPUT=/path/to/result.json`. The harness checkp
 
 ## Policies Tested
 
-The benchmark reproduces the current generated predicate:
+The measured run reproduced this pre-C4 predicate:
 
 ```surql
 'table_select' IN $auth.permissions AND
 (!!visibility OR readers_index CONTAINS <string>$auth.id
  OR <string>owned_by IN $auth.z_access_index)
 ```
+
+The current generated reader branch is
+`readers_index CONTAINSANY $auth.z_access_index`. The benchmark harness uses
+that form now; rerun it before attributing new performance numbers to C4.
 
 The comparison tables are:
 

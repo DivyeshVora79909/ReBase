@@ -1,4 +1,28 @@
 function splitStatements(source) {
+  return splitStatementsWithLocations(source).map((entry) => entry.source);
+}
+
+function sourceLocation(source, offset) {
+  const lineStarts = [0];
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] === "\n") lineStarts.push(index + 1);
+  }
+  return locationFromLineStarts(source.length, lineStarts, offset);
+}
+
+function locationFromLineStarts(length, lineStarts, offset) {
+  const bounded = Math.max(0, Math.min(length, offset));
+  let low = 0;
+  let high = lineStarts.length;
+  while (low + 1 < high) {
+    const middle = (low + high) >> 1;
+    if (lineStarts[middle] <= bounded) low = middle;
+    else high = middle;
+  }
+  return { offset: bounded, line: low + 1, column: bounded - lineStarts[low] + 1 };
+}
+
+function splitStatementsWithLocations(source) {
   const statements = [];
   let start = 0;
   let quote = null;
@@ -6,6 +30,32 @@ function splitStatements(source) {
   let lineComment = false;
   let blockComment = false;
   let depth = 0;
+  const lineStarts = [0];
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] === "\n") lineStarts.push(index + 1);
+  }
+
+  const addStatement = (end) => {
+    const statement = source.slice(start, end).trim();
+    if (!statement) return;
+    let offset = start;
+    while (offset < end) {
+      while (offset < end && /\s/.test(source[offset])) offset += 1;
+      if (source.startsWith("--", offset)) {
+        const newline = source.indexOf("\n", offset + 2);
+        offset = newline < 0 || newline >= end ? end : newline + 1;
+        continue;
+      }
+      if (source.startsWith("/*", offset)) {
+        const close = source.indexOf("*/", offset + 2);
+        offset = close < 0 || close >= end ? end : close + 2;
+        continue;
+      }
+      break;
+    }
+    statements.push({ source: statement, startOffset: start, endOffset: end,
+      ...locationFromLineStarts(source.length, lineStarts, offset) });
+  };
 
   for (let index = 0; index < source.length; index += 1) {
     const char = source[index];
@@ -41,14 +91,27 @@ function splitStatements(source) {
     else if (char === "{" || char === "(" || char === "[") depth += 1;
     else if (char === "}" || char === ")" || char === "]") depth -= 1;
     else if (char === ";" && depth === 0) {
-      const statement = source.slice(start, index + 1).trim();
-      if (statement) statements.push(statement);
+      addStatement(index + 1);
       start = index + 1;
     }
   }
-  const remainder = source.slice(start).trim();
-  if (remainder) statements.push(remainder);
+  addStatement(source.length);
   return statements;
+}
+
+// Transform executable text without rewriting quoted values or comments.
+function mapSqlCode(source, transform, literal = (value) => value) {
+  const pattern = /'(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`|--[^\r\n]*|\/\*[\s\S]*?\*\//g;
+  let result = '', cursor = 0;
+  for (const match of source.matchAll(pattern)) {
+    result += transform(source.slice(cursor, match.index)) + literal(match[0]);
+    cursor = match.index + match[0].length;
+  }
+  return result + transform(source.slice(cursor));
+}
+
+function sqlCode(source) {
+  return mapSqlCode(source, (value) => value, (value) => ' '.repeat(value.length));
 }
 
 function splitTopLevel(value, separator = ",") {
@@ -164,9 +227,13 @@ function parseRecordType(fieldDefinition) {
 }
 
 module.exports = {
+  mapSqlCode,
+  sqlCode,
   extractClauseExpression,
   findTopLevelKeyword,
   parseRecordType,
   splitStatements,
+  splitStatementsWithLocations,
+  sourceLocation,
   splitTopLevel,
 };

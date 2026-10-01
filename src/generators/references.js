@@ -39,7 +39,7 @@ function generateReferenceAssertions(schema, options = {}) {
   let output = use(options.namespace, options.database);
   for (const table of schema.tables.values()) {
     for (const field of table.fields.values()) {
-      if (!field.recordType || /@rebase-reference-delta\b/i.test(field.comment)) continue;
+      if (!field.recordType || field.treeRoot || field.treeNode || /@rebase-reference-delta\b/i.test(field.comment)) continue;
       output += `ALTER FIELD ${field.name} ON TABLE ${table.name} ASSERT ${combinedAssertion(field)};\n`;
     }
   }

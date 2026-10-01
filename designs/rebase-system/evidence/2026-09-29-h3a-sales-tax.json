@@ -1,0 +1,74 @@
+{
+  "id": "H3a-sales-tax-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "result": "pass",
+  "packet": "H3a sale-side variable tax output lifecycle",
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "observed": "49 tables, 0 views, 14 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "pass",
+      "independentLeadRerun": true,
+      "coverage": [
+        "sales invoice issue creates stable required tax children alongside base invoice lines",
+        "entered variable tax components post customer receivable/net, invoice outstanding, and tax-authority payable/net",
+        "duplicate/empty roles, zero amounts, wrong tax claim party type, currency and economic entity reject",
+        "tax amount edit and role add/remove preserve stable IDs and remove obsolete child rows",
+        "issue date move after physical dispatch rekeys all base/tax roots; earlier-than-dispatch issue date rolls back",
+        "compatible invoice reparent preserves child IDs and clears the old invoice root",
+        "party, currency, or entity mismatch during reparent restores old/new roots and all rows",
+        "billed quantity edit from 2 to 1.5 updates customer, invoice, and billing roots while preserving line ID",
+        "billing 2.01 units against a 2-unit dispatch rejects and restores the complete graph",
+        "record-user SELECT/CREATE/UPDATE/DELETE against managed tax children is denied",
+        "deleting the invoice issue removes billing, claim, invoice, and tax outputs while preserving stock-out facts",
+        "unbilled stock-out changes physical stock without invoice or tax output"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "elapsedSeconds": 30.4,
+  "elapsedNote": "Observed wall time for the independent five-command lead verification sequence; the lower-model isolated probe run was 29.08 seconds.",
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "designs/all-in-accounting/core/schema.surql": "cae621012a11cd48f24b5bb5b89ca28ca9650f5840883200afae17a977cd18be",
+      "designs/all-in-accounting/claims/invoices.surql": "db4c2b31ec7dc20e680b673e716ebc8fe31f251fdb7f2073ba03672e65503d4c",
+      "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+      "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+      "dev-tools/accounting/core-probe.js": "a7e6d2a624b0415d70193c7a0f3b9d13dd6f4d4a6f2f4aaa725b495b7c31f398",
+      "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+      "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8"
+    }
+  },
+  "feasibilityEvidence": "2026-09-29-h3-feedback-gate.json",
+  "limits": [
+    "The accounting runtime fixture uses disposable in-memory SurrealDB, not a production database or populated deployment migration.",
+    "Tax amounts are entered source facts; rate, jurisdictional rule/version, recoverability, compound basis and statutory rounding remain H4.",
+    "Record-user writes to managed children are denied. A privileged root administrator remains trusted and can issue administrative writes outside the normal client boundary.",
+    "The fixture does not enforce uniqueness of one external physical event across different source tables.",
+    "H2 purchase receipt cash settlement remains open for H3b; depth-ten ancestry remains H3c."
+  ],
+  "next": "H3b: settle the H2 purchase receipt invoice through a typed cash-allocation route without duplicating receipt, claim, invoice, or cash effects."
+}

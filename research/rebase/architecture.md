@@ -1,9 +1,14 @@
 # ReBase Architecture
 
-Status: canonical project architecture
+Historical gateway baseline, 2026-09-25. The native `node:http` listener was
+implemented in O1a on 2026-09-26; this document's Hono routing references and
+the older multi-lane operation model are not the current listener contract.
+The [system redesign](../../designs/rebase-system/README.md) and its
+[verification record](../../designs/rebase-system/verification.md) track the
+remaining runtime gates.
 
 ReBase is a database-centered backend framework. Clients authenticate and query
-SurrealDB directly; the Hono runtime exists only for privileged provider work,
+SurrealDB directly; the Node runtime exists only for privileged provider work,
 managed queues, webhooks, and scheduling. SurrealDB remains the source of truth
 for data shape, authorization, reference validity, and user-facing effect state.
 
@@ -120,10 +125,11 @@ recipient proves possession of an identity.
 `account_password` accepts a verified email, phone, or username plus a password.
 Password presence is never used as the authenticated-state flag: a principal
 must still have a delivery identity, and local code authentication is only
-available through a currently issued email/SMS challenge. Platform mail
-is a deployment-owned Resend adapter, separate from tenant BYOC credentials;
-Twilio SMS is an optional explicit adapter with the
-`REBASE_PLATFORM_SMS_TWILIO_*` profile keys.
+available through a currently issued email/SMS challenge. Delivery is a queued
+BYOC operation resolved through a fixed private policy. Brevo and Twilio
+credentials and sender values live in protected typed database rows. The
+encrypted task payload uses a stable production key separate from the
+generated-event bearer secret.
 
 OAuth is signin-only and stateless. A generated record access method sends the
 opaque provider token to an authenticated internal runtime endpoint. An

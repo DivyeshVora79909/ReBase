@@ -1,0 +1,55 @@
+{
+  "packet": "H7 pre-code gross-input guard feasibility",
+  "status": "feasible; production implementation not started",
+  "date": "2026-09-29",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "A disposable, probe-only batch fact contributes net quantity to a stock root and positive input demand to a separate schema-owned gross-input root. Its attached ReBase validator compares the settled gross-demand range at that exact timestamp with fn::tree::before(stock_root, [effective_at]).",
+    "No production accounting schema, stock source, floor guard, compiler route, or routing document was changed. The probe extends generated adapters only inside its own in-memory database so a disposable source can use the existing temporal refresh lifecycle."
+  ],
+  "result": {
+    "conclusion": "Proceed to H7 implementation. The existing temporal primitives and settled validation phase can enforce gross input separately from net stock without an untracked array or a derived field reading its own local tree.",
+    "observed": [
+      "Zero prior stock: one batch with input 1 and same-time output 1 rejects. Its hypothetical net delta is 0, so a net-only complete-time floor would pass; the separate gross root has demand 1 while pre-time stock is 0. The source and both roots remain unchanged.",
+      "Prior stock 10: two input facts of 6 at the same instant accept the first and reject the second because same-time aggregate gross demand is 12 against pre-time stock 10. Full source/root snapshot equality holds for the rejected second write.",
+      "The same aggregate case rejects with reversed insertion and record-ID order, with the same atomic snapshot result.",
+      "A grant at the prior timestamp supports a later input of 6. fn::tree::before at the later event remains 10; the post-event stock is 4.",
+      "Reducing or deleting that earlier grant re-runs the dependent later batch validator and rejects atomically, leaving the grant and all roots unchanged.",
+      "The gross range uses the exact half-open interval [T, T + 1ns). A valid schedule with prior stock 6, demand 6 at T, replenishment 6 at T + 0.5ms, and later demand 6 at T + 0.75ms passes with final stock 0. The probe directly observes demand 6 in [T,T+1ns) and demand 12 in [T,T+1ms), proving a millisecond upper bound would falsely combine distinct timestamps. SurrealDB preserved the one-nanosecond successor."
+    ],
+    "supported_mechanisms": [
+      "Gross demand is an explicit schema-owned temporal root, not a query-time reconstructed array.",
+      "The source validator runs after `fn::rebase::refresh` has synchronized and published both memberships; the gross range includes the current source fact.",
+      "A `dependent=true` membership on stock history makes later batch facts refresh when an earlier stock contribution is edited or deleted. The probe demonstrated rejection and rollback for both operations.",
+      "The validator directly calls tree prefix/range readers. It is not a derived field and does not read its own local root through a derived dependency."
+    ],
+    "limits": [
+      "This is an engine and temporal-lifecycle feasibility probe, not an H7 production schema or domain acceptance claim.",
+      "The probe fixture uses one scalar input and one scalar output per batch fact. It does not implement recipes, routing, resource/unit guards, or a generalized assembly model.",
+      "The exact timestamp interval depends on the demonstrated SurrealDB 3.2.0 nanosecond datetime resolution and exclusive upper-bound behavior; the probe does not claim behavior for other engine versions."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/h7-gross-input-probe.js", "result": "passed" },
+    { "command": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8'))\"", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 68 tables, 0 views, 22 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 68 tables, 0 views, 22 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "npm run probe:accounting-h7-gross-input", "result": "passed on a local in-memory SurrealDB 3.2.0 server" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "fingerprints": {
+    "dev-tools/accounting/h7-gross-input-probe.js": "e98bcac2420ef0b1b2420da17056f7cf1c3f531f40e77eb91cd41ae89e5c2945",
+    "package.json": "7d4a97de3b8cae679daf61fc1575406e39ad64e2c28194edfd4a4e192aa1a8f1",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "src/tree-contract.js": "9b66357f0361af045638c7f7ae2f8bb97efecebcc018d498fc219c0dbc9cb3dd",
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/movements/stock.surql": "906b98556bba4aff617655208526f6bbb234208c6ff5619cf29780d55834dc20",
+    "build/all-in-accounting/schema.surql": "130e6d0aff02f75e23e7e034db4431c9d99df52d7c507aefec02c1051a693c46"
+  }
+}

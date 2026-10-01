@@ -8,7 +8,11 @@ const { stdin, stdout } = require("node:process");
 const { Surreal } = require("surrealdb");
 const { populate } = require("./populate");
 const { connectDatabase, sessionEndpoint } = require("../gateway/connection");
-const { loadEnvironment, resolveConfiguration, assertConnectionConfiguration } = require("../config/environment");
+const {
+  assertConfiguredContext,
+  assertConnectionConfiguration,
+  resolveConfiguration,
+} = require("../config/environment");
 
 const root = path.resolve(__dirname, "..");
 
@@ -24,20 +28,9 @@ function parseArgs(argv) {
         throw new Error(`Missing value for ${option}`);
       return argv[index];
     };
-    if (option === "--endpoint") options.endpoint = next();
-    else if (option === "--namespace" || option === "--ns")
-      options.namespace = next();
-    else if (option === "--database" || option === "--db")
-      options.database = next();
-    else if (option === "--project") options.project = next();
+    if (option === "--project") options.project = next();
     else if (option === "--help" || option === "-h") options.help = true;
     else throw new Error(`Unknown option: ${option}`);
-  }
-  if (
-    (options.namespace && !options.database) ||
-    (!options.namespace && options.database)
-  ) {
-    throw new Error("--namespace and --database must be supplied together");
   }
   return options;
 }
@@ -52,17 +45,26 @@ function buildDir(options) {
   return path.join(root, "build", path.basename(options.project));
 }
 
-async function connectAdmin(options) {
-  return (await connectDatabase(options)).db;
+async function connectAdmin({ configuration, context }) {
+  assertConnectionConfiguration(configuration);
+  const selected = assertConfiguredContext(configuration, context);
+  return (await connectDatabase({
+    ...configuration.surreal,
+    namespace: selected.namespace,
+    database: selected.database,
+  })).db;
 }
 
 async function switchContext({ admin, actor, options, connect = connectAdmin }, namespace, database) {
   if (!namespace || !database) throw new Error(".use requires namespace and database");
+  const context = assertConfiguredContext(options.configuration, { namespace, database });
   await actor?.close().catch(() => {});
   await admin?.close().catch(() => {});
-  options.namespace = namespace;
-  options.database = database;
-  return { admin: await connect(options), actor: null };
+  options.context = context;
+  return {
+    admin: await connect({ configuration: options.configuration, context }),
+    actor: null,
+  };
 }
 
 function json(value) {
@@ -75,8 +77,6 @@ function json(value) {
 
 function runBuild(options) {
   const args = [path.join("dev-tools", "compiler", "cli.js"), "--project", sourceDir(options)];
-  if (options.namespace && options.database) args.push("--namespace", options.namespace, "--database", options.database);
-  if (options.envFile) args.push("--env-file", options.envFile);
   const result = spawnSync(process.execPath, args,
     {
       cwd: root,
@@ -89,37 +89,39 @@ function runBuild(options) {
   if (result.status !== 0) throw new Error("Build failed");
 }
 
-async function main(argv = process.argv.slice(2)) {
-  const loaded = loadEnvironment(argv);
-  const options = parseArgs(loaded.args);
-  const configuration = resolveConfiguration(loaded.values, options);
-  options.endpoint = configuration.surreal.endpoint;
-  options.username = configuration.surreal.username;
-  options.password = configuration.surreal.password;
-  options.connectTimeoutMs = configuration.surreal.connectTimeoutMs;
-  options.namespace ||= configuration.surreal.defaultContext?.namespace;
-  options.database ||= configuration.surreal.defaultContext?.database;
-  options.environment = loaded.values;
-  options.envFile = loaded.file || "";
+async function main(argv = process.argv.slice(2), environment = process.env) {
+  const options = parseArgs(argv);
   if (options.help) {
     console.log(
-      "Usage: node dev-tools/workbench.js --env-file PATH [--endpoint URL] [--namespace NS --database DB] [--project NAME|DIR]",
+      "Usage: node [--env-file PATH] dev-tools/workbench.js [--project NAME|DIR]",
     );
     return;
   }
+  const configuration = resolveConfiguration(environment);
+  options.configuration = configuration;
+  options.environment = { ...environment };
+  assertConnectionConfiguration(configuration);
   const prompt = readline.createInterface({
     input: stdin,
     output: stdout,
     prompt: "rebase> ",
   });
-  options.namespace ||= (await prompt.question("Namespace: ")).trim();
-  options.database ||= (await prompt.question("Database: ")).trim();
-  if (!options.namespace || !options.database) {
-    prompt.close();
-    throw new Error("Namespace and database are required");
+  options.context = configuration.surreal.defaultContext || (
+    configuration.surreal.contexts.length === 1
+      ? configuration.surreal.contexts[0]
+      : undefined
+  );
+  if (!options.context) {
+    const namespace = (await prompt.question("Configured namespace: ")).trim();
+    const database = (await prompt.question("Configured database: ")).trim();
+    try {
+      options.context = assertConfiguredContext(configuration, { namespace, database });
+    } catch (error) {
+      prompt.close();
+      throw error;
+    }
   }
-  assertConnectionConfiguration({ ...configuration, surreal: { ...configuration.surreal, defaultContext: { namespace: options.namespace, database: options.database } } });
-  let admin = await connectAdmin(options);
+  let admin = await connectAdmin({ configuration, context: options.context });
   let actor = null;
   console.log("ReBase workbench. Type .help for commands.");
   prompt.prompt();
@@ -136,7 +138,7 @@ async function main(argv = process.argv.slice(2)) {
   .build                         Compile the current project
   .deploy                        Apply build/<project>/schema.surql
   .populate [table] [count]      Generate valid random data from data/*.schema.json
-  .use <namespace> <database>    Switch the active database context
+  .use <namespace> <database>    Switch to a context in the process profile
   .as <identifier> <password>    Authenticate a working actor
   .query <surql>                 Run a query as the current actor or admin
   .sample <table> [limit]        Inspect a bounded sample
@@ -161,11 +163,8 @@ async function main(argv = process.argv.slice(2)) {
             table,
             count: Number(count),
             batchSize: 100,
-            endpoint: options.endpoint,
-            username: options.username,
-            password: options.password,
-            namespace: options.namespace,
-            database: options.database,
+            namespace: options.context.namespace,
+            database: options.context.database,
             configuration,
           });
           console.log(json(result));
@@ -174,10 +173,10 @@ async function main(argv = process.argv.slice(2)) {
           if (!identifier || !password)
             throw new Error(".as requires an identifier and password");
           const session = new Surreal();
-          await session.connect(sessionEndpoint(options.endpoint));
+          await session.connect(sessionEndpoint(configuration.surreal.endpoint));
           const auth = await session.signin({
-            namespace: options.namespace,
-            database: options.database,
+            namespace: options.context.namespace,
+            database: options.context.database,
             access: "account_password",
             variables: { identifier, password },
           });

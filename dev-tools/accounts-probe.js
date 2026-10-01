@@ -1,737 +1,655 @@
 #!/usr/bin/env node
-
-/*
- * Disposable on-disk smoke/integrity probe for the all-in-one Accounts kernel.
- * It deliberately uses SurrealKV (never mem://), a generated bundle, explicit
- * IDs, and final-statement extraction.  The fixture is small by design: this
- * is a deterministic regression probe, not a capacity benchmark.
- */
-
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const net = require("node:net");
-const os = require("node:os");
-const path = require("node:path");
-const { spawn } = require("node:child_process");
-const { Surreal } = require("surrealdb");
-const { isRetryableConflict } = require("surrealdb");
-
-const WS = globalThis.WebSocket || (() => {
-  try {
-    return require("ws");
-  } catch {
-    throw new Error("Accounts probe requires a native WebSocket or the ws package");
-  }
-})();
-const ROOT = path.resolve(__dirname, "..");
-
-function surrealBinary() {
-  if (process.env.REBASE_ACCOUNTS_SURREAL_BIN) return process.env.REBASE_ACCOUNTS_SURREAL_BIN;
-  return fs.existsSync("/tmp/surreal") ? "/tmp/surreal" : "surreal";
-}
-
-function finalResult(response) {
-  const last = Array.isArray(response) ? response.at(-1) : response;
-  if (last && typeof last === "object" && Object.hasOwn(last, "result")) {
-    if (last.status === "ERR") throw new Error(last.detail || "SurrealQL query failed");
-    return last.result;
-  }
-  return last;
-}
-
-function rows(response) {
-  const value = finalResult(response);
-  return Array.isArray(value) ? value : value == null ? [] : [value];
-}
-
-async function freePort() {
-  const server = net.createServer();
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const port = server.address().port;
-  await new Promise((resolve) => server.close(resolve));
-  return port;
-}
-
-async function waitForPort(port, child) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (child.exitCode !== null) break;
-    const connected = await new Promise((resolve) => {
-      const socket = net.createConnection({ host: "127.0.0.1", port });
-      const finish = (value) => { socket.destroy(); resolve(value); };
-      socket.setTimeout(100, () => finish(false));
-      socket.once("connect", () => finish(true));
-      socket.once("error", () => finish(false));
-    });
-    if (connected) return;
-    await new Promise((resolve) => setTimeout(resolve, 40));
-  }
-  throw new Error("Disposable SurrealDB did not start");
-}
-
-async function startServer() {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-accounts-probe-"));
-  const port = await freePort();
-  const child = spawn(surrealBinary(), [
-    "start", `surrealkv://${directory}`,
-    "--user", "root", "--pass", "root",
-    "--bind", `127.0.0.1:${port}`,
-    "--no-banner", "--log", "error",
-  ], { stdio: ["ignore", "ignore", "pipe"] });
-  let stderr = "";
-  child.stderr.on("data", (chunk) => { stderr += chunk; });
-  child.once("error", (error) => { stderr = `${stderr}${error.message}`; });
-  try {
-    await waitForPort(port, child);
-  } catch (error) {
-    child.kill("SIGTERM");
-    throw new Error(`${error.message}${stderr.trim() ? `: ${stderr.trim()}` : ""}`);
-  }
-  return { directory, child, endpoint: `ws://127.0.0.1:${port}/rpc` };
-}
-
-async function stopServer(server) {
-  if (!server?.child || server.child.exitCode !== null) return;
-  const exited = new Promise((resolve) => server.child.once("exit", resolve));
-  server.child.kill("SIGTERM");
-  await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2000))]);
-  if (server.child.exitCode === null) server.child.kill("SIGKILL");
-  fs.rmSync(server.directory, { recursive: true, force: true });
-}
-
-async function connect(server, namespace, database) {
-  const db = new Surreal({ websocketImpl: WS });
-  await db.connect(server.endpoint);
-  await db.signin({ username: "root", password: "root" });
-  await db.query(`DEFINE NAMESPACE IF NOT EXISTS ${namespace}; USE NS ${namespace}; DEFINE DATABASE ${database}; USE DB ${database};`);
-  await db.use({ namespace, database });
-  return db;
-}
-
-async function openSession(server, namespace, database) {
-  const db = new Surreal({ websocketImpl: WS });
-  await db.connect(server.endpoint);
-  await db.signin({ username: "root", password: "root" });
-  await db.use({ namespace, database });
-  return db;
-}
-
-async function queryWithConflictRetry(db, query, attempts = 50) {
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    try {
-      return await db.query(query);
-    } catch (error) {
-      const retryable = isRetryableConflict(error) || /transaction conflict|conflict/i.test(error.message || "");
-      if (!retryable || attempt === attempts - 1) throw error;
-      await new Promise((resolve) => setTimeout(resolve, Math.min(40, 2 ** Math.min(attempt, 5))));
-    }
-  }
-  throw new Error("unreachable");
-}
-
-function compileBundle(namespace, database) {
-  const output = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rebase-accounts-build-")), "build");
-  const result = require("./compiler/cli").compileFromArgs({
-    projectDir: "designs/all-in-one",
-    frameworkDir: "framework",
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs'),
+  os = require('node:os'),
+  path = require('node:path');
+const { start, client, applySchema } = require('./temporal-tree/harness');
+const { compileFromArgs } = require('./compiler/cli');
+const { snapshot, inspect } = require('./temporal-tree/accounts-oracle');
+const { equal, scan } = require('./temporal-tree/oracle');
+const root = 'rebase_group:root',
+  date = (day) => new Date(Date.UTC(2026, 0, 1 + day)).toISOString();
+async function main({ writeOnly = process.argv.includes('--write-only') } = {}) {
+  const output = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-entities-'));
+  const compiled = compileFromArgs({
+    projectDir: 'designs/all-in-one',
+    frameworkDir: 'framework',
     outputDir: output,
-    namespace,
-    database,
-  }, ROOT);
-  return { output, bundle: result.bundle };
-}
-
-async function main() {
-  const namespace = `rebase_accounts_probe_${Date.now().toString(36)}`;
-  const database = "accounts";
-  const compiled = compileBundle(namespace, database);
-  const server = await startServer();
-  const db = await connect(server, namespace, database);
+  });
+  const server = await start(),
+    q = client(server.url);
+  async function create(id, day, fields) {
+    await q(
+      `CREATE ${id} SET owned_by=${root},a_effective_at=d'${date(day)}',${fields};`,
+    );
+  }
+  async function check() {
+    return inspect(await snapshot(q));
+  }
+  async function reject(sql, pattern) {
+    const before = await snapshot(q);
+    await assert.rejects(q(sql), pattern);
+    assert.deepEqual(
+      await snapshot(q),
+      before,
+      'failed edit must roll back facts, shadows, all roots and timestamps',
+    );
+  }
+  async function value(id, measure) {
+    return Number(
+      await q(`RETURN ${id}.z_book.summary.measures.${measure}.sum ?? 0dec;`),
+    );
+  }
   try {
-    await db.query(compiled.bundle);
-    await db.query(`
-      CREATE currency:inr SET owned_by = groups:root, a_code = 'INR', a_name = 'Indian Rupee';
-      CREATE currency:usd SET owned_by = groups:root, a_code = 'USD', a_name = 'US Dollar';
-      CREATE currency:eur SET owned_by = groups:root, a_code = 'EUR', a_name = 'Euro';
-      CREATE organization:vendor SET owned_by = groups:root, a_name = 'Vendor';
-      CREATE organization:other SET owned_by = groups:root, a_name = 'Other';
-      CREATE organization:context SET owned_by = groups:root, a_name = 'Context Only';
-      CREATE organization:no_code_1 SET owned_by = groups:root, a_name = 'No Code 1';
-      CREATE organization:no_code_2 SET owned_by = groups:root, a_name = 'No Code 2';
-      CREATE treasury_account:cash SET owned_by = groups:root, a_name = 'Cash', a_currency = currency:inr;
-      CREATE misc_account:permissive SET owned_by = groups:root, a_name = 'Permissive Misc', a_currency = currency:inr;
-      CREATE misc_account:guarded SET owned_by = groups:root, a_name = 'Guarded Misc', a_currency = currency:inr, a_guard_non_negative = true;
-      CREATE item:widget SET owned_by = groups:root, a_name = 'Widget';
-      CREATE item:no_sku_1 SET owned_by = groups:root, a_name = 'No SKU 1';
-      CREATE item:no_sku_2 SET owned_by = groups:root, a_name = 'No SKU 2';
-      CREATE operating_unit:warehouse SET owned_by = groups:root, a_name = 'Warehouse', a_kind = 'warehouse';
-      CREATE operating_unit:warehouse_2 SET owned_by = groups:root, a_name = 'Warehouse 2', a_kind = 'warehouse';
-      CREATE operating_unit:opening_probe SET owned_by = groups:root, a_name = 'Opening Probe Unit', a_kind = 'warehouse';
-      CREATE misc_inventory_node:external_stock SET owned_by = groups:root, a_name = 'External Stock';
-      CREATE service:consulting SET owned_by = groups:root, a_name = 'Consulting';
-      CREATE service:no_code_1 SET owned_by = groups:root, a_name = 'No Service Code 1';
-      CREATE service:no_code_2 SET owned_by = groups:root, a_name = 'No Service Code 2';
-      CREATE tax_rule:gst SET owned_by = groups:root, a_name = 'GST', a_code = 'GST', a_default_rate = 18dec;
-      CREATE tax_rule:no_code_1 SET owned_by = groups:root, a_name = 'No Tax Code 1';
-      CREATE tax_rule:no_code_2 SET owned_by = groups:root, a_name = 'No Tax Code 2';
-      CREATE organization_finance_profile:vendor SET owned_by = groups:root,
-        a_organization = organization:vendor, a_functional_currency = currency:inr,
-        a_reporting_currency = currency:usd;
-    `);
-    await db.query(`CREATE money_opening_balance:permissive SET owned_by = groups:root,
-        a_endpoint = misc_account:permissive, a_currency = currency:inr,
-        a_amount = 10dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'permissive-opening';
-      CREATE money_movement:permissive_out SET owned_by = groups:root,
-        a_from = misc_account:permissive, a_to = organization:vendor,
-        a_currency = currency:inr, a_amount = 20dec,
-        a_effective_at = d'2026-01-02T00:00:00Z', a_idempotency_key = 'permissive-out';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = misc_account:permissive;"))[0].balance), "-10");
-    await db.query(`CREATE money_opening_balance:guarded SET owned_by = groups:root,
-        a_endpoint = misc_account:guarded, a_currency = currency:inr,
-        a_amount = 10dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'guarded-opening';`);
-    await assert.rejects(
-      db.query(`CREATE money_movement:guarded_out SET owned_by = groups:root,
-        a_from = misc_account:guarded, a_to = organization:vendor,
-        a_currency = currency:inr, a_amount = 20dec,
-        a_effective_at = d'2026-01-02T00:00:00Z', a_idempotency_key = 'guarded-out';`),
-      /NEGATIVE_MONEY_POSITION|HISTORICAL_NEGATIVE_PREFIX|negative/i,
+    await q(
+      'DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;',
     );
-    await assert.rejects(
-      db.query(`CREATE organization_finance_profile:vendor_duplicate SET owned_by = groups:root,
-        a_organization = organization:vendor, a_functional_currency = currency:usd;`),
-      /unique|duplicate|index/i,
-    );
-    await db.query(`CREATE money_opening_balance:cash SET owned_by = groups:root,
-        a_endpoint = treasury_account:cash, a_currency = currency:inr,
-        a_amount = 100dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'opening-cash';`);
-    await db.query(`CREATE treasury_account:opening_probe SET owned_by = groups:root,
-        a_name = 'Opening Probe', a_currency = currency:inr;
-      CREATE money_opening_balance:opening_probe SET owned_by = groups:root,
-        a_endpoint = treasury_account:opening_probe, a_currency = currency:inr,
-        a_amount = 20dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'opening-probe';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:opening_probe;"))[0].balance), "20");
-    await db.query("UPDATE money_opening_balance:opening_probe SET a_amount = 30dec;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:opening_probe;"))[0].balance), "30");
-    await db.query("DELETE money_opening_balance:opening_probe;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:opening_probe;"))[0].balance), "0");
-    await db.query(`CREATE money_movement:pay_1 SET owned_by = groups:root,
-        a_from = treasury_account:cash, a_to = organization:vendor,
-        a_currency = currency:inr, a_amount = 30dec,
-        a_effective_at = d'2026-01-02T00:00:00Z', a_idempotency_key = 'pay-1';`);
-    const position = rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:cash;"))[0];
-    assert.equal(String(position.balance), "70");
-    assert.equal(String(position.total_out), "30");
-
-    await db.query("UPDATE money_movement:pay_1 SET a_amount = 20dec;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "80");
-    await db.query("UPDATE money_movement:pay_1 SET a_amount = 30dec;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "70");
-
-    await assert.rejects(
-      db.query(`CREATE money_movement:pay_over SET owned_by = groups:root,
-        a_from = treasury_account:cash, a_to = organization:vendor,
-        a_currency = currency:inr, a_amount = 80dec,
-        a_effective_at = d'2026-01-03T00:00:00Z', a_idempotency_key = 'pay-over';`),
-      /NEGATIVE_MONEY_POSITION|negative/i,
-    );
-    assert.equal(rows(await db.query("SELECT id FROM money_movement WHERE id = money_movement:pay_over;")).length, 0);
-
-    // A current total can remain positive while an earlier effective-time
-    // prefix becomes negative. Replay must reject the edit atomically.
-    await db.query(`CREATE treasury_account:historical_cash SET owned_by = groups:root,
-        a_name = 'Historical Cash', a_currency = currency:inr;
-      CREATE money_opening_balance:historical_opening SET owned_by = groups:root,
-        a_endpoint = treasury_account:historical_cash, a_currency = currency:inr,
-        a_amount = 100dec, a_effective_at = d'2026-01-10T00:00:00Z',
-        a_idempotency_key = 'historical-opening';
-      CREATE money_movement:historical_out SET owned_by = groups:root,
-        a_from = treasury_account:historical_cash, a_to = organization:vendor,
-        a_currency = currency:inr, a_amount = 80dec,
-        a_effective_at = d'2026-01-11T00:00:00Z',
-        a_idempotency_key = 'historical-out';
-      CREATE money_movement:historical_in SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = treasury_account:historical_cash,
-        a_currency = currency:inr, a_amount = 100dec,
-        a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-in';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:historical_cash;"))[0].balance), "120");
-    await assert.rejects(
-      db.query("UPDATE money_movement:historical_out SET a_amount = 150dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_amount FROM money_movement:historical_out;"))[0].a_amount), "80");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:historical_cash;"))[0].balance), "120");
-    await assert.rejects(
-      db.query("UPDATE money_opening_balance:historical_opening SET a_amount = 50dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    await assert.rejects(
-      db.query("DELETE money_opening_balance:historical_opening;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    await db.query("DELETE money_movement:historical_in;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:historical_cash;"))[0].balance), "20");
-    await db.query(`CREATE money_movement:historical_in SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = treasury_account:historical_cash,
-        a_currency = currency:inr, a_amount = 100dec,
-        a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-in';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:historical_cash;"))[0].balance), "120");
-
-    await assert.rejects(
-      db.query("UPDATE money_movement:pay_1 SET a_effective_at = d'2026-01-04T00:00:00Z';"),
-      /READONLY|immutable|cannot/i,
-    );
-
-    await assert.rejects(
-      db.query(`CREATE fx_rate:bad_same SET owned_by = groups:root,
-        a_base_currency = currency:inr, a_quote_currency = currency:inr,
-        a_rate = 1dec, a_effective_at = d'2026-01-02T00:00:00Z';`),
-      /FX_SAME_CURRENCY|same.currency|same currency/i,
-    );
-    await db.query(`CREATE fx_rate:inr_usd SET owned_by = groups:root,
-      a_base_currency = currency:inr, a_quote_currency = currency:usd,
-      a_rate = 0.012dec, a_effective_at = d'2026-01-02T00:00:00Z';
-      CREATE fx_rate:usd_eur SET owned_by = groups:root,
-        a_base_currency = currency:usd, a_quote_currency = currency:eur,
-        a_rate = 0.92dec, a_effective_at = d'2026-01-02T00:00:00Z';
-      CREATE treasury_account:fx_cash SET owned_by = groups:root,
-        a_name = 'FX Cash', a_currency = currency:inr;
-      CREATE treasury_account:usd_cash SET owned_by = groups:root,
-        a_name = 'USD Cash', a_currency = currency:usd;
-      CREATE money_opening_balance:fx_cash SET owned_by = groups:root,
-        a_endpoint = treasury_account:fx_cash, a_currency = currency:inr,
-        a_amount = 100dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'opening-fx-cash';`);
-    await db.query(`CREATE money_exchange:fx_1 SET owned_by = groups:root,
-      a_from = treasury_account:fx_cash, a_to = treasury_account:usd_cash,
-      a_from_currency = currency:inr, a_to_currency = currency:usd,
-      a_from_amount = 10dec, a_to_amount = 0.12dec, a_fx_rate = fx_rate:inr_usd,
-      a_effective_at = d'2026-01-03T00:00:00Z', a_idempotency_key = 'fx-1';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:fx_cash;"))[0].balance), "90");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:usd_cash;"))[0].balance), "0.12");
-    await db.query("UPDATE money_exchange:fx_1 SET a_from_amount = 12dec, a_to_amount = 0.14dec;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:fx_cash;"))[0].balance), "88");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:usd_cash;"))[0].balance), "0.14");
-    await assert.rejects(
-      db.query(`CREATE money_movement:bad_fx SET owned_by = groups:root,
-        a_from = treasury_account:fx_cash, a_to = organization:vendor,
-        a_currency = currency:usd, a_amount = 1dec,
-        a_effective_at = d'2026-01-04T00:00:00Z', a_idempotency_key = 'bad-fx';`),
-      /MONEY_FROM_CURRENCY|currency/i,
-    );
-    await assert.rejects(
-      db.query(`UPDATE money_exchange:fx_1 SET a_from_amount = 1000dec;`),
-      /NEGATIVE_MONEY_POSITION|negative/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_from_amount FROM money_exchange:fx_1;"))[0].a_from_amount), "12");
-    await assert.rejects(
-      db.query(`CREATE money_exchange:fx_bad_pair SET owned_by = groups:root,
-        a_from = treasury_account:fx_cash, a_to = treasury_account:usd_cash,
-        a_from_currency = currency:inr, a_to_currency = currency:usd,
-        a_from_amount = 1dec, a_to_amount = 1dec, a_fx_rate = fx_rate:usd_eur,
-        a_effective_at = d'2026-01-04T00:00:00Z', a_idempotency_key = 'fx-bad-pair';`),
-      /FX_PAIR|pair/i,
-    );
-    await db.query("DELETE money_exchange:fx_1;");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:fx_cash;"))[0].balance), "100");
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:usd_cash;"))[0].balance), "0");
-
-    await db.query(`CREATE treasury_account:historical_fx_inr SET owned_by = groups:root,
-        a_name = 'Historical FX INR', a_currency = currency:inr;
-      CREATE treasury_account:historical_fx_usd SET owned_by = groups:root,
-        a_name = 'Historical FX USD', a_currency = currency:usd;
-      CREATE money_opening_balance:historical_fx_opening SET owned_by = groups:root,
-        a_endpoint = treasury_account:historical_fx_inr, a_currency = currency:inr,
-        a_amount = 100dec, a_effective_at = d'2026-01-10T00:00:00Z',
-        a_idempotency_key = 'historical-fx-opening';
-      CREATE money_exchange:historical_fx_exchange SET owned_by = groups:root,
-        a_from = treasury_account:historical_fx_inr, a_to = treasury_account:historical_fx_usd,
-        a_from_currency = currency:inr, a_to_currency = currency:usd,
-        a_from_amount = 80dec, a_to_amount = 0.96dec, a_fx_rate = fx_rate:inr_usd,
-        a_effective_at = d'2026-01-11T00:00:00Z',
-        a_idempotency_key = 'historical-fx-exchange';
-      CREATE money_movement:historical_fx_in SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = treasury_account:historical_fx_inr,
-        a_currency = currency:inr, a_amount = 100dec,
-        a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-fx-in';`);
-    assert.equal(String(rows(await db.query("SELECT balance FROM money_position WHERE endpoint = treasury_account:historical_fx_inr;"))[0].balance), "120");
-    await assert.rejects(
-      db.query("UPDATE money_exchange:historical_fx_exchange SET a_from_amount = 150dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_from_amount FROM money_exchange:historical_fx_exchange;"))[0].a_from_amount), "80");
-
-    await db.query(`
-      CREATE service_capacity:cap_1 SET owned_by = groups:root,
-        a_operating_unit = operating_unit:warehouse, a_service = service:consulting,
-        a_quantity = 2dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'cap-1';
-    `);
-    await db.query(`CREATE service_delivery:delivery_1 SET owned_by = groups:root,
-        a_operating_unit = operating_unit:warehouse, a_service = service:consulting,
-        a_organization = organization:vendor, a_quantity = 1dec,
-        a_effective_at = d'2026-01-02T00:00:00Z', a_idempotency_key = 'delivery-1';`);
-    const servicePosition = rows(await db.query("SELECT * FROM service_position;"))[0];
-    assert.equal(String(servicePosition.remaining), "1");
-    await assert.rejects(
-      db.query(`CREATE service_delivery:delivery_over SET owned_by = groups:root,
-        a_operating_unit = operating_unit:warehouse, a_service = service:consulting,
-        a_quantity = 2dec, a_effective_at = d'2026-01-03T00:00:00Z',
-        a_idempotency_key = 'delivery-over';`),
-      /SERVICE_CAPACITY_EXCEEDED|HISTORICAL_NEGATIVE_PREFIX|capacity/i,
-    );
-    await db.query("UPDATE service_capacity:cap_1 SET a_quantity = 3dec;");
-    assert.equal(String(rows(await db.query("SELECT * FROM service_position;"))[0].remaining), "2");
-    await db.query("UPDATE service_delivery:delivery_1 SET a_quantity = 2dec;");
-    assert.equal(String(rows(await db.query("SELECT * FROM service_position;"))[0].remaining), "1");
-    await db.query("UPDATE service_delivery:delivery_1 SET a_quantity = 3dec;");
-    assert.equal(String(rows(await db.query("SELECT * FROM service_position;"))[0].remaining), "0");
-    await assert.rejects(
-      db.query("UPDATE service_delivery:delivery_1 SET a_quantity = 4dec;"),
-      /SERVICE_CAPACITY_EXCEEDED|HISTORICAL_NEGATIVE_PREFIX|capacity/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT * FROM service_position;"))[0].remaining), "0");
-
-    await db.query(`CREATE operating_unit:historical_unit SET owned_by = groups:root,
-        a_name = 'Historical Unit', a_kind = 'warehouse';
-      CREATE inventory_opening_balance:historical_opening SET owned_by = groups:root,
-        a_operating_unit = operating_unit:historical_unit, a_item = item:widget,
-        a_quantity = 5dec, a_effective_at = d'2026-01-10T00:00:00Z',
-        a_idempotency_key = 'historical-inventory-opening';
-      CREATE inventory_movement:historical_inventory_out SET owned_by = groups:root,
-        a_from = operating_unit:historical_unit, a_to = organization:vendor,
-        a_item = item:widget, a_quantity = 3dec,
-        a_effective_at = d'2026-01-11T00:00:00Z',
-        a_idempotency_key = 'historical-inventory-out';
-      CREATE inventory_movement:historical_inventory_in SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = operating_unit:historical_unit,
-        a_item = item:widget, a_quantity = 10dec,
-        a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-inventory-in';`);
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:historical_unit;"))[0].quantity), "12");
-    await assert.rejects(
-      db.query("UPDATE inventory_movement:historical_inventory_out SET a_quantity = 8dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    await assert.rejects(
-      db.query("UPDATE inventory_opening_balance:historical_opening SET a_quantity = 2dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    await assert.rejects(
-      db.query("DELETE inventory_opening_balance:historical_opening;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative/i,
-    );
-    await db.query("DELETE inventory_movement:historical_inventory_in;");
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:historical_unit;"))[0].quantity), "2");
-    await db.query(`CREATE inventory_movement:historical_inventory_in SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = operating_unit:historical_unit,
-        a_item = item:widget, a_quantity = 10dec,
-        a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-inventory-in';`);
-
-    await db.query(`CREATE service:historical_service SET owned_by = groups:root, a_name = 'Historical Service';
-      CREATE service_capacity:historical_capacity SET owned_by = groups:root,
-        a_operating_unit = operating_unit:historical_unit, a_service = service:historical_service,
-        a_quantity = 5dec, a_effective_at = d'2026-01-10T00:00:00Z',
-        a_idempotency_key = 'historical-service-capacity';
-      CREATE service_delivery:historical_delivery SET owned_by = groups:root,
-        a_operating_unit = operating_unit:historical_unit, a_service = service:historical_service,
-        a_organization = organization:vendor, a_quantity = 3dec,
-        a_effective_at = d'2026-01-11T00:00:00Z',
-        a_idempotency_key = 'historical-service-delivery';
-      CREATE service_capacity:historical_capacity_later SET owned_by = groups:root,
-        a_operating_unit = operating_unit:historical_unit, a_service = service:historical_service,
-        a_quantity = 4dec, a_effective_at = d'2026-01-12T00:00:00Z',
-        a_idempotency_key = 'historical-service-capacity-later';`);
-    assert.equal(String(rows(await db.query("SELECT remaining FROM service_position WHERE operating_unit = operating_unit:historical_unit;"))[0].remaining), "6");
-    await assert.rejects(
-      db.query("UPDATE service_capacity:historical_capacity SET a_quantity = 2dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative|capacity/i,
-    );
-    await assert.rejects(
-      db.query("UPDATE service_delivery:historical_delivery SET a_quantity = 7dec;"),
-      /ACCOUNTS_HISTORICAL_NEGATIVE_PREFIX|historical|negative|capacity/i,
-    );
-
-    await db.query(`CREATE inventory_opening_balance:opening_probe SET owned_by = groups:root,
-      a_operating_unit = operating_unit:opening_probe, a_item = item:widget,
-      a_quantity = 5dec, a_effective_at = d'2026-01-01T00:00:00Z',
-      a_idempotency_key = 'opening-inventory-probe';`);
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:opening_probe;"))[0].quantity), "5");
-    await db.query("UPDATE inventory_opening_balance:opening_probe SET a_quantity = 7dec;");
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:opening_probe;"))[0].quantity), "7");
-    await db.query("DELETE inventory_opening_balance:opening_probe;");
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:opening_probe;"))[0].quantity), "0");
-
-    await db.query(`CREATE inventory_opening_balance:widget SET owned_by = groups:root,
-      a_operating_unit = operating_unit:warehouse, a_item = item:widget,
-      a_quantity = 10dec, a_effective_at = d'2026-01-01T00:00:00Z',
-      a_idempotency_key = 'opening-widget';`);
-    await db.query(`CREATE inventory_movement:stock_out SET owned_by = groups:root,
-      a_from = operating_unit:warehouse, a_to = organization:vendor,
-      a_item = item:widget, a_quantity = 4dec,
-      a_effective_at = d'2026-01-02T00:00:00Z', a_idempotency_key = 'stock-out';`);
-    assert.equal(String(rows(await db.query("SELECT * FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "6");
-    await db.query("UPDATE inventory_movement:stock_out SET a_quantity = 3dec;");
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "7");
-    await db.query("UPDATE inventory_movement:stock_out SET a_quantity = 4dec;");
-    assert.equal(String(rows(await db.query("SELECT quantity FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "6");
-    await assert.rejects(
-      db.query(`CREATE inventory_movement:stock_over SET owned_by = groups:root,
-        a_from = operating_unit:warehouse, a_to = organization:vendor,
-        a_item = item:widget, a_quantity = 7dec,
-        a_effective_at = d'2026-01-03T00:00:00Z', a_idempotency_key = 'stock-over';`),
-      /NEGATIVE_INVENTORY|negative/i,
-    );
-    await db.query(`CREATE inventory_movement:stock_transfer SET owned_by = groups:root,
-      a_from = operating_unit:warehouse, a_to = operating_unit:warehouse_2,
-      a_item = item:widget, a_quantity = 2dec,
-      a_effective_at = d'2026-01-04T00:00:00Z', a_idempotency_key = 'stock-transfer';`);
-    const inventoryPositions = rows(await db.query("SELECT * FROM inventory_position ORDER BY operating_unit;"));
-    assert.equal(String(inventoryPositions.find((row) => String(row.operating_unit) === "operating_unit:warehouse").quantity), "4");
-    assert.equal(String(inventoryPositions.find((row) => String(row.operating_unit) === "operating_unit:warehouse_2").quantity), "2");
-
-    await db.query(`CREATE invoice:inv_1 SET owned_by = groups:root,
-      a_organization = organization:vendor, a_currency = currency:inr,
-      a_direction = 'receivable', a_number = 'INV-1',
-      a_effective_at = d'2026-01-01T00:00:00Z';
-      CREATE invoice:other_number SET owned_by = groups:root,
-        a_organization = organization:other, a_currency = currency:inr,
-        a_direction = 'receivable', a_number = 'INV-1',
-        a_effective_at = d'2026-01-01T00:00:00Z';`);
-    await assert.rejects(
-      db.query(`CREATE invoice:duplicate_number SET owned_by = groups:root,
-        a_organization = organization:vendor, a_currency = currency:inr,
-        a_direction = 'receivable', a_number = 'INV-1',
-        a_effective_at = d'2026-01-01T00:00:00Z';`),
-      /index|unique|duplicate/i,
-    );
-    await db.query(`CREATE invoice_line:line_1 SET owned_by = groups:root,
-      a_invoice = invoice:inv_1, a_subject = item:widget,
-      a_quantity = 1dec, a_unit_price = 50dec;`);
-    await db.query(`CREATE tax_output:tax_1 SET owned_by = groups:root,
-      a_invoice_line = invoice_line:line_1, a_rule = tax_rule:gst, a_rate = 18dec;`);
-    const taxedLine = rows(await db.query("SELECT * FROM invoice_line:line_1;"))[0];
-    assert.equal(String(taxedLine.d4_base_amount), "50");
-    assert.equal(String(taxedLine.d5_tax_amount), "9");
-    assert.equal(String(taxedLine.d6_gross_amount), "59");
-    await db.query(`CREATE money_movement:pay_2 SET owned_by = groups:root,
-      a_from = organization:vendor, a_to = treasury_account:cash,
-      a_currency = currency:inr, a_amount = 50dec,
-      a_effective_at = d'2026-01-05T00:00:00Z', a_idempotency_key = 'pay-2';`);
-    await db.query(`CREATE payment_application:app_1 SET owned_by = groups:root,
-      a_payment = money_movement:pay_2, a_invoice = invoice:inv_1,
-      a_amount = 50dec, a_idempotency_key = 'application-1';`);
-    await assert.rejects(
-      db.query("UPDATE money_movement:pay_2 SET a_amount = 49dec;"),
-      /OVER_APPLIED|applied|payment/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_amount FROM money_movement:pay_2;"))[0].a_amount), "50");
-    await assert.rejects(
-      db.query("CREATE payment_application:app_over SET owned_by = groups:root, a_payment = money_movement:pay_2, a_invoice = invoice:inv_1, a_amount = 1dec, a_idempotency_key = 'application-over';"),
-      /OVER_APPLIED|OVER_SETTLED|settled|applied/i,
-    );
-
-    await db.query(`CREATE money_refund:refund_1 SET owned_by = groups:root,
-      a_original_payment = money_movement:pay_1, a_amount = 10dec,
-      a_effective_at = d'2026-01-06T00:00:00Z', a_idempotency_key = 'refund-1';`);
-    assert.equal(String(rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "130");
-
-    await db.query(`CREATE inventory_return:return_1 SET owned_by = groups:root,
-      a_original_movement = inventory_movement:stock_out, a_quantity = 1dec,
-      a_effective_at = d'2026-01-06T00:00:00Z', a_idempotency_key = 'return-1';`);
-    assert.equal(String(rows(await db.query("SELECT * FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "5");
-    await assert.rejects(
-      db.query(`CREATE inventory_return:return_internal SET owned_by = groups:root,
-        a_original_movement = inventory_movement:stock_transfer, a_quantity = 1dec,
-        a_effective_at = d'2026-01-06T00:00:00Z', a_idempotency_key = 'return-internal';`),
-      /RETURN_REQUIRES_DELIVERY|delivery|organization/i,
-    );
-
-    await db.query(`CREATE adjustment_note:note_1 SET owned_by = groups:root,
-      a_organization = organization:vendor, a_name = 'Correction';
-      CREATE money_adjustment_line:money_adj_1 SET owned_by = groups:root,
-        a_note = adjustment_note:note_1, a_target = money_movement:pay_1, a_delta = -5dec;
-      CREATE inventory_adjustment_line:inventory_adj_1 SET owned_by = groups:root,
-        a_note = adjustment_note:note_1, a_target = inventory_movement:stock_out, a_delta = -1dec;`);
-    assert.equal(String(rows(await db.query("SELECT d4_net_amount FROM money_movement:pay_1;"))[0].d4_net_amount), "25");
-    assert.equal(String(rows(await db.query("SELECT d4_net_quantity FROM inventory_movement:stock_out;"))[0].d4_net_quantity), "3");
-    assert.equal(String(rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "135");
-    assert.equal(String(rows(await db.query("SELECT * FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "6");
-
-    await db.query("UPDATE money_refund:refund_1 SET a_amount = 15dec;");
-    assert.equal(String(rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "140");
-    await assert.rejects(
-      db.query(`CREATE money_refund:refund_over SET owned_by = groups:root,
-        a_original_payment = money_movement:pay_1, a_amount = 11dec,
-        a_effective_at = d'2026-01-07T00:00:00Z', a_idempotency_key = 'refund-over';`),
-      /REFUND_EXCEEDS_PAYMENT|refund/i,
-    );
-    await db.query("DELETE money_refund:refund_1;");
-    assert.equal(String(rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:cash;"))[0].balance), "125");
-
-    await db.query("UPDATE inventory_return:return_1 SET a_quantity = 2dec;");
-    assert.equal(String(rows(await db.query("SELECT * FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "7");
-    await assert.rejects(
-      db.query("UPDATE inventory_movement:stock_out SET a_quantity = 1dec;"),
-      /RETURN_EXCEEDS_MOVEMENT|return|quantity/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_quantity FROM inventory_movement:stock_out;"))[0].a_quantity), "4");
-    await assert.rejects(
-      db.query(`CREATE inventory_return:return_over SET owned_by = groups:root,
-        a_original_movement = inventory_movement:stock_out, a_quantity = 2dec,
-        a_effective_at = d'2026-01-07T00:00:00Z', a_idempotency_key = 'return-over';`),
-      /RETURN_EXCEEDS_MOVEMENT|return/i,
-    );
-    await db.query("DELETE inventory_return:return_1;");
-    assert.equal(String(rows(await db.query("SELECT * FROM inventory_position WHERE operating_unit = operating_unit:warehouse;"))[0].quantity), "5");
-
-    await db.query(`CREATE tax_adjustment_line:tax_adj_1 SET owned_by = groups:root,
-      a_note = adjustment_note:note_1, a_target = tax_output:tax_1, a_delta = -1dec;`);
-    const adjustedTaxLine = rows(await db.query("SELECT * FROM invoice_line:line_1;"))[0];
-    assert.equal(String(adjustedTaxLine.d5_tax_amount), "8");
-    assert.equal(String(adjustedTaxLine.d6_gross_amount), "58");
-    await assert.rejects(
-      db.query("UPDATE invoice_line:line_1 SET a_unit_price = 40dec;"),
-      /OVER_SETTLED|settled|claim/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_unit_price FROM invoice_line:line_1;"))[0].a_unit_price), "50");
-    await assert.rejects(
-      db.query(`CREATE adjustment_note:wrong_org SET owned_by = groups:root,
-        a_organization = organization:other, a_name = 'Wrong Org';
-        CREATE tax_adjustment_line:tax_adj_wrong_org SET owned_by = groups:root,
-          a_note = adjustment_note:wrong_org, a_target = tax_output:tax_1, a_delta = -1dec;`),
-      /ADJUSTMENT_ORGANIZATION|organization/i,
-    );
-
-    await db.query(`CREATE money_refund:refund_revalidate SET owned_by = groups:root,
-      a_original_payment = money_movement:pay_1, a_amount = 10dec,
-      a_effective_at = d'2026-01-09T00:00:00Z', a_idempotency_key = 'refund-revalidate';`);
-    await db.query("UPDATE money_adjustment_line:money_adj_1 SET a_delta = -20dec;");
-    assert.equal(String(rows(await db.query("SELECT d4_net_amount FROM money_movement:pay_1;"))[0].d4_net_amount), "10");
-    await assert.rejects(
-      db.query("UPDATE money_adjustment_line:money_adj_1 SET a_delta = -25dec;"),
-      /REFUND_EXCEEDS_PAYMENT|NET|refund|total_out|negative/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_delta FROM money_adjustment_line:money_adj_1;"))[0].a_delta), "-20");
-    await db.query("DELETE money_refund:refund_revalidate; UPDATE money_adjustment_line:money_adj_1 SET a_delta = -5dec;");
-
-    await db.query(`CREATE invoice:refund_invoice SET owned_by = groups:root,
-      a_organization = organization:vendor, a_currency = currency:inr,
-      a_direction = 'receivable', a_effective_at = d'2026-01-10T00:00:00Z';
-      CREATE invoice_line:refund_line SET owned_by = groups:root,
-        a_invoice = invoice:refund_invoice, a_subject = item:widget,
-        a_quantity = 1dec, a_unit_price = 20dec;
-      CREATE money_movement:pay_alloc SET owned_by = groups:root,
-        a_from = organization:vendor, a_to = treasury_account:cash,
-        a_currency = currency:inr, a_amount = 20dec,
-        a_effective_at = d'2026-01-10T00:00:00Z', a_idempotency_key = 'pay-alloc';
-      CREATE payment_application:app_alloc SET owned_by = groups:root,
-        a_payment = money_movement:pay_alloc, a_invoice = invoice:refund_invoice,
-        a_amount = 15dec, a_idempotency_key = 'application-alloc';
-      CREATE money_refund:refund_alloc SET owned_by = groups:root,
-        a_original_payment = money_movement:pay_alloc, a_amount = 5dec,
-      a_effective_at = d'2026-01-11T00:00:00Z', a_idempotency_key = 'refund-alloc';`);
-    await assert.rejects(
-      db.query("UPDATE money_refund:refund_alloc SET a_amount = 6dec;"),
-      /OVER_APPLIED|applied|refund|payment/i,
-    );
-    assert.equal(String(rows(await db.query("SELECT a_amount FROM money_refund:refund_alloc;"))[0].a_amount), "5");
-    await assert.rejects(
-      db.query(`CREATE payment_application:app_alloc_over SET owned_by = groups:root,
-        a_payment = money_movement:pay_alloc, a_invoice = invoice:refund_invoice,
-        a_amount = 6dec, a_idempotency_key = 'application-alloc-over';`),
-      /OVER_APPLIED|OVER_SETTLED|applied|settled|refund/i,
-    );
-
-    await db.query(`CREATE service_capacity:context_cap SET owned_by = groups:root,
-      a_operating_unit = operating_unit:warehouse, a_service = service:consulting,
-      a_quantity = 1dec, a_effective_at = d'2026-01-08T00:00:00Z',
-      a_idempotency_key = 'context-cap';
-      CREATE service_delivery:context_delivery SET owned_by = groups:root,
-        a_operating_unit = operating_unit:warehouse, a_service = service:consulting,
-        a_quantity = 1dec, a_effective_at = d'2026-01-08T00:00:00Z',
-        a_contexts = [organization:context], a_idempotency_key = 'context-delivery';`);
-    await db.query("DELETE organization:context;");
-    const contextDelivery = rows(await db.query("SELECT a_contexts FROM service_delivery:context_delivery;"))[0];
-    assert.equal((contextDelivery.a_contexts || []).length, 0);
-    await db.query("DELETE service_delivery:context_delivery; DELETE service_capacity:context_cap;");
-
-    await assert.rejects(
-      db.query("DELETE item:widget;"),
-      /REFERENCE|referenced|REJECT|cannot delete/i,
-    );
-
-    await db.query(`CREATE adjustment_note:note_cascade SET owned_by = groups:root, a_name = 'Cascade';
-      CREATE money_adjustment_line:money_adj_cascade SET owned_by = groups:root,
-        a_note = adjustment_note:note_cascade, a_target = money_movement:pay_1, a_delta = 1dec;`);
-    assert.equal(String(rows(await db.query("SELECT d4_net_amount FROM money_movement:pay_1;"))[0].d4_net_amount), "26");
-    await db.query("DELETE adjustment_note:note_cascade;");
-    assert.equal(rows(await db.query("SELECT id FROM money_adjustment_line WHERE id = money_adjustment_line:money_adj_cascade;"))[0], undefined);
-    assert.equal(String(rows(await db.query("SELECT d4_net_amount FROM money_movement:pay_1;"))[0].d4_net_amount), "25");
-
-    await db.query("CREATE invoice:locked SET owned_by = groups:root, a_organization = organization:vendor, a_currency = currency:inr, a_direction = 'receivable', a_effective_at = d'2026-01-08T00:00:00Z', a_locked = true;");
-    await assert.rejects(
-      db.query("CREATE invoice_line:locked_line SET owned_by = groups:root, a_invoice = invoice:locked, a_subject = item:widget, a_quantity = 1dec, a_unit_price = 1dec;"),
-      /INVOICE_LOCKED|locked/i,
-    );
-    await db.query("CREATE adjustment_note:locked_note SET owned_by = groups:root, a_name = 'Locked', a_locked = true;");
-    await assert.rejects(
-      db.query("CREATE money_adjustment_line:locked_line SET owned_by = groups:root, a_note = adjustment_note:locked_note, a_target = money_movement:pay_1, a_delta = 1dec;"),
-      /ADJUSTMENT_LOCKED|locked/i,
-    );
-
-    await db.query(`CREATE treasury_account:concurrent_cash SET owned_by = groups:root,
-      a_name = 'Concurrent Cash', a_currency = currency:inr;
-      CREATE money_opening_balance:concurrent_opening SET owned_by = groups:root,
-        a_endpoint = treasury_account:concurrent_cash, a_currency = currency:inr,
-        a_amount = 1000dec, a_effective_at = d'2026-01-01T00:00:00Z',
-        a_idempotency_key = 'concurrent-opening';`);
-    const sessions = await Promise.all(
-      Array.from({ length: 8 }, () => openSession(server, namespace, database)),
-    );
-    try {
-      await Promise.all(Array.from({ length: 24 }, (_, index) => {
-        const id = `concurrent_${index + 1}`;
-        return queryWithConflictRetry(
-          sessions[index % sessions.length],
-          `CREATE money_movement:${id} SET owned_by = groups:root,
-            a_from = treasury_account:concurrent_cash, a_to = organization:vendor,
-            a_currency = currency:inr, a_amount = 1dec,
-            a_effective_at = d'2026-02-01T00:00:00Z',
-            a_idempotency_key = '${id}';`,
-        );
-      }));
-    } finally {
-      await Promise.all(sessions.map((session) => session.close().catch(() => {})));
+    await applySchema(q, compiled.bundle);
+    for (const [id, code] of [
+      ['inr', 'INR'],
+      ['usd', 'USD'],
+    ])
+      await q(
+        `CREATE currency:${id} SET owned_by=${root},a_code='${code}',a_name='${code}';`,
+      );
+    for (const name of [
+      'company',
+      'customer',
+      'vendor',
+      'authority',
+      'other',
+    ]) {
+      await q(`CREATE organization:${name} SET owned_by=${root},a_name='${name}';
+    CREATE money_account:${name} SET owned_by=${root},a_entity=organization:${name},a_currency=currency:inr,a_nonnegative=false;`);
     }
-    const concurrentPosition = rows(await db.query("SELECT * FROM money_position WHERE endpoint = treasury_account:concurrent_cash;"))[0];
-    assert.equal(String(concurrentPosition.balance), "976");
-    const concurrentRows = rows(await db.query("SELECT a_idempotency_key FROM money_movement;"))
-      .filter((row) => String(row.a_idempotency_key).startsWith("concurrent_"));
-    assert.equal(concurrentRows.length, 24);
+    for (const name of ['company', 'vendor'])
+      await q(
+        `CREATE money_account:${name}_usd SET owned_by=${root},a_entity=organization:${name},a_currency=currency:usd,a_nonnegative=false;`,
+      );
+    for (const name of ['bank', 'other_bank'])
+      await q(`CREATE treasury_account:${name} SET owned_by=${root},a_name='${name}',a_organization=organization:company;
+    CREATE money_account:${name} SET owned_by=${root},a_entity=treasury_account:${name},a_currency=currency:inr;`);
+    await q(`CREATE money_account:bank_usd SET owned_by=${root},a_entity=treasury_account:bank,a_currency=currency:usd;
+   CREATE misc_account:funding SET owned_by=${root},a_name='Funding source';
+   CREATE money_account:funding SET owned_by=${root},a_entity=misc_account:funding,a_currency=currency:inr,a_nonnegative=false;`);
+    for (const [kind, name] of [
+      ['asset', 'direct'],
+      ['payable', 'output'],
+      ['receivable', 'input'],
+    ])
+      await q(`CREATE tax_${kind}:${name} SET owned_by=${root},a_name='${name}',a_organization=organization:company;
+    CREATE money_account:${name} SET owned_by=${root},a_entity=tax_${kind}:${name},a_currency=currency:inr;`);
+    for (const name of ['warehouse', 'outlet', 'customer'])
+      await q(
+        `CREATE operating_unit:${name} SET owned_by=${root},a_name='${name}',a_organization=organization:${name === 'customer' ? 'customer' : 'company'};`,
+      );
+    await q(`CREATE misc_inventory_node:source SET owned_by=${root},a_name='Stock source';
+   CREATE item:widget SET owned_by=${root},a_name='Widget';
+   CREATE service:consulting SET owned_by=${root},a_name='Consulting',a_unit='hour';
+   CREATE calculation_rule:rate SET owned_by=${root},a_name='10 percent',a_rate=0.1dec;
+   CREATE calculation_rule:cap SET owned_by=${root},a_name='Capped fee',a_rate=0.1dec,a_cap=5dec;`);
+    for (const [name, endpoint, subject, nonnegative] of [
+      ['source', 'misc_inventory_node:source', 'item:widget', false],
+      ['warehouse', 'operating_unit:warehouse', 'item:widget', true],
+      ['outlet', 'operating_unit:outlet', 'item:widget', true],
+      ['customer', 'operating_unit:customer', 'item:widget', true],
+      ['vendor', 'organization:vendor', 'item:widget', false],
+      ['other', 'organization:other', 'item:widget', false],
+      [
+        'service_source',
+        'misc_inventory_node:source',
+        'service:consulting',
+        false,
+      ],
+      ['service_unit', 'operating_unit:warehouse', 'service:consulting', true],
+      [
+        'service_customer',
+        'operating_unit:customer',
+        'service:consulting',
+        true,
+      ],
+    ])
+      await q(
+        `CREATE stock_account:${name} SET owned_by=${root},a_endpoint=${endpoint},a_subject=${subject},a_nonnegative=${nonnegative};`,
+      );
+    await create(
+      'currency_exchange:quote',
+      -20,
+      'a_from=currency:inr,a_to=currency:usd,a_rate=0.02dec',
+    );
+    await create(
+      'currency_exchange:refund',
+      -20,
+      'a_from=currency:inr,a_to=currency:usd,a_rate=0.01dec',
+    );
+    await create(
+      'adjustment_note:money',
+      90,
+      "a_reason='Corrections and reversals',a_currency=currency:inr",
+    );
+    await create(
+      'adjustment_note:usd',
+      90,
+      "a_reason='Dollar corrections',a_currency=currency:usd",
+    );
+    await reject(
+      `CREATE money_account:duplicate SET owned_by=${root},a_entity=treasury_account:bank,a_currency=currency:inr;`,
+      /already contains|unique|index/i,
+    );
+    await create(
+      'payment:fund',
+      -10,
+      'a_from=money_account:funding,a_to=money_account:bank,a_amount=1000dec',
+    );
+    await create(
+      'payment:spend',
+      0,
+      'a_from=money_account:bank,a_to=money_account:vendor,a_amount=100dec',
+    );
+    await create(
+      'money_adjustment:spend',
+      2,
+      'a_original=payment:spend,a_note=adjustment_note:money,a_from_delta=20dec',
+    );
+    await create(
+      'money_refund:spend',
+      4,
+      'a_original=payment:spend,a_note=adjustment_note:money,a_amount=35dec',
+    );
+    await create(
+      'money_charge:fee',
+      3,
+      'a_original=payment:spend,a_rule=calculation_rule:rate,a_to=money_account:authority',
+    );
+    await create(
+      'money_parent_charge:cap',
+      5,
+      'a_original=payment:spend,a_rule=calculation_rule:cap,a_to=money_account:authority',
+    );
+    await create(
+      'money_adjustment:fee',
+      6,
+      'a_original=money_charge:fee,a_note=adjustment_note:money,a_from_delta=-1dec',
+    );
+    await check();
+    equal(
+      await q(
+        'RETURN payment:spend.z_history.summary.measures.from_amount.sum;',
+      ),
+      85,
+    );
+    equal(
+      await q('RETURN payment:spend.z_history.summary.measures.basis.sum;'),
+      101,
+    );
+    await reject(
+      `CREATE money_refund:bad SET owned_by=${root},a_original=payment:spend,a_note=adjustment_note:money,a_amount=200dec,a_effective_at=d'${date(7)}';`,
+      /CAPACITY/,
+    );
+    await reject(
+      `CREATE money_refund:wrong_direction SET owned_by=${root},a_original=payment:spend,a_note=adjustment_note:money,a_amount=1dec,a_to_delta=2dec,a_effective_at=d'${date(7)}';`,
+      /REFUND_DIRECTION/,
+    );
+    await reject(
+      `CREATE money_adjustment:early SET owned_by=${root},a_original=payment:spend,a_note=adjustment_note:money,a_from_delta=10dec,a_effective_at=d'${date(-1)}';`,
+      /CHILD_BEFORE_ORIGINAL/,
+    );
+    await reject(
+      `CREATE payment:no_fx SET owned_by=${root},a_from=money_account:bank,a_to=money_account:vendor_usd,a_amount=100dec,a_effective_at=d'${date(0)}';`,
+      /EXCHANGE_REQUIRED/,
+    );
+    await create(
+      'payment:fx',
+      0,
+      'a_from=money_account:bank,a_to=money_account:vendor_usd,a_amount=150dec,a_exchange=currency_exchange:quote',
+    );
+    await create(
+      'money_adjustment:fx',
+      2,
+      'a_original=payment:fx,a_note=adjustment_note:money,a_from_delta=10dec,a_to_delta=0.1dec',
+    );
+    await reject(
+      `CREATE money_refund:fx_bad SET owned_by=${root},a_original=payment:fx,a_note=adjustment_note:money,a_amount=100dec,a_to_delta=-2.5dec,a_effective_at=d'${date(3)}';`,
+      /CAPACITY/,
+    );
+    await create(
+      'money_refund:fx',
+      3,
+      'a_original=payment:fx,a_note=adjustment_note:money,a_amount=100dec,a_exchange=currency_exchange:refund',
+    );
+    await create(
+      'money_adjustment:target_only',
+      4,
+      'a_original=payment:fx,a_note=adjustment_note:money,a_to_delta=-0.2dec',
+    );
+    await q('UPDATE currency_exchange:quote SET a_rate=0.025dec;');
+    await check();
+    equal(await q('RETURN money_refund:fx.z10_credit;'), -1);
+    await reject(
+      `UPDATE currency_exchange:quote SET a_effective_at=d'${date(1)}';`,
+      /EXCHANGE_AFTER_USAGE/,
+    );
+    await create(
+      'payment:same',
+      1,
+      'a_from=money_account:bank,a_to=money_account:bank,a_amount=2000dec',
+    );
+    assert.equal(await q('RETURN payment:same.z_to;'), null);
+    await create(
+      'payment:internal_fx',
+      7,
+      'a_from=money_account:bank,a_to=money_account:bank_usd,a_amount=40dec,a_exchange=currency_exchange:quote',
+    );
+    await create(
+      'payment:other_fund',
+      -10,
+      'a_from=money_account:funding,a_to=money_account:other_bank,a_amount=1000dec',
+    );
+    await q('UPDATE payment:spend SET a_from=money_account:other_bank;');
+    await check();
+    await q('UPDATE payment:spend SET a_from=money_account:bank;');
+    await check();
+    await reject(
+      'UPDATE payment:fund SET a_amount=1dec;',
+      /NEGATIVE_ASSET_HISTORY/,
+    );
+    await reject(
+      `CREATE money_adjustment:no_note SET owned_by=${root},a_original=payment:spend,a_from_delta=1dec,a_effective_at=d'${date(8)}';`,
+      /a_note|record/i,
+    );
+    await reject(
+      `CREATE money_adjustment:wrong_note SET owned_by=${root},a_original=payment:spend,a_note=adjustment_note:usd,a_from_delta=1dec,a_effective_at=d'${date(8)}';`,
+      /NOTE_CURRENCY/,
+    );
+    console.log(
+      'PASS entity/currency dimensions, FX quote reactivity, independent refund legs, target-only corrections, shared-owner coalescing and atomic solvency',
+    );
 
-    const info = finalResult(await db.query("INFO FOR DB;"));
-    assert(Object.hasOwn(info.tables, "money_position"));
-    assert(Object.hasOwn(info.tables, "invoice_line"));
-    console.log("accounts: all-in-one schema, same-currency movements, FX exchanges, mutable deltas, position guards, service capacity, and settlement caps passed");
+    await create(
+      'payment:income',
+      7,
+      'a_from=money_account:customer,a_to=money_account:bank,a_amount=100dec',
+    );
+    await create(
+      'asset_allocation:withheld',
+      8,
+      'a_original=payment:income,a_rule=calculation_rule:rate,a_to=money_account:direct',
+    );
+    await create(
+      'payment:recovery',
+      9,
+      'a_from=money_account:direct,a_to=money_account:bank,a_amount=2dec',
+    );
+    equal(
+      await q(
+        'RETURN payment:income.z_history.summary.measures.to_amount.sum;',
+      ),
+      90,
+    );
+    await reject(
+      `CREATE money_refund:allocated SET owned_by=${root},a_original=payment:income,a_note=adjustment_note:money,a_amount=91dec,a_effective_at=d'${date(10)}';`,
+      /CAPACITY/,
+    );
+    await create(
+      'money_refund:allocation',
+      10,
+      'a_original=asset_allocation:withheld,a_note=adjustment_note:money,a_amount=3dec',
+    );
+    equal(
+      await q(
+        'RETURN payment:income.z_history.summary.measures.to_amount.sum;',
+      ),
+      93,
+    );
+    await check();
+    console.log(
+      'PASS direct-tax asset allocation, accountable destination, independent recovery and linked reversal capacity',
+    );
+
+    await create(
+      'delivery:stock',
+      -5,
+      'a_from=stock_account:source,a_to=stock_account:warehouse,a_quantity=50dec,a_value=500dec,a_currency=currency:inr',
+    );
+    await create(
+      'invoice:sale',
+      10,
+      'a_issuer=money_account:company,a_recipient=money_account:customer',
+    );
+    await create(
+      'invoice:purchase',
+      10,
+      'a_issuer=money_account:vendor,a_recipient=money_account:company',
+    );
+    await create(
+      'invoice:other',
+      12,
+      'a_issuer=money_account:company,a_recipient=money_account:customer',
+    );
+    await create(
+      'adjustment_note:sale',
+      90,
+      "a_reason='Sale correction',a_currency=currency:inr,a_invoice=invoice:sale",
+    );
+    await create(
+      'delivery:purchase',
+      -2,
+      'a_from=stock_account:vendor,a_to=stock_account:warehouse,a_quantity=5dec,a_value=50dec,a_currency=currency:inr,a_invoice=invoice:purchase',
+    );
+    await create(
+      'delivery_parent_charge:input',
+      -1,
+      'a_original=delivery:purchase,a_rule=calculation_rule:rate,a_tax_account=money_account:input',
+    );
+    await create(
+      'delivery:sale',
+      0,
+      'a_from=stock_account:warehouse,a_to=stock_account:customer,a_quantity=10dec,a_value=100dec,a_currency=currency:inr,a_invoice=invoice:sale',
+    );
+    await create(
+      'delivery_parent_charge:tax',
+      1,
+      'a_original=delivery:sale,a_rule=calculation_rule:rate,a_tax_account=money_account:output',
+    );
+    await create(
+      'delivery_adjustment:sale',
+      2,
+      'a_original=delivery:sale,a_note=adjustment_note:sale,a_quantity_delta=2dec,a_value_delta=20dec',
+    );
+    await create(
+      'delivery_charge:tax',
+      3,
+      'a_original=delivery:sale,a_rule=calculation_rule:rate,a_tax_account=money_account:output',
+    );
+    await create(
+      'delivery_charge:cap',
+      5,
+      'a_original=delivery:sale,a_rule=calculation_rule:cap,a_tax_account=money_account:output',
+    );
+    await create(
+      'delivery_charge_adjustment:tax',
+      4,
+      'a_charge=delivery_parent_charge:tax,a_note=adjustment_note:sale,a_delta=-2dec',
+    );
+    await create(
+      'delivery_return:sale',
+      6,
+      'a_original=delivery:sale,a_note=adjustment_note:sale,a_quantity=3dec',
+    );
+    await check();
+    equal(await value('invoice:sale', 'amount'), 146);
+    equal(await value('stock_account:warehouse', 'quantity'), 46);
+    equal(
+      await q(
+        'RETURN operating_unit:warehouse.z_activity.summary.measures.inbound.sum;',
+      ),
+      3,
+    );
+    equal(
+      await q(
+        'RETURN operating_unit:warehouse.z_activity.summary.measures.outbound.sum;',
+      ),
+      2,
+    );
+    equal(
+      await q(
+        `RETURN fn::tree::read(money_account:company,'z_book','before',[d'${date(10)}']).measures.receivable.sum ?? 0dec;`,
+      ),
+      0,
+    );
+    equal(await value('money_account:company', 'receivable'), 151); // sale + input-tax claim
+    equal(await value('money_account:company', 'payable'), 81); // purchase + output-tax claim
+    assert.equal(
+      await q('RETURN delivery_adjustment:sale.z_note.owner.rid;'),
+      'adjustment_note:sale',
+    );
+    assert.equal(
+      await q('RETURN delivery_adjustment:sale.z_from_unit.owner.rid;'),
+      'operating_unit:warehouse',
+    );
+    await reject(
+      'UPDATE delivery:sale SET a_invoice=invoice:other;',
+      /NOTE_INVOICE/,
+    );
+    await reject(
+      `CREATE money_adjustment:unlinked_note SET owned_by=${root},a_original=payment:spend,a_note=adjustment_note:sale,a_from_delta=1dec,a_effective_at=d'${date(8)}';`,
+      /NOTE_INVOICE/,
+    );
+    await reject(
+      'UPDATE money_adjustment:spend SET a_note=adjustment_note:sale;',
+      /NOTE_INVOICE/,
+    );
+    await reject(
+      'UPDATE delivery_adjustment:sale SET a_original=delivery:stock;',
+      /NOTE_INVOICE/,
+    );
+    // An unscoped note may group corrections; assigning an invoice must validate
+    // every existing entry, including those with no invoice of their own.
+    await q('UPDATE adjustment_note:sale SET a_invoice=NONE;');
+    await q('UPDATE money_adjustment:spend SET a_note=adjustment_note:sale;');
+    await check();
+    await reject(
+      'UPDATE adjustment_note:sale SET a_invoice=invoice:sale;',
+      /NOTE_INVOICE/,
+    );
+    await q('UPDATE money_adjustment:spend SET a_note=adjustment_note:money;');
+    await q('UPDATE adjustment_note:sale SET a_invoice=invoice:sale;');
+    await check();
+    await reject(
+      `UPDATE delivery:sale SET a_effective_at=d'${date(11)}';`,
+      /CHILD_BEFORE_ORIGINAL|LINE_AFTER_INVOICE/,
+    );
+    await reject(
+      `CREATE delivery:future SET owned_by=${root},a_from=stock_account:warehouse,a_to=stock_account:customer,a_quantity=1dec,a_value=1dec,a_currency=currency:inr,a_invoice=invoice:sale,a_effective_at=d'${date(11)}';`,
+      /LINE_AFTER_INVOICE/,
+    );
+    await reject(
+      'UPDATE delivery:sale SET a_to=stock_account:other;',
+      /INVOICE_DELIVERY_PARTIES/,
+    );
+    await reject(
+      'UPDATE delivery:sale SET a_currency=currency:usd;',
+      /INVOICE_CURRENCY/,
+    );
+    await reject(
+      `CREATE delivery_return:bad SET owned_by=${root},a_original=delivery:sale,a_note=adjustment_note:sale,a_quantity=20dec,a_effective_at=d'${date(7)}';`,
+      /CAPACITY|NEGATIVE_STOCK/,
+    );
+    await reject(
+      `UPDATE adjustment_note:sale SET a_effective_at=d'${date(5)}';`,
+      /CORRECTION_AFTER_NOTE/,
+    );
+    await create(
+      'delivery:grant',
+      -3,
+      'a_from=stock_account:service_source,a_to=stock_account:service_unit,a_quantity=10dec,a_value=0dec,a_currency=currency:inr',
+    );
+    await create(
+      'delivery:service',
+      2,
+      'a_from=stock_account:service_unit,a_to=stock_account:service_customer,a_quantity=3dec,a_value=30dec,a_currency=currency:inr',
+    );
+    await create(
+      'delivery:internal',
+      3,
+      'a_from=stock_account:warehouse,a_to=stock_account:outlet,a_quantity=2dec,a_value=20dec,a_currency=currency:inr',
+    );
+    await check();
+    console.log(
+      'PASS inbound/outbound invoices, issue-time claim recognition, stock/service capacity, unit ancestry, correction-note invoice scope and live compound assessments',
+    );
+
+    await create(
+      'settlement:partial',
+      11,
+      'a_from=money_account:customer,a_to=money_account:bank,a_amount=60dec,a_invoice=invoice:sale',
+    );
+    await create(
+      'money_refund:partial',
+      12,
+      'a_original=settlement:partial,a_note=adjustment_note:sale,a_amount=10dec',
+    );
+    await create(
+      'money_adjustment:partial',
+      13,
+      'a_original=settlement:partial,a_note=adjustment_note:sale,a_from_delta=5dec',
+    );
+    await create(
+      'settlement:purchase',
+      11,
+      'a_from=money_account:bank,a_to=money_account:vendor,a_amount=20dec,a_invoice=invoice:purchase',
+    );
+    equal(await value('invoice:sale', 'amount'), 91);
+    equal(await value('invoice:purchase', 'amount'), 35);
+    await create(
+      'tax_assessment:standalone',
+      14,
+      'a_tax_account=money_account:output,a_amount=20dec',
+    );
+    await create(
+      'tax_adjustment:standalone',
+      15,
+      'a_original=tax_assessment:standalone,a_note=adjustment_note:money,a_delta=-2dec',
+    );
+    await create(
+      'tax_remittance:tax',
+      16,
+      'a_from=money_account:bank,a_to=money_account:authority,a_amount=5dec,a_tax_account=money_account:output',
+    );
+    await create(
+      'money_refund:remit',
+      17,
+      'a_original=tax_remittance:tax,a_note=adjustment_note:money,a_amount=1dec',
+    );
+    await create(
+      'tax_assessment:credit',
+      14,
+      'a_tax_account=money_account:input,a_amount=10dec',
+    );
+    await create(
+      'tax_recovery:credit',
+      17,
+      'a_from=money_account:authority,a_to=money_account:bank,a_amount=4dec,a_tax_account=money_account:input',
+    );
+    await check();
+    equal(await value('money_account:output', 'payable'), 40);
+    equal(await value('money_account:input', 'receivable'), 11);
+    equal(await value('money_account:output', 'asset'), 0);
+    await reject(
+      `CREATE tax_remittance:bad SET owned_by=${root},a_from=money_account:bank,a_to=money_account:authority,a_amount=41dec,a_tax_account=money_account:output,a_effective_at=d'${date(19)}';`,
+      /NEGATIVE_CLAIM_HISTORY/,
+    );
+    await reject(
+      `CREATE payment:claim_cash SET owned_by=${root},a_from=money_account:bank,a_to=money_account:output,a_amount=1dec,a_effective_at=d'${date(19)}';`,
+      /CLAIM_IS_NOT_CASH/,
+    );
+    await reject(
+      `CREATE tax_recovery:wrong_kind SET owned_by=${root},a_from=money_account:authority,a_to=money_account:bank,a_amount=1dec,a_tax_account=money_account:output,a_effective_at=d'${date(19)}';`,
+      /TAX_CLAIM_KIND/,
+    );
+    await reject(
+      `UPDATE invoice:sale SET a_effective_at=d'${date(12)}';`,
+      /SETTLEMENT_BEFORE_INVOICE/,
+    );
+    await reject(
+      `UPDATE invoice:sale SET a_effective_at=d'${date(4)}';`,
+      /LINE_AFTER_INVOICE/,
+    );
+    await reject(
+      'UPDATE delivery:sale SET a_value=20dec;',
+      /INVOICE_OVERSETTLED|NEGATIVE_CLAIM_HISTORY/,
+    );
+    await q('UPDATE delivery:sale SET a_value=105dec;');
+    await check();
+    await q(`UPDATE invoice:sale SET a_effective_at=d'${date(9)}';`);
+    await check();
+    await q('UPDATE calculation_rule:rate SET a_rate=0.12dec;');
+    await check();
+    await q('DELETE delivery_charge:cap;');
+    await check();
+    await reject('DELETE payment:spend;', /reference|referenced/i);
+    await reject(
+      'DELETE money_account:company;',
+      /reference|referenced|OWNER_NOT_EMPTY/i,
+    );
+    const before = await snapshot(q);
+    await q('UPDATE delivery:sale SET system_ping=time::now();');
+    assert.equal(
+      (await snapshot(q)).find((r) => r.id === 'delivery:sale').updated_at,
+      before.find((r) => r.id === 'delivery:sale').updated_at,
+    );
+    const groups = await check(),
+      sale = groups.get('invoice:sale/z_book');
+    equal(
+      await q(
+        `RETURN fn::tree::read(invoice:sale,'z_book','range',[[d'${date(0)}'],[d'${date(7)}']]);`,
+      ),
+      scan(
+        sale.entries.filter((e) => e.key[0] < date(7).replace('.000Z', 'Z')),
+      ),
+    );
+    console.log(
+      'PASS assets versus receivables/payables, partial settlements, standalone tax claims, remittance/recovery, mutable histories, rollback, range queries and timestamps',
+    );
+
+    if (!writeOnly) {
+      await q(
+        `CREATE rebase_user:actor SET name='Actor',parents=[${root}];DEFINE ACCESS accounts_probe ON DATABASE TYPE RECORD SIGNIN rebase_user:actor;`,
+      );
+      const response = await fetch(`${server.url}/signin`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ns: 'temporal_probe',
+          db: 'fixture',
+          ac: 'accounts_probe',
+        }),
+      });
+      const { token } = await response.json();
+      assert(token);
+      const actor = client(server.url, 'fixture', token);
+      await actor(
+        `CREATE payment:authenticated SET owned_by=rebase_user:actor,a_from=money_account:bank,a_to=money_account:vendor,a_amount=10dec,a_effective_at=d'${date(21)}',z_history={summary:{count:999}};`,
+      );
+      await actor(
+        `CREATE money_charge:authenticated SET owned_by=rebase_user:actor,a_original=payment:authenticated,a_rule=calculation_rule:rate,a_to=money_account:authority,a_effective_at=d'${date(22)}',z11_amount=999dec;`,
+      );
+      await check();
+      equal(
+        await actor(
+          "RETURN fn::tree::read(payment:authenticated,'z_history','summary',[]).measures.basis.sum;",
+        ),
+        11.2,
+      );
+    }
+    const populated = await snapshot(q);
+    await applySchema(q, compiled.bundle);
+    assert.deepEqual(
+      await snapshot(q),
+      populated,
+      'schema reapplication preserves data and maintained state',
+    );
+    await check();
+    if (!writeOnly)
+      console.log(
+        'PASS authenticated writes, protected derived metadata and populated schema reapplication',
+      );
+    else console.log('PASS populated schema reapplication');
+    console.log(
+      'entity calculation suite: all independent source/AVL checks passed',
+    );
   } finally {
-    await db.close().catch(() => {});
-    fs.rmSync(compiled.output, { recursive: true, force: true });
-    await stopServer(server);
+    await server.close();
+    fs.rmSync(output, { recursive: true, force: true });
   }
 }
-
-if (require.main === module) {
-  main().then(() => process.exit(0), (error) => {
-    console.error(`accounts: FAIL: ${error.stack || error.message}`);
-    process.exit(1);
+if (require.main === module)
+  main().catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
   });
-}
-
 module.exports = { main };

@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { splitStatements } = require("../../src/surql");
+const { sourceLocation, splitStatementsWithLocations } = require("../../src/surql");
 
 const SURREAL_EXTENSIONS = new Set([".surql", ".sql"]);
 const SECTION_BEGIN = /^\s*--+\s*REBASE\s+SECTION\s+([A-Za-z][A-Za-z0-9_-]*)\s+BEGIN\s*$/gim;
@@ -49,6 +49,7 @@ function combineMaterials(files) {
 
 function extractMarkedSections(source) {
   const sections = new Map();
+  const sectionLocations = new Map();
   const ranges = [];
   SECTION_BEGIN.lastIndex = 0;
   let start;
@@ -61,13 +62,15 @@ function extractMarkedSections(source) {
     }
     if (!end) throw new Error(`Unclosed REBASE section: ${name}`);
     const bodyStart = start.index + start[0].length;
-    const body = source.slice(bodyStart, end.index).trim();
+    const rawBody = source.slice(bodyStart, end.index);
+    const body = rawBody.trim();
     if (sections.has(name)) throw new Error(`Duplicate REBASE section: ${name}`);
     sections.set(name, body);
+    sectionLocations.set(name, sourceLocation(source, bodyStart + rawBody.length - rawBody.trimStart().length));
     ranges.push([start.index, end.index + end[0].length]);
     SECTION_BEGIN.lastIndex = end.index + end[0].length;
   }
-  return { ranges, sections };
+  return { ranges, sections, sectionLocations };
 }
 
 function removeMarkedSections(source, ranges) {
@@ -105,15 +108,25 @@ function classifyMaterials(files) {
       const type = ["seed", "migration", "schema", "views", "events", "framework"].includes(name)
         ? name
         : "raw";
-      statements.push({ file, section: name, type, source, explicit: true });
+      statements.push({ file, section: name, type, source, location: extracted.sectionLocations.get(name), explicit: true });
     }
-    const unmarked = removeMarkedSections(file.source, extracted.ranges);
-    for (const statement of splitStatements(unmarked)) {
+    let cursor = 0;
+    let unmarked = "";
+    for (const [start, end] of extracted.ranges) {
+      unmarked += file.source.slice(cursor, start);
+      unmarked += file.source.slice(start, end).replace(/[^\r\n]/g, " ");
+      cursor = end;
+    }
+    unmarked += file.source.slice(cursor);
+    for (const entry of splitStatementsWithLocations(unmarked)) {
+      const statement = file.source.slice(entry.startOffset, entry.endOffset).trim();
+      if (!statement) continue;
       statements.push({
         file,
         section: null,
         type: classifyStatement(statement),
         source: statement,
+        location: sourceLocation(file.source, entry.offset),
         explicit: false,
       });
     }
@@ -139,6 +152,44 @@ function materialSources(materials, group, type, { includeExplicit = true } = {}
     .map((item) => item.source.trim())
     .filter(Boolean)
     .join("\n\n");
+}
+
+function materialStatements(materials, group, types, { includeExplicit = true } = {}) {
+  const allowed = new Set(Array.isArray(types) ? types : [types]);
+  return materials.statements
+    .filter(item => item.file.group === group && allowed.has(item.type))
+    .filter(item => includeExplicit || !item.explicit)
+    .flatMap(item => splitStatementsWithLocations(item.source).map(part => ({
+      source: part.source,
+      location: {
+        source: item.file.path,
+        relative: item.file.relative,
+        group,
+        offset: item.location.offset + part.offset,
+        line: item.location.line + part.line - 1,
+        column: part.line === 1 ? item.location.column + part.column - 1 : part.column,
+      },
+      group,
+      section: item.section,
+      type: item.type,
+      explicit: item.explicit,
+    })));
+}
+
+function composeProfiles(materials, { framework = "framework", project = "project" } = {}) {
+  if (!framework || !project || framework === project) {
+    throw new Error("Compiler profiles require distinct framework and project groups");
+  }
+  const collect = group => ({
+    schema: materialSources(materials, group, "schema"),
+    raw: materialSources(materials, group, "raw"),
+    events: materialSources(materials, group, "events"),
+    views: materialSources(materials, group, "views"),
+    seed: materialSources(materials, group, "seed"),
+    schemaStatements: materialStatements(materials, group, ["schema", "raw"]),
+    frameworkStatements: materialStatements(materials, group, ["schema", "raw", "events"]),
+  });
+  return { framework: collect(framework), project: collect(project) };
 }
 
 function detectContext(materials) {
@@ -182,12 +233,14 @@ function partitionSource(materials, name) {
 module.exports = {
   classifyMaterials,
   classifyStatement,
+  composeProfiles,
   combineMaterials,
   contextStatement,
   detectContext,
   extractMarkedSections,
   listFiles,
   loadMaterials,
+  materialStatements,
   materialSources,
   partitionSource,
   readMaterialFiles,

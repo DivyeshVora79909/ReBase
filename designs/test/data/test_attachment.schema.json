@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": ["owned_by", "storage_config", "attached_to", "file_name", "media_type", "byte_length_limit"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
     "storage_config": { "type": "string", "pattern": "^file_storage_config:[a-z0-9-]+$" },
     "attached_to": { "type": "string", "pattern": "^(test_primitive|test_tree):[a-z0-9-]+$" },
     "file_name": { "type": "string", "minLength": 1, "maxLength": 255 },

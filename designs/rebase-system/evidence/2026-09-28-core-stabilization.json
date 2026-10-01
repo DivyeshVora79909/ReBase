@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "recordedAt": "2026-09-28T06:50:31.711Z",
+  "scope": "K1-K3 core stabilization implementation and focused verification; not full verification or production certification",
+  "head": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "branch": "main",
+  "worktree": "Pre-existing unrelated dirty files preserved; no broad reset or revert performed.",
+  "coreFingerprint": {
+    "sha256": "be88c682dc4497e74ea56894652db30a569114595a072d9538ecf3a8d4f679b5",
+    "fileCount": 111,
+    "method": "SHA-256 of sorted relative paths, NUL separators, raw .js/.surql bytes under src/framework/gateway/config/dev-tools plus package.json and package-lock.json"
+  },
+  "packets": {
+    "K1": {
+      "status": "passed",
+      "changes": [
+        "one shared 300000ms scheduling horizon",
+        "60000ms default reconciliation cadence validated below horizon",
+        "prompt continuation for fully admitted pages and interval backoff after deferral"
+      ],
+      "commands": [
+        "npm run probe:environment",
+        "npm run probe:scheduling",
+        "npm run probe:runtime"
+      ],
+      "limits": [
+        "controlled-clock probe uses a stub store",
+        "runtime probe exercises disposable SurrealDB/Redis"
+      ]
+    },
+    "K2": {
+      "status": "passed",
+      "changes": [
+        "capacity count and BullMQ insertion share a single Redis Lua script execution",
+        "receipt and operation limits preserved",
+        "distributed admission lock and split pre-count removed",
+        "adapter checks BullMQ 6.2.0 and insertion script shape"
+      ],
+      "commands": [
+        "npm run probe:queues",
+        "npm run probe:admission",
+        "npm run probe:runtime"
+      ],
+      "coverage": [
+        "paused producer across separate processes",
+        "delayed and prioritized insertion paths",
+        "duplicates at capacity",
+        "completed-job re-admission",
+        "producer death before atomic insertion",
+        "receipt reserve and recovery after Redis returns"
+      ]
+    },
+    "K3": {
+      "status": "passed",
+      "policy": {
+        "waitingDeadLetterRetentionDays": 30,
+        "pruneIntervalMs": 60000,
+        "maxItemsPerPass": 1000,
+        "pruneOnStartup": true
+      },
+      "commands": [
+        "npm run probe:dead-letters",
+        "npm run probe:runtime"
+      ],
+      "coverage": [
+        "repeated dead letters from multiple producers",
+        "bounded cleanup batches",
+        "restart cleanup",
+        "SurrealDB failed outcome remains after Redis diagnostic removal"
+      ],
+      "limits": [
+        "age bound only; not a hard Redis entry count, byte, or process memory bound"
+      ]
+    }
+  },
+  "additionalChecks": {
+    "node --check changed JavaScript": "passed",
+    "git diff --check": "passed"
+  },
+  "notRun": [
+    "npm run verify",
+    "live provider calls",
+    "Redis Cluster testing",
+    "production migration or rollout",
+    "representative load and memory bounds"
+  ],
+  "sha256": {
+    "config/environment.js": "bb7d2a3cab851a3a55f4f1b2f394fd0c3b4961864a48e46366383c19968ef5ab",
+    "config/runtime-timing.js": "fec7a643993e2fecaa79884dfd3cd3ca86a3d02bc4bc7b56cf1db57b2d55ecea",
+    "gateway/reconciler.js": "b185f2cfca00ca3e7aeb3dfe8dc9ea9837778b2c4ac890e646bac75ef66b0457",
+    "gateway/runtime.js": "e6317d5b668865d6bf0a473c341fc580a329ed37b6bc6496b3a749a8ad13de9f",
+    "gateway/queues/bullmq.js": "8a88e64106e8c3a56b245038ff0969c09edd42627b81515921acaac49fac8854",
+    "gateway/queues/atomic-admission.js": "5f2595efab3ab610f2bf49f05b443f48c9573ea4acd1bc1d6941edd3c251c1ad",
+    "dev-tools/scheduling-probe.js": "661bf338cace6855be739bda10c0cdba4dc270ce41bbe36244dd5aa490e2dadf",
+    "dev-tools/admission-capacity-probe.js": "d0bf587d1974f6b5afc3d9493a77e1819e3da81701e2f0b00cd54a7b877bac67",
+    "dev-tools/dead-letter-retention-probe.js": "11c85c9351c4aff316d396062fb10bc578eba30457bd410369701662066d1c17",
+    "dev-tools/runtime-probe.js": "eab926a8dedc3900a6c616a6a7aecac7102fe1c7afc00ebfdf6d1e7d590ccda4",
+    "package.json": "7040d2bb9ce4807116e1ff3721c07f47d39b6ac78571332821e1f89cbf1f59c2"
+  }
+}

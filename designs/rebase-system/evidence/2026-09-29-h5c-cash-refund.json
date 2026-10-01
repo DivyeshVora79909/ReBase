@@ -1,0 +1,64 @@
+{
+  "packet": "H5c one standalone receivable-cash refund variant",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "A receivable_cash_refund links exactly one receivable_cash_allocation targeting standalone receivable. The refund derives its cash_in, treasury_account, target receivable, claim account, party, entity, and currency through typed allocation ancestry.",
+    "Each refund is the sole real cash movement: it debits the source treasury once, restores the same claim receivable/net, reverses target settled, consumes dated allocation refund capacity, and adds equal refunded/allocation_reversed measures to the original cash-in allocation root. It does not create cash_out or change gross allocated.",
+    "cash_in owns one dated available grant equal to its amount at effective_at. Both cash-in allocation families subtract available while adding gross allocated; refunds post equal refunded/allocation_reversed effects, cancel in available, and leave capacity unchanged. Each receivable_cash_allocation owns one dated refund grant at allocation time.",
+    "Refund time must be strictly later than its allocation. Same-time sibling refunds use complete-timestamp refund capacity.",
+    "The focused fixture includes both receivable_cash_allocation and sales_invoice_cash_allocation to prove both cash-in allocation families contribute to the source cap."
+  ],
+  "probe": {
+    "command": "npm run probe:accounting-h5c",
+    "result": "passed",
+    "output": "H5c allocated cash refund, dated capacities, source-row oracle, lifecycle rollback, and no-duplicate-cash passed",
+    "checks": [
+      "Cash-in and allocation self-seeds each grant one dated capacity; deletion of all consumers prunes the allocation grant, and deletion/re-addition prunes and recreates the cash-in self-seed cleanly.",
+      "A 60 allocation is refunded in partial 20 + same-time sibling 20 + later 20 facts; allocation refund remaining reaches zero and the standalone receivable settlement returns to zero.",
+      "Refund at allocation time, currency-inexact amount, zero amount, and cumulative over-refund reject atomically.",
+      "Allocation amount/date edits refresh source and refund capacity; cash-in amount/date/party/entity/currency endpoint edits that invalidate descendants reject with full snapshot equality.",
+      "Refund amount/date edits, deletion and stable-ID re-addition refresh or prune treasury, claim, settlement, cash-source and allocation-capacity roots together.",
+      "Deletion of used allocation, target receivable, and cash-in source is protected; after descendants are removed, the two self-seeded owners can be deleted and recreated.",
+      "Independent source-row oracles reconstruct customer receivable/net, target settlement, treasury, gross allocation, refunded/reversed measures, cash-in available capacity, and dated refund capacity.",
+      "The disposable graph has no cash_out rows and keeps the unrelated fully allocated sales-invoice cash movement and physical stock root unchanged.",
+      "For every cash-in source, the independent complete-time oracle follows each refund through refund.allocation to allocation.source, groups +cash_in.amount, both allocation families' negative amounts, and equal negative-refund/positive-allocation_reversed deltas by timestamp, then checks available.sum and available.instant_min."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/cash-refund-probe.js", "result": "passed", "elapsed_seconds": 0.01 },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 64 tables, 0 views; 21 materials", "elapsed_seconds": 0.26 },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 64 tables, 0 views; 21 materials", "elapsed_seconds": 0.26 },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK", "elapsed_seconds": 0.21 },
+    { "command": "npm run probe:accounting-h5c", "result": "passed", "elapsed_seconds": 7.28 },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed; customer-withheld allocation-linked claims and cash/stock isolation", "elapsed_seconds": 4.89 },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed; supplier withholding and shared-capacity guards", "elapsed_seconds": 4.89 },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls", "elapsed_seconds": 21.86 },
+    { "command": "node --check dev-tools/accounting/cash-refund-probe.js", "result": "passed after final direct-allocation oracle change", "elapsed_seconds": 0.01 },
+    { "command": "npm run probe:accounting-h5c", "result": "passed after final direct-allocation oracle change", "elapsed_seconds": 7.28 },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/movements/cash.surql": "334986926f09a83b624afa57456eeb7b7a5e9bd3dc3c24438049b46a0dfe9840",
+    "designs/all-in-accounting/claims/settlements.surql": "9f34e77b07671fc06834c981c0da590df3ff04fede6d68187f7c69a7862ccdfa",
+    "designs/all-in-accounting/claims/invoices.surql": "9bed09d04a22ae2c37c5d13f73f421af8e7f298da0c1fb204f6ea53c15fc43e0",
+    "designs/all-in-accounting/claims/cash-refunds.surql": "b477b38d3d616c05fe3e751df4fa7308ed2ae3c5e0bb30ae5719362b1b4536e1",
+    "designs/all-in-accounting/movements/stock.surql": "906b98556bba4aff617655208526f6bbb234208c6ff5619cf29780d55834dc20",
+    "dev-tools/accounting/cash-refund-probe.js": "9797e678af11d6be0c383bd27d732c47e21e6269aca6320aae16afe069834b97",
+    "package.json": "34cad97ec52a5c22c48cdf7ca3cc6fa9854002840fcf9e7a6e7dc4b7e7bb8a6f",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "This covers standalone receivable allocation refunds only. Invoice refunds, refunds of unallocated cash, physical returns, generic credit notes, and production migration are out of scope.",
+    "Gross allocated remains unchanged; refunded and allocation_reversed cancel in the cash-in available equation, so a refund does not create new cash allocation capacity.",
+    "No legal, statutory, or production policy interpretation is added."
+  ]
+}

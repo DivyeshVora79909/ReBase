@@ -80,14 +80,14 @@ function escapeHtml(value) {
   })[character]);
 }
 
-function challengeMessage(identity, context, code, ttlMs, channel) {
+function challengeMessage(identity, context, code, ttlMs, channel, expiresAt) {
   const name = String(identity.name || "there");
-  const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+  const expires = new Date(expiresAt).toISOString();
   const text = [
     `Hello ${name},`,
     "",
     `Your ReBase ${channel} verification code is ${code}.`,
-    `It expires at ${expiresAt}.`,
+    `It expires at ${expires}.`,
     "",
     `Namespace: ${context.namespace}`,
     `Database: ${context.database}`,
@@ -96,17 +96,15 @@ function challengeMessage(identity, context, code, ttlMs, channel) {
   ].join("\n");
   const html = `<p>Hello ${escapeHtml(name)},</p>
 <p>Your ReBase ${escapeHtml(channel)} verification code is <strong>${escapeHtml(code)}</strong>.</p>
-<p>It expires at ${escapeHtml(expiresAt)}.</p>
+<p>It expires at ${escapeHtml(expires)}.</p>
 <p>Namespace: <code>${escapeHtml(context.namespace)}</code><br>Database: <code>${escapeHtml(context.database)}</code></p>
 <p>If you did not request this code, you can ignore this message.</p>`;
   if (channel === "phone") {
     return {
-      to: identity.number,
       body: `ReBase verification code: ${code}. Expires in ${Math.max(1, Math.ceil(ttlMs / 60000))} minutes.`,
     };
   }
   return {
-    to: [identity.address],
     subject: "Your ReBase verification code",
     text,
     html,
@@ -138,8 +136,9 @@ function createAuthenticationService(options = {}) {
         contextPart(context?.database, "Database"),
       )))
     : null;
-  const sendEmail = typeof options.sendEmail === "function" ? options.sendEmail : null;
-  const sendSms = typeof options.sendSms === "function" ? options.sendSms : null;
+  const sealAuthenticationPayload = typeof options.sealAuthenticationPayload === "function"
+    ? options.sealAuthenticationPayload
+    : null;
   const rateLimiter = options.rateLimiter || null;
   const generateCode = options.generateCode || randomCode;
   if (typeof generateCode !== "function") throw new Error("Authentication code generator must be a function");
@@ -157,10 +156,6 @@ function createAuthenticationService(options = {}) {
     ip: validatePositiveInteger(options.rateLimits?.ip ?? 10, "Authentication IP rate limit"),
     identifier: validatePositiveInteger(options.rateLimits?.identifier ?? 3, "Authentication identifier rate limit"),
   };
-
-  function adapterFor(channel) {
-    return channel === "phone" ? sendSms : sendEmail;
-  }
 
   async function limit(clientAddress, context, channel, accountIdentifier) {
     if (!rateLimiter) return null;
@@ -240,17 +235,27 @@ function createAuthenticationService(options = {}) {
     `, { identifier: accountIdentifier });
   }
 
-  async function updateChallenge(store, identity, code, expiresAt) {
-    const variables = {
-      principal: String(identity.principal),
-      target: String(identity.id),
-      principal_revision: Number(identity.principal_revision),
-      target_revision: Number(identity.revision),
-      code,
-      expires_at: new Date(expiresAt).toISOString(),
-    };
-    const updated = await store.execute(`
-      RETURN (UPDATE authentication_challenge SET
+  async function findDeliveryPolicy(store) {
+    return store.execute(`
+      RETURN (SELECT email_configuration, phone_configuration
+        FROM rebase_authentication_delivery_policy:default)[0];
+    `);
+  }
+
+  async function enqueueChallenge(store, identity, channel, configuration, code, expiresAt, context) {
+    const deliveryNonce = crypto.randomUUID();
+    const challengeId = `authentication_challenge:${digest(identity.id)}`;
+    const message = challengeMessage(identity, context, code, challengeTtlMs, channel, expiresAt);
+    const payloadCiphertext = sealAuthenticationPayload(message);
+    if (typeof payloadCiphertext !== "string" || !payloadCiphertext) {
+      throw new Error("Authentication payload sealer returned an invalid ciphertext");
+    }
+    return store.execute(`
+      BEGIN TRANSACTION;
+      LET $current_challenge = (SELECT VALUE <string>id FROM authentication_challenge
+        WHERE target = type::record($target))[0];
+      LET $challenge_id = $current_challenge ?? $new_challenge_id;
+      UPSERT type::record($challenge_id) SET
         principal = type::record($principal),
         target = type::record($target),
         principal_revision = $principal_revision,
@@ -258,41 +263,33 @@ function createAuthenticationService(options = {}) {
         code_hash = crypto::argon2::generate($code),
         attempts = 0,
         expires_at = type::datetime($expires_at),
-        consumed_at = NONE
-        WHERE target = type::record($target)
-        RETURN AFTER)[0];
-    `, variables);
-    if (updated != null) return updated;
-    try {
-      return await store.execute(`
-        CREATE authentication_challenge SET
-          principal = type::record($principal),
-          target = type::record($target),
-          principal_revision = $principal_revision,
-          target_revision = $target_revision,
-          code_hash = crypto::argon2::generate($code),
-          attempts = 0,
-          expires_at = type::datetime($expires_at),
-          consumed_at = NONE
-        RETURN AFTER;
-      `, variables);
-    } catch (error) {
-      // A concurrent issuer may have won the unique target insert. Retry as an update.
-      if (!/unique|duplicate|already exists|index/i.test(String(error?.message || error))) throw error;
-      return store.execute(`
-        RETURN (UPDATE authentication_challenge SET
-          principal = type::record($principal),
-          target = type::record($target),
-          principal_revision = $principal_revision,
-          target_revision = $target_revision,
-          code_hash = crypto::argon2::generate($code),
-          attempts = 0,
-          expires_at = type::datetime($expires_at),
-          consumed_at = NONE
-          WHERE target = type::record($target)
-          RETURN AFTER)[0];
-      `, variables);
-    }
+        consumed_at = NONE,
+        delivery_nonce = type::uuid($delivery_nonce);
+      CREATE ONLY authentication_delivery_task SET
+        configuration = type::record($configuration),
+        principal = type::record($principal),
+        target = type::record($target),
+        challenge = type::record($challenge_id),
+        channel = $channel,
+        principal_revision = $principal_revision,
+        target_revision = $target_revision,
+        delivery_nonce = type::uuid($delivery_nonce),
+        payload_ciphertext = $payload_ciphertext;
+      COMMIT TRANSACTION;
+      RETURN true;
+    `, {
+      new_challenge_id: challengeId,
+      principal: String(identity.principal),
+      target: String(identity.id),
+      configuration: String(configuration),
+      principal_revision: Number(identity.principal_revision),
+      target_revision: Number(identity.revision),
+      code,
+      expires_at: new Date(expiresAt).toISOString(),
+      delivery_nonce: deliveryNonce,
+      channel,
+      payload_ciphertext: payloadCiphertext,
+    });
   }
 
   async function requestChallenge({
@@ -320,10 +317,10 @@ function createAuthenticationService(options = {}) {
         400,
       );
     }
-    if (!rateLimiter || (channel !== "username" && !adapterFor(channel))) {
+    if (!rateLimiter || !sealAuthenticationPayload) {
       throw new RuntimeError(
         "AUTHENTICATION_DELIVERY_UNAVAILABLE",
-        "Authentication delivery is not configured",
+        "Authentication recovery is not configured",
         503,
       );
     }
@@ -335,12 +332,18 @@ function createAuthenticationService(options = {}) {
     }
     try {
       const store = await options.stores.forContext(namespace, database);
+      const policy = await findDeliveryPolicy(store);
+      if (!policy) return { accepted: true, delivered: false };
+      const deliveryConfigurations = {
+        email: policy.email_configuration ? String(policy.email_configuration) : null,
+        phone: policy.phone_configuration ? String(policy.phone_configuration) : null,
+      };
       let identity;
       if (channel === "username") {
         const candidates = await findUsernameIdentities(store, accountIdentifier);
         const selected = [
-          ...(sendEmail ? (candidates?.email || []) : []),
-          ...(sendSms ? (candidates?.phone || []) : []),
+          ...(deliveryConfigurations.email ? (candidates?.email || []) : []),
+          ...(deliveryConfigurations.phone ? (candidates?.phone || []) : []),
         ].sort((left, right) => Number(right.priority || 0) - Number(left.priority || 0)
           || String(left.id).localeCompare(String(right.id)));
         identity = selected[0];
@@ -351,13 +354,14 @@ function createAuthenticationService(options = {}) {
       if (!identity?.id || identity.principal_revision == null || identity.revision == null) {
         return { accepted: true, delivered: false };
       }
-      if (!adapterFor(channel)) return { accepted: true, delivered: false };
+      const configuration = deliveryConfigurations[channel];
+      if (!configuration) return { accepted: true, delivered: false };
+      if (!await store.load(configuration)) return { accepted: true, delivered: false };
       const code = String(generateCode());
       if (!/^[0-9]{6}$/.test(code)) throw new Error("Authentication code generator returned an invalid code");
       const expiresAt = Date.now() + challengeTtlMs;
-      await updateChallenge(store, identity, code, expiresAt);
-      await adapterFor(channel)(challengeMessage(identity, context, code, challengeTtlMs, channel));
-      return { accepted: true, delivered: true, channel };
+      await enqueueChallenge(store, identity, channel, configuration, code, expiresAt, context);
+      return { accepted: true, queued: true, channel };
     } catch (error) {
       reportError({
         code: String(error?.code || "AUTHENTICATION_DELIVERY_FAILED"),
@@ -371,11 +375,11 @@ function createAuthenticationService(options = {}) {
   }
 
   return Object.freeze({
-    enabled: Boolean((sendEmail || sendSms) && rateLimiter),
-    channels: Object.freeze({ email: Boolean(sendEmail), phone: Boolean(sendSms) }),
+    enabled: Boolean(sealAuthenticationPayload && rateLimiter),
+    channels: Object.freeze({ email: Boolean(sealAuthenticationPayload), phone: Boolean(sealAuthenticationPayload) }),
     async health() {
-      if (!sendEmail && !sendSms) return { ok: true, enabled: false, channels: { email: false, phone: false } };
-      if (!rateLimiter) return { ok: false, enabled: true, channels: { email: Boolean(sendEmail), phone: Boolean(sendSms) }, error: "rate limiter unavailable" };
+      if (!sealAuthenticationPayload) return { ok: true, enabled: false, channels: { email: false, phone: false } };
+      if (!rateLimiter) return { ok: false, enabled: true, channels: { email: true, phone: true }, error: "rate limiter unavailable" };
       let limiter = { ok: true };
       try {
         if (typeof rateLimiter.health === "function") limiter = await rateLimiter.health();
@@ -385,7 +389,7 @@ function createAuthenticationService(options = {}) {
       return {
         ok: limiter.ok !== false,
         enabled: true,
-        channels: { email: Boolean(sendEmail), phone: Boolean(sendSms) },
+        channels: { email: true, phone: true },
         rateLimit: limiter,
       };
     },

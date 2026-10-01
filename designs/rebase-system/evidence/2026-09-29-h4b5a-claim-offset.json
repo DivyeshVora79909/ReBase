@@ -1,0 +1,66 @@
+{
+  "packet": "H4b5a paired tax-claim offset",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "One explicit claim_offset_instruction posts receivable -amount and payable -amount to one typed claim_account.z_history root at one effective timestamp; net delta is zero.",
+    "Amount is positive and exact at the account currency precision. Existing shared claim capacity guards reject overdraw of either measure atomically.",
+    "Receivable and payable capacity use complete-timestamp instant_min semantics so same-time record ID order has no economic meaning; recognized_credit remains on its existing strict-prefix guard.",
+    "The single claim_account reference carries the shared entity, opponent and currency dimensions. Cross-account offsets, authorization rules and statutory or eligibility interpretations are out of scope.",
+    "The offset has no treasury, cash-allocation, or stock membership."
+  ],
+  "mechanism": {
+    "instruction": "One explicit positive amount, one typed REJECT/READONLY claim_account reference, one effective_at, one required tree membership with both receivable and payable deltas and net 0.",
+    "capacity": "claim_account validation rejects when complete-timestamp receivable.instant_min or payable.instant_min falls below zero; both measures are validated together with the root update.",
+    "lifecycle": "The instruction's stable record ID owns its one tree membership; updates rekey or replace that membership atomically, deletion prunes it, and the typed account reference rejects account deletion while the instruction exists."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b5a",
+    "result": "passed",
+    "output": "Accounting H4b5a paired tax claim offset, complete-timestamp capacity, lifecycle, and rollback passed",
+    "checks": [
+      "Opening R6 and P18 followed by explicit offset 6 at a later timestamp leaves receivable 0, payable 12, and unchanged net; treasury is unchanged.",
+      "Moving the offset before both openings rejects and restores the complete source, instruction, root and treasury snapshot; moving it to the payable opening timestamp succeeds and independently reconstructs R0/P12/net unchanged.",
+      "Zero, negative and USD currency-inexact amount 1.001 reject. Independent fixtures reject receivable overdraw and payable overdraw. An amount edit from 6 to 7 rejects with the full snapshot unchanged; a valid edit to 5 updates both measures.",
+      "Deletion removes both measure effects, re-addition at the same record ID restores them, and deletion of the referenced claim_account rejects.",
+      "Same-time payable R/P source rows inserted in reverse order plus offset 6 yield R0/P12; a second same-time offset of 1 rejects, proving complete-time overdraw protection rather than a record-ID prefix result.",
+      "Independent row reconstruction checks receivable, payable and net totals; the offset produces no treasury movement."
+    ]
+  },
+  "commands": [
+    { "command": "npm run build:all-in-accounting", "result": "passed; 61 tables, 0 views" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 61 tables, 0 views" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "node --check dev-tools/accounting/h4b5a-probe.js", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b5a", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, adjacent intervals, tie-order independence and rollback" },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4a", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/claims/claim-offsets.surql": "5ea29e7ad82e99a5cf0d1b7f02412429dcf96880f616becaab1ba7410a611363",
+    "designs/all-in-accounting/core/schema.surql": "33b77d93f620973c2ff8629f4f6ffa3ba1c693cf218fa263582d749b20a647f4",
+    "dev-tools/accounting/h4b5a-probe.js": "80919c2bd19d8ac3702dbe0eca763502b91147b62a47a942a4bc7a8ba3e023f8",
+    "package.json": "72bb03eee6fc1c96a641fc901d393c111eae6d97f5e47d73f796d05512a06d20",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "The paired offset is scoped to one claim_account row; different-opponent or cross-account offset authorization is not implemented.",
+    "The profile guard changes only receivable/payable capacity to complete-timestamp semantics. recognized_credit remains strict-prefix and was not migrated by this packet.",
+    "The slice records an explicit amount only; it does not infer a statutory right, tax eligibility, remittance, or legal netting permission.",
+    "This disposable fixture has no stock postings or cash allocations; the only observed treasury root remains unchanged. No production migration is claimed."
+  ]
+}

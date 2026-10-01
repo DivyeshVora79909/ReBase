@@ -1,0 +1,64 @@
+{
+  "id": "H1-identity-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "result": "pass",
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "observed": "47 tables, 0 views, 13 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass"
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "pass",
+      "coverage": [
+        "direct user and organization economic identities",
+        "economic identity independent from authorization ownership",
+        "record-user denial of access and posting through another owner's account",
+        "cross-entity movement rollback and stock-unit consistency",
+        "immutable account, currency, resource and unit dimensions",
+        "multi-currency and isolated single-currency treasury index variants",
+        "A1/A2 movement, claim, invoice and allocation regression oracles",
+        "explicit old-book mapping preflight, duplicate/missing mapping rejection, destination collision rejection, rollback and repeat safety"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "designs/all-in-accounting/core/schema.surql": "a1153f3feaec9c77027cbfe0291f1720c5be9552eba5430fbf93aa9b24f2a4be",
+      "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+      "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+      "designs/all-in-accounting/claims/standalone.surql": "09674910737ad84a331c9795921c45ac6fe16eeb2a3af1026d17a5d0bba00366",
+      "designs/all-in-accounting/claims/adjustments.surql": "3795916c956bbe07de627dccfc7dd0f29c0daabdfd7b239854ef49fd2299f9aa",
+      "designs/all-in-accounting/claims/settlements.surql": "fecdfbd12156f4e0318cb3b50b1275465d8f74a75ce7945c5da3b171c0057725",
+      "designs/all-in-accounting/claims/invoices.surql": "c3dfba74a17fdaf032ac206058705abcdf6af3aaaceb4025679a6e4386b31744",
+      "dev-tools/accounting/core-probe.js": "5d9c56a0fe596016937937c743a74c306a443a6bae3d24abf99d2a1e9b6a7a32",
+      "dev-tools/accounting/h1-migration-preflight.js": "85de0fbba9ffe45d7f2414e3e6dc9f3fb85750ff5aadb47eea41584c2c33e2a6"
+    }
+  },
+  "limits": [
+    "The migration test is a populated bounded fixture, not a full legacy profile cutover.",
+    "No live providers, production database, or representative-scale capacity test was run."
+  ],
+  "next": "Proceed with H2 against the verified target profile. Keep full populated legacy cutover open for any later deployment/migration scope; do not infer it from this bounded fixture."
+}

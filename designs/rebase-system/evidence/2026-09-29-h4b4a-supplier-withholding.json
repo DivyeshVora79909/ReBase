@@ -1,0 +1,78 @@
+{
+  "packet": "H4b4 payer-side supplier withholding",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "An explicit supplier_withholding fact references exactly one purchase_receipt_cash_allocation and one immutable policy version scoped to the selected tax claim account.",
+    "The amount is entered, positive, and currency-precision exact; there is no inferred rate, formula, or statutory interpretation.",
+    "The fact reduces supplier payable and purchase-invoice outstanding by the withholding amount and increases the selected tax-account payable by the same amount.",
+    "The fact has no cash, cash-allocation-capacity, or stock membership; actual cash remains solely the cash_out and purchase_receipt_cash_allocation.",
+    "One fact per allocation is enforced; source, party, entity, supplier, currency, tax-account, policy interval, and effective-date dimensions are validated.",
+    "The selected withholding tax claim may differ from the receipt's assessed input-tax claim; it must match the receipt's economic entity and currency and have a tax_account opponent."
+  ],
+  "mechanism": {
+    "policy_version": "READONLY tax_claim_account, policy_key, version, valid_from and valid_until fields; unique identity is (tax_claim_account, policy_key, version).",
+    "withholding_fact": "A user-managed fact references a typed purchase_receipt_cash_allocation and policy version. A unique allocation index prevents a second withholding fact for the same allocation.",
+    "tracked_dates": [
+      "receipt_at derives from receipt.effective_at with @rebase-depends.",
+      "allocation_at derives from allocation.effective_at with @rebase-depends.",
+      "payment is a typed derived reference to allocation.source; payment_at depends on payment.effective_at."
+    ],
+    "effects": "One fact emits supplier payable -amount/net +amount, purchase invoice outstanding -amount, and selected tax claim payable +amount/net -amount at its explicit effective_at.",
+    "capacities": "The pre-existing purchase_receipt_cash_allocation is the only cash source allocation and amount 90 remains in cash_out.z_allocations. Supplier claim and purchase invoice outstanding guards reject aggregate over-settlement."
+  },
+  "probe": {
+    "command": "npm run probe:accounting-h4b4a",
+    "result": "passed",
+    "output": "Accounting H4b4a payer-side supplier withholding, shared-capacity guards, rollback, and cash/stock isolation passed",
+    "checks": [
+      "A receipt with base 90 and assessed tax 10 opens supplier payable and purchase-invoice outstanding of 100, tax receivable of 10, and stock quantity 9.",
+      "Cash-out and receipt cash allocation of 90 leave treasury balance -90, source cash allocation capacity 90, supplier payable 10, and purchase-invoice outstanding 10 before withholding.",
+      "An explicit withholding of 10 leaves supplier payable 0 and invoice outstanding 0; the receipt's assessed-tax account retains receivable 10 and payable 0, while the distinct policy-selected withholding tax account receives payable 10.",
+      "Independent row oracles reconstruct supplier payable, invoice outstanding, tax payable, treasury cash and stock from source rows, allocations and withholding facts.",
+      "Zero, excess currency precision, duplicate allocation fact, amount 11 over-settlement, policy entity/currency mismatch, policy with a non-tax opponent, expired policy, pre-receipt/allocation date, invalid source type, and invalid cash-allocation party/entity/currency reject without changing the captured source/fact/root state.",
+      "Editing the immutable policy interval rejects; moving the allocation or receipt date past the fact date rejects atomically, confirming the declared causal date dependencies.",
+      "Withholding amount edit keeps the fact ID stable; removal leaves cash, cash allocation capacity and stock unchanged; re-addition at the same ID restores the posting.",
+      "Deleting the referenced allocation while a withholding fact exists rejects, preventing a stranded withholding fact."
+    ],
+    "fixture_note": "The main treasury account uses minimum_balance -100 to allow the specified isolated -90 cash-out without introducing a separate opening cash movement. Auxiliary funded treasury accounts exist only to exercise rejected source party/entity/currency allocations."
+  },
+  "commands": [
+    { "command": "npm run build:all-in-accounting", "result": "passed; 58 tables, 0 views" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 58 tables, 0 views" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "node --check dev-tools/accounting/h4b4a-probe.js", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4a", "result": "passed" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/claims/supplier-withholding.surql": "e96774b81c741a8108aca30feecea1bf641b5a016ad7c69b6c5e4611fa18484f",
+    "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+    "designs/all-in-accounting/claims/invoices.surql": "ed1cbaf284935741b42e55a757c6ff071b81d26250680828f23bb93a1d5a3821",
+    "designs/all-in-accounting/claims/purchase-tax-credit.surql": "a456a410084598ee30e70f8454792ee805c9faa1300703a4dd0647280bad320e",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+    "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+    "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+    "designs/all-in-accounting/core/schema.surql": "0ec0ff00b3e2a5c4c905f61cce921e392393c43d0a8adc214d3ab208ce27255f",
+    "dev-tools/accounting/h4b4a-probe.js": "d17a691e6ab9595bb85af8af7c229af215b1e38eb98b31cc588b021b5f3a9d86",
+    "package.json": "246e81b1eac9ebf0d0395185ff735eb0fcf6aaf8962d2e751549361b80cd7559",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "This fixture records an explicitly entered withholding amount under a selected account-scoped version; it makes no rate or statutory interpretation claim.",
+    "One withholding fact per actual purchase_receipt_cash_allocation is supported; splits, multiple withholding reasons per allocation, reversals and remittance are later work.",
+    "The probe exercises the aggregate supplier payable and purchase invoice outstanding floors with an over-settlement attempt; it does not claim per-receipt settlement capacity beyond those shared roots.",
+    "The packet does not implement customer-withheld TDS, collector-side TCS, offsets, cash remittance, or production migration."
+  ]
+}

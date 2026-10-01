@@ -1,13 +1,11 @@
 function readerFieldTargets(field, systemTables) {
+  if (field?.treeRoot || field?.treeNode || field?.system) return [];
+  if (!field?.inheritReaders) return [];
   const targets = field?.recordType?.targets || [];
   if (!targets.length) return [];
-  // Derived record shadows are calculation inputs, not authorization edges.
-  // A schema author can opt a field into reader inheritance explicitly with
-  // @rebase-readers; ordinary VALUE/COMPUTED fields remain opaque to the
-  // reader graph even when their type is a record.
-  if (field.derived && !field.inheritReaders) return [];
+  // Derived values and arrays participate only when their field is explicitly
+  // marked; the marker is the complete reader-edge contract.
   if (targets.some((target) => systemTables.has(target))) return [];
-  if (field.recordType.isArray && !field.inheritReaders) return [];
   return targets;
 }
 

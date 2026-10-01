@@ -1,0 +1,60 @@
+{
+  "packet": "H5a stock account complete-timestamp minimum floor",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "The stock_account minimum_quantity guard uses complete-timestamp quantity.instant_min in the all-in-accounting target profile.",
+    "The disposable probe exercises account-level stock floors only with explicit stock_in, stock_out, and stock_transfer sources; quantities are independently reconstructed from those rows.",
+    "No return/refund, invoice outstanding, source-specific gross input availability, recipe self-funding, or production behavior is implemented by this prerequisite."
+  ],
+  "probe": {
+    "command": "npm run probe:stock-timestamp-guard",
+    "result": "passed",
+    "output": "H5a stock complete-timestamp floor, tie-order independence, source reconstruction, and rollback passed",
+    "checks": [
+      "A same-time incoming stock transfer and outgoing transfer leave quantity 0 in both ID orders. The outgoing-first order has strict min_prefix -5 but instant_min 0 and is accepted.",
+      "Direct stock_in 5 and stock_out 5 at one timestamp leave quantity 0.",
+      "Same-time incoming 5 with outgoing 6 rejects atomically and preserves the incoming source and stock root.",
+      "Outflow 1 before a later receipt of 5 rejects atomically despite a positive eventual balance.",
+      "Editing a same-time stock-in from 5 to 4 against stock-out 5 rejects and restores the complete source/root snapshot.",
+      "An independent oracle reconstructs root quantities from stock_in, stock_out, and both stock_transfer legs for every fixture account."
+    ]
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/stock-timestamp-probe.js", "result": "passed" },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 62 tables, 0 views; 20 materials" },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 62 tables, 0 views; 20 materials" },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK" },
+    { "command": "npm run probe:stock-timestamp-guard", "result": "passed" },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, adjacent intervals, tie-order independence and rollback" },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls" },
+    { "command": "npm run probe:accounting-h4b5b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b5a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed" },
+    { "command": "npm run probe:accounting-h4b", "result": "passed" },
+    { "command": "npm run probe:accounting-h4a", "result": "passed" },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/movements/stock.surql": "88debe989305e0820b7ec8d6d0a28e8c59b80686f60f86d96b6facb8bd461bdd",
+    "dev-tools/accounting/stock-timestamp-probe.js": "9b0e5fd091db2eaed6851fdf75baf27cbae1ba4c4752027c51c3cefd255ec801",
+    "package.json": "c0415d24b230f7755a917309254ece24be0d574cd8b53fba066808595d1e2dd6",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "The changed guard is the stock account's aggregate minimum floor only. It does not stop an individual recipe from using its own simultaneous output to fund gross inputs.",
+    "Source-specific gross input availability and self-funding checks remain separate future work; no H5b physical return or refund route is included.",
+    "Invoice outstanding policy remains unchanged. No production migration is claimed."
+  ]
+}

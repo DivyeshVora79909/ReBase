@@ -1,0 +1,31 @@
+{
+  "formatVersion": 1,
+  "recordedAt": "2026-09-29",
+  "scope": "Pre-H1 baseline for the existing book-based all-in-accounting profile; not evidence for the revised economic-entity design",
+  "head": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "profile": {
+    "compiledTables": 48,
+    "schemaValidation": "passed",
+    "currentAccountingProbe": "passed: A1 core and A2a-A2d movements, claims, invoices, allocations, required outputs, and rollback oracles"
+  },
+  "commands": [
+    "npm run build:all-in-accounting",
+    "npm run check:all-in-accounting",
+    "surreal validate build/all-in-accounting/schema.surql",
+    "npm run probe:accounting-core"
+  ],
+  "duration": "Approximately 13 seconds across the four commands based on observed command-session elapsed time; not wrapped in a shell timer.",
+  "runtime": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "sourceFingerprint": {
+    "sha256": "4f05e0dae31da0fe12a5c2c448192076dcdb393ebf4b1a7afc646e220fb66b74",
+    "fileCount": 9,
+    "method": "SHA-256 of sorted relative paths, NUL separators, and per-file SHA-256 values for all .surql/.js/.json files in designs/all-in-accounting and dev-tools/accounting, plus package.json"
+  },
+  "limits": [
+    "The passing probe is for the existing compulsory-book schema and does not test direct-user economic entities.",
+    "No production data migration was run; H1 must prove explicit mapping, collision preflight, rollback, and repeat safety in a disposable fixture."
+  ]
+}

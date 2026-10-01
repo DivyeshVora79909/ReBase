@@ -15,6 +15,12 @@ authorization path can be useful as a server-controlled, adaptive candidate
 query for sparse grants; it is not a replacement for the database permission
 predicate.
 
+The measured ReBase reader branch in this document predates C4 and matches one
+user through `$auth.id`. Current generated permissions use
+`readers_index CONTAINSANY $auth.z_access_index`, which also covers authorized
+groups. The recorded timings are historical for the single-user reader shape;
+they do not measure the current C4 predicate or group membership.
+
 ## Scope And Reproduction
 
 Measured on:

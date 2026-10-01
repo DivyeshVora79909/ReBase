@@ -1,0 +1,142 @@
+{
+  "id": "H3b-purchase-receipt-settlement-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "result": "pass",
+  "packet": "H3b purchase-receipt invoice settlement",
+  "scope": {
+    "changed": [
+      "designs/all-in-accounting/claims/invoices.surql",
+      "dev-tools/accounting/core-probe.js",
+      "designs/rebase-system/evidence/2026-09-29-h3b-purchase-receipt-settlement.json"
+    ],
+    "unchangedByPacket": [
+      "designs/all-in-accounting/movements/purchase-receipt.surql",
+      "designs/all-in-accounting/claims/settlements.surql",
+      "designs/all-in-accounting/movements/cash.surql",
+      "src/temporal.surql",
+      "src/generators/temporal.js",
+      "designs/all-in-one"
+    ]
+  },
+  "route": {
+    "table": "purchase_receipt_cash_allocation",
+    "source": "cash_out",
+    "target": "purchase_receipt",
+    "notBefore": "allocation.effective_at >= cash_out.effective_at and purchase_receipt.effective_at",
+    "effects": [
+      "supplier claim payable decreases and net increases",
+      "purchase invoice outstanding decreases",
+      "cash source shared allocation capacity increases"
+    ],
+    "guards": [
+      "cash source economic entity, supplier party and currency match receipt",
+      "cash_out.z_allocations maximum prefix cannot exceed cash source amount",
+      "purchase_invoice.z_outstanding minimum prefix cannot be negative"
+    ]
+  },
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+      "elapsedSeconds": 0.52
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass",
+      "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+      "elapsedSeconds": 0.49
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass",
+      "observed": "build/all-in-accounting/schema.surql: OK",
+      "elapsedSeconds": 0.3
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "pass",
+      "observed": "Accounting H3b receipt settlement, H3a sales tax, H2 receipt and net bounds, H1 fixtures, and A1/A2 oracles passed",
+      "elapsedSeconds": 34.09,
+      "coverage": [
+        "receipt creates one stock, supplier, tax-credit and invoice position without stock_in, purchase_invoice_issue or purchase_invoice_line outputs",
+        "two independently dated payments partially and then fully settle the receipt gross amount",
+        "standalone payable allocation and receipt allocation share one cash_out source capacity",
+        "wrong supplier, currency and economic-entity cash sources reject and restore the complete snapshot",
+        "payment beyond cash source capacity and payment beyond invoice outstanding reject and restore the complete snapshot",
+        "cash source amount and date edits revalidate allocations; invalid edits roll back",
+        "deleting an allocation reopens invoice and supplier claim balances; its then-unallocated cash_out source can be deleted",
+        "receipt price and date edits rekey the stock, tax, supplier and invoice roots; reducing gross below paid or moving receipt after payment rejects and rolls back",
+        "allocation amount and date edits update all three roots; moving allocation before receipt or cash source rejects and rolls back",
+        "oracle reconstructs amounts from authoritative receipt, payable and allocation rows and checks active root positions separately"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "elapsedSeconds": 0.06
+    }
+  ],
+  "independentLeadRerun": {
+    "result": "pass",
+    "elapsedSeconds": 30.95,
+    "commands": [
+      {
+        "command": "npm run build:all-in-accounting",
+        "result": "pass",
+        "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+        "elapsedSeconds": 0.42
+      },
+      {
+        "command": "npm run check:all-in-accounting",
+        "result": "pass",
+        "observed": "50 tables, 0 views, 14 material files, 2 table handlers, 0 webhook handlers",
+        "elapsedSeconds": 0.43
+      },
+      {
+        "command": "surreal validate build/all-in-accounting/schema.surql",
+        "result": "pass",
+        "observed": "build/all-in-accounting/schema.surql: OK",
+        "elapsedSeconds": 0.47
+      },
+      {
+        "command": "npm run probe:accounting-core",
+        "result": "pass",
+        "observed": "H3b receipt settlement, H3a sales tax, H2 receipt and net bounds, H1 fixtures, and A1/A2 oracles passed",
+        "elapsedSeconds": 29.63
+      },
+      {
+        "command": "git diff --check",
+        "result": "pass"
+      }
+    ]
+  },
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "designs/all-in-accounting/claims/invoices.surql": "f08dfcfcf7a36e6e717702e0c4621db8c6d67c9f1f6ec10bcab7fe8386f2b54e",
+      "designs/all-in-accounting/claims/settlements.surql": "79dbf1c3b37b5b87e337cab486d5d34dfeec73a3900488e181440ff1894ca0f0",
+      "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+      "designs/all-in-accounting/movements/cash.surql": "9e6d574619b60a628d91803fec70e1394317c3cd1a109db49ce440fcec54948c",
+      "dev-tools/accounting/core-probe.js": "f365c2f77206823018e51ffacf70428de9b33c4dfd852c3f879c37dcb827f3b9",
+      "build/all-in-accounting/schema.surql": "d92555ca5c53507424d05714ef794a6b04d4f1059783b769f9a48a612721d41b",
+      "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+      "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8"
+    }
+  },
+  "limits": [
+    "The runtime fixture uses disposable in-memory SurrealDB, not a production database or populated deployment migration.",
+    "The probe uses one purchase receipt per invoice; invoice-root aggregation across multiple receipts is provided by the shared outstanding tree but was not separately exercised in H3b.",
+    "Purchase tax remains an entered receipt fact; tax-law rates, recoverability and statutory rounding remain H4.",
+    "The fixture does not enforce uniqueness of one external physical event across distinct source tables.",
+    "Depth-ten ancestry and broader multi-hop document constraints remain H3c."
+  ],
+  "next": "H3c: bounded ten-level multi-hop ancestry with ancestor edits, child removal and final-guard rollback."
+}

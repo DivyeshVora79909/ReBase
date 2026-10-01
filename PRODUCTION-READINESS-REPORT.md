@@ -1,6 +1,28 @@
 # Production Readiness Report
 
-Updated after the named-adapter runtime reboot and canonical environment-profile work. Tested with Node `22.23.2`, SurrealDB `3.2.0`, disposable Redis, disposable in-memory SurrealDB, deterministic injected service transports, and an injected AWS SQS client.
+## Current status — 2026-09-29
+
+For current check results, limits, and source fingerprints, use the [core audit](designs/rebase-system/core-audit.md)
+and [lead recheck evidence](designs/rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json).
+The [core handoff](designs/rebase-system/core-handoff.md) retains K1–K5 requirements;
+the [accounting handoff](designs/all-in-accounting/implementation-handoff.md)
+is canonical for domain packet status, including unresolved H4b5c residual
+policy and H8 physical cost measurement. Live providers, hard Redis memory
+bounds, representative load, populated production migration, and CRM/HRM
+remain outside the recorded passing gates. See the [configuration reference](designs/rebase-system/core-configuration.md)
+for current settings.
+
+<details>
+<summary>Archived report from before the one-shot runtime cutover (superseded)</summary>
+
+The following historical assertions describe an older checkout. Hono, SQS,
+repeat schedules, platform process-key adapters, and its production bearer
+limitation do not describe the current implementation. Its verdict and commands
+are preserved as history; use the current audit above for decisions.
+
+Original report: updated after the named-adapter runtime reboot and canonical
+environment-profile work. Tested with Node `22.23.2`, SurrealDB `3.2.0`,
+disposable Redis/SurrealDB, injected transports, and an injected AWS SQS client.
 
 ## Verdict
 
@@ -57,3 +79,5 @@ npm run verify
 ```
 
 The verification suite uses disposable data and does not send real email, create cloud objects, or mutate real AWS queues.
+
+</details>

@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": ["owned_by", "access_key_id", "secret_access_key", "endpoint", "region"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
     "provider": { "type": "string", "minLength": 2, "x-rebase-optional-probability": 0.9 },
     "visibility": { "type": "boolean", "x-rebase-optional-probability": 0.45 },
     "access_key_id": { "type": "string", "minLength": 1 },

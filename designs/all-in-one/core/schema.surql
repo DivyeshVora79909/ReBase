@@ -1,4 +1,3 @@
--- The all-in-one profile owns one principal pair.  The framework binds the
--- complete authentication/authorization implementation onto these markers.
-DEFINE TABLE OVERWRITE user SCHEMAFULL COMMENT '@rebase-principal user';
-DEFINE TABLE OVERWRITE groups SCHEMAFULL COMMENT '@rebase-principal group';
+-- Stable names, easy to find/replace in the generated development schema.
+DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL;
+DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL;

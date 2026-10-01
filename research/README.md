@@ -12,6 +12,10 @@ information kind so an agent can load only the material needed for a task.
 
 ## ReBase documents
 
+- [`rebase/temporal-trees.md`](./rebase/temporal-trees.md) — implemented v2
+  calculation contract: intrusive AVL aggregates, causal dependencies, schema/query
+  API, entity/currency/resource accounts, CRM/HRM composition, measured limits
+  and verification.
 - [`rebase/architecture.md`](./rebase/architecture.md) — canonical end-to-end
   effect architecture and ownership boundaries.
 - [`rebase/authentication.md`](./rebase/authentication.md) — typed delivery
@@ -59,13 +63,7 @@ information kind so an agent can load only the material needed for a task.
   schema-driven fixture generation and dependency-batch findings.
 - [`surrealdb/schema-temporal-fact-check.md`](./surrealdb/schema-temporal-fact-check.md) — catalog access, dynamic tables, materialized-view dependencies, temporal grouping, statistics, and domain probes.
 - [`surrealdb/temporal-integrity-dimensional-fact-check.md`](./surrealdb/temporal-integrity-dimensional-fact-check.md) — focused measurements and design boundaries for historical replay, changefeeds, state-lane references, polymorphism, and sparse dimensions.
-- [`surrealdb/accounts-transaction-concurrency-fact-check.md`](./surrealdb/accounts-transaction-concurrency-fact-check.md) — on-disk fact checks for read-only views, synchronous guard rollback, mutable position OCC anchors, temporal replay, references, and Accounts dimensions.
-- [`rebase/domain-suite-plan.md`](./rebase/domain-suite-plan.md) — corrected mutable reactive-calculation architecture for accounts, CRM, warehouse, HRM, temporal views, and cron declarations.
-- [`rebase/all-in-one-suite-plan.md`](./rebase/all-in-one-suite-plan.md) — composition, canonical shared entities, cross-domain dependency order, calculation crons, and the staged verification plan for one suite build.
-- [`rebase/calculation-engine-expansion-plan.md`](./rebase/calculation-engine-expansion-plan.md) — product-level expansion plan for independent domains, lifecycle lanes, temporal policies, currency, tax composition, communications, and staged implementation.
-- [`rebase/accounts-movement-architecture-plan.md`](./rebase/accounts-movement-architecture-plan.md) — Accounts-only target architecture for money, inventory, service capacity, claims, settlement, tax components, adjustments, positions, and temporal integrity.
-- [`rebase/all-in-one-suite-architecture.mmd`](./rebase/all-in-one-suite-architecture.mmd) — conceptual Mermaid graph of the shared kernel, domain packages, reactive pipeline, lifecycle lanes, temporal replay, and typed crons.
-- [`rebase/accounts-movement-architecture.mmd`](./rebase/accounts-movement-architecture.mmd) — Accounts movement graph showing typed primitives, positions, claims, tax components, and reactive boundaries.
+- [`surrealdb/accounts-transaction-concurrency-fact-check.md`](./surrealdb/accounts-transaction-concurrency-fact-check.md) — historical on-disk measurements for read-only views, synchronous rollback, mutable OCC anchors, replay, references, and dimensions; product policy is now in the v2 contract.
 
 ## Evidence conventions
 

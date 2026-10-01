@@ -16,9 +16,10 @@ runtime semantics respectively.
 4. classify remaining statements by syntax (`USE`, schema, views, seed,
    migration, or raw), never by filename convention;
 5. detect/bind the two principal tables from project schema material;
-6. parse schema and views and analyze reverse references, effects, and indexes;
+6. parse schema and views; analyze references, field provenance, temporal memberships,
+   business dependencies, effects, and indexes;
 7. emit context, raw schema/framework, generated assertions/security/audit/
-   reactivity/effect events, views, indexes, and optional seed/bootstrap;
+   tree/reactivity/effect events, views, indexes, and optional seed/bootstrap;
 8. copy the design’s validated `table-handlers/` tree;
 9. validate deterministic output and stale artifacts.
 
@@ -49,14 +50,30 @@ The compiler derives, rather than duplicates:
 - record reference cardinality and targets;
 - existence assertions and native delete policies;
 - ownership, access indexes, readers, views, audit, and change logs;
+- protected tree storage, derived-field refresh, and consumed-field dependency routes;
 - effect process, exact named adapters, input/output fields, handlers, and generated events;
 - SurrealDB-generated record IDs and runtime indexes;
 - seed dependency ordering and population pools.
 
-Reference assertions apply to top-level record fields. Required scalars use
+Reference assertions apply to top-level business record fields, excluding
+structural storage. Required scalars use
 `record::exists($value)`, optional scalars allow `NONE`, and arrays validate each
 member. The principal `parents` field is the deliberate delta-validation
 exception; see [`parents-field.md`](./parents-field.md).
+
+Temporal authoring uses `@rebase-tree-root`, `@rebase-tree-node`,
+`@rebase-members fn::...`, `@rebase-derived`, and `@rebase-validate fn::...`.
+The [temporal contract](./temporal-trees.md) owns their API and constraints.
+Consumed references must be typed, scalar, and tracked with native `REFERENCE`.
+Opaque helper reads need `@rebase-depends`; multi-hop identity is materialized
+one hop at a time. Local shadows precede their consumers in field-name order.
+Field analysis distinguishes a real `VALUE` clause from `$value` in assertions
+and preserves quoted text/comments during expression rewriting.
+
+Rotations and derived refreshes do not change business timestamps or produce
+audited mutations. Client inputs include `$value` normalizers, but exclude
+computed/derived fields, tree storage, effect outputs, and `@rebase-system` fields.
+Custom field SELECT permissions remain intact when generated writes are protected.
 
 ## Effect/handler validation
 
@@ -85,8 +102,9 @@ node dev-tools/compiler/cli.js --print-raw
 The compiler can generate runtime events only when a complete environment profile
 supplies a namespace/database context and runtime URL/secret. Without those
 values the generated schema remains context-neutral and contains no
-deployment-specific event calls. Use `--env-file` to select a profile; explicit
-compiler flags remain one-off overrides.
+deployment-specific event calls. Use Node's `--env-file` option before the
+script to select a profile; inherited process variables take precedence.
+Explicit compiler flags remain one-off overrides.
 
 ## Development data
 
@@ -140,14 +158,17 @@ are not target architecture.
 
 `npm run verify` performs deterministic compile checks, `surreal validate`,
 architecture/runtime/security/data probes, and generated-artifact checks. Live
-probes use disposable in-memory namespaces/databases, create their own actors
-and records, assert the important matrix, and clean up by terminating the
-instance.
+probes use disposable instances (on-disk SurrealKV for temporal/account probes),
+create their own actors and records, and terminate/remove the instance afterward.
 
 Critical coverage includes principal DAGs, permission-aware references,
 ownership delegation, readers and revocation, views, audit/change logs, sync and
 async effects, duplicate claims/retry/reconciliation, webhook signatures and
-deduplication, and seeded data generation.
+deduplication, seeded data generation, intrusive multi-tree topology and
+chronology, exact ordered summaries, live prefix invalidation, final-state
+guards, and concurrent owner conflicts. `probe:temporal-tree`, `probe:accounts`,
+and `probe:suite` are required gates; the suite probe checks CRM lifecycle,
+HRM allowances, inherited unit activity, and populated schema reapplication.
 
 Before changing a core rule, ask:
 

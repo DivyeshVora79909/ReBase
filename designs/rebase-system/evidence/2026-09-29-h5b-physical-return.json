@@ -1,0 +1,85 @@
+{
+  "packet": "H5b one physical return path and dated source capacity",
+  "status": "passed",
+  "date": "2026-09-29",
+  "profile": "disposable all-in-accounting profile",
+  "engine": {
+    "surrealdb": "3.2.0",
+    "node": "v22.23.2"
+  },
+  "scope": [
+    "A positive stock_return references one stock_out, retains its exact recipient as return_party, and credits one same-entity/resource/unit stock_account destination.",
+    "Each stock_out owns one distinct dated z_returns capacity root. Its z_return_grant node contributes the original stock_out quantity at source effective_at; each linked stock_return subtracts its quantity at return effective_at.",
+    "A return at the source timestamp is accepted. The stock_out source grant is the first same-time key and stock_return children follow it for these table names; sibling returns with opposite record-ID ordering are also covered.",
+    "Stock movement roots and dated return-capacity roots are independently reconstructed from authoritative stock_out, stock_return, stock_in, and stock_transfer rows."
+  ],
+  "probe": {
+    "command": "npm run probe:accounting-h5b",
+    "result": "passed",
+    "output": "H5b physical return, dated self-seeded capacity, lifecycle rollback, and source-row oracle passed",
+    "checks": [
+      "The self-seeded stock_out grant creates a dated pool of exactly the source quantity; the independent oracle matches its sum and complete-timestamp minimum.",
+      "A return before its source rejects with complete snapshot equality; return effective_at equal to source effective_at succeeds.",
+      "Same-time sibling returns sort by distinct record IDs and update the shared capacity and destination stock roots; a second compatible destination is exercised.",
+      "A competing over-return and zero-quantity return reject atomically; positive quantity edits refresh the dated capacity and stock roots.",
+      "Wrong economic entity, resource, unit, and return party reject without changing any source, return, capacity root, or stock root.",
+      "Reducing or moving the stock_out source so active returns become invalid rejects atomically; deleting a source with linked returns and deleting used stock accounts are protected.",
+      "Return destination/date edit succeeds; return delete prunes both capacity and destination tree slots; re-addition retains the same record ID.",
+      "The independent stock oracle includes historical opening stock, stock-out, and return facts; the capacity oracle groups source grant and all linked returns by effective timestamp."
+    ],
+    "observed_same_timestamp_key_order": {
+      "first": ["2026-07-02T00:00:00.000Z", "stock_out:main", "z_return_grant"],
+      "last": ["2026-07-02T00:00:00.000Z", "stock_return:main_a", "z_source_capacity"],
+      "interpretation": "The table-name ordering fixes stock_out before stock_return in this domain fixture. The adverse reversed-key case is covered by the generic boundary-tree probe; this H5b fixture proves equal-time acceptance and stable same-time returns without claiming a reversed source/return key order."
+    }
+  },
+  "commands": [
+    { "command": "node --check dev-tools/accounting/stock-return-probe.js", "result": "passed", "elapsed_seconds": 0.05 },
+    { "command": "npm run build:all-in-accounting", "result": "passed; 63 tables, 0 views; 20 materials", "elapsed_seconds": 0.49 },
+    { "command": "npm run check:all-in-accounting", "result": "passed; 63 tables, 0 views; 20 materials", "elapsed_seconds": 0.46 },
+    { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed; schema OK", "elapsed_seconds": 0.28 },
+    { "command": "npm run probe:accounting-h5b", "result": "passed before final probe-only hardening", "elapsed_seconds": 6.87 },
+    { "command": "npm run probe:stock-timestamp-guard", "result": "passed", "elapsed_seconds": 5.32 },
+    { "command": "npm run probe:boundary-tree", "result": "passed; complete-key algebra, missing-measure algebra, adjacent intervals, reversed tie order, and rollback", "elapsed_seconds": 8.75 },
+    { "command": "npm run probe:accounting-core", "result": "passed; H3b/H3a/H2/H1/A1/A2 controls", "elapsed_seconds": 33.34 },
+    { "command": "npm run probe:accounting-h4b5b", "result": "passed", "elapsed_seconds": 7.33 },
+    { "command": "npm run probe:accounting-h4b5a", "result": "passed", "elapsed_seconds": 5.99 },
+    { "command": "npm run probe:accounting-h4b4b", "result": "passed", "elapsed_seconds": 7.85 },
+    { "command": "npm run probe:accounting-h4b4a", "result": "passed", "elapsed_seconds": 7.35 },
+    { "command": "npm run probe:accounting-h4b3", "result": "passed", "elapsed_seconds": 5.67 },
+    { "command": "npm run probe:accounting-h4b2", "result": "passed", "elapsed_seconds": 14.58 },
+    { "command": "npm run probe:accounting-h4b", "result": "passed", "elapsed_seconds": 9.64 },
+    { "command": "npm run probe:accounting-h4a", "result": "passed", "elapsed_seconds": 10.73 },
+    { "command": "node --check dev-tools/accounting/stock-return-probe.js", "result": "passed after final oracle and zero-quantity assertion", "elapsed_seconds": 0.04 },
+    { "command": "npm run probe:accounting-h5b", "result": "passed after final probe edit", "elapsed_seconds": 6.57 },
+    { "command": "git diff --check", "result": "passed" }
+  ],
+  "lead_rerun": {
+    "result": "passed serially against the current H5b source fingerprints",
+    "commands": [
+      { "command": "node --check dev-tools/accounting/stock-return-probe.js", "result": "passed", "elapsed_seconds": 0.04 },
+      { "command": "npm run build:all-in-accounting", "result": "passed; 63 tables, 20 materials", "elapsed_seconds": 0.45 },
+      { "command": "npm run check:all-in-accounting", "result": "passed; 63 tables, 20 materials", "elapsed_seconds": 0.47 },
+      { "command": "surreal validate build/all-in-accounting/schema.surql", "result": "passed", "elapsed_seconds": 0.28 },
+      { "command": "npm run probe:accounting-h5b", "result": "passed", "elapsed_seconds": 6.45 },
+      { "command": "npm run probe:stock-timestamp-guard", "result": "passed", "elapsed_seconds": 5.15 },
+      { "command": "npm run probe:boundary-tree", "result": "passed", "elapsed_seconds": 9.11 },
+      { "command": "npm run probe:accounting-core", "result": "passed", "elapsed_seconds": 33.99 }
+    ]
+  },
+  "source_fingerprints_sha256": {
+    "designs/all-in-accounting/core/schema.surql": "f0476cc46e5b7ff47a3ed13f0c378edae2ba6db6151877ba8fa58d781b8ca6c6",
+    "designs/all-in-accounting/movements/stock.surql": "906b98556bba4aff617655208526f6bbb234208c6ff5619cf29780d55834dc20",
+    "dev-tools/accounting/stock-return-probe.js": "a975834cfe777326e3ea43fb7969e7ba22d2fe2fd157d36cb777f4a73f1e1675",
+    "package.json": "8238b2a9bce3d6ddcc9508955cc2a117c3b1c00ff304f37b1128c4d88f498fed",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef"
+  },
+  "limits": [
+    "This packet establishes one physical return and its dated source-quantity cap only. It does not imply a cash refund or claim correction; H5c is a separate active packet.",
+    "The H5a stock-account complete-timestamp minimum remains account-level capacity. This H5b source cap is per stock_out and does not establish source-specific gross input availability or prevent a recipe from funding its own inputs.",
+    "The disposable probe observed stock_out sorting before stock_return at a common timestamp because of table-name ordering. Reversed-key algebra is covered by probe:boundary-tree, but the H5b table pair itself does not reverse that ordering.",
+    "No production migration or production lifecycle claim is made."
+  ]
+}

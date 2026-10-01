@@ -1,24 +1,53 @@
 # ReBase
 
-ReBase compiles SurrealDB authorization, validation, audit, views, and table-keyed external effects. Clients use SurrealDB directly; the Hono runtime only performs work that requires privileged provider access.
+ReBase compiles SurrealDB authorization, validation, audit, reactive calculations, and table-keyed external effects. Clients use SurrealDB directly; the native Node HTTP runtime performs work requiring privileged provider access.
+
+**Current work and evidence:** see the [core handoff](./designs/rebase-system/core-handoff.md)
+for K1–K5 implementation and restart requirements, the [core audit](./designs/rebase-system/core-audit.md)
+and [lead recheck](./designs/rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json)
+for dated checks and fingerprints, and the [accounting handoff](./designs/all-in-accounting/implementation-handoff.md)
+for domain status and open H4b5c policy/H8 cost measurement. [Configuration](./designs/rebase-system/core-configuration.md)
+is the settings reference. CRM/HRM remain future scope.
 
 [`research/rebase/architecture.md`](./research/rebase/architecture.md) defines
 the current runtime contract. [`research/README.md`](./research/README.md)
 indexes project decisions separately from measured SurrealDB behavior.
+The [temporal calculation contract](./research/rebase/temporal-trees.md) describes
+the implemented v2 system: business records participate directly in augmented
+AVL trees; shared functions maintain ordered aggregates and field-sensitive
+dependencies. Roots and nodes now require explicit `datetime`/`int` key types
+and finite owner targets. The [compiled stage fixture](./dev-tools/temporal-tree/typed-fixture.surql)
+verifies one record's independent time and integer orderings.
+The [all-in-one profile](./designs/all-in-one/README.md) composes
+currency accounts, assets and claims, stock/service capacity, invoices, derived
+transactions, CRM case histories, and HRM allowances using this core.
+The proposed [ReBase system blueprint](./designs/rebase-system/README.md) treats
+those domains as separate calculation modules over shared identities. Its
+[reviewed redesign plan](./designs/rebase-system/plan.md) covers general ordered
+trees, compiler passes, field-level audit, direct-parent readers, native Node
+operations, typed provider credentials, and one-shot task recovery. Fresh
+foundation and runtime checks support the recorded core gates, including
+credential ownership and final integration. Production migration, live
+providers, and representative load remain open in the handoff.
+[Verification](./designs/rebase-system/verification.md) separates implemented
+checks from pending work.
+The proposed [all-in-accounting suite](./designs/all-in-accounting/README.md)
+documents the accounting module's blueprint and implementation plan for typed
+movements, claims, temporal resource limits, and manufacturing compositions.
 
 ## Layout
 
 ```text
 framework/                    Shared auth, access, and audit SurrealQL
-src/                          Schema parser, analysis, and generators
+src/                          Schema analysis, generators, shared ordered AVL
 dev-tools/compiler/           Stateless compiler stages and CLI
-gateway/                      Hono runtime, named service adapters, and queue drivers
+gateway/                      Native Node runtime, named service adapters, and queue drivers
 designs/<name>/schema.surql   Business and effect tables
 designs/<name>/views.surql    Aggregate views
 designs/<name>/data/          Development data JSON Schemas
 designs/<name>/table-handlers Table-keyed effect handlers
-designs/all-in-one/             Composed calculation suite (core + accounts;
-                                future CRM/HRM domains are sibling directories)
+designs/all-in-one/          Composed calculation suite (core, accounts, CRM, HRM)
+designs/rebase-system/        Cross-domain system blueprint and tree catalog
 ```
 
 ## Commands
@@ -29,33 +58,41 @@ npm run build:all-in-one
 npm run check
 npm run check:all-in-one
 npm run verify
+npm run probe:temporal-tree
 npm run probe:accounts
-npm run server -- --env-file .env.local
-npm run workbench -- --env-file .env.local
-npm run populate -- --env-file .env.local --table all --count 100
+npm run probe:suite
+npm run server
+npm run workbench
+npm run populate -- --table all --count 100
 ```
 
-Commands read one explicit environment profile. For example:
+Node loads an optional environment profile before starting each tool. For example:
 
 ```bash
-node gateway/server.js --env-file .env.local
-node dev-tools/compiler/cli.js --env-file .env.cloud
-node dev-tools/populate.js --env-file .env.local --count 100
-node dev-tools/workbench.js --env-file .env.local
+node --env-file=.env.local gateway/server.js
+node --env-file=.env.cloud dev-tools/compiler/cli.js
+node --env-file=.env.local dev-tools/populate.js --count 100
+node --env-file=.env.local dev-tools/workbench.js
 ```
 
-Profiles use `SURREAL_NAMESPACE` and `SURREAL_DATABASE` for the default context.
-Use `--namespace` and `--database` for one-off command overrides. Provider API
-credentials remain typed fields in SurrealDB configuration records.
+Each tool resolves its process environment once into a validated, immutable
+configuration profile. The inherited process environment takes precedence over
+values in a Node `--env-file` profile. Partial namespace/database or runtime
+URL/secret pairs, malformed numbers and booleans, unsupported URLs, and invalid
+queue settings fail at startup. Connection, listener, queue, and runtime event
+settings cannot be overridden with command-line flags; select them in the
+profile. The workbench can switch only among contexts listed by that profile.
+Provider API credentials remain typed fields in SurrealDB configuration records.
 
 The compiler emits `build/<project>/schema.surql`, a private `runtime-contracts.json`, and validated `table-handlers/` modules. It does not emit tenant operation catalogs, generic job schemas, or compatibility artifacts.
 
-Runtime event generation is explicit because namespace and database are deployment context:
+Runtime event generation uses the same profile's default namespace/database and
+runtime binding. Keep build and deploy on the same profile:
 
 ```bash
-node dev-tools/compiler/cli.js \
+node --env-file=.env.cloud dev-tools/compiler/cli.js \
   --project designs/test \
-  --env-file .env.cloud
+  --check
 ```
 
 ## Database Security
@@ -65,11 +102,16 @@ Each business table receives table permissions plus set-based row authorization:
 ```surql
 FOR select WHERE '<table>_select' IN $auth.permissions
   AND (!!visibility
-    OR readers_index CONTAINS <string>$auth.id
+    OR readers_index CONTAINSANY $auth.z_access_index
     OR <string>owned_by IN $auth.z_access_index)
 ```
 
-Create and update require the matching table permission and an allowed resulting owner. Delete requires self ownership or domination. Direct parent groups can receive delegation, but parent membership alone cannot reclaim a delegated record.
+The framework principals are `rebase_user` and `rebase_group`. Reader access is
+computed from explicitly marked direct reference fields; ancestors and tree
+membership do not grant access. `readers_index` is private. Create and update
+require the matching table permission and an allowed resulting owner. Delete
+requires self ownership or domination. Direct parent groups can receive
+delegation, but parent membership alone cannot reclaim a delegated record.
 
 Strict schema fields, assertions, references, field permissions, and record visibility remain in SurrealDB. The runtime receives either a compiler-selected provisional snapshot or a committed record locator; it is not another client authorization layer.
 
@@ -95,12 +137,14 @@ through the challenge flow.
 `POST /anonymous/authentication/challenges` accepts a namespace, database, and
 email, phone, or username identifier. It always returns the same `202` response
 for present, missing, and disallowed identities, applies per-address and
-context/identifier rate limits, and delivers through the platform Resend or
-Twilio adapter. The code hash is private to SurrealDB and is never returned by
-the endpoint. Configure platform mail with
-`REBASE_PLATFORM_EMAIL_RESEND_API_KEY`; the default sender is
-`ReBase <onboarding@resend.dev>` until a verified domain is configured. Phone
-delivery uses the explicit `REBASE_PLATFORM_SMS_TWILIO_*` keys.
+context/identifier rate limits, and queues delivery through the fixed
+`rebase_authentication_delivery_policy:default` row. Email and SMS credentials
+and sender values live in private typed database configuration rows; callers
+cannot select a provider or configuration. Challenge hashing and delivery-task
+creation commit atomically. The task stores an encrypted message payload, while
+the challenge hash remains private to SurrealDB. Production requires a stable
+`REBASE_AUTHENTICATION_PAYLOAD_SECRET` of at least 32 bytes, separate from the
+runtime event-authentication secret.
 
 When a runtime URL and runtime secret are supplied at compilation, the compiler
 also emits the `oauth` record access method. It calls the authenticated,
@@ -160,19 +204,17 @@ module.exports = {
 The test design provides the reference examples:
 
 - `email_brevo_config`: configuration storage with a required API-key field hidden from normal reads.
-- `send_brevo_email`: committed async record, BullMQ delivery, retry/reconciliation, and scheduling.
+- `send_brevo_email`: committed async record, one-shot execution time, BullMQ delivery, and retry reconciliation.
 - `file_storage_config` plus `test_attachment`: a deterministic, typed file entity that issues S3-compatible upload/download grants and removes the object on deletion.
 - `razorpay_config` plus `razorpay_order`: synchronous Razorpay Test Mode order creation with required database-owned credentials and a signed `order.paid` webhook that updates the same order row.
 
 `npm run probe:runtime` verifies generated sync and async events against a disposable SurrealDB, including duplicate claims, retry recovery, reconciliation, wake authentication, and webhooks.
 
-The runtime selects a queue driver with `REBASE_QUEUE_DRIVER=bullmq|sqs` and
-exposes three transport lanes:
-`task`, `schedule`, and `webhook`. SQS deployments provide
-`REBASE_SQS_TASK_QUEUE_URL`, `REBASE_SQS_SCHEDULE_QUEUE_URL`,
-`REBASE_SQS_WEBHOOK_QUEUE_URL` plus the matching
-`REBASE_SQS_DEAD_LETTER_*` URLs. Queue payloads remain only
-`{ namespace, database, id }`.
+The runtime uses one BullMQ queue for versioned operation hints. Tasks carry
+`execute_at` and priority fields; delayed hints are admitted only within the
+bounded horizon, and reconciliation republishes missing hints from SurrealDB.
+The queue payload contains the context locator and private execution/revision
+identity, while current due time and priority are loaded from the database.
 
 There is no provider mode. `createAdapters()` statically composes the five named
 functions available in this build, and runtime contracts inject only the

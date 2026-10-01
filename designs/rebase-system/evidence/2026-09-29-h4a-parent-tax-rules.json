@@ -1,0 +1,164 @@
+{
+  "id": "H4a-parent-tax-rules-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "profile": "designs/all-in-accounting",
+  "baseHead": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "workingTree": "dirty-preserved",
+  "result": "pass",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64"
+  },
+  "packet": "H4a parent-only sales fixed/proportional tax components",
+  "changedFiles": [
+    "designs/all-in-accounting/claims/tax-rules.surql",
+    "designs/all-in-accounting/claims/invoices.surql",
+    "dev-tools/accounting/h4a-probe.js",
+    "package.json",
+    "designs/all-in-accounting/implementation-handoff.md",
+    "designs/rebase-system/evidence/2026-09-29-h4a-parent-tax-rules.json",
+    "designs/all-in-accounting/blueprint.md"
+  ],
+  "commands": [
+    {
+      "command": "npm run build:all-in-accounting",
+      "result": "pass",
+      "elapsedSeconds": 0.69,
+      "observed": "51 tables, 0 views, 15 materials"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "pass",
+      "elapsedSeconds": 0.61
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "pass",
+      "elapsedSeconds": 0.31
+    },
+    {
+      "command": "node --check dev-tools/accounting/h4a-probe.js",
+      "result": "pass",
+      "elapsedSeconds": 0.05
+    },
+    {
+      "command": "npm run probe:accounting-h4a",
+      "result": "pass",
+      "elapsedSeconds": 8.9,
+      "coverage": [
+        "fixed 1 and proportional 10 percent on parent base 10 create two managed tax children, customer/invoice 12 and separate tax payables totaling 2",
+        "parent billed quantity edit produces base 7.50, proportional tax 0.75, invoice 9.25 and stable tax child IDs",
+        "explicit 20 percent version selection produces proportional tax 1.50 while another issued source remains pinned to 10 percent",
+        "selected rule's rate update and deletion reject with unchanged source, children and roots; malformed rule shape, interval, tax identity and fixed-amount currency precision reject",
+        "out-of-interval and before-dispatch dates, wrong component key, rule currency, tax claim account, duplicate key, rounded-to-zero rate, and manual/rule XOR violations reject with whole-graph rollback",
+        "issue date moves within the selected interval and follows managed child recognition time; manual H3a amount coexists with ruled components",
+        "component removal and source deletion remove only owned children and projections, leaving physical stock-out"
+      ]
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "result": "pass",
+      "elapsedSeconds": 32.68,
+      "coverage": "existing H3a manual tax, H3b purchase-receipt settlement, H2 receipt and net bounds, H1 and A1/A2 oracles"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "elapsedSeconds": 0.06
+    }
+  ],
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "designs/all-in-accounting/claims/tax-rules.surql": "cd109c58ff40edc5e6b3d7d1c8ecd138436088c9f24a6fa275cee84c30df9cd5",
+      "designs/all-in-accounting/claims/invoices.surql": "70725229de1344090cc87bcc29fa9ca17a365334467d12a0172be19bbb92a875",
+      "dev-tools/accounting/h4a-probe.js": "d6b830599742835bf218cf38798d33860adfa850badf46b7e7d1deb2549106b5",
+      "package.json": "2453cdc010e33bb3617cfa6887b52f036352eb90fe64d0fad61ad0aebe213e39",
+      "designs/all-in-accounting/movements/purchase-receipt.surql": "efaac8ea7757a0602038ce65e03239727aa8d939887738baf531357f3105b583",
+      "dev-tools/accounting/core-probe.js": "f365c2f77206823018e51ffacf70428de9b33c4dfd852c3f879c37dcb827f3b9",
+      "build/all-in-accounting/schema.surql": "e0a2a6edf9c37b203871a087273b7a3ba03af43aafd1e5a3534765c56e1e5053"
+    },
+    "scope": "H4a executable, configuration, and generated schema artifacts at the H4a rerun; mutable planning documents are excluded."
+  },
+  "limits": [
+    "All domain results use a disposable in-memory SurrealDB 3.2.0 profile; no populated production migration is proven.",
+    "Selected versions are immutable typed source facts. They are not automatically looked up by tax label or date; a source changes version only through an explicit parent edit.",
+    "H4a has issue-date sales recognition and parent-local pre-tax line amounts only; aggregate, compound, purchase-rule, withholding, offset and statutory compliance behavior are outside this packet.",
+    "Rules are protected from deletion while a managed tax child refers to them; privileged administrative database access remains trusted outside the normal client boundary.",
+    "The probe checks fixed-amount precision against a two-decimal currency and rate outputs at two decimals; other currency precisions and concurrent source edits remain untested."
+  ],
+  "next": "H4b aggregate/compound basis and explicit offsets/withholding/collection, with separate purchase-rule migration when its fixed slots are removed.",
+  "independentLeadRerun": {
+    "result": "pass",
+    "elapsedSeconds": 42.1,
+    "commands": [
+      {
+        "command": "npm run build:all-in-accounting",
+        "result": "pass",
+        "elapsedSeconds": 0.57,
+        "observed": "51 tables, 0 views, 15 materials"
+      },
+      {
+        "command": "npm run check:all-in-accounting",
+        "result": "pass",
+        "elapsedSeconds": 0.6
+      },
+      {
+        "command": "surreal validate build/all-in-accounting/schema.surql",
+        "result": "pass",
+        "elapsedSeconds": 0.65
+      },
+      {
+        "command": "node --check dev-tools/accounting/h4a-probe.js",
+        "result": "pass",
+        "elapsedSeconds": 0.11
+      },
+      {
+        "command": "npm run probe:accounting-h4a",
+        "result": "pass",
+        "elapsedSeconds": 9.71,
+        "observed": "fixed/proportional versions, precision rejection, parent-local calculation, rollback and H3a manual path"
+      },
+      {
+        "command": "npm run probe:accounting-core",
+        "result": "pass",
+        "elapsedSeconds": 30.4,
+        "observed": "H3b receipt settlement, H3a sales tax, H2 receipt and net bounds, H1 fixtures, and A1/A2 oracles"
+      },
+      {
+        "command": "git diff --check",
+        "result": "pass"
+      }
+    ]
+  },
+  "postH4aCompatibility": {
+    "recordedAt": "2026-09-29",
+    "result": "pass",
+    "purpose": "Recheck the bounded H3c fixture after H4a added a production tax-rule table and H3c validation changed from a fixed table-count expectation to a base-profile-relative assertion.",
+    "commands": [
+      {
+        "command": "node dev-tools/accounting/h3c-probe.js --validate-only",
+        "result": "pass",
+        "elapsedSeconds": 0.84,
+        "observed": "54 tables, 16 materials"
+      },
+      {
+        "command": "node dev-tools/accounting/h3c-probe.js",
+        "result": "pass",
+        "elapsedSeconds": 7.5,
+        "observed": "ten typed levels, bounded branch, reactive reparent and rollback"
+      }
+    ],
+    "sourceFingerprintAtRerun": {
+      "algorithm": "sha256 per file",
+      "files": {
+        "designs/all-in-accounting/claims/tax-rules.surql": "cd109c58ff40edc5e6b3d7d1c8ecd138436088c9f24a6fa275cee84c30df9cd5",
+        "designs/all-in-accounting/claims/invoices.surql": "70725229de1344090cc87bcc29fa9ca17a365334467d12a0172be19bbb92a875",
+        "dev-tools/accounting/h4a-probe.js": "d6b830599742835bf218cf38798d33860adfa850badf46b7e7d1deb2549106b5",
+        "dev-tools/accounting/h3c-probe.js": "01ddbb81ccdb5bcd8693e7151a093cc52cfe79e31ec16cc1ca9a6f7a19c617f3",
+        "dev-tools/accounting/h3c-fixture/fixture.surql": "97a1826f99c3c0e7f2ba867a6a7a9475138a07412a412b8499e1c6d0aa8763df",
+        "build/all-in-accounting/schema.surql": "e0a2a6edf9c37b203871a087273b7a3ba03af43aafd1e5a3534765c56e1e5053"
+      }
+    }
+  }
+}

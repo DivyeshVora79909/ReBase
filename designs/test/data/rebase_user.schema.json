@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "parents"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "faker": "person.fullName"
+    },
+    "username": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{8,31}$",
+      "x-rebase-optional-probability": 0.65
+    },
+    "parents": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+      "minItems": 1,
+      "maxItems": 5,
+      "uniqueItems": true
+    },
+    "a_favorite_primitive": {
+      "type": "string",
+      "pattern": "^test_primitive:[a-z0-9-]+$",
+      "x-rebase-optional-probability": 0.35
+    },
+    "a_friends": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^rebase_user:[a-z0-9-]+$" },
+      "minItems": 0,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "x-rebase-optional-probability": 0.45
+    },
+    "a_watched_items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(test_primitive|test_tree):[a-z0-9-]+$"
+      },
+      "minItems": 0,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "x-rebase-optional-probability": 0.35
+    }
+  }
+}

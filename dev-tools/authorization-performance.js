@@ -176,11 +176,11 @@ async function defineBenchmark(root) {
   await root.query(`
     DEFINE TABLE bench_default SCHEMAFULL PERMISSIONS
       FOR select WHERE 'bench_default_select' IN $auth.permissions AND
-        (!!visibility OR readers_index CONTAINS <string>$auth.id OR <string>owned_by IN $auth.z_access_index)
+        (!!visibility OR readers_index CONTAINSANY $auth.z_access_index OR <string>owned_by IN $auth.z_access_index)
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_default TYPE bool;
     DEFINE FIELD readers_index ON bench_default TYPE array<string>;
-    DEFINE FIELD owned_by ON bench_default TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_default TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_default TYPE int;
     DEFINE FIELD bucket ON bench_default TYPE int;
     DEFINE FIELD payload ON bench_default TYPE string;
@@ -194,7 +194,7 @@ async function defineBenchmark(root) {
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_owner_current TYPE bool;
     DEFINE FIELD readers_index ON bench_owner_current TYPE array<string>;
-    DEFINE FIELD owned_by ON bench_owner_current TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_owner_current TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_owner_current TYPE int;
     DEFINE FIELD bucket ON bench_owner_current TYPE int;
     DEFINE FIELD payload ON bench_owner_current TYPE string;
@@ -207,7 +207,7 @@ async function defineBenchmark(root) {
         (!!visibility OR <string>owned_by IN $auth.z_access_index)
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_owner_lean TYPE bool;
-    DEFINE FIELD owned_by ON bench_owner_lean TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_owner_lean TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_owner_lean TYPE int;
     DEFINE FIELD bucket ON bench_owner_lean TYPE int;
     DEFINE FIELD payload ON bench_owner_lean TYPE string;
@@ -219,7 +219,7 @@ async function defineBenchmark(root) {
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_open TYPE bool;
     DEFINE FIELD readers_index ON bench_open TYPE array<string>;
-    DEFINE FIELD owned_by ON bench_open TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_open TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_open TYPE int;
     DEFINE FIELD bucket ON bench_open TYPE int;
     DEFINE FIELD payload ON bench_open TYPE string;
@@ -227,11 +227,11 @@ async function defineBenchmark(root) {
 
     DEFINE TABLE bench_visibility_index SCHEMAFULL PERMISSIONS
       FOR select WHERE 'bench_visibility_index_select' IN $auth.permissions AND
-        (!!visibility OR readers_index CONTAINS <string>$auth.id OR <string>owned_by IN $auth.z_access_index)
+        (!!visibility OR readers_index CONTAINSANY $auth.z_access_index OR <string>owned_by IN $auth.z_access_index)
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_visibility_index TYPE bool;
     DEFINE FIELD readers_index ON bench_visibility_index TYPE array<string>;
-    DEFINE FIELD owned_by ON bench_visibility_index TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_visibility_index TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_visibility_index TYPE int;
     DEFINE FIELD bucket ON bench_visibility_index TYPE int;
     DEFINE FIELD payload ON bench_visibility_index TYPE string;
@@ -241,7 +241,7 @@ async function defineBenchmark(root) {
 
     DEFINE TABLE bench_owner_string SCHEMAFULL PERMISSIONS
       FOR select WHERE 'bench_owner_string_select' IN $auth.permissions AND
-        (!!visibility OR readers_index CONTAINS <string>$auth.id OR owned_by_key IN $auth.z_access_index)
+        (!!visibility OR readers_index CONTAINSANY $auth.z_access_index OR owned_by_key IN $auth.z_access_index)
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_owner_string TYPE bool;
     DEFINE FIELD readers_index ON bench_owner_string TYPE array<string>;
@@ -266,7 +266,7 @@ async function defineBenchmark(root) {
       FOR select WHERE 'bench_owner_record_only_select' IN $auth.permissions
         AND <string>owned_by IN $auth.z_access_index
       FOR create, update, delete NONE;
-    DEFINE FIELD owned_by ON bench_owner_record_only TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_owner_record_only TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_owner_record_only TYPE int;
     DEFINE FIELD bucket ON bench_owner_record_only TYPE int;
     DEFINE FIELD payload ON bench_owner_record_only TYPE string;
@@ -274,7 +274,7 @@ async function defineBenchmark(root) {
 
     DEFINE TABLE bench_reader_only SCHEMAFULL PERMISSIONS
       FOR select WHERE 'bench_reader_only_select' IN $auth.permissions
-        AND readers_index CONTAINS <string>$auth.id
+        AND readers_index CONTAINSANY $auth.z_access_index
       FOR create, update, delete NONE;
     DEFINE FIELD readers_index ON bench_reader_only TYPE array<string>;
     DEFINE FIELD seq ON bench_reader_only TYPE int;
@@ -294,11 +294,11 @@ async function defineBenchmark(root) {
 
     DEFINE TABLE bench_visibility_eq SCHEMAFULL PERMISSIONS
       FOR select WHERE 'bench_visibility_eq_select' IN $auth.permissions AND
-        (visibility = true OR readers_index CONTAINS <string>$auth.id OR <string>owned_by IN $auth.z_access_index)
+        (visibility = true OR readers_index CONTAINSANY $auth.z_access_index OR <string>owned_by IN $auth.z_access_index)
       FOR create, update, delete NONE;
     DEFINE FIELD visibility ON bench_visibility_eq TYPE bool;
     DEFINE FIELD readers_index ON bench_visibility_eq TYPE array<string>;
-    DEFINE FIELD owned_by ON bench_visibility_eq TYPE record<user | groups>;
+    DEFINE FIELD owned_by ON bench_visibility_eq TYPE record<rebase_user | rebase_group>;
     DEFINE FIELD seq ON bench_visibility_eq TYPE int;
     DEFINE FIELD bucket ON bench_visibility_eq TYPE int;
     DEFINE FIELD payload ON bench_visibility_eq TYPE string;
@@ -314,36 +314,36 @@ async function defineBenchmark(root) {
     "bench_reader_only_select", "bench_visibility_only_select", "bench_visibility_eq_select",
   ];
   await root.query(`
-    CREATE groups:bench_narrow SET name = 'Narrow', parents = [groups:root], role = $permissions;
-    CREATE groups:bench_wide SET name = 'Wide', parents = [groups:root], role = $permissions;
-    CREATE groups:bench_other SET name = 'Other', parents = [groups:root], role = $permissions;
-    CREATE user:bench_narrow SET name = 'Narrow',
-      password = crypto::argon2::generate($password), parents = [groups:bench_narrow], login_access = true;
-    CREATE user:bench_wide SET name = 'Wide',
-      password = crypto::argon2::generate($password), parents = [groups:bench_wide], login_access = true;
-    CREATE authentication_email:bench_narrow SET principal = user:bench_narrow, address = 'narrow@example.com', verified_revision = 1;
-    CREATE authentication_email:bench_wide SET principal = user:bench_wide, address = 'wide@example.com', verified_revision = 1;
+    CREATE rebase_group:bench_narrow SET name = 'Narrow', parents = [rebase_group:root], role = $permissions;
+    CREATE rebase_group:bench_wide SET name = 'Wide', parents = [rebase_group:root], role = $permissions;
+    CREATE rebase_group:bench_other SET name = 'Other', parents = [rebase_group:root], role = $permissions;
+    CREATE rebase_user:bench_narrow SET name = 'Narrow',
+      password = crypto::argon2::generate($password), parents = [rebase_group:bench_narrow], login_access = true;
+    CREATE rebase_user:bench_wide SET name = 'Wide',
+      password = crypto::argon2::generate($password), parents = [rebase_group:bench_wide], login_access = true;
+    CREATE authentication_email:bench_narrow SET principal = rebase_user:bench_narrow, address = 'narrow@example.com', verified_revision = 1;
+    CREATE authentication_email:bench_wide SET principal = rebase_user:bench_wide, address = 'wide@example.com', verified_revision = 1;
     UPDATE authentication_email:bench_narrow SET verified_revision = revision, verified_at = time::now();
     UPDATE authentication_email:bench_wide SET verified_revision = revision, verified_at = time::now();
   `, { permissions, password: PASSWORD });
   for (let offset = 0; offset < 100; offset += 20) {
     await root.query(`
       FOR $i IN $start..$end {
-        CREATE type::record('groups', string::concat('bench_child_', <string>$i)) SET
-          name = string::concat('Child ', <string>$i), parents = [user:bench_wide], role = [];
+        CREATE type::record('rebase_group', string::concat('bench_child_', <string>$i)) SET
+          name = string::concat('Child ', <string>$i), parents = [rebase_user:bench_wide], role = [];
       };
     `, { start: offset, end: offset + 20 });
   }
   return {
-    narrow: rows(await root.query("SELECT array::len(z_access_index) AS width FROM user:bench_narrow;"))[0].width,
-    wide: rows(await root.query("SELECT array::len(z_access_index) AS width FROM user:bench_wide;"))[0].width,
+    narrow: rows(await root.query("SELECT array::len(z_access_index) AS width FROM rebase_user:bench_narrow;"))[0].width,
+    wide: rows(await root.query("SELECT array::len(z_access_index) AS width FROM rebase_user:bench_wide;"))[0].width,
   };
 }
 
 async function populateTable(root, table, from, to, includeReaders) {
   const started = performance.now();
   const readerPart = includeReaders
-    ? "readers_index: IF $kind = 1 OR $kind = 5 THEN ['user:bench_narrow', 'user:bench_wide'] ELSE [] END,"
+    ? "readers_index: IF $kind = 1 OR $kind = 5 THEN ['rebase_user:bench_narrow', 'rebase_user:bench_wide'] ELSE [] END,"
     : "";
   await root.query(`
     FOR $i IN $from..$to {
@@ -351,10 +351,10 @@ async function populateTable(root, table, from, to, includeReaders) {
       CREATE type::record($table, $i) CONTENT {
         visibility: $kind = 0 OR $kind = 5,
         ${readerPart}
-        owned_by: IF $kind = 2 THEN user:bench_narrow
-          ELSE IF $kind = 3 THEN groups:bench_narrow
-          ELSE IF $kind = 4 THEN groups:bench_child_1
-          ELSE groups:bench_other END,
+        owned_by: IF $kind = 2 THEN rebase_user:bench_narrow
+          ELSE IF $kind = 3 THEN rebase_group:bench_narrow
+          ELSE IF $kind = 4 THEN rebase_group:bench_child_1
+          ELSE rebase_group:bench_other END,
         seq: $i,
         bucket: $i % 100,
         payload: 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -429,21 +429,21 @@ async function populateStage(root, from, to) {
 async function plans(db) {
   const queries = {
     default_page: "SELECT VALUE id FROM bench_default LIMIT 100 EXPLAIN FULL;",
-    default_owner: "SELECT VALUE id FROM bench_default WHERE owned_by = user:bench_narrow LIMIT 100 EXPLAIN FULL;",
-    default_reader: "SELECT VALUE id FROM bench_default WHERE readers_index CONTAINS 'user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
+    default_owner: "SELECT VALUE id FROM bench_default WHERE owned_by = rebase_user:bench_narrow LIMIT 100 EXPLAIN FULL;",
+    default_reader: "SELECT VALUE id FROM bench_default WHERE readers_index CONTAINS 'rebase_user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
     default_visible: "SELECT VALUE id FROM bench_default WHERE visibility = true LIMIT 100 EXPLAIN FULL;",
     default_selective: "SELECT VALUE id FROM bench_default WHERE bucket = 7 AND seq > 0 ORDER BY bucket, seq LIMIT 100 EXPLAIN FULL;",
     owner_page: "SELECT VALUE id FROM bench_owner_current LIMIT 100 EXPLAIN FULL;",
     open_page: "SELECT VALUE id FROM bench_open LIMIT 100 EXPLAIN FULL;",
     visibility_index_page: "SELECT VALUE id FROM bench_visibility_index LIMIT 100 EXPLAIN FULL;",
     visibility_index_filter: "SELECT VALUE id FROM bench_visibility_index WHERE visibility = true LIMIT 100 EXPLAIN FULL;",
-    owner_string_filter: "SELECT VALUE id FROM bench_owner_string WHERE owned_by_key = 'user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
+    owner_string_filter: "SELECT VALUE id FROM bench_owner_string WHERE owned_by_key = 'rebase_user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
     owner_only_page: "SELECT VALUE id FROM bench_owner_only LIMIT 100 EXPLAIN FULL;",
-    owner_only_filter: "SELECT VALUE id FROM bench_owner_only WHERE owned_by = 'user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
+    owner_only_filter: "SELECT VALUE id FROM bench_owner_only WHERE owned_by = 'rebase_user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
     owner_record_only_page: "SELECT VALUE id FROM bench_owner_record_only LIMIT 100 EXPLAIN FULL;",
-    owner_record_only_filter: "SELECT VALUE id FROM bench_owner_record_only WHERE owned_by = user:bench_narrow LIMIT 100 EXPLAIN FULL;",
+    owner_record_only_filter: "SELECT VALUE id FROM bench_owner_record_only WHERE owned_by = rebase_user:bench_narrow LIMIT 100 EXPLAIN FULL;",
     reader_only_page: "SELECT VALUE id FROM bench_reader_only LIMIT 100 EXPLAIN FULL;",
-    reader_only_filter: "SELECT VALUE id FROM bench_reader_only WHERE readers_index CONTAINS 'user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
+    reader_only_filter: "SELECT VALUE id FROM bench_reader_only WHERE readers_index CONTAINS 'rebase_user:bench_narrow' LIMIT 100 EXPLAIN FULL;",
     visibility_only_page: "SELECT VALUE id FROM bench_visibility_only LIMIT 100 EXPLAIN FULL;",
     visibility_only_filter: "SELECT VALUE id FROM bench_visibility_only WHERE visibility = true LIMIT 100 EXPLAIN FULL;",
     visibility_eq_page: "SELECT VALUE id FROM bench_visibility_eq LIMIT 100 EXPLAIN FULL;",
@@ -458,8 +458,8 @@ async function stageMeasurements(actor, rowCount) {
     default_page_ids: "SELECT VALUE id FROM bench_default LIMIT 100;",
     default_page_full: "SELECT * FROM bench_default LIMIT 100;",
     default_count: "SELECT count() AS count FROM bench_default GROUP ALL;",
-    default_owner: "SELECT VALUE id FROM bench_default WHERE owned_by = user:bench_narrow LIMIT 100;",
-    default_reader: "SELECT VALUE id FROM bench_default WHERE readers_index CONTAINS 'user:bench_narrow' LIMIT 100;",
+    default_owner: "SELECT VALUE id FROM bench_default WHERE owned_by = rebase_user:bench_narrow LIMIT 100;",
+    default_reader: "SELECT VALUE id FROM bench_default WHERE readers_index CONTAINS 'rebase_user:bench_narrow' LIMIT 100;",
     default_visible: "SELECT VALUE id FROM bench_default WHERE visibility = true LIMIT 100;",
     default_selective: "SELECT VALUE id FROM bench_default WHERE bucket = 7 AND seq > 0 ORDER BY bucket, seq LIMIT 100;",
     default_keyset: `SELECT VALUE id FROM bench_default WHERE seq > ${Math.floor(rowCount / 2)} ORDER BY seq LIMIT 100;`,
@@ -477,20 +477,20 @@ async function stageMeasurements(actor, rowCount) {
     visibility_index_visible_count: "SELECT count() AS count FROM bench_visibility_index WHERE visibility = true GROUP ALL;",
     owner_string_page: "SELECT VALUE id FROM bench_owner_string LIMIT 100;",
     owner_string_count: "SELECT count() AS count FROM bench_owner_string GROUP ALL;",
-    owner_string_filter: "SELECT VALUE id FROM bench_owner_string WHERE owned_by_key = 'user:bench_narrow' LIMIT 100;",
-    owner_string_filter_count: "SELECT count() AS count FROM bench_owner_string WHERE owned_by_key = 'user:bench_narrow' GROUP ALL;",
+    owner_string_filter: "SELECT VALUE id FROM bench_owner_string WHERE owned_by_key = 'rebase_user:bench_narrow' LIMIT 100;",
+    owner_string_filter_count: "SELECT count() AS count FROM bench_owner_string WHERE owned_by_key = 'rebase_user:bench_narrow' GROUP ALL;",
     owner_only_page: "SELECT VALUE id FROM bench_owner_only LIMIT 100;",
     owner_only_count: "SELECT count() AS count FROM bench_owner_only GROUP ALL;",
-    owner_only_filter: "SELECT VALUE id FROM bench_owner_only WHERE owned_by = 'user:bench_narrow' LIMIT 100;",
-    owner_only_filter_count: "SELECT count() AS count FROM bench_owner_only WHERE owned_by = 'user:bench_narrow' GROUP ALL;",
+    owner_only_filter: "SELECT VALUE id FROM bench_owner_only WHERE owned_by = 'rebase_user:bench_narrow' LIMIT 100;",
+    owner_only_filter_count: "SELECT count() AS count FROM bench_owner_only WHERE owned_by = 'rebase_user:bench_narrow' GROUP ALL;",
     owner_record_only_page: "SELECT VALUE id FROM bench_owner_record_only LIMIT 100;",
     owner_record_only_count: "SELECT count() AS count FROM bench_owner_record_only GROUP ALL;",
-    owner_record_only_filter: "SELECT VALUE id FROM bench_owner_record_only WHERE owned_by = user:bench_narrow LIMIT 100;",
-    owner_record_only_filter_count: "SELECT count() AS count FROM bench_owner_record_only WHERE owned_by = user:bench_narrow GROUP ALL;",
+    owner_record_only_filter: "SELECT VALUE id FROM bench_owner_record_only WHERE owned_by = rebase_user:bench_narrow LIMIT 100;",
+    owner_record_only_filter_count: "SELECT count() AS count FROM bench_owner_record_only WHERE owned_by = rebase_user:bench_narrow GROUP ALL;",
     reader_only_page: "SELECT VALUE id FROM bench_reader_only LIMIT 100;",
     reader_only_count: "SELECT count() AS count FROM bench_reader_only GROUP ALL;",
-    reader_only_filter: "SELECT VALUE id FROM bench_reader_only WHERE readers_index CONTAINS 'user:bench_narrow' LIMIT 100;",
-    reader_only_filter_count: "SELECT count() AS count FROM bench_reader_only WHERE readers_index CONTAINS 'user:bench_narrow' GROUP ALL;",
+    reader_only_filter: "SELECT VALUE id FROM bench_reader_only WHERE readers_index CONTAINS 'rebase_user:bench_narrow' LIMIT 100;",
+    reader_only_filter_count: "SELECT count() AS count FROM bench_reader_only WHERE readers_index CONTAINS 'rebase_user:bench_narrow' GROUP ALL;",
     visibility_only_page: "SELECT VALUE id FROM bench_visibility_only LIMIT 100;",
     visibility_only_count: "SELECT count() AS count FROM bench_visibility_only GROUP ALL;",
     visibility_only_filter: "SELECT VALUE id FROM bench_visibility_only WHERE visibility = true LIMIT 100;",

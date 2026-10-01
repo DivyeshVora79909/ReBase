@@ -1,13 +1,18 @@
-const { createBrevoEmailAdapter } = require("./brevo-email.adapter");
+const { createBrevoEmailAdapter, createBrevoEmailEventsAdapter } = require("./brevo-email.adapter");
 const { createRazorpayOrderAdapter } = require("./razorpay-order.adapter");
 const { createRazorpayWebhookAdapter } = require("./razorpay-webhook.adapter");
 const { createS3StorageAdapters } = require("./s3-storage.adapter");
+const { createTwilioSmsAdapter } = require("./twilio-sms.adapter");
 
 const ADAPTER_NAMES = Object.freeze([
   "sendBrevoEmail",
+  "getBrevoEmailEvents",
+  "sendTwilioSms",
   "createS3UploadGrant",
   "createS3AccessGrant",
   "deleteS3Object",
+  "purgeS3Object",
+  "headS3Object",
   "createRazorpayOrder",
 ]);
 
@@ -27,6 +32,11 @@ function createAdapters(options = {}) {
   });
   return Object.freeze({
     sendBrevoEmail: createBrevoEmailAdapter({ fetch: options.fetch, endpoint: options.brevoEndpoint }),
+    getBrevoEmailEvents: createBrevoEmailEventsAdapter({ fetch: options.fetch, eventsEndpoint: options.brevoEventsEndpoint }),
+    sendTwilioSms: createTwilioSmsAdapter({ fetch: options.fetch, endpoint: options.twilioEndpoint }),
+    ...(options.authenticationPayloadCipher
+      ? { openAuthenticationPayload: options.authenticationPayloadCipher.open }
+      : {}),
     ...storage,
     createRazorpayOrder: createRazorpayOrderAdapter({ fetch: options.fetch, endpoint: options.razorpayEndpoint }),
     ...assertFunctionOverrides(options.overrides),

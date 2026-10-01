@@ -1,436 +1,401 @@
-const fs = require("node:fs");
-const path = require("node:path");
+const {
+  DEFAULT_RECONCILE_INTERVAL_MS,
+  QUEUE_HORIZON_MS,
+} = require("./runtime-timing");
 
 const DEFAULTS = Object.freeze({
   environment: "development",
   host: "127.0.0.1",
   port: 8788,
   connectTimeoutMs: 10000,
-  reconcileIntervalMs: 30 * 60 * 1000,
+  reconcileIntervalMs: DEFAULT_RECONCILE_INTERVAL_MS,
+  terminalTaskRetentionDays: 30,
   redisConnectTimeoutMs: 5000,
   queueStartupTimeoutMs: 10000,
   queueHealthTimeoutMs: 2000,
   queuePrefix: "rebase",
   bodyLimitBytes: 256 * 1024,
   requestTimeoutMs: 30000,
-  platformEmailFrom: "ReBase <onboarding@resend.dev>",
   authenticationChallengeTtlMs: 10 * 60 * 1000,
   authenticationRateLimitWindowMs: 15 * 60 * 1000,
   authenticationRateLimitIp: 10,
   authenticationRateLimitIdentifier: 3,
-  queueDriver: "bullmq",
   debug: false,
 });
 
-function stripQuotes(value) {
-  const text = String(value || "").trim();
-  if (text.length < 2) return text;
-  const quote = text[0];
-  if (quote !== '"' && quote !== "'") return text;
-  let escaped = false;
-  for (let index = 1; index < text.length; index += 1) {
-    if (text[index] === quote && !escaped) {
-      const trailing = text.slice(index + 1).trim();
-      if (trailing && !trailing.startsWith("#")) return text;
-      const content = text.slice(1, index);
-      if (quote === "'") return content.replace(/\\'/g, "'");
-      return content
-        .replace(/\\n/g, "\n")
-        .replace(/\\r/g, "\r")
-        .replace(/\\t/g, "\t")
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, "\\");
-    }
-    escaped = text[index] === "\\" && !escaped;
-    if (text[index] !== "\\") escaped = false;
+const CONTEXT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const CONTEXT_KEYS = ["namespace", "database"];
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireRecord(value, label) {
+  if (!isRecord(value)) throw new Error(`${label} must be an object`);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new Error(`${label} must be a plain object`);
   }
+  return value;
+}
+
+function assertOnlyKeys(value, allowed, label) {
+  const unexpected = Object.keys(value).filter((key) => !allowed.includes(key));
+  if (unexpected.length) {
+    throw new Error(`${label} has unsupported fields: ${unexpected.join(", ")}`);
+  }
+}
+
+function envString(values, key, { secret = false } = {}) {
+  const raw = values[key];
+  if (raw === undefined || raw === null) return undefined;
+  if (!["string", "number", "boolean"].includes(typeof raw)) {
+    throw new Error(`${key} must be a string`);
+  }
+  const text = String(raw);
+  if (!text.trim()) return undefined;
+  return secret ? text : text.trim();
+}
+
+function requiredString(value, label, { allowWhitespace = false } = {}) {
+  if (typeof value !== "string" || !value.length || (!allowWhitespace && !value.trim())) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function optionalString(value, label, options) {
+  if (value === undefined || value === null) return undefined;
+  return requiredString(value, label, options);
+}
+
+function envInteger(values, key, fallback, minimum, maximum = Number.MAX_SAFE_INTEGER) {
+  const raw = values[key];
+  if (raw === undefined || raw === null) return fallback;
+  const text = String(raw).trim();
+  if (!/^-?\d+$/.test(text)) throw new Error(`${key} must be an integer`);
+  const number = Number(text);
+  if (!Number.isSafeInteger(number) || number < minimum || number > maximum) {
+    throw new Error(`${key} must be between ${minimum} and ${maximum}`);
+  }
+  return number;
+}
+
+function envBoolean(values, key, fallback) {
+  const raw = values[key];
+  if (raw === undefined || raw === null) return fallback;
+  if (typeof raw === "boolean") return raw;
+  const text = String(raw).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(text)) return true;
+  if (["0", "false", "no", "off"].includes(text)) return false;
+  throw new Error(`${key} must be true or false`);
+}
+
+function integer(value, label, minimum, maximum = Number.MAX_SAFE_INTEGER) {
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`${label} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return value;
+}
+
+function validateUrl(value, label, protocols) {
+  if (value === undefined) return undefined;
+  const text = requiredString(value, label);
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new Error(`${label} must be a valid URL`);
+  }
+  if (!protocols.includes(url.protocol) || !url.hostname || url.username || url.password) {
+    throw new Error(`${label} must use ${protocols.join(" or ")} and contain a host without embedded credentials`);
+  }
+  if (url.hash) throw new Error(`${label} must not contain a fragment`);
   return text;
 }
 
-function parseEnvFile(source) {
-  const values = {};
-  for (const rawLine of String(source || "").split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(
-      line,
-    );
-    if (!match) continue;
-    let value = match[2].trim();
-    if (!value.startsWith("'") && !value.startsWith('"')) {
-      value = value.replace(/\s+#.*$/, "").trim();
+function context(value, label) {
+  requireRecord(value, label);
+  assertOnlyKeys(value, CONTEXT_KEYS, label);
+  for (const key of CONTEXT_KEYS) {
+    if (typeof value[key] !== "string" || !CONTEXT_NAME.test(value[key])) {
+      throw new Error(`${label}.${key} must be a SurrealDB identifier`);
     }
-    values[match[1]] = stripQuotes(value);
   }
-  return values;
+  return { namespace: value.namespace, database: value.database };
 }
 
-function envFileArgument(argv = []) {
-  const args = [];
-  let file;
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
-    if (argument === "--env-file") {
-      if (argv[index + 1] === undefined)
-        throw new Error("Missing value for --env-file");
-      file = argv[++index];
-      continue;
-    }
-    if (String(argument).startsWith("--env-file=")) {
-      file = String(argument).slice("--env-file=".length);
-      if (!file) throw new Error("--env-file requires a path");
-      continue;
-    }
-    args.push(argument);
-  }
-  return { args, file };
-}
-
-function loadEnvironment(
-  argv = [],
-  { cwd = process.cwd(), baseEnv = process.env } = {},
-) {
-  const parsed = envFileArgument(argv);
-  let fileValues = {};
-  let file = null;
-  if (parsed.file) {
-    file = path.resolve(cwd, parsed.file);
-    if (!fs.existsSync(file))
-      throw new Error(`Environment file not found: ${file}`);
-    fileValues = parseEnvFile(fs.readFileSync(file, "utf8"));
-  }
-  return {
-    values: { ...(baseEnv || {}), ...fileValues },
-    args: parsed.args,
-    file,
-  };
-}
-
-function value(values, overrides, key, overrideKey = key) {
-  return overrides?.[overrideKey] ?? values?.[key];
-}
-
-function numberValue(values, overrides, key, overrideKey, fallback) {
-  const raw = value(values, overrides, key, overrideKey);
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  const result = Number(raw);
-  return Number.isFinite(result) ? result : fallback;
-}
-
-function booleanValue(values, overrides, key, overrideKey, fallback) {
-  const raw = value(values, overrides, key, overrideKey);
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  if (typeof raw === "boolean") return raw;
-  return /^(1|true|yes|on)$/i.test(String(raw));
+function contextKey(value) {
+  return `${value.namespace}\u0000${value.database}`;
 }
 
 function parseContexts(raw) {
-  if (!raw) return [];
+  if (raw === undefined || raw === null || raw === "") return [];
   let parsed;
   try {
     parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
     throw new Error("REBASE_ALLOWED_CONTEXTS must be valid JSON");
   }
-  if (!Array.isArray(parsed))
+  if (!Array.isArray(parsed)) {
     throw new Error("REBASE_ALLOWED_CONTEXTS must be a JSON array");
-  return parsed.map((context) => {
-    if (!context?.namespace || !context?.database) {
-      throw new Error(
-        "Every REBASE_ALLOWED_CONTEXTS entry requires namespace and database",
-      );
-    }
-    return {
-      namespace: String(context.namespace),
-      database: String(context.database),
-    };
+  }
+  const seen = new Set();
+  return parsed.map((item, index) => {
+    const parsedContext = context(item, `REBASE_ALLOWED_CONTEXTS[${index}]`);
+    const key = contextKey(parsedContext);
+    if (seen.has(key)) throw new Error("REBASE_ALLOWED_CONTEXTS must not contain duplicate contexts");
+    seen.add(key);
+    return parsedContext;
   });
 }
 
-function pair(
-  values,
-  overrides,
-  leftKey,
-  rightKey,
-  leftOverride,
-  rightOverride,
-) {
-  const left = value(values, overrides, leftKey, leftOverride);
-  const right = value(values, overrides, rightKey, rightOverride);
-  return {
-    left: left ? String(left) : undefined,
-    right: right ? String(right) : undefined,
-  };
+function deepFreeze(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
 }
 
-function resolveConfiguration(values = {}, overrides = {}) {
-  const authenticationOverrides = overrides.authentication || {};
-  const platformSmsOverrides = overrides.platformSms || {};
-  const environment = String(
-    value(values, overrides, "NODE_ENV", "environment") || DEFAULTS.environment,
+function validateConfiguration(configuration) {
+  const input = requireRecord(configuration, "Configuration");
+  assertOnlyKeys(
+    input,
+    ["environment", "server", "surreal", "runtime", "queue", "storage", "authentication", "webhooks"],
+    "Configuration",
   );
-  const surrealPair = pair(
-    values,
-    overrides,
-    "SURREAL_NAMESPACE",
-    "SURREAL_DATABASE",
-    "namespace",
-    "database",
-  );
-  const runtimePair = pair(
-    values,
-    overrides,
-    "REBASE_RUNTIME_URL",
-    "REBASE_RUNTIME_SECRET",
-    "runtimeUrl",
-    "runtimeSecret",
-  );
-  const defaultContext =
-    overrides.defaultContext ||
-    (surrealPair.left && surrealPair.right
-      ? { namespace: surrealPair.left, database: surrealPair.right }
-      : undefined);
-  const configuredContexts =
-    overrides.contexts ||
-    parseContexts(value(values, overrides, "REBASE_ALLOWED_CONTEXTS", "contexts"));
-  const contexts = [...configuredContexts];
+
+  const environment = requiredString(input.environment, "NODE_ENV");
+  if (!["development", "test", "production"].includes(environment)) {
+    throw new Error("NODE_ENV must be development, test, or production");
+  }
+
+  const serverInput = requireRecord(input.server, "Configuration.server");
+  assertOnlyKeys(serverInput, ["host", "port", "reconcileIntervalMs", "terminalTaskRetentionDays", "bodyLimitBytes", "requestTimeoutMs", "debug"], "Configuration.server");
+  const server = {
+    host: requiredString(serverInput.host, "REBASE_HTTP_HOST"),
+    port: integer(serverInput.port, "REBASE_HTTP_PORT", 0, 65535),
+    reconcileIntervalMs: integer(serverInput.reconcileIntervalMs, "REBASE_RECONCILE_INTERVAL_MS", 1000),
+    terminalTaskRetentionDays: integer(serverInput.terminalTaskRetentionDays, "REBASE_TERMINAL_TASK_RETENTION_DAYS", 1, 3650),
+    bodyLimitBytes: integer(serverInput.bodyLimitBytes, "REBASE_HTTP_BODY_LIMIT_BYTES", 1),
+    requestTimeoutMs: integer(serverInput.requestTimeoutMs, "REBASE_HTTP_REQUEST_TIMEOUT_MS", 1),
+    debug: serverInput.debug,
+  };
+  if (typeof server.debug !== "boolean") throw new Error("REBASE_HTTP_DEBUG must be a boolean");
+  if (server.reconcileIntervalMs >= QUEUE_HORIZON_MS) {
+    throw new Error(
+      `REBASE_RECONCILE_INTERVAL_MS must be shorter than the ${QUEUE_HORIZON_MS}ms queue admission horizon`,
+    );
+  }
+
+  const surrealInput = requireRecord(input.surreal, "Configuration.surreal");
+  assertOnlyKeys(surrealInput, ["endpoint", "username", "password", "namespace", "database", "connectTimeoutMs", "defaultContext", "contexts"], "Configuration.surreal");
+  const surreal = {
+    endpoint: validateUrl(optionalString(surrealInput.endpoint, "SURREAL_ENDPOINT"), "SURREAL_ENDPOINT", ["ws:", "wss:", "http:", "https:"]),
+    username: optionalString(surrealInput.username, "SURREAL_USERNAME"),
+    password: optionalString(surrealInput.password, "SURREAL_PASSWORD", { allowWhitespace: true }),
+    namespace: optionalString(surrealInput.namespace, "SURREAL_NAMESPACE"),
+    database: optionalString(surrealInput.database, "SURREAL_DATABASE"),
+    connectTimeoutMs: integer(surrealInput.connectTimeoutMs, "SURREAL_CONNECT_TIMEOUT_MS", 1),
+  };
+  const connectionFields = [surreal.endpoint, surreal.username, surreal.password];
+  if (connectionFields.some(Boolean) && !connectionFields.every(Boolean)) {
+    throw new Error("SURREAL_ENDPOINT, SURREAL_USERNAME, and SURREAL_PASSWORD must be provided together");
+  }
+  if (Boolean(surreal.namespace) !== Boolean(surreal.database)) {
+    throw new Error("SURREAL_NAMESPACE and SURREAL_DATABASE must be provided together");
+  }
+  let defaultContext;
+  if (surrealInput.defaultContext !== undefined && surrealInput.defaultContext !== null) {
+    defaultContext = context(surrealInput.defaultContext, "Configuration.surreal.defaultContext");
+  } else if (surreal.namespace && surreal.database) {
+    defaultContext = { namespace: surreal.namespace, database: surreal.database };
+  }
   if (
-    defaultContext &&
-    !contexts.some(
-      (item) =>
-        item.namespace === defaultContext.namespace &&
-        item.database === defaultContext.database,
-    )
+    surreal.namespace && surreal.database && defaultContext &&
+    (surreal.namespace !== defaultContext.namespace || surreal.database !== defaultContext.database)
   ) {
+    throw new Error("Configuration.surreal.defaultContext must match SURREAL_NAMESPACE and SURREAL_DATABASE");
+  }
+  const configuredContexts = surrealInput.contexts;
+  if (!Array.isArray(configuredContexts)) throw new Error("Configuration.surreal.contexts must be an array");
+  const contexts = configuredContexts.map((item, index) => context(item, `Configuration.surreal.contexts[${index}]`));
+  const contextKeys = new Set();
+  for (const item of contexts) {
+    const key = contextKey(item);
+    if (contextKeys.has(key)) throw new Error("Configuration.surreal.contexts must not contain duplicates");
+    contextKeys.add(key);
+  }
+  if (defaultContext && !contextKeys.has(contextKey(defaultContext))) contexts.push(defaultContext);
+  surreal.defaultContext = defaultContext;
+  surreal.contexts = contexts;
+
+  const runtimeInput = requireRecord(input.runtime, "Configuration.runtime");
+  assertOnlyKeys(runtimeInput, ["url", "secret"], "Configuration.runtime");
+  const runtime = {
+    url: validateUrl(optionalString(runtimeInput.url, "REBASE_RUNTIME_URL"), "REBASE_RUNTIME_URL", ["http:", "https:"]),
+    secret: optionalString(runtimeInput.secret, "REBASE_RUNTIME_SECRET", { allowWhitespace: true }),
+  };
+  if (Boolean(runtime.url) !== Boolean(runtime.secret)) {
+    throw new Error("REBASE_RUNTIME_URL and REBASE_RUNTIME_SECRET must be provided together");
+  }
+
+  const queueInput = requireRecord(input.queue, "Configuration.queue");
+  assertOnlyKeys(queueInput, ["prefix", "redis", "startupTimeoutMs", "healthTimeoutMs"], "Configuration.queue");
+  const prefix = requiredString(queueInput.prefix, "REBASE_QUEUE_PREFIX");
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(prefix)) throw new Error("REBASE_QUEUE_PREFIX contains unsupported characters");
+
+  const redisInput = requireRecord(queueInput.redis, "Configuration.queue.redis");
+  assertOnlyKeys(redisInput, ["url", "connectTimeoutMs"], "Configuration.queue.redis");
+  const redis = {
+    url: validateUrl(optionalString(redisInput.url, "REBASE_QUEUE_REDIS_URL"), "REBASE_QUEUE_REDIS_URL", ["redis:", "rediss:"]),
+    connectTimeoutMs: integer(redisInput.connectTimeoutMs, "REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS", 1),
+  };
+
+  const storageInput = requireRecord(input.storage, "Configuration.storage");
+  assertOnlyKeys(storageInput, ["bucket"], "Configuration.storage");
+  const storage = { bucket: optionalString(storageInput.bucket, "REBASE_STORAGE_BUCKET") };
+
+  const authInput = requireRecord(input.authentication, "Configuration.authentication");
+  assertOnlyKeys(authInput, ["payloadSecret", "challengeTtlMs", "rateLimits"], "Configuration.authentication");
+  const limitsInput = requireRecord(authInput.rateLimits, "Configuration.authentication.rateLimits");
+  assertOnlyKeys(limitsInput, ["windowMs", "ip", "identifier"], "Configuration.authentication.rateLimits");
+  const authentication = {
+    payloadSecret: optionalString(authInput.payloadSecret, "REBASE_AUTHENTICATION_PAYLOAD_SECRET", { allowWhitespace: true }),
+    challengeTtlMs: integer(authInput.challengeTtlMs, "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS", 60000, 86400000),
+    rateLimits: {
+      windowMs: integer(limitsInput.windowMs, "REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS", 1000),
+      ip: integer(limitsInput.ip, "REBASE_AUTHENTICATION_RATE_LIMIT_IP", 1),
+      identifier: integer(limitsInput.identifier, "REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER", 1),
+    },
+  };
+
+  const webhooks = requireRecord(input.webhooks, "Configuration.webhooks");
+  assertOnlyKeys(webhooks, [], "Configuration.webhooks");
+
+  return deepFreeze({
+    environment,
+    server,
+    surreal,
+    runtime,
+    queue: {
+      prefix,
+      redis,
+      startupTimeoutMs: integer(queueInput.startupTimeoutMs, "REBASE_QUEUE_STARTUP_TIMEOUT_MS", 1),
+      healthTimeoutMs: integer(queueInput.healthTimeoutMs, "REBASE_QUEUE_HEALTH_TIMEOUT_MS", 1),
+    },
+    storage,
+    authentication,
+    webhooks: {},
+  });
+}
+
+function resolveConfiguration(values = process.env) {
+  if (arguments.length > 1) {
+    throw new Error("Configuration overrides are unsupported; resolve one process environment profile");
+  }
+  if (!isRecord(values)) throw new Error("Process environment must be an object");
+  const selectedQueueDriver = envString(values, "REBASE_QUEUE_DRIVER");
+  if (selectedQueueDriver && selectedQueueDriver !== "bullmq") {
+    throw new Error("REBASE_QUEUE_DRIVER must be bullmq; the SQS driver was removed");
+  }
+  const environment = envString(values, "NODE_ENV") || DEFAULTS.environment;
+  const namespace = envString(values, "SURREAL_NAMESPACE");
+  const database = envString(values, "SURREAL_DATABASE");
+  if (Boolean(namespace) !== Boolean(database)) {
+    throw new Error("SURREAL_NAMESPACE and SURREAL_DATABASE must be provided together");
+  }
+  const runtimeUrl = envString(values, "REBASE_RUNTIME_URL");
+  const runtimeSecret = envString(values, "REBASE_RUNTIME_SECRET", { secret: true });
+  if (Boolean(runtimeUrl) !== Boolean(runtimeSecret)) {
+    throw new Error("REBASE_RUNTIME_URL and REBASE_RUNTIME_SECRET must be provided together");
+  }
+  const defaultContext = namespace && database ? { namespace, database } : undefined;
+  const contexts = parseContexts(envString(values, "REBASE_ALLOWED_CONTEXTS"));
+  if (defaultContext && !contexts.some((item) => contextKey(item) === contextKey(defaultContext))) {
     contexts.push(defaultContext);
   }
-  return {
+  const configuration = {
     environment,
     server: {
-      host: String(
-        value(values, overrides, "REBASE_HTTP_HOST", "hostname") || DEFAULTS.host,
-      ),
-      port: numberValue(
-        values,
-        overrides,
-        "REBASE_HTTP_PORT",
-        "port",
-        DEFAULTS.port,
-      ),
-      reconcileIntervalMs: numberValue(
-        values,
-        overrides,
-        "REBASE_RECONCILE_INTERVAL_MS",
-        "reconcileIntervalMs",
-        DEFAULTS.reconcileIntervalMs,
-      ),
-      bodyLimitBytes: numberValue(
-        values,
-        overrides,
-        "REBASE_HTTP_BODY_LIMIT_BYTES",
-        "bodyLimitBytes",
-        DEFAULTS.bodyLimitBytes,
-      ),
-      requestTimeoutMs: numberValue(
-        values,
-        overrides,
-        "REBASE_HTTP_REQUEST_TIMEOUT_MS",
-        "requestTimeoutMs",
-        DEFAULTS.requestTimeoutMs,
-      ),
-      debug: booleanValue(
-        values,
-        overrides,
-        "REBASE_HTTP_DEBUG",
-        "debug",
-        DEFAULTS.debug,
-      ),
+      host: envString(values, "REBASE_HTTP_HOST") || DEFAULTS.host,
+      port: envInteger(values, "REBASE_HTTP_PORT", DEFAULTS.port, 0, 65535),
+      reconcileIntervalMs: envInteger(values, "REBASE_RECONCILE_INTERVAL_MS", DEFAULTS.reconcileIntervalMs, 1000),
+      terminalTaskRetentionDays: envInteger(values, "REBASE_TERMINAL_TASK_RETENTION_DAYS", DEFAULTS.terminalTaskRetentionDays, 1, 3650),
+      bodyLimitBytes: envInteger(values, "REBASE_HTTP_BODY_LIMIT_BYTES", DEFAULTS.bodyLimitBytes, 1),
+      requestTimeoutMs: envInteger(values, "REBASE_HTTP_REQUEST_TIMEOUT_MS", DEFAULTS.requestTimeoutMs, 1),
+      debug: envBoolean(values, "REBASE_HTTP_DEBUG", DEFAULTS.debug),
     },
     surreal: {
-      endpoint: value(values, overrides, "SURREAL_ENDPOINT", "endpoint"),
-      username: value(values, overrides, "SURREAL_USERNAME", "username"),
-      password: value(values, overrides, "SURREAL_PASSWORD", "password"),
-      namespace: surrealPair.left,
-      database: surrealPair.right,
-      connectTimeoutMs: numberValue(
-        values,
-        overrides,
-        "SURREAL_CONNECT_TIMEOUT_MS",
-        "connectTimeoutMs",
-        DEFAULTS.connectTimeoutMs,
-      ),
+      endpoint: envString(values, "SURREAL_ENDPOINT"),
+      username: envString(values, "SURREAL_USERNAME"),
+      password: envString(values, "SURREAL_PASSWORD", { secret: true }),
+      namespace,
+      database,
+      connectTimeoutMs: envInteger(values, "SURREAL_CONNECT_TIMEOUT_MS", DEFAULTS.connectTimeoutMs, 1),
       defaultContext,
       contexts,
     },
-    runtime: { url: runtimePair.left, secret: runtimePair.right },
+    runtime: { url: runtimeUrl, secret: runtimeSecret },
     queue: {
-      driver: String(
-        value(values, overrides, "REBASE_QUEUE_DRIVER", "queueDriver") ||
-          DEFAULTS.queueDriver,
-      ),
-      prefix: String(
-        value(values, overrides, "REBASE_QUEUE_PREFIX", "queuePrefix") ||
-          DEFAULTS.queuePrefix,
-      ),
+      prefix: envString(values, "REBASE_QUEUE_PREFIX") || DEFAULTS.queuePrefix,
       redis: {
-        url: value(values, overrides, "REBASE_QUEUE_REDIS_URL", "redisUrl"),
-        connectTimeoutMs: numberValue(
-          values,
-          overrides,
-          "REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS",
-          "redisConnectTimeoutMs",
-          DEFAULTS.redisConnectTimeoutMs,
-        ),
+        url: envString(values, "REBASE_QUEUE_REDIS_URL"),
+        connectTimeoutMs: envInteger(values, "REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS", DEFAULTS.redisConnectTimeoutMs, 1),
       },
-      startupTimeoutMs: numberValue(
-        values,
-        overrides,
-        "REBASE_QUEUE_STARTUP_TIMEOUT_MS",
-        "queueStartupTimeoutMs",
-        DEFAULTS.queueStartupTimeoutMs,
-      ),
-      healthTimeoutMs: numberValue(
-        values,
-        overrides,
-        "REBASE_QUEUE_HEALTH_TIMEOUT_MS",
-        "queueHealthTimeoutMs",
-        DEFAULTS.queueHealthTimeoutMs,
-      ),
-      sqs: {
-        region: value(values, overrides, "AWS_REGION", "awsRegion"),
-        endpoint: value(values, overrides, "SQS_ENDPOINT", "sqsEndpoint"),
-        queueUrls: Object.fromEntries(
-          ["task", "schedule", "webhook"].map((lane) => [
-            lane,
-            value(
-              values,
-              overrides,
-              `REBASE_SQS_${lane.toUpperCase()}_QUEUE_URL`,
-              `sqs${lane}QueueUrl`,
-            ),
-          ]),
-        ),
-        deadLetterQueueUrls: Object.fromEntries(
-          ["task", "schedule", "webhook"].map((lane) => [
-            lane,
-            value(
-              values,
-              overrides,
-              `REBASE_SQS_DEAD_LETTER_${lane.toUpperCase()}_QUEUE_URL`,
-              `sqsDeadLetter${lane}QueueUrl`,
-            ),
-          ]),
-        ),
-      },
+      startupTimeoutMs: envInteger(values, "REBASE_QUEUE_STARTUP_TIMEOUT_MS", DEFAULTS.queueStartupTimeoutMs, 1),
+      healthTimeoutMs: envInteger(values, "REBASE_QUEUE_HEALTH_TIMEOUT_MS", DEFAULTS.queueHealthTimeoutMs, 1),
     },
-    storage: {
-      bucket: value(values, overrides, "REBASE_STORAGE_BUCKET", "storageBucket"),
-    },
-    platformEmail: {
-      resendApiKey: overrides.platformEmail?.resendApiKey ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_EMAIL_RESEND_API_KEY",
-        "platformEmailResendApiKey",
-      ),
-      from: overrides.platformEmail?.from ?? String(
-        value(values, overrides, "REBASE_PLATFORM_EMAIL_FROM", "platformEmailFrom")
-          || DEFAULTS.platformEmailFrom,
-      ),
-    },
+    storage: { bucket: envString(values, "REBASE_STORAGE_BUCKET") },
     authentication: {
-      challengeTtlMs: numberValue(
-        values,
-        authenticationOverrides,
-        "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS",
-        "challengeTtlMs",
-        DEFAULTS.authenticationChallengeTtlMs,
-      ),
+      payloadSecret: envString(values, "REBASE_AUTHENTICATION_PAYLOAD_SECRET", { secret: true }),
+      challengeTtlMs: envInteger(values, "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS", DEFAULTS.authenticationChallengeTtlMs, 60000, 86400000),
       rateLimits: {
-        windowMs: numberValue(
-          values,
-          authenticationOverrides,
-          "REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS",
-          "windowMs",
-          DEFAULTS.authenticationRateLimitWindowMs,
-        ),
-        ip: numberValue(
-          values,
-          authenticationOverrides,
-          "REBASE_AUTHENTICATION_RATE_LIMIT_IP",
-          "ip",
-          DEFAULTS.authenticationRateLimitIp,
-        ),
-        identifier: numberValue(
-          values,
-          authenticationOverrides,
-          "REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER",
-          "identifier",
-          DEFAULTS.authenticationRateLimitIdentifier,
-        ),
+        windowMs: envInteger(values, "REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS", DEFAULTS.authenticationRateLimitWindowMs, 1000),
+        ip: envInteger(values, "REBASE_AUTHENTICATION_RATE_LIMIT_IP", DEFAULTS.authenticationRateLimitIp, 1),
+        identifier: envInteger(values, "REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER", DEFAULTS.authenticationRateLimitIdentifier, 1),
       },
-    },
-    platformSms: {
-      accountSid: platformSmsOverrides.accountSid ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_SMS_TWILIO_ACCOUNT_SID",
-        "platformSmsTwilioAccountSid",
-      ),
-      authToken: platformSmsOverrides.authToken ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_SMS_TWILIO_AUTH_TOKEN",
-        "platformSmsTwilioAuthToken",
-      ),
-      apiKeySid: platformSmsOverrides.apiKeySid ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SID",
-        "platformSmsTwilioApiKeySid",
-      ),
-      apiKeySecret: platformSmsOverrides.apiKeySecret ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_SMS_TWILIO_API_KEY_SECRET",
-        "platformSmsTwilioApiKeySecret",
-      ),
-      from: platformSmsOverrides.from ?? value(
-        values,
-        overrides,
-        "REBASE_PLATFORM_SMS_TWILIO_FROM",
-        "platformSmsTwilioFrom",
-      ),
     },
     webhooks: {},
   };
+  return validateConfiguration(configuration);
 }
 
-function contextFromConfiguration(config) {
-  return config?.surreal?.defaultContext;
+function contextFromConfiguration(configuration) {
+  return configuration?.surreal?.defaultContext;
 }
 
-function assertConnectionConfiguration(config, { requireContext = true } = {}) {
-  const surreal = config?.surreal || {};
+function assertConfiguredContext(configuration, selectedContext) {
+  const config = validateConfiguration(configuration);
+  const selected = context(selectedContext, "Selected context");
+  if (!config.surreal.contexts.some((item) => contextKey(item) === contextKey(selected))) {
+    throw new Error(`Context ${selected.namespace}/${selected.database} is not configured in this process profile`);
+  }
+  return selected;
+}
+
+function assertConnectionConfiguration(configuration, { requireContext = true } = {}) {
+  const config = validateConfiguration(configuration);
+  const surreal = config.surreal;
   const missing = [];
   if (!surreal.endpoint) missing.push("SURREAL_ENDPOINT");
   if (!surreal.username) missing.push("SURREAL_USERNAME");
   if (!surreal.password) missing.push("SURREAL_PASSWORD");
-  if (requireContext && !surreal.defaultContext && !surreal.contexts?.length) {
+  if (requireContext && !surreal.defaultContext && !surreal.contexts.length) {
     missing.push("SURREAL_NAMESPACE and SURREAL_DATABASE (or REBASE_ALLOWED_CONTEXTS)");
   }
-  if (missing.length)
-    throw new Error(`Missing configuration: ${missing.join(", ")}`);
+  if (missing.length) throw new Error(`Missing configuration: ${missing.join(", ")}`);
   return config;
 }
 
 module.exports = {
   DEFAULTS,
+  QUEUE_HORIZON_MS,
+  assertConfiguredContext,
   assertConnectionConfiguration,
   contextFromConfiguration,
-  envFileArgument,
-  loadEnvironment,
   parseContexts,
-  parseEnvFile,
   resolveConfiguration,
+  validateConfiguration,
 };

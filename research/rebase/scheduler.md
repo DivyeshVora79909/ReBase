@@ -1,5 +1,9 @@
 # Schedules and Reconciliation
 
+This document describes the current gateway contract. The next design is in
+[the system redesign](../../designs/rebase-system/README.md); its proposed
+Node/one-shot runtime does not replace implemented behavior until its gates pass.
+
 Status: adopted scheduler policy
 
 This document owns time-based triggers, lost-wake recovery, context discovery,

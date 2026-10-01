@@ -1,0 +1,65 @@
+{
+  "packet": "H8 timed production pre-code feasibility",
+  "run_date": "2026-09-29",
+  "engine": "SurrealDB 3.2.0",
+  "result": "passed",
+  "commands": [
+    {
+      "command": "node --check dev-tools/accounting/h8-production-feasibility-probe.js",
+      "result": "passed"
+    },
+    {
+      "command": "npm run probe:accounting-h8-feasibility",
+      "duration_seconds": 7.35,
+      "result": "passed",
+      "output": "H8 feasibility passed: overlapping reservations, exact-end quantity/available, same-account self-funding rejection, cancellation as-of oracle"
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "result": "passed",
+      "output": "72 tables, 23 material files"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "model_proved": {
+    "root": "stock_account.z_history",
+    "measures": {
+      "quantity": "physical on-hand stock",
+      "available": "free stock after reservations"
+    },
+    "scheduled_run": "Reserve input quantity from available at planned_start. At end, apply one net source membership with quantity = output - input, available = output, and a separate gross_input measure. The input's available debit and reservation release cancel at end; output adds available stock.",
+    "cancellation": "Before or exactly at planned_start removes all effects. After start and before end releases the hold at cancelled_at without consuming physical stock or publishing output. Cancellation at or after end is rejected.",
+    "same_account": "An output at end cannot fund the run's earlier start reservation; an opened same-account case coalesces physical input and output at exact end.",
+    "availability_guard": "Overlapping reservations and an ordinary debit against held stock reject atomically, with unchanged source rows and roots."
+  },
+  "cases": [
+    "Two overlapping reservations exceeding opening stock reject in both record-ID orders.",
+    "Physical quantity remains unchanged during the run while available reflects the hold.",
+    "At exact end, physical input is consumed and the hold is released without an intermediate record-ID prefix.",
+    "Same-account input/output and no-opening-stock self-funding attempt.",
+    "Ordinary stock debit cannot spend reserved availability.",
+    "Cancellation before start, at start, after start, and at scheduled end, with as-of assertions and rollback checks."
+  ],
+  "limitations": [
+    "This is a disposable feasibility fixture, not H8 production integration or a migration.",
+    "The fixture extends the current compiled adapter and event dispatch only for its H8 source rows; its generated stock-root peer types contain only fixture nodes. Mixed H8 and existing stock movement node layouts remain unproved.",
+    "The debit case uses the fixture h8_stock_debit writer, not the production stock_out, stock_return, stock_transfer, purchase_receipt, assembly_input, or assembly_output paths.",
+    "Date shifts, downstream output-use capacity, full recipe child generation, concurrency, fan-out measurements, and broad regression probes remain open for H8 integration."
+  ],
+  "next": "Implement H8 in the production accounting profile. Add available deltas to every direct stock-history writer and validate available.instant_min >= 0 on the stock root. Keep physical minimum_quantity separate. Use one net end membership per causal source at an owner/timestamp unless a disposable probe proves a supported alternative. Then test date shifts, reservations and ordinary stock-outs, cancellation, output-use capacity, exact-time oracles, and regressions.",
+  "sha256": {
+    "build/all-in-accounting/schema.surql": "d551008ee331ee32684facced6856cf914d7456eb8f2f3bb605e7bbeeb5fbd1c",
+    "dev-tools/accounting/h8-production-feasibility-fixture.surql": "7bfe877e664f0976814582544cc9a43f06b2c5042692cc426d65cfd86bec94d5",
+    "dev-tools/accounting/h8-production-feasibility-probe.js": "08cd308b15716f6f1cadac4710da833bd6f9f922fddda3879862b0fc11fa4cac",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "package.json": "7b32a8585a06939e25af82dc9f3ce113741728651f41e8d811fe2436b2827bfd"
+  }
+}

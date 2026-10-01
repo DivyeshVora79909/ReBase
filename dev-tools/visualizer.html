@@ -118,7 +118,7 @@
         database: parameters.get("database"),
         user: parameters.get("user"),
         password: parameters.get("password"),
-        root: parameters.get("root") || "groups:root",
+        root: parameters.get("root") || "rebase_group:root",
       };
       const missingConfig = [
         "endpoint",
@@ -193,8 +193,8 @@
 
         try {
           const q = `
-                LET $groups = SELECT id, parents, name, 'groups' AS kind FROM groups;
-                LET $users = SELECT id, parents, name, 'user' AS kind FROM user LIMIT 100;
+                LET $groups = SELECT id, parents, name, 'rebase_group' AS kind FROM rebase_group;
+                LET $users = SELECT id, parents, name, 'rebase_user' AS kind FROM rebase_user LIMIT 100;
                 LET $rows = array::flatten([$groups, $users]);
                 LET $nodes = $rows.map(|$row| $row.id);
                 LET $edges = array::flatten(

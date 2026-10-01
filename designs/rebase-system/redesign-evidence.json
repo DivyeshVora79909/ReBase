@@ -1,0 +1,249 @@
+{
+  "at": "2026-09-25T11:33:41.916Z",
+  "node": "v22.23.2",
+  "surreal": "3.2.0 for linux on x86_64",
+  "redis": "Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=e53ff17674aa6190",
+  "bullmq": "6.2.0",
+  "functionCalls": {
+    "scope": "Read-only arithmetic and object folds; no trees, write amplification, concurrency, or provider calls.",
+    "comparisons": [
+      {
+        "name": "decimal_arithmetic",
+        "iterations": 500,
+        "samples": 9,
+        "inlineDatabaseMs": {
+          "min": 4.285326,
+          "median": 4.439116,
+          "max": 6.892966
+        },
+        "callDatabaseMs": {
+          "min": 8.658283,
+          "median": 8.951571,
+          "max": 13.674274
+        },
+        "pairedOverheadMicrosecondsPerCall": {
+          "min": 8.120721999999999,
+          "median": 8.95018,
+          "max": 14.462334
+        },
+        "raw": [
+          {
+            "inline": {
+              "databaseMs": 4.845833,
+              "wallMs": 75.60852399999999
+            },
+            "call": {
+              "databaseMs": 9.002091,
+              "wallMs": 74.27220299999999
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 8.914206,
+              "wallMs": 71.141523
+            },
+            "inline": {
+              "databaseMs": 4.439116,
+              "wallMs": 69.54413199999999
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 4.422794,
+              "wallMs": 64.27663700000016
+            },
+            "call": {
+              "databaseMs": 8.692836,
+              "wallMs": 69.2183480000001
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 12.649623,
+              "wallMs": 80.42295999999988
+            },
+            "inline": {
+              "databaseMs": 6.892966,
+              "wallMs": 97.91948700000012
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 4.638922,
+              "wallMs": 82.4313530000004
+            },
+            "call": {
+              "databaseMs": 8.699283,
+              "wallMs": 68.83067699999992
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 13.674274,
+              "wallMs": 86.6390080000001
+            },
+            "inline": {
+              "databaseMs": 6.443107,
+              "wallMs": 81.92539799999986
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 4.308878,
+              "wallMs": 72.06897200000003
+            },
+            "call": {
+              "databaseMs": 8.951571,
+              "wallMs": 68.9115569999999
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 8.658283,
+              "wallMs": 67.88440899999978
+            },
+            "inline": {
+              "databaseMs": 4.285326,
+              "wallMs": 61.648045999999795
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 4.388682,
+              "wallMs": 60.348169999999755
+            },
+            "call": {
+              "databaseMs": 9.061058,
+              "wallMs": 66.11705699999993
+            }
+          }
+        ]
+      },
+      {
+        "name": "ordered_summary_fold",
+        "iterations": 500,
+        "samples": 9,
+        "inlineDatabaseMs": {
+          "min": 18.70135,
+          "median": 19.927787,
+          "max": 24.881081
+        },
+        "callDatabaseMs": {
+          "min": 22.710508,
+          "median": 23.755023,
+          "max": 30.090355
+        },
+        "pairedOverheadMicrosecondsPerCall": {
+          "min": 3.4361839999999977,
+          "median": 7.351590000000002,
+          "max": 11.927728000000004
+        },
+        "raw": [
+          {
+            "inline": {
+              "databaseMs": 18.818644,
+              "wallMs": 72.76238899999998
+            },
+            "call": {
+              "databaseMs": 24.782508,
+              "wallMs": 83.77952400000004
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 24.013885,
+              "wallMs": 84.70168400000011
+            },
+            "inline": {
+              "databaseMs": 19.927787,
+              "wallMs": 75.98112600000013
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 19.501373,
+              "wallMs": 77.37015999999994
+            },
+            "call": {
+              "databaseMs": 23.177168,
+              "wallMs": 78.34308400000009
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 22.710508,
+              "wallMs": 77.19886799999995
+            },
+            "inline": {
+              "databaseMs": 19.665412,
+              "wallMs": 75.30550600000015
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 18.70135,
+              "wallMs": 74.88154200000008
+            },
+            "call": {
+              "databaseMs": 22.925251,
+              "wallMs": 79.65252999999984
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 23.146727,
+              "wallMs": 80.78231599999981
+            },
+            "inline": {
+              "databaseMs": 21.373982,
+              "wallMs": 80.33782700000029
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 24.881081,
+              "wallMs": 87.43543199999976
+            },
+            "call": {
+              "databaseMs": 30.090355,
+              "wallMs": 101.19335299999966
+            }
+          },
+          {
+            "call": {
+              "databaseMs": 23.755023,
+              "wallMs": 86.34876200000053
+            },
+            "inline": {
+              "databaseMs": 21.075526,
+              "wallMs": 76.29138400000011
+            }
+          },
+          {
+            "inline": {
+              "databaseMs": 23.773308,
+              "wallMs": 91.74544400000013
+            },
+            "call": {
+              "databaseMs": 25.4914,
+              "wallMs": 93.33895399999983
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "queueSemantics": {
+    "priorityOrder": [
+      "j-default",
+      "j-urgent",
+      "j-normal"
+    ],
+    "duplicateKeepsOriginal": true,
+    "missingRemovalSucceeds": true,
+    "activeRemovalRejected": true,
+    "delayMs": 400,
+    "observedLatenessMs": 16,
+    "scope": "One disposable Redis and BullMQ queue; transport behavior only, not runtime durability or throughput."
+  }
+}

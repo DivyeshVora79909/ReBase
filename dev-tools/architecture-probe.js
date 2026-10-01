@@ -569,12 +569,12 @@ async function principalCompilerProbe(db, namespace, database) {
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-principals-"));
   try {
     fs.writeFileSync(path.join(projectDir, "schema.surql"), `
-      DEFINE TABLE employee SCHEMAFULL COMMENT '@rebase-principal user';
-      DEFINE TABLE department SCHEMAFULL COMMENT '@rebase-principal group';
+      DEFINE TABLE rebase_user SCHEMAFULL;
+      DEFINE TABLE rebase_group SCHEMAFULL;
       DEFINE TABLE resource SCHEMAFULL;
       DEFINE FIELD label ON resource TYPE string;
-      DEFINE TABLE note SCHEMAFULL COMMENT '@rebase-audit';
-      DEFINE FIELD body ON note TYPE string;
+      DEFINE TABLE note SCHEMAFULL;
+      DEFINE FIELD body ON note TYPE string COMMENT '@rebase-audit';
       DEFINE FIELD target ON note TYPE option<record<resource>> DEFAULT NONE
         ASSERT $value = NONE OR $value != resource:blocked
         REFERENCE ON DELETE REJECT;
@@ -591,15 +591,15 @@ async function principalCompilerProbe(db, namespace, database) {
     const generated = generateBundle(materials, {
       context: { namespace, database },
     });
-    assert.deepEqual(generated.principals, { user: "employee", group: "department" });
+    assert.deepEqual(generated.principals, { user: "rebase_user", group: "rebase_group" });
     assert.deepEqual(generated.contracts.principals, {
-      user: "employee",
-      group: "department",
-      root: "department:root",
+      user: "rebase_user",
+      group: "rebase_group",
+      root: "rebase_group:root",
     });
-    assert.match(generated.bundle, /record<employee \| department>/);
-    assert.match(generated.bundle, /CREATE department:root/);
-    assert.match(generated.bundle, /SELECT\s+(?:VALUE\s+)?id\s+FROM\s+employee/i);
+    assert.match(generated.bundle, /record<rebase_user \| rebase_group>/);
+    assert.match(generated.bundle, /UPSERT rebase_group:root/);
+    assert.match(generated.bundle, /SELECT\s+(?:VALUE\s+)?id\s+FROM\s+rebase_user/i);
     assert.doesNotMatch(generated.bundle, /record<user \| groups>/);
     assert.doesNotMatch(generated.bundle, /groups:root/);
     assert.match(
@@ -612,12 +612,12 @@ async function principalCompilerProbe(db, namespace, database) {
     );
     assert.doesNotMatch(generated.bundle, /ALTER FIELD nested_target ON TABLE note/);
     await db.query(generated.bundle);
-    const root = rows(await db.query("SELECT name FROM department:root;"))[0];
+    const root = rows(await db.query("SELECT name FROM rebase_group:root;"))[0];
     assert.equal(root.name, "System Admins");
   } finally {
     fs.rmSync(projectDir, { recursive: true, force: true });
   }
-  console.log("architecture: custom principal compiler binding passed");
+  console.log("architecture: fixed principal compiler contract passed");
 }
 
 async function main() {

@@ -1,0 +1,472 @@
+{
+  "formatVersion": 1,
+  "recordedAt": "2026-09-26T14:09:03.254641+00:00",
+  "scope": "Targeted core contract audit; not full verify or production certification",
+  "head": "a6626c0cb4aa134ed0bd27346aa7e2ee660260a8",
+  "branch": "main",
+  "initialDirtyEntryCountAfterCleanup": 135,
+  "coreFingerprint": "69d0afa558651f7451d6d2c74f3a192077dc937d2e41d1e1d3a552ba6c6cceab",
+  "coreSourceUnchangedDuringAudit": true,
+  "fingerprintMethod": "SHA-256 of sorted relative paths (UTF-8), NUL, raw file bytes, NUL; .js/.surql under src/framework/gateway/config/dev-tools, plus package.json and package-lock.json",
+  "coreFiles": {
+    "config/environment.js": "04e7598c1cd1985210bfac6826434785e6569dee68c553f76a7bf207d4c9c7a5",
+    "dev-tools/accounting/core-probe.js": "69b87aacc7d604edf8dfcf5811dde3352cb05d47faa30a91834785e8e74f9736",
+    "dev-tools/accounts-probe.js": "00c393ed6902428ad5b70433afd02d3c37ccef481b389bbf7eaee6655d3b11f8",
+    "dev-tools/adapter-probe.js": "0a5df3effa6018ced0b3b11d43892e4ea1899c31dda5fbff1990d80df24cb08d",
+    "dev-tools/architecture-probe.js": "fad1d96539c8dfc4c8b113ceef0a9308fa1f30aaf4634064da9d700ca9d074df",
+    "dev-tools/authentication-probe.js": "c514c6ee9452206dd28db237519a533ae65411025bd2f703bedd36dc34660b38",
+    "dev-tools/authorization-performance.js": "ebcd621045079da035f2b58f5e74cd03ebce2401ea99669c781694f2f0062692",
+    "dev-tools/compiler-probe.js": "bd10ef0a8d9166a563d5ca594f913066441a4f2b3d5af8337c0bf65697c5040a",
+    "dev-tools/compiler/cli.js": "57bbbddcc75d8d3d5cc867e199c7b5ccf4f79db22c80564d39db9c50f66b2be5",
+    "dev-tools/compiler/index.js": "7352019a1fd918c7d9b78a5826888cff6e8fa560b19c6cdce104f4513d0d68b1",
+    "dev-tools/compiler/materials.js": "fa3ab295a3cae17e38e65e206a41b980e00f62f46f08ec3048e23550a1f401ef",
+    "dev-tools/compiler/pipeline.js": "912635738df1bd737fe03ad07384378955187dd28cabf01eafb5b76c606fbac4",
+    "dev-tools/compiler/principals.js": "666d6df7a423249f13518c65947d5892b5ff0867fce8a133b6e918c422ac9cc0",
+    "dev-tools/compiler/table-handlers.js": "9bf65ccb84036057fcc1101b4668bf8ff770cc2f7e4c9983ab4b0e74e69729f3",
+    "dev-tools/environment-probe.js": "54128ca83ba940fef9e5a5808829d8abcb60b4c795e4639ea3b83909614392aa",
+    "dev-tools/lifecycle-migration.js": "c17b25ee855c208c04669eef18fc2690553495c2497f0f9c48e84aa1fc599f89",
+    "dev-tools/populate.js": "0705d1ef9d0688f6de9d2544dbd8feb922d97f4ded9569c8be48acf60f87286e",
+    "dev-tools/probe.js": "1f25dc5a6b42ef995fc50480202c06aa2fe84c78ebf207c04dcd60e3a4753239",
+    "dev-tools/queue-probe.js": "f194cd77c9c16aa3479bd0d07e6d9c2e84b330b87bad2235b654c00650fc8bb1",
+    "dev-tools/razorpay-refund-probe.js": "1955e34049ade2387162ed419acb344775890fe900d0ef83c2ee00105f76585a",
+    "dev-tools/reference-permission-performance.js": "56597249da297188e4b8bdceafbe8e967a02801f09a07dea72898357763a9347",
+    "dev-tools/research/redesign-probe.js": "8ea62acd2bd42668829fef454ce1ddbc75581b38248f3bd6a16dc514fbcc8d10",
+    "dev-tools/runtime-probe-worker.js": "ddbfc3278a017e53267ba48c3855f7dd34802641f1d00f8bb758495170184d16",
+    "dev-tools/runtime-probe.js": "f59d1e6109c1d82a284a6d4f435f05678874a499ddd9a5b3c052edc5a2ec565f",
+    "dev-tools/suite-probe.js": "01659c1f4f1561102200d34c0b367304bd038594ad98a50fc588f3c25fabe2a0",
+    "dev-tools/synthetic-write-amplification-probe.js": "393f54ea2649972a14219123a26ad9cfe85be9a287f0a0b18d8002fd27391eee",
+    "dev-tools/synthetic-write-amplification/schema.surql": "41d274d45c0e97315424d7d0819c79699e4f264cdf233c96c82b17e1ed607117",
+    "dev-tools/temporal-tree/accounts-oracle.js": "c58aa168f632cdd98c7f5be5b8bed282e7b30c536278327667a626af169804cf",
+    "dev-tools/temporal-tree/boundary-probe.js": "27405b24aefdb8befd402b5f67d90dd139f33a4fb53427c444e3b8b281a593d5",
+    "dev-tools/temporal-tree/causal-outputs-fixture.surql": "0057a0eb5ca1b3480f3bf12fd1575fefb379920c05a44a3524d08b123982d6d8",
+    "dev-tools/temporal-tree/causal-outputs-probe.js": "b32712f3ae6a10ed3f61459bd2b29cd1d486c3b3e7d9ed6a4f9f8fe8d610f5e7",
+    "dev-tools/temporal-tree/compiler-fixture.surql": "9fbed6eba9ea285dcd7c6b5425e90e8b6baedfec19748ade82f0fe914fe00950",
+    "dev-tools/temporal-tree/contract-probe.js": "34d6d07193dbdf76e76ca4be3bf1e86a240bcba6d048d637cea05f11883dcaf2",
+    "dev-tools/temporal-tree/derived-order-fixture.surql": "e125ec28b3e6cb2f69db265f67f3760b1ccb4518b556567db27c8c1473e545fd",
+    "dev-tools/temporal-tree/derived-order-probe.js": "f4454f7df0656e9c3d6794a51d733695fba44a8c0f3f477e581e06205c89cea5",
+    "dev-tools/temporal-tree/harness.js": "17a3b3c528de6d1f94af9f92cea10914bc7d20a58feeeba4e1144df18c06502d",
+    "dev-tools/temporal-tree/oracle.js": "fb2d47a74397300b3826fa3ede1a6b30f66fdad5149f465abbaffe9e633be7cf",
+    "dev-tools/temporal-tree/ordinal-fixture.surql": "b1367a188c6f50507412b54c3062d9178a6816513d50b75ff5f7cbcda342f56f",
+    "dev-tools/temporal-tree/ordinal-probe.js": "fc207f57f1111ec5ba964af1f86000f9d7f88949fa66ef9d4d94b686e9310626",
+    "dev-tools/temporal-tree/positions-fixture.surql": "9952d58453288f71a9bb7bafe0ddd8b43d0c75bfd0db2f3bfdd8628aadd94cb8",
+    "dev-tools/temporal-tree/positions-probe.js": "7c1d6c31db9c070226cfaa3473c9ad7b28803fdeb0371dd30cc5411a0afa128d",
+    "dev-tools/temporal-tree/probe.js": "bf05d2e7f62b0fb090d0b8c3c84517b881d52baa17404888a3763e8b179d5926",
+    "dev-tools/temporal-tree/reactivity-probe.js": "cee71d868bb17341c026ccb34aa1af5d161e2a30986801d1be3edbb44497a2eb",
+    "dev-tools/temporal-tree/required-outputs-fixture.surql": "3d316f0d1dcf86132ab3aad3e253a2566ab0ceb08598500bd6afcd16fe9e50ee",
+    "dev-tools/temporal-tree/required-outputs-probe.js": "c7d64c8286f89fbe1d522fb218ba8abb83a5e46b154e02ddbdcabff7ffdf5439",
+    "dev-tools/temporal-tree/typed-fixture.surql": "b888f4080c95317cedc71fa45656647f0a79eec85a7cff237a2531f42f4c26a7",
+    "dev-tools/temporal-tree/typed-probe.js": "ef84e3e9b0f0bea56d89aa1807041a624eb8d5ff194fa66faea409a91c4f11fc",
+    "dev-tools/webhook-inbox-probe.js": "99740b3665bfb4339237b25ebc9904cd570cbe882ee8f5231d1704fdb75519cc",
+    "dev-tools/workbench.js": "902cc7106676cdae6be319d640872fc5c3fd0361dbc25b4aee3f1f239ccfb334",
+    "dev-tools/write-amplification-probe.js": "a9b9034057ea47f106b4add48da873b05058bb8f64d3f0b7bb12d30107794c83",
+    "framework/access.surql": "3bed89ec524c3c14ed3e6940120618fc3053580f54ad236f7fb27eb7e0356e40",
+    "framework/audit.surql": "8e304b65f8ec65e5fcb3f0040f85a1ba3e754fba795676953e7cb84583ddb374",
+    "framework/auth.surql": "03c8f5f94e466cc67abbffaac9e8ee8c7a05860e588c926c43cbe47f6a5dbf1b",
+    "framework/authentication.surql": "95d7bb76ac0e1a71159f4eff7994adb2184dff79828c79810a43869d2b6624b4",
+    "framework/reconciliation.surql": "c2a8699547d2a6dc064b18e1ffbc159593612b0402f6c0e4e0845e05403174df",
+    "framework/webhooks.surql": "0d9bf0178b6b5815fef19982dbefb8232596e24da17036103770458cce00344f",
+    "gateway/app.js": "7a84e605b23b36b1412d15fb590b9c5a2222ab25d31d847ef7578cfd32117ee1",
+    "gateway/authentication-payload.js": "e24d411d659b9bf634e9c5d749cd13f7470fe0545637dbbdfc39b445c6ab17f0",
+    "gateway/authentication.js": "9fc10fe58530b94566c298b974a46d9800675014c9667054c86043938262748b",
+    "gateway/connection.js": "7e263473c6d63698ade987c67ea67aa0cc57da669eb367242c3474b8906abaab",
+    "gateway/directory.js": "a6a230164d64e28ab9db5c1e08621f98e6bc3be2a7ec29913f11a7e365c8f2ed",
+    "gateway/errors.js": "2e72363bb1e9677385cabf3a5bc8cdf8fe852b2894523fa3d73b683f682d4fb9",
+    "gateway/handlers.js": "6795d5ad50d13c541be645dba001ae99f74572e1a90d36e03d0daa8e78109428",
+    "gateway/oauth.js": "88148635abb7390263fb98f06559beafaba75446c64b2f4c299e21429c8a46a8",
+    "gateway/operations/authentication-delivery.js": "ba5e43d6902a81cfe89dde5021c3d47d27ada6e3ca1e3efe3a9c4726ada932f3",
+    "gateway/operations/provider-receipt.js": "0f2f07553667eb240565dcf587aa12b2affac8fa159ad6ce93eeeb9b0c0af2c5",
+    "gateway/providers/brevo-email.adapter.js": "6ac020500b08922a643fd593a892b286fb9e2456047633395df7160f6590f4a1",
+    "gateway/providers/http.js": "c69ad10f7ce87014c60836ccdaf5a11c39d54a83b31df823734180ad36c9942d",
+    "gateway/providers/index.js": "cfe84c61bf7f0585c4c06268235677871b8f7a72e25d5b9d0508579a837ebde3",
+    "gateway/providers/razorpay-order.adapter.js": "19a33df65381c8f4bd534e0ecf008b9aac9a6400647fbf45146d62f6bf917ee0",
+    "gateway/providers/razorpay-webhook.adapter.js": "05ca3e47832dc3a9e694432db5d0da18b9897996c39f490411f53f578ff94c75",
+    "gateway/providers/s3-storage.adapter.js": "a38fd49cce31652452424704e03a25ec3f083e7cd183105c929afbe8cbfad2d9",
+    "gateway/providers/signatures.js": "bd2d16739738d1542ad81c065a7214e7b7e8fee73fcf9c6888ea8391cf27a437",
+    "gateway/providers/twilio-sms.adapter.js": "c09706b81dca80c505a3028287e1dd3ff49d5549469cc256b6b7e4fcd666caa6",
+    "gateway/queues/bullmq.js": "a744b956fdf33a2997ab5ba100ab8254ff515dae386d14720fd088a0ae57e2c9",
+    "gateway/queues/index.js": "67b0043c9433150aadac4cccf80b176761def491ea9104d706f51ee85df65156",
+    "gateway/queues/port.js": "09563e7de2c96d8ddc7fb6b95625a50eb3699a602e93e9c37e0083ea3b7cbc67",
+    "gateway/rate-limit.js": "aeed983f27cf8587ac21f8fcf591595ba30a017d8bdd97f3c317d03aeed8312d",
+    "gateway/reconciler.js": "71a239974c62742b907ac62aed015e14e47268030eda1e5c61ec30a90a1ae1d8",
+    "gateway/runtime.js": "55225c7264159c6c56bf4057063dc9b3f87760988591297bd541b34559df6342",
+    "gateway/server.js": "806e0d93f5f36b6555443741a2ae1f9eab0612a7c6a98057926d1359c27fbc60",
+    "gateway/store.js": "0c0704710be22ed3f78c3a4668a698e81249d01240f814da7980ac3c7f6ae0b6",
+    "gateway/utils.js": "a12c7e4640a52d4f409b0a34c3d6b471924cdb9f788b0e03f1eaf0a778520690",
+    "gateway/webhook-routes.js": "3cb1f573011feb9f476a4082cc7b2ad402c1d821ed3dcf9ee68ed4d6e4eb27b7",
+    "gateway/webhooks.js": "ae8d4346e72e4335e9d90de84ad6138214987197c15857113bc0ed7af04fc34d",
+    "package-lock.json": "4b3cd5e807d00ee320beaa83cf156fa9ad023dbcc3996e0ce255bf526d6a6bf1",
+    "package.json": "cd3c369ba3226c650e9f9007f50b341105e626ac50d4819069c3ca425b2f195e",
+    "src/analyze.js": "c8c5dd8257dc5efe312f68d07aa32f0839805c7ffd953286cd1aa4a50e1b63ee",
+    "src/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "src/fields.js": "4248dcbe0f3f43e31944ae88a371f20fe1091aa3e4c78155ab5f2278dccb9ffc",
+    "src/generators/access.js": "7e2eaa5341cbd8ed844696c853bafdf2e9d44bacccc6ddff1dc97104906f1bf5",
+    "src/generators/audit.js": "2167ed9a35c53d84bfcebbfa258a0833f1fce20a7b89c4d5735b10a78500ad70",
+    "src/generators/effects.js": "b79ac8bd1f29ab7d3acda91534abe21d8ee428672e514eb06213221824065c29",
+    "src/generators/indexes.js": "3ae9cbae42af2d232ecfbd9424d705774d95890999aa741e658214eeddc69c64",
+    "src/generators/reactivity.js": "0be0473c36fcfc7dd5b2132556f4041d47974824d4ba8440299dce25800fa17a",
+    "src/generators/references.js": "df902536e2295ea02be01e0721bdadb2f3453944706640e29b74854d36e5c65e",
+    "src/generators/security.js": "7ec9a4e1e65abeaf0401632002ee5c640a473e0fef2a425437410ca3dfb3e053",
+    "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "src/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "src/operation-adapters.js": "82a20796b7ae50e00fec423bd86be06d72e6b51c8e5319f978a8fad31ba283b5",
+    "src/readers.js": "f32737dc5f4162c1af63b8ff911572af58396f57e40628a8b0f6968b30a61c0e",
+    "src/schema.js": "5b17050ae5c767921048178e264a9c28b5f5d67882cbf6654e6ebfc7519de942",
+    "src/security-policy.js": "3cfa9aa26d7c3c1db693cf4552fa34e60ec5738c0d4d9aec36d70bc65efd17e9",
+    "src/surql.js": "6004ce3d170998a78038ac2faccea58f17b5eb75722f768a0d71d0ae2b7fe9de",
+    "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "src/tree-contract.js": "9b66357f0361af045638c7f7ae2f8bb97efecebcc018d498fc219c0dbc9cb3dd"
+  },
+  "fixtureFiles": {
+    "designs/all-in-one/README.md": "d5d00640103025f2a9b4ba31fded5d5438c5e9b54ad231b19cdb8b27deb1684b",
+    "designs/all-in-one/accounts/billing.surql": "8ea3ff37d8ad48c21fb5e20067d60ced33c5779640054bd9e362663d49e0f155",
+    "designs/all-in-one/accounts/logistics.surql": "282079b3e1e7b85a8998d80620d8fbf221499cc7ba7c1e361d55e5be954c3686",
+    "designs/all-in-one/accounts/money.surql": "f5070ea3496167fb5265e7a6a27b3737d29258937ef4afb876d00c30e8ebe3cc",
+    "designs/all-in-one/accounts/schema.surql": "c6744367bff19827167afe68890b5e82351b5407714e830ba01abe176d6a4141",
+    "designs/all-in-one/core/schema.surql": "a76999195b2b488412101201f287019146766992877c19845b93be76db86d171",
+    "designs/all-in-one/crm/schema.surql": "dafc7c1d0e10ea0de0f1ffb094dd8ac947f402ecd4f24eb49ca49fe70e41a4da",
+    "designs/all-in-one/hrm/schema.surql": "37635f10de3fd8c571f6812f18d1ff6dc4a3c8fb5fb01ff8f820ee9f131e5f00",
+    "designs/test/data/email_brevo_config.schema.json": "4b446905bdd93ee267c195903354c4977c71cc7913109b38ba17f431a465fdd6",
+    "designs/test/data/file_storage_config.schema.json": "d8c73918f599b23b33a6cde10b8dab6e5de6207d0dd6d368972d797d95120099",
+    "designs/test/data/razorpay_config.schema.json": "b699df2186bc78e6ec472b7074970b6ee0e938fec15700d149c9eed06aa4c94d",
+    "designs/test/data/razorpay_order.schema.json": "207d58dbeeea0725a0ea56ec2e6d5f81fc9a6f7731d1e0c8ebaa1d053fc90bcc",
+    "designs/test/data/rebase_group.schema.json": "443bad26878e83539aa9c2ea851add38ce61455b2c25a2beae1be6c0a0c61f3d",
+    "designs/test/data/rebase_user.schema.json": "bab96b4724339b80c4cd2fef1f7af02222063169c4e96357f8443c6b076ae835",
+    "designs/test/data/send_brevo_email.schema.json": "107b77f6399facc6ccda8a65427e219c68b7eeae3e90a597716a5217240320d5",
+    "designs/test/data/test_attachment.schema.json": "c99a17cff8906c06119fc8178308f3c07e7bad13883ef71784c782cf9f0a354e",
+    "designs/test/data/test_multiref.schema.json": "f607b98b78e21c63db323dbe58953882fe2596a07555f3dacb905a953be546d8",
+    "designs/test/data/test_primitive.schema.json": "edca6dfb0f1d79b2172f912cabb3a112bdd7440fe587b666ba88bc591f9db771",
+    "designs/test/data/test_relation.schema.json": "18395a9ada3f025de2c6dd8a0656768dbbfd7124effbc42cc0e7829d2a6f6bda",
+    "designs/test/data/test_tree.schema.json": "207025fedffa8d8f9d78cca43fe235377d3040ecfb120be8ef63de37e422441d",
+    "designs/test/schema.surql": "93ca47f44f434e57aa2d561f096f9cbeb47817a0c3af71780ecd98c3d5fb8fef",
+    "designs/test/seed.surql": "61d47de510bdcee003e640c4f7041dcf0ba9519f80bbe03e2725421fd8560b24",
+    "designs/test/table-handlers/razorpay_order.js": "c26e71d28ea564ede68080d3ec125bc3f6e67f182577d2c5bb5a4925d29dd1c8",
+    "designs/test/table-handlers/send_brevo_email.js": "a74d9a5faedd055fd93cd3f9bd7e0ccc20a3f93decdd4291dd43628e973aac34",
+    "designs/test/table-handlers/test_attachment.js": "39449c06d32ec560326814525bf80f98f9f47a2f56ff20e4a055b691c6600a17",
+    "designs/test/table-handlers/test_attachment_cleanup.js": "f4344f69f0e6a2afddd67d3ac1b7d2f0bc2874b4098dbe08a129d3280fd58e0c",
+    "designs/test/views.surql": "6bcea6de96bb14c86e3a95a31d8b08c2253d98ef55fb1040e22afc6845045312",
+    "designs/test/webhook-handlers/razorpay.js": "4687f541c06c7fb33349254e66d9aef58154cc890d491e01347c24d87beffd8e"
+  },
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 linux x86_64",
+    "redis": "7.0.15",
+    "bullmq": "6.2.0"
+  },
+  "execution": {
+    "personalEnvLoaded": false,
+    "realProviderCalls": false,
+    "someChecksOverlapped": true,
+    "fullVerifyRun": false
+  },
+  "generatedArtifacts": {
+    "testSchemaSha256": "a32bf04ab39f7c35f173c67f9a2b8b22cd99522988f522b4bccbf3d98beb7550",
+    "allInOneSchemaSha256": "de650a1d524334f4e89480185be7d60c0a327b077fda0ac79b7960008ccbdb82",
+    "refreshedAllInOneMatchesNativeValidatedTemporarySchema": true
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "status": "source-derived",
+      "description": "30-minute post-scan interval exceeds five-minute admission horizon; pendingPage separately hardcodes 5m"
+    },
+    {
+      "id": "F2",
+      "status": "reproduced",
+      "description": "Real expired-lock interleaving produced three live hints at a limit of two"
+    },
+    {
+      "id": "F3",
+      "status": "source-derived",
+      "description": "Dead-letter jobs remain waiting with no pruner/consumer; removeOnComplete does not bound that state"
+    },
+    {
+      "id": "F4",
+      "status": "requirement-gap",
+      "description": "Two private delivery credential tables exist without root-group ownership or reusable record-client use grants"
+    },
+    {
+      "id": "F5",
+      "status": "user-correction-recorded",
+      "description": "Mandatory domain book/organization was already in the Astra marker; domain correction deferred"
+    },
+    {
+      "id": "F6",
+      "status": "documentation-and-artifacts-corrected",
+      "description": "Entry documents updated; all-in-one output refreshed after missing shared webhook receipt/lifecycle definitions"
+    }
+  ],
+  "checks": [
+    {
+      "label": "compiler",
+      "command": [
+        "node",
+        "dev-tools/compiler-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:49:01.179694+00:00",
+      "seconds": 1.219,
+      "exitCode": 0,
+      "output": "ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\ncompiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "check-test",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "startedAt": "2026-09-26T13:49:01.179865+00:00",
+      "seconds": 0.751,
+      "exitCode": 0,
+      "output": "npm notice run rebase-surreal-compiler@0.2.0 check\nnpm notice run node dev-tools/compiler/cli.js --check\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\nReBase compiled 26 tables and 8 views.\nMaterial files: 9\nTable handlers: 6\nWebhook handlers: 1\nOutput: build/test\nSchema: build/test/schema.surql\nOne-shot upgrade batches: build/test/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: build/test/migrate-one-shot-finalize.surql\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "configuration",
+      "command": [
+        "node",
+        "dev-tools/environment-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:49:01.191345+00:00",
+      "seconds": 0.886,
+      "exitCode": 0,
+      "output": "environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "auth-unit",
+      "command": [
+        "node",
+        "dev-tools/authentication-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:49:01.264042+00:00",
+      "seconds": 0.334,
+      "exitCode": 0,
+      "output": "authentication: normalization, context isolation, generic responses, encrypted atomic queueing, failure mapping, and OAuth allowlist passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "runtime",
+      "command": [
+        "node",
+        "dev-tools/runtime-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:49:14.592548+00:00",
+      "seconds": 55.785,
+      "exitCode": 0,
+      "output": "runtime: one-shot legacy backfill processes bounded repeat-safe batches, preserves next execution time, quarantines active leases, and finalizes after three passes\nruntime: one-shot legacy backfill processes bounded repeat-safe batches across a file-backed database restart, preserves next execution time, quarantines active leases, and finalizes after three passes\nruntime: operation tasks, bounded terminal retention, durable attachment cleanup, worker and gateway process recovery, cancellation/reconciliation, one-shot timing, cross-client admission, durable keyset recovery, Redis restart, revision fencing, authentication, effects, webhooks, readiness, and context races passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "typed-tree",
+      "command": [
+        "node",
+        "dev-tools/temporal-tree/typed-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:49:14.637492+00:00",
+      "seconds": 87.084,
+      "exitCode": 0,
+      "output": "PASS explicit tree contracts and 30 invalid declaration diagnostics\nCompiled typed trees: SurrealDB 3.2.0 for linux on x86_64, Node v22.23.2, surrealkv\nPASS compiled dual ordering, nanosecond ties, safe int extremes, absence, rekeys, independent owners, scale versions and rollback\nPASS malformed inputs before int coercion, public read bounds, exact structural pairs and pre-coalescing validation\nPASS 56 deterministic mixed-order mutations reconstructed from authoritative source fields (seed 250925)\nPASS competing dual-tree writes: one commit, five complete rollbacks (1 conflict retries)\nPASS root/slot ACL, conditional fields, deliberate aggregate publication, forged writes and both select policies\nPASS 113 mutation checkpoints, 1308 ordered reads, 101 rejection snapshots; populated reapplication and empty-tree cleanup\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "architecture",
+      "command": [
+        "node",
+        "dev-tools/architecture-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:50:10.845633+00:00",
+      "seconds": 1.837,
+      "exitCode": 0,
+      "output": "architecture: UUIDv7 record ID behavior passed\narchitecture: synchronous snapshot and rollback boundary passed\narchitecture: reference authorization and event permission boundary passed\narchitecture: fixed principal compiler contract passed\narchitecture: PASS\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "positions",
+      "command": [
+        "node",
+        "dev-tools/temporal-tree/positions-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:50:10.857253+00:00",
+      "seconds": 204.408,
+      "exitCode": 0,
+      "output": "Compiled multi-position trees: SurrealDB 3.2.0 for linux on x86_64, Node v22.23.2, surrealkv\nPASS distinct datetime/int positions, schema-order identities, merge/split, absence, net zero, nanosecond ties, rekeys and owner moves\nPASS post-maintenance source/owner guards, incompatible coincident legs, delete rollback and nonempty-owner protection\nPASS 24 insertion permutations and linked-slot deletion paths: left-on-deleted, next-on-deleted, parent-on-deleted, prev-on-deleted, right-on-deleted, root-on-deleted, successor-direct-deleted, successor-indirect-deleted, successor-indirect-live\nPASS root/source composition and native owner-reference fencing\nPASS 96 deterministic multi-position mutations, repeated root-source deletion and populated reapplication (seed 260925)\nPASS six competing eight-slot writes: one commit, five complete rollbacks (5 conflict retries)\nPASS 221 mutation checkpoints, 1084 ordered reads, 12 rejection snapshots; private frames, record-user deletion and complete cleanup\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "core-fixtures",
+      "command": [
+        "node",
+        "-e",
+        "(async()=>{await require('./dev-tools/temporal-tree/boundary-probe').main();await require('./dev-tools/temporal-tree/derived-order-probe').main();await require('./dev-tools/temporal-tree/required-outputs-probe').main();await require('./dev-tools/temporal-tree/causal-outputs-probe').main();})().catch(e=>{console.error(e);process.exitCode=1;});"
+      ],
+      "startedAt": "2026-09-26T13:50:58.167517+00:00",
+      "seconds": 47.585,
+      "exitCode": 0,
+      "output": "PASS complete-key algebra: 4665 timestamp/delta sequences, 57909 binary folds, identity and direct reconstructions\nPASS missing-measure boundary algebra: 777 sequences, 3477 binary folds and identities\nPASS compiled adjacent [start,end) intervals, tie-order independence, complete-timestamp range, and rollback\nPASS topological CREATE shadows, opaque dependency refresh, local updates, native ASSERT rollback, reordered declarations and populated reapplication\nPASS required-output recipes compile without temporal tree roots\nPASS paired required outputs settle together despite a transient strict-prefix breach\nPASS final guard failure restores the source and complete required-output set\nPASS record-user create, update and delete cannot alter managed outputs\nPASS source edits update stable managed values and remove obsolete roles without duplicates\nPASS source deletion removes outputs, restores owner histories and leaves no managed rows\nPASS two input roots publish before one basis refresh and the diamond joins both branches\nPASS final downstream floor failure restores the complete input and output graph\nPASS future date and amount edits rekey every downstream branch and final output\nPASS a required output cannot feed a root consumed by its own derived basis\nPASS deleting basis and source rows clears the causal graph and every owned membership\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "security",
+      "command": [
+        "node",
+        "dev-tools/probe.js",
+        "security"
+      ],
+      "startedAt": "2026-09-26T13:55:46.955130+00:00",
+      "seconds": 3.456,
+      "exitCode": 0,
+      "output": "security: authentication, direct readers, group intersection, revocation, cycles, and synchronous field audit passed\nsecurity: owner select policy keeps the direct reader index protected and unchanged\nprobe: PASS\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "temporal-quick",
+      "command": [
+        "node",
+        "dev-tools/temporal-tree/probe.js",
+        "--quick"
+      ],
+      "startedAt": "2026-09-26T13:55:46.960065+00:00",
+      "seconds": 42.305,
+      "exitCode": 0,
+      "output": "PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable causal slots\nPASS compiled multi-tree chronology, range/rank/percentile oracle, inherited references, capped-prefix invalidation, final guards and timestamps\nPASS 36 randomized compiled mutations against independent source oracle\nPASS repeated root deletion, empty trees and singleton-owner lifecycle without reverse references\nPASS record-auth queries, private mutators, forged metadata/shadows, authenticated live-rule creation\nPASS concurrent owner fencing (25 conflict retries)\nPASS ascending AVL bound, nanosecond ordering, stable ties/date edits and populated schema reapplication\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "check-all-in-one",
+      "command": [
+        "npm",
+        "run",
+        "check:all-in-one"
+      ],
+      "startedAt": "2026-09-26T13:55:47.040434+00:00",
+      "seconds": 0.938,
+      "exitCode": 1,
+      "output": "npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one\nnpm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\nReBase compilation failed: Generated output is stale: /home/divyeshvora/javascript/node/projects/ReBase/build/all-in-one/schema.surql\n",
+      "outcome": "stale-generated-artifact",
+      "resolvedBy": "refresh-suite-artifacts and check-suite-refreshed"
+    },
+    {
+      "label": "admission-lock-expiry",
+      "command": [
+        "node",
+        "/tmp/rebase-core-audit-20260926/admission-lock-expiry.cjs"
+      ],
+      "startedAt": "2026-09-26T13:56:51.273794+00:00",
+      "seconds": 32.066,
+      "exitCode": 0,
+      "output": "{\"stage\":\"paused-after-check\",\"lockTtlMs\":29998}\n{\"finding\":\"live-hint-limit-exceeded-after-real-lock-expiry\",\"maxLiveHints\":2,\"liveHints\":3,\"staleProducer\":{\"jobId\":\"w-RDQsLWH6bjP80UWNkMBK8xQGk1-mzKgQy7mXd3Bgar8\",\"queued\":true,\"duplicate\":false}}\nREPRODUCED: producer resumed after its lease expired and admitted a third live hint above the configured limit of two.\n",
+      "outcome": "defect-reproduced",
+      "reproduceCommand": [
+        "node",
+        "designs/rebase-system/evidence/admission-lock-expiry.cjs"
+      ],
+      "interpretation": "The historical experiment asserts the violation, not correctness. After repair, convert it to a cap-preserving regression."
+    },
+    {
+      "label": "queue-unit",
+      "command": [
+        "node",
+        "dev-tools/queue-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:57:38.630672+00:00",
+      "seconds": 0.357,
+      "exitCode": 0,
+      "output": "queues: versioned work identity, positive priority, shared admission defaults, and decisions passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "adapters",
+      "command": [
+        "node",
+        "dev-tools/adapter-probe.js"
+      ],
+      "startedAt": "2026-09-26T13:57:39.081005+00:00",
+      "seconds": 0.292,
+      "exitCode": 0,
+      "output": "adapters: static registry, flat mappings, normalization, retries, shared bucket, dynamic Twilio credentials, and overrides passed\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "native-schema-test",
+      "command": [
+        "surreal",
+        "validate",
+        "build/test/schema.surql"
+      ],
+      "startedAt": "2026-09-26T13:57:39.458637+00:00",
+      "seconds": 0.277,
+      "exitCode": 0,
+      "output": "build/test/schema.surql: OK\n\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "compile-suite-fresh",
+      "command": [
+        "node",
+        "dev-tools/compiler/cli.js",
+        "--project",
+        "designs/all-in-one",
+        "--output",
+        "/tmp/rebase-core-audit-20260926/fresh-all-in-one"
+      ],
+      "startedAt": "2026-09-26T13:57:39.814306+00:00",
+      "seconds": 0.522,
+      "exitCode": 0,
+      "output": "ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\nReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../../../../../../tmp/rebase-core-audit-20260926/fresh-all-in-one\nSchema: ../../../../../../tmp/rebase-core-audit-20260926/fresh-all-in-one/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-core-audit-20260926/fresh-all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-core-audit-20260926/fresh-all-in-one/migrate-one-shot-finalize.surql\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "native-schema-suite-fresh",
+      "command": [
+        "surreal",
+        "validate",
+        "/tmp/rebase-core-audit-20260926/fresh-all-in-one/schema.surql"
+      ],
+      "startedAt": "2026-09-26T13:57:40.420103+00:00",
+      "seconds": 0.49,
+      "exitCode": 0,
+      "output": "/tmp/rebase-core-audit-20260926/fresh-all-in-one/schema.surql: OK\n\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "refresh-suite-artifacts",
+      "command": [
+        "npm",
+        "run",
+        "build:all-in-one"
+      ],
+      "startedAt": "2026-09-26T13:58:49.867374+00:00",
+      "seconds": 0.84,
+      "exitCode": 0,
+      "output": "npm notice run rebase-surreal-compiler@0.2.0 build:all-in-one\nnpm notice run node dev-tools/compiler/cli.js --project designs/all-in-one --output build/all-in-one\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\nReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: build/all-in-one\nSchema: build/all-in-one/schema.surql\nOne-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql\n",
+      "outcome": "pass"
+    },
+    {
+      "label": "check-suite-refreshed",
+      "command": [
+        "npm",
+        "run",
+        "check:all-in-one"
+      ],
+      "startedAt": "2026-09-26T13:58:50.836868+00:00",
+      "seconds": 0.823,
+      "exitCode": 0,
+      "output": "npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one\nnpm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted\nReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: build/all-in-one\nSchema: build/all-in-one/schema.surql\nOne-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql\n",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "No full verify run",
+    "No new domain acceptance",
+    "No live provider or production migration certification",
+    "No physical capacity or throughput benchmark",
+    "Admission reproducer exit zero means defect reproduced"
+  ],
+  "documentationChecks": {
+    "scopedLocalLinks": "pass",
+    "gitDiffCheck": "pass",
+    "reproducerSyntax": "pass",
+    "coreSourceFingerprintAfterDocumentation": "unchanged"
+  }
+}

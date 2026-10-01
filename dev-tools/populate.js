@@ -13,9 +13,10 @@ const { connectDatabase } = require("../gateway/connection");
 const { queryResult } = require("../gateway/utils");
 const { parseSchema } = require("../src/schema");
 const {
+  assertConfiguredContext,
   assertConnectionConfiguration,
-  loadEnvironment,
   resolveConfiguration,
+  validateConfiguration,
 } = require("../config/environment");
 
 function seedNumber(seed) {
@@ -111,9 +112,6 @@ function parseArgs(argv) {
     if (option === "--project") options.project = next();
     else if (option === "--source") options.sourceDir = next();
     else if (option === "--build") options.buildDir = next();
-    else if (option === "--endpoint") options.endpoint = next();
-    else if (option === "--namespace" || option === "--ns") options.namespace = next();
-    else if (option === "--database" || option === "--db") options.database = next();
     else if (option === "--table") options.table = next();
     else if (option === "--count") options.count = Number(next());
     else if (option === "--batch-size") options.batchSize = Number(next());
@@ -137,16 +135,12 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  console.log(`Usage: node dev-tools/populate.js [options]
+  console.log(`Usage: node [--env-file PATH] dev-tools/populate.js [options]
 
 Options:
-  --env-file <path>          Load connection values from an environment profile
   --project <name|dir>       Design name or directory (default: test)
   --source <directory>       Explicit design source directory
   --build <directory>        Explicit compiled artifact directory
-  --endpoint <url>           SurrealDB WebSocket endpoint
-  --namespace <name>         Override profile namespace
-  --database <name>          Override profile database
   --table <name|all>        Populate one table or every data schema
   --count <n>               Records per table (default: 25)
   --batch-size <n>          Insert batch size (default: 100)
@@ -304,25 +298,31 @@ async function populate(options) {
     ...options,
   };
   const { sourceDir, buildDir, name } = projectPaths(options.project, options);
-  const configuration = options.configuration || resolveConfiguration({}, options);
-  options.endpoint ||= configuration.surreal.endpoint;
-  options.username ||= configuration.surreal.username;
-  options.password ||= configuration.surreal.password;
-  options.connectTimeoutMs ||= configuration.surreal.connectTimeoutMs;
-  options.namespace ||= configuration.surreal.defaultContext?.namespace;
-  options.database ||= configuration.surreal.defaultContext?.database;
-  assertConnectionConfiguration({
-    ...configuration,
-    surreal: {
-      ...configuration.surreal,
-      endpoint: options.endpoint,
-      username: options.username,
-      password: options.password,
-      defaultContext: options.namespace && options.database
-        ? { namespace: options.namespace, database: options.database }
-        : undefined,
-    },
-  });
+  for (const key of ["endpoint", "username", "password", "connectTimeoutMs"]) {
+    if (Object.hasOwn(options, key)) {
+      throw new Error(`${key} is process-profile configuration and cannot be overridden`);
+    }
+  }
+  const configuration = validateConfiguration(
+    options.configuration || resolveConfiguration(process.env),
+  );
+  if (Boolean(options.namespace) !== Boolean(options.database)) {
+    throw new Error("A selected populate namespace and database must be supplied together");
+  }
+  const targetContext = options.namespace
+    ? assertConfiguredContext(configuration, {
+        namespace: options.namespace,
+        database: options.database,
+      })
+    : configuration.surreal.defaultContext || (
+        configuration.surreal.contexts.length === 1
+          ? configuration.surreal.contexts[0]
+          : undefined
+      );
+  if (!targetContext) {
+    throw new Error("Populate requires a default SURREAL_NAMESPACE and SURREAL_DATABASE in the process profile");
+  }
+  assertConnectionConfiguration(configuration);
   const compiledPath = path.join(buildDir, "schema.surql");
   if (!fs.existsSync(compiledPath))
     throw new Error(`Compiled schema not found: ${compiledPath}`);
@@ -330,12 +330,9 @@ async function populate(options) {
   if (!dataSchemas.size)
     throw new Error(`No data schemas found in ${path.join(sourceDir, "data")}`);
   const parsed = parseSchema(fs.readFileSync(compiledPath, "utf8"), "");
-  const principalEntries = [...parsed.tables.values()]
-    .filter((table) => table.principalKind)
-    .map((table) => [table.principalKind, table.name]);
-  const principals = Object.fromEntries(principalEntries);
-  if (!principals.user || !principals.group) {
-    throw new Error("Compiled schema must mark one user and one group principal table");
+  const principals = { user: "rebase_user", group: "rebase_group" };
+  if (!parsed.tables.has(principals.user) || !parsed.tables.has(principals.group)) {
+    throw new Error("Compiled schema must define rebase_user and rebase_group");
   }
   let tables =
     options.table === "all"
@@ -370,12 +367,9 @@ async function populate(options) {
   );
 
   const connection = await connectDatabase({
-    endpoint: options.endpoint,
-    username: options.username,
-    password: options.password,
-    namespace: options.namespace,
-    database: options.database,
-    connectTimeoutMs: options.connectTimeoutMs,
+    ...configuration.surreal,
+    namespace: targetContext.namespace,
+    database: targetContext.database,
   });
   const db = connection.db;
   try {
@@ -481,11 +475,10 @@ async function populate(options) {
 }
 
 if (require.main === module) {
-  const loaded = loadEnvironment(process.argv.slice(2));
-  const options = parseArgs(loaded.args);
-  options.configuration = resolveConfiguration(loaded.values, options);
+  const options = parseArgs(process.argv.slice(2));
   if (options.help) usage();
-  else
+  else {
+    options.configuration = resolveConfiguration(process.env);
     populate(options)
       .then((result) => {
         console.log(`Replay seed: ${result.seed}`);
@@ -496,6 +489,7 @@ if (require.main === module) {
         console.error(`Population failed: ${error.stack || error.message}`);
         process.exitCode = 1;
       });
+  }
 }
 
-module.exports = { populate };
+module.exports = { parseArgs, populate, usage };

@@ -12,7 +12,7 @@ function readPredicate({ actor = "$auth", row = "", includeReaders = true } = {}
   const prefix = row ? `${row}.` : "";
   const owner = ownerPredicate({ actor, row, includeSelf: true });
   const visibility = `!!${prefix}visibility`;
-  const readers = includeReaders ? ` OR ${prefix}readers_index CONTAINS <string>${actor}.id` : "";
+  const readers = includeReaders ? ` OR ${prefix}readers_index CONTAINSANY ${actor}.z_access_index` : "";
   return `(${visibility}${readers} OR ${owner})`;
 }
 

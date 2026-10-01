@@ -4,14 +4,14 @@
   "additionalProperties": false,
   "required": ["owned_by", "a_primitive"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
     "a_primitive": {
       "type": "string",
       "pattern": "^test_primitive:[a-z0-9-]+$"
     },
     "a_polymorphic": {
       "type": "string",
-      "pattern": "^(test_primitive|user):[a-z0-9-]+$",
+      "pattern": "^(test_primitive|rebase_user):[a-z0-9-]+$",
       "x-rebase-optional-probability": 0.55
     },
     "a_primitive_array": {
@@ -25,7 +25,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^(test_primitive|groups):[a-z0-9-]+$"
+        "pattern": "^(test_primitive|rebase_group):[a-z0-9-]+$"
       },
       "minItems": 0,
       "maxItems": 5,

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["owned_by", "to", "body"],
+  "properties": {
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+    "config": { "type": "string", "pattern": "^rebase_sms_delivery_config:[a-z0-9-]+$", "x-rebase-optional-probability": 0.5 },
+    "to": { "type": "string", "pattern": "^\\+[1-9][0-9]{7,14}$" },
+    "body": { "type": "string", "minLength": 1 }
+  }
+}

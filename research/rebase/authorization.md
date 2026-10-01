@@ -17,7 +17,8 @@ regressions and parallel sources of truth are not.
 
 ## Vocabulary
 
-- **Principal:** a `user` or `groups` record.
+- **Principal:** a user or group record. Examples below use the test profile's
+  `user` / `groups`; all-in-one declares `rebase_user` / `rebase_group`.
 - **Business record:** any application record outside framework-owned principal,
   audit, effect, schedule, and operational tables.
 - **Ownership:** every business record has `owned_by TYPE record<user | groups>`.
@@ -126,6 +127,11 @@ references participate automatically because fanout is one. Arrays participate
 only with `@rebase-readers`, must use native `REFERENCE`, must have business-only
 targets, and accept the recomputation cost explicitly.
 
+Tree root/node slots and `@rebase-system` fields do not contribute readers.
+Tree topology never grants access. Tree query helpers honor native row/field
+SELECT permissions and fail if a required member is unreadable; private tree
+mutation functions run within the initiating source event's transaction.
+
 There is no `shared_with` field. Use groups for direct sharing or reference a
 business resource whose readers should flow into the derived record.
 
@@ -222,9 +228,10 @@ are omitted by default.
 
 `change_logs` is a smaller client-facing history for fields explicitly marked
 for change logging. It is independently authorized by the target’s existence,
-table capability, and access index. Cascaded recomputation may create additional
-audit entries; that noise is accepted because it does not complicate or block
-the permission model. SurrealDB 3.2 exposes no transaction ID inside async
+table capability, and access index. Audited mutation scheduling is gated by
+changes to authoritative audited fields; system pings, rotations, derived
+shadows, and aggregate publications do not create business audit entries or
+advance `updated_at`. SurrealDB 3.2 exposes no transaction ID inside async
 events, so records retain event time, actor, target, before/after, and changed
 fields without synthetic transaction grouping.
 
@@ -237,7 +244,7 @@ The compiler’s deterministic order is:
 3. uniform table permissions and system fields;
 4. reader derivation, cycle guards, and propagation;
 5. audit and change-log events;
-6. views and reactive fields;
+6. shared temporal functions, protected fields, dependency events, and views;
 7. required indexes;
 8. root permission bootstrap and project seed.
 

@@ -5,14 +5,14 @@ const TWILIO_MESSAGES_ENDPOINT = "https://api.twilio.com/2010-04-01/Accounts";
 function createTwilioSmsAdapter(options = {}) {
   const request = options.fetch || globalThis.fetch;
   if (typeof request !== "function") throw new Error("Twilio SMS requires a fetch implementation");
-  const accountSid = options.accountSid ? String(options.accountSid) : "";
-  const apiKeySid = options.apiKeySid ? String(options.apiKeySid) : "";
-  const apiKeySecret = options.apiKeySecret ? String(options.apiKeySecret) : "";
-  const authToken = options.authToken ? String(options.authToken) : "";
-  const from = options.from ? String(options.from) : "";
   const endpoint = String(options.endpoint || TWILIO_MESSAGES_ENDPOINT).replace(/\/+$/, "");
 
-  return async function sendTwilioSms({ to, body, statusCallback, signal }) {
+  return async function sendTwilioSms({ configuration = {}, to, body, statusCallback, signal }) {
+    const accountSid = configuration.account_sid ? String(configuration.account_sid) : "";
+    const apiKeySid = configuration.api_key_sid ? String(configuration.api_key_sid) : "";
+    const apiKeySecret = configuration.api_key_secret ? String(configuration.api_key_secret) : "";
+    const authToken = configuration.auth_token ? String(configuration.auth_token) : "";
+    const from = configuration.from_number ? String(configuration.from_number) : "";
     const username = apiKeySid && apiKeySecret ? apiKeySid : accountSid;
     const password = apiKeySid && apiKeySecret ? apiKeySecret : authToken;
     if (!username || !password || !accountSid || !from) {

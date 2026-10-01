@@ -1,0 +1,44 @@
+{
+  "id": "H3a-required-output-feedback-gate-2026-09-29",
+  "recordedAt": "2026-09-29",
+  "result": "pass",
+  "verificationType": "disposable compiled SurrealKV fixture",
+  "command": "node /tmp/rebase-h3a-feedback-gate.js",
+  "elapsedSeconds": 5.44,
+  "temporaryArtifactsRetained": false,
+  "fixtureSha256": "8f14b44c0ada6a56383d3bf401184a261d5d7c8b61ab1e224da0453f98a2987b",
+  "probeSha256": "b123c853316fbb8b788f411a1f60b32b2406f1d02df869010b3439630ccef612",
+  "sourceFingerprint": {
+    "algorithm": "sha256 per file",
+    "files": {
+      "src/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+      "src/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8"
+    }
+  },
+  "cases": [
+    {
+      "source": "reactively consumes an invoice header field",
+      "childMembership": "unrelated root",
+      "result": "accepted; one position"
+    },
+    {
+      "source": "reactively consumes an invoice header field",
+      "childMembership": "same invoice root",
+      "result": "rejected with REBASE_REQUIRED_OUTPUT_FEEDBACK"
+    },
+    {
+      "source": "derives an invoice reference without consuming an invoice field",
+      "childMembership": "same invoice root",
+      "result": "accepted; one position"
+    }
+  ],
+  "rollback": "Rejected create and retarget update each restored source rows, children, and roots exactly to their pre-write snapshots.",
+  "conclusion": "The required-output guard distinguishes reference-only ancestry from consumed header fields, but treats any consumed field on an invoice dependency as feedback when a child contributes to that invoice root.",
+  "limits": [
+    "The temporary fixture and probe were removed after the run; their hashes and results are recorded, but the exact fixture cannot be rerun from this evidence file.",
+    "This gate did not compile or exercise the complete accounting sale/tax schema.",
+    "The fixture's accepted reference-only child did not test the child itself deriving invoice header fields; the existing invoice-line recipe has that pattern in the accounting probe, but variable tax children remain unproved.",
+    "No full suite, production migration, or throughput behavior was tested."
+  ],
+  "next": "Use the reference-only sales_invoice_issue parent for H3a and preserve its lack of reactive invoice-header dependencies; verify generated tax outputs across invoice, customer claim, and tax-authority claim roots."
+}

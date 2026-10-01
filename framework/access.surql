@@ -12,7 +12,7 @@ DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
             WHERE number = $identifier_value
               AND verified_revision = revision
               AND principal.login_access = true)[0];
-        LET $username_principal = (SELECT VALUE id FROM user
+        LET $username_principal = (SELECT VALUE id FROM rebase_user
             WHERE username = $identifier_value AND login_access = true)[0];
         LET $principal = IF $email_principal != NONE THEN $email_principal
             ELSE IF $phone_principal != NONE THEN $phone_principal
@@ -54,7 +54,7 @@ DEFINE ACCESS OVERWRITE account_code ON DATABASE TYPE RECORD
             WHERE address = $identifier_value)[0];
         LET $phone_identity = (SELECT * FROM authentication_phone
             WHERE number = $identifier_value)[0];
-        LET $username_principal = (SELECT VALUE id FROM user
+        LET $username_principal = (SELECT VALUE id FROM rebase_user
             WHERE username = $identifier_value AND login_access = true)[0];
         LET $username_challenge = (SELECT * FROM authentication_challenge
             WHERE principal = $username_principal

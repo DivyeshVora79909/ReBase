@@ -2,10 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["owned_by", "config", "to", "subject"],
+  "required": ["owned_by", "to", "subject"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(user|groups):[a-z0-9-]+$" },
-    "config": { "type": "string", "pattern": "^email_brevo_config:[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+    "config": { "type": "string", "pattern": "^rebase_email_delivery_config:[a-z0-9-]+$", "x-rebase-optional-probability": 0.5 },
     "to": {
       "type": "array",
       "items": { "type": "string", "format": "email" },

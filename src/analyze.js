@@ -1,17 +1,9 @@
-const EXTENSION_TABLES = new Set(["user", "groups"]);
+const EXTENSION_TABLES = new Set(["rebase_user", "rebase_group"]);
 const { contributesReaders } = require("./readers");
 
 function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
-  const extensionTables = new Set(
-    [...schema.tables.values()]
-      .filter((table) => table.principalKind)
-      .map((table) => table.name),
-  );
-  validateSystemExtensions(schema, extensionTables.size ? extensionTables : EXTENSION_TABLES);
+  validateSystemExtensions(schema, EXTENSION_TABLES);
   const reverseReferences = new Map();
-  const internalTables = new Set(
-    [...schema.tables.values()].filter((table) => table.internal).map((table) => table.name),
-  );
   for (const table of schema.tables.values()) {
     for (const field of table.fields.values()) {
       if (!contributesReaders(field, frameworkTables)) continue;
@@ -26,12 +18,11 @@ function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {
           sourceTable: table.name,
           sourceField: field.name,
           sourceIsSystem: frameworkTables.has(table.name),
-          sourceIsInternal: internalTables.has(table.name),
         });
       }
     }
   }
-  return { reverseReferences, systemTables: frameworkTables, internalTables };
+  return { reverseReferences, systemTables: frameworkTables };
 }
 
 function validateSystemExtensions(schema, extensionTables) {
