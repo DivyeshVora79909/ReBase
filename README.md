@@ -6,7 +6,9 @@ ReBase compiles SurrealDB authorization, validation, audit, reactive calculation
 The [developer-tools handoff](./designs/rebase-system/developer-experience-handoff.md)
 records review evidence and execution instructions; the
 [plan](./designs/rebase-system/developer-experience-plan.md) preserves the design
-decisions and deferred frontend work.
+decisions. The separately redesigned frontend has its own
+[documentation](./designs/frontend/README.md); frontend reverification awaits
+the user's request.
 
 **Current work and evidence:** see the [core handoff](./designs/rebase-system/core-handoff.md)
 for K1–K5 implementation and restart requirements, the [core audit](./designs/rebase-system/core-audit.md)

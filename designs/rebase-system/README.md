@@ -27,7 +27,9 @@ post-commit recovery boundary.
 Start developer-tools work with its
 [execution handoff](./developer-experience-handoff.md); the
 [developer experience plan](./developer-experience-plan.md) preserves the design
-decisions. Frontend implementation is deferred there.
+decisions. The separately redesigned frontend is tracked in
+[frontend documentation](../frontend/README.md); its reverification awaits an
+explicit user request, as recorded in the developer-tools handoff.
 
 Read the core handoff first. Open the longer design documents only for the
 active packet; reading every document on each model switch wastes context.

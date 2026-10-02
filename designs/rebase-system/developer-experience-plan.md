@@ -3,8 +3,10 @@
 Restart from [the execution handoff](developer-experience-handoff.md) for
 working-tree status, review findings, evidence, and the smallest required checks.
 
-Status: D0–D4 implemented; scoped checks passed. D5 remains deferred. See the
-[completion handoff](developer-experience-handoff.md) for evidence. The
+Status: D0–D4 implemented; scoped checks passed. The user reports D5's frontend
+work was implemented separately; see the 2026-10-02 update in the
+[completion handoff](developer-experience-handoff.md). Frontend review awaits
+an explicit user request. The
 compiler/runtime contract and business behavior stay fixed.
 
 ## Objective and boundaries
@@ -23,8 +25,8 @@ registry, query DSL, framework, or parallel database abstraction.
 
 - The implementation baseline is permanent checkpoint `d0593fa` (`major
   changes: reworked the compiler, new engine for compiling tree based linked
-  list references and more`). The active worktree is shared and dirty; preserve
-  its unrelated changes.
+  list references and more`). That review used a shared dirty worktree, later
+  committed in `0625f9b`; preserve any subsequent user changes.
 - The empty-environment baseline has an 18-artifact manifest across `test`,
   `all-in-one`, and `all-in-accounting`. The handoff links the retained review
   evidence, source fingerprints, and reproducible parity commands.
@@ -55,8 +57,10 @@ small ordinary-JS API from `dev-tools/index.js`; use native `node:repl` from
 `dev-tools/workbench.js`; add separate standard-JSON-Schema accounting shapes
 and one explicit JavaScript SDK fixture.
 
-**Defer:** MetaSol implementation and any frontend framework change. Do not
-rebuild a general CRUD layer, form/query/route registry, field framework,
+**Separate scope:** frontend implementation now has its own
+[documentation](../frontend/README.md); frontend review waits for the user's
+request. For developer-tools work, do not rebuild a general CRUD layer,
+form/query/route registry, field framework,
 project factory, schema-driven UI, metadata registry, or custom query syntax.
 
 ## Compatibility and security boundaries
@@ -174,14 +178,20 @@ or a semantic oracle.
 for shared integration/release gates, not documentation or path-only edits.
 Do not delete evidence as cleanup.
 
-### D5 — Frontend blueprint only; implementation deferred
+### D5 — Historical frontend blueprint; superseded by separate work
+
+The user reports the frontend redesign is implemented separately. Git metadata
+records MetaSol `3022392` and ReBase frontend docs `738e8d3`. This update does
+not review or validate that implementation. Use [its documentation](../frontend/README.md)
+for future frontend work when requested; the original notes below are historical
+rationale, not an instruction to restart or restore an older frontend.
 
 The initial developer-tools inventory observed MetaSol as a separate nested
 checkout at `cccd1df`, with a large uncommitted replacement implementing the
 simplified starter. This is a recorded snapshot, not fresh frontend verification;
-inspect that checkout when frontend work resumes. Treat it as a prototype.
+inspect that checkout only when frontend review/work is explicitly requested.
 
-Current simplified files worth keeping as examples:
+Files recorded in that earlier snapshot:
 
 - `MetaSol/src/app/SessionProvider.jsx` and `WorkspaceProvider.jsx`: session
   scoping and query-cache clearing on context/account switch.
@@ -197,10 +207,10 @@ Current simplified files worth keeping as examples:
 History records the traps: `4126329` and `d406d5d` introduced a resource
 registry, query compiler/operator model, and generic console; `fa5d9be` and
 `0cead8e` expanded generic query state, validation, and pagination; `e8881d8`
-reworked a large query builder and relation/form components. The uncommitted
-simplification removes those layers. Do not restore them for dev-tools work.
+reworked a large query builder and relation/form components. The then-uncommitted
+simplification removed those layers. Do not restore them for dev-tools work.
 
-On a separately authorized frontend slice:
+Original guidance for a separately authorized frontend slice:
 
 1. Keep one account/session context and independent preferences; clear caches
    and live subscriptions on account/context change.
@@ -215,8 +225,8 @@ On a separately authorized frontend slice:
 5. Prefer direct SDK functions and visible page-specific forms. No arbitrary
    UI query DSL, generated form framework, or automatic route registry.
 
-**Exit:** no MetaSol changes in D0–D4. Start one page only after a separate
-scope decision; check the SDK/library behavior when implementing that page.
+**Original exit:** no MetaSol changes in D0–D4. Frontend implementation has since
+proceeded independently; do not execute this historical packet again.
 
 ## Verification gates
 

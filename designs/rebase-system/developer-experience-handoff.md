@@ -1,19 +1,39 @@
 # Developer experience restart handoff
 
 As of 2026-10-02. This records the completed scoped developer-tools redesign
-and its verification. The design rationale and deferred frontend guidance are
-in [the plan](developer-experience-plan.md).
+and its verification. The design rationale and historical frontend guidance
+are in [the plan](developer-experience-plan.md).
+
+## User update: frontend redesigned separately (2026-10-02)
+
+- The user reports completing the previously deferred frontend independently,
+  without changing the developer-tools work covered by this handoff. Preserve
+  that work; do not restart or undo it from the old D5 blueprint.
+- Git metadata observed: ReBase `738e8d3` (`full frontend built`) adds
+  `designs/frontend/` documentation and evidence; MetaSol `3022392`
+  (`full frontend MetaSol redesign`) contains the frontend changes. The earlier
+  developer-tools work is committed in ReBase `0625f9b`. Both worktrees were
+  clean before this documentation-only update.
+- [Frontend documentation](../frontend/README.md) now owns frontend scope and
+  continuation. This turn inspected Git status/log/stat only: no frontend code
+  review, build, test, or revalidation of its evidence. The user will explicitly
+  request frontend reverification later.
+- Backend, developer-tools, and accounting handoffs retain their own scope.
+  Continue the selected non-frontend packet using their existing instructions;
+  do not reopen completed D0–D4 or expand into frontend work. The dated checks
+  below remain historical evidence for their recorded source fingerprints.
 
 ## Scope and working-tree state
 
 - Developer tools were reorganized around ordinary JavaScript, a small public
-  API, and Node's native REPL. Frontend implementation remains deferred.
+  API, and Node's native REPL. Frontend work is tracked separately above.
 - This slice preserves core engine behavior, end-user client behavior,
   database rules, generated SurrealQL, authorization, and business behavior.
 - All-in-accounting received five explicit public JSON Schemas and one visible
   SDK fixture example. CRM/HRM designs were not redesigned.
-- The shared worktree is intentionally dirty and contains other ongoing ReBase
-  work. Preserve it: do not reset, stash, or commit unrelated changes.
+- The original review used a shared dirty worktree, subsequently committed as
+  noted above. Always preserve current user work; do not reset, stash, or commit
+  unrelated changes.
 
 ## Completed implementation
 
@@ -92,8 +112,9 @@ the retained manifest and commands below are the restart evidence.
   it has no usable result and was not repeated. Focused evidence above is the
   acceptance evidence for this scoped work.
 
-D0–D4 have no remaining implementation packet. D5 is a separate deferred
-frontend task; this handoff does not authorize expanding into it.
+D0–D4 have no remaining implementation packet. The former D5 deferral has been
+superseded by the user's separate frontend work; its review remains outside
+this handoff until explicitly requested.
 
 ## Lower-model execution guide
 
@@ -122,7 +143,8 @@ do not reload the whole chat or treat every historical open item as a new task.
   `economic_entity` can be the existing user or an organization.
 - Ordinary JavaScript handles fixture edits. Preserve validation, conversion,
   batching, seeded generation, and bounded reference sampling around it.
-- D5 remains deferred. Routine fixes inside this scope need no further lead
+- Frontend implementation is tracked separately; its review awaits the user's
+  explicit request. Routine fixes inside this scope need no further lead
   approval. New business policies, frontend expansion, deployment, and commits
   are separate scope decisions; do not invent them to keep working.
 
