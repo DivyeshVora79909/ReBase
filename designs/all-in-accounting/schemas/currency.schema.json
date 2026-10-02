@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "Record strings accept simple table:custom-key and SDK spellings table:⟨custom-key⟩ or table:u\"<uuid>\".",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["owned_by", "code", "name"],
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^rebase_(user|group):(?:[A-Za-z0-9_-]+|⟨[A-Za-z0-9_-]+⟩|u\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\")$"
+    },
+    "code": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{0,15}$" },
+    "name": { "type": "string", "minLength": 1 },
+    "precision": { "type": "integer", "minimum": 0, "maximum": 18 }
+  }
+}

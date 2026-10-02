@@ -24,7 +24,7 @@ lines 30–52).
 - Compiler framework discovery parses every table from framework source into
   `frameworkTables` ([`dev-tools/compiler/pipeline.js`](../../dev-tools/compiler/pipeline.js#L40-L68)). The security generator skips tables in
   `systemTables` before emitting ownership/RLS and otherwise preserves native
-  `PERMISSIONS NONE` ([`src/generators/security.js`](../../src/generators/security.js#L36-L59)). Therefore adding `owned_by` or keeping a table under
+  `PERMISSIONS NONE` ([`dev-tools/compiler/generators/security.js`](../../dev-tools/compiler/generators/security.js#L36-L59)). Therefore adding `owned_by` or keeping a table under
   `framework/` does not install authorization for these credentials.
 - Keep these two typed credential families. Add explicit native policies or a
   small targeted permission helper for ownership-aware BYOC writes and use.

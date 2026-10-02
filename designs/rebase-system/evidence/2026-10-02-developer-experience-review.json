@@ -1,0 +1,538 @@
+{
+  "reviewDate": "2026-10-02",
+  "directory": "/tmp/rebase-dx-lead-mt9VSu",
+  "baselineHead": "d0593fa86f5ef52f8aafc53453aa9c392b35a7fb",
+  "baselineArtifactSha256": {
+    "all-in-accounting/migrate-one-shot-backfill.surql": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804",
+    "all-in-accounting/migrate-one-shot-finalize.surql": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2",
+    "all-in-accounting/runtime-contracts.json": "3178ce7c2da02bf220e2a37c114c40d31da4e4ff020d17d1dcd2de34adcec442",
+    "all-in-accounting/schema.surql": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069",
+    "test/migrate-one-shot-backfill.surql": "0c9dfa3d1a6e93638fe095bcaa09ec940068391d32f0dd652002fdf48d16f985",
+    "test/migrate-one-shot-finalize.surql": "833f028c63f1be4d587ec0aa44ee98cd9783f854073ca01e9567d2881cdf2d0a",
+    "test/runtime-contracts.json": "d6cf4c87c3f604beaaf73b4142c32fda190f54c3f9651bb98f23d3df28be105a",
+    "test/schema.surql": "696d22f183b97e2412db727ce4c813be23ebe6fa090e4bcf24fd2da8c0793188",
+    "test/table-handlers/razorpay_order.js": "c26e71d28ea564ede68080d3ec125bc3f6e67f182577d2c5bb5a4925d29dd1c8",
+    "test/table-handlers/send_brevo_email.js": "14b86887a4cc21db23bc251ccd4014ee269a280bdc568ff66454e1b0a3c662eb",
+    "test/table-handlers/send_twilio_sms.js": "332927b22c4a163ffa108eb9a6fb6d67f920542b6b782809df48f095bbb01e99",
+    "test/table-handlers/test_attachment.js": "39449c06d32ec560326814525bf80f98f9f47a2f56ff20e4a055b691c6600a17",
+    "test/table-handlers/test_attachment_cleanup.js": "f4344f69f0e6a2afddd67d3ac1b7d2f0bc2874b4098dbe08a129d3280fd58e0c",
+    "test/webhook-handlers/razorpay.js": "4687f541c06c7fb33349254e66d9aef58154cc890d491e01347c24d87beffd8e",
+    "all-in-one/migrate-one-shot-backfill.surql": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804",
+    "all-in-one/migrate-one-shot-finalize.surql": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2",
+    "all-in-one/runtime-contracts.json": "3178ce7c2da02bf220e2a37c114c40d31da4e4ff020d17d1dcd2de34adcec442",
+    "all-in-one/schema.surql": "516db43f4f0fe3813cf96d720a3566e5d2f817d5d136b25ba59802d2fe3ef390"
+  },
+  "baselineCommands": [
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/test --framework framework --output /tmp/rebase-dx-lead-mt9VSu/baseline/test",
+      "cwd": "clean d0593fa checkout",
+      "exitCode": 0,
+      "elapsedSeconds": 0.279,
+      "stdout": "ReBase compiled 26 tables and 8 views.\nMaterial files: 9\nTable handlers: 7\nWebhook handlers: 1\nOutput: ../baseline/test\nSchema: ../baseline/test/schema.surql\nOne-shot upgrade batches: ../baseline/test/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../baseline/test/migrate-one-shot-finalize.surql"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-one --framework framework --output /tmp/rebase-dx-lead-mt9VSu/baseline/all-in-one",
+      "cwd": "clean d0593fa checkout",
+      "exitCode": 0,
+      "elapsedSeconds": 0.622,
+      "stdout": "ReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../baseline/all-in-one\nSchema: ../baseline/all-in-one/schema.surql\nOne-shot upgrade batches: ../baseline/all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../baseline/all-in-one/migrate-one-shot-finalize.surql"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-accounting --framework framework --output /tmp/rebase-dx-lead-mt9VSu/baseline/all-in-accounting",
+      "cwd": "clean d0593fa checkout",
+      "exitCode": 0,
+      "elapsedSeconds": 0.678,
+      "stdout": "ReBase compiled 76 tables and 0 views.\nMaterial files: 24\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../baseline/all-in-accounting\nSchema: ../baseline/all-in-accounting/schema.surql\nOne-shot upgrade batches: ../baseline/all-in-accounting/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../baseline/all-in-accounting/migrate-one-shot-finalize.surql"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node --test dev-tools/tests/workbench.test.js dev-tools/tests/client-schemas.test.js",
+      "scope": "Focused offline API/schema regressions",
+      "exitCode": 0,
+      "elapsedSeconds": 2.447,
+      "outputTail": "--\n  duration_ms: 10.119187\n  type: 'test'\n  ...\n# Subtest: native workbench evaluates JavaScript and await, then closes sessions\nok 17 - native workbench evaluates JavaScript and await, then closes sessions\n  ---\n  duration_ms: 106.512729\n  type: 'test'\n  ...\n# Subtest: native workbench uses its live project options and allows explicit overrides\nok 18 - native workbench uses its live project options and allows explicit overrides\n  ---\n  duration_ms: 7.796704\n  type: 'test'\n  ...\n# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear\nok 19 - workbench merges mutable project options, honors reassignment, and restores them after clear\n  ---\n  duration_ms: 23.330937\n  type: 'test'\n  ...\n# Subtest: bare build inspection is compact while full compiler results remain accessible\nok 20 - bare build inspection is compact while full compiler results remain accessible\n  ---\n  duration_ms: 13.043576\n  type: 'test'\n  ...\n# Subtest: managed SDK connections preserve the raw client and share pending close failures\nok 21 - managed SDK connections preserve the raw client and share pending close failures\n  ---\n  duration_ms: 22.093479\n  type: 'test'\n  ...\n# Subtest: cleanup retains a manual close failure while another connection is still opening\nok 22 - cleanup retains a manual close failure while another connection is still opening\n  ---\n  duration_ms: 10.78263\n  type: 'test'\n  ...\n# Subtest: REPL clear restores workbench helpers without losing connection ownership\nok 23 - REPL clear restores workbench helpers without losing connection ownership\n  ---\n  duration_ms: 10.900228\n  type: 'test'\n  ...\n# Subtest: workbench shutdown waits for late SDK close and rejects later connects\nok 24 - workbench shutdown waits for late SDK close and rejects later connects\n  ---\n  duration_ms: 6.109903\n  type: 'test'\n  ...\n# Subtest: workbench reports a late-open close failure after all cleanup attempts settle\nok 25 - workbench reports a late-open close failure after all cleanup attempts settle\n  ---\n  duration_ms: 8.200995\n  type: 'test'\n  ...\n1..25\n# tests 25\n# suites 0\n# pass 25\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 2373.148593"
+    },
+    {
+      "command": "node dev-tools/checks/compiler-probe.js",
+      "scope": "Compiler regression",
+      "exitCode": 0,
+      "elapsedSeconds": 0.973,
+      "outputTail": "compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "node dev-tools/checks/environment-probe.js",
+      "scope": "Environment regression",
+      "exitCode": 0,
+      "elapsedSeconds": 0.511,
+      "outputTail": "environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed"
+    },
+    {
+      "command": "node dev-tools/accounting/fixture-example.js",
+      "scope": "Offline six-row fixture preview",
+      "exitCode": 0,
+      "elapsedSeconds": 0.49,
+      "outputTail": "Validated 6 explicit all-in-accounting fixture rows.\nSDK RecordId, Decimal, and Date values are ready for bound client writes.\nNo database connection is opened by this example."
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/test --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/test",
+      "scope": "test build",
+      "exitCode": 0,
+      "elapsedSeconds": 0.324,
+      "outputTail": "ReBase compiled 26 tables and 8 views.\nMaterial files: 9\nTable handlers: 7\nWebhook handlers: 1\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/test --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/test --check",
+      "scope": "test check",
+      "exitCode": 0,
+      "elapsedSeconds": 0.293,
+      "outputTail": "ReBase compiled 26 tables and 8 views.\nMaterial files: 9\nTable handlers: 7\nWebhook handlers: 1\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/test/schema.surql",
+      "scope": "test schema.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.212,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/test/schema.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-backfill.surql",
+      "scope": "test migrate-one-shot-backfill.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.186,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-backfill.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-finalize.surql",
+      "scope": "test migrate-one-shot-finalize.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.192,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/test/migrate-one-shot-finalize.surql: OK"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-one --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/all-in-one",
+      "scope": "all-in-one build",
+      "exitCode": 0,
+      "elapsedSeconds": 0.502,
+      "outputTail": "ReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-one --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/all-in-one --check",
+      "scope": "all-in-one check",
+      "exitCode": 0,
+      "elapsedSeconds": 0.506,
+      "outputTail": "ReBase compiled 54 tables and 0 views.\nMaterial files: 13\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-one/schema.surql",
+      "scope": "all-in-one schema.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.377,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-one/schema.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-backfill.surql",
+      "scope": "all-in-one migrate-one-shot-backfill.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.204,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-backfill.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-finalize.surql",
+      "scope": "all-in-one migrate-one-shot-finalize.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.189,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-one/migrate-one-shot-finalize.surql: OK"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-accounting --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting",
+      "scope": "all-in-accounting build",
+      "exitCode": 0,
+      "elapsedSeconds": 0.573,
+      "outputTail": "ReBase compiled 76 tables and 0 views.\nMaterial files: 24\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "node dev-tools/compiler/cli.js --project designs/all-in-accounting --framework framework --output /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting --check",
+      "scope": "all-in-accounting check",
+      "exitCode": 0,
+      "elapsedSeconds": 0.638,
+      "outputTail": "ReBase compiled 76 tables and 0 views.\nMaterial files: 24\nTable handlers: 2\nWebhook handlers: 0\nOutput: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting\nSchema: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/schema.surql\nOne-shot upgrade batches: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-backfill.surql\nOne-shot upgrade finalizer: ../../../../../../tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-finalize.surql\n\nReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/schema.surql",
+      "scope": "all-in-accounting schema.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.676,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/schema.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-backfill.surql",
+      "scope": "all-in-accounting migrate-one-shot-backfill.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.54,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-backfill.surql: OK"
+    },
+    {
+      "command": "surreal validate /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-finalize.surql",
+      "scope": "all-in-accounting migrate-one-shot-finalize.surql native syntax validation",
+      "exitCode": 0,
+      "elapsedSeconds": 0.191,
+      "outputTail": "/tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/migrate-one-shot-finalize.surql: OK"
+    },
+    {
+      "command": "git diff --check",
+      "scope": "Tracked whitespace check",
+      "exitCode": 0,
+      "elapsedSeconds": 0.04,
+      "outputTail": ""
+    }
+  ],
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0 for linux on x86_64",
+    "sdk": "2.0.8",
+    "ajv": "8.20.0",
+    "isolation": "Child verification commands use an empty environment plus PATH; no .env, provider, Redis, or application database."
+  },
+  "originalArtifactMatches": 18,
+  "publicSchemaSha256": {
+    "cash_in.schema.json": "78851a1257ebc1a955de4840d212917ff9a05d6cc966f60993713957e322f6aa",
+    "currency.schema.json": "37962c73b2da6d1d93b72f1644623615fe9a42276e5b0ff7157ea75acc51cf7c",
+    "organization.schema.json": "873aee731699d1a83ab78fe8745d0f9e42d93f1860d76b27b6023f431c08f821",
+    "treasury.schema.json": "232dc1ed14ad585e048c1ba1dea8fc00b0f921cd06d874978a84f4e3f1921898",
+    "treasury_account.schema.json": "ce0e13dc33b30522f359fee54c3c5dd48d53008ebbb4f7ed3d00c123d9601d81"
+  },
+  "generatedFileCount": 23,
+  "currentHead": "d0593fa86f5ef52f8aafc53453aa9c392b35a7fb",
+  "worktree": "Dirty shared checkout; tracked and untracked implementation files audited. No commit, reset, stash, or deployment.",
+  "status": "Scoped developer-tools review complete",
+  "focusedTests": {
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  },
+  "nativeFixtureSmoke": {
+    "command": "env -i PATH=\"$PATH\" node designs/rebase-system/evidence/2026-10-02-fixture-sdk-smoke.cjs /tmp/rebase-dx-lead-mt9VSu/current/all-in-accounting/schema.surql",
+    "scope": "Disposable memory DB accounting fixture and native value round trips",
+    "exitCode": 0,
+    "elapsedSeconds": 9.245,
+    "stderr": "",
+    "result": {
+      "serverEngine": "memory",
+      "explicitRowsInserted": 6,
+      "tableCounts": {
+        "organization": 2,
+        "currency": 1,
+        "treasury": 1,
+        "treasury_account": 1,
+        "cash_in": 1
+      },
+      "rootGroup": "already present",
+      "uuid4CustomerId": "organization:u\"550e8400-e29b-41d4-a716-446655440000\"",
+      "uuid4CustomerIdValueType": "Uuid$1",
+      "uuid4CashInReference": "organization:u\"550e8400-e29b-41d4-a716-446655440000\"",
+      "customUuid7TreasuryId": "treasury:⟨fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix⟩",
+      "customTreasuryReference": "treasury:⟨fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix⟩",
+      "databaseIdStrings": {
+        "organization": [
+          "organization:demo_owner",
+          "organization:u'550e8400-e29b-41d4-a716-446655440000'"
+        ],
+        "treasury": [
+          "treasury:`fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix`"
+        ]
+      },
+      "treasuryBalanceType": "Decimal$1",
+      "treasuryBalance": "42.5"
+    }
+  },
+  "relocation": {
+    "byteIdenticalOriginalModules": [
+      {
+        "from": "src/analyze.js",
+        "to": "dev-tools/compiler/analyze.js"
+      },
+      {
+        "from": "src/derived-order.js",
+        "to": "dev-tools/compiler/derived-order.js"
+      },
+      {
+        "from": "src/fields.js",
+        "to": "dev-tools/compiler/fields.js"
+      },
+      {
+        "from": "src/generators/access.js",
+        "to": "dev-tools/compiler/generators/access.js"
+      },
+      {
+        "from": "src/generators/audit.js",
+        "to": "dev-tools/compiler/generators/audit.js"
+      },
+      {
+        "from": "src/generators/effects.js",
+        "to": "dev-tools/compiler/generators/effects.js"
+      },
+      {
+        "from": "src/generators/indexes.js",
+        "to": "dev-tools/compiler/generators/indexes.js"
+      },
+      {
+        "from": "src/generators/reactivity.js",
+        "to": "dev-tools/compiler/generators/reactivity.js"
+      },
+      {
+        "from": "src/generators/references.js",
+        "to": "dev-tools/compiler/generators/references.js"
+      },
+      {
+        "from": "src/generators/security.js",
+        "to": "dev-tools/compiler/generators/security.js"
+      },
+      {
+        "from": "src/generators/temporal.js",
+        "to": "dev-tools/compiler/generators/temporal.js"
+      },
+      {
+        "from": "src/generators/tree.js",
+        "to": "dev-tools/compiler/generators/tree.js"
+      },
+      {
+        "from": "src/operation-adapters.js",
+        "to": "gateway/operation-adapters.js"
+      },
+      {
+        "from": "src/readers.js",
+        "to": "dev-tools/compiler/readers.js"
+      },
+      {
+        "from": "src/schema.js",
+        "to": "dev-tools/compiler/schema.js"
+      },
+      {
+        "from": "src/security-policy.js",
+        "to": "dev-tools/compiler/security-policy.js"
+      },
+      {
+        "from": "src/surql.js",
+        "to": "dev-tools/compiler/surql.js"
+      },
+      {
+        "from": "src/temporal.surql",
+        "to": "dev-tools/compiler/temporal.surql"
+      },
+      {
+        "from": "src/tree-contract.js",
+        "to": "dev-tools/compiler/tree-contract.js"
+      }
+    ],
+    "preservedNpmScriptKeyCount": 57,
+    "scope": "Original src compiler/runtime adapter files compared byte-for-byte. Other probe moves reviewed for import/path-only changes; compiler/reactivity disposable output layout also adjusted for new disjoint-path contract."
+  },
+  "sourceFingerprintScope": "SHA-256 of relevant tracked and untracked JS, SurrealQL, JSON and locked dependencies/configuration inputs. Documentation, evidence JSON, installed dependencies, .env, and generated output excluded.",
+  "sourceSha256": {
+    "config/environment.js": "bb7d2a3cab851a3a55f4f1b2f394fd0c3b4961864a48e46366383c19968ef5ab",
+    "config/runtime-timing.js": "fec7a643993e2fecaa79884dfd3cd3ca86a3d02bc4bc7b56cf1db57b2d55ecea",
+    "designs/all-in-accounting/claims/adjustments.surql": "65cca458d79a82294b0533266f49edd56b123a2ddd06a99bd6d809c3e4204384",
+    "designs/all-in-accounting/claims/cash-refunds.surql": "b477b38d3d616c05fe3e751df4fa7308ed2ae3c5e0bb30ae5719362b1b4536e1",
+    "designs/all-in-accounting/claims/claim-offsets.surql": "5ea29e7ad82e99a5cf0d1b7f02412429dcf96880f616becaab1ba7410a611363",
+    "designs/all-in-accounting/claims/customer-withholding.surql": "f68869d63d42e7ec6170a5d141616a7c4cf15b8ad8823c7fd56a8c42698eeb0a",
+    "designs/all-in-accounting/claims/invoices.surql": "9bed09d04a22ae2c37c5d13f73f421af8e7f298da0c1fb204f6ea53c15fc43e0",
+    "designs/all-in-accounting/claims/purchase-tax-credit.surql": "a456a410084598ee30e70f8454792ee805c9faa1300703a4dd0647280bad320e",
+    "designs/all-in-accounting/claims/settlements.surql": "9f34e77b07671fc06834c981c0da590df3ff04fede6d68187f7c69a7862ccdfa",
+    "designs/all-in-accounting/claims/standalone.surql": "c1ab8d71ec8f14b89f2dcedc8c6822e97232084cf6b125e9ef618bf2975538d4",
+    "designs/all-in-accounting/claims/supplier-withholding.surql": "e96774b81c741a8108aca30feecea1bf641b5a016ad7c69b6c5e4611fa18484f",
+    "designs/all-in-accounting/claims/tax-remittance.surql": "f1c2a6784398d366b0bf35f200563409c235a03bbc1a66ed0a52dba2673d517f",
+    "designs/all-in-accounting/claims/tax-rules.surql": "cd109c58ff40edc5e6b3d7d1c8ecd138436088c9f24a6fa275cee84c30df9cd5",
+    "designs/all-in-accounting/core/schema.surql": "452e093e9c1632d7a8f8b0e56854a37ad0660826022e03bf90cbb17d9f86e43d",
+    "designs/all-in-accounting/movements/cash.surql": "682bc6e475c1b619a6e9d19fa0a25cae747721298346feee5203f188923e5967",
+    "designs/all-in-accounting/movements/exchange.surql": "d472e433f52e075d7c586920e1a858dd38091f4d32c4ddccc20dab2a8ee21ecb",
+    "designs/all-in-accounting/movements/purchase-receipt.surql": "e62fb065187a005be401db92385e468973ee1183d5b43c55b9fdd4c77d38d7f6",
+    "designs/all-in-accounting/movements/stock.surql": "fa807c6c049d4231bd8f22fb8f7b4eccc534269b985514525c3aadd03b42cbad",
+    "designs/all-in-accounting/movements/zz-assembly.surql": "656b1dace8ab3799f8e7c12957ea449c0e5745bf201f97dd049cb422615699e6",
+    "designs/all-in-accounting/movements/zz-timed-production.surql": "5ef9d2ab27a6648f0a70182d60b65ef17d3a65f167b8ca465c3c93382d1dd57f",
+    "designs/all-in-accounting/schemas/cash_in.schema.json": "78851a1257ebc1a955de4840d212917ff9a05d6cc966f60993713957e322f6aa",
+    "designs/all-in-accounting/schemas/currency.schema.json": "37962c73b2da6d1d93b72f1644623615fe9a42276e5b0ff7157ea75acc51cf7c",
+    "designs/all-in-accounting/schemas/organization.schema.json": "873aee731699d1a83ab78fe8745d0f9e42d93f1860d76b27b6023f431c08f821",
+    "designs/all-in-accounting/schemas/treasury_account.schema.json": "ce0e13dc33b30522f359fee54c3c5dd48d53008ebbb4f7ed3d00c123d9601d81",
+    "designs/all-in-accounting/schemas/treasury.schema.json": "232dc1ed14ad585e048c1ba1dea8fc00b0f921cd06d874978a84f4e3f1921898",
+    "designs/all-in-one/accounts/billing.surql": "8ea3ff37d8ad48c21fb5e20067d60ced33c5779640054bd9e362663d49e0f155",
+    "designs/all-in-one/accounts/logistics.surql": "282079b3e1e7b85a8998d80620d8fbf221499cc7ba7c1e361d55e5be954c3686",
+    "designs/all-in-one/accounts/money.surql": "f5070ea3496167fb5265e7a6a27b3737d29258937ef4afb876d00c30e8ebe3cc",
+    "designs/all-in-one/accounts/schema.surql": "c6744367bff19827167afe68890b5e82351b5407714e830ba01abe176d6a4141",
+    "designs/all-in-one/core/schema.surql": "a76999195b2b488412101201f287019146766992877c19845b93be76db86d171",
+    "designs/all-in-one/crm/schema.surql": "dafc7c1d0e10ea0de0f1ffb094dd8ac947f402ecd4f24eb49ca49fe70e41a4da",
+    "designs/all-in-one/hrm/schema.surql": "37635f10de3fd8c571f6812f18d1ff6dc4a3c8fb5fb01ff8f820ee9f131e5f00",
+    "designs/rebase-system/evidence/2026-10-02-fixture-sdk-smoke.cjs": "2cc51566eb0a9e7f6ad2c115fca4c5de7b9cf2f2d434077d5a044adc33e426f0",
+    "designs/test/data/file_storage_config.schema.json": "d8c73918f599b23b33a6cde10b8dab6e5de6207d0dd6d368972d797d95120099",
+    "designs/test/data/razorpay_config.schema.json": "b699df2186bc78e6ec472b7074970b6ee0e938fec15700d149c9eed06aa4c94d",
+    "designs/test/data/razorpay_order.schema.json": "207d58dbeeea0725a0ea56ec2e6d5f81fc9a6f7731d1e0c8ebaa1d053fc90bcc",
+    "designs/test/data/rebase_group.schema.json": "58a341d710476a05c95b3606aa6bda47e4bdd125d2dfe5d89015baae1036a363",
+    "designs/test/data/rebase_user.schema.json": "bab96b4724339b80c4cd2fef1f7af02222063169c4e96357f8443c6b076ae835",
+    "designs/test/data/send_brevo_email.schema.json": "a0f67ef9e88175e2271915902f1c6cf2ff404c993d47a4012599ddcff21b4c4b",
+    "designs/test/data/send_twilio_sms.schema.json": "b0b59d7342ccf3e1ec4d4e04d4108b7f60abbba5908359b0ba79293e01023e5d",
+    "designs/test/data/test_attachment.schema.json": "c99a17cff8906c06119fc8178308f3c07e7bad13883ef71784c782cf9f0a354e",
+    "designs/test/data/test_multiref.schema.json": "f607b98b78e21c63db323dbe58953882fe2596a07555f3dacb905a953be546d8",
+    "designs/test/data/test_primitive.schema.json": "edca6dfb0f1d79b2172f912cabb3a112bdd7440fe587b666ba88bc591f9db771",
+    "designs/test/data/test_relation.schema.json": "18395a9ada3f025de2c6dd8a0656768dbbfd7124effbc42cc0e7829d2a6f6bda",
+    "designs/test/data/test_tree.schema.json": "207025fedffa8d8f9d78cca43fe235377d3040ecfb120be8ef63de37e422441d",
+    "designs/test/schema.surql": "f5e68fc981f5de7e82de7d727aba1bfb91cdab28e09d9aaa3a10205bb094de70",
+    "designs/test/seed.surql": "61d47de510bdcee003e640c4f7041dcf0ba9519f80bbe03e2725421fd8560b24",
+    "designs/test/table-handlers/razorpay_order.js": "c26e71d28ea564ede68080d3ec125bc3f6e67f182577d2c5bb5a4925d29dd1c8",
+    "designs/test/table-handlers/send_brevo_email.js": "14b86887a4cc21db23bc251ccd4014ee269a280bdc568ff66454e1b0a3c662eb",
+    "designs/test/table-handlers/send_twilio_sms.js": "332927b22c4a163ffa108eb9a6fb6d67f920542b6b782809df48f095bbb01e99",
+    "designs/test/table-handlers/test_attachment_cleanup.js": "f4344f69f0e6a2afddd67d3ac1b7d2f0bc2874b4098dbe08a129d3280fd58e0c",
+    "designs/test/table-handlers/test_attachment.js": "39449c06d32ec560326814525bf80f98f9f47a2f56ff20e4a055b691c6600a17",
+    "designs/test/views.surql": "6bcea6de96bb14c86e3a95a31d8b08c2253d98ef55fb1040e22afc6845045312",
+    "designs/test/webhook-handlers/razorpay.js": "4687f541c06c7fb33349254e66d9aef58154cc890d491e01347c24d87beffd8e",
+    "dev-tools/accounting/fixture-example.js": "1464540cbc9d0342eb8cf3ce67f3be023bd3678e66c1cb49dccd5a7d87397e43",
+    "dev-tools/checks/accounts-probe.js": "019918769bd58f935d62a8bdf1b226b73f24cf5c70dfebdbc20c3c532ccfaee3",
+    "dev-tools/checks/adapter-probe.js": "f9e87ab7f16c0b3b78f6e45bed351eab4267c661b93d14c1d224dcd976b66418",
+    "dev-tools/checks/admission-capacity-probe.js": "76ffa00e1c1760585b03ad54bbf946cc6e51e8b122f04887e74e4df9053f7aaf",
+    "dev-tools/checks/architecture-probe.js": "16b6284402cb49729fc905f1454603124505c09b958fbd9d7e7b3da5be0fc775",
+    "dev-tools/checks/authentication-probe.js": "e8921cb76000c658f88cf6127abf1e2be9b43764a59304492703eceb61d5df1f",
+    "dev-tools/checks/compiler-probe.js": "58b86a68534e1e0037ad9e4442210f35a068cf5fe46fe2ef274e0ef6fcc327b9",
+    "dev-tools/checks/credential-probe.js": "116a184cc61ddfdfe2e37b28cbfb59ba197f2fd0e09190b637da114d2613a21b",
+    "dev-tools/checks/dead-letter-retention-probe.js": "389a4b20020546f1d286aed67826189e5c86ee46e87eb8551c364ec8714164b8",
+    "dev-tools/checks/environment-probe.js": "bf65fb12e39fa2f3af6eaa8ce1fdf7b9bd6a1a36f01f4a8a561486912272418b",
+    "dev-tools/checks/probe.js": "aaf11a46cdb5070e5bafc8ed20acb7fcf4fbffa341327d8d0878964ee6b2119b",
+    "dev-tools/checks/queue-probe.js": "bfcb143ab29469bcc53ee015b5f30c9061f42e25137071c895880489e17e638e",
+    "dev-tools/checks/razorpay-refund-probe.js": "6fd302726d049cd0ada03ecabe87ee62b5a40e8b6cf1c5bbccb905f8e5df1b01",
+    "dev-tools/checks/runtime-probe-worker.js": "7b106674792343afcc8532fca7b38615eaf69ce81f2f004d48edee810664347e",
+    "dev-tools/checks/runtime-probe.js": "34381b6ea213657c9a13e145c9f62a39368ea5b76c5647834fb0b282ec8680db",
+    "dev-tools/checks/scheduling-probe.js": "6013f34f53322983e788964d077ac68046bcf53959534f7fddc86bb981a74be2",
+    "dev-tools/checks/suite-probe.js": "fe55498ab80d3f7c3974bcb5a65e92abf1ca5acb150d12a957c0626244aaa760",
+    "dev-tools/checks/webhook-inbox-probe.js": "a710fa77be674b785e8b9e019d6efa44d3634ca26def25489f66f20d5790dd4d",
+    "dev-tools/client-schemas.js": "bd6f28241027a40f15faefa6f09d40cd10f8ccec59f1bb4e5e5dfd42e556975d",
+    "dev-tools/compiler/analyze.js": "c8c5dd8257dc5efe312f68d07aa32f0839805c7ffd953286cd1aa4a50e1b63ee",
+    "dev-tools/compiler/cli.js": "4600ef6bf406dfe53da1c1b15eb5345ec2e3de5aae3df1e50bb08b18a5b18a35",
+    "dev-tools/compiler/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "dev-tools/compiler/fields.js": "4248dcbe0f3f43e31944ae88a371f20fe1091aa3e4c78155ab5f2278dccb9ffc",
+    "dev-tools/compiler/generators/access.js": "7e2eaa5341cbd8ed844696c853bafdf2e9d44bacccc6ddff1dc97104906f1bf5",
+    "dev-tools/compiler/generators/audit.js": "2167ed9a35c53d84bfcebbfa258a0833f1fce20a7b89c4d5735b10a78500ad70",
+    "dev-tools/compiler/generators/effects.js": "b79ac8bd1f29ab7d3acda91534abe21d8ee428672e514eb06213221824065c29",
+    "dev-tools/compiler/generators/indexes.js": "3ae9cbae42af2d232ecfbd9424d705774d95890999aa741e658214eeddc69c64",
+    "dev-tools/compiler/generators/reactivity.js": "0be0473c36fcfc7dd5b2132556f4041d47974824d4ba8440299dce25800fa17a",
+    "dev-tools/compiler/generators/references.js": "df902536e2295ea02be01e0721bdadb2f3453944706640e29b74854d36e5c65e",
+    "dev-tools/compiler/generators/security.js": "7ec9a4e1e65abeaf0401632002ee5c640a473e0fef2a425437410ca3dfb3e053",
+    "dev-tools/compiler/generators/temporal.js": "0f834a672217ad66766aeab58c247944fa00d1ee98c9ad6b15ab69ebccb290a8",
+    "dev-tools/compiler/generators/tree.js": "25dd1e515f84fa47f3ca7ecb1f4f01da3018ea3e67c66f85664abd86cac4b3dc",
+    "dev-tools/compiler/index.js": "fe9026df7106d91aaf287e1e0c729dda6a3a2c4494680831414ca956d6ccbc8b",
+    "dev-tools/compiler/materials.js": "d4b9d15fde9253509b5977d22fc054a5b4f4bc72c1bb729a152b28f97f91d9f6",
+    "dev-tools/compiler/pipeline.js": "e579807131ccb24ce2e3ef69dde49cb37764df294aab9906920a07b061f9de95",
+    "dev-tools/compiler/principals.js": "666d6df7a423249f13518c65947d5892b5ff0867fce8a133b6e918c422ac9cc0",
+    "dev-tools/compiler/project.js": "a29a3431ab3a678507dda9584defbd6be9e1d63719a623f498965d995857cbac",
+    "dev-tools/compiler/readers.js": "f32737dc5f4162c1af63b8ff911572af58396f57e40628a8b0f6968b30a61c0e",
+    "dev-tools/compiler/schema.js": "5b17050ae5c767921048178e264a9c28b5f5d67882cbf6654e6ebfc7519de942",
+    "dev-tools/compiler/security-policy.js": "3cfa9aa26d7c3c1db693cf4552fa34e60ec5738c0d4d9aec36d70bc65efd17e9",
+    "dev-tools/compiler/surql.js": "6004ce3d170998a78038ac2faccea58f17b5eb75722f768a0d71d0ae2b7fe9de",
+    "dev-tools/compiler/table-handlers.js": "3be595f8f555f95cc0b551b4f5957022ed0a01be7c9513d8944e56c83375d820",
+    "dev-tools/compiler/temporal.surql": "e8b893217ce0b67c6263743c342404dd3dc64cab4a7a6c8ffb5d306e1cdfd925",
+    "dev-tools/compiler/tree-contract.js": "9b66357f0361af045638c7f7ae2f8bb97efecebcc018d498fc219c0dbc9cb3dd",
+    "dev-tools/experiments/authorization-performance.js": "5d7def3edddac33123c8aa388506e0862d69e656af80829fdac5dab2207cc93f",
+    "dev-tools/experiments/reference-permission-performance.js": "56597249da297188e4b8bdceafbe8e967a02801f09a07dea72898357763a9347",
+    "dev-tools/experiments/synthetic-write-amplification-probe.js": "3b77b8786bd37888824e93a48acd5bafe73b47385aab2abe1d684d9f543693e9",
+    "dev-tools/experiments/synthetic-write-amplification/schema.surql": "41d274d45c0e97315424d7d0819c79699e4f264cdf233c96c82b17e1ed607117",
+    "dev-tools/experiments/write-amplification-probe.js": "3bcdad41054c6fa50f00310514aff2455509fd9b977894fc477131df32a0a746",
+    "dev-tools/index.js": "e19e670c292ae8b0b186613cc1c050caf8c9f742f8471eb8a37dd8f4a574ec4a",
+    "dev-tools/populate.js": "73297ea3b1fa9d57e97e28a81f2b11d22ef2a858aaf2952109aa37a2d522ba7e",
+    "dev-tools/temporal-tree/harness.js": "d10e00c2e50517702c9e2172ee61c732225bf7451d4f5ba6b21be99d688bb93c",
+    "dev-tools/temporal-tree/reactivity-probe.js": "c4b76e95b783af2d5228a9831915d92890b311798a4ce420771f0a9d5130ef02",
+    "dev-tools/tests/client-schemas.test.js": "0bb5306ecdf7abdfcc11b05527ffaf350ea5c374b0c32076192d954da60123a0",
+    "dev-tools/tests/workbench.test.js": "5db4d7009213a18871ff2b7411837facac8bc9eec79bc64059517c478480c59b",
+    "dev-tools/workbench.js": "eca75d999a28e5784fd9f4474fe4fa4c143353bb140f2df524dd4c0dbdf7409e",
+    "framework/access.surql": "3bed89ec524c3c14ed3e6940120618fc3053580f54ad236f7fb27eb7e0356e40",
+    "framework/audit.surql": "8e304b65f8ec65e5fcb3f0040f85a1ba3e754fba795676953e7cb84583ddb374",
+    "framework/auth.surql": "03c8f5f94e466cc67abbffaac9e8ee8c7a05860e588c926c43cbe47f6a5dbf1b",
+    "framework/authentication.surql": "1b2a0eafd9ad100f4177672594e901d5ae5aed2f45f32efc6b23946ded5bc076",
+    "framework/reconciliation.surql": "c2a8699547d2a6dc064b18e1ffbc159593612b0402f6c0e4e0845e05403174df",
+    "framework/webhooks.surql": "0d9bf0178b6b5815fef19982dbefb8232596e24da17036103770458cce00344f",
+    "gateway/app.js": "7a84e605b23b36b1412d15fb590b9c5a2222ab25d31d847ef7578cfd32117ee1",
+    "gateway/authentication-payload.js": "e24d411d659b9bf634e9c5d749cd13f7470fe0545637dbbdfc39b445c6ab17f0",
+    "gateway/authentication.js": "9fc10fe58530b94566c298b974a46d9800675014c9667054c86043938262748b",
+    "gateway/connection.js": "7e263473c6d63698ade987c67ea67aa0cc57da669eb367242c3474b8906abaab",
+    "gateway/directory.js": "a6a230164d64e28ab9db5c1e08621f98e6bc3be2a7ec29913f11a7e365c8f2ed",
+    "gateway/errors.js": "2e72363bb1e9677385cabf3a5bc8cdf8fe852b2894523fa3d73b683f682d4fb9",
+    "gateway/handlers.js": "6795d5ad50d13c541be645dba001ae99f74572e1a90d36e03d0daa8e78109428",
+    "gateway/oauth.js": "88148635abb7390263fb98f06559beafaba75446c64b2f4c299e21429c8a46a8",
+    "gateway/operation-adapters.js": "82a20796b7ae50e00fec423bd86be06d72e6b51c8e5319f978a8fad31ba283b5",
+    "gateway/operations/authentication-delivery.js": "ba5e43d6902a81cfe89dde5021c3d47d27ada6e3ca1e3efe3a9c4726ada932f3",
+    "gateway/operations/provider-receipt.js": "0f2f07553667eb240565dcf587aa12b2affac8fa159ad6ce93eeeb9b0c0af2c5",
+    "gateway/providers/brevo-email.adapter.js": "6ac020500b08922a643fd593a892b286fb9e2456047633395df7160f6590f4a1",
+    "gateway/providers/http.js": "c69ad10f7ce87014c60836ccdaf5a11c39d54a83b31df823734180ad36c9942d",
+    "gateway/providers/index.js": "cfe84c61bf7f0585c4c06268235677871b8f7a72e25d5b9d0508579a837ebde3",
+    "gateway/providers/razorpay-order.adapter.js": "19a33df65381c8f4bd534e0ecf008b9aac9a6400647fbf45146d62f6bf917ee0",
+    "gateway/providers/razorpay-webhook.adapter.js": "05ca3e47832dc3a9e694432db5d0da18b9897996c39f490411f53f578ff94c75",
+    "gateway/providers/s3-storage.adapter.js": "a38fd49cce31652452424704e03a25ec3f083e7cd183105c929afbe8cbfad2d9",
+    "gateway/providers/signatures.js": "bd2d16739738d1542ad81c065a7214e7b7e8fee73fcf9c6888ea8391cf27a437",
+    "gateway/providers/twilio-sms.adapter.js": "c09706b81dca80c505a3028287e1dd3ff49d5549469cc256b6b7e4fcd666caa6",
+    "gateway/queues/atomic-admission.js": "5f2595efab3ab610f2bf49f05b443f48c9573ea4acd1bc1d6941edd3c251c1ad",
+    "gateway/queues/bullmq.js": "8a88e64106e8c3a56b245038ff0969c09edd42627b81515921acaac49fac8854",
+    "gateway/queues/index.js": "67b0043c9433150aadac4cccf80b176761def491ea9104d706f51ee85df65156",
+    "gateway/queues/port.js": "09563e7de2c96d8ddc7fb6b95625a50eb3699a602e93e9c37e0083ea3b7cbc67",
+    "gateway/rate-limit.js": "aeed983f27cf8587ac21f8fcf591595ba30a017d8bdd97f3c317d03aeed8312d",
+    "gateway/reconciler.js": "b185f2cfca00ca3e7aeb3dfe8dc9ea9837778b2c4ac890e646bac75ef66b0457",
+    "gateway/runtime.js": "d76999d6160f68b1b9d8a3bd9ec11561d0bd4674c4adb8b277bf29cc2aec3cf7",
+    "gateway/server.js": "806e0d93f5f36b6555443741a2ae1f9eab0612a7c6a98057926d1359c27fbc60",
+    "gateway/store.js": "0c0704710be22ed3f78c3a4668a698e81249d01240f814da7980ac3c7f6ae0b6",
+    "gateway/utils.js": "a12c7e4640a52d4f409b0a34c3d6b471924cdb9f788b0e03f1eaf0a778520690",
+    "gateway/webhook-routes.js": "3cb1f573011feb9f476a4082cc7b2ad402c1d821ed3dcf9ee68ed4d6e4eb27b7",
+    "gateway/webhooks.js": "ae8d4346e72e4335e9d90de84ad6138214987197c15857113bc0ed7af04fc34d",
+    "package-lock.json": "4b3cd5e807d00ee320beaa83cf156fa9ad023dbcc3996e0ce255bf526d6a6bf1",
+    "package.json": "4fcefce8b016a9852ade4da7d4516037531ae29ca3c93db87c18f3d869de3d5b"
+  },
+  "findingsFixed": [
+    {
+      "issue": "Overlapping build/source trees and generated-file symlinks could destroy authoring input.",
+      "fix": "Preflight project/framework/output directory overlap, canonical aliases, known generated-file symlinks, and copied trees before any output pruning.",
+      "evidence": "Disposable reproduction changed authoring source before fix; regression now snapshots source/output bytes, paths, modes, and symlinks in build and check modes."
+    },
+    {
+      "issue": "Explicit project paths and live mutable/reassigned workbench options were resolved incorrectly or dropped.",
+      "fix": "Explicit projectDir is a path, live project options are read per operation, per-call project replaces inherited projectDir, and .clear restores initial helpers/project while preserving connection tracking."
+    },
+    {
+      "issue": "Automatic REPL inspection showed full compiler results including private bundle/configuration.",
+      "fix": "Workbench build/check custom inspection is compact; explicit property access and public JS API retain complete compiler results."
+    },
+    {
+      "issue": "Shutdown could finish before async closes or lose a manual close failure during a pending open.",
+      "fix": "Shared idempotent close promises, wait for pending opens and closes, retain close errors and report them after settlement.",
+      "evidence": "A root-added deterministic regression failed before the retained-error fix; final workbench tests pass."
+    },
+    {
+      "issue": "Version-specific/unanchored UUID handling confused UUIDv4, UUID-looking strings, SDK strings, and actual database casts.",
+      "fix": "Bounded anchored parsing preserves native UUID versus simple string identity across SDK u-double-quote/angle-key and DB u-single-quote/backtick-key forms.",
+      "evidence": "Initial memory smoke failed on actual SELECT VALUE <string>id; final retained smoke checks actual DB strings and SDK values."
+    },
+    {
+      "issue": "Selected process-profile options could be silently ignored.",
+      "fix": "Public API consistently rejects process-level overrides; configuration stays in config/environment.js."
+    },
+    {
+      "issue": "Legacy probe builds nested generated output under authoring inputs.",
+      "fix": "Compiler and reactivity probe fixtures use disjoint temporary source/build siblings; generated domain logic unchanged."
+    },
+    {
+      "issue": "Handoff counts, filesystem/database wording and fixture descriptions were stale.",
+      "fix": "Updated usage guide, plan and canonical restart handoff with final commands, evidence, bounded work packets, ownership, completion criteria and failure triage."
+    }
+  ],
+  "limits": [
+    "All 18 original artifacts match clean d0593fa under the same empty process profile; this is not proof of every runtime configuration or deployment.",
+    "Nine surreal validate calls establish syntax, not full accounting behavior. The memory smoke covers six explicit rows and one balance.",
+    "No broad npm run verify, Redis/provider suite, production migration, capacity benchmark, or frontend implementation is claimed. An earlier broad verify was stopped and is not acceptance evidence.",
+    "Path guards handle checked source/output and copy aliases plus known output symlinks; this trusted local tool is not a hostile-filesystem sandbox or atomic multi-file writer.",
+    "Public schemas cover five authored create inputs only. Native fixture ID conversion handles the documented subset, not arbitrary SurrealQL key expressions.",
+    "Temporary paths may disappear; retained hashes, source fingerprints, documented commands, and the dated smoke script are the durable evidence."
+  ],
+  "finalReviewChecks": {
+    "trackedDiffWhitespace": "git diff --check: exit 0",
+    "existingLocalMarkdownLinks": 56,
+    "untrackedAndGuideWhitespaceFiles": 60,
+    "sourceFingerprintsRechecked": 149,
+    "relocatedSourceBytesRechecked": 19,
+    "preservedScriptKeysRechecked": 57,
+    "reactivityProbeSyntax": "node --check dev-tools/temporal-tree/reactivity-probe.js: exit 0; no full reactivity DB suite rerun for the path-only fixture change.",
+    "legacyWhitespace": "An initial over-broad whole-input scan reported pre-existing whitespace in designs/test/views.surql; the file was verified byte-identical to baseline and left unchanged. Final added-file and tracked-diff whitespace checks passed."
+  }
+}

@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { parseSchema } = require('../../src/schema');
-const { resolveTreeContract } = require('../../src/tree-contract');
+const { parseSchema } = require('../compiler/schema');
+const { resolveTreeContract } = require('../compiler/tree-contract');
 
 function main() {
   const root = "@rebase-tree-root @rebase-tree-key int";

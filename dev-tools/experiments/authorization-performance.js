@@ -8,7 +8,7 @@ const { performance } = require("node:perf_hooks");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "../..");
 const NAMESPACE = "rebase_perf";
 const DATABASE = "authorization";
 const PASSWORD = "password123";

@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { createRuntime } = require("../gateway/runtime");
-const { createWebhookRouteCodec } = require("../gateway/webhook-routes");
+const { createRuntime } = require("../../gateway/runtime");
+const { createWebhookRouteCodec } = require("../../gateway/webhook-routes");
 
 function createHarness({ failCommit = false, loseCommitResponse = false, queueDown = true, queuePort } = {}) {
   const route = {

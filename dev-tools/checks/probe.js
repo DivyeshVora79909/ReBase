@@ -7,9 +7,9 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
-const { populate } = require("./populate");
-const { resolveConfiguration } = require("../config/environment");
-const { compileFromArgs } = require("./compiler/cli");
+const { populate } = require("../populate");
+const { resolveConfiguration } = require("../../config/environment");
+const { compileFromArgs } = require("../compiler/cli");
 
 function queryResult(response) {
   if (!Array.isArray(response)) return response;
@@ -82,7 +82,7 @@ function compile(projectDir, outputDir, namespace, database) {
     frameworkDir: "framework",
     outputDir,
     configuration,
-  }, path.resolve(__dirname, ".."));
+  }, path.resolve(__dirname, "../.."));
 }
 
 async function connect(endpoint, namespace, database) {
@@ -545,7 +545,7 @@ async function dataProbe(options) {
       states.push(setupState);
       const result = await populate({
         project: "test",
-        sourceDir: path.resolve(__dirname, "../designs/test"),
+        sourceDir: path.resolve(__dirname, "../../designs/test"),
         buildDir: setupState.buildDir,
         configuration: resolveConfiguration({
           SURREAL_ENDPOINT: options.endpoint,

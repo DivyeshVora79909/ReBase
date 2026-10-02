@@ -10,8 +10,10 @@ const oracle = require('./oracle');
 
 async function setup() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-v2-compile-'));
-  fs.copyFileSync(path.join(__dirname, 'compiler-fixture.surql'), path.join(dir, 'schema.surql'));
-  const result = compileFromArgs({ projectDir: dir, frameworkDir: 'framework', outputDir: path.join(dir, 'build') });
+  const projectDir = path.join(dir, 'project');
+  fs.mkdirSync(projectDir);
+  fs.copyFileSync(path.join(__dirname, 'compiler-fixture.surql'), path.join(projectDir, 'schema.surql'));
+  const result = compileFromArgs({ projectDir, frameworkDir: 'framework', outputDir: path.join(dir, 'build') });
   const server = await start();
   const query = client(server.url);
   try {

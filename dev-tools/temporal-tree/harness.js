@@ -1,11 +1,12 @@
 "use strict";
-// Disposable on-disk SurrealKV only; never reads application environment profiles.
+// Disposable SurrealDB: SurrealKV by default, memory when explicitly requested.
+// Never reads application environment profiles.
 const fs = require("node:fs");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
-const { splitStatements } = require("../../src/surql");
+const { splitStatements } = require("../compiler/surql");
 const binary = process.env.REBASE_TREE_SURREAL_BIN || "surreal";
 
 async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surrealkv" } = {}) {
@@ -14,8 +15,9 @@ async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surre
   await new Promise(resolve => socket.listen(0, "127.0.0.1", resolve));
   const port = socket.address().port;
   await new Promise(resolve => socket.close(resolve));
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-temporal-tree-"));
-  const child = spawn(binary, ["start", `${engine}://${directory}`, "--bind", `127.0.0.1:${port}`,
+  const directory = engine === "memory" ? null : fs.mkdtempSync(path.join(os.tmpdir(), "rebase-temporal-tree-"));
+  const storage = engine === "memory" ? "memory" : `${engine}://${directory}`;
+  const child = spawn(binary, ["start", storage, "--bind", `127.0.0.1:${port}`,
     "--user", "root", "--pass", "root", "--no-banner", "--log", "error"], { stdio: ["ignore", "ignore", "pipe"] });
   let log = "";
   child.stderr.on("data", chunk => { log += chunk; });
@@ -29,7 +31,7 @@ async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surre
       await closed;
       clearTimeout(timer);
     }
-    if (!keepData) fs.rmSync(directory, { recursive: true, force: true });
+    if (!keepData && directory) fs.rmSync(directory, { recursive: true, force: true });
   };
   try {
     for (let i = 0; i < 150; i++) {

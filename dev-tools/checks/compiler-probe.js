@@ -4,17 +4,17 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { compileFromArgs, main: compilerMain } = require("./compiler/cli");
-const { parseArgs: parseMigrationArgs, runLifecycleMigration } = require("./lifecycle-migration");
-const { resolveConfiguration } = require("../config/environment");
-const compilerApi = require("./compiler");
-const { businessFields } = require('../src/fields');
-const { parseSchema } = require('../src/schema');
-const { generateSecurity } = require('../src/generators/security');
-const { generateRuntimeContracts } = require('../src/generators/effects');
-const { classifyMaterials, materialStatements } = require('./compiler/materials');
+const { compileFromArgs, main: compilerMain } = require("../compiler/cli");
+const { parseArgs: parseMigrationArgs, runLifecycleMigration } = require("../lifecycle-migration");
+const { resolveConfiguration } = require("../../config/environment");
+const compilerApi = require("../compiler");
+const { businessFields } = require('../compiler/fields');
+const { parseSchema } = require('../compiler/schema');
+const { generateSecurity } = require('../compiler/generators/security');
+const { generateRuntimeContracts } = require('../compiler/generators/effects');
+const { classifyMaterials, materialStatements } = require('../compiler/materials');
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "../..");
 const FRAMEWORK = path.join(ROOT, "framework");
 
 function schema(effect = "") {
@@ -192,24 +192,24 @@ async function main() {
     ]) {
       const dir = path.join(temp, name);
       project(dir, alteration(fixture), null);
-      assert.throws(() => compile(dir, path.join(dir, 'build')), error);
+      assert.throws(() => compile(dir, path.join(temp, `${name}-build`)), error);
     }
     const badTreeDir = path.join(temp, 'bad-tree-source-location');
     project(badTreeDir, fixture.replace('@rebase-tree-root @rebase-tree-key datetime', '@rebase-tree-root'), null);
-    assert.throws(() => compile(badTreeDir, path.join(badTreeDir, 'build')),
+    assert.throws(() => compile(badTreeDir, path.join(temp, 'bad-tree-build')),
       /tree_owner\.z_book.*project:material\.surql:\d+:\d+/);
     const forwardSource = fixture.replace('VALUE $this.a_user.name', 'VALUE $this.z_zz')
       + "\nDEFINE FIELD z_zz ON principal_report TYPE string VALUE $this.a_user.name COMMENT '@rebase-derived';";
     const forwardDir = path.join(temp, 'forward');
     project(forwardDir, forwardSource, null);
-    const forward = compile(forwardDir, path.join(forwardDir, 'build'));
+    const forward = compile(forwardDir, path.join(temp, 'forward-build'));
     assert.match(forward.bundle, /LET \$r1 = object::extend\(\$r0, \{ z_zz:/);
     assert.match(forward.bundle, /LET \$r2 = object::extend\(\$r1, \{ z_name:/);
     const cyclicSource = fixture.replace('VALUE $this.a_user.name', 'VALUE $this.z_zz')
       + "\nDEFINE FIELD z_zz ON principal_report TYPE string VALUE $this.z_name COMMENT '@rebase-derived';";
     const cyclicDir = path.join(temp, 'cyclic');
     project(cyclicDir, cyclicSource, null);
-    assert.throws(() => compile(cyclicDir, path.join(cyclicDir, 'build')), /principal_report: derived field cycle z_name -> z_zz -> z_name/);
+    assert.throws(() => compile(cyclicDir, path.join(temp, 'cyclic-build')), /principal_report: derived field cycle z_name -> z_zz -> z_name/);
     const valid = path.join(temp, "valid");
     const output = path.join(temp, "build");
     project(valid, schema(validEffect()));
@@ -414,10 +414,10 @@ async function main() {
     for (const [name, source, handlers, expected] of cases) {
       const directory = path.join(temp, name.replaceAll(" ", "-"));
       project(directory, source, handlers);
-      assert.throws(() => compile(directory, path.join(directory, "build")), expected, name);
+      assert.throws(() => compile(directory, path.join(temp, `${path.basename(directory)}-build`)), expected, name);
     }
 
-    const mutableRegistry = require("../gateway/handlers").loadTableHandlers(path.join(valid, "table-handlers"), {
+    const mutableRegistry = require("../../gateway/handlers").loadTableHandlers(path.join(valid, "table-handlers"), {
       contracts: new Map(Object.entries(result.contracts.tables)),
       mutable: true,
     });
@@ -425,7 +425,7 @@ async function main() {
     assert.equal(mutableRegistry.get("delivery"), null);
     mutableRegistry.register({ table: "delivery", on: { async CREATE() { return { outcome: "success", patch: {} }; } } });
     assert(mutableRegistry.get("delivery"));
-    const frozenRegistry = require("../gateway/handlers").loadTableHandlers(path.join(valid, "table-handlers"), {
+    const frozenRegistry = require("../../gateway/handlers").loadTableHandlers(path.join(valid, "table-handlers"), {
       contracts: new Map(Object.entries(result.contracts.tables)),
     });
     assert.throws(() => frozenRegistry.register({ table: "delivery", on: { async CREATE() {} } }), /frozen/i);

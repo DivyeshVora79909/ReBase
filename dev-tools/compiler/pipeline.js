@@ -1,21 +1,21 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { analyzeSchema } = require("../../src/analyze");
-const { generateAuditEvents } = require("../../src/generators/audit");
-const { generateOAuthAccess } = require("../../src/generators/access");
-const { generateIndexes } = require("../../src/generators/indexes");
-const { generateReferenceAssertions } = require("../../src/generators/references");
-const { generateCascades, generateReaderCycleGuards, generateViews } = require("../../src/generators/reactivity");
-const { generateRootPermissions, generateSecurity } = require("../../src/generators/security");
+const { analyzeSchema } = require("./analyze");
+const { generateAuditEvents } = require("./generators/audit");
+const { generateOAuthAccess } = require("./generators/access");
+const { generateIndexes } = require("./generators/indexes");
+const { generateReferenceAssertions } = require("./generators/references");
+const { generateCascades, generateReaderCycleGuards, generateViews } = require("./generators/reactivity");
+const { generateRootPermissions, generateSecurity } = require("./generators/security");
 const {
   generateEffectEvents,
   generateLifecycleMigration,
   generateLifecycleFields,
   generateOperationEvents,
   generateRuntimeContracts,
-} = require("../../src/generators/effects");
-const { generateTemporal, resolveTemporalModel } = require("../../src/generators/temporal");
-const { parseSchema } = require("../../src/schema");
+} = require("./generators/effects");
+const { generateTemporal, resolveTemporalModel } = require("./generators/temporal");
+const { parseSchema } = require("./schema");
 const { PRINCIPAL_TABLES, detectSelectPolicy, validatePrincipalTables } = require("./principals");
 const { composeProfiles, contextStatement } = require("./materials");
 
@@ -174,6 +174,36 @@ function generateBundle(materials, options = {}) {
   return emitModel(resolveModel(materials, options));
 }
 
+function pathWithin(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (
+    relative !== ".." &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  );
+}
+
+function canonicalPath(value) {
+  let current = path.resolve(value);
+  const missing = [];
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    missing.unshift(path.basename(current));
+    current = parent;
+  }
+  return path.join(fs.realpathSync.native(current), ...missing);
+}
+
+function assertDisjointPaths(leftPath, rightPath, label = "Source and output") {
+  const left = path.resolve(leftPath);
+  const right = path.resolve(rightPath);
+  const paths = [[left, right], [canonicalPath(left), canonicalPath(right)]];
+  if (paths.some(([first, second]) => pathWithin(first, second) || pathWithin(second, first))) {
+    throw new Error(`${label} paths must not overlap: ${left} and ${right}`);
+  }
+}
+
 function copyTree(sourceDir, outputDir) {
   if (!sourceDir || !fs.existsSync(sourceDir)) return [];
   const copied = [];
@@ -192,6 +222,33 @@ function copyTree(sourceDir, outputDir) {
   }
   visit(sourceDir);
   return copied.sort();
+}
+
+function preflightArtifacts(outputDir, copies = []) {
+  for (const name of [
+    "schema.surql",
+    "runtime-contracts.json",
+    "migrate-one-shot-backfill.surql",
+    "migrate-one-shot-finalize.surql",
+  ]) {
+    const target = path.join(outputDir, name);
+    if (fs.lstatSync(target, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      throw new Error(`Generated artifact must not be a symbolic link: ${target}`);
+    }
+  }
+  const trees = copies.filter((value) => value?.sourceDir && value?.outputDir);
+  for (const tree of trees) {
+    assertDisjointPaths(outputDir, tree.sourceDir, "Artifact output and copy source");
+    for (const source of trees) {
+      assertDisjointPaths(source.sourceDir, tree.outputDir, "Copied artifact source and destination");
+    }
+  }
+  for (let index = 0; index < trees.length; index += 1) {
+    for (let next = index + 1; next < trees.length; next += 1) {
+      assertDisjointPaths(trees[index].outputDir, trees[next].outputDir, "Copied artifact output");
+    }
+  }
+  return trees;
 }
 
 function treeFiles(directory) {
@@ -216,7 +273,7 @@ function checkCopiedTree(sourceDir, outputDir) {
 }
 
 function writeArtifacts({ outputDir, bundle, contracts, lifecycleMigration, copies = [] }, { check = false } = {}) {
-  const trees = copies.filter((value) => value?.sourceDir && value?.outputDir);
+  const trees = preflightArtifacts(outputDir, copies);
   const schemaPath = path.join(outputDir, "schema.surql");
   const contractPath = path.join(outputDir, "runtime-contracts.json");
   const backfillPath = path.join(outputDir, "migrate-one-shot-backfill.surql");
@@ -253,11 +310,13 @@ function writeArtifacts({ outputDir, bundle, contracts, lifecycleMigration, copi
 }
 
 module.exports = {
+  assertDisjointPaths,
   contextOptions,
   checkCopiedTree,
   copyTree,
   emitModel,
   generateBundle,
+  preflightArtifacts,
   resolveModel,
   section,
   writeArtifacts,

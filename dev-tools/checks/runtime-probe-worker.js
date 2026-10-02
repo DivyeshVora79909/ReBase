@@ -3,10 +3,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { Surreal } = require("surrealdb");
-const { loadTableHandlers } = require("../gateway/handlers");
-const { createAdapters } = require("../gateway/providers");
-const { createRuntime } = require("../gateway/runtime");
-const { createTableStore } = require("../gateway/store");
+const { loadTableHandlers } = require("../../gateway/handlers");
+const { createAdapters } = require("../../gateway/providers");
+const { createRuntime } = require("../../gateway/runtime");
+const { createTableStore } = require("../../gateway/store");
 
 async function main() {
   const required = [
@@ -20,7 +20,7 @@ async function main() {
   const missing = required.filter((name) => !process.env[name]);
   if (missing.length) throw new Error(`Missing worker probe settings: ${missing.join(", ")}`);
 
-  const projectDirectory = path.resolve(__dirname, "../build/test");
+  const projectDirectory = path.resolve(__dirname, "../../build/test");
   const runtimeContracts = JSON.parse(fs.readFileSync(path.join(projectDirectory, "runtime-contracts.json"), "utf8"));
   const contracts = new Map(Object.entries(runtimeContracts.tables || {}));
   const handlers = loadTableHandlers(path.join(projectDirectory, "table-handlers"), { contracts });

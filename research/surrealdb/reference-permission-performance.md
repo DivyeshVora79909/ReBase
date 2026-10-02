@@ -39,7 +39,7 @@ Measured on:
   record.
 
 The reproducible harness is
-[`dev-tools/reference-permission-performance.js`](../../dev-tools/reference-permission-performance.js)
+[`dev-tools/experiments/reference-permission-performance.js`](../../dev-tools/experiments/reference-permission-performance.js)
 and is exposed as `npm run probe:reference-permissions`.
 The project requires Node `>=20`; when the `surreal` executable is not on
 `PATH`, set `REBASE_REFERENCE_PERF_SURREAL_BIN=/absolute/path/to/surreal`.

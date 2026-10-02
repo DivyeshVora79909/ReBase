@@ -134,7 +134,7 @@ closes the planning deliverable, not any proposed implementation gate.
 
 ### C1 — Typed ordered roots
 
-**Complete.** `src/tree-contract.js` and `src/generators/tree.js` implement the
+**Complete.** `dev-tools/compiler/tree-contract.js` and `dev-tools/compiler/generators/tree.js` implement the
 explicit `datetime`/`int` key and finite owner contract. All existing tree
 schemas are migrated. `npm run probe:typed-tree` compiles the versioned-stage
 fixture and checks it against an independent source reconstruction. Exact
@@ -256,7 +256,7 @@ follow-up audit fix: CREATE/DELETE lifecycle entries remain present when an
 optional selected nested leaf is absent, while UPDATE entries remain limited to
 selected-field changes.
 
-Change `framework/`, `src/readers.js`, security/reactivity/audit generators,
+Change `framework/`, `dev-tools/compiler/readers.js`, security/reactivity/audit generators,
 principal rebinding, and affected fixtures together.
 
 - Fixed `rebase_user`/`rebase_group` names; remove discovery/internal/auth-private
@@ -375,7 +375,7 @@ and record patterns now match `rebase_user`/`rebase_group`.
 
 Validation: `npm run probe:environment`, `npm run probe:compiler`,
 `npm run probe:authentication`, `npm run probe:adapters`, `npm run probe:runtime`,
-`node dev-tools/probe.js data`, JavaScript syntax checks on changed runtime/config
+`node dev-tools/checks/probe.js data`, JavaScript syntax checks on changed runtime/config
 files, and `git diff --check` passed. Runtime and population checks use disposable
 SurrealDB/Redis; provider calls stay local. Whole-project `npm run verify`, live
 providers, and production BYOC row provisioning/rotation were not exercised.

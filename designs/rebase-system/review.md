@@ -90,15 +90,15 @@ For current independent findings and preserved/corrected decisions, use the
 [2026-09-26 core audit](./core-audit.md). Several runtime descriptions below
 predate the one-shot/single-queue implementation.
 
-- `src/temporal.surql` separates AVL mechanics, membership synchronization,
+- `dev-tools/compiler/temporal.surql` separates AVL mechanics, membership synchronization,
   causal refresh, and final validation. Reuse the mechanics.
-- `src/tree-contract.js` and `src/generators/tree.js` now require explicit
+- `dev-tools/compiler/tree-contract.js` and `dev-tools/compiler/generators/tree.js` now require explicit
   `datetime`/`int` keys and finite owner targets. C1 replaces the implicit global
   unions with exact table/slot assertions, grouped by table to avoid excessive
   expression depth in the existing accounting profile.
 - Membership coalescing still groups by owner and rejects different keys in one
   source/owner pair. Reusing slot storage alone does not implement intervals.
-- `src/derived-order.js` resolves local derived fields into a topological order.
+- `dev-tools/compiler/derived-order.js` resolves local derived fields into a topological order.
   Private initial-value shadows and the refresh adapter preserve that order on
   CREATE and reactive updates; C3 verifies reordered declarations.
 - Audit is selected on concrete fields. Value projections and value-free

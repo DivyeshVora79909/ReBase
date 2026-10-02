@@ -10,35 +10,35 @@ const { once } = require("node:events");
 const { spawn, spawnSync } = require("node:child_process");
 const { createServer } = require("node:http");
 const { Surreal } = require("surrealdb");
-const { createAuthenticationService } = require("../gateway/authentication");
-const { createAuthenticationPayloadCipher } = require("../gateway/authentication-payload");
-const { createRuntimeApp } = require("../gateway/app");
-const { connectDatabase } = require("../gateway/connection");
-const { createStoreDirectory, fixedStoreDirectory } = require("../gateway/directory");
-const { loadTableHandlers } = require("../gateway/handlers");
-const { createWebhookRouteCodec } = require("../gateway/webhook-routes");
-const { loadWebhookHandlers } = require("../gateway/webhooks");
-const { createWebhookAdapters } = require("../gateway/providers");
-const { createMockOAuthAdapter, createOAuthVerifier } = require("../gateway/oauth");
-const { createMemoryRateLimiter, createRedisRateLimiter } = require("../gateway/rate-limit");
-const { createBullMqPort } = require("../gateway/queues/bullmq");
-const { createRuntime } = require("../gateway/runtime");
-const providerReceiptOperation = require("../gateway/operations/provider-receipt");
-const { startServer } = require("../gateway/server");
-const { createTableStore } = require("../gateway/store");
-const { operationEnvelope } = require("../gateway/queues/port");
-const { queryResult } = require("../gateway/utils");
+const { createAuthenticationService } = require("../../gateway/authentication");
+const { createAuthenticationPayloadCipher } = require("../../gateway/authentication-payload");
+const { createRuntimeApp } = require("../../gateway/app");
+const { connectDatabase } = require("../../gateway/connection");
+const { createStoreDirectory, fixedStoreDirectory } = require("../../gateway/directory");
+const { loadTableHandlers } = require("../../gateway/handlers");
+const { createWebhookRouteCodec } = require("../../gateway/webhook-routes");
+const { loadWebhookHandlers } = require("../../gateway/webhooks");
+const { createWebhookAdapters } = require("../../gateway/providers");
+const { createMockOAuthAdapter, createOAuthVerifier } = require("../../gateway/oauth");
+const { createMemoryRateLimiter, createRedisRateLimiter } = require("../../gateway/rate-limit");
+const { createBullMqPort } = require("../../gateway/queues/bullmq");
+const { createRuntime } = require("../../gateway/runtime");
+const providerReceiptOperation = require("../../gateway/operations/provider-receipt");
+const { startServer } = require("../../gateway/server");
+const { createTableStore } = require("../../gateway/store");
+const { operationEnvelope } = require("../../gateway/queues/port");
+const { queryResult } = require("../../gateway/utils");
 const { createHarness: createWebhookInboxHarness } = require("./webhook-inbox-probe");
-const { loadMaterials } = require("./compiler/materials");
-const { runLifecycleMigration } = require("./lifecycle-migration");
-const { generateBundle } = require("./compiler/pipeline");
+const { loadMaterials } = require("../compiler/materials");
+const { runLifecycleMigration } = require("../lifecycle-migration");
+const { generateBundle } = require("../compiler/pipeline");
 const {
   generateLifecycleFields,
   generateLifecycleMigration,
   generateOperationEvents,
   generateRuntimeContracts,
-} = require("../src/generators/effects");
-const { parseSchema } = require("../src/schema");
+} = require("../compiler/generators/effects");
+const { parseSchema } = require("../compiler/schema");
 
 async function freePort() {
   const server = net.createServer();
@@ -3093,14 +3093,14 @@ async function main() {
     const obsoleteArgument = spawnSync(process.execPath, [
       "gateway/server.js", "--env-file", runtimeProfile,
     ], {
-      cwd: path.resolve(__dirname, ".."),
+      cwd: path.resolve(__dirname, "../.."),
       env: inheritedEnvironment,
       encoding: "utf8",
     });
     assert.notEqual(obsoleteArgument.status, 0);
     assert.match(obsoleteArgument.stderr, /Use Node options before gateway\/server\.js/);
     runtimeChild = spawn(process.execPath, ["--env-file", runtimeProfile, "gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
+      cwd: path.resolve(__dirname, "../.."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
     });
     await waitForPort(childPort, runtimeChild, "ReBase server");
     assert.equal((await fetch(`http://127.0.0.1:${childPort}/healthz`)).status, 200);
@@ -3112,7 +3112,7 @@ async function main() {
     })).status, 413);
 
     const conflicting = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."),
+      cwd: path.resolve(__dirname, "../.."),
       env: { ...childEnvironment, REBASE_QUEUE_PREFIX: `${childEnvironment.REBASE_QUEUE_PREFIX}-conflict` },
       stdio: ["ignore", "ignore", "ignore"],
     });
@@ -3121,7 +3121,7 @@ async function main() {
     const missingSecretEnvironment = { ...childEnvironment, REBASE_HTTP_PORT: String(await freePort()) };
     delete missingSecretEnvironment.REBASE_RUNTIME_SECRET;
     const missingSecret = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."), env: missingSecretEnvironment, stdio: ["ignore", "ignore", "ignore"],
+      cwd: path.resolve(__dirname, "../.."), env: missingSecretEnvironment, stdio: ["ignore", "ignore", "ignore"],
     });
     assert.notEqual(await waitForExit(missingSecret), 0);
 
@@ -3133,7 +3133,7 @@ async function main() {
     };
     delete missingPayloadSecretEnvironment.REBASE_AUTHENTICATION_PAYLOAD_SECRET;
     const missingPayloadSecret = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."),
+      cwd: path.resolve(__dirname, "../.."),
       env: missingPayloadSecretEnvironment,
       stdio: ["ignore", "ignore", "ignore"],
     });
@@ -3141,7 +3141,7 @@ async function main() {
 
     const productionPort = await freePort();
     const productionServer = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."),
+      cwd: path.resolve(__dirname, "../.."),
       env: { ...childEnvironment, NODE_ENV: "production", REBASE_HTTP_PORT: String(productionPort), REBASE_QUEUE_PREFIX: `${childEnvironment.REBASE_QUEUE_PREFIX}-production` },
       stdio: ["ignore", "ignore", "ignore"],
     });
@@ -3150,7 +3150,7 @@ async function main() {
     await stopChild(productionServer);
 
     const unavailableRedis = spawn(process.execPath, ["gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."),
+      cwd: path.resolve(__dirname, "../.."),
       env: {
         ...childEnvironment,
         REBASE_HTTP_PORT: String(await freePort()),
@@ -3193,8 +3193,8 @@ async function main() {
     let workerStderr = "";
     let workerErrorMessage = "";
     let workerExecutionResult;
-    processWorkerChild = spawn(process.execPath, ["dev-tools/runtime-probe-worker.js"], {
-      cwd: path.resolve(__dirname, ".."),
+    processWorkerChild = spawn(process.execPath, ["dev-tools/checks/runtime-probe-worker.js"], {
+      cwd: path.resolve(__dirname, "../.."),
       env: {
         ...process.env,
         SURREAL_ENDPOINT: state.endpoint,
@@ -3304,7 +3304,7 @@ async function main() {
     assert.equal(providerRequestCount, 1);
 
     runtimeChild = spawn(process.execPath, ["--env-file", runtimeProfile, "gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
+      cwd: path.resolve(__dirname, "../.."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
     });
     await waitForPort(childPort, runtimeChild, "ReBase server for restart recovery");
     await waitFor(async () => (await fetch(`http://127.0.0.1:${childPort}/readyz`)).status === 200,
@@ -3338,7 +3338,7 @@ async function main() {
     "restarted Redis should have lost its in-memory task hint");
 
     runtimeChild = spawn(process.execPath, ["--env-file", runtimeProfile, "gateway/server.js"], {
-      cwd: path.resolve(__dirname, ".."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
+      cwd: path.resolve(__dirname, "../.."), env: inheritedEnvironment, stdio: ["ignore", "ignore", "pipe"],
     });
     await waitForPort(childPort, runtimeChild, "ReBase server after gateway restart");
     await waitFor(async () => (await fetch(`http://127.0.0.1:${childPort}/readyz`)).status === 200,

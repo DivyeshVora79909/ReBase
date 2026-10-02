@@ -8,8 +8,8 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
-const { loadMaterials } = require("./compiler/materials");
-const { generateBundle } = require("./compiler/pipeline");
+const { loadMaterials } = require("../compiler/materials");
+const { generateBundle } = require("../compiler/pipeline");
 
 function rows(response) {
   const value = Array.isArray(response) ? response.at(-1) : response;
@@ -584,7 +584,7 @@ async function principalCompilerProbe(db, namespace, database) {
     `);
     const materials = loadMaterials({
       groups: [
-        { name: "framework", roots: [path.resolve(__dirname, "..", "framework")] },
+        { name: "framework", roots: [path.resolve(__dirname, "../..", "framework")] },
         { name: "project", roots: [projectDir] },
       ],
     });

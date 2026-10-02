@@ -4,9 +4,9 @@ const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   os = require('node:os'),
   path = require('node:path');
-const { start, client, applySchema } = require('./temporal-tree/harness');
-const { verify, equal } = require('./temporal-tree/oracle');
-const { compileFromArgs } = require('./compiler/cli');
+const { start, client, applySchema } = require('../temporal-tree/harness');
+const { verify, equal } = require('../temporal-tree/oracle');
+const { compileFromArgs } = require('../compiler/cli');
 const root = 'rebase_group:root',
   date = (d) => new Date(Date.UTC(2026, 0, 1 + d)).toISOString();
 const tables = [

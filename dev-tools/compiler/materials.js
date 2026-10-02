@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { sourceLocation, splitStatementsWithLocations } = require("../../src/surql");
+const { sourceLocation, splitStatementsWithLocations } = require("./surql");
 
 const SURREAL_EXTENSIONS = new Set([".surql", ".sql"]);
 const SECTION_BEGIN = /^\s*--+\s*REBASE\s+SECTION\s+([A-Za-z][A-Za-z0-9_-]*)\s+BEGIN\s*$/gim;

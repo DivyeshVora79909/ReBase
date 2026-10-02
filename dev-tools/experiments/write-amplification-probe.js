@@ -6,9 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
-const { start, client, applySchema } = require('./temporal-tree/harness');
-const { compileFromArgs } = require('./compiler/cli');
-const { parseSchema } = require('../src/schema');
+const { start, client, applySchema } = require('../temporal-tree/harness');
+const { compileFromArgs } = require('../compiler/cli');
+const { parseSchema } = require('../compiler/schema');
 
 const DEFAULT_SIZES = [10, 100, 1000, 10000, 100000, 1000000];
 const root = 'rebase_group:root';

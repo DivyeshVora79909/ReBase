@@ -3,7 +3,7 @@ const { spawn } = require("node:child_process");
 const { once } = require("node:events");
 const crypto = require("node:crypto");
 const net = require("node:net");
-const { createBullMqPort } = require("../gateway/queues/bullmq");
+const { createBullMqPort } = require("../../gateway/queues/bullmq");
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const envelope = (id) => ({

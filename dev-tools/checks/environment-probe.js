@@ -9,10 +9,10 @@ const {
   assertConfiguredContext,
   assertConnectionConfiguration,
   resolveConfiguration,
-} = require("../config/environment");
-const { parseArgs: parseCompilerArgs } = require("./compiler/cli");
-const { parseArgs: parsePopulateArgs } = require("./populate");
-const { parseArgs: parseWorkbenchArgs } = require("./workbench");
+} = require("../../config/environment");
+const { parseArgs: parseCompilerArgs } = require("../compiler/cli");
+const { parseArgs: parsePopulateArgs } = require("../populate");
+const { parseArgs: parseWorkbenchArgs } = require("../workbench");
 
 function main() {
   const directory = fs.mkdtempSync(
@@ -128,7 +128,7 @@ function main() {
     assert.notEqual(missingProfile.status, 0);
 
     const visualizer = fs.readFileSync(
-      path.join(__dirname, "visualizer.html"),
+      path.join(__dirname, "../visualizer.html"),
       "utf8",
     );
     assert.match(visualizer, /URLSearchParams/);

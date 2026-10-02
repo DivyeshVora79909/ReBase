@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { loadTableHandlers } = require("../../gateway/handlers");
 const { loadWebhookHandlers } = require("../../gateway/webhooks");
-const { assertGrantAdapters } = require("../../src/operation-adapters");
+const { assertGrantAdapters } = require("../../gateway/operation-adapters");
 
 function deniedPermissions(field) {
   const definition = field?.definition || "";

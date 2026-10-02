@@ -82,7 +82,7 @@ with no backlog. The pending query separately hardcodes `"5m"`.
 
 **Read:** `config/environment.js`; `gateway/reconciler.js`;
 `gateway/runtime.js` (`enqueue`, `reconcile`); `gateway/store.js`
-(`pendingPage`); existing corresponding cases in `dev-tools/runtime-probe.js`.
+(`pendingPage`); existing corresponding cases in `dev-tools/checks/runtime-probe.js`.
 
 **Original acceptance criteria:**
 
@@ -127,7 +127,7 @@ check, outlive the Redis lock, and later add a hint above the cap. The retained
 live hints with a configured limit of two before this fix.
 
 **Read:** `gateway/queues/{bullmq,port}.js`; shared-admission cases in
-`dev-tools/runtime-probe.js`; installed BullMQ **6.2.0** backend/add-job code.
+`dev-tools/checks/runtime-probe.js`; installed BullMQ **6.2.0** backend/add-job code.
 Inspect the installed version: do not assume a BullMQ 5 `Scripts` API.
 
 **Original acceptance criteria:**
@@ -173,7 +173,7 @@ confirms the resumed producer is rejected without exceeding the cap. It also
 checks duplicates at capacity. `npm run probe:queues` and the disposable
 `npm run probe:runtime` pass, including receipt reservation and recovery after
 Redis returns. The old lease-expiry file is historical failure evidence; the
-passing regression is `dev-tools/admission-capacity-probe.js`. Redis Cluster
+passing regression is `dev-tools/checks/admission-capacity-probe.js`. Redis Cluster
 is not certified.
 
 ### K3 — Bound dead-letter retention — complete
@@ -182,7 +182,7 @@ is not certified.
 pruner. Its `removeOnComplete` setting did not trim jobs left waiting.
 
 **Read:** `deadLetter` and `health` in `gateway/queues/bullmq.js`; dead-letter
-case in `dev-tools/runtime-probe.js`; durable task outcomes in `gateway/store.js`.
+case in `dev-tools/checks/runtime-probe.js`; durable task outcomes in `gateway/store.js`.
 
 The policy applies to the state actually stored: failed durable business work
 remains in SurrealDB; expired Redis diagnostics do not erase recoverable task
@@ -212,7 +212,7 @@ RSS limit.
 
 **Read:** `framework/authentication.surql` (first 42 lines);
 `gateway/authentication.js` (`findDeliveryPolicy`, challenge enqueue);
-`gateway/operations/authentication-delivery.js`; `src/generators/security.js`;
+`gateway/operations/authentication-delivery.js`; `dev-tools/compiler/generators/security.js`;
 framework-table discovery in `dev-tools/compiler/pipeline.js`.
 
 Keep `rebase_email_delivery_config` and `rebase_sms_delivery_config` as the

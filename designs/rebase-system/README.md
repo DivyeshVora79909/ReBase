@@ -24,11 +24,17 @@ post-commit recovery boundary.
 
 ## Document routing
 
+Start developer-tools work with its
+[execution handoff](./developer-experience-handoff.md); the
+[developer experience plan](./developer-experience-plan.md) preserves the design
+decisions. Frontend implementation is deferred there.
+
 Read the core handoff first. Open the longer design documents only for the
 active packet; reading every document on each model switch wastes context.
 
 | Document | Purpose |
 |---|---|
+| [Developer-tools handoff](./developer-experience-handoff.md) | Current review, source boundaries, executor guidance, and focused verification commands. |
 | [Core handoff](./core-handoff.md) | Current core scope, K1–K5 requirements, restart instruction. |
 | [Accounting handoff](../all-in-accounting/implementation-handoff.md) | Revised economic identities, multi-effect sources, net limits, and H0–H8 domain packets. |
 | [Configuration reference](./core-configuration.md) | Existing settings/defaults, internal constants, traps, focused checks. |

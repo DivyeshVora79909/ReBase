@@ -1,5 +1,5 @@
 -- Disposable primitive experiment, intentionally not a compiler profile.
--- Load src/temporal.surql first. No replacement AVL or reactive consumers.
+-- Load dev-tools/compiler/temporal.surql first. No replacement AVL or reactive consumers.
 -- Flexible internal storage is narrowed at every key-bearing field; compiled
 -- field/record authorization and full structural typing are separate gates.
 

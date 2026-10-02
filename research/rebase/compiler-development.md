@@ -23,9 +23,11 @@ runtime semantics respectively.
 8. copy the design’s validated `table-handlers/` tree;
 9. validate deterministic output and stale artifacts.
 
-The project may manually compose small stateless functions around the compiler
-pipeline. No environment-provided namespace/database defaults are part of the
-compiler core; deployment context is an explicit CLI/runtime argument.
+The project may compose small stateless functions around the compiler pipeline
+in `dev-tools/compiler/`. Deployment context comes from the validated process
+configuration at the build boundary; the compiler stages receive it explicitly.
+See the [JavaScript development guide](../../dev-tools/README.md) for the public
+API and native Node REPL.
 
 ## Material classification
 
@@ -104,7 +106,8 @@ supplies a namespace/database context and runtime URL/secret. Without those
 values the generated schema remains context-neutral and contains no
 deployment-specific event calls. Use Node's `--env-file` option before the
 script to select a profile; inherited process variables take precedence.
-Explicit compiler flags remain one-off overrides.
+CLI flags select project/output paths and check mode; connection and runtime
+credentials remain process-profile configuration.
 
 ## Development data
 
@@ -137,22 +140,18 @@ record. Suppress bulk result serialization with `RETURN NONE`.
 
 ## Workbench
 
-The REPL is a small manual orchestrator with explicit runtime context:
+The workbench starts Node's built-in JavaScript REPL with the public functions
+from `dev-tools/index.js`. It supports ordinary JavaScript and top-level
+`await`; database access starts only when a developer explicitly calls
+`connect()`. Select among configured contexts through the SDK. The
+[developer tools guide](../../dev-tools/README.md) documents build, check,
+deploy, population, and direct SDK use.
 
-```text
-.build
-.deploy
-.populate [table] [count]
-.as <email> <password>
-.query <surql>
-.sample <table> [limit]
-.probe [security|data|all]
-```
-
-It reads the selected profile and supports `.use <namespace> <database>` to
-switch the active context without restarting the process.
-Static cookbook scripts, operation discovery, and a monolithic scenario graph
-are not target architecture.
+Population keeps reference sampling, bounded batches, and seeded built-in
+generation from `data/<table>.schema.json`. An ordinary JS `transform` callback
+can adjust each generated document before existing AJV validation and SDK
+conversion. Private generator annotations remain in that directory; public
+accounting schemas use the separate authored `schemas/*.schema.json` path.
 
 ## Verification
 

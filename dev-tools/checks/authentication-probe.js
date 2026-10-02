@@ -9,11 +9,11 @@ const {
   normalizeEmail,
   normalizePhone,
   normalizeUsername,
-} = require("../gateway/authentication");
-const { createMockOAuthAdapter, createOAuthVerifier } = require("../gateway/oauth");
-const { createMemoryRateLimiter } = require("../gateway/rate-limit");
-const { createAuthenticationPayloadCipher } = require("../gateway/authentication-payload");
-const { createRuntimeApp } = require("../gateway/app");
+} = require("../../gateway/authentication");
+const { createMockOAuthAdapter, createOAuthVerifier } = require("../../gateway/oauth");
+const { createMemoryRateLimiter } = require("../../gateway/rate-limit");
+const { createAuthenticationPayloadCipher } = require("../../gateway/authentication-payload");
+const { createRuntimeApp } = require("../../gateway/app");
 
 function fakeDirectory({ mode = "identity", identity = {} } = {}) {
   let calls = 0;

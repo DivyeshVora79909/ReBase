@@ -9,7 +9,7 @@ const {
   assertWorkEnvelope,
 } = require("./queues/port");
 const { withTimeout } = require("./utils");
-const { SIDE_EFFECT_ADAPTERS, assertGrantAdapters } = require("../src/operation-adapters");
+const { SIDE_EFFECT_ADAPTERS, assertGrantAdapters } = require("./operation-adapters");
 const { QUEUE_HORIZON_MS, surrealDuration } = require("../config/runtime-timing");
 
 const HANDLER_OUTCOMES = new Set(["success", "retry", "failed", "ambiguous", "ignore"]);

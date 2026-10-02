@@ -2,10 +2,10 @@
 
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { resolveConfiguration, QUEUE_HORIZON_MS } = require("../config/environment");
-const { surrealDuration } = require("../config/runtime-timing");
-const { createReconciler } = require("../gateway/reconciler");
-const { createRuntime } = require("../gateway/runtime");
+const { resolveConfiguration, QUEUE_HORIZON_MS } = require("../../config/environment");
+const { surrealDuration } = require("../../config/runtime-timing");
+const { createReconciler } = require("../../gateway/reconciler");
+const { createRuntime } = require("../../gateway/runtime");
 
 const CONTEXT = { namespace: "schedule_probe", database: "probe" };
 const BASE_TIME = Date.UTC(2026, 0, 1);

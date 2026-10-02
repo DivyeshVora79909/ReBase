@@ -6,10 +6,10 @@ const net = require("node:net");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
-const { createTableStore } = require("../gateway/store");
-const { createRuntime } = require("../gateway/runtime");
-const { loadTableHandlers } = require("../gateway/handlers");
-const { queryResult } = require("../gateway/utils");
+const { createTableStore } = require("../../gateway/store");
+const { createRuntime } = require("../../gateway/runtime");
+const { loadTableHandlers } = require("../../gateway/handlers");
+const { queryResult } = require("../../gateway/utils");
 
 const namespace = "credential_probe";
 const database = "checks";

@@ -3,9 +3,9 @@
 Status: implemented v2 with explicit datetime/int contracts added in C1, 2026-09-25. Replaces the
 Accounts replay design and earlier suite/tree plans. Requirements include the entity/interaction extension through 2026-09-22;
 scalar feasibility baseline: `a5eb8f8`.
-Implementation: [shared functions](../../src/temporal.surql),
-[tree contracts](../../src/tree-contract.js), [storage expansion](../../src/generators/tree.js),
-[dependency expansion](../../src/generators/temporal.js),
+Implementation: [shared functions](../../dev-tools/compiler/temporal.surql),
+[tree contracts](../../dev-tools/compiler/tree-contract.js), [storage expansion](../../dev-tools/compiler/generators/tree.js),
+[dependency expansion](../../dev-tools/compiler/generators/temporal.js),
 [composed domain](../../designs/all-in-one/README.md).
 
 ## Scope and decisions
@@ -329,8 +329,8 @@ not throughput benchmarks.
 ```sh
 npm run build && npm run build:all-in-one && npm run verify
 REBASE_TREE_SURREAL_BIN=/path/to/surreal node dev-tools/temporal-tree/probe.js
-REBASE_TREE_SURREAL_BIN=/path/to/surreal node dev-tools/accounts-probe.js
-REBASE_TREE_SURREAL_BIN=/path/to/surreal node dev-tools/suite-probe.js
+REBASE_TREE_SURREAL_BIN=/path/to/surreal node dev-tools/checks/accounts-probe.js
+REBASE_TREE_SURREAL_BIN=/path/to/surreal node dev-tools/checks/suite-probe.js
 ```
 
 Historical scalar baseline (`a5eb8f8`, both versions): 260 seeded mutations; ascending

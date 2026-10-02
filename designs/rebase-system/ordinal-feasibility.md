@@ -81,7 +81,7 @@ policy; this primitive experiment does not establish that lifecycle.
 ## Experiment boundary
 
 The [fixture](../../dev-tools/temporal-tree/ordinal-fixture.surql) loads
-[the shared runtime](../../src/temporal.surql) unchanged and
+[the shared runtime](../../dev-tools/compiler/temporal.surql) unchanged and
 supplies only integer-key storage, simple membership adapters, and source
 events in its disposable database. It has no reactive consumers. Its owner
 count limit exists to test failure after maintenance, not to model a complete

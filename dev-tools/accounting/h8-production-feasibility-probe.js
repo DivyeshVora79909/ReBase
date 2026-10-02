@@ -7,7 +7,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { Surreal } = require('surrealdb');
 const { queryResult } = require('../../gateway/utils');
-const { treeFields } = require('../../src/generators/tree');
+const { treeFields } = require('../compiler/generators/tree');
 
 const root = path.resolve(__dirname, '../..');
 const n = (x) => Number(String(x ?? 0).replace(/dec$/i, ''));

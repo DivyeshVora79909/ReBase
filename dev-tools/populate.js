@@ -11,7 +11,7 @@ const seedrandom = require("seedrandom");
 const { RecordId, Uuid } = require("surrealdb");
 const { connectDatabase } = require("../gateway/connection");
 const { queryResult } = require("../gateway/utils");
-const { parseSchema } = require("../src/schema");
+const { parseSchema } = require("./compiler/schema");
 const {
   assertConfiguredContext,
   assertConnectionConfiguration,
@@ -39,8 +39,13 @@ function recordId(value) {
   const separator = text.indexOf(":");
   if (separator < 1) throw new Error(`Invalid record id: ${text}`);
   const id = text.slice(separator + 1);
-  const uuidText = /[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i.exec(id)?.[0];
-  return new RecordId(text.slice(0, separator), uuidText ? new Uuid(uuidText) : id);
+  // SDK/DB canonical UUID literals are typed; quoted simple custom keys stay strings.
+  const uuidText = /^u(["'])([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\1$/i.exec(id)?.[2];
+  const quotedKey = /^(?:⟨([A-Za-z0-9_-]+)⟩|`([A-Za-z0-9_-]+)`)$/.exec(id);
+  const key = uuidText
+    ? new Uuid(uuidText)
+    : (quotedKey?.[1] || quotedKey?.[2] || id);
+  return new RecordId(text.slice(0, separator), key);
 }
 
 function nativeRecords(value, field, property = {}) {
@@ -146,7 +151,8 @@ Options:
   --batch-size <n>          Insert batch size (default: 100)
   --reservoir-size <n>      Maximum sampled IDs per table (default: 2000)
   --page-size <n>           Keyset page size (default: 500)
-  --seed <value>            Replay seed (random by default)`);
+  --seed <value>            Seed the built-in faker/schema generator (random by default)
+                             Custom transform randomness remains caller-owned`);
 }
 
 function projectPaths(project, overrides = {}) {
@@ -287,6 +293,33 @@ function rowGenerationSchema(schema, random) {
   return generated;
 }
 
+/**
+ * Apply a caller-owned fixture override before the existing AJV and SDK codecs.
+ * The callback receives a per-table zero-based index and the built-in replay seed.
+ */
+async function prepareDocument(document, {
+  transform,
+  table,
+  index,
+  seed,
+  validate,
+  errorsText,
+}) {
+  const transformed = transform
+    ? await transform(document, { table, index, seed })
+    : document;
+  if (!validate(transformed)) {
+    const detail = errorsText
+      ? errorsText(validate.errors)
+      : validate.errors?.map((error) => `${error.instancePath || "/"} ${error.message}`).join(", ")
+        || "schema validation failed";
+    throw new Error(
+      `Generated invalid ${table}: ${detail}`,
+    );
+  }
+  return transformed;
+}
+
 async function populate(options) {
   options = {
     project: "test",
@@ -297,6 +330,9 @@ async function populate(options) {
     pageSize: 500,
     ...options,
   };
+  if (options.transform !== undefined && typeof options.transform !== "function") {
+    throw new Error("transform must be a function");
+  }
   const { sourceDir, buildDir, name } = projectPaths(options.project, options);
   for (const key of ["endpoint", "username", "password", "connectTimeoutMs"]) {
     if (Object.hasOwn(options, key)) {
@@ -413,12 +449,15 @@ async function populate(options) {
         const size = Math.min(pending, options.batchSize);
         const rows = [];
         for (let index = 0; index < size; index += 1) {
-          const document = jsf.generate(rowGenerationSchema(prepared.schema, random));
-          if (!validators.get(table)(document)) {
-            throw new Error(
-              `Generated invalid ${table}: ${ajv.errorsText(validators.get(table).errors)}`,
-            );
-          }
+          const generated = jsf.generate(rowGenerationSchema(prepared.schema, random));
+          const document = await prepareDocument(generated, {
+            transform: options.transform,
+            table,
+            index: created[table] + index,
+            seed,
+            validate: validators.get(table),
+            errorsText: (errors) => ajv.errorsText(errors),
+          });
           const data = Object.fromEntries(
             Object.entries(document)
               .filter(([name]) => name !== "id")
@@ -492,4 +531,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { parseArgs, populate, usage };
+module.exports = { parseArgs, populate, prepareDocument, recordId, usage };

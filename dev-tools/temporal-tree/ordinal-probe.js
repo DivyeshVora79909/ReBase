@@ -74,7 +74,7 @@ async function main() {
   );
   try {
     await q('DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture; USE DB fixture;');
-    const runtime = fs.readFileSync(path.join(__dirname, '../../src/temporal.surql'), 'utf8');
+    const runtime = fs.readFileSync(path.join(__dirname, '../compiler/temporal.surql'), 'utf8');
     const fixture = fs.readFileSync(path.join(__dirname, 'ordinal-fixture.surql'), 'utf8');
     await applySchema(q, `${runtime}\n${fixture}`);
     const version = execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim();

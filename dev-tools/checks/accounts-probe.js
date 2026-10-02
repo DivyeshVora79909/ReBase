@@ -4,10 +4,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'),
   os = require('node:os'),
   path = require('node:path');
-const { start, client, applySchema } = require('./temporal-tree/harness');
-const { compileFromArgs } = require('./compiler/cli');
-const { snapshot, inspect } = require('./temporal-tree/accounts-oracle');
-const { equal, scan } = require('./temporal-tree/oracle');
+const { start, client, applySchema } = require('../temporal-tree/harness');
+const { compileFromArgs } = require('../compiler/cli');
+const { snapshot, inspect } = require('../temporal-tree/accounts-oracle');
+const { equal, scan } = require('../temporal-tree/oracle');
 const root = 'rebase_group:root',
   date = (day) => new Date(Date.UTC(2026, 0, 1 + day)).toISOString();
 async function main({ writeOnly = process.argv.includes('--write-only') } = {}) {

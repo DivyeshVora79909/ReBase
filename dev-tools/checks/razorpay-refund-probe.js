@@ -5,8 +5,8 @@ const crypto = require("node:crypto");
 const net = require("node:net");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
-const { queryResult } = require("../gateway/utils");
-const handler = require("../designs/test/webhook-handlers/razorpay");
+const { queryResult } = require("../../gateway/utils");
+const handler = require("../../designs/test/webhook-handlers/razorpay");
 
 async function freePort() {
   const server = net.createServer();

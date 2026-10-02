@@ -7,9 +7,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
-const { compileFromArgs } = require('./compiler/cli');
-const { start, client, applySchema } = require('./temporal-tree/harness');
-const { splitStatements } = require('../src/surql');
+const { compileFromArgs } = require('../compiler/cli');
+const { start, client, applySchema } = require('../temporal-tree/harness');
+const { splitStatements } = require('../compiler/surql');
 
 const ownerCount = 10;
 const pathHeight = 20;
@@ -463,7 +463,7 @@ async function main(argv = process.argv.slice(2)) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-synthetic-write-amplification-'));
   try {
     const compiled = compileFromArgs({
-      projectDir: 'dev-tools/synthetic-write-amplification',
+      projectDir: 'dev-tools/experiments/synthetic-write-amplification',
       frameworkDir: 'framework',
       outputDir: temp,
     });

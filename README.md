@@ -2,6 +2,12 @@
 
 ReBase compiles SurrealDB authorization, validation, audit, reactive calculations, and table-keyed external effects. Clients use SurrealDB directly; the native Node HTTP runtime performs work requiring privileged provider access.
 
+**Developer tools:** start with the [JavaScript workbench guide](./dev-tools/README.md).
+The [developer-tools handoff](./designs/rebase-system/developer-experience-handoff.md)
+records review evidence and execution instructions; the
+[plan](./designs/rebase-system/developer-experience-plan.md) preserves the design
+decisions and deferred frontend work.
+
 **Current work and evidence:** see the [core handoff](./designs/rebase-system/core-handoff.md)
 for K1–K5 implementation and restart requirements, the [core audit](./designs/rebase-system/core-audit.md)
 and [lead recheck](./designs/rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json)
@@ -39,12 +45,14 @@ movements, claims, temporal resource limits, and manufacturing compositions.
 
 ```text
 framework/                    Shared auth, access, and audit SurrealQL
-src/                          Schema analysis, generators, shared ordered AVL
-dev-tools/compiler/           Stateless compiler stages and CLI
+dev-tools/compiler/           Schema analysis, generators, ordered AVL, build API and thin CLI
+dev-tools/index.js            Public JavaScript development functions
+dev-tools/workbench.js        Native Node REPL
 gateway/                      Native Node runtime, named service adapters, and queue drivers
 designs/<name>/schema.surql   Business and effect tables
 designs/<name>/views.surql    Aggregate views
 designs/<name>/data/          Development data JSON Schemas
+designs/<name>/schemas/       Explicitly public JSON validation schemas
 designs/<name>/table-handlers Table-keyed effect handlers
 designs/all-in-one/          Composed calculation suite (core, accounts, CRM, HRM)
 designs/rebase-system/        Cross-domain system blueprint and tree catalog
@@ -237,4 +245,4 @@ static map because raw-body signatures cannot be dispatched from request data.
 
 ## Development Tools
 
-`npm run populate` derives topology from the compiled schema and scalar generation rules from `data/*.schema.json`. `npm run workbench` provides build, deploy, populate, authentication, query, sample, and probe commands without a fixed namespace/database.
+`npm run populate` generates sample records from `data/*.schema.json` using the compiled reference graph. Pass a normal JavaScript `transform` callback through the public API when a fixture needs edited values. `npm run workbench` starts Node's built-in JavaScript REPL; see the [developer tools guide](./dev-tools/README.md) for the public functions and direct SDK examples.

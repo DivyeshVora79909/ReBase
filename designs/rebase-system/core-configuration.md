@@ -226,13 +226,13 @@ fixing an unrelated packet. Install with `npm ci` only if dependencies need it.
 | Docs only | Links, scoped diff, `git diff --check` | No database suite. |
 | Config | `npm run probe:environment` | `probe:runtime` if startup/binding changes. |
 | Queue/runtime | Relevant smallest case, `npm run probe:queues` | `npm run probe:runtime`. |
-| Authentication/credentials | `npm run probe:authentication`; `node dev-tools/probe.js security` | Runtime + affected compiler fixture. |
+| Authentication/credentials | `npm run probe:authentication`; `node dev-tools/checks/probe.js security` | Runtime + affected compiler fixture. |
 | Compiler or readers/audit | `npm run probe:compiler`; `npm run probe:architecture` | Security and affected generated/tree checks. |
 | AVL/ordering | Affected typed/position/temporal fixture | Full tree and dependent fixtures at integration. |
 | Required/causal outputs | Corresponding `probe:required-outputs` / `probe:causal-outputs` | Affected foundation and source-oracle integration. |
 | Final core integration | Rebuild/check matching profiles and native validation | `npm run verify` once, plus changed coverage omitted from it. |
 
-The main probes start their own loopback servers. `dev-tools/probe.js` is
+The main probes start their own loopback servers. `dev-tools/checks/probe.js` is
 disposable by default; **do not set `REBASE_PROBE_ENDPOINT`** for this audit
 workflow because that selects an external server. Test fixtures have their own
 credentials and mocked service transports. Build/check first only when their

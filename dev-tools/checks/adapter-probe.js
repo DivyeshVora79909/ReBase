@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 const assert = require("node:assert/strict");
-const { ADAPTER_NAMES, createAdapters } = require("../gateway/providers");
-const { createTwilioSmsAdapter } = require("../gateway/providers/twilio-sms.adapter");
-const brevoEmailHandler = require("../designs/test/table-handlers/send_brevo_email");
+const { ADAPTER_NAMES, createAdapters } = require("../../gateway/providers");
+const { createTwilioSmsAdapter } = require("../../gateway/providers/twilio-sms.adapter");
+const brevoEmailHandler = require("../../designs/test/table-handlers/send_brevo_email");
 
 async function main() {
   const requests = [];

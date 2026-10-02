@@ -39,7 +39,7 @@ This is acceptable for bounded pages, direct record access, and queries with a b
 Reproduce with:
 
 ```sh
-node dev-tools/authorization-performance.js
+node dev-tools/experiments/authorization-performance.js
 ```
 
 Useful safety controls are `REBASE_PERF_ROWS`, `REBASE_PERF_BATCH_ROWS`, `REBASE_PERF_BATCH_PAUSE_MS`, and `REBASE_PERF_QUERY_CONCURRENCY`. The harness defaults to temporary RocksDB; set `REBASE_PERF_MEMORY=1` only for a small disposable smoke test.

@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { DEFAULT_ADMISSION, DEFAULT_POLICY } = require("../gateway/queues/bullmq");
+const { DEFAULT_ADMISSION, DEFAULT_POLICY } = require("../../gateway/queues/bullmq");
 const {
   assertOperationEnvelope,
   assertPriority,
@@ -11,7 +11,7 @@ const {
   operationEnvelope,
   receiptEnvelope,
   workEnvelopeKey,
-} = require("../gateway/queues/port");
+} = require("../../gateway/queues/port");
 
 function main() {
   const locator = { namespace: "tenant", database: "app", id: "send_brevo_email:one" };
