@@ -1,10 +1,26 @@
 # Developer experience restart handoff
 
-As of 2026-10-02. This records the completed scoped developer-tools redesign
+Updated 2026-10-03. This records the completed scoped developer-tools redesign
 and its verification. The design rationale and historical frontend guidance
 are in [the plan](developer-experience-plan.md).
 
-## User update: frontend redesigned separately (2026-10-02)
+## Review scope update — 2026-10-03
+
+The user now requests review of both backend and frontend. The earlier
+frontend deferral below is historical. Current results and corrections are in
+the [redesign review](evidence/2026-10-03-redesign-verification.json) and
+[frontend verification](../frontend/verification.md). Acceptance stops at local
+SurrealDB consistency and delivered browser workflows. Do not test real
+email/SMS/payment credentials. There is no existing data to migrate.
+
+The review reproduced and fixed one more input-preservation bug: a hard-linked
+generated artifact could overwrite an authoring file. Generated files now use
+temporary writes and atomic replacement, preserving existing permission bits.
+The final offline workbench/public-schema suite passed **26/26** after this
+fix; the six-row fixture preview also passed. Atomicity is per generated file,
+not across the complete build. See the current review for commands and hashes.
+
+## Historical user update: frontend redesigned separately (2026-10-02)
 
 - The user reports completing the previously deferred frontend independently,
   without changing the developer-tools work covered by this handoff. Preserve
@@ -112,9 +128,9 @@ the retained manifest and commands below are the restart evidence.
   it has no usable result and was not repeated. Focused evidence above is the
   acceptance evidence for this scoped work.
 
-D0–D4 have no remaining implementation packet. The former D5 deferral has been
-superseded by the user's separate frontend work; its review remains outside
-this handoff until explicitly requested.
+D0–D4 have no remaining implementation packet. The former D5 deferral was
+superseded by the user's separate frontend work and the 2026-10-03 review
+request; its ongoing contracts belong to the frontend documentation.
 
 ## Lower-model execution guide
 
@@ -143,8 +159,8 @@ do not reload the whole chat or treat every historical open item as a new task.
   `economic_entity` can be the existing user or an organization.
 - Ordinary JavaScript handles fixture edits. Preserve validation, conversion,
   batching, seeded generation, and bounded reference sampling around it.
-- Frontend implementation is tracked separately; its review awaits the user's
-  explicit request. Routine fixes inside this scope need no further lead
+- Frontend implementation and verification are tracked separately. Routine
+  fixes inside this scope need no further lead
   approval. New business policies, frontend expansion, deployment, and commits
   are separate scope decisions; do not invent them to keep working.
 

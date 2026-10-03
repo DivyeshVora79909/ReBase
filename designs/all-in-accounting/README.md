@@ -51,7 +51,7 @@ Current packet status, evidence IDs, fixture limits, and open policies live in
 the [implementation handoff](./implementation-handoff.md). In particular,
 H2 posts assessed purchase tax immediately as a receivable; H4b3 records
 eligible/usable recognition separately without posting a second receivable.
-H4b5c residual policy and populated legacy-profile migration remain open.
+The H4b5c current invoice tax paths have no separate residual effect. The populated legacy-profile migration remains open.
 H8 has no writable `end_at`: managed roles compute planned start plus immutable
 duration because SurrealDB 3.2.0 rejects READONLY projection refresh and permits
 writable VALUE override. The bounded H8 profile is not a production migration;

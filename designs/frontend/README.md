@@ -5,6 +5,10 @@ The current request authorizes direct frontend implementation, including breakin
 changes and removal of superseded frontend code. This package owns the frontend
 plan and evidence; the existing core and accounting handoffs retain their scope.
 
+The user's 2026-10-03 request includes fresh frontend and backend verification.
+See [the current review](verification.md#redesign-review--2026-10-03) for the
+passed baseline, invoice timestamp correction and acceptance boundary.
+
 ## Reading route
 
 1. [Execution plan](execution-plan.md): decisions, implementation sequence and gates.

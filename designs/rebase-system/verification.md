@@ -1,5 +1,14 @@
 # Redesign verification and algorithm decision
 
+## Redesign review — 2026-10-03
+
+The [current audit](./core-audit.md#current-redesign-review--2026-10-03) and
+[combined evidence](./evidence/2026-10-03-redesign-verification.json) record the
+fresh developer-tools, database/runtime and frontend checks, invoice timestamp
+and generated-file corrections, exact fingerprints, and accepted scope.
+Historical gaps in the rows below describe their dated checkpoints; current
+invoice outstanding uses complete-timestamp `instant_min`.
+
 ## Focused lead recheck — 2026-09-29
 
 The [lead audit evidence](./evidence/2026-09-29-lead-checkpoint-audit.json)

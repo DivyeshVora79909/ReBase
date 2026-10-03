@@ -55,9 +55,10 @@ The corresponding native functions are in
 - CSV exports the current page with exact decimal text and spreadsheet-formula
   escaping. They are not a full ledger or a server export job.
 
-Reads use explicit projections and bounded database timeouts. No browser
-`INFO STRUCTURE`, generic `SELECT *`, private operation bundle or root login is
-needed by an application route.
+List, detail and lookup reads use explicit projections and database timeouts.
+The scalar treasury cutoff uses `RETURN fn::tree::read(...)` without an explicit
+query timeout. No browser `INFO STRUCTURE`, generic `SELECT *`, private
+operation bundle or root login is needed by an application route.
 
 ## Write contracts
 
@@ -81,10 +82,11 @@ server-owned. The current form creates invoices without tax components.
 
 Cash allocation consumes an already recorded movement; it does not make a new
 payment. The backend rejects incompatible party/entity/currency and exhausted
-capacity. **Invoice allocation at its exact issue timestamp is not supported by
-the current invoice history guard.** The form explains this and keeps the date
-as entered. Choose a later time; the client never silently adds an offset.
-Standalone claims use their separate tested complete-timestamp capacity rules.
+capacity. Invoice allocation supports the exact issue timestamp through the
+backend's complete-timestamp outstanding floor. The client keeps the entered
+date without adding an offset. Allocation before its source or beyond the
+outstanding balance is rejected. Standalone claims retain their own
+complete-timestamp capacity rules.
 
 An exchange reversal uses the original executed amounts and reverses both
 treasury legs. There is no quote refresh. The database permits one full reversal.

@@ -1,0 +1,525 @@
+
+## Final developer-tools suite
+TAP version 13
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 1 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 161.327317
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 2 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 1188.346253
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 3 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 2.910935
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 4 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 6.436108
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 5 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 2.479529
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 6 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 391.990423
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 7 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 57.729457
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 8 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 44.275144
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 9 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 15.127724
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 10 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 5.483675
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates the same input schemas and binds native SDK values
+ok 11 - accounting fixture validates the same input schemas and binds native SDK values
+  ---
+  duration_ms: 45.834014
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 12 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 24.599811
+  type: 'test'
+  ...
+# Subtest: public accounting schemas express client input shape without tree fields or fixture keywords
+ok 13 - public accounting schemas express client input shape without tree fields or fixture keywords
+  ---
+  duration_ms: 26.524521
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 14 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.574837
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 15 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 276.123516
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 16 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 5.697889
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 17 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 7.609554
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 18 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 77.202256
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 19 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 5.252741
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 20 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 18.368615
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 21 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 11.57732
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 22 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 13.172318
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 23 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 6.637851
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 24 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 9.07495
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 25 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 8.747607
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 26 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 8.294647
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2612.278021
+
+
+## Frontend baseline native
+TAP version 13
+# Subtest: a native record session reads real compiled balances and bounded polymorphic references
+ok 1 - a native record session reads real compiled balances and bounded polymorphic references
+  ---
+  duration_ms: 10048.486087
+  type: 'test'
+  ...
+# Subtest: exact source writes commit, stale edits fail, invalid history rolls back, and deletion checks the actual row
+ok 2 - exact source writes commit, stale edits fail, invalid history rolls back, and deletion checks the actual row
+  ---
+  duration_ms: 284.033932
+  type: 'test'
+  ...
+# Subtest: a viewer cannot create cash sources or read another owner's account
+ok 3 - a viewer cannot create cash sources or read another owner's account
+  ---
+  duration_ms: 72.048605
+  type: 'test'
+  ...
+# Subtest: treasury history uses an exclusive cutoff and cash forms preserve exact decimals
+ok 4 - treasury history uses an exclusive cutoff and cash forms preserve exact decimals
+  ---
+  duration_ms: 803.639751
+  type: 'test'
+  ...
+# Subtest: claim forms derive net and both allocation families reject over-settlement atomically
+ok 5 - claim forms derive net and both allocation families reject over-settlement atomically
+  ---
+  duration_ms: 951.811387
+  type: 'test'
+  ...
+# Subtest: stock forms create accounts and sources while guarding historical capacity
+ok 6 - stock forms create accounts and sources while guarding historical capacity
+  ---
+  duration_ms: 372.049615
+  type: 'test'
+  ...
+# Subtest: invoice forms atomically issue sales and purchase lines, allocate cash, and roll back an invalid header
+ok 7 - invoice forms atomically issue sales and purchase lines, allocate cash, and roll back an invalid header
+  ---
+  duration_ms: 1555.54948
+  type: 'test'
+  ...
+# Subtest: exchange forms create a pair, record exact amounts, and reverse both account effects
+ok 8 - exchange forms create a pair, record exact amounts, and reverse both account effects
+  ---
+  duration_ms: 269.943386
+  type: 'test'
+  ...
+# Subtest: production and assembly create immutable recipes and update lifecycle sources
+ok 9 - production and assembly create immutable recipes and update lifecycle sources
+  ---
+  duration_ms: 1261.198041
+  type: 'test'
+  ...
+# Subtest: every directory form and the currency-separated overview use the published fields
+ok 10 - every directory form and the currency-separated overview use the published fields
+  ---
+  duration_ms: 173.279089
+  type: 'test'
+  ...
+# Subtest: runtime input preserves false/zero, rejects invalid explicit profiles, and has no implicit connection
+ok 11 - runtime input preserves false/zero, rejects invalid explicit profiles, and has no implicit connection
+  ---
+  duration_ms: 4.88518
+  type: 'test'
+  ...
+# Subtest: identity includes the endpoint, engine, profile, namespace, database and access context
+ok 12 - identity includes the endpoint, engine, profile, namespace, database and access context
+  ---
+  duration_ms: 0.978907
+  type: 'test'
+  ...
+# Subtest: runtime parsing copies trusted facts instead of retaining mutable input
+ok 13 - runtime parsing copies trusted facts instead of retaining mutable input
+  ---
+  duration_ms: 0.342333
+  type: 'test'
+  ...
+# Subtest: unverified embedded engines are explicitly unavailable
+ok 14 - unverified embedded engines are explicitly unavailable
+  ---
+  duration_ms: 0.500386
+  type: 'test'
+  ...
+# Subtest: post-login navigation retains encoded IDs and cannot change origin or workspace
+ok 15 - post-login navigation retains encoded IDs and cannot change origin or workspace
+  ---
+  duration_ms: 0.621959
+  type: 'test'
+  ...
+# Subtest: the initial list URL accepts bounded plain state
+ok 16 - the initial list URL accepts bounded plain state
+  ---
+  duration_ms: 0.474097
+  type: 'test'
+  ...
+# Subtest: memory sessions belong to one application and one connection identity
+ok 17 - memory sessions belong to one application and one connection identity
+  ---
+  duration_ms: 3.119878
+  type: 'test'
+  ...
+# Subtest: moving a token writes the destination before removing the old copy and keeps other scopes
+ok 18 - moving a token writes the destination before removing the old copy and keeps other scopes
+  ---
+  duration_ms: 1.422878
+  type: 'test'
+  ...
+# Subtest: failed persistence retains the current session in memory and reports the actual storage mode
+ok 19 - failed persistence retains the current session in memory and reports the actual storage mode
+  ---
+  duration_ms: 0.770753
+  type: 'test'
+  ...
+# Subtest: failed removal cannot restore a forgotten session in the same application
+ok 20 - failed removal cannot restore a forgotten session in the same application
+  ---
+  duration_ms: 2.925127
+  type: 'test'
+  ...
+# Subtest: malformed tokens and old global tokens are never adopted
+ok 21 - malformed tokens and old global tokens are never adopted
+  ---
+  duration_ms: 1.74437
+  type: 'test'
+  ...
+# Subtest: financial input and display retain digits beyond binary floating point precision
+ok 22 - financial input and display retain digits beyond binary floating point precision
+  ---
+  duration_ms: 2.667631
+  type: 'test'
+  ...
+# Subtest: native record identities preserve typed keys and unusual names without SQL interpolation
+ok 23 - native record identities preserve typed keys and unusual names without SQL interpolation
+  ---
+  duration_ms: 1.400709
+  type: 'test'
+  ...
+# Subtest: editing a local datetime does not truncate its seconds or milliseconds
+ok 24 - editing a local datetime does not truncate its seconds or milliseconds
+  ---
+  duration_ms: 0.636625
+  type: 'test'
+  ...
+# Subtest: CSV keeps exact values, quotes cells and neutralizes spreadsheet formulas
+ok 25 - CSV keeps exact values, quotes cells and neutralizes spreadsheet formulas
+  ---
+  duration_ms: 0.467955
+  type: 'test'
+  ...
+# Subtest: untrusted URL state cannot introduce arbitrary SQL order or unbounded pages
+ok 26 - untrusted URL state cannot introduce arbitrary SQL order or unbounded pages
+  ---
+  duration_ms: 0.33947
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17162.341118
+
+
+## Frontend baseline browser and build
+npm notice run metasol@0.0.0 test:browser
+npm notice run playwright test --config /tmp/rebase-final-frontend-00fr2wd6/playwright.config.mjs --workers=1
+[WebServer] npm notice run metasol@0.0.0 build
+[WebServer] npm notice run vite build --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs
+[WebServer] [PLUGIN_TIMINGS] Your build spent significant time in plugin `solid`. See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+[WebServer] 
+[WebServer] npm notice run metasol@0.0.0 preview
+[WebServer] npm notice run vite preview --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs --host 127.0.0.1 --port 4173 --strictPort
+
+Running 28 tests using 1 worker
+
+  ✓   1 tests/accounting.spec.js:46:1 › native accounting pages render without errors and show meaningful empty states (3.9s)
+  ✓   2 tests/accounting.spec.js:92:1 › cash creation, editing and deletion change the real balance; rejected writes keep the draft (5.0s)
+  ✓   3 tests/accounting.spec.js:157:1 › table, grid, board, filter history and current-page CSV work on real accounts (2.3s)
+  ✓   4 tests/accounting.spec.js:180:1 › viewer permissions hide writes and do not expose the operator's balances (1.9s)
+  ✓   5 tests/accounting.spec.js:199:1 › directory and treasury setup creates a usable account with an exclusive historical cutoff (4.1s)
+  ✓   6 tests/accounting.spec.js:252:1 › claim and stock forms use typed selections and allocate existing cash (4.9s)
+  ✓   7 tests/accounting.spec.js:313:1 › invoice multi-selection issues a document and settles it without duplicating a payment (4.6s)
+  ✓   8 tests/accounting.spec.js:354:1 › exchange reversal and production lifecycle use their explicit source forms (6.6s)
+  ✓   9 tests/accounting.spec.js:411:1 › an unconfirmed create can be inspected and retrying its stable reference cannot duplicate it (23.5s)
+  ✓  10 tests/accounting.spec.js:468:1 › preferences, keyboard selection and mobile navigation remain usable in small viewports (3.8s)
+  ✓  11 tests/accounting.spec.js:536:1 › paged lookups ignore late search results and hydrate the selected record (3.4s)
+  ✓  12 tests/accounting.spec.js:587:1 › a new immutable recipe version can complete an immediate assembly batch (5.5s)
+  ✓  13 tests/engine.spec.js:3:3 › memory profiles are rejected before any embedded code loads (1.2s)
+  ✓  14 tests/engine.spec.js:3:3 › indexeddb profiles are rejected before any embedded code loads (882ms)
+  ✓  15 tests/runtime.spec.js:2:1 › connection input rejects invalid context and old routes are absent (1.6s)
+  ✓  16 tests/runtime.spec.js:13:1 › a real sign-in gates reads, native query state follows history, and memory does not survive reload (2.5s)
+  ✓  17 tests/runtime.spec.js:41:1 › tab sessions survive encoded-ID reloads and child navigation keeps the workspace owner (3.0s)
+  ✓  18 tests/runtime.spec.js:70:1 › database and endpoint changes isolate tokens and cached rows even with the same record IDs (3.9s)
+  ✓  19 tests/runtime.spec.js:94:1 › changing a profile endpoint does not restore the previous endpoint's persisted token (2.5s)
+  ✓  20 tests/runtime.spec.js:107:1 › a late sign-in cannot restore an abandoned workspace or persist its token (2.4s)
+  ✓  21 tests/runtime.spec.js:130:1 › closing a workspace suppresses its pending read and the next workspace stays independent (2.8s)
+  ✓  22 tests/runtime.spec.js:143:1 › SDK expiry ends private reads without an anonymous sign-in retry (9.7s)
+  ✓  23 tests/runtime.spec.js:162:1 › unavailable token storage keeps an active memory session and reports the fallback (2.0s)
+  ✓  24 tests/runtime.spec.js:171:1 › restoring a persisted session gates principal and feature reads until authentication completes (2.3s)
+  ✓  25 tests/runtime.spec.js:185:1 › device sessions restore in a new tab and moving to tab storage removes the device copy (3.7s)
+  ✓  26 tests/runtime.spec.js:204:1 › reused workspace route parameters replace the captured client without a page reload (2.9s)
+  ✓  27 tests/runtime.spec.js:227:1 › the native HTTP transport signs in and restores a tab session (2.1s)
+  ✓  28 tests/runtime.spec.js:237:1 › a connection timeout releases its client and a retry creates a working session (2.7s)
+
+  28 passed (2.4m)
+
+
+## Frontend final invoice native
+TAP version 13
+# Subtest: invoice forms atomically issue sales and purchase lines, settle at the issue instant, and roll back invalid writes
+ok 1 - invoice forms atomically issue sales and purchase lines, settle at the issue instant, and roll back invalid writes
+  ---
+  duration_ms: 14653.661275
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15574.878923
+
+
+## Frontend final invoice browser and build
+npm notice run metasol@0.0.0 test:browser
+npm notice run playwright test --config /tmp/rebase-final-frontend-00fr2wd6/invoice-followup/playwright.config.mjs accounting.spec.js --grep invoice multi-selection --workers=1
+[WebServer] npm notice run metasol@0.0.0 build
+[WebServer] npm notice run vite build --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs
+[WebServer] [PLUGIN_TIMINGS] Your build spent significant time in plugins. Here is a breakdown:
+[WebServer]   - solid (91%)
+[WebServer]   - tanstack-router:code-splitter:compile-reference-file (6%)
+[WebServer] See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+[WebServer] 
+[WebServer] npm notice run metasol@0.0.0 preview
+[WebServer] npm notice run vite preview --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs --host 127.0.0.1 --port 4173 --strictPort
+
+Running 1 test using 1 worker
+
+  ✓  1 tests/accounting.spec.js:313:1 › invoice multi-selection settles at the issue instant without duplicating a payment (6.3s)
+
+  1 passed (28.4s)
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata node --check dev-tools/accounting/core-probe.js
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run build:all-in-accounting
+npm notice run rebase-surreal-compiler@0.2.0 build:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 76 tables and 0 views.
+Material files: 24
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run check
+npm notice run rebase-surreal-compiler@0.2.0 check
+npm notice run node dev-tools/compiler/cli.js --check
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 26 tables and 8 views.
+Material files: 9
+Table handlers: 7
+Webhook handlers: 1
+Output: build/test
+Schema: build/test/schema.surql
+One-shot upgrade batches: build/test/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/test/migrate-one-shot-finalize.surql
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run check:all-in-one
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 54 tables and 0 views.
+Material files: 13
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-one
+Schema: build/all-in-one/schema.surql
+One-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run check:all-in-accounting
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 76 tables and 0 views.
+Material files: 24
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata surreal validate build/all-in-accounting/schema.surql
+build/all-in-accounting/schema.surql: OK
+
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:compiler
+npm notice run rebase-surreal-compiler@0.2.0 probe:compiler
+npm notice run node dev-tools/checks/compiler-probe.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:environment
+npm notice run rebase-surreal-compiler@0.2.0 probe:environment
+npm notice run node dev-tools/checks/environment-probe.js
+environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:accounting-core
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-core
+npm notice run node dev-tools/accounting/core-probe.js
+Invoice complete-timestamp partial/full settlement, ID-order control, pre-issue rejection, and rollback passed
+Accounting H3b receipt settlement, H3a sales tax, H2 receipt and net bounds, H1 fixtures, and A1/A2 oracles passed
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:credentials
+npm notice run rebase-surreal-compiler@0.2.0 probe:credentials
+npm notice run node dev-tools/checks/credential-probe.js
+credentials: owner, delegation, redaction, platform binding, BYOC, unauthorized operation, and pre-load guards passed (1794ms)
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:authentication
+npm notice run rebase-surreal-compiler@0.2.0 probe:authentication
+npm notice run node dev-tools/checks/authentication-probe.js
+authentication: normalization, context isolation, generic responses, fixed target/config routing, encrypted atomic queueing, failure mapping, and OAuth allowlist passed
+
+
+## env -i PATH="$PATH" TZ=Asia/Kolkata npm run probe:runtime
+npm notice run rebase-surreal-compiler@0.2.0 probe:runtime
+npm notice run node dev-tools/checks/runtime-probe.js
+runtime: one-shot legacy backfill processes bounded repeat-safe batches, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: one-shot legacy backfill processes bounded repeat-safe batches across a file-backed database restart, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: operation tasks, bounded terminal retention, durable attachment cleanup, worker and gateway process recovery, cancellation/reconciliation, one-shot timing, cross-client admission, durable keyset recovery, Redis restart, revision fencing, authentication, effects, webhooks, readiness, and context races passed
+

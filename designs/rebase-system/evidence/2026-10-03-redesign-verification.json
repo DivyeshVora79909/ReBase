@@ -1,0 +1,378 @@
+{
+  "reviewDate": "2026-10-03",
+  "status": "passed-requested-scope",
+  "scope": {
+    "included": [
+      "developer-tools redesign",
+      "generated schema and public JSON schemas",
+      "SurrealDB authentication, permissions, accounting and runtime consistency",
+      "delivered MetaSol accounting workflows"
+    ],
+    "excluded": [
+      "real email/SMS/payment API keys and live provider calls",
+      "deployment or production data mutation",
+      "new deferred product features",
+      "representative physical capacity benchmarks"
+    ],
+    "migration": "Not applicable: user has no existing data to migrate.",
+    "testEnvironment": "Disposable local databases; injected/synthetic provider transports; sanitized process environment."
+  },
+  "repositories": {
+    "rebaseHead": "8fb89b36b4950d6b5ce7f1fa3665ed79a6884864",
+    "metaSolHead": "30223929406de5092c62bf79030ec8c2380b9959",
+    "committedByReview": false,
+    "rebaseWorkingChanges": "Preexisting dirty documentation, H8 measurement and package edits preserved. This review adds invoice source/probe, atomic artifact-write regression, and current review documentation/evidence; no commits, push or deployment.",
+    "metaSolWorkingChanges": [
+      " M src/data/writes.js",
+      " M src/routes/w.$profile.$namespace.$database._app.invoices.$id.jsx",
+      " M tests/accounting.spec.js",
+      " M tests/accounting.test.js"
+    ]
+  },
+  "developerTools": {
+    "command": "env -i PATH=\"$PATH\" node --test dev-tools/tests/workbench.test.js dev-tools/tests/client-schemas.test.js",
+    "exitCode": 0,
+    "elapsedSeconds": 2.689,
+    "log": "/tmp/rebase-final-review-622ivnlu/devtools.log",
+    "passed": 26,
+    "failed": 0,
+    "fixturePreview": "Six authored SDK fixture rows validated offline, as reported by the developer-tools reviewer; no database connection."
+  },
+  "frontend": {
+    "baseline": {
+      "frontend_head": "30223929406de5092c62bf79030ec8c2380b9959",
+      "native": {
+        "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata node --test --test-concurrency=1 tests/*.test.js",
+        "passed": 26,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "duration_ms": 17162.341118,
+        "exit_code": 0
+      },
+      "browser": {
+        "command": "env -i PATH=\"$PATH\" HOME=/tmp/rebase-final-frontend-00fr2wd6/home TZ=Asia/Kolkata npm run test:browser -- --config /tmp/rebase-final-frontend-00fr2wd6/playwright.config.mjs --workers=1",
+        "passed": 28,
+        "failed": 0,
+        "duration_reported": "2.4m",
+        "workers": 1,
+        "retries": 0,
+        "exit_code": 0,
+        "build": "Vite production build passed as web-server prerequisite; empty envDir config used for both build and preview"
+      },
+      "initial_browser_attempt": "Interrupted by auditor after 1 passed, 1 interrupted, 26 not run to extend empty envDir protection from build to preview; initial preview may have internally read .env. No env contents opened/output; source has no import.meta.env consumers. Raw log retained.",
+      "sources_changed": [],
+      "git_diff_check": "passed",
+      "git_status": "clean",
+      "screenshots_inspected": [
+        "workspace-desktop.png",
+        "overview-desktop.png",
+        "cash-mobile-dark.png"
+      ],
+      "exception": "src/data/treasury.js treasuryBefore bare RETURN does not set explicit DB timeout; bounded single-value tree lookup.",
+      "scope_limits": [
+        "Chromium only",
+        "local memory databases",
+        "no production data/migration/provider credentials or live provider calls",
+        "deferred frontend tax/returns/refunds/quote FX/admin/onboarding not established",
+        "invoice same-instant allocation intentionally unsupported"
+      ]
+    },
+    "finalFocused": {
+      "frontend_head": "30223929406de5092c62bf79030ec8c2380b9959",
+      "status": [
+        " M src/data/writes.js",
+        " M src/routes/w.$profile.$namespace.$database._app.invoices.$id.jsx",
+        " M tests/accounting.spec.js",
+        " M tests/accounting.test.js"
+      ],
+      "frontend_sha256": {
+        "src/data/writes.js": "973387f8346a8ec5f4d1b8a3c94eea5bd76d56eb306a12735d554abf844acfcb",
+        "src/routes/w.$profile.$namespace.$database._app.invoices.$id.jsx": "14d616f59941e2927377962746274df06fd20fdc30bcde855408ecfdef77aae0",
+        "tests/accounting.test.js": "16a2a240e40a0a6170606f0efebd77c370baada5ffa515b046f1ca50f8f92b21",
+        "tests/accounting.spec.js": "4f16000b036ac738366ed1447324a4f4cd341a8a61f85a7c4092c9ba8780b9e5"
+      },
+      "backend_invoice_schema_sha256": "13271e2e71e47c85c94cd6891a1d9db366ccd31bcef61bad1c496d38260de957",
+      "native": {
+        "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata node --test --test-concurrency=1 --test-name-pattern='invoice forms' tests/accounting.test.js",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "duration_ms": 15574.878923,
+        "exit_code": 0
+      },
+      "browser": {
+        "command": "env -i PATH=\"$PATH\" HOME=/tmp/rebase-final-frontend-00fr2wd6/home TZ=Asia/Kolkata npm run test:browser -- --config /tmp/rebase-final-frontend-00fr2wd6/invoice-followup/playwright.config.mjs accounting.spec.js --grep 'invoice multi-selection' --workers=1",
+        "passed": 1,
+        "failed": 0,
+        "test_duration_reported": "6.3s",
+        "total_duration_reported": "28.4s",
+        "workers": 1,
+        "retries": 0,
+        "exit_code": 0,
+        "build": "passed; empty envDir for build and preview"
+      },
+      "source_change": "Removed obsolete invoice same-instant warning from form/error text. Replaced rejection expectation with native positive partial/full both-side settlement, preissue/oversettlement rollback. Existing browser invoice test verifies partial/full exact timestamp and cash rows unchanged.",
+      "initial_targeted_native_attempt": "Failed only auditor test regex: preissue settlement returns INVOICE_ALLOCATION_BEFORE_SOURCE instead of INVOICE_OVERSETTLED. Corrected precise expected guard; initial log retained.",
+      "git_diff_check": "passed",
+      "full_baseline_rerun": false
+    }
+  },
+  "frontendIsolation": {
+    "reproduce": "Create empty envDir and temporary HOME, recreate these wrapper modules with current absolute checkout/temp paths, then run the recorded commands. Both build and preview need the Vite wrapper.",
+    "viteConfig": "import config from \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol/vite.config.js\";\nexport default { ...config, envDir: \"/tmp/rebase-final-frontend-00fr2wd6/empty-env\" };\n",
+    "playwrightBaselineConfig": "import config from \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol/playwright.config.js\";\nexport default { ...config, testDir: \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol/tests\", outputDir: \"/tmp/rebase-final-frontend-00fr2wd6/test-results\", workers: 1, retries: 0, webServer: { ...config.webServer, cwd: \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol\", command: \"npm run build -- --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs && npm run preview -- --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs --host 127.0.0.1 --port 4173 --strictPort\" } };\n",
+    "playwrightFocusedConfig": "import config from \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol/playwright.config.js\";\nexport default { ...config, testDir: \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol/tests\", outputDir: \"/tmp/rebase-final-frontend-00fr2wd6/invoice-followup/test-results\", workers: 1, retries: 0, webServer: { ...config.webServer, cwd: \"/home/divyeshvora/javascript/node/projects/ReBase/MetaSol\", command: \"npm run build -- --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs && npm run preview -- --config /tmp/rebase-final-frontend-00fr2wd6/vite.config.mjs --host 127.0.0.1 --port 4173 --strictPort\" } };\n"
+  },
+  "findings": [
+    {
+      "id": "invoice-timestamp",
+      "problem": "Strict min_prefix rejects a valid issue and settlement sharing an effective timestamp when negative membership sorts first.",
+      "fix": "Use outstanding.instant_min and remove obsolete frontend warnings. The expanded accounting core probe and final native/browser invoice checks passed."
+    },
+    {
+      "id": "hardlinked-artifact",
+      "problem": "Overwriting a hard-linked generated file in place could overwrite an authoring file.",
+      "fix": "Write temporary files and rename over each output, preserving existing permissions and cleaning temporary directories. Final focused suite passes 26/26. Atomicity is per file, not across the complete build."
+    },
+    {
+      "id": "stale-public-schemas",
+      "problem": "Accounting generated output lacked all five authored public client schemas.",
+      "fix": "Rebuilt accounting output. All five generated public JSON schemas match the authored bytes; the build check passes."
+    },
+    {
+      "id": "documentation",
+      "problem": "Current routing still deferred frontend verification and described P1 and residual posting as unresolved.",
+      "fix": "Refresh current acceptance/status; preserve dated historical evidence. Qualify scalar treasury cutoff read timeout exception."
+    }
+  ],
+  "limits": [
+    "Full baseline frontend suites precede the invoice correction; only impacted invoice native/browser tests and build were rerun afterward.",
+    "Chromium and disposable local memory databases do not establish other-browser or production-capacity behavior.",
+    "Advanced tax, returns/refunds, quote FX, administration/onboarding UI and CRM/HRM remain separate scope.",
+    "No broad npm run verify or H8 performance rerun is claimed."
+  ],
+  "environment": {
+    "node": "v22.23.2",
+    "surreal": "3.2.0 for linux on x86_64",
+    "redis": "Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=e53ff17674aa6190",
+    "bullmq": "6.2.0",
+    "ioredis": "6.0.0",
+    "surrealdb": "2.0.8"
+  },
+  "backendChecks": [
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata node --check dev-tools/accounting/core-probe.js",
+      "exitCode": 0,
+      "elapsedSeconds": 0.062,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-00.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run build:all-in-accounting",
+      "exitCode": 0,
+      "elapsedSeconds": 1.101,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-01.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run check",
+      "exitCode": 0,
+      "elapsedSeconds": 0.55,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-02.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run check:all-in-one",
+      "exitCode": 0,
+      "elapsedSeconds": 0.858,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-03.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run check:all-in-accounting",
+      "exitCode": 0,
+      "elapsedSeconds": 0.878,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-04.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata surreal validate build/all-in-accounting/schema.surql",
+      "exitCode": 0,
+      "elapsedSeconds": 0.611,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-05.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:compiler",
+      "exitCode": 0,
+      "elapsedSeconds": 1.348,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-06.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:environment",
+      "exitCode": 0,
+      "elapsedSeconds": 0.846,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-07.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:accounting-core",
+      "exitCode": 0,
+      "elapsedSeconds": 65.719,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-08.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:credentials",
+      "exitCode": 0,
+      "elapsedSeconds": 2.164,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-09.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:authentication",
+      "exitCode": 0,
+      "elapsedSeconds": 0.445,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-10.log"
+    },
+    {
+      "command": "env -i PATH=\"$PATH\" TZ=Asia/Kolkata npm run probe:runtime",
+      "exitCode": 0,
+      "elapsedSeconds": 54.047,
+      "log": "/tmp/rebase-final-review-622ivnlu/backend-11.log"
+    }
+  ],
+  "sourceComparisons": {
+    "developerTools": {
+      "reference": "designs/rebase-system/evidence/2026-10-02-developer-experience-review.json",
+      "manifestKey": "sourceSha256",
+      "matchedCount": 145,
+      "changed": [
+        {
+          "path": "designs/all-in-accounting/claims/invoices.surql",
+          "previousSha256": "9bed09d04a22ae2c37c5d13f73f421af8e7f298da0c1fb204f6ea53c15fc43e0",
+          "currentSha256": "13271e2e71e47c85c94cd6891a1d9db366ccd31bcef61bad1c496d38260de957"
+        },
+        {
+          "path": "dev-tools/compiler/pipeline.js",
+          "previousSha256": "e579807131ccb24ce2e3ef69dde49cb37764df294aab9906920a07b061f9de95",
+          "currentSha256": "3001dbe7e9a119fc59749dbc0851567f17b00d5a5e7d7ec15def19b1cc4deef4"
+        },
+        {
+          "path": "dev-tools/tests/client-schemas.test.js",
+          "previousSha256": "0bb5306ecdf7abdfcc11b05527ffaf350ea5c374b0c32076192d954da60123a0",
+          "currentSha256": "ffbc636eca462ee5b2905c671c3f455bb2a5561ca5028c631b1702fb41119225"
+        },
+        {
+          "path": "package.json",
+          "previousSha256": "4fcefce8b016a9852ade4da7d4516037531ae29ca3c93db87c18f3d869de3d5b",
+          "currentSha256": "d32396a3f1238457eb2b2f859c94911b6e71779598eb45ea72f5be60babccd97"
+        }
+      ],
+      "missing": []
+    },
+    "frontend": {
+      "reference": "designs/frontend/evidence/2026-10-02-frontend.json",
+      "manifestKey": "fingerprints.frontendSourceSha256",
+      "matchedCount": 66,
+      "changed": [
+        {
+          "path": "MetaSol/src/data/writes.js",
+          "previousSha256": "cb63bbb0edef62b8b7fad37251981131342b15402f365b7239d500122a23f472",
+          "currentSha256": "973387f8346a8ec5f4d1b8a3c94eea5bd76d56eb306a12735d554abf844acfcb"
+        },
+        {
+          "path": "MetaSol/src/routes/w.$profile.$namespace.$database._app.invoices.$id.jsx",
+          "previousSha256": "22c646edc51576bd76b6ef3fd42792fd221c5907f42831c142e25550780ac57d",
+          "currentSha256": "14d616f59941e2927377962746274df06fd20fdc30bcde855408ecfdef77aae0"
+        },
+        {
+          "path": "MetaSol/tests/accounting.spec.js",
+          "previousSha256": "4a61489d4328c712ce8d16c44f176d7edee510045456f04259ed8b8b6cce3bd5",
+          "currentSha256": "4f16000b036ac738366ed1447324a4f4cd341a8a61f85a7c4092c9ba8780b9e5"
+        },
+        {
+          "path": "MetaSol/tests/accounting.test.js",
+          "previousSha256": "6e331bc58818b6f5b075d542d25fdffdb53b27c2b31f861f93c960fc70181bef",
+          "currentSha256": "16a2a240e40a0a6170606f0efebd77c370baada5ffa515b046f1ca50f8f92b21"
+        }
+      ],
+      "missing": []
+    }
+  },
+  "publicSchemaSha256": {
+    "cash_in.schema.json": "78851a1257ebc1a955de4840d212917ff9a05d6cc966f60993713957e322f6aa",
+    "currency.schema.json": "37962c73b2da6d1d93b72f1644623615fe9a42276e5b0ff7157ea75acc51cf7c",
+    "organization.schema.json": "873aee731699d1a83ab78fe8745d0f9e42d93f1860d76b27b6023f431c08f821",
+    "treasury.schema.json": "232dc1ed14ad585e048c1ba1dea8fc00b0f921cd06d874978a84f4e3f1921898",
+    "treasury_account.schema.json": "ce0e13dc33b30522f359fee54c3c5dd48d53008ebbb4f7ed3d00c123d9601d81"
+  },
+  "initialGeneratedCheck": {
+    "command": "npm run check:all-in-accounting",
+    "result": "Failed: generated client/schemas directory absent. Rebuilt current accounting source and check then passed; no schema source regression was inferred from stale output."
+  },
+  "invoiceCoverage": {
+    "positive": "Sales and purchase issue/line workflows and purchase-receipt workflow accept partial then full settlement at the exact issue timestamp.",
+    "ordering": "Sales/purchase invoice allocation memberships naturally sort before their managed invoice lines; probes observe strict min_prefix -4 and -10 while instant_min is 0. Purchase receipt memberships sort before their allocations and retain strict min_prefix 0. These are the two actual table/ID ordering cases; suffixes alone do not reverse different table names.",
+    "negative": "Sales/purchase pre-issue and excess allocation rejection leave invoice, source/managed rows, allocations, claim and cash/treasury snapshots unchanged. Purchase-receipt excess allocation also restores its captured graph.",
+    "frontend": "Native checks cover both invoice directions and partial/full settlement. Browser checks preserve exact timestamps and show unchanged cash movement rows."
+  },
+  "redisDecision": {
+    "additionalHighConcurrencyTest": "not needed for this review",
+    "basis": "Queue/admission/timing/reconciler sources match the prior atomic race-fix evidence; installed BullMQ is the pinned 6.2.0. The relocated admission probe differs only in two require paths. Current disposable runtime integration passed. No throughput, physical memory or Redis Cluster claim.",
+    "reference": "designs/rebase-system/evidence/2026-09-28-core-stabilization.json",
+    "matchingSha256": {
+      "gateway/queues/bullmq.js": "8a88e64106e8c3a56b245038ff0969c09edd42627b81515921acaac49fac8854",
+      "gateway/queues/atomic-admission.js": "5f2595efab3ab610f2bf49f05b443f48c9573ea4acd1bc1d6941edd3c251c1ad",
+      "config/runtime-timing.js": "fec7a643993e2fecaa79884dfd3cd3ca86a3d02bc4bc7b56cf1db57b2d55ecea",
+      "gateway/reconciler.js": "b185f2cfca00ca3e7aeb3dfe8dc9ea9837778b2c4ac890e646bac75ef66b0457"
+    },
+    "admissionProbeComparisonCommand": "git diff d0593fa:dev-tools/admission-capacity-probe.js HEAD:dev-tools/checks/admission-capacity-probe.js"
+  },
+  "additionalCurrentSha256": {
+    "designs/all-in-accounting/claims/invoices.surql": "13271e2e71e47c85c94cd6891a1d9db366ccd31bcef61bad1c496d38260de957",
+    "dev-tools/accounting/core-probe.js": "a1a3e4648a42205e5ca8c8cdbc2657c3a13cb3371be1d35e13708b48bf46b14c",
+    "dev-tools/compiler/pipeline.js": "3001dbe7e9a119fc59749dbc0851567f17b00d5a5e7d7ec15def19b1cc4deef4",
+    "dev-tools/tests/client-schemas.test.js": "ffbc636eca462ee5b2905c671c3f455bb2a5561ca5028c631b1702fb41119225",
+    "dev-tools/tests/workbench.test.js": "5db4d7009213a18871ff2b7411837facac8bc9eec79bc64059517c478480c59b",
+    "dev-tools/checks/compiler-probe.js": "58b86a68534e1e0037ad9e4442210f35a068cf5fe46fe2ef274e0ef6fcc327b9",
+    "dev-tools/checks/environment-probe.js": "bf65fb12e39fa2f3af6eaa8ce1fdf7b9bd6a1a36f01f4a8a561486912272418b",
+    "dev-tools/checks/authentication-probe.js": "e8921cb76000c658f88cf6127abf1e2be9b43764a59304492703eceb61d5df1f",
+    "dev-tools/checks/credential-probe.js": "116a184cc61ddfdfe2e37b28cbfb59ba197f2fd0e09190b637da114d2613a21b",
+    "dev-tools/checks/runtime-probe.js": "34381b6ea213657c9a13e145c9f62a39368ea5b76c5647834fb0b282ec8680db",
+    "gateway/runtime.js": "d76999d6160f68b1b9d8a3bd9ec11561d0bd4674c4adb8b277bf29cc2aec3cf7",
+    "gateway/store.js": "0c0704710be22ed3f78c3a4668a698e81249d01240f814da7980ac3c7f6ae0b6",
+    "package.json": "d32396a3f1238457eb2b2f859c94911b6e71779598eb45ea72f5be60babccd97",
+    "package-lock.json": "4b3cd5e807d00ee320beaa83cf156fa9ad023dbcc3996e0ce255bf526d6a6bf1",
+    "build/all-in-accounting/schema.surql": "6293c521d068fb511ed73fed227e923543037d70c799d11288ee97bf41bc76fc",
+    "build/all-in-accounting/runtime-contracts.json": "3178ce7c2da02bf220e2a37c114c40d31da4e4ff020d17d1dcd2de34adcec442",
+    "dev-tools/accounting/h8-measurement-probe.js": "e8f852fb1ea4f1794ee40bedec50425c2afea5b6163e905ce174d5db5d6c4c51"
+  },
+  "retainedLog": {
+    "path": "designs/rebase-system/evidence/2026-10-03-redesign-verification-output.txt",
+    "sha256": "5c8becf61a937449996db324579ec3be2fc470e0bf1a0a2ca4d9f573a389faf7",
+    "contents": "Successful final developer-tools suite, frontend baseline and final targeted invoice runs/builds, all final backend commands. Excluded attempts are described in the staged summaries; their temporary logs are not required for this pass claim."
+  },
+  "finalReviewChecks": {
+    "gitDiffCheck": "passed in ReBase and MetaSol",
+    "relativeDocumentationFileLinks": {
+      "checked": 383,
+      "files": 19,
+      "missing": 0,
+      "scope": "File targets in changed Markdown outside fenced examples; heading fragments not parsed."
+    },
+    "generatedArtifacts": "17 prior artifact hashes unchanged; only accounting schema changes for the corrected invoice guard; 5 public JSON exports match source exactly.",
+    "reviewedSourceDiffs": [
+      "invoice guard and new executed accounting regression",
+      "atomic artifact writer and permission/source-preservation test",
+      "four MetaSol invoice warning/regression edits"
+    ],
+    "retainedRegressionFiles": "No unproven dead-code deletions; existing regression evidence retained."
+  },
+  "generatedArtifactParity": {
+    "reference": "designs/rebase-system/evidence/2026-10-02-developer-experience-review.json",
+    "baselineKey": "baselineArtifactSha256",
+    "matches": 17,
+    "changed": [
+      {
+        "path": "build/all-in-accounting/schema.surql",
+        "previousSha256": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069",
+        "currentSha256": "6293c521d068fb511ed73fed227e923543037d70c799d11288ee97bf41bc76fc"
+      }
+    ],
+    "note": "The invoice guard intentionally changes the accounting schema; the remaining generated artifacts retain their previous bytes. Five authored client JSON schemas are verified separately."
+  }
+}

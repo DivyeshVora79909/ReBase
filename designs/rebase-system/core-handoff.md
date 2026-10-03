@@ -1,11 +1,17 @@
 # Core stabilization handoff
 
-Updated 2026-09-29. **Start here for core work.** This file retains K1–K5
+Updated 2026-10-03. **Start here for core work.** This file retains K1–K5
 acceptance and restart requirements. The [core audit](./core-audit.md) and its
 linked evidence are canonical for current findings and checks; the
 [accounting handoff](../all-in-accounting/implementation-handoff.md) owns
 current H1–H8 domain status and evidence. The larger system plan is historical
 context.
+
+The 2026-10-03 review includes developer tools and the delivered frontend.
+Its acceptance boundary is local SurrealDB consistency. Live email/SMS/payment
+providers are explicitly excluded, and there is no existing data to migrate.
+Use the [current review evidence](./evidence/2026-10-03-redesign-verification.json)
+for fresh checks; older K1–K5 evidence remains tied to its recorded source.
 
 ## Current assignment
 

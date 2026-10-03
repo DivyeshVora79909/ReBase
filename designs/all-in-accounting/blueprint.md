@@ -620,10 +620,12 @@ cash-out allocation root exactly once. Required effects, matching amounts, and
 deletion integrity belong to the atomic recipe contract. Rules select eligible
 accounts and jurisdictions; the engine does not infer statutory eligibility.
 
-Any rounding residual remains unresolved until its source, sign, range,
-currency precision, destination measure/account, date, and selected policy are
-specified. The FX-transfer residual is specific to its own formula and does
-not supply a tax residual policy. A residual does not imply cash movement.
+No separate tax residual is calculated in the current invoice schema. If a future
+tax feature introduces a concrete line-versus-invoice reconciliation, specify
+its authoritative source, sign/range, currency precision, destination and date
+policy before implementation. The FX-transfer residual remains specific to its
+exchange formula and is recorded as quote-use history; it does not imply cash
+or tax movement.
 
 **Withholding/collection at source.** If a customer clears 100 with 90 cash and
 10 withheld on our behalf, record real cash of 90, reduce the customer claim by
@@ -663,11 +665,19 @@ numbers as timeless identities: the Income Tax Department's
 explicitly distinguishes old/new Act periods and numbering. These references
 establish design distinctions; they are not an exhaustive compliance rule set.
 
-Invoice-level rounded tax can differ from the sum of rounded line taxes. State
-which basis is authoritative and where a residual is assigned. For compound tax,
-use a finite acyclic graph of calculated bases, excluding each output from its
-own input tree. Preserve a policy version on facts; changing today's rule must
-not silently recalculate accepted historical tax.
+Current invoice tax components have one invoice-scoped output per tax key.
+Where H4a/H4b calculate an amount from the invoice basis, they round it to
+invoice currency precision before emitting linked invoice, claim, and tax-account
+effects with their declared directions. Billed lines contribute to tax bases;
+tax is not separately calculated and rounded per line. No tax residual is
+calculated or posted for the current invoice paths. `cash_fx_transfer` records its distinct
+exchange-formula residual as quote-use history, which does not create an extra
+tax or cash effect. If a future tax feature reconciles line totals against an
+invoice total, specify its authoritative basis and destination as an explicit
+typed policy before implementation. For compound tax, use a finite acyclic
+graph of calculated bases, excluding each output from its own input tree.
+Preserve a policy version on facts; changing today's rule must not silently
+recalculate accepted historical tax.
 
 **Barter or in-kind settlement.** A resource movement can support a claim
 allocation with an explicit monetary valuation and a quantity-capacity guard.

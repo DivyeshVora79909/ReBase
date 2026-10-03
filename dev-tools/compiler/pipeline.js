@@ -251,6 +251,25 @@ function preflightArtifacts(outputDir, copies = []) {
   return trees;
 }
 
+function writeGeneratedFile(target, contents) {
+  const existing = fs.lstatSync(target, { throwIfNoEntry: false });
+  const temporaryDirectory = fs.mkdtempSync(
+    path.join(path.dirname(target), ".rebase-artifact-"),
+  );
+  const temporary = path.join(temporaryDirectory, path.basename(target));
+  try {
+    fs.writeFileSync(
+      temporary,
+      contents,
+      existing ? { mode: existing.mode & 0o7777 } : undefined,
+    );
+    if (existing) fs.chmodSync(temporary, existing.mode & 0o7777);
+    fs.renameSync(temporary, target);
+  } finally {
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
 function treeFiles(directory) {
   if (!directory || !fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -298,10 +317,10 @@ function writeArtifacts({ outputDir, bundle, contracts, lifecycleMigration, copi
     return { schemaPath, contractPath, backfillPath, finalizeMigrationPath, copied: [] };
   }
   fs.mkdirSync(outputDir, { recursive: true });
-  fs.writeFileSync(schemaPath, bundle);
-  fs.writeFileSync(contractPath, contractSource);
-  fs.writeFileSync(backfillPath, backfillSource);
-  fs.writeFileSync(finalizeMigrationPath, finalizeMigrationSource);
+  writeGeneratedFile(schemaPath, bundle);
+  writeGeneratedFile(contractPath, contractSource);
+  writeGeneratedFile(backfillPath, backfillSource);
+  writeGeneratedFile(finalizeMigrationPath, finalizeMigrationSource);
   const copied = trees.flatMap((tree) => {
     fs.rmSync(tree.outputDir, { recursive: true, force: true });
     return copyTree(tree.sourceDir, tree.outputDir).map((file) => path.join(path.basename(tree.outputDir), file));

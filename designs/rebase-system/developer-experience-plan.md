@@ -3,11 +3,12 @@
 Restart from [the execution handoff](developer-experience-handoff.md) for
 working-tree status, review findings, evidence, and the smallest required checks.
 
-Status: D0–D4 implemented; scoped checks passed. The user reports D5's frontend
-work was implemented separately; see the 2026-10-02 update in the
-[completion handoff](developer-experience-handoff.md). Frontend review awaits
-an explicit user request. The
-compiler/runtime contract and business behavior stay fixed.
+Status: D0–D4 implemented; scoped checks passed. D5's frontend was implemented
+separately and is included in the user's 2026-10-03 review request. See the
+[completion handoff](developer-experience-handoff.md) and
+[frontend verification](../frontend/verification.md) for dated results.
+The developer-tools redesign preserves the compiler/runtime contract and
+business behavior; subsequent domain corrections have their own evidence.
 
 ## Objective and boundaries
 
@@ -58,7 +59,7 @@ small ordinary-JS API from `dev-tools/index.js`; use native `node:repl` from
 and one explicit JavaScript SDK fixture.
 
 **Separate scope:** frontend implementation now has its own
-[documentation](../frontend/README.md); frontend review waits for the user's
+[documentation](../frontend/README.md); its 2026-10-03 review follows the user's
 request. For developer-tools work, do not rebuild a general CRUD layer,
 form/query/route registry, field framework,
 project factory, schema-driven UI, metadata registry, or custom query syntax.

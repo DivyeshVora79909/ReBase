@@ -60,7 +60,8 @@
     "probe:accounting-h7-gross-input": "node dev-tools/accounting/h7-gross-input-probe.js",
     "probe:accounting-h7-assembly": "node dev-tools/accounting/h7-assembly-probe.js",
     "probe:accounting-h8-feasibility": "node dev-tools/accounting/h8-production-feasibility-probe.js",
-    "probe:accounting-h8": "node dev-tools/accounting/h8-timed-production-probe.js"
+    "probe:accounting-h8": "node dev-tools/accounting/h8-timed-production-probe.js",
+    "probe:accounting-h8-metrics": "node dev-tools/accounting/h8-measurement-probe.js --metric-sample"
   },
   "engines": {
     "node": ">=20.6.0"

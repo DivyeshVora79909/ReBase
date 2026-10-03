@@ -443,6 +443,29 @@ async function assertInvoiceOracles(db) {
   await assertMovementOracles(db);
 }
 
+async function invoiceTimestampGraph(db, { invoiceId, sourceId, outputTable, allocationTable, fundingId }) {
+  return queryResult(await db.query(`RETURN {
+    invoice: (SELECT * FROM ONLY ${invoiceId}),
+    source: (SELECT * FROM ONLY ${sourceId}),
+    outputs: (SELECT * FROM ${outputTable} WHERE invoice = ${invoiceId} ORDER BY id),
+    allocations: (SELECT * FROM ${allocationTable} WHERE target.invoice = ${invoiceId} ORDER BY id),
+    funding: (SELECT * FROM ONLY ${fundingId}),
+    claim: (SELECT * FROM ONLY claim_account:claim_a),
+    treasury: (SELECT * FROM ONLY treasury_account:cash_a)
+  };`));
+}
+
+async function assertInvoiceTimestamp(db, invoiceId, balance, minPrefix) {
+  const measures = queryResult(await db.query(
+    `RETURN ${invoiceId}.z_outstanding.summary.measures.outstanding;`,
+  ));
+  assert.equal(numeric(measures.sum ?? 0), balance, `${invoiceId} complete-time outstanding`);
+  assert.equal(numeric(measures.instant_min ?? 0), 0,
+    `${invoiceId} minimum after complete timestamps`);
+  assert.equal(numeric(measures.min_prefix ?? 0), minPrefix,
+    `${invoiceId} strict ID-ordered prefix diagnostic`);
+}
+
 async function probeInvoices(db) {
   await db.query(`
     CREATE ONLY stock_in:invoiced_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = stock_account:stock_a,
@@ -573,6 +596,152 @@ async function probeInvoices(db) {
     "deleting an unallocated issue removes its managed invoice lines");
   assert.equal(await ownerTreeSum(db, "sales_invoice:invoice_two", "z_outstanding", "outstanding"), 0,
     "issue deletion removes its invoice and claim postings");
+}
+
+async function probeInvoiceTimestampBoundaries(db) {
+  const invoiceAt = "2026-04-02T00:00:00Z";
+  await db.query(`
+    CREATE ONLY stock_out:invoice_timestamp_sale_source SET owned_by = rebase_group:root,
+      from_account = stock_account:stock_a, to_party = organization:org_b,
+      quantity = 1dec, effective_at = d'2026-04-01T00:00:00Z';
+    CREATE ONLY stock_in:invoice_timestamp_purchase_source SET owned_by = rebase_group:root,
+      from_party = organization:org_b, to_account = stock_account:stock_a,
+      quantity = 1dec, effective_at = d'2026-04-01T00:00:00Z';
+    CREATE ONLY sales_invoice:invoice_timestamp_sale SET owned_by = rebase_group:root,
+      claim_account = claim_account:claim_a, number = 'S-TIMESTAMP';
+    CREATE ONLY sales_invoice_issue:invoice_timestamp_sale_issue SET owned_by = rebase_group:root,
+      invoice = sales_invoice:invoice_timestamp_sale, issued_at = d'${invoiceAt}', lines = [
+        { line_key: 'timestamp-sale', source: stock_out:invoice_timestamp_sale_source,
+          billed_quantity: 1dec, unit_price: 10dec }
+      ];
+    CREATE ONLY cash_in:invoice_timestamp_sale_funds SET owned_by = rebase_group:root,
+      from_party = organization:org_b, to_account = treasury_account:cash_a,
+      amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
+    CREATE ONLY purchase_invoice:invoice_timestamp_purchase SET owned_by = rebase_group:root,
+      claim_account = claim_account:claim_a, number = 'P-TIMESTAMP';
+    CREATE ONLY purchase_invoice_issue:invoice_timestamp_purchase_issue SET owned_by = rebase_group:root,
+      invoice = purchase_invoice:invoice_timestamp_purchase, issued_at = d'${invoiceAt}', lines = [
+        { line_key: 'timestamp-purchase', source: stock_in:invoice_timestamp_purchase_source,
+          billed_quantity: 1dec, unit_price: 10dec }
+      ];
+    CREATE ONLY cash_out:invoice_timestamp_purchase_funds SET owned_by = rebase_group:root,
+      from_account = treasury_account:cash_a, to_party = organization:org_b,
+      amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
+    CREATE ONLY purchase_invoice:invoice_timestamp_receipt SET owned_by = rebase_group:root,
+      claim_account = claim_account:claim_a, number = 'P-TIMESTAMP-RECEIPT';
+    CREATE ONLY purchase_receipt:invoice_timestamp_receipt_source SET owned_by = rebase_group:root,
+      invoice = purchase_invoice:invoice_timestamp_receipt, stock_account = stock_account:stock_a,
+      tax_claim_account = claim_account:claim_tax, quantity = 1dec, unit_price = 9dec,
+      tax_amount = 1dec, effective_at = d'${invoiceAt}';
+    CREATE ONLY cash_out:invoice_timestamp_receipt_funds SET owned_by = rebase_group:root,
+      from_account = treasury_account:cash_a, to_party = organization:org_b,
+      amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
+  `);
+
+  const sale = {
+    invoiceId: "sales_invoice:invoice_timestamp_sale",
+    sourceId: "sales_invoice_issue:invoice_timestamp_sale_issue",
+    outputTable: "sales_invoice_line",
+    allocationTable: "sales_invoice_cash_allocation",
+    fundingId: "cash_in:invoice_timestamp_sale_funds",
+  };
+  let before = await invoiceTimestampGraph(db, sale);
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_early
+    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+      target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 1dec,
+      effective_at = d'2026-04-01T00:00:00Z';`),
+  "sales invoice settlement before issue rejects");
+  assert.deepEqual(await invoiceTimestampGraph(db, sale), before,
+    "pre-issue sales settlement leaves invoice outputs, allocations, claim and cash roots unchanged");
+  await db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_partial
+    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+      target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 4dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, sale.invoiceId, 6, -4);
+  await db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_final
+    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+      target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 6dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, sale.invoiceId, 0, -10);
+  before = await invoiceTimestampGraph(db, sale);
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_excess
+    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+      target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 1dec,
+      effective_at = d'${invoiceAt}';`),
+  "same-time sales invoice excess rejects");
+  assert.deepEqual(await invoiceTimestampGraph(db, sale), before,
+    "over-settled sales invoice restores its issue, managed line, allocations, claim and cash roots");
+
+  const purchase = {
+    invoiceId: "purchase_invoice:invoice_timestamp_purchase",
+    sourceId: "purchase_invoice_issue:invoice_timestamp_purchase_issue",
+    outputTable: "purchase_invoice_line",
+    allocationTable: "purchase_invoice_cash_allocation",
+    fundingId: "cash_out:invoice_timestamp_purchase_funds",
+  };
+  before = await invoiceTimestampGraph(db, purchase);
+  await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_early
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+      target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 1dec,
+      effective_at = d'2026-04-01T00:00:00Z';`),
+  "purchase invoice settlement before issue rejects");
+  assert.deepEqual(await invoiceTimestampGraph(db, purchase), before,
+    "pre-issue purchase settlement leaves invoice outputs, allocations, claim and cash roots unchanged");
+  await db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_partial
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+      target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 4dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, purchase.invoiceId, 6, -4);
+  await db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_final
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+      target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 6dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, purchase.invoiceId, 0, -10);
+  before = await invoiceTimestampGraph(db, purchase);
+  await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_excess
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+      target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 1dec,
+      effective_at = d'${invoiceAt}';`),
+  "same-time purchase invoice excess rejects");
+  assert.deepEqual(await invoiceTimestampGraph(db, purchase), before,
+    "over-settled purchase invoice restores its issue, managed line, allocations, claim and cash roots");
+
+  const receipt = {
+    invoiceId: "purchase_invoice:invoice_timestamp_receipt",
+    sourceId: "purchase_receipt:invoice_timestamp_receipt_source",
+    outputTable: "purchase_receipt",
+    allocationTable: "purchase_receipt_cash_allocation",
+    fundingId: "cash_out:invoice_timestamp_receipt_funds",
+  };
+  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_partial
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+      target = purchase_receipt:invoice_timestamp_receipt_source, amount = 4dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, receipt.invoiceId, 6, 0);
+  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_final
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+      target = purchase_receipt:invoice_timestamp_receipt_source, amount = 6dec,
+      effective_at = d'${invoiceAt}';`);
+  await assertInvoiceTimestamp(db, receipt.invoiceId, 0, 0);
+  before = await invoiceTimestampGraph(db, receipt);
+  await rejects(() => db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_excess
+    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+      target = purchase_receipt:invoice_timestamp_receipt_source, amount = 1dec,
+      effective_at = d'${invoiceAt}';`),
+  "same-time purchase receipt excess rejects");
+  assert.deepEqual(await invoiceTimestampGraph(db, receipt), before,
+    "over-settled purchase receipt restores the invoice, receipt, allocations, claim and cash roots");
+  await db.query(`
+    DELETE purchase_receipt_cash_allocation:invoice_timestamp_receipt_final;
+    DELETE purchase_receipt_cash_allocation:invoice_timestamp_receipt_partial;
+    DELETE purchase_receipt:invoice_timestamp_receipt_source;
+    DELETE cash_out:invoice_timestamp_receipt_funds;
+    DELETE purchase_invoice:invoice_timestamp_receipt;
+  `);
+
+  await assertClaimOracles(db);
+  await assertMovementOracles(db);
+  process.stdout.write("Invoice complete-timestamp partial/full settlement, ID-order control, pre-issue rejection, and rollback passed\n");
 }
 
 async function assertMovementOracles(db) {
@@ -1666,6 +1835,7 @@ async function main() {
     await probeClaimSettlements(db);
     await probeClaimAdjustments(db);
     await probeInvoices(db);
+    await probeInvoiceTimestampBoundaries(db);
 
     const dimensions = queryResult(await db.query(`
       RETURN {

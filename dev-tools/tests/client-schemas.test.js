@@ -232,6 +232,39 @@ test("rejects generated-file symlinks before changing source or existing output"
   }
 });
 
+test("replaces hard-linked generated artifacts without changing authoring input", (t) => {
+  const root = temporaryDirectory();
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const projectDir = path.join(root, "project");
+  const outputDir = path.join(root, "build");
+  fs.cpSync(path.join(repositoryRoot, "designs/test"), projectDir, { recursive: true });
+  const protectedFile = path.join(projectDir, "authoring-notes.txt");
+  fs.writeFileSync(protectedFile, "Keep this authoring input.\n");
+  fs.chmodSync(protectedFile, 0o666);
+  const protectedMode = fs.statSync(protectedFile).mode & 0o7777;
+  const publicOutput = path.join(outputDir, "client", "schemas");
+  fs.mkdirSync(publicOutput, { recursive: true });
+  fs.writeFileSync(path.join(publicOutput, "stale.schema.json"), "{}\n");
+  fs.linkSync(protectedFile, path.join(outputDir, "schema.surql"));
+  assert.equal(fs.statSync(protectedFile).nlink, 2);
+
+  const result = buildProject({
+    projectDir,
+    frameworkDir: path.join(repositoryRoot, "framework"),
+    outputDir,
+    configuration: resolveConfiguration({ NODE_ENV: "test" }),
+  }, root);
+  assert.equal(result.schema.tables.size > 0, true);
+  assert.equal(fs.readFileSync(protectedFile, "utf8"), "Keep this authoring input.\n");
+  assert.equal(fs.statSync(protectedFile).nlink, 1);
+  const generatedSchema = path.join(outputDir, "schema.surql");
+  assert.match(fs.readFileSync(generatedSchema, "utf8"), /-- REBASE:/);
+  assert.equal(fs.statSync(protectedFile).mode & 0o7777, protectedMode);
+  assert.equal(fs.statSync(generatedSchema).mode & 0o7777, protectedMode);
+  assert.equal(fs.existsSync(publicOutput), false);
+  assert.equal(fs.readdirSync(outputDir).some((name) => name.startsWith(".rebase-artifact-")), false);
+});
+
 test("buildProject preflights handler aliases before pruning existing public output", (t) => {
   const root = temporaryDirectory();
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

@@ -6,7 +6,9 @@ DEFINE FUNCTION OVERWRITE fn::accounting::invoice_validate($row: object) {
         THROW 'ACCOUNTING_INVOICE_PARTY_MISMATCH';
     };
     LET $summary = $row.z_outstanding.summary;
-    IF ($summary.measures.outstanding.min_prefix ?? 0dec) < 0dec {
+    -- Invoice capacity is checked after each complete effective timestamp;
+    -- record-ID tie order is not economic ordering.
+    IF ($summary.measures.outstanding.instant_min ?? 0dec) < 0dec {
         THROW 'ACCOUNTING_INVOICE_OVERSETTLED';
     };
     IF $summary.tags.currency != NONE AND

@@ -1,6 +1,15 @@
 # ReBase redesign implementation plan
 
-## Current execution authority — 2026-09-29
+## Current execution authority — updated 2026-10-03
+
+The delivered redesign has completed the user's backend/frontend review through
+local SurrealDB consistency. See the [current audit](./core-audit.md) and
+[evidence](./evidence/2026-10-03-redesign-verification.json). Invoice timestamp
+validation and generated-file source preservation were corrected; the focused
+checks passed. Live providers are excluded and there is no data to migrate.
+No new product packet or load benchmark is assigned by this review.
+
+## Earlier execution state — 2026-10-02
 
 Use [core-handoff.md](./core-handoff.md) for core implementation: **K1–K5
 passed** on the recorded dirty snapshot. H1/H2/H3a/H3b passed for the revised
@@ -8,7 +17,7 @@ target profile; H3c's bounded fixture, H4a, H4b1, H4b2, H4b3, H4b4a
 payer-side supplier withholding, H4b4b customer-withheld TDS, and H4b5a paired
 claim offset and H4b5b treasury-backed remittance passed their scoped gates;
 see [H4b5b evidence](./evidence/2026-09-29-h4b5b-tax-remittance.json).
-H4b5c residual policy remains future and unresolved. H5a's complete-timestamp
+H4b5c current scope is resolved: current tax paths create no separate residual effect. H5a's complete-timestamp
 stock floor, H5b physical return with dated source capacity, and H5c standalone
 receivable cash refund passed. H6a ordered resource-pair identity and entered-
 quantity currency exchange passed; H6b quote-derived currency exchange also
@@ -17,9 +26,9 @@ gates; see [H7 implementation evidence](./evidence/2026-09-29-h7-immediate-assem
 and separate [gross-input feasibility evidence](./evidence/2026-09-29-h7-gross-input-feasibility.json).
 H8 bounded timed production passed its integration and scoped regression gates;
 see [H8 integration evidence](./evidence/2026-09-29-h8-timed-production-integration.json).
-The bounded implementation gates through H8 have passing evidence. H8 physical
-cost measurement remains open, and H4b5c residual policy requires a concrete
-business policy. H0 context compression remains a separate maintenance packet.
+The bounded implementation gates through H8 have passing evidence. Three
+transaction-layer counter samples for one H8 profile match; physical storage
+cost remains open. H4b5c is resolved for current invoice tax paths; a new reconciliation feature needs its own policy. H0 context compression remains a separate maintenance packet.
 No new domain expansion is assigned. See the accounting handoff for packet
 scope and remaining verification work.
 See the H4b5a evidence and the H4b3 evidence in the

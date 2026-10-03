@@ -7,23 +7,27 @@ The canonical references are the [accounting handoff](../all-in-accounting/imple
 [developer-tools handoff](../rebase-system/developer-experience-handoff.md).
 Their historical evidence is not a fresh frontend verification claim.
 
+The 2026-10-03 review closes P1 for the delivered invoice workflows; see
+[verification](verification.md). Live email/SMS/payment checks are excluded
+from this task, and no existing data needs migration. The packets below are
+future features, not blockers for the delivered redesign.
+
 ## Recommended sequence
 
-1. Correct and prove the invoice complete-timestamp guard.
-2. Add source/detail maintenance and a reviewed complete ledger projection.
-3. Add returns/refunds and quote-derived FX using their implemented contracts.
-4. Add tax/credit/withholding workflows after agreeing their visible public
-   projections; keep residual posting separate until policy is decided.
-5. Add account onboarding/authentication delivery when gateway configuration and
+1. Add source/detail maintenance and a reviewed complete ledger projection.
+2. Add returns/refunds and quote-derived FX using their implemented contracts.
+3. Add tax/credit/withholding workflows after agreeing their visible public
+   projections. Current invoice tax paths need no separate residual posting.
+4. Add account onboarding/authentication delivery when gateway configuration and
    delivery-provider expectations are explicitly selected.
-6. Measure representative workloads before deciding on virtualization, live
+5. Measure representative workloads before deciding on virtualization, live
    subscriptions, background exports or more client infrastructure.
 
 ## Concrete frontend packets
 
 | Packet | Prerequisite and invariant | Smallest proof | Files and completion |
 | --- | --- | --- | --- |
-| P1: invoice timestamp boundary | `invoice_validate` currently guards `outstanding.min_prefix`; same-time settlement is unsupported. Complete-timestamp policy must be proven before removing the UI note. | Issue and partial/full settlement at the same instant in both ID orders; a settlement before issuance and an excess amount still roll back. | Backend invoice source plus a focused backend probe; then frontend invoice tests/note. No artificial timestamp offsets. |
+| P1: invoice timestamp boundary — complete 2026-10-03 | `invoice_validate` uses `outstanding.instant_min`; settlement at the issue instant is supported. | Native sales/purchase partial/full settlement and early/excess rollback; browser settlement retains the exact issue timestamp and existing cash sources. | Backend guard and focused regressions, frontend invoice tests and obsolete warning removal. See current verification; no artificial timestamp offsets. |
 | P2: maintenance and reconciliation | Account/master dimensions have readonly/reference constraints. Editing source values must retain native IDs and compare last-read versions. | Two independent editors; one stale update fails. Deleting a referenced row fails with no aggregate drift. | Relevant `MetaSol/src/data/` module, route and tests. Add only reviewed writable fields; preserve the current exact-row helper. |
 | P3: complete ledger and account ranges | Direct cash/stock lists omit exchange, returns, invoices and managed effects. Define a public effect projection with ordering, dimensions and permission semantics. | One account containing cash, exchange and a reversal has complete paginated activity and a reconciliation to its history summary. | Backend projection if required; treasury/inventory routes. Label source and effective time; no browser reads of private managed tables. |
 | P4: returns and refunds | H5b physical returns and H5c standalone receivable refunds have scoped backend implementations. They consume specific source capacities and dates. | Partial return/refund, exact capacity, over-capacity rollback, source edits and inaccessible references. | New explicit data functions and forms beside inventory/claims; new source-ID fixtures and browser flow. Never turn a return into an arbitrary negative movement. |
@@ -44,10 +48,10 @@ the next packet.
 
 | Area | Decision or evidence required before implementation |
 | --- | --- |
-| H4b5c residual posting | Explicit source, sign, permitted range, precision, destination and effective date. Do not manufacture a balancing record in the frontend. |
-| Physical cost / capacity | Representative physical rows, internal writes, bytes, dependency visits, fan-out and contention variance. Existing bounded serial H8 timings do not establish capacity or throughput. |
-| Populated legacy migration | A complete mapping, identity/collision policy, history and rollback proof against representative populated data. This new frontend does not need a compatibility UI. |
-| Live providers | Chosen provider/configuration, test credentials, delivery semantics and observed callbacks. Local mock results do not establish production delivery. |
+| New residual reconciliation | H4b5c is resolved for current invoice tax paths: no separate residual effect. Reopen only for a concrete feature requiring an explicit source, sign/range, precision, destination and date. |
+| Physical cost / capacity | Three bounded H8 samples record transaction-layer keys and bytes. Physical device costs, dependency visits, fan-out and contention remain unmeasured; neither those counters nor serial timings establish capacity or throughput. |
+| Populated legacy migration | Not applicable to this task: there is no existing data. A future populated deployment would require its own mapping, identity/collision policy and rollback proof. |
+| Live providers | Excluded by the user from this review. A future deployment can verify its chosen delivery configuration and callbacks separately; mock checks do not establish production delivery. |
 | Workforce / costing / valuation | A defined quantity/time/cost basis and lifecycle. Timed production does not calculate wages, absorption costs or inventory valuation. |
 | Statutory filing | Jurisdiction, period, evidence/eligibility policy, corrections and submission contract. Displaying taxes is not filing or compliance verification. |
 | CRM | Independent customer/contact/opportunity identities, ownership and a first lifecycle. Begin with a separate conventional page/domain slice, sharing proven session/UI primitives. |

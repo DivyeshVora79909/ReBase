@@ -1,16 +1,38 @@
 # Production Readiness Report
 
-## Current status — 2026-09-29
+## Current status — 2026-10-03
 
-For current check results, limits, and source fingerprints, use the [core audit](designs/rebase-system/core-audit.md)
-and [lead recheck evidence](designs/rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json).
-The [core handoff](designs/rebase-system/core-handoff.md) retains K1–K5 requirements;
-the [accounting handoff](designs/all-in-accounting/implementation-handoff.md)
-is canonical for domain packet status, including unresolved H4b5c residual
-policy and H8 physical cost measurement. Live providers, hard Redis memory
-bounds, representative load, populated production migration, and CRM/HRM
-remain outside the recorded passing gates. See the [configuration reference](designs/rebase-system/core-configuration.md)
-for current settings.
+**Verified for the requested scope:** developer tools, local SurrealDB
+consistency, and the delivered MetaSol frontend. The
+[review evidence](designs/rebase-system/evidence/2026-10-03-redesign-verification.json)
+records commands, source fingerprints, logs and exclusions.
+
+| Check | Result |
+| --- | --- |
+| Compiler and exports | All three profile checks, accounting native schema validation, compiler/environment probes, and exact five-file public schema export passed. |
+| Database and runtime | Accounting core (including invoice timestamp/rollback regressions), credential permissions, authentication and disposable SurrealDB/Redis runtime checks passed. |
+| Developer tools | Final workbench/public-schema suite: **26 passed**. |
+| Frontend | Full baseline: **26 native/unit + 28 browser tests passed**. After the invoice fix: focused native and browser invoice checks plus a fresh production build passed. |
+
+The review fixed same-instant invoice settlement and a build path that could
+overwrite an authoring file through a hard-linked output. It refreshed the
+missing generated client schemas and corrected stale handoff/status text.
+The final frontend checks cover partial/full settlement and rejection rollback;
+the earlier complete suites were not rerun after those focused edits.
+
+The user excludes live email/SMS/payment credentials and has no data to migrate.
+Redis admission code matches the previously verified atomic implementation;
+fresh runtime integration passed, so no high-concurrency load run was needed.
+These results do not claim production capacity. Further frontend tax,
+returns/refunds, administration/onboarding, CRM and HRM features remain in the
+[deferred-work map](designs/frontend/deferred-work.md).
+
+Use the [core audit](designs/rebase-system/core-audit.md),
+[accounting handoff](designs/all-in-accounting/implementation-handoff.md),
+[frontend verification](designs/frontend/verification.md), and
+[configuration reference](designs/rebase-system/core-configuration.md) for
+scope and continuation. H4b5c is resolved for current invoice tax paths; H8's
+historical transaction counters do not measure physical storage costs.
 
 <details>
 <summary>Archived report from before the one-shot runtime cutover (superseded)</summary>

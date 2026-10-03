@@ -47,11 +47,12 @@ packet state, evidence, profiles, and limits are canonical in the
   separate; personal accounts do not require an artificial organization/book.
 - H2 posts assessed purchase tax immediately as a receivable. H4b3 records
   eligible/usable recognition separately without posting another receivable.
-  H4b5c residual source/sign/range/precision/destination/effective-date policy
-  must be defined before implementation. See handoff for evidence and limits.
+  Current H4b invoice tax paths post rounded component amounts consistently and create no separate tax residual effect. A future reconciliation requires a named policy; see the handoff.
 - H8's bounded profile has no writable `end_at`; managed roles compute planned
   start plus immutable duration. It is not a production migration and excludes
-  workforce and costing. H8 physical cost measurement remains open.
+  workforce and costing. Three transaction-layer counter samples match for one
+  fixture; physical storage costs, dependency visits, and representative-load
+  behavior remain open. See the dated counter evidence in the handoff.
 - A full populated migration from a deployed legacy profile, tax-law rules,
   accounting temporal/window policy, remaining claims/documents, paired
   recipes, domain integrations, and measured operation cost remain open unless

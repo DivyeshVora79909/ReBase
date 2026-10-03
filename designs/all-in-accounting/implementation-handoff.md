@@ -1,5 +1,21 @@
 # Accounting architecture handoff
 
+## Redesign verification — 2026-10-03
+
+The user requested review of the delivered backend and frontend through local
+SurrealDB consistency. See the
+[combined review evidence](../rebase-system/evidence/2026-10-03-redesign-verification.json)
+and [frontend verification](../frontend/verification.md). The invoice
+outstanding floor now uses complete timestamps (`instant_min`), so an issue
+and settlement at the same instant do not depend on record-ID tie order.
+Early and excessive settlements remain rejected. Public client schemas are
+exported by the accounting build alongside its existing artifacts.
+
+Live email/SMS/payment credentials are excluded from acceptance. There is no
+existing data to migrate. No further domain expansion is assigned by this
+review; deferred frontend features retain their own packets. The earlier
+measurements below remain evidence for their recorded sources.
+
 ## Next lower-model assignments — lead recheck complete
 
 Start with this section and the [lead audit evidence](../rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json).
@@ -13,18 +29,33 @@ schema reapplication. Preserve the dirty worktree and historical evidence.
    records three fresh SurrealKV samples each at two and eight prior runs.
    Source/recipe checks and rejected-write rollback passed; the H8 section
    below separates operation timing from setup and lists unmeasured costs.
-   Internal writes, operation bytes, dependency visits, contention variance,
-   throughput and fan-out remain open. Before another measurement packet,
-   identify a direct counter for its missing metric; keep the domain schema
-   fixed and reuse the existing harness. Do not repeat these six samples for
-   documentation changes.
+   Three additional small-profile samples now have native transaction-counter
+   deltas in [the counter evidence](../rebase-system/evidence/2026-10-02-h8-transaction-counters.json).
+   Dependency visits, physical device writes/bytes, contention variance,
+   throughput and fan-out remain open. Keep the domain schema fixed and reuse
+   the existing harness. Do not repeat the six timing samples for documentation
+   changes.
 2. **Luna: H0 routing cleanup passed, 2026-09-30.** Six routing files went from
    1,189 to 950 lines; the new [coverage map](./context-compression-map.md) adds
    41 lines and records retained decisions and evidence. Relative links,
    heading references, and diff checks passed. Broader research compression
    remains a separate future packet using the context map's procedure.
-3. **H4b5c stays open.** Define residual source, sign, permitted range, precision,
-   destination and effective date before implementing any residual posting.
+3. **H4b5c current scope resolved, 2026-10-02.** Current invoice tax
+   components have one invoice-scoped output per tax key. H4a/H4b calculated
+   amounts use invoice currency precision; linked postings use that amount with
+   the declared direction on each root. No separate tax residual effect exists
+   or is needed for these paths. The FX residual is quote-use history only. Do not add a
+   generic residual or cash/tax posting. A source review of `claims/invoices.surql`,
+   `movements/cash.surql`, and the existing H4b2/H6b evidence established this
+   current-scope decision; no runtime behavior or tax-law policy was tested.
+   Reopen H4b5c only when a concrete tax feature requires reconciliation; define its source/formula, sign/range,
+   currency precision, destination, effective date and policy first.
+4. **H8 transaction-counter samples passed, 2026-10-02.** The new
+   [evidence](../rebase-system/evidence/2026-10-02-h8-transaction-counters.json)
+   records three fresh-process samples with identical deltas: 151 transaction
+   keys, 9,555 key bytes, and 576,072 value bytes for one bounded production
+   create. The metrics are process-wide transaction-layer counters, not physical
+   storage measurements. Preserve the original six timing samples.
 
 Select verification from the changed contract and compare audit hashes first.
 Repeat passed probes only for relevant changes or unresolved findings; reserve
@@ -32,7 +63,7 @@ full verification for a shared integration change. Keep real providers and
 personal `.env` outside these tasks. End each packet with evidence and the next
 bounded action. CRM/HRM and further domain expansion remain future work.
 
-Updated 2026-09-30. This is the continuation route for Luna/Sol after the lead
+Updated 2026-10-02. This is the continuation route for Luna/Sol after the lead
 review. The [blueprint](./blueprint.md) defines the revised target; the
 [context map](./context-map.md) routes longer evidence. H1's direct economic
 identity schema and focused probe are implemented and independently verified;
@@ -43,8 +74,10 @@ H3a sale-side variable tax outputs and H3b purchase-receipt settlement passed
 on 2026-09-29; H3c passed as a bounded disposable ancestry fixture, H4a,
 H4b1, H4b2, H4b3, H4b4a payer-side supplier withholding, H4b4b customer-
 withheld TDS, H4b5a paired claim offset, and H4b5b treasury-backed remittance
-passed their scoped gates. H4b5c residual policy remains future and unresolved
-pending lead review. H5a's complete-timestamp stock floor and H5b physical
+passed their scoped gates. H4b5c is resolved for the current invoice paths:
+no separate tax residual effect is calculated or posted. Reopen it only for
+a concrete reconciliation feature with an explicit policy. H5a's
+complete-timestamp stock floor and H5b physical
 return with its dated source capacity passed their scoped gates. H5c's
 standalone receivable cash-refund path also passed. H6a ordered resource-pair
 identity and entered-quantity currency exchange passed its scoped gate on
@@ -79,9 +112,9 @@ H4b5a paired claim offset passed; see the [H4b5a evidence](../rebase-system/evid
 The treasury complete-timestamp floor prerequisite passed; see the
 [treasury guard evidence](../rebase-system/evidence/2026-09-29-treasury-timestamp-guard.json).
 See the [H4b5b remittance evidence](../rebase-system/evidence/2026-09-29-h4b5b-tax-remittance.json)
-for focused runtime checks, regressions, fingerprints, and limits. H4b5c
-residual policy remains future and unresolved pending lead review. H4b5a was rerun against
-the combined current profile after the treasury change and passed; its original
+for focused runtime checks, regressions, fingerprints, and limits. H4b5c is
+resolved for the current tax paths; H4b5a was rerun against the combined
+current profile after the treasury change and passed; its original
 source fingerprints remain a historical checkpoint.
 H5a implements only the stock-account complete-timestamp floor; H5b adds one
 physical return path and dated source capacity; H5c adds one standalone
@@ -301,10 +334,10 @@ payable and treasury balance floors; evaluate optional net floor/ceiling rules w
 policy for claim receivable/payable, and the treasury guard prerequisite is
 covered by the [treasury timestamp evidence](../rebase-system/evidence/2026-09-29-treasury-timestamp-guard.json).
 `recognized_credit` remains on its existing strict-prefix guard ([H4b5a evidence](../rebase-system/evidence/2026-09-29-h4b5a-claim-offset.json)).
-The invoice `outstanding.min_prefix` guard remains a separate complete-time
-policy gap; same-time invoice settlement is unsupported until it is corrected
-and proved. Stock `quantity.min_prefix` is deferred to H5, including gross
-source-availability and self-funding checks. Positive-only `settled`,
+The invoice outstanding floor uses `instant_min` after the 2026-10-03
+correction; same-time invoice settlement is supported. H5a also changed the
+stock floor to `instant_min`; H7/H8 separately enforce gross source
+availability and self-funding checks. Positive-only `settled`,
 `allocated`, and `billed` capacity caps continue to use `max_prefix`.
 Use the blueprint counterexample whose final net is zero but
 historical peak is 100. Include equal-time R/P changes in both ID orders,
@@ -507,9 +540,10 @@ multi-document grouping.
 
 After H4b1, allow a declared component to consume a prior calculated component
 amount through a finite acyclic calculation dependency. Keep component identity,
-version selection, order, rounding, and residual policy explicit. Reject cycles,
-missing predecessors, and version/date/currency mismatch atomically. Do not
-expose a general client formula interpreter.
+version selection, order and rounding explicit. Do not add a separate tax
+residual effect for current paths; reopen only for a concrete reconciliation
+feature. Reject cycles, missing predecessors, and version/date/currency mismatch
+atomically. Do not expose a general client formula interpreter.
 
 **Status:** passed on 2026-09-29 in a disposable profile. The [H4b2 evidence](../rebase-system/evidence/2026-09-29-h4b2-compound-tax.json)
 records one aggregate proportional predecessor and one compound proportional
@@ -619,12 +653,13 @@ H4b4a's checkpoint `package.json` fingerprint is historical after H4b4b added
 its probe script, though H4b4a reran successfully in H4b4b's regression
 sequence. Preserve the H4b4a evidence unchanged.
 
-##### H4b5 — Offsets, remittance, and rounding residuals (H4b5b passed)
+##### H4b5 — Offsets, remittance and residual policy (H4b5a/b passed; current residual scope resolved)
 
 H4b5a paired claim offset and H4b5b treasury-backed remittance passed their
-scoped fixtures. H4b5c residual policy remains future and unresolved pending
-lead review. Split this packet so its independent claim, treasury, and rounding
-decisions can be accepted separately.
+scoped fixtures. H4b5c is resolved for current tax paths: tax component amounts
+are rounded and posted consistently, with no separate tax residual effect.
+The FX quote-use residual remains specific to its transfer formula. Reopen H4b5c
+only if a concrete feature requires a tax reconciliation effect.
 
 ###### H4b5a — Paired tax-claim offset (passed)
 
@@ -668,13 +703,23 @@ guards also passed. See the [H4b5b evidence](../rebase-system/evidence/2026-09-2
 for exact commands, source fingerprints, and limits. This records an explicit
 amount only and makes no production migration or statutory interpretation claim.
 
-###### H4b5c — Rounding residual policy (future; unresolved)
+###### H4b5c — Tax rounding residual (resolved for current scope, 2026-10-02)
 
-Do not implement a generic residual until its source, sign, range, currency
-precision, destination measure/account, effective date, and selected policy
-are explicit. The FX-transfer residual is specific to that transfer formula
-and does not select a tax residual destination or policy. A residual must be
-posted as an explicit typed effect; it must not imply cash movement on its own.
+Current invoice tax components have one invoice-scoped output per tax key.
+Where H4a/H4b calculate an amount from the invoice basis, they round it to
+invoice currency precision before emitting linked invoice, claim, and tax-account
+effects with their declared directions. Billed lines contribute to tax bases;
+tax is not separately calculated and rounded per line. No tax residual is
+calculated or posted for the current invoice paths. `cash_fx_transfer.rounding_residual`
+is a separate exchange-formula fact in `currency_exchange.z_usage`; it is not a
+tax effect or cash leg.
+
+Do not add a generic residual table or effect. If a later tax feature introduces
+a concrete line-versus-invoice reconciliation, define its authoritative basis,
+residual sign/range, currency precision, destination measure/account,
+effective-date rule, and immutable policy version before implementation. Its
+typed effect must not imply cash movement unless a separate cash transaction is
+explicitly part of that feature.
 
 ### H5 — Shared capacities, returns, refunds and logistics
 
@@ -963,13 +1008,28 @@ captured snapshot. Setup is separate: each database imported the schema in
 about 45.5 seconds, dominating the roughly five-minute packet duration.
 
 Returned-row differences, serialized summary widths and whole-database
-directory sizes are observations, not internal write counts or operation
-bytes. Dependency visits, internal writes and isolated operation bytes remain
-unmeasured. Serial samples observed no retries; the earlier bounded contention
-case establishes functional retry behavior only. Repeated-run contention,
-throughput, fan-out and representative capacity remain open. A constant-sized
-root guard does not make the whole write constant-time. Select direct counters
-for the next missing metric before running more samples.
+directory sizes remain observations rather than internal write counts or
+operation bytes. The [2026-10-02 counter evidence](../rebase-system/evidence/2026-10-02-h8-transaction-counters.json)
+records three fresh SurrealKV processes using one target `CREATE` after the same
+two-run fixture. Each produced 151 successful transaction keys written, 9,555
+key bytes written, and 576,072 value bytes written. Source/root oracles passed,
+and each later capacity rejection preserved the complete snapshot. The earlier
+six timing samples remain unchanged. Reproduce these samples with
+`npm run probe:accounting-h8-metrics`.
+
+SurrealDB 3.2.0 exposes these as process-wide counters with
+`outcome="success"` and `otel_scope_name="surrealdb.transaction"` labels and
+no namespace/database labels. They report transaction-layer key counts and
+key/value bytes; they do not measure physical device writes, persisted disk
+bytes, compaction, or write amplification. The metrics reference documents the
+[root-authenticated `/metrics` endpoint and counters](https://surrealdb.com/docs/manage/observability/metrics).
+Two early full-fixture runs stopped during baseline parsing before the target
+`CREATE`; neither is a measurement sample. The parser now follows the observed
+3.2.0 exposition.
+Dependency visits, physical storage behavior, concurrent contention variance,
+throughput, fan-out, and representative capacity remain open. Recollect these
+same deltas only after a relevant code, schema, or server-version change; do not
+repeat them as a substitute for measuring those remaining costs.
 
 ## Execution settings and evidence discipline
 
@@ -999,8 +1059,10 @@ for the next missing metric before running more samples.
 > Read `designs/rebase-system/core-handoff.md` and the starting-point section of
 > `designs/all-in-accounting/implementation-handoff.md`. K1–K5 and H1/H2/H3a/H3b
 > passed on the recorded snapshot; H3c's bounded ten-level fixture, H4a, H4b1,
-> H4b2, H4b3, H4b4a, H4b4b, H4b5a, and H4b5b passed. H4b5c residual policy
-> remains future and unresolved pending lead review. H5a complete-timestamp
+> H4b2, H4b3, H4b4a, H4b4b, H4b5a, and H4b5b passed. H4b5c is resolved for
+> current tax paths: no separate residual effect is calculated or posted;
+> reopen only for a concrete reconciliation feature with an explicit policy.
+> H5a complete-timestamp
 > stock floor, H5b physical return with dated source capacity, and H5c
 > standalone receivable cash refund with dated source capacity passed. H6a
 > ordered resource-pair identity and entered-quantity currency exchange and

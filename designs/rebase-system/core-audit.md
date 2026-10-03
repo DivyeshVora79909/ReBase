@@ -1,4 +1,32 @@
-# Core audit — baseline 2026-09-26; K1–K3 update 2026-09-28; K4b/K5 update 2026-09-29
+# Core audit
+
+## Current redesign review — 2026-10-03
+
+The [combined evidence](./evidence/2026-10-03-redesign-verification.json)
+records fresh checks of the developer tools, backend and delivered frontend.
+All three profile checks, accounting schema validation, compiler/environment,
+accounting core, credential, authentication and runtime probes passed. The
+final developer-tools suite passed 26/26. Frontend baseline suites passed
+26 native/unit and 28 browser tests; focused invoice checks and build passed
+after the correction below. Full `npm run verify` was not rerun.
+
+Two concrete defects were fixed: invoice outstanding used strict record-prefix
+ordering instead of complete timestamps, and generated-file writes could
+overwrite an authoring file through a hard link. The accounting build also
+restored its five missing public client schemas. Source snapshots and rollback
+checks cover early/excess settlement, both natural membership orders, and
+partial/full settlement at issuance. Build regressions preserve source bytes
+and modes; file replacement is atomic individually, not across the build.
+
+K1/K2 queue, admission, timing and reconciler sources match the retained
+2026-09-28 fingerprints. The admission probe changed only its two import paths;
+BullMQ remains pinned at 6.2.0. Fresh runtime integration passed. No additional
+high-concurrency or physical-capacity experiment was indicated.
+
+The requested acceptance boundary is local SurrealDB consistency and delivered
+browser workflows. No real email/SMS/payment credentials were tested, and no
+existing data needs migration. Deferred product features remain separate work.
+Earlier audits below retain their original scope and source identity.
 
 ## Lead recheck — 2026-09-29
 
@@ -12,12 +40,13 @@ Source/recipe oracles and the post-reapplication output-date guard passed.
 
 No engine or domain-schema fix was needed. The audit corrected stale root
 README/readiness status, narrowed the blanket completion wording, and closed
-the two H8 verification omissions. H8 physical cost measurement, H4b5c policy,
-and H0 compression remain open. The original K4b/K5 whole-worktree fingerprint
+the two H8 verification omissions. Three H8 transaction-counter samples now
+match; physical storage costs and H0 broader research compression remain open.
+H4b5c was resolved for current invoice tax paths on 2026-10-02. The original K4b/K5 whole-worktree fingerprint
 and H8 evidence remain historical; this recheck adds 125 per-file fingerprints.
 The full verify suite and positions probe were not rerun in this focused audit.
 
-## Current conclusion — 2026-09-29
+## Historical conclusion — 2026-09-29
 
 K1–K5 passed on the recorded dirty working tree. K4b verified root-hidden
 platform credentials, owner/delegate write-only BYOC secrets, fixed trusted
@@ -34,7 +63,7 @@ revised all-in-accounting profile remain open. H1/H2/H3a/H3b passed for the revi
 fixture, H4a, H4b1, H4b2, H4b3, H4b4a payer-side supplier withholding, and
 H4b4b customer-withheld TDS and H4b5a paired claim offset passed their scoped
 gates. H4b5b treasury-backed remittance passed; see [H4b5b evidence](./evidence/2026-09-29-h4b5b-tax-remittance.json).
-H4b5c residual policy remains future and unresolved. H5a's complete-timestamp
+H4b5c current scope is resolved: current tax paths create no separate residual effect. H5a's complete-timestamp
 stock floor, H5b physical return with dated source capacity, and H5c standalone
 receivable cash refund passed. H6a ordered resource-pair identity and entered-
 quantity currency exchange passed; see its
@@ -45,8 +74,9 @@ assembly passed its bounded schema/probe and regression gates; see [H7 implement
 and separate [gross-input feasibility evidence](./evidence/2026-09-29-h7-gross-input-feasibility.json).
 H8 bounded timed production passed its integration and scoped regression gates;
 see [H8 integration evidence](./evidence/2026-09-29-h8-timed-production-integration.json).
-The bounded implementation gates through H8 have passing evidence. H8 physical
-cost measurement and H4b5c residual policy remain open. No new domain expansion
+The bounded implementation gates through H8 have passing evidence. Three H8
+transaction-layer counter samples match; physical storage cost remains open.
+H4b5c current scope is resolved. No new domain expansion
 is assigned. H0 context compression remains a separate maintenance packet. See the
 [accounting handoff](../all-in-accounting/implementation-handoff.md) for packet
 limits and selection guidance.

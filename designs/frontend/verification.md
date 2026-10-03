@@ -1,4 +1,33 @@
-# Frontend verification — 2026-10-02
+# Frontend verification
+
+## Redesign review — 2026-10-03
+
+The user requested a fresh backend and frontend review through local SurrealDB
+consistency. The [combined evidence](../rebase-system/evidence/2026-10-03-redesign-verification.json)
+records commands, source fingerprints, corrections and scope.
+
+- At MetaSol `3022392`, the full baseline passed **26 native/unit tests** and
+  **28 Chromium browser tests**, including the production build. Desktop entry,
+  overview and mobile dark cash screenshots were inspected.
+- Review found a backend invoice guard using strict record prefixes instead
+  of complete timestamps. It now uses `outstanding.instant_min`. The frontend
+  no longer warns against same-instant settlement. Focused final checks passed:
+  **one native invoice test** covering sales and purchase partial/full settlement
+  and early/excess rollback, plus **one browser invoice test** and a fresh build.
+  The browser confirms allocation timestamps equal the entered issue timestamp
+  and no duplicate cash movement is created.
+- The full baseline was not repeated after those four focused frontend edits.
+  Exact final fingerprints and the focused checks identify what was revalidated.
+- The final browser runs use a sanitized process environment and temporary
+  Vite configs with an empty `envDir` for both build and preview. One initial
+  baseline attempt was interrupted to extend that isolation to preview;
+  it has no passing-suite claim. No provider calls or API keys were tested.
+
+No existing data needs migration for this task. Live providers and deployment
+load are outside acceptance. Deferred product workflows below remain separate
+features; these results cover the delivered screen contracts.
+
+## Implementation verification — 2026-10-02 (historical)
 
 The delivered scope in [screen-contracts.md](screen-contracts.md) is implemented
 and verified. Evidence is retained in
@@ -41,8 +70,8 @@ the temporary schema output.
   over-settlement without partial writes; net remains derived.
 - Sales and purchase invoices create header/issue atomically, consume stock
   billing capacity, settle from existing cash and roll back invalid lines.
-  The current same-instant invoice-settlement rejection is explicitly retained
-  as a boundary test, not reported as supported behavior.
+  At this checkpoint same-instant invoice settlement was rejected. The
+  2026-10-03 correction and focused checks above supersede that boundary.
 - Exchange and its full reversal restore the two account effects. Both
   production and assembly create recipe versions and change lifecycle state
   through their source records. All eight directory create adapters run against
@@ -87,8 +116,9 @@ MetaSol began with the earlier uncommitted Solid starter at
 `cccd1df7c53aba2f43b6c8b1b949452094420fbb`.
 The exact recorded baseline and current fingerprints in the evidence identify
 the changed files; the original starter's legacy deletions were preserved.
-MetaSol is a separate ignored repository. Both worktrees remain uncommitted;
-no push or deployment was performed. This work adds the frontend package in
+MetaSol is a separate ignored repository. Both worktrees were uncommitted at
+this historical checkpoint; the frontend was subsequently committed as noted
+above. No push or deployment was performed by this review. This work added the frontend package in
 ReBase and changes the frontend checkout; backend source remains unchanged.
 
 The tests use local memory databases and Chromium. They do not establish

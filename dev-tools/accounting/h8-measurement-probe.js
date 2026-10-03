@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-// A bounded, disposable H8 observation. A returned row diff and a disk file
-// footprint are observations of different things; neither is an engine write count.
+// Bounded, disposable H8 observations. Row diffs and disk footprints do not
+// represent engine write cost; the optional counter mode samples native metrics.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -16,6 +16,11 @@ const schema = fs.readFileSync(schemaPath, 'utf8');
 const sizes = [2, 8];
 const repeats = 3;
 const stockIds = ['input_a', 'input_b', 'output_a', 'output_b'];
+const transactionMetrics = [
+  'surrealdb_transaction_keys_written_total',
+  'surrealdb_transaction_key_bytes_written_bytes_total',
+  'surrealdb_transaction_value_bytes_written_bytes_total',
+];
 const numeric = (value) => Number(String(value ?? 0).replace(/dec$/i, ''));
 const id = (value) => String(value ?? '');
 const elapsed = (startAt) => Math.round((performance.now() - startAt) * 1000) / 1000;
@@ -25,6 +30,55 @@ function directoryBytes(directory) {
     const target = path.join(directory, entry.name);
     return sum + (entry.isDirectory() ? directoryBytes(target) : fs.statSync(target).size);
   }, 0);
+}
+
+async function scrapeTransactionMetrics(url) {
+  const response = await fetch(`${url}/metrics`, {
+    headers: {
+      Authorization: `Basic ${Buffer.from('root:root').toString('base64')}`,
+      Accept: 'text/plain',
+    },
+  });
+  const body = await response.text();
+  assert.equal(response.status, 200, `authenticated GET /metrics returned ${response.status}: ${body.slice(0, 240)}`);
+  assert.match(response.headers.get('content-type') || '', /text\/plain/i, 'metrics endpoint returns Prometheus text');
+  const buildInfo = body.split(/\r?\n/).find((line) => line.startsWith('surrealdb_build_info{'));
+  const buildVersion = buildInfo?.match(/build_version="([^"]+)"/)?.[1];
+  assert(buildVersion, 'metrics expose the running server version');
+  const samples = {};
+  for (const name of transactionMetrics) {
+    const samplePattern = new RegExp(`^${name}\\{([^}]*)\\}\\s+([0-9]+)(?:\\s+[0-9]+)?\\s*$`);
+    const matchingLines = body.split(/\r?\n/).filter((line) => line.startsWith(`${name}{`));
+    const success = matchingLines.filter((line) => {
+      const match = line.match(samplePattern);
+      if (!match) return false;
+      const labels = Object.fromEntries(match[1].split(',').map((label) => {
+        const separator = label.indexOf('=');
+        return [label.slice(0, separator), label.slice(separator + 2, -1)];
+      }));
+      assert.equal(labels.otel_scope_name, 'surrealdb.transaction', `${name} has the transaction instrument scope`);
+      assert.deepEqual(Object.keys(labels).sort(), ['otel_scope_name', 'outcome'], `${name} remains process-wide`);
+      return labels.outcome === 'success';
+    });
+    assert.equal(success.length, 1, `${name} must have one success series; found ${success.length}`);
+    samples[name] = success[0].match(samplePattern)[2];
+  }
+  return { status: response.status, contentType: response.headers.get('content-type'), buildVersion, samples };
+}
+
+function counterDeltas(before, after) {
+  return Object.fromEntries(transactionMetrics.map((name) => {
+    const oldValue = BigInt(before.samples[name]);
+    const newValue = BigInt(after.samples[name]);
+    assert(newValue >= oldValue, `${name} must be monotonic in one server process`);
+    return [name, {
+      outcome: 'success',
+      unit: name.includes('_bytes_') ? 'bytes' : 'keys',
+      beforeRaw: before.samples[name],
+      afterRaw: after.samples[name],
+      delta: (newValue - oldValue).toString(),
+    }];
+  }));
 }
 
 async function snapshot(q) {
@@ -138,7 +192,7 @@ function runSql(name, batch, day) {
   return `CREATE ONLY production_run:${name} SET owned_by=rebase_group:root,recipe_version=production_recipe_version:split,batch_count=${batch},planned_start=d'2026-07-${String(day).padStart(2, '0')}T00:00:00Z',status='scheduled';`;
 }
 
-async function oneRun(priorRuns, repeat) {
+async function oneRun(priorRuns, repeat, { captureCounters = false } = {}) {
   const startedAt = performance.now();
   const server = await start({ engine: 'surrealkv' });
   const serverStartMs = elapsed(startedAt);
@@ -156,9 +210,11 @@ async function oneRun(priorRuns, repeat) {
     const before = await snapshot(q);
     assertSourceOracle(before, priorRuns);
 
+    const counterBaseline = captureCounters ? await scrapeTransactionMetrics(server.url) : null;
     const operationStarted = performance.now();
     await q(runSql('target', 1, 20));
     const successMs = elapsed(operationStarted);
+    const counterAfter = captureCounters ? await scrapeTransactionMetrics(server.url) : null;
     const after = await snapshot(q);
     assertSourceOracle(after, priorRuns + 1);
     const beforeCounts = counts(before);
@@ -185,6 +241,14 @@ async function oneRun(priorRuns, repeat) {
     return {
       priorRuns, repeat, serverStartMs, schemaImportMs, fixtureMs,
       successfulCreateMs: successMs, rejectedCreateMs: rejectedMs,
+      ...(captureCounters ? {
+        transactionCounterScrapes: {
+          endpoint: 'authenticated GET /metrics',
+          baseline: counterBaseline,
+          afterTargetCreate: counterAfter,
+          processWideDeltas: counterDeltas(counterBaseline, counterAfter),
+        },
+      } : {}),
       rejectionClass: 'stock capacity guard',
       rejectionMessage: rejection.slice(0, 240),
       changedRows: changed, before: beforeCounts, after: afterCounts,
@@ -198,15 +262,31 @@ async function oneRun(priorRuns, repeat) {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  assert(args.every((arg) => arg === '--metric-sample'), `unsupported arguments: ${args.join(' ')}`);
+  const metricSample = args.includes('--metric-sample');
   const observations = [];
-  for (const priorRuns of sizes) for (let repeat = 1; repeat <= repeats; repeat += 1)
-    observations.push(await oneRun(priorRuns, repeat));
+  if (metricSample) {
+    // Match the smaller existing H8 profile with one fresh process and one
+    // target CREATE. The original six timing samples remain a separate mode.
+    observations.push(await oneRun(2, 1, { captureCounters: true }));
+  } else {
+    for (const priorRuns of sizes) for (let repeat = 1; repeat <= repeats; repeat += 1)
+      observations.push(await oneRun(priorRuns, repeat));
+  }
   console.log(JSON.stringify({
-    id: 'h8-bounded-measurement-2026-09-30', recordedAt: new Date().toISOString(),
-    environment: { node: process.version, surrealdb: 'local executable, version captured by command record', engine: 'SurrealKV' },
+    id: metricSample ? 'h8-transaction-counter-measurement-2026-10-02' : 'h8-bounded-measurement-2026-09-30',
+    recordedAt: new Date().toISOString(),
+    runMode: metricSample ? 'one fresh SurrealKV process, two prior runs, one target CREATE' : 'six timing samples',
+    environment: {
+      node: process.version,
+      surrealdb: metricSample ? observations[0].transactionCounterScrapes.baseline.buildVersion : 'local executable, version captured by command record',
+      engine: 'SurrealKV',
+    },
     schemaSha256: crypto.createHash('sha256').update(schema).digest('hex'),
     contract: 'CREATE ONLY one scheduled split-recipe production_run, batch_count=1, four distinct stock owners, two managed inputs and two managed outputs; rejected variant batch_count=200 at the same date',
-    sizes: sizes.map((priorRuns) => ({ priorRuns, repeats })), observations,
+    sizes: metricSample ? [{ priorRuns: 2, repeats: 1 }] : sizes.map((priorRuns) => ({ priorRuns, repeats })),
+    observations,
     metricScope: {
       durations: 'client-observed milliseconds; setup, schema import, fixture, successful and rejected SQL separately',
       activeNodeSlots: 'non-null live tree-node fields on selected stock and H8 managed rows',
@@ -216,8 +296,12 @@ async function main() {
       databaseDirectoryBytesAfterShutdown: 'total local SurrealKV files for entire schema and fixture; not per-operation bytes or write amplification',
       retries: 'serial run observed zero transaction-conflict retries; contention variance unmeasured',
       dependencyVisits: 'unmeasured: no direct visit counter exposed by this probe',
-      internalWrites: 'unmeasured: SQL and directory footprint do not expose engine write count',
-      operationBytes: 'unmeasured: no isolated persisted-byte delta or engine write-byte counter',
+      internalWrites: metricSample
+        ? 'SurrealDB transaction-layer key count delta; process-wide, not physical device writes'
+        : 'unmeasured in the original timing mode; use --metric-sample for native transaction counters',
+      operationBytes: metricSample
+        ? 'SurrealDB transaction-layer key/value byte deltas; process-wide, not physical storage bytes'
+        : 'unmeasured in the original timing mode; use --metric-sample for native transaction counters',
     },
   }, null, 2));
 }

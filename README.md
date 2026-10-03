@@ -7,14 +7,16 @@ The [developer-tools handoff](./designs/rebase-system/developer-experience-hando
 records review evidence and execution instructions; the
 [plan](./designs/rebase-system/developer-experience-plan.md) preserves the design
 decisions. The separately redesigned frontend has its own
-[documentation](./designs/frontend/README.md); frontend reverification awaits
-the user's request.
+[documentation](./designs/frontend/README.md) and
+[verification record](./designs/frontend/verification.md).
 
 **Current work and evidence:** see the [core handoff](./designs/rebase-system/core-handoff.md)
 for K1–K5 implementation and restart requirements, the [core audit](./designs/rebase-system/core-audit.md)
-and [lead recheck](./designs/rebase-system/evidence/2026-09-29-lead-checkpoint-audit.json)
+and [redesign review](./designs/rebase-system/evidence/2026-10-03-redesign-verification.json)
 for dated checks and fingerprints, and the [accounting handoff](./designs/all-in-accounting/implementation-handoff.md)
-for domain status and open H4b5c policy/H8 cost measurement. [Configuration](./designs/rebase-system/core-configuration.md)
+for domain status and H8 limits. Three matching transaction-layer counter
+samples are recorded; physical storage cost remains unmeasured. H4b5c is
+resolved for the current tax paths; see the accounting handoff. [Configuration](./designs/rebase-system/core-configuration.md)
 is the settings reference. CRM/HRM remain future scope.
 
 [`research/rebase/architecture.md`](./research/rebase/architecture.md) defines
@@ -35,8 +37,10 @@ those domains as separate calculation modules over shared identities. Its
 trees, compiler passes, field-level audit, direct-parent readers, native Node
 operations, typed provider credentials, and one-shot task recovery. Fresh
 foundation and runtime checks support the recorded core gates, including
-credential ownership and final integration. Production migration, live
-providers, and representative load remain open in the handoff.
+credential ownership and final integration. The current acceptance boundary is
+local SurrealDB consistency and the delivered frontend. Live provider checks
+are excluded, and there is no existing data to migrate. Representative load
+and deployment checks require their own workload and environment.
 [Verification](./designs/rebase-system/verification.md) separates implemented
 checks from pending work.
 The proposed [all-in-accounting suite](./designs/all-in-accounting/README.md)

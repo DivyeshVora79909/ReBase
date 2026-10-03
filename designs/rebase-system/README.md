@@ -2,8 +2,7 @@
 
 This index routes design history; the [core handoff](./core-handoff.md) owns
 K1–K5 implementation and restart requirements, while the [accounting handoff](../all-in-accounting/implementation-handoff.md)
-owns H1–H8 packet status, evidence, and domain limits. H4b5c residual policy
-and H8 physical cost measurement remain open there. Start core work with the
+owns H1–H8 packet status, evidence, and domain limits. H4b5c is resolved for current invoice tax paths. H8 has three matching transaction-layer counter samples; physical storage cost remains open there. Start core work with the
 [core handoff](./core-handoff.md), then its packet-specific
 source list and [configuration reference](./core-configuration.md).
 The [fresh audit](./core-audit.md) and linked evidence record current checks,
@@ -28,8 +27,9 @@ Start developer-tools work with its
 [execution handoff](./developer-experience-handoff.md); the
 [developer experience plan](./developer-experience-plan.md) preserves the design
 decisions. The separately redesigned frontend is tracked in
-[frontend documentation](../frontend/README.md); its reverification awaits an
-explicit user request, as recorded in the developer-tools handoff.
+[frontend documentation](../frontend/README.md). The user authorized its review
+alongside the backend on 2026-10-03; use the
+[verification record](../frontend/verification.md) for current results.
 
 Read the core handoff first. Open the longer design documents only for the
 active packet; reading every document on each model switch wastes context.

@@ -1,0 +1,132 @@
+{
+  "id": "h8-transaction-counter-measurement-2026-10-02",
+  "recordedAt": "2026-10-02",
+  "packet": "H8 one-operation SurrealKV transaction counters",
+  "command": "npm run probe:accounting-h8-metrics",
+  "environment": {
+    "node": "v22.23.2",
+    "surrealdb": "3.2.0",
+    "engine": "SurrealKV"
+  },
+  "contract": "One CREATE ONLY scheduled production_run with batch_count=1 after two prior scheduled runs; four distinct stock accounts, two managed inputs, two managed outputs. The existing source oracle runs before and after. A batch_count=200 capacity rejection then must leave the complete snapshot unchanged.",
+  "sourceFingerprints": {
+    "schema": {
+      "path": "build/all-in-accounting/schema.surql",
+      "sha256": "e3a0f3092d41fd39e8bb7a2853be41755cf55c42b9d4dd41edad9cab352df069"
+    },
+    "measurementProbeForSample1": {
+      "path": "dev-tools/accounting/h8-measurement-probe.js",
+      "sha256": "e00b788683ea1e86cd503cf443a8f25b6ac3ae5888ef33f11ed4894a20225070",
+      "note": "Sample 1 preceded output-metadata-only corrections. The counter collection, parser, fixture and oracle were identical to samples 2 and 3."
+    },
+    "measurementProbeForSamples2And3": {
+      "path": "dev-tools/accounting/h8-measurement-probe.js",
+      "sha256": "e8f852fb1ea4f1794ee40bedec50425c2afea5b6163e905ce174d5db5d6c4c51"
+    },
+    "harness": {
+      "path": "dev-tools/temporal-tree/harness.js",
+      "sha256": "d10e00c2e50517702c9e2172ee61c732225bf7451d4f5ba6b21be99d688bb93c"
+    },
+    "package": {
+      "path": "package.json",
+      "sha256": "d32396a3f1238457eb2b2f859c94911b6e71779598eb45ea72f5be60babccd97"
+    }
+  },
+  "metricCapture": {
+    "endpoint": "authenticated GET /metrics",
+    "response": "HTTP 200, text/plain; version=0.0.4",
+    "buildVersion": "3.2.0",
+    "baseline": "After fixture setup and source oracle, immediately before the target CREATE.",
+    "after": "Immediately after the successful target CREATE, before readback or snapshot queries.",
+    "labels": ["outcome=success", "otel_scope_name=surrealdb.transaction"],
+    "scope": "These metrics have no namespace/database labels. Deltas are process-wide and can include unrelated server work.",
+    "results": [
+      {
+        "sample": 1,
+        "recordedAt": "2026-10-02T16:24:44.502Z",
+        "baseline": {
+          "surrealdb_transaction_keys_written_total": "16893",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "740582",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5130490"
+        },
+        "afterTargetCreate": {
+          "surrealdb_transaction_keys_written_total": "17044",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "750137",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5706562"
+        },
+        "delta": {
+          "keysWritten": "151",
+          "keyBytesWritten": "9555",
+          "valueBytesWritten": "576072"
+        },
+        "successfulCreateMs": 738.842,
+        "rejectedCapacityCreateMs": 651.721,
+        "schemaImportMs": 47165.626,
+        "fixtureMs": 1498.522
+      },
+      {
+        "sample": 2,
+        "recordedAt": "2026-10-02T16:32:39.026Z",
+        "baseline": {
+          "surrealdb_transaction_keys_written_total": "16895",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "740594",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5130544"
+        },
+        "afterTargetCreate": {
+          "surrealdb_transaction_keys_written_total": "17046",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "750149",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5706616"
+        },
+        "delta": {
+          "keysWritten": "151",
+          "keyBytesWritten": "9555",
+          "valueBytesWritten": "576072"
+        },
+        "successfulCreateMs": 804.888,
+        "rejectedCapacityCreateMs": 674.433,
+        "schemaImportMs": 46930.454,
+        "fixtureMs": 1415.586
+      },
+      {
+        "sample": 3,
+        "recordedAt": "2026-10-02T16:33:37.975Z",
+        "baseline": {
+          "surrealdb_transaction_keys_written_total": "16893",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "740582",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5130486"
+        },
+        "afterTargetCreate": {
+          "surrealdb_transaction_keys_written_total": "17044",
+          "surrealdb_transaction_key_bytes_written_bytes_total": "750137",
+          "surrealdb_transaction_value_bytes_written_bytes_total": "5706558"
+        },
+        "delta": {
+          "keysWritten": "151",
+          "keyBytesWritten": "9555",
+          "valueBytesWritten": "576072"
+        },
+        "successfulCreateMs": 745.798,
+        "rejectedCapacityCreateMs": 704.019,
+        "schemaImportMs": 47536.555,
+        "fixtureMs": 1490.412
+      }
+    ]
+  },
+  "correctness": {
+    "sourceAndRootOracles": "Passed before and after each successful target CREATE.",
+    "capacityRejection": "All three batch_count=200 variants hit ACCOUNTING_PRODUCTION_RESERVATION_CAPACITY.",
+    "rollback": "All three rejected-write snapshots were unchanged.",
+    "reproducibility": "All three fresh-process samples produced identical transaction-layer deltas: 151 keys, 9,555 key bytes, and 576,072 value bytes. Baseline values differed slightly, but observed deltas did not."
+  },
+  "implementationNotes": [
+    "Two early full-fixture attempts stopped during baseline parsing before the target CREATE. They are not measurement samples. A minimal disposable metrics-shape probe identified the 3.2.0 Prometheus byte-counter suffix and the otel_scope_name label; the parser was corrected before the three captured samples.",
+    "The original six timing samples from 2026-09-30 were not repeated."
+  ],
+  "limits": [
+    "One fixed H8 profile and three serial fresh-process samples; not representative capacity or throughput certification.",
+    "Transaction-layer KV counters are not physical device writes, persisted disk bytes, compaction, or write amplification.",
+    "The metrics are process-wide; unrelated background work could contribute. No ambient counter changes altered the observed deltas in these three samples.",
+    "Dependency visits, concurrent contention variance, and physical storage behavior remain unmeasured."
+  ],
+  "reference": "https://surrealdb.com/docs/manage/observability/metrics"
+}

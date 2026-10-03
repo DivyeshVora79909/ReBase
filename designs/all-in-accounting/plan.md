@@ -26,7 +26,7 @@ H4b5a paired claim offset passed its scoped fixture; see
 [evidence](../rebase-system/evidence/2026-09-29-h4b5a-claim-offset.json).
 H4b5b treasury-backed remittance passed; see
 [evidence](../rebase-system/evidence/2026-09-29-h4b5b-tax-remittance.json).
-H4b5c residual policy remains future/unresolved. H5a's complete-timestamp
+H4b5c is resolved for current invoice tax paths: no separate residual effect is calculated or posted. H5a's complete-timestamp
 stock floor, H5b physical return, and H5c standalone receivable cash refund
 passed their scoped gates. H6a ordered resource-pair identity and entered-
 quantity currency exchange passed; H6b quote-derived currency exchange also
