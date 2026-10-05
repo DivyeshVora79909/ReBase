@@ -105,54 +105,55 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Authority';
-      CREATE ONLY organization:authority_rcap SET owned_by = rebase_group:root, name = 'Receivable cap authority';
-      CREATE ONLY organization:authority_pcap SET owned_by = rebase_group:root, name = 'Payable cap authority';
-      CREATE ONLY organization:authority_sim SET owned_by = rebase_group:root, name = 'Same-time authority';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY tax_account:main SET owned_by = rebase_group:root,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Authority';
+      CREATE ONLY organization:authority_rcap SET owned_by = rebase_tenant:default, name = 'Receivable cap authority';
+      CREATE ONLY organization:authority_pcap SET owned_by = rebase_tenant:default, name = 'Payable cap authority';
+      CREATE ONLY organization:authority_sim SET owned_by = rebase_tenant:default, name = 'Same-time authority';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY tax_account:main SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Main tax claim';
-      CREATE ONLY tax_account:rcap SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:rcap SET owned_by = rebase_tenant:default,
         authority = organization:authority_rcap, jurisdiction = organization:entity, label = 'Receivable cap';
-      CREATE ONLY tax_account:pcap SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:pcap SET owned_by = rebase_tenant:default,
         authority = organization:authority_pcap, jurisdiction = organization:entity, label = 'Payable cap';
-      CREATE ONLY tax_account:sim SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:sim SET owned_by = rebase_tenant:default,
         authority = organization:authority_sim, jurisdiction = organization:entity, label = 'Same-time tax claim';
-      CREATE ONLY treasury:main SET owned_by = rebase_group:root, name = 'Main';
-      CREATE ONLY treasury_account:cash SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury:main SET owned_by = rebase_tenant:default, name = 'Main';
+      CREATE ONLY treasury_account:cash SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:main, currency = currency:usd;
-      CREATE ONLY claim_account:main SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:main SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:main, currency = currency:usd;
-      CREATE ONLY claim_account:receivable_cap SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:receivable_cap SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:rcap, currency = currency:usd;
-      CREATE ONLY claim_account:payable_cap SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:payable_cap SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:pcap, currency = currency:usd;
-      CREATE ONLY claim_account:simultaneous SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:simultaneous SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:sim, currency = currency:usd;
-      CREATE ONLY receivable:main_r SET owned_by = rebase_group:root, claim_account = claim_account:main,
+      CREATE ONLY receivable:main_r SET owned_by = rebase_tenant:default, claim_account = claim_account:main,
         amount = 6dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY payable:main_p SET owned_by = rebase_group:root, claim_account = claim_account:main,
+      CREATE ONLY payable:main_p SET owned_by = rebase_tenant:default, claim_account = claim_account:main,
         amount = 18dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY receivable:rcap_r SET owned_by = rebase_group:root, claim_account = claim_account:receivable_cap,
+      CREATE ONLY receivable:rcap_r SET owned_by = rebase_tenant:default, claim_account = claim_account:receivable_cap,
         amount = 2dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY payable:rcap_p SET owned_by = rebase_group:root, claim_account = claim_account:receivable_cap,
+      CREATE ONLY payable:rcap_p SET owned_by = rebase_tenant:default, claim_account = claim_account:receivable_cap,
         amount = 8dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY receivable:pcap_r SET owned_by = rebase_group:root, claim_account = claim_account:payable_cap,
+      CREATE ONLY receivable:pcap_r SET owned_by = rebase_tenant:default, claim_account = claim_account:payable_cap,
         amount = 8dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY payable:pcap_p SET owned_by = rebase_group:root, claim_account = claim_account:payable_cap,
+      CREATE ONLY payable:pcap_p SET owned_by = rebase_tenant:default, claim_account = claim_account:payable_cap,
         amount = 2dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY payable:simultaneous_p SET owned_by = rebase_group:root, claim_account = claim_account:simultaneous,
+      CREATE ONLY payable:simultaneous_p SET owned_by = rebase_tenant:default, claim_account = claim_account:simultaneous,
         amount = 18dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY receivable:simultaneous_r SET owned_by = rebase_group:root, claim_account = claim_account:simultaneous,
+      CREATE ONLY receivable:simultaneous_r SET owned_by = rebase_tenant:default, claim_account = claim_account:simultaneous,
         amount = 6dec, effective_at = d'2026-07-01T00:00:00Z';
     `);
     let state = await oracle(db, 0, 0);
     const mainNet = measure(state.main, 'z_history', 'net');
     const cashBefore = JSON.stringify(state.cash.z_history);
 
-    await db.query(`CREATE ONLY claim_offset_instruction:main_offset SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY claim_offset_instruction:main_offset SET owned_by = rebase_tenant:default,
       claim_account = claim_account:main, amount = 6dec, effective_at = d'2026-06-03T00:00:00Z';`);
     state = await oracle(db, 6, 0);
     assert.equal(measure(state.main, 'z_history', 'receivable'), 0, 'R6 with offset 6 leaves receivable zero');
@@ -175,17 +176,17 @@ async function main() {
     assert.equal(measure(state.main, 'z_history', 'receivable'), 0);
     assert.equal(measure(state.main, 'z_history', 'payable'), 12);
 
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:zero SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:zero SET owned_by = rebase_tenant:default,
       claim_account = claim_account:main, amount = 0dec, effective_at = d'2026-06-03T00:00:00Z';`, 'zero amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:negative SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:negative SET owned_by = rebase_tenant:default,
       claim_account = claim_account:main, amount = -1dec, effective_at = d'2026-06-03T00:00:00Z';`, 'negative amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:excess_precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:excess_precision SET owned_by = rebase_tenant:default,
       claim_account = claim_account:main, amount = 1.001dec, effective_at = d'2026-06-03T00:00:00Z';`,
     'currency-inexact amount rejects without changing the graph');
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:receivable_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:receivable_overdraw SET owned_by = rebase_tenant:default,
       claim_account = claim_account:receivable_cap, amount = 3dec, effective_at = d'2026-06-03T00:00:00Z';`,
     'receivable capacity rejects overdraw independently');
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:payable_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:payable_overdraw SET owned_by = rebase_tenant:default,
       claim_account = claim_account:payable_cap, amount = 3dec, effective_at = d'2026-06-03T00:00:00Z';`,
     'payable capacity rejects overdraw independently');
     await rejectsUnchanged(db, 'UPDATE claim_offset_instruction:main_offset SET amount = 7dec;',
@@ -200,14 +201,14 @@ async function main() {
     state = await oracle(db, 0, 0);
     assert.equal(measure(state.main, 'z_history', 'receivable'), 6);
     assert.equal(measure(state.main, 'z_history', 'payable'), 18);
-    await db.query(`CREATE ONLY claim_offset_instruction:main_offset SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY claim_offset_instruction:main_offset SET owned_by = rebase_tenant:default,
       claim_account = claim_account:main, amount = 6dec, effective_at = d'2026-06-03T00:00:00Z';`);
     state = await oracle(db, 6, 0);
     assert.equal(String(state.offsets.find((row) => String(row.id) === 'claim_offset_instruction:main_offset').id), stableId,
       'deletion/re-addition reuses the stable instruction ID');
     await rejectsUnchanged(db, 'DELETE claim_account:main;', 'account deletion while offset instruction exists rejects');
 
-    await db.query(`CREATE ONLY claim_offset_instruction:same_timestamp_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY claim_offset_instruction:same_timestamp_first SET owned_by = rebase_tenant:default,
       claim_account = claim_account:simultaneous, amount = 6dec, effective_at = d'2026-07-01T00:00:00Z';`);
     state = await oracle(db, 6, 6);
     assert.equal(measure(state.simultaneous, 'z_history', 'receivable'), 0,
@@ -216,7 +217,7 @@ async function main() {
       'same-timestamp P18 with offset 6 is reduced atomically');
     assert.equal(measure(state.simultaneous, 'z_history', 'net'), -12,
       'same-timestamp offset contributes zero net delta');
-    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:same_timestamp_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY claim_offset_instruction:same_timestamp_overdraw SET owned_by = rebase_tenant:default,
       claim_account = claim_account:simultaneous, amount = 1dec, effective_at = d'2026-07-01T00:00:00Z';`,
     'same-timestamp overdraw rejects after complete-time grouping, regardless of source insert order');
 

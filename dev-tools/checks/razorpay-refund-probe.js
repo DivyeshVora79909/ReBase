@@ -59,7 +59,7 @@ async function main() {
     const record = {
       id: orderId,
       provider_order_id: "order_provider_probe",
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       amount_paise: 100,
       currency: "INR",
     };

@@ -109,7 +109,7 @@ async function signIn(endpoint, namespace, database, identifier, password) {
     namespace,
     database,
     access: "account_password",
-    variables: { identifier, password },
+    variables: { tenant: "rebase_tenant:default", identifier, password },
   });
   return db;
 }
@@ -591,15 +591,15 @@ async function principalCompilerProbe(db, namespace, database) {
     const generated = generateBundle(materials, {
       context: { namespace, database },
     });
-    assert.deepEqual(generated.principals, { user: "rebase_user", group: "rebase_group" });
+    assert.deepEqual(generated.principals, { user: "rebase_user", group: "rebase_group", tenant: "rebase_tenant" });
     assert.deepEqual(generated.contracts.principals, {
       user: "rebase_user",
       group: "rebase_group",
-      root: "rebase_group:root",
+      tenant: "rebase_tenant",
     });
-    assert.match(generated.bundle, /record<rebase_user \| rebase_group>/);
-    assert.match(generated.bundle, /UPSERT rebase_group:root/);
-    assert.match(generated.bundle, /SELECT\s+(?:VALUE\s+)?id\s+FROM\s+rebase_user/i);
+    assert.match(generated.bundle, /record<rebase_user \| rebase_group \| rebase_tenant>/);
+    assert.doesNotMatch(generated.bundle, /(?:CREATE|UPSERT) rebase_tenant:/);
+    assert.match(generated.bundle, /fn::rebase::tenant_permissions\(\)/);
     assert.doesNotMatch(generated.bundle, /record<user \| groups>/);
     assert.doesNotMatch(generated.bundle, /groups:root/);
     assert.match(
@@ -612,8 +612,9 @@ async function principalCompilerProbe(db, namespace, database) {
     );
     assert.doesNotMatch(generated.bundle, /ALTER FIELD nested_target ON TABLE note/);
     await db.query(generated.bundle);
-    const root = rows(await db.query("SELECT name FROM rebase_group:root;"))[0];
-    assert.equal(root.name, "System Admins");
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
+    const root = rows(await db.query("SELECT name FROM rebase_tenant:default;"))[0];
+    assert.equal(root.name, "Fixture tenant");
   } finally {
     fs.rmSync(projectDir, { recursive: true, force: true });
   }

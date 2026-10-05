@@ -8,7 +8,7 @@ const { start, client, applySchema } = require('../temporal-tree/harness');
 const { compileFromArgs } = require('../compiler/cli');
 const { snapshot, inspect } = require('../temporal-tree/accounts-oracle');
 const { equal, scan } = require('../temporal-tree/oracle');
-const root = 'rebase_group:root',
+const root = 'rebase_tenant:default',
   date = (day) => new Date(Date.UTC(2026, 0, 1 + day)).toISOString();
 async function main({ writeOnly = process.argv.includes('--write-only') } = {}) {
   const output = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-entities-'));
@@ -394,7 +394,7 @@ async function main({ writeOnly = process.argv.includes('--write-only') } = {}) 
     );
     equal(
       await q(
-        `RETURN fn::tree::read(money_account:company,'z_book','before',[d'${date(10)}']).measures.receivable.sum ?? 0dec;`,
+        `RETURN fn::tree::before({rid:money_account:company,slot:'z_book'},[d'${date(10)}']).measures.receivable.sum ?? 0dec;`,
       ),
       0,
     );
@@ -583,7 +583,7 @@ async function main({ writeOnly = process.argv.includes('--write-only') } = {}) 
       sale = groups.get('invoice:sale/z_book');
     equal(
       await q(
-        `RETURN fn::tree::read(invoice:sale,'z_book','range',[[d'${date(0)}'],[d'${date(7)}']]);`,
+        `RETURN fn::tree::range({rid:invoice:sale,slot:'z_book'},[d'${date(0)}'],[d'${date(7)}']);`,
       ),
       scan(
         sale.entries.filter((e) => e.key[0] < date(7).replace('.000Z', 'Z')),

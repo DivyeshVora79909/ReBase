@@ -109,21 +109,21 @@ async function main() {
     verify(before);
   };
   try {
-    await q(`CREATE calc_owner:input_a SET owned_by=rebase_group:root, a_floor=0dec;
-      CREATE calc_owner:input_b SET owned_by=rebase_group:root, a_floor=0dec;
-      CREATE calc_owner:left SET owned_by=rebase_group:root, a_floor=0dec;
-      CREATE calc_owner:right SET owned_by=rebase_group:root, a_floor=0dec;
-      CREATE calc_owner:final SET owned_by=rebase_group:root, a_floor=120dec;
-      CREATE input_seed:a SET owned_by=rebase_group:root, a_owner=calc_owner:input_a,
+    await q(`CREATE calc_owner:input_a SET owned_by=rebase_tenant:default, a_floor=0dec;
+      CREATE calc_owner:input_b SET owned_by=rebase_tenant:default, a_floor=0dec;
+      CREATE calc_owner:left SET owned_by=rebase_tenant:default, a_floor=0dec;
+      CREATE calc_owner:right SET owned_by=rebase_tenant:default, a_floor=0dec;
+      CREATE calc_owner:final SET owned_by=rebase_tenant:default, a_floor=120dec;
+      CREATE input_seed:a SET owned_by=rebase_tenant:default, a_owner=calc_owner:input_a,
         a_at=d'${at(0)}', a_amount=20dec;
-      CREATE input_seed:b SET owned_by=rebase_group:root, a_owner=calc_owner:input_b,
+      CREATE input_seed:b SET owned_by=rebase_tenant:default, a_owner=calc_owner:input_b,
         a_at=d'${at(0)}', a_amount=20dec;
-      CREATE calc_basis:main SET owned_by=rebase_group:root, a_input_a=calc_owner:input_a,
+      CREATE calc_basis:main SET owned_by=rebase_tenant:default, a_input_a=calc_owner:input_a,
         a_input_b=calc_owner:input_b, a_left_owner=calc_owner:left,
         a_right_owner=calc_owner:right, a_feedback=false;
-      CREATE diamond_basis:main SET owned_by=rebase_group:root, a_left_owner=calc_owner:left,
+      CREATE diamond_basis:main SET owned_by=rebase_tenant:default, a_left_owner=calc_owner:left,
         a_right_owner=calc_owner:right, a_final_owner=calc_owner:final;
-      CREATE rebase_user:writer SET name='Writer', parents=[rebase_group:root];
+      CREATE rebase_user:writer SET name='Writer', parents=[rebase_tenant:default];
       DEFINE ACCESS causal_writer ON DATABASE TYPE RECORD SIGNIN rebase_user:writer;`);
     const response = await fetch(`${env.server.url}/signin`, { method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@ async function main() {
     assert.equal(Number(data.diamonds[0].z_amount), 120);
 
     const beforeBatchAudit = (await auditIds(q)).length;
-    await writer(`CREATE batch_source:main SET owned_by=rebase_group:root,
+    await writer(`CREATE batch_source:main SET owned_by=rebase_tenant:default,
       a_input_a=calc_owner:input_a, a_input_b=calc_owner:input_b,
       a_at=d'${at(1)}', a_delta_a=2dec, a_delta_b=3dec;`);
     await waitForAuditGrowth(q, beforeBatchAudit);

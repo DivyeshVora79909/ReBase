@@ -7,7 +7,7 @@
   "properties": {
     "owned_by": {
       "type": "string",
-      "pattern": "^rebase_(user|group):(?:[A-Za-z0-9_-]+|⟨[A-Za-z0-9_-]+⟩|u\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\")$"
+      "pattern": "^rebase_(user|group|tenant):(?:[A-Za-z0-9_-]+|⟨[A-Za-z0-9_-]+⟩|u\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\")$"
     },
     "name": { "type": "string", "minLength": 1 },
     "code": { "type": "string", "minLength": 1 }

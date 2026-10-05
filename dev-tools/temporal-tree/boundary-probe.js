@@ -145,7 +145,7 @@ function checkAlgebra() {
 }
 
 const at = n => `2026-09-25T00:00:00.${String(n).padStart(9, '0')}Z`;
-const intervalSource = (id, start, end) => `CREATE position_fact:${id} SET owned_by=rebase_group:root,
+const intervalSource = (id, start, end) => `CREATE position_fact:${id} SET owned_by=rebase_tenant:default,
   a_time_owner=position_owner:boundary, a_order_owner=position_owner:boundary,
   a_time_z=d'${at(start)}', a_time_a=d'${at(end)}', a_order_z=10, a_order_a=20,
   a_weight_a=-1dec;`;
@@ -153,7 +153,7 @@ const intervalSource = (id, start, end) => `CREATE position_fact:${id} SET owned
 async function checkDatabase() {
   const env = await setup(), q = env.query;
   try {
-    await q('CREATE position_owner:boundary SET owned_by=rebase_group:root, a_instant_capacity=1dec;');
+    await q('CREATE position_owner:boundary SET owned_by=rebase_tenant:default, a_instant_capacity=1dec;');
     await q(intervalSource('z_old', 1, 2));
     await q(intervalSource('a_new', 2, 3));
 

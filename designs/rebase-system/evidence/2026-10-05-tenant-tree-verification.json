@@ -1,0 +1,1160 @@
+{
+  "reviewDate": "2026-10-05",
+  "recordedAt": "2026-10-05T03:56:50.754511+00:00",
+  "status": "passed-requested-backend-scope-ready-for-lead-review",
+  "scope": {
+    "included": [
+      "T0 checkout recovery",
+      "T1 tenant/reference/view and public tree authorization",
+      "T2 typed ordered trees and dependency-ordered managed lifecycle",
+      "T3 sales taxes on priced delivery lines",
+      "T4 authentication and durable runtime",
+      "T5 all three compiler profiles and developer tools",
+      "T6 integrated verification and handoffs"
+    ],
+    "excluded": [
+      "MetaSol tenant migration and browser acceptance",
+      "live provider credentials or calls",
+      "production deployment or data migration",
+      "physical capacity and throughput benchmarks",
+      "new CRM, HRM, manufacturing or jurisdictional tax policy"
+    ],
+    "testEnvironment": "Disposable local SurrealDB/Redis with mock or injected provider transports. Only PATH and TZ are inherited by the command runner; no personal environment profile is selected."
+  },
+  "repositories": {
+    "rebaseHeadBeforeLocalCommit": "eb001a25906abe049ee63d3a46d9f29be4babd6d",
+    "rebaseBranch": "main",
+    "startingHead": "eb001a25906abe049ee63d3a46d9f29be4babd6d",
+    "startingCapturedAt": "2026-10-05T02:04:04.764440+00:00",
+    "startingTrackedModifications": 145,
+    "startingUntrackedFiles": 19,
+    "preservedBaseline": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/baseline.json",
+    "preservedBaselinePatch": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/baseline.patch",
+    "baselinePatchSha256": "656feaa1ff702013b155cb41ce8edfbdd5d8a09327e548f2ae2dc9f050fae82e",
+    "metaSolHead": "ada483e4d3fc389e66e0db9a21a14e3319a0fc12",
+    "metaSolStatus": "",
+    "metaSolAcceptance": "Deferred; its unchanged implementation was not tested against this backend.",
+    "commitBoundary": "These tested bytes and evidence are intended for one local backend commit. The containing commit identifies them without a self-referential hash. No push, history rewrite or deployment."
+  },
+  "versions": {
+    "node": "v22.23.2",
+    "surreal": "3.3.0 for linux on x86_64",
+    "redis": "Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=e53ff17674aa6190",
+    "pinnedSurreal": "3.3.0",
+    "packages": {
+      "surrealdb": "2.0.8",
+      "@simplewebauthn/server": "13.3.3",
+      "bullmq": "6.2.0",
+      "ioredis": "6.0.0",
+      "ws": "8.22.0"
+    }
+  },
+  "finalCommands": [
+    {
+      "label": "build-test-02",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "started_at": "2026-10-05T03:02:53.063736+00:00",
+      "elapsed_seconds": 0.524,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-test-02.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "differencesFromFinalSource": [
+        "dev-tools/accounting/h7-gross-input-probe.js"
+      ],
+      "retainedEvidenceReason": "Only the standalone H7 gross-input feasibility probe changed after this pass. This build/backend command does not load it; production compiler, schema, runtime and all executed test dependencies remain byte-identical."
+    },
+    {
+      "label": "build-suite-02",
+      "command": [
+        "npm",
+        "run",
+        "build:all-in-one"
+      ],
+      "started_at": "2026-10-05T03:02:53.719611+00:00",
+      "elapsed_seconds": 0.838,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-suite-02.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "differencesFromFinalSource": [
+        "dev-tools/accounting/h7-gross-input-probe.js"
+      ],
+      "retainedEvidenceReason": "Only the standalone H7 gross-input feasibility probe changed after this pass. This build/backend command does not load it; production compiler, schema, runtime and all executed test dependencies remain byte-identical."
+    },
+    {
+      "label": "build-accounting-02",
+      "command": [
+        "npm",
+        "run",
+        "build:all-in-accounting"
+      ],
+      "started_at": "2026-10-05T03:02:54.690169+00:00",
+      "elapsed_seconds": 0.939,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-accounting-02.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "differencesFromFinalSource": [
+        "dev-tools/accounting/h7-gross-input-probe.js"
+      ],
+      "retainedEvidenceReason": "Only the standalone H7 gross-input feasibility probe changed after this pass. This build/backend command does not load it; production compiler, schema, runtime and all executed test dependencies remain byte-identical."
+    },
+    {
+      "label": "verify-03",
+      "command": [
+        "npm",
+        "run",
+        "verify"
+      ],
+      "started_at": "2026-10-05T03:02:55.764487+00:00",
+      "elapsed_seconds": 1006.086,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/verify-03.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "differencesFromFinalSource": [
+        "dev-tools/accounting/h7-gross-input-probe.js"
+      ],
+      "retainedEvidenceReason": "Only the standalone H7 gross-input feasibility probe changed after this pass. This build/backend command does not load it; production compiler, schema, runtime and all executed test dependencies remain byte-identical."
+    },
+    {
+      "label": "accounting-02",
+      "command": [
+        "npm",
+        "run",
+        "verify:accounting"
+      ],
+      "started_at": "2026-10-05T03:36:24.167893+00:00",
+      "elapsed_seconds": 694.793,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/accounting-02.log",
+      "source_sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "source_sha256_after": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "differencesFromFinalSource": []
+    },
+    {
+      "label": "positions-01",
+      "command": [
+        "node",
+        "dev-tools/temporal-tree/positions-probe.js"
+      ],
+      "started_at": "2026-10-05T03:47:59.088470+00:00",
+      "elapsed_seconds": 291.274,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/positions-01.log",
+      "source_sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "source_sha256_after": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "differencesFromFinalSource": []
+    },
+    {
+      "label": "razorpay-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:razorpay-refunds"
+      ],
+      "started_at": "2026-10-05T03:52:50.469303+00:00",
+      "elapsed_seconds": 1.028,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/razorpay-01.log",
+      "source_sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "source_sha256_after": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "differencesFromFinalSource": []
+    }
+  ],
+  "syntax": {
+    "label": "syntax-final-02",
+    "command": [
+      "python3",
+      "-"
+    ],
+    "started_at": "2026-10-05T03:37:38.360411+00:00",
+    "elapsed_seconds": 4.636,
+    "exit_code": 0,
+    "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/syntax-final-02.log",
+    "source_sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+    "source_sha256_after": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585"
+  },
+  "scriptExpansions": {
+    "verify": "npm run check && npm run check:all-in-one && npm run check:all-in-accounting && surreal validate build/all-in-accounting/schema.surql && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && surreal validate build/test/migrate-one-shot-backfill.surql && surreal validate build/test/migrate-one-shot-finalize.surql && surreal validate build/all-in-one/migrate-one-shot-backfill.surql && surreal validate build/all-in-one/migrate-one-shot-finalize.surql && npm run probe:environment && npm run probe:authentication && npm run probe:tenant-auth && npm run probe:tenant-records && npm run probe:passkeys && npm run probe:credentials && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:admission && npm run probe:dead-letters && npm run probe:runtime && npm run probe:live && npm run probe:scheduling && npm run probe:webhook-inbox && npm run probe:adapters && npm run probe:temporal-tree && npm run probe:typed-tree && npm run probe:ordered-tree && npm run probe:boundary-tree && npm run probe:derived-order && npm run probe:required-outputs && npm run probe:causal-outputs && npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools",
+    "verify:accounting": "npm run probe:accounting-core && npm run probe:accounting-h4a && npm run probe:accounting-h4b && npm run probe:accounting-h4b2 && npm run probe:accounting-h4b3 && npm run probe:accounting-h4b4a && npm run probe:accounting-h4b4b && npm run probe:accounting-h4b5a && npm run probe:accounting-h4b5b && npm run probe:stock-timestamp-guard && npm run probe:accounting-h5b && npm run probe:accounting-h5c && npm run probe:treasury-timestamp-guard && npm run probe:accounting-h6a && npm run probe:accounting-h6b && npm run probe:accounting-h7-gross-input && npm run probe:accounting-h7-assembly && npm run probe:accounting-h8 && npm run probe:delivery-taxes"
+  },
+  "transcript": {
+    "path": "designs/rebase-system/evidence/2026-10-05-tenant-tree-verification-output.txt",
+    "sha256": "24d10023431a498236933d671b6312faf6eb9629f4aab4b6ceda7b7832e2f9e9",
+    "sections": {
+      "build-test-02": {
+        "startLine": 3,
+        "endLine": 13,
+        "sha256": "abb79a8ded161903284514e99e63c2aebd150f04b3cc2572fa4880934fc5f4a8"
+      },
+      "build-suite-02": {
+        "startLine": 17,
+        "endLine": 27,
+        "sha256": "7cc53e140745309510e9c3cd5e5b7895bd0062fb18dd929b83a3d48bb9adcafd"
+      },
+      "build-accounting-02": {
+        "startLine": 31,
+        "endLine": 41,
+        "sha256": "9f4cc2d1f31905ff2d82ad397455441c9e9506821d9501c511231177d9c9b49d"
+      },
+      "verify-03": {
+        "startLine": 45,
+        "endLine": 386,
+        "sha256": "d815d8e6794d60c8d4302ac1055ac7a0ea4ceff315868bc9cc39729f29f3a5d6"
+      },
+      "accounting-02": {
+        "startLine": 390,
+        "endLine": 455,
+        "sha256": "9f2e133c3bb38dee0a4e1326c37430e66bd82e405c012b8aabf101f984140ebc"
+      },
+      "positions-01": {
+        "startLine": 459,
+        "endLine": 466,
+        "sha256": "df764298cf67e5a3e372deaec8cfb6b4ed91e6c33f6966e902942f6f9927ee5e"
+      },
+      "razorpay-01": {
+        "startLine": 470,
+        "endLine": 472,
+        "sha256": "63727dc25d752acf1814e8a40918e887fc2d17105ea7d4c60ffbc2f449cc4d89"
+      },
+      "syntax-final-02": {
+        "startLine": 476,
+        "endLine": 476,
+        "sha256": "35c6bbf869ae2fe6532c5b5ec8f02f01cf1e3519800af379f87c7c390e58fbab"
+      },
+      "seek-precedence": {
+        "startLine": 480,
+        "endLine": 480,
+        "sha256": "68dfef694f55b17e14f6f81990643c684a908db2e587c80ee05a12f05a3b06dc"
+      },
+      "managed-root-auth-scan": {
+        "startLine": 484,
+        "endLine": 493,
+        "sha256": "ef8eeeb9781a59b2a16c83b326ebaf6ba31bb5f9f5497b96e2be97a80cc112ac"
+      },
+      "native-system-read-02": {
+        "startLine": 497,
+        "endLine": 497,
+        "sha256": "2f83e2103bd42df90bb7f63a009fc12f6c97b0a50ada5978135527e13c5dc825"
+      },
+      "tenant-records-01": {
+        "startLine": 501,
+        "endLine": 520,
+        "sha256": "22f7e7592b8545119eab94169f7bbe86093797b2e84ee62e50e31b5750322f62"
+      },
+      "ordered-01": {
+        "startLine": 524,
+        "endLine": 531,
+        "sha256": "09ea031601770bd8164ec0ec071acc199abf2f0d4c780dec2a631992ed48c3e8"
+      },
+      "ordered-02": {
+        "startLine": 535,
+        "endLine": 556,
+        "sha256": "d29b51e601adeb9d34ee4cf59349d5f98aa5091b0bbf83ae89b86ca4ad09e602"
+      },
+      "typed-01": {
+        "startLine": 560,
+        "endLine": 573,
+        "sha256": "86a997cc7857128145ba07525d0169cec5cd2eb6357cd99ea21298890b3abd51"
+      },
+      "required-root-01": {
+        "startLine": 577,
+        "endLine": 596,
+        "sha256": "e52f650fc8a925e6c5490ef16ab3c41249c3e1944b8125ba6cc68af0f141c133"
+      },
+      "delivery-01": {
+        "startLine": 600,
+        "endLine": 607,
+        "sha256": "4db644d0404f9b6ab91b2cc143844096738010829d78f04b9e0dc950d9d8115b"
+      },
+      "delivery-02": {
+        "startLine": 611,
+        "endLine": 626,
+        "sha256": "93695044a19146456e249fff71841a298b0d61fb1995a8bf196e33524798ab44"
+      },
+      "verify-01": {
+        "startLine": 630,
+        "endLine": 728,
+        "sha256": "231cb06a1a017e9899823319304ba7bbabccedfa5929bf42bafb08dd783ff10b"
+      },
+      "verify-02": {
+        "startLine": 732,
+        "endLine": 850,
+        "sha256": "caa962c6694428dca55a706f9ab27c520bd420d732a76f9e6ad4ebfb4eea164c"
+      },
+      "accounting-01": {
+        "startLine": 854,
+        "endLine": 917,
+        "sha256": "a5078cfde5bf9476f2a321dae825593cfff27be0136195f165d7f28d6f157e90"
+      }
+    }
+  },
+  "sourceFingerprint": {
+    "sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+    "fileCount": 240,
+    "method": "SHA256 of Python json.dumps(sorted path-to-SHA256 map, sort_keys=True); JS/CJS/SurQL/JSON plus .surreal-version and .env.example, excluding this evidence directory. Builds and Markdown are recorded separately.",
+    "files": {
+      ".env.example": "053fb35508fed2a40a8a6499f43fb32b85f7f7b1898b23237c3eab03d5789b52",
+      ".surreal-version": "5eee6c0c5c6901f5e523f0a434bca4106e1ff7136deb451f982b0bb1a7b13716",
+      "config/environment.js": "f23883b5905be2d3157bea595c0b747d59c43f0bf7ab28029cd9d42d8ed79b17",
+      "config/runtime-timing.js": "fec7a643993e2fecaa79884dfd3cd3ca86a3d02bc4bc7b56cf1db57b2d55ecea",
+      "content/examples-llm/computed_graph_query.surql": "5f8bb4ec755f594e5c8450ff3fcd7a05b40082c27f253e7cce5a8de8ad04a4da",
+      "content/examples-llm/computed_n_view.surql": "36f05ddf032fc57b1d6766a6dfaac7a231a170b754e0bfcf6ee02ec2af4cfeeb",
+      "content/examples-llm/cross_value_native_traversal.surql": "0028f030ed587133763a5384e9d82ea3d148ea02a496a0ca324def1a8d6e7d9f",
+      "content/examples-llm/cross_value_virtual_expression.surql": "efea033d78d8aaf315c8c4c6a6cfd3aaa4f4706214302246aefba03eab507e22",
+      "content/examples-llm/enforcers_polymorphic_relations.surql": "a9d2ae7e9ff7bcd7b4ed9f2bae51544cccecafe81ac30070f5932f5b59f5df24",
+      "content/examples-llm/graph_hydration_n_traversal.surql": "616661252f3bde447a3c042128cd6d27ed802cb700a16bdcc21f4792eaba4d5f",
+      "content/examples-llm/graph_integrity.surql": "5073e8abdd953d367adb00959c62934ab41d04b97620017ea197fecae88c13f0",
+      "content/examples-llm/heirarchical_rbac.surql": "d1674cca062da04fa856c6dd2750e4f7eb97d5491d8e43af03e7d38b2de882b3",
+      "content/examples-llm/intra_field_value_clause.surql": "58e8ee471c2fec1949cb213a9adcfadf3884b722aab6c2f6f8c2dff9ee132292",
+      "content/examples-llm/manual_partitioned_view.surql": "7e6f05bc36f86a16f52a3c009152d0b47b989339673a2868cd2435a14b1e163f",
+      "content/examples-llm/manual_state_views.surql": "cffcc64eb54d97f1ab95281d79082c56cb1d52ba50281d25aaf01fd431db5375",
+      "content/examples-llm/many_to_many_relation.surql": "2f6e5e82c27743e81c8f2767d3e4b74f076f16467710ae0894239cc5aec8f6d8",
+      "content/examples-llm/materialised_view.surql": "050d1c2c438b0d365336878f677eff15f97c5f418746f8a99d15e402950cc369",
+      "content/examples-llm/meta_scripting.surql": "bd3f52db604b19afea245df66763c15c6f7f2902b09305c24d7d77074e0dcf34",
+      "content/examples-llm/reactive_cascade.surql": "38d2a4b68f895a7ae9a93d5a805a1eccad45e433a6d54bcd44a8f1b41d91f85e",
+      "content/examples-llm/reactive_cascade_assert.surql": "1bd185293155b3f62a51d9f29b0ce876664f50028b89f7b49b906a551737496b",
+      "content/examples-llm/record_traversals.surql": "2e4dc825414fcf4ac3ef5def227b7ebc1cfc1d2a2b7a5c9c5c9f233922b312e4",
+      "content/examples-llm/select_queries.surql": "00d05a6f6821c995f77f6c7caf64d90e2d2bdcfdde23ca5a8a5ae805af333939",
+      "content/examples-llm/set_and_array.surql": "61a7fe5fdcd88b189473b84b8d9a9f7a59dad1094ba41a525e5058b77d8e519f",
+      "content/examples-llm/sets_vs_array_analyze.surql": "2255d0cf1f9b2b3278ae9374c284e522a1270b62b384bb87d22ae7c57ef0d6bf",
+      "content/examples-llm/shadow_n_state.surql": "1d124f636fbdd2fcd5cc0cb3a2624ff7a6d77ec0753cfb247d2e679243a8abe2",
+      "content/examples-llm/shadow_referential_integrity.surql": "e015a1ce45e506e60c78811febdc66642bcc9f0eb987c2b9b218fe1c915fece1",
+      "content/examples-llm/test_n_deductions.surql": "33e1474d6816b7ceaed4c075fe7a583f843c8ecabcf62bdf4767183e334573b2",
+      "content/examples-llm/value_clause.surql": "441c8a5b5ac31974c7de768c63fa243386ea7e09aefdcc59fb555494f813bb32",
+      "designs/all-in-accounting/claims/adjustments.surql": "65cca458d79a82294b0533266f49edd56b123a2ddd06a99bd6d809c3e4204384",
+      "designs/all-in-accounting/claims/cash-refunds.surql": "b477b38d3d616c05fe3e751df4fa7308ed2ae3c5e0bb30ae5719362b1b4536e1",
+      "designs/all-in-accounting/claims/claim-offsets.surql": "5ea29e7ad82e99a5cf0d1b7f02412429dcf96880f616becaab1ba7410a611363",
+      "designs/all-in-accounting/claims/customer-withholding.surql": "dce360ddac49fa357d6e54329d1f8545936d6cf830c7ed54f25f6bf1478181c8",
+      "designs/all-in-accounting/claims/delivery-taxes.surql": "61322fcdf900697fc5d93829cb991791879a038cb2bddf2541dc08762ab40e15",
+      "designs/all-in-accounting/claims/invoices.surql": "2aa9a9af615312972df21adec50e7222e68fdfc110103c25debfc580ac362692",
+      "designs/all-in-accounting/claims/purchase-tax-credit.surql": "4974c9dcd418ed10628a3a718ba43e4afd168d7f5d64900c3c9b3d92c14f9adb",
+      "designs/all-in-accounting/claims/settlements.surql": "8fb086005262c36ce11fea6d8cd55f81e9854c70ea47e295dc7526fffdda6325",
+      "designs/all-in-accounting/claims/standalone.surql": "1fb29ce8c55cf59266550b54ba0e619253a66df8e873d638d22b9e84ccb65559",
+      "designs/all-in-accounting/claims/supplier-withholding.surql": "1692c7403b50ee4fec44695b62a3d21cb37d15f4b7c884244be383512728f127",
+      "designs/all-in-accounting/claims/tax-remittance.surql": "f1c2a6784398d366b0bf35f200563409c235a03bbc1a66ed0a52dba2673d517f",
+      "designs/all-in-accounting/claims/tax-rules.surql": "f1d292bf7ce51507d53de09fbf760c0b1edebdc0c8fb53d57af9fe4274d44409",
+      "designs/all-in-accounting/core/schema.surql": "55500d8bdd7ce02c5e6738659fbef641bba62a20b44819664359e49120b629c5",
+      "designs/all-in-accounting/movements/cash.surql": "61d60c385881d394960e0fba295e316f88f7f42bb9e9326bfd84c54001aa5665",
+      "designs/all-in-accounting/movements/exchange.surql": "829339a266b2fa0824d30c5ad6a2f23973091f94454d94f5d5b6872ec6fce33c",
+      "designs/all-in-accounting/movements/purchase-receipt.surql": "e62fb065187a005be401db92385e468973ee1183d5b43c55b9fdd4c77d38d7f6",
+      "designs/all-in-accounting/movements/stock.surql": "a1456b546ceaa5ff9cc5d310cf013116af9ad7aa45fb453bcaa920e61165ffcb",
+      "designs/all-in-accounting/movements/zz-assembly.surql": "126e88e42b045970deb11e150409dd617699b0fd86b2541950f010c9332bbeee",
+      "designs/all-in-accounting/movements/zz-timed-production.surql": "bc8329187ceae9b64440b46cf4fe96a85b2c365db45b65977f9b9bfaa1807a54",
+      "designs/all-in-accounting/schemas/cash_in.schema.json": "74d66cd4f27e34a2c4436c0d1b20fc3ebb74bd4910371ad9ce1965dd143f092b",
+      "designs/all-in-accounting/schemas/currency.schema.json": "62ae0ef7127b825f0aac0aadbd3d4768baad163d1aaf45528c77d434ed2b574e",
+      "designs/all-in-accounting/schemas/organization.schema.json": "3cfe438d1e777eb429a1b7190aa1e866ec4d97abbb01c691db21811ae3955d3a",
+      "designs/all-in-accounting/schemas/treasury.schema.json": "f9f9c39f5c93407f249d446e79cd5f88bdd9842b5c6e992334c2d76c1723c2db",
+      "designs/all-in-accounting/schemas/treasury_account.schema.json": "ea378563be44683445bf59b04695d510641382a90d29195d3eed5c5e41bacb3c",
+      "designs/all-in-one/accounts/billing.surql": "27b63c91587bf241232483f522043d3efff39838bc8263e76100fd507a9f42fa",
+      "designs/all-in-one/accounts/logistics.surql": "3672fd27494f9515166e8d0b3085543104ade574e6ce3c41c570e1d0d37d011c",
+      "designs/all-in-one/accounts/money.surql": "edd50c9bb0f96c042fb32ce82b9091415f35148d95cf39c560f2f454ae63d68c",
+      "designs/all-in-one/accounts/schema.surql": "28de3d8a0a59f044a9d3c568ef20c276cf93d39ecb615515becc1fad90f4089d",
+      "designs/all-in-one/core/schema.surql": "a76999195b2b488412101201f287019146766992877c19845b93be76db86d171",
+      "designs/all-in-one/crm/schema.surql": "e53c01b2392e5ca0b57ae0aa13ccfc579d9a300d4c7feaf10896ddf2f6fec70d",
+      "designs/all-in-one/hrm/schema.surql": "467d28dd72a3169f7aed4f7034605cd1350bb479cbccfa2852c4bdf0fcdaa47f",
+      "designs/crm/schema.surql": "915911b74bb291a572ba1799e17f11442efab39d6f9818afa167cd695abe8cee",
+      "designs/crm/seed.surql": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "designs/crm/views.surql": "6316ec6ff8234c4538f7bbbaccfe7d1492cdd4ee7b49f979f0ba738a23859643",
+      "designs/frontend/evidence/2026-10-02-frontend.json": "03d6d25f61a5f29110d128365148a12800a305eb56913583f2943e4cf29e33e7",
+      "designs/rebase-system/redesign-evidence.json": "6d28f18d6444b91baf017ac8c6b5e227384da14a78f04e2a1f6eb724306c1d70",
+      "designs/test/data/file_storage_config.schema.json": "ce9496df94973cbe97e28523d2a88fe7fe9b4f29fb1abfb02c7a87ff976b61bc",
+      "designs/test/data/razorpay_config.schema.json": "da33a274e29a2af71cea0e7f23f660169bdd1d7748bf0a500387e7f2c6190ba2",
+      "designs/test/data/razorpay_order.schema.json": "62851e1404e277914264164ab1f826f38fc1d00fc9f9a752642413922aea2018",
+      "designs/test/data/rebase_group.schema.json": "07db18d0ee93440a1ca6f6c3bd7ed15716b275064823d7317e49f5878b136cfe",
+      "designs/test/data/rebase_user.schema.json": "050b680f080e81490018215685dc2c085c397024d8542ab7ac5b06466786083e",
+      "designs/test/data/send_brevo_email.schema.json": "7484d0efbb5dfc6b7c7de106083df10720a7d4572e209fe819527b8df9910401",
+      "designs/test/data/send_twilio_sms.schema.json": "ffbb37a08995ac2e3e9f1f8b735453bba4ffb2d5a81554ab74befeb24a188990",
+      "designs/test/data/test_attachment.schema.json": "932ea3a99fb390c69c0e47ee80f5225ff76f7e369523aa9a2a64de8247ad0705",
+      "designs/test/data/test_multiref.schema.json": "136db9eda3e989e1651a122f592e13176fc24212308471dcfaa65f5916d7f5ef",
+      "designs/test/data/test_primitive.schema.json": "18716fedfed4552f12f9ab62a702359dfd4eb50affa474dcf078b38116d3cf8d",
+      "designs/test/data/test_relation.schema.json": "bde5106eef61bf4ec66942c0df09a3b0f83a62420105f58767bacf361a683310",
+      "designs/test/data/test_tree.schema.json": "e04ec03ae6d5cc8a587efd8a486f8d6654389f5bae7d792f3669531be8495947",
+      "designs/test/schema.surql": "650f05b34706ce14c70b51741fa77deef27d927a5cbdc190a1459fbb1dd18a88",
+      "designs/test/seed.surql": "61d47de510bdcee003e640c4f7041dcf0ba9519f80bbe03e2725421fd8560b24",
+      "designs/test/table-handlers/razorpay_order.js": "c26e71d28ea564ede68080d3ec125bc3f6e67f182577d2c5bb5a4925d29dd1c8",
+      "designs/test/table-handlers/send_brevo_email.js": "a74d9a5faedd055fd93cd3f9bd7e0ccc20a3f93decdd4291dd43628e973aac34",
+      "designs/test/table-handlers/send_twilio_sms.js": "345894688adf16eb117a64585a63ad5a1b87c4160c9ce1c76f85cee7c71e9481",
+      "designs/test/table-handlers/test_attachment.js": "39449c06d32ec560326814525bf80f98f9f47a2f56ff20e4a055b691c6600a17",
+      "designs/test/table-handlers/test_attachment_cleanup.js": "f4344f69f0e6a2afddd67d3ac1b7d2f0bc2874b4098dbe08a129d3280fd58e0c",
+      "designs/test/views.surql": "345480719155745981517824b4ba5504d2374cf20fc940adbe2bb486706f0c25",
+      "designs/test/webhook-handlers/razorpay.js": "4687f541c06c7fb33349254e66d9aef58154cc890d491e01347c24d87beffd8e",
+      "dev-tools/accounting/cash-refund-probe.js": "bf52bd41b4ad4c6a3bbf4045e25db00200c69b550dcd1b0bfdf288f79043b31d",
+      "dev-tools/accounting/core-probe.js": "9994056081e6ce020f4204bde24cd13de16af66e462e3ac9bc08e2983c80d596",
+      "dev-tools/accounting/delivery-tax-probe.js": "07d453c6b63d9f75d44dbbb21c876ea95cf666ae18d93a7d7f97e25d6be13e5b",
+      "dev-tools/accounting/fixture-example.js": "58fa3de6f1cb0133773b016fe0a6addbfc8f8a398432723e0a1712d25b644831",
+      "dev-tools/accounting/h1-migration-preflight.js": "85de0fbba9ffe45d7f2414e3e6dc9f3fb85750ff5aadb47eea41584c2c33e2a6",
+      "dev-tools/accounting/h3c-fixture/fixture.surql": "1a12bee5bb11e253ed82594de95d4d0912c3c413d956c1d06ceb14231b8616a4",
+      "dev-tools/accounting/h3c-probe.js": "b09a2aee8f38dc31f583f2775d1fc9da4eccabf9506b9d465775c9167f28bed2",
+      "dev-tools/accounting/h4a-probe.js": "8960a154952ec14cbe91dda8e7e7fb471c6f1959166a0c15251c6866f1b9e2cb",
+      "dev-tools/accounting/h4b-probe.js": "e68a7b93fcb89ae4412fe60aacbba6d179c5150c6614007bd97f43921a7f2a62",
+      "dev-tools/accounting/h4b2-probe.js": "70bc6db043121bab14e7f0deda9f8276b010fbab800083ceefb47bc7f8792902",
+      "dev-tools/accounting/h4b3-probe.js": "ce8275f6e4c5dca6f5b569d236bd58595e60132022aad8f187976c98748cb2b1",
+      "dev-tools/accounting/h4b4a-probe.js": "fbeddc39981fd36bfb5ba139b849c47c14583677ce74bddd37f134373c77c294",
+      "dev-tools/accounting/h4b4b-probe.js": "4033b2cadfbc0322d8eb948a8dc3df0d5d6e622548a79d9e4974127106ec431d",
+      "dev-tools/accounting/h4b5a-probe.js": "eb56ba73af7ad64a465f1a9f7edc815ac9ccd429f3d36b4e7304fcb623f8a66b",
+      "dev-tools/accounting/h4b5b-probe.js": "bdeba00b7ec5d9980cee917f7c11bde1be14baba5668de0f68fa0442677fa245",
+      "dev-tools/accounting/h6a-probe.js": "d62b8cfd644c3b150fa4e4d8599a511941166f44dc8fc210db33464269716371",
+      "dev-tools/accounting/h6b-probe.js": "32283dcad560045e869a7d8822f8b6cf028a23ca82f8401083d94cb296cb9cf7",
+      "dev-tools/accounting/h7-assembly-probe.js": "61b8c65355bf1f8359c65ccc2c9a478ec89bb032ed561d8737d0dc37b51caf2a",
+      "dev-tools/accounting/h7-gross-input-probe.js": "06e984cfa5631ef52bfea5fcd2404dc0b9c1261d33409a0e4b64375845d5366a",
+      "dev-tools/accounting/h8-measurement-probe.js": "7f7fc569a039f6f677dfb9a8e2c86a9915b85a04e8887908a6326bde689d34dd",
+      "dev-tools/accounting/h8-production-feasibility-fixture.surql": "7bfe877e664f0976814582544cc9a43f06b2c5042692cc426d65cfd86bec94d5",
+      "dev-tools/accounting/h8-production-feasibility-probe.js": "a8ef6e8daa43605850a3b0f9280f199441feec0b4ef6ed692327fbe6e01663e6",
+      "dev-tools/accounting/h8-timed-production-probe.js": "1174c2c0c72d4feec81a8e1daa9ab145dc81aa0006ab2fceabfa5a0ca039c059",
+      "dev-tools/accounting/stock-return-probe.js": "7dd636166d2164b60bd69325d9cc496c823a2b30e40d08cfadacfd1f7ac8007f",
+      "dev-tools/accounting/stock-timestamp-probe.js": "33a9702b3f8327bea5026fd1d0dcb85ceef1b2e0b3931a68c1c688b7dc4abbb5",
+      "dev-tools/accounting/treasury-timestamp-probe.js": "d61f6a06795c1f19ebaa59c51ba12eeb3fcacb3b437f47b1f1da6dfede45e9ab",
+      "dev-tools/checks/accounts-probe.js": "b744553dec6bdc31b4b6feb5612f0fd4d6bbd5becb59de7ceae2b03637607dfb",
+      "dev-tools/checks/adapter-probe.js": "f9e87ab7f16c0b3b78f6e45bed351eab4267c661b93d14c1d224dcd976b66418",
+      "dev-tools/checks/admission-capacity-probe.js": "f2c40c41416ababdc37ad290da5659a9457156cd68f061d5bcb73cda577f1bb6",
+      "dev-tools/checks/architecture-probe.js": "af3d6fb63605e052c653fe91b3addfc4be528377f3b1bd7a9fcc2227e035f9a3",
+      "dev-tools/checks/authentication-probe.js": "07da46a7a7934d87adea5f94af7879842e0112d9212da7580d1aca385b486ade",
+      "dev-tools/checks/compiler-probe.js": "009c49c595b9d9133107e235216d75b515037b913bd3e4e7bd8a245be7971191",
+      "dev-tools/checks/credential-probe.js": "ec4944662b8cad9a6069e4ef36211ae20890228f9a333ea3d3e53017f2c7a114",
+      "dev-tools/checks/dead-letter-retention-probe.js": "a620126cce5d51100840c13e5d84a2e39817083e7f3a1d05818fe51c639f5c39",
+      "dev-tools/checks/environment-probe.js": "bf65fb12e39fa2f3af6eaa8ce1fdf7b9bd6a1a36f01f4a8a561486912272418b",
+      "dev-tools/checks/live-probe.js": "65be890e69f78a198129abbdaa7705da7de8e57fc376b1fae18412a2180f7004",
+      "dev-tools/checks/passkey-probe.js": "005b3985bda1d65b6671d064387291f6cbe1faa4bc415912b13385d250bbace6",
+      "dev-tools/checks/probe.js": "8f1ba3582fa9c1d0513f2a9e2dbac31500c4f4236fda157ed28fddd881ae48c2",
+      "dev-tools/checks/queue-probe.js": "a8803afbb6be3fa9c4b33b6a5939e1fad0093e1a87a797cbfe2cca41e517f0f7",
+      "dev-tools/checks/razorpay-refund-probe.js": "8daffbe936dd084ce14a445663beb74cbc6e702b2533b9e83f183a43cf2d278b",
+      "dev-tools/checks/runtime-probe-worker.js": "5ea26bc3e9426443f69561e2e3282b64994f95f557d1f39ce4e1d17adac4b5ce",
+      "dev-tools/checks/runtime-probe.js": "7ab930084eee69945daabdec1277dce5139f2d8fa3762db5d283f3bad4e04afc",
+      "dev-tools/checks/scheduling-probe.js": "6013f34f53322983e788964d077ac68046bcf53959534f7fddc86bb981a74be2",
+      "dev-tools/checks/suite-probe.js": "073f23f91edc1f6976e6f13b1e50809135faf087e4b80a2c6a0a0a3bc7ac93be",
+      "dev-tools/checks/tenant-auth-probe.js": "cb1ed496d3d7f3ec6f0cc2ca3b6dafb2a50902d1e4036eb4ff421330e2e5b98e",
+      "dev-tools/checks/tenant-record-probe.js": "133686d05c7d2278f00ebca300b41c6aaf14a0050958a5a41ec8b1d3f44121f4",
+      "dev-tools/checks/webhook-inbox-probe.js": "ab49306ac0af55da2417dc988cec968b83fe03b2594c918b073d2e8b4d8937ef",
+      "dev-tools/client-schemas.js": "bd6f28241027a40f15faefa6f09d40cd10f8ccec59f1bb4e5e5dfd42e556975d",
+      "dev-tools/compiler/analyze.js": "64ab7cd29856b1e2a41a4f847f4384541bb747abbab04d5a5c72e545c7525751",
+      "dev-tools/compiler/cli.js": "4600ef6bf406dfe53da1c1b15eb5345ec2e3de5aae3df1e50bb08b18a5b18a35",
+      "dev-tools/compiler/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+      "dev-tools/compiler/fields.js": "5f726a26c51b5d2ee64a3e81bb1093b2d36c0cbc11431004d2733b3aa1b9fb70",
+      "dev-tools/compiler/generators/access.js": "e1d670cde91943dfca8339ac4067c82b2232d9c3fd8c0bee86c623a8c750cf3d",
+      "dev-tools/compiler/generators/audit.js": "b2e6837c1a44e03c62cc8908e3019c8f3c05addb25b36b7c96fb89bc3cdfa943",
+      "dev-tools/compiler/generators/effects.js": "2c1640a5718acb709b752eb4808872f1f62f5a26d430525657adb95ddd8b6bd3",
+      "dev-tools/compiler/generators/indexes.js": "522990544ab360804c15e9c01cefcdb39d2d2ea830dbfae7248c035e0f70c4e6",
+      "dev-tools/compiler/generators/reactivity.js": "2fa972ac5669c3dc2ac2865e3878f736e6738239509e38458b8deb5987289d0e",
+      "dev-tools/compiler/generators/references.js": "e7094fc77605da1893d313ba0350a1f654571fb55f10af6e62219087385face2",
+      "dev-tools/compiler/generators/security.js": "8df81a1727da5ba050f22443b647ae5dc5442c22bb48a3f1ffb160e5df6cfa35",
+      "dev-tools/compiler/generators/temporal.js": "54572164279d2d464037fdb22f03f002186ceabaa302d92ee548537f8ed1015f",
+      "dev-tools/compiler/generators/tree.js": "82717a0b3fbd03d4fdbcc8ed929941256bb0eee7be8a77f0dc1a182ebbb492b0",
+      "dev-tools/compiler/index.js": "fe9026df7106d91aaf287e1e0c729dda6a3a2c4494680831414ca956d6ccbc8b",
+      "dev-tools/compiler/materials.js": "d4b9d15fde9253509b5977d22fc054a5b4f4bc72c1bb729a152b28f97f91d9f6",
+      "dev-tools/compiler/pipeline.js": "33e9ba6c08f4e274c94c193d343766f9cc517b578314cb3242a0b9360c12182c",
+      "dev-tools/compiler/principals.js": "1eda08f01faab4d44b689b29939f58b02e27d9a94089810f049bb2014f062447",
+      "dev-tools/compiler/project.js": "a29a3431ab3a678507dda9584defbd6be9e1d63719a623f498965d995857cbac",
+      "dev-tools/compiler/readers.js": "f32737dc5f4162c1af63b8ff911572af58396f57e40628a8b0f6968b30a61c0e",
+      "dev-tools/compiler/schema.js": "7ea0b6872432eede825feca010c8a50c3a28895bc1686554d6b21a5dd38655e8",
+      "dev-tools/compiler/security-policy.js": "533c15422fc2cddc2121aad1b6929a5076159662572a832f38c4db91866d59e5",
+      "dev-tools/compiler/surql.js": "6004ce3d170998a78038ac2faccea58f17b5eb75722f768a0d71d0ae2b7fe9de",
+      "dev-tools/compiler/table-handlers.js": "3be595f8f555f95cc0b551b4f5957022ed0a01be7c9513d8944e56c83375d820",
+      "dev-tools/compiler/temporal.surql": "5f3930a32f9b44890f9486ec8fdf0f0458e89ae75578b38df2f970d55e58eecb",
+      "dev-tools/compiler/tree-contract.js": "2c94636ae53061c5f8f2790debaa800d58fc5a86ac8a936c2b65a754746b8828",
+      "dev-tools/experiments/authorization-performance.js": "5d7def3edddac33123c8aa388506e0862d69e656af80829fdac5dab2207cc93f",
+      "dev-tools/experiments/reference-permission-performance.js": "56597249da297188e4b8bdceafbe8e967a02801f09a07dea72898357763a9347",
+      "dev-tools/experiments/synthetic-write-amplification-probe.js": "3b77b8786bd37888824e93a48acd5bafe73b47385aab2abe1d684d9f543693e9",
+      "dev-tools/experiments/synthetic-write-amplification/schema.surql": "c01d275d087d0a9e96e0efe7a2e38a6fc1eb81d3c74c61a21515b6b235c96d74",
+      "dev-tools/experiments/write-amplification-probe.js": "3bcdad41054c6fa50f00310514aff2455509fd9b977894fc477131df32a0a746",
+      "dev-tools/index.js": "e19e670c292ae8b0b186613cc1c050caf8c9f742f8471eb8a37dd8f4a574ec4a",
+      "dev-tools/lifecycle-migration.js": "c17b25ee855c208c04669eef18fc2690553495c2497f0f9c48e84aa1fc599f89",
+      "dev-tools/populate.js": "d3340a62c007977fe48f550ccd36981af451e5c225baa91c598f5da3b476a3a9",
+      "dev-tools/research/redesign-probe.js": "8ea62acd2bd42668829fef454ce1ddbc75581b38248f3bd6a16dc514fbcc8d10",
+      "dev-tools/temporal-tree/accounts-oracle.js": "c58aa168f632cdd98c7f5be5b8bed282e7b30c536278327667a626af169804cf",
+      "dev-tools/temporal-tree/boundary-probe.js": "4a006f8f3444268c22e66ee38de78391304df51f4d71882e76a00b34311754b5",
+      "dev-tools/temporal-tree/causal-outputs-fixture.surql": "3a8d96dc068771091055d31c25718c7d1c09b6233d8ec39a05c354d852d48b45",
+      "dev-tools/temporal-tree/causal-outputs-probe.js": "55a7b563652c630371629359e41558d402a5ed28af0a4601ab7967f681ac52dd",
+      "dev-tools/temporal-tree/compiler-fixture.surql": "3c62b140968c35772429d8c377e28eeb38e628dcca031b0d8b222b4b544c40d9",
+      "dev-tools/temporal-tree/contract-probe.js": "5f0337865a6c4bf1a5a734a44fd6cbd9ce838a87ff287f7c8e109af11b6a4147",
+      "dev-tools/temporal-tree/derived-order-fixture.surql": "f6bd16d44b36c7380ec1cc218de234a268dfe8cb4072fb376a40fa3c5870f434",
+      "dev-tools/temporal-tree/derived-order-probe.js": "aa0c1a9746f570dd59f93087d27f936008d277f9a46a509e2c962d7a855b2200",
+      "dev-tools/temporal-tree/harness.js": "c120d4b05d16c7daa91022699dfd31892080b06faaf795bb7da8e8ace526038d",
+      "dev-tools/temporal-tree/oracle.js": "fb2d47a74397300b3826fa3ede1a6b30f66fdad5149f465abbaffe9e633be7cf",
+      "dev-tools/temporal-tree/ordered-fixture.surql": "21c383f728ce5941b487e628f8f25876cbfdee9d643cf1ae40c054e1c7632ef3",
+      "dev-tools/temporal-tree/ordered-probe.js": "10b452d0de7767d55c78f443b24bf31c36ea1127390e2ba39b992116217b739e",
+      "dev-tools/temporal-tree/ordinal-fixture.surql": "381d0118841092dab3bb3061d18a9b5f62767b8b7a62837127cd5a7815cb3a0c",
+      "dev-tools/temporal-tree/ordinal-probe.js": "82799aa92979bf6149425f2ef3e72b812f90f29e93cda9a4ad277135437c469e",
+      "dev-tools/temporal-tree/positions-fixture.surql": "6c74ba40a9b6f605d26d72fe85022b592135fd9d80fb654fac9330df431f2b22",
+      "dev-tools/temporal-tree/positions-probe.js": "ec8b38a03d54a451b3e03064ed9eb2646b6d565de6a0cd6ebbafc01a6d3c21aa",
+      "dev-tools/temporal-tree/probe.js": "bf05d2e7f62b0fb090d0b8c3c84517b881d52baa17404888a3763e8b179d5926",
+      "dev-tools/temporal-tree/reactivity-probe.js": "dcc69b1257b16368fb3ae30d1a346f3a35c96c5b7ddf9cec44620c725eba9b6f",
+      "dev-tools/temporal-tree/required-outputs-fixture.surql": "829c35ffe4ab5352637c52495bf0f904fd1456f0a08c7d22b9e125eb0b70a237",
+      "dev-tools/temporal-tree/required-outputs-probe.js": "c1971ff72826e096945dc52321d72af3f55becbe16bd1626df46e5274e7d212b",
+      "dev-tools/temporal-tree/typed-fixture.surql": "7d4098d2fdb3225738781c16b83880406744249829febdd0a8d003198b0e137b",
+      "dev-tools/temporal-tree/typed-probe.js": "6f03917af3e7846148bbffa3cf235c74036317e2b5fdc18bbceb1afe9229476b",
+      "dev-tools/tests/client-schemas.test.js": "ffbc636eca462ee5b2905c671c3f455bb2a5561ca5028c631b1702fb41119225",
+      "dev-tools/tests/workbench.test.js": "5db4d7009213a18871ff2b7411837facac8bc9eec79bc64059517c478480c59b",
+      "dev-tools/workbench.js": "eca75d999a28e5784fd9f4474fe4fa4c143353bb140f2df524dd4c0dbdf7409e",
+      "framework/access.surql": "b81fe2ce55c57a8ff4d7117755f8147fef71360b200611b11abb7d13143f563c",
+      "framework/audit.surql": "bf504134213c7c39e8c67b5f259bc7800ee32ad24dc0102b0a3cb1ea54400ceb",
+      "framework/auth.surql": "7f4a6add8b43463cadc0788bf9d912283b039c83b58e48ac2ad8c1cc39a1de90",
+      "framework/authentication.surql": "57805a4767603fc85e9a85ab6ef4f74c9ba00929d44bf846fd5b5d6855809200",
+      "framework/passkeys.surql": "ed88e22f49412a96c24464a578cad9be99ece7c2b2ee5620dc24c976253957b0",
+      "framework/reconciliation.surql": "c2a8699547d2a6dc064b18e1ffbc159593612b0402f6c0e4e0845e05403174df",
+      "framework/webhooks.surql": "5b62935678e0623c22c4e74e691b271e07be5b1acae32d23303d48eb5b088726",
+      "gateway/app.js": "009077f05df499edfd8b1808deae79ca35178b1ff5a4bf53c687f8a5e804c7d2",
+      "gateway/authentication-payload.js": "e24d411d659b9bf634e9c5d749cd13f7470fe0545637dbbdfc39b445c6ab17f0",
+      "gateway/authentication.js": "889f5d41d9f3b3a3810e9279090b79437f43f7002f39d588332cf99e03a208a9",
+      "gateway/connection.js": "704d99744c456b753e368ee087c8b8f75110d2f96a634d53bb88efd37c74f48c",
+      "gateway/directory.js": "4a7394be12ff044e0f9343e513ac1e11ee1a9c15dce33706dea98dd05f3a03ed",
+      "gateway/errors.js": "2e72363bb1e9677385cabf3a5bc8cdf8fe852b2894523fa3d73b683f682d4fb9",
+      "gateway/handlers.js": "6795d5ad50d13c541be645dba001ae99f74572e1a90d36e03d0daa8e78109428",
+      "gateway/live.js": "0fb9dd8a60255e218e54652a8ccb9289c179ed2b52804dc9970791c246b243b5",
+      "gateway/oauth.js": "88148635abb7390263fb98f06559beafaba75446c64b2f4c299e21429c8a46a8",
+      "gateway/operation-adapters.js": "82a20796b7ae50e00fec423bd86be06d72e6b51c8e5319f978a8fad31ba283b5",
+      "gateway/operations/authentication-delivery.js": "9a7a634c7e1eb621726162e2d072f4aaba11938a1e43ee8719862558ac4b7662",
+      "gateway/operations/provider-receipt.js": "7114591d10e0759e62342cbde0dc5abec08f15856d24cb764471d235abda931b",
+      "gateway/passkeys.js": "a1678cc23b4675d4fa929a0be8c9791f1e2e7abdf7700b4cc3b7e08e35d482e6",
+      "gateway/providers/brevo-email.adapter.js": "6ac020500b08922a643fd593a892b286fb9e2456047633395df7160f6590f4a1",
+      "gateway/providers/http.js": "c69ad10f7ce87014c60836ccdaf5a11c39d54a83b31df823734180ad36c9942d",
+      "gateway/providers/index.js": "cfe84c61bf7f0585c4c06268235677871b8f7a72e25d5b9d0508579a837ebde3",
+      "gateway/providers/razorpay-order.adapter.js": "19a33df65381c8f4bd534e0ecf008b9aac9a6400647fbf45146d62f6bf917ee0",
+      "gateway/providers/razorpay-webhook.adapter.js": "05ca3e47832dc3a9e694432db5d0da18b9897996c39f490411f53f578ff94c75",
+      "gateway/providers/s3-storage.adapter.js": "a38fd49cce31652452424704e03a25ec3f083e7cd183105c929afbe8cbfad2d9",
+      "gateway/providers/signatures.js": "bd2d16739738d1542ad81c065a7214e7b7e8fee73fcf9c6888ea8391cf27a437",
+      "gateway/providers/twilio-sms.adapter.js": "c09706b81dca80c505a3028287e1dd3ff49d5549469cc256b6b7e4fcd666caa6",
+      "gateway/queues/atomic-admission.js": "5f2595efab3ab610f2bf49f05b443f48c9573ea4acd1bc1d6941edd3c251c1ad",
+      "gateway/queues/bullmq.js": "8a88e64106e8c3a56b245038ff0969c09edd42627b81515921acaac49fac8854",
+      "gateway/queues/index.js": "67b0043c9433150aadac4cccf80b176761def491ea9104d706f51ee85df65156",
+      "gateway/queues/port.js": "067ba24745eed7b65916442e6258de49231d6234456ea92535163e0866f0aacc",
+      "gateway/rate-limit.js": "aeed983f27cf8587ac21f8fcf591595ba30a017d8bdd97f3c317d03aeed8312d",
+      "gateway/reconciler.js": "b185f2cfca00ca3e7aeb3dfe8dc9ea9837778b2c4ac890e646bac75ef66b0457",
+      "gateway/runtime.js": "8d7be8af900d81cf02ca7629c317556a5b221b54831221ed6effd243e6e5c1e6",
+      "gateway/server.js": "1f760c640cacf96cb9313dfdc5573eedf15d4b7e34112f9d67cefbb9fdcdc7d1",
+      "gateway/store.js": "47e525dea6faaf978c6644ad5eb5bead5287e8cb8faac0e7e1e6da400a40d882",
+      "gateway/utils.js": "a12c7e4640a52d4f409b0a34c3d6b471924cdb9f788b0e03f1eaf0a778520690",
+      "gateway/webhook-routes.js": "1e626c48825ceb0a507189bdbbc6ac4fbf11dae985c5a80a10d1cd80ee88edfc",
+      "gateway/webhooks.js": "ae8d4346e72e4335e9d90de84ad6138214987197c15857113bc0ed7af04fc34d",
+      "package-lock.json": "f961d2aae90745be1fedbcc5e70684662dc31b9c226a993caf08fc882a8b33e6",
+      "package.json": "eb23061c67e31fd2bdc764b8e2de01ca40e1d7c2c41528c87a617149cfca7254",
+      "queries/audit.surql": "24abccdb795b4b322c4837ad57054c48c0f497f718eeb2f6967e122c83c62c05",
+      "queries/authorization.surql": "7c80315b7624a8a2335cd6f933e32bac955caa1f6e21c7cfb2635e25dd4f7d5b",
+      "queries/benchmark.surql": "9d6c8742cea67e34526fa9350659ba6da980f908480618ceebb13b2663ca6a14",
+      "queries/cycles.surql": "5a580f42a3674fccfafd6318c613e0c8aef2590ea145caf698714088d4754854",
+      "queries/graph.surql": "be4b9ff20511e649d833af0eb9d508ebc918f97081936d950838736a305116be",
+      "queries/job.surql": "20ddced4502260d390abeb7977fbb57b5c21796b8711a574af54c6a658573b23"
+    }
+  },
+  "buildSha256": {
+    "test": {
+      "build/test/migrate-one-shot-backfill.surql": "0c9dfa3d1a6e93638fe095bcaa09ec940068391d32f0dd652002fdf48d16f985",
+      "build/test/migrate-one-shot-finalize.surql": "833f028c63f1be4d587ec0aa44ee98cd9783f854073ca01e9567d2881cdf2d0a",
+      "build/test/runtime-contracts.json": "5164f49bec65d9bbfc1c3b5a67bcb00d484613a90f33fcf9a827eca222036812",
+      "build/test/schema.surql": "afe0f49a281aa6a40e7c3d86009a5d4330f87cf8316293957ec96194ef76c6d2",
+      "build/test/table-handlers/razorpay_order.js": "c26e71d28ea564ede68080d3ec125bc3f6e67f182577d2c5bb5a4925d29dd1c8",
+      "build/test/table-handlers/send_brevo_email.js": "a74d9a5faedd055fd93cd3f9bd7e0ccc20a3f93decdd4291dd43628e973aac34",
+      "build/test/table-handlers/send_twilio_sms.js": "345894688adf16eb117a64585a63ad5a1b87c4160c9ce1c76f85cee7c71e9481",
+      "build/test/table-handlers/test_attachment.js": "39449c06d32ec560326814525bf80f98f9f47a2f56ff20e4a055b691c6600a17",
+      "build/test/table-handlers/test_attachment_cleanup.js": "f4344f69f0e6a2afddd67d3ac1b7d2f0bc2874b4098dbe08a129d3280fd58e0c",
+      "build/test/webhook-handlers/razorpay.js": "4687f541c06c7fb33349254e66d9aef58154cc890d491e01347c24d87beffd8e"
+    },
+    "all-in-one": {
+      "build/all-in-one/migrate-one-shot-backfill.surql": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804",
+      "build/all-in-one/migrate-one-shot-finalize.surql": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2",
+      "build/all-in-one/runtime-contracts.json": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110",
+      "build/all-in-one/schema.surql": "26597f5ebc48c3dbac2efc97db5b2019e77882f3253eb239878910606f299df3"
+    },
+    "all-in-accounting": {
+      "build/all-in-accounting/client/schemas/cash_in.schema.json": "74d66cd4f27e34a2c4436c0d1b20fc3ebb74bd4910371ad9ce1965dd143f092b",
+      "build/all-in-accounting/client/schemas/currency.schema.json": "62ae0ef7127b825f0aac0aadbd3d4768baad163d1aaf45528c77d434ed2b574e",
+      "build/all-in-accounting/client/schemas/organization.schema.json": "3cfe438d1e777eb429a1b7190aa1e866ec4d97abbb01c691db21811ae3955d3a",
+      "build/all-in-accounting/client/schemas/treasury.schema.json": "f9f9c39f5c93407f249d446e79cd5f88bdd9842b5c6e992334c2d76c1723c2db",
+      "build/all-in-accounting/client/schemas/treasury_account.schema.json": "ea378563be44683445bf59b04695d510641382a90d29195d3eed5c5e41bacb3c",
+      "build/all-in-accounting/migrate-one-shot-backfill.surql": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804",
+      "build/all-in-accounting/migrate-one-shot-finalize.surql": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2",
+      "build/all-in-accounting/runtime-contracts.json": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110",
+      "build/all-in-accounting/schema.surql": "f77c6aa45bad5c81e241904cdcb6f01a3ed1229379f326419acddc382a139ba3"
+    }
+  },
+  "documentationSha256": {
+    "HOW_I_THINK.md": "9997e19324af0e61a97e889851173f6071e9576bbf636aa48b5b08dbe54b2a45",
+    "PRODUCTION-READINESS-REPORT.md": "255698956e02e31fa44de2b4ef74ecf42c572349a0eba79e1eaaba772536eb99",
+    "README.md": "a7631b7ecbde5729cb337eca101be75f9c28db7be526cc8128798665dcaad8d3",
+    "designs/all-in-accounting/README.md": "a556776a0dacf2c1cd025cce746ea0e0522ff9b60004dabf8dc42887732bcb17",
+    "designs/all-in-accounting/blueprint.md": "d55f144817672ef2c49001c99508955d255097a46c57ee22315898a32cae6a12",
+    "designs/all-in-accounting/context-compression-map.md": "107e7e6a1b85fa75fcf24ea744a17f2e9ff764623c88b85591f80d44ed6d2598",
+    "designs/all-in-accounting/context-map.md": "ccf5eb2690d1e59c2ee505ad4effd77e31b94dd014e0bc71f5d5e177cb9a5fd1",
+    "designs/all-in-accounting/delivery-taxes.md": "889bfb3545c15025206143f22676c8c3ad739b94e41871cfa4b25a0808512425",
+    "designs/all-in-accounting/implementation-handoff.md": "6aa8c2f75a1450ad083febfb905b6a4c5024f9872b39d425f457de3615ffbf4f",
+    "designs/all-in-accounting/plan.md": "7a8e7e6d0521f50d9e7338ba5acab7cbfa4659683aab66a86e122307e96b8219",
+    "designs/all-in-one/README.md": "d5d00640103025f2a9b4ba31fded5d5438c5e9b54ad231b19cdb8b27deb1684b",
+    "designs/frontend/README.md": "0cb8d5eb638c99890ba35d5121844a35821224a5d1f33b8c21e16134cd54b214",
+    "designs/frontend/architecture.md": "c1dcd078efb82d05d36c8af6259c617835d1af4431cb5f1da0714d855658e9ee",
+    "designs/frontend/continuation-prompts.md": "b624a6228c4a97e6ac3b98416e0f71f5347a1803835e3daeec6d3a6cb7144865",
+    "designs/frontend/deferred-work.md": "b2e3282196283385010d23783026fe2255ac06f4e275956889c667452b756c6c",
+    "designs/frontend/developer-guide.md": "09285dcfa69a314344dfe86b8f88beafdc3c05a28e6cd9887c90356347670576",
+    "designs/frontend/execution-plan.md": "1259dfe036376adea204dcd4a06d6b1afa010f8abcb1ee013d85900827a691a9",
+    "designs/frontend/screen-contracts.md": "77d18630dcc822ba965713b53fcd9c8101312279cfc3bdc8410f3943b624fde9",
+    "designs/frontend/verification.md": "9898297f00d26d651423d5f16ea507ddd7941cb30d1395f28e05fcad46f8ce73",
+    "designs/rebase-system/README.md": "77753e47f16c04f58f77f153f1c1f5fd93dbf4dc0b5f0e3a284aa62a8281f528",
+    "designs/rebase-system/applications.md": "24930e2a64baf791a834f9d5ee9bbe98f68b7e9b3bdb9a24714d9809e6d3efcd",
+    "designs/rebase-system/blueprint.md": "ddd8d713bf3c75567e4cb30fc09655dbd8ec6f190157b10ccdab2c14ff0e82e4",
+    "designs/rebase-system/core-audit.md": "a8ffb23d93cd4f0e6f66a9100f80e21e62a35adb9c11ba562a659d4cc67036da",
+    "designs/rebase-system/core-configuration.md": "0f104cbdb22f1e384a89ad240b70132cc7bc05735cdfd68248e299a3b0eebb52",
+    "designs/rebase-system/core-handoff.md": "1371eec5a1a4926a3322cad366a0e0f4afe1cc5fd90dad81ea80a47751e0700b",
+    "designs/rebase-system/credential-ownership-contract.md": "fdfb9c40f97f96e4041ab6f2e24eccbac46af16cd1e83917607b51ab816a599c",
+    "designs/rebase-system/developer-experience-handoff.md": "24c29a557036bf5eeea7fb684f7a056e3445fae31078d070a16eade5155bc90a",
+    "designs/rebase-system/developer-experience-plan.md": "01a85895a66670c0a3af8856d54f7e3f3e49952918369f7e2913f3a8459b88b0",
+    "designs/rebase-system/foundation.md": "5d8bf3fed07166827a0ce6658d603850c99374d7df6a4aa1d640fd1e71c87f31",
+    "designs/rebase-system/operations.md": "cabb1325f70e6e2c42cdd3d244258ee533ae788aa0cb9f9ebff761214223f910",
+    "designs/rebase-system/ordered-tree-contract.md": "b0da6042104d749d384d03ccac74ea2fe2a2e44962265b243117f7b7d647550a",
+    "designs/rebase-system/ordinal-feasibility.md": "1de34926ef89c05fcc4c620c30bb01564f9e2c52d73fb8499e00ec13b4803308",
+    "designs/rebase-system/plan.md": "8119b542e71db728c5e8061440eff2cb2a7e0cf4136e79c895e1cbdb8f12f4a9",
+    "designs/rebase-system/review.md": "1a31ce7d120e242ca04291a6d00239b7e90940814cab729e977133a986792a1b",
+    "designs/rebase-system/single-design-runtime.md": "0db403ad739b6e8731020cae3a4948c3a2d313276ceff5a65cd45762736a9d38",
+    "designs/rebase-system/tenant-authentication.md": "4465fb54f6f8cae472ede9c0c2f098f35e501fbf8b0936bff221c4e66ce2d476",
+    "designs/rebase-system/tenant-tree-handoff.md": "f90b7460ed805cdf0dd06f9bec1497e07a8338663dac983af5e0082c71501245",
+    "designs/rebase-system/tenant-tree-redesign.md": "5144b827dddbca2248ef73718c4210c3cafa0965b77007bd46957ec138545e3f",
+    "designs/rebase-system/tree-catalog.md": "65abdc8da1ebd7d276bf088d85985e70a32cb22a15e284d25828baa14bab9abe",
+    "designs/rebase-system/verification.md": "cbaa45d49add0ba2e45222e962a23e752c4a5503cd80df841a9fd14a4bf8a38d",
+    "dev-tools/README.md": "7af76fd0d3f5d60767fb027f57bf6d7f73aa060cba074bbfb6be5cd9d6922026",
+    "dev-tools/checks/README.md": "e24fa2a0359b10315c8a7a251fa56bbeac3f286fba49e7f24e900473ae8c282e",
+    "research/README.md": "af132f0fbb4d739c4f492528f44c9afb85d8785135eb4518006d15c23fc638a1",
+    "research/rebase/architecture.md": "3ddac528ab05752c9c6bfeeeb5ee46650c0f0e9d37ce9c07e7ac98a89c6fccb8",
+    "research/rebase/authentication.md": "41efe17a81f5fb79495cd8b0d4394c8f1a596b4a414f0175f49f4840ed4ee0db",
+    "research/rebase/authorization.md": "af30b4d7a58c02bcaf1f5c1c25904df550317fbd45a2d4e60fff4f216a5b8aa3",
+    "research/rebase/compiler-development.md": "200d7f18feb9eb8c5314e797936bac7df62cd122ff632b1af8ed16d12945f3c4",
+    "research/rebase/parents-field.md": "6c222e2d5ee4c5ff854606380a4de1271231f87026f0a9d6b7635259bee3c45b",
+    "research/rebase/runtime-dispatch.md": "4841776a7a1a4bbe82fc1f43b9cc825614f42f6f04a71cddb91bf71a9866b355",
+    "research/rebase/scheduler.md": "23d54657b753db1774824e84a4e3fc4655de1ae117884bf8ee463df6556b5a45",
+    "research/rebase/session-lifecycle.md": "58c3ba5a6ed59990da1e38da8f1a9c2a82917b289e2099dc264949da5c7714af",
+    "research/rebase/temporal-trees.md": "5138e55917b27d85e6ea22268972ce233ef6a1508859b7a17eeecfe796f68f10",
+    "research/rebase/twilio-trial-sms.md": "3c6984687d32e049eb3751a25276d4537074cda888d9790a123e86603d8cdf5a",
+    "research/rebase/write-amplification-plan.md": "3c1290de943646809826cbb73e07c19109550ee4fdc24b9036a1c65e54306bd8",
+    "research/rebase/write-amplification-results.md": "92a30659cc5baf255ffe475774f7f3a06a37df401278cae0f906fb1069a3ea77",
+    "research/surrealdb/access-definitions.md": "4dfe7ca3b23642d744b761044103a41a7847322a815fd982fc1744a48b789eb5",
+    "research/surrealdb/accounts-transaction-concurrency-fact-check.md": "7a65b4e9c0af65df506914260dc2f2b10df42ee4f622e68a878935a475a7eee2",
+    "research/surrealdb/async-events.md": "d48f714ba64b6ef74ba3bc953fbe1ffbfe8fb7aa83704d04ec8ae219ccd24b34",
+    "research/surrealdb/authorization-select-performance.md": "0a67883d719f4abdf624da107acc1fe11ff21c27b63e5a21a5a6acc8687095f8",
+    "research/surrealdb/cross-namespace-reconciliation.md": "bf91f4fca2fcd7b81d3187de29cb9285d2880ae35ab76f17925ef32760786f9e",
+    "research/surrealdb/data-generation.md": "994dda041477e96f57fa6215c56a9951c133c5a76de75c7520c47ee46fa31fbf",
+    "research/surrealdb/engine-performance.md": "9ad77e145c0d3a8bc8ad28c896ff1f09bc0829c29064e049ec43d0cee497d24b",
+    "research/surrealdb/live-queries-async-events-changefeeds.md": "36e047f2e9393542d1382dbdaa3cc509eeecc607c0a5ea1111bbdd7f3148718a",
+    "research/surrealdb/record-references.md": "f50d24562f86dbef8e4b4afbe5754b8d874196aa7c70eae10c1005bd3dccc9de",
+    "research/surrealdb/reference-authorization.md": "4bbe98236d17ef5fa439272f18de18060f901d0cc40ddf901c3c2ef8b90012de",
+    "research/surrealdb/reference-permission-performance.md": "2f472f8d9f0c2772fabe67b4c4b3c56cbde90008c8ac042417c891bbc18d1c5e",
+    "research/surrealdb/schema-temporal-fact-check.md": "840cc499209bfbe146f19a8d7205b26340707b8b1a9ba5573a53c21692c52dad",
+    "research/surrealdb/surreal_db_internals_architecture.md": "8464e8f1d783d41f9c3bdbd5b94f615d828096d8768d73f9c3f64d2ae3a9c440",
+    "research/surrealdb/synchronous-events.md": "ab0a9180a619e32c2aa7c81fc334b6f37eb09dd670006a19de53b385ec220f9c",
+    "research/surrealdb/temporal-integrity-dimensional-fact-check.md": "46d5c19b391332f61ee988713f2255a691c3fe91ff7cd4ea44ea14fad64612f2",
+    "research/surrealdb/update-permissions.md": "26ac29da82b327e37a16034e1a06936bda3b7de8253ba4b706280a0eeaba8bf2",
+    "research/surrealdb/uuidv7-record-ids.md": "2f0c352b16bb82d098ca6679f88ac9014d38cd54ef3f004ebe082b52cf4433b1"
+  },
+  "resolvedFindings": [
+    {
+      "id": "F1",
+      "result": "Record-scoped materialized views retain tenant, owner/readers and configured owner-only selection; computed fields use the same policy. Tenant publication is explicit."
+    },
+    {
+      "id": "F2",
+      "result": "Managed-output REFERENCE prerequisites determine creation and reverse deletion order. Live node counts permit dependent-first removal of outputs that own trees; removed roots are excluded from final drain."
+    },
+    {
+      "id": "F3",
+      "result": "Existing local derived-field topological ordering retained and verified, including reversed declarations and rollback."
+    },
+    {
+      "id": "F4",
+      "result": "Initial watch failure retries with bounded backoff and one watcher; reconciliation, partial cleanup, shutdown during retry/attach and actual reconnect pass."
+    },
+    {
+      "id": "seek-precedence",
+      "result": "Native null-coalescing precedence was reproduced; generated reverse/inclusive expressions now group operands explicitly."
+    },
+    {
+      "id": "native-derived-prefix",
+      "result": "Record-created prefix formulas use the guarded public reader. System access is checked by a private native function; guests and direct record-helper calls remain denied."
+    },
+    {
+      "id": "oauth-assertion",
+      "result": "The compiler regression permits existing-identity verification but rejects provisioning and unrelated OAuth sign-in mutations."
+    },
+    {
+      "id": "gross-input-fixture",
+      "result": "The handwritten H7 feasibility adapters now register an explicit duplicate-timestamp policy for both roots. No production code or generated build changed."
+    },
+    {
+      "id": "delivery-taxes",
+      "result": "Source-derived four-root oracle covers 20 mutation checkpoints, 9 full rollbacks, priced-portion rounding, compound provenance, tenant/currency/source changes, same-time settlement, four tax-input modes and cleanup."
+    }
+  ],
+  "retainedLimitation": {
+    "name": "SurrealDB 3.3.0 indexed ORDER BY id source scan",
+    "observed": "The multi-reader a_recipe_compound fixture returned spare, main, spare despite two stored rows. WITH NOINDEX ORDER BY id and unordered scans returned the correct two records.",
+    "workaround": "Explicit WITH NOINDEX ORDER BY id in required-output and delivery-tax snapshots; preserve complete results without deduplication. Carry the same limitation into affected frontend source queries.",
+    "boundary": "A smaller reproduction was inconsistent. No internal engine cause, universal index failure, indexed-performance guarantee or engine upgrade is claimed.",
+    "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/managed-root-auth-scan.log"
+  },
+  "earlierAttempts": [
+    {
+      "label": "accounting-01",
+      "command": [
+        "npm",
+        "run",
+        "verify:accounting"
+      ],
+      "started_at": "2026-10-05T03:19:41.958262+00:00",
+      "elapsed_seconds": 420.819,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/accounting-01.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f"
+    },
+    {
+      "label": "boundary-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:boundary-tree"
+      ],
+      "started_at": "2026-10-05T02:14:44.888493+00:00",
+      "elapsed_seconds": 12.406,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/boundary-01.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "build-accounting-01",
+      "command": [
+        "npm",
+        "run",
+        "build:all-in-accounting"
+      ],
+      "started_at": "2026-10-05T02:37:15.715171+00:00",
+      "elapsed_seconds": 1.122,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-accounting-01.log",
+      "source_sha256": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3",
+      "source_sha256_after": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3"
+    },
+    {
+      "label": "build-suite-01",
+      "command": [
+        "npm",
+        "run",
+        "build:all-in-one"
+      ],
+      "started_at": "2026-10-05T02:37:14.631240+00:00",
+      "elapsed_seconds": 0.924,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-suite-01.log",
+      "source_sha256": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3",
+      "source_sha256_after": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3"
+    },
+    {
+      "label": "build-test-01",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "started_at": "2026-10-05T02:37:13.866331+00:00",
+      "elapsed_seconds": 0.612,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/build-test-01.log",
+      "source_sha256": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3",
+      "source_sha256_after": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3"
+    },
+    {
+      "label": "causal-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:causal-outputs"
+      ],
+      "started_at": "2026-10-05T02:14:08.059934+00:00",
+      "elapsed_seconds": 14.348,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/causal-01.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "compiler-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:compiler"
+      ],
+      "started_at": "2026-10-05T02:49:08.055861+00:00",
+      "elapsed_seconds": 1.772,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/compiler-02.log",
+      "source_sha256": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae",
+      "source_sha256_after": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae"
+    },
+    {
+      "label": "delivery-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:delivery-taxes"
+      ],
+      "started_at": "2026-10-05T02:16:26.247416+00:00",
+      "elapsed_seconds": 100.493,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/delivery-01.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "delivery-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:delivery-taxes"
+      ],
+      "started_at": "2026-10-05T02:33:59.065239+00:00",
+      "elapsed_seconds": 193.194,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/delivery-02.log",
+      "source_sha256": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3",
+      "source_sha256_after": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3"
+    },
+    {
+      "label": "delivery-03",
+      "command": [
+        "npm",
+        "run",
+        "probe:delivery-taxes"
+      ],
+      "started_at": "2026-10-05T02:39:48.601250+00:00",
+      "elapsed_seconds": 187.478,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/delivery-03.log",
+      "source_sha256": "a07f6c8a9d0173dea8a3242a32752d04a64669dcffc31bb13f7005a4f0f8791c",
+      "source_sha256_after": "a07f6c8a9d0173dea8a3242a32752d04a64669dcffc31bb13f7005a4f0f8791c"
+    },
+    {
+      "label": "derived-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:derived-order"
+      ],
+      "started_at": "2026-10-05T02:14:22.521505+00:00",
+      "elapsed_seconds": 22.264,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/derived-01.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "h7-gross-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:accounting-h7-gross-input"
+      ],
+      "started_at": "2026-10-05T03:29:55.771661+00:00",
+      "elapsed_seconds": 15.575,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/h7-gross-02.log",
+      "source_sha256": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585",
+      "source_sha256_after": "bcbecccc86c04ce6fb9bac0c4516a7b607b9b782378915203506c02160ade585"
+    },
+    {
+      "label": "managed-root-auth-scan",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:27:27.849478+00:00",
+      "elapsed_seconds": 7.867,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/managed-root-auth-scan.log",
+      "source_sha256": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d",
+      "source_sha256_after": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d"
+    },
+    {
+      "label": "managed-root-repro",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:23:39.954459+00:00",
+      "elapsed_seconds": 7.728,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/managed-root-repro.log",
+      "source_sha256": "e96367228c77c9518013e823e5669863adb577599d9bd4c2345c4f50487c6539",
+      "source_sha256_after": "e96367228c77c9518013e823e5669863adb577599d9bd4c2345c4f50487c6539"
+    },
+    {
+      "label": "managed-root-scan",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:25:08.648004+00:00",
+      "elapsed_seconds": 7.845,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/managed-root-scan.log",
+      "source_sha256": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d",
+      "source_sha256_after": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d"
+    },
+    {
+      "label": "native-id-order-02",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:30:50.233288+00:00",
+      "elapsed_seconds": 1.65,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/native-id-order-02.log",
+      "source_sha256": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d",
+      "source_sha256_after": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d"
+    },
+    {
+      "label": "native-id-order",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:30:04.807140+00:00",
+      "elapsed_seconds": 0.853,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/native-id-order.log",
+      "source_sha256": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d",
+      "source_sha256_after": "0f7b522deecf57ff1ff77bc60ce8b74d1685f09f870b02d7ae28c23bab7d942d"
+    },
+    {
+      "label": "native-system-read-01",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:58:27.671601+00:00",
+      "elapsed_seconds": 8.975,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/native-system-read-01.log",
+      "source_sha256": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae",
+      "source_sha256_after": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae"
+    },
+    {
+      "label": "native-system-read-02",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:59:46.404182+00:00",
+      "elapsed_seconds": 9.089,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/native-system-read-02.log",
+      "source_sha256": "949540fc94e54bafd26669cf1b8d3069b45c023b8288907458d505302ce07ce3",
+      "source_sha256_after": "949540fc94e54bafd26669cf1b8d3069b45c023b8288907458d505302ce07ce3"
+    },
+    {
+      "label": "ordered-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:ordered-tree"
+      ],
+      "started_at": "2026-10-05T02:05:03.986993+00:00",
+      "elapsed_seconds": 15.558,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/ordered-01.log"
+    },
+    {
+      "label": "ordered-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:ordered-tree"
+      ],
+      "started_at": "2026-10-05T02:06:00.195108+00:00",
+      "elapsed_seconds": 15.722,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/ordered-02.log"
+    },
+    {
+      "label": "ordered-03",
+      "command": [
+        "npm",
+        "run",
+        "probe:ordered-tree"
+      ],
+      "started_at": "2026-10-05T02:06:53.993315+00:00",
+      "elapsed_seconds": 44.006,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/ordered-03.log"
+    },
+    {
+      "label": "required-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:required-outputs"
+      ],
+      "started_at": "2026-10-05T02:13:42.757847+00:00",
+      "elapsed_seconds": 25.19,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/required-01.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "required-root-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:required-outputs"
+      ],
+      "started_at": "2026-10-05T02:22:06.136502+00:00",
+      "elapsed_seconds": 17.373,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/required-root-01.log",
+      "source_sha256": "e96367228c77c9518013e823e5669863adb577599d9bd4c2345c4f50487c6539",
+      "source_sha256_after": "e96367228c77c9518013e823e5669863adb577599d9bd4c2345c4f50487c6539"
+    },
+    {
+      "label": "required-root-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:required-outputs"
+      ],
+      "started_at": "2026-10-05T02:33:31.604390+00:00",
+      "elapsed_seconds": 27.33,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/required-root-02.log",
+      "source_sha256": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3",
+      "source_sha256_after": "6bc8691737b834318c0e2c42dbe2af7372c275a89f354cf5f4f7e1ce2d4149e3"
+    },
+    {
+      "label": "seek-precedence",
+      "command": [
+        "node",
+        "-"
+      ],
+      "started_at": "2026-10-05T02:06:52.818746+00:00",
+      "elapsed_seconds": 0.908,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/seek-precedence.log"
+    },
+    {
+      "label": "syntax-final",
+      "command": [
+        "python3",
+        "-"
+      ],
+      "started_at": "2026-10-05T03:09:39.478448+00:00",
+      "elapsed_seconds": 4.577,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/syntax-final.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f"
+    },
+    {
+      "label": "temporal-quick-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:temporal-tree",
+        "--",
+        "--quick"
+      ],
+      "started_at": "2026-10-05T03:01:30.399698+00:00",
+      "elapsed_seconds": 47.413,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/temporal-quick-01.log",
+      "source_sha256": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f",
+      "source_sha256_after": "be508bbb8f8e903e4f38df0891564a48132de21780944e8c171c957a5a31966f"
+    },
+    {
+      "label": "tenant-records-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:tenant-records"
+      ],
+      "started_at": "2026-10-05T02:11:08.883756+00:00",
+      "elapsed_seconds": 17.686,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/tenant-records-01.log"
+    },
+    {
+      "label": "tenant-records-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:tenant-records"
+      ],
+      "started_at": "2026-10-05T02:12:38.185017+00:00",
+      "elapsed_seconds": 36.482,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/tenant-records-02.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "typed-01",
+      "command": [
+        "npm",
+        "run",
+        "probe:typed-tree"
+      ],
+      "started_at": "2026-10-05T02:08:51.666460+00:00",
+      "elapsed_seconds": 87.256,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/typed-01.log"
+    },
+    {
+      "label": "typed-02",
+      "command": [
+        "npm",
+        "run",
+        "probe:typed-tree"
+      ],
+      "started_at": "2026-10-05T02:14:57.399886+00:00",
+      "elapsed_seconds": 88.727,
+      "exit_code": 0,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/typed-02.log",
+      "source_sha256": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b",
+      "source_sha256_after": "9ea45bb45fde82722444eee96ae627b72e9380f8f0db82989f3569985413f17b"
+    },
+    {
+      "label": "verify-01",
+      "command": [
+        "npm",
+        "run",
+        "verify"
+      ],
+      "started_at": "2026-10-05T02:42:56.208254+00:00",
+      "elapsed_seconds": 52.918,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/verify-01.log",
+      "source_sha256": "a07f6c8a9d0173dea8a3242a32752d04a64669dcffc31bb13f7005a4f0f8791c",
+      "source_sha256_after": "a07f6c8a9d0173dea8a3242a32752d04a64669dcffc31bb13f7005a4f0f8791c"
+    },
+    {
+      "label": "verify-02",
+      "command": [
+        "npm",
+        "run",
+        "verify"
+      ],
+      "started_at": "2026-10-05T02:51:34.448273+00:00",
+      "elapsed_seconds": 217.976,
+      "exit_code": 1,
+      "log": "/tmp/rebase-tenant-tree-20261005-vmr9wyb4/verify-02.log",
+      "source_sha256": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae",
+      "source_sha256_after": "57a5217e737e046916376a360c874e3d99c0b8e4841488ad4eaf499928e62cae"
+    }
+  ],
+  "limits": [
+    "A public aggregate is governed by its declared root or view publication policy; private nodes can make ordered traversal fail.",
+    "The closure can grow quadratically; shared tenant/root fences can contend. These are correctness checks, not capacity measurements.",
+    "Positions, Razorpay mock refund checks and full accounting are explicit gates in addition to npm run verify.",
+    "Raw earlier failures remain in the preserved evidence directory. Accounting and trailing gates match the final source fingerprint; retained build/backend passes differ only in the isolated H7 probe they do not load, as recorded per command."
+  ]
+}

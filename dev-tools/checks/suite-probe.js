@@ -7,7 +7,7 @@ const assert = require('node:assert/strict'),
 const { start, client, applySchema } = require('../temporal-tree/harness');
 const { verify, equal } = require('../temporal-tree/oracle');
 const { compileFromArgs } = require('../compiler/cli');
-const root = 'rebase_group:root',
+const root = 'rebase_tenant:default',
   date = (d) => new Date(Date.UTC(2026, 0, 1 + d)).toISOString();
 const tables = [
   'organization',

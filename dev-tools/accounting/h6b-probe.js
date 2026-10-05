@@ -148,76 +148,77 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY rebase_group:second SET name = 'Second owner', parents = [rebase_group:root];
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY currency:jpy SET owned_by = rebase_group:root, code = 'JPY', name = 'JPY', precision = 0;
-      CREATE ONLY treasury:usd SET owned_by = rebase_group:root, name = 'USD';
-      CREATE ONLY treasury:eur SET owned_by = rebase_group:root, name = 'EUR';
-      CREATE ONLY treasury:jpy SET owned_by = rebase_group:root, name = 'JPY';
-      CREATE ONLY treasury:usd_other SET owned_by = rebase_group:root, name = 'USD other entity';
-      CREATE ONLY treasury:eur_owner SET owned_by = rebase_group:root, name = 'EUR other owner';
-      CREATE ONLY treasury:floor SET owned_by = rebase_group:root, name = 'FX floor treasury';
-      CREATE ONLY treasury_account:usd SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY rebase_group:second SET name = 'Second owner', parents = [rebase_tenant:default];
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY currency:jpy SET owned_by = rebase_tenant:default, code = 'JPY', name = 'JPY', precision = 0;
+      CREATE ONLY treasury:usd SET owned_by = rebase_tenant:default, name = 'USD';
+      CREATE ONLY treasury:eur SET owned_by = rebase_tenant:default, name = 'EUR';
+      CREATE ONLY treasury:jpy SET owned_by = rebase_tenant:default, name = 'JPY';
+      CREATE ONLY treasury:usd_other SET owned_by = rebase_tenant:default, name = 'USD other entity';
+      CREATE ONLY treasury:eur_owner SET owned_by = rebase_tenant:default, name = 'EUR other owner';
+      CREATE ONLY treasury:floor SET owned_by = rebase_tenant:default, name = 'FX floor treasury';
+      CREATE ONLY treasury_account:usd SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:usd, currency = currency:usd, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:eur, currency = currency:eur, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:jpy SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:jpy SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:jpy, currency = currency:jpy, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:usd_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY treasury_account:usd_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         treasury = treasury:usd_other, currency = currency:usd, minimum_balance = -1000dec;
       CREATE ONLY treasury_account:eur_owner SET owned_by = rebase_group:second, economic_entity = organization:entity,
         treasury = treasury:eur_owner, currency = currency:eur, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:floor SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:floor SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:floor, currency = currency:usd, minimum_balance = 0dec;
-      CREATE ONLY exchange_pair:usd_eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:usd_eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:usd, received_resource = currency:eur;
-      CREATE ONLY exchange_pair:eur_usd SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:eur_usd SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:eur, received_resource = currency:usd;
-      CREATE ONLY exchange_pair:usd_jpy SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:usd_jpy SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:usd, received_resource = currency:jpy;
-      CREATE ONLY exchange_pair:jpy_usd SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:jpy_usd SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:jpy, received_resource = currency:usd;
-      CREATE ONLY exchange_pair:other_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY exchange_pair:other_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         given_resource = currency:usd, received_resource = currency:eur;
       CREATE ONLY exchange_pair:other_owner SET owned_by = rebase_group:second, economic_entity = organization:entity,
         given_resource = currency:usd, received_resource = currency:eur;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:widget SET owned_by = rebase_group:root, name = 'Widget', unit = measure_unit:each;
-      CREATE ONLY service:repair SET owned_by = rebase_group:root, name = 'Repair', unit = measure_unit:each;
-      CREATE ONLY exchange_pair:identity_only SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:widget SET owned_by = rebase_tenant:default, name = 'Widget', unit = measure_unit:each;
+      CREATE ONLY service:repair SET owned_by = rebase_tenant:default, name = 'Repair', unit = measure_unit:each;
+      CREATE ONLY exchange_pair:identity_only SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = item:widget, received_resource = service:repair;
-      CREATE ONLY currency_exchange:main SET owned_by = rebase_group:root, pair = exchange_pair:usd_eur,
+      CREATE ONLY currency_exchange:main SET owned_by = rebase_tenant:default, pair = exchange_pair:usd_eur,
         from_currency = currency:usd, to_currency = currency:eur, rate = 0.9dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY currency_exchange:later SET owned_by = rebase_group:root, pair = exchange_pair:usd_eur,
+      CREATE ONLY currency_exchange:later SET owned_by = rebase_tenant:default, pair = exchange_pair:usd_eur,
         from_currency = currency:usd, to_currency = currency:eur, rate = 0.5dec, effective_at = d'2026-06-05T00:00:00Z';
-      CREATE ONLY currency_exchange:usd_jpy SET owned_by = rebase_group:root, pair = exchange_pair:usd_jpy,
+      CREATE ONLY currency_exchange:usd_jpy SET owned_by = rebase_tenant:default, pair = exchange_pair:usd_jpy,
         from_currency = currency:usd, to_currency = currency:jpy, rate = 0.1dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY currency_exchange:jpy_usd SET owned_by = rebase_group:root, pair = exchange_pair:jpy_usd,
+      CREATE ONLY currency_exchange:jpy_usd SET owned_by = rebase_tenant:default, pair = exchange_pair:jpy_usd,
         from_currency = currency:jpy, to_currency = currency:usd, rate = 0.01dec, effective_at = d'2026-06-01T00:00:00Z';
     `);
     await assertOracle(db);
 
-    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:unbound SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:unbound SET owned_by = rebase_tenant:default,
       from_currency = currency:usd, to_currency = currency:eur, rate = 1dec, effective_at = d'2026-06-01T00:00:00Z';`,
     'unbound quote rejects');
-    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:wrong_pair SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:wrong_pair SET owned_by = rebase_tenant:default,
       pair = exchange_pair:eur_usd, from_currency = currency:usd, to_currency = currency:eur,
       rate = 1dec, effective_at = d'2026-06-01T00:00:00Z';`, 'quote currencies must match its explicit ordered pair');
-    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:wrong_owner SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:wrong_owner SET owned_by = rebase_tenant:default,
       pair = exchange_pair:other_owner, from_currency = currency:usd, to_currency = currency:eur,
       rate = 1dec, effective_at = d'2026-06-01T00:00:00Z';`, 'quote owner must match the pair owner');
-    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:noncurrency SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY currency_exchange:noncurrency SET owned_by = rebase_tenant:default,
       pair = exchange_pair:identity_only, from_currency = currency:usd, to_currency = currency:eur,
       rate = 1dec, effective_at = d'2026-06-01T00:00:00Z';`, 'quote pair must be currency-only');
 
-    await db.query(`CREATE ONLY cash_fx_transfer:z_later_quote SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:z_later_quote SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 2.01dec, effective_at = d'2026-06-06T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_fx_transfer:a_main SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:a_main SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 1.11dec, effective_at = d'2026-06-06T00:00:00Z';`);
     let state = await assertOracle(db);
@@ -229,7 +230,7 @@ async function main() {
       'quote-derived amounts enter quoted pair history');
     assert.equal(measure(row(state.pairs, 'exchange_pair:usd_eur'), 'z_history', 'executed_given'), 0,
       'quoted history does not mix with H6a entered quantities');
-    await db.query(`CREATE ONLY cash_fx_transfer:b_rekeyable SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:b_rekeyable SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 0.5dec, effective_at = d'2026-06-06T00:00:00Z';`);
     state = await assertOracle(db);
@@ -238,7 +239,7 @@ async function main() {
       'valid unreversed transfer cannot move before its selected quote');
     await db.query('DELETE cash_fx_transfer:b_rekeyable;');
     state = await assertOracle(db);
-    await db.query(`CREATE ONLY cash_fx_transfer:b_rekeyable SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:b_rekeyable SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 0.5dec, effective_at = d'2026-06-06T00:00:00Z';`);
     state = await assertOracle(db);
@@ -248,37 +249,37 @@ async function main() {
       'selected quote rate is immutable after transfer selection');
     assert.equal(measure(row(state.quotes, 'currency_exchange:main'), 'z_usage', 'source'), 3.62,
       'selected quote records actual gross source usage');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:floor_guard SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:floor_guard SET owned_by = rebase_tenant:default,
       from_account = treasury_account:floor, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 1dec, effective_at = d'2026-06-06T00:00:00Z';`,
     'treasury guard rejects and rolls back both cash legs, quote use, and pair history');
 
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_orientation SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_orientation SET owned_by = rebase_tenant:default,
       from_account = treasury_account:eur, to_account = treasury_account:usd, exchange = currency_exchange:main,
       from_amount = 1dec, effective_at = d'2026-06-06T00:00:00Z';`, 'transfer account currencies must follow quote pair');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_entity SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd_other, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 1dec, effective_at = d'2026-06-06T00:00:00Z';`, 'transfer accounts must use quote economic entity');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_owner SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:wrong_owner SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur_owner, exchange = currency_exchange:main,
       from_amount = 1dec, effective_at = d'2026-06-06T00:00:00Z';`, 'transfer accounts must use quote authorization owner');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:before_quote SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:before_quote SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 1dec, effective_at = d'2026-05-31T00:00:00Z';`, 'transfer before explicit quote effective date rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:bad_source_precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:bad_source_precision SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:eur, exchange = currency_exchange:main,
       from_amount = 1.001dec, effective_at = d'2026-06-06T00:00:00Z';`, 'source amount must match its currency precision');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:rounded_zero SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:rounded_zero SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:jpy, exchange = currency_exchange:usd_jpy,
       from_amount = 0.01dec, effective_at = d'2026-06-02T00:00:00Z';`, 'positive source rounding to zero JPY rejects atomically');
-    await db.query(`CREATE ONLY cash_fx_transfer:jpy_valid SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:jpy_valid SET owned_by = rebase_tenant:default,
       from_account = treasury_account:usd, to_account = treasury_account:jpy, exchange = currency_exchange:usd_jpy,
       from_amount = 10dec, effective_at = d'2026-06-02T00:00:00Z';`);
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:jpy_source_fraction SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer:jpy_source_fraction SET owned_by = rebase_tenant:default,
       from_account = treasury_account:jpy, to_account = treasury_account:usd, exchange = currency_exchange:jpy_usd,
       from_amount = 100.5dec, effective_at = d'2026-06-02T00:00:00Z';`,
     'zero-decimal source currency rejects fractional input');
-    await db.query(`CREATE ONLY cash_fx_transfer:jpy_source_valid SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer:jpy_source_valid SET owned_by = rebase_tenant:default,
       from_account = treasury_account:jpy, to_account = treasury_account:usd, exchange = currency_exchange:jpy_usd,
       from_amount = 100dec, effective_at = d'2026-06-02T00:00:00Z';`);
     state = await assertOracle(db);
@@ -287,16 +288,16 @@ async function main() {
     assert.equal(n(row(state.transfers, 'cash_fx_transfer:jpy_source_valid').to_amount), 1,
       'zero-decimal source currency accepts exact whole-unit input');
 
-    await db.query(`CREATE ONLY cash_fx_transfer_reversal:z_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer_reversal:z_reverse SET owned_by = rebase_tenant:default,
       source = cash_fx_transfer:z_later_quote, effective_at = d'2026-06-06T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:usd_eur'), 'z_history', 'quoted_given'), 1.61,
       'full reversal subtracts original quote-oriented source volume');
     assert.equal(measure(row(state.quotes, 'currency_exchange:main'), 'z_usage', 'source'), 3.62,
       'reversal leaves historical quote-use total unchanged');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer_reversal:z_duplicate SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer_reversal:z_duplicate SET owned_by = rebase_tenant:default,
       source = cash_fx_transfer:z_later_quote, effective_at = d'2026-06-06T00:00:00Z';`, 'one full reversal per transfer source');
-    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer_reversal:before SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_fx_transfer_reversal:before SET owned_by = rebase_tenant:default,
       source = cash_fx_transfer:a_main, effective_at = d'2026-06-01T00:00:00Z';`, 'reversal before transfer rejects');
     await rejectsUnchanged(db, "UPDATE cash_fx_transfer:z_later_quote SET effective_at = d'2026-06-07T00:00:00Z';",
       'source date edit crossing a dependent reversal rejects atomically');
@@ -317,7 +318,7 @@ async function main() {
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:usd_eur'), 'z_history', 'quoted_given'), 3.83,
       'deleting reversal restores all quote-derived volumes');
-    await db.query(`CREATE ONLY cash_fx_transfer_reversal:z_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_fx_transfer_reversal:z_reverse SET owned_by = rebase_tenant:default,
       source = cash_fx_transfer:z_later_quote, effective_at = d'2026-06-06T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(id(row(state.reversals, 'cash_fx_transfer_reversal:z_reverse')), stable, 'full reversal delete/re-add keeps stable ID');

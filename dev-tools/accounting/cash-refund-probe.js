@@ -198,53 +198,54 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:customer SET owned_by = rebase_group:root, name = 'Customer';
-      CREATE ONLY organization:wrong_customer SET owned_by = rebase_group:root, name = 'Wrong customer';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Authority';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY treasury:main SET owned_by = rebase_group:root, name = 'Main treasury';
-      CREATE ONLY treasury:invoice SET owned_by = rebase_group:root, name = 'Invoice source treasury';
-      CREATE ONLY treasury:foreign SET owned_by = rebase_group:root, name = 'Foreign currency treasury';
-      CREATE ONLY treasury_account:cash SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:customer SET owned_by = rebase_tenant:default, name = 'Customer';
+      CREATE ONLY organization:wrong_customer SET owned_by = rebase_tenant:default, name = 'Wrong customer';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Authority';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY treasury:main SET owned_by = rebase_tenant:default, name = 'Main treasury';
+      CREATE ONLY treasury:invoice SET owned_by = rebase_tenant:default, name = 'Invoice source treasury';
+      CREATE ONLY treasury:foreign SET owned_by = rebase_tenant:default, name = 'Foreign currency treasury';
+      CREATE ONLY treasury_account:cash SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:main, currency = currency:usd;
-      CREATE ONLY treasury_account:cash_invoice SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:cash_invoice SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:invoice, currency = currency:usd;
-      CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:foreign, currency = currency:eur;
-      CREATE ONLY treasury_account:cash_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY treasury_account:cash_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         treasury = treasury:foreign, currency = currency:usd;
-      CREATE ONLY claim_account:customer SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:customer SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:customer, currency = currency:usd;
-      CREATE ONLY claim_account:wrong_customer SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:wrong_customer SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:wrong_customer, currency = currency:usd;
-      CREATE ONLY receivable:main SET owned_by = rebase_group:root, claim_account = claim_account:customer,
+      CREATE ONLY receivable:main SET owned_by = rebase_tenant:default, claim_account = claim_account:customer,
         amount = 60dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY receivable:wrong_party SET owned_by = rebase_group:root, claim_account = claim_account:wrong_customer,
+      CREATE ONLY receivable:wrong_party SET owned_by = rebase_tenant:default, claim_account = claim_account:wrong_customer,
         amount = 1dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:widget SET owned_by = rebase_group:root, name = 'Widget', unit = measure_unit:each;
-      CREATE ONLY operating_unit:store SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Store';
-      CREATE ONLY stock_account:stock SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:widget SET owned_by = rebase_tenant:default, name = 'Widget', unit = measure_unit:each;
+      CREATE ONLY operating_unit:store SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Store';
+      CREATE ONLY stock_account:stock SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         operating_unit = operating_unit:store, resource = item:widget;
-      CREATE ONLY stock_in:inventory SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY stock_in:inventory SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = stock_account:stock, quantity = 1dec, effective_at = d'2026-05-30T00:00:00Z';
-      CREATE ONLY stock_out:dispatch SET owned_by = rebase_group:root, from_account = stock_account:stock,
+      CREATE ONLY stock_out:dispatch SET owned_by = rebase_tenant:default, from_account = stock_account:stock,
         to_party = organization:customer, quantity = 1dec, effective_at = d'2026-05-31T00:00:00Z';
-      CREATE ONLY sales_invoice:invoice SET owned_by = rebase_group:root, claim_account = claim_account:customer, number = 'H5C-1';
-      CREATE ONLY sales_invoice_issue:issue SET owned_by = rebase_group:root, invoice = sales_invoice:invoice,
+      CREATE ONLY sales_invoice:invoice SET owned_by = rebase_tenant:default, claim_account = claim_account:customer, number = 'H5C-1';
+      CREATE ONLY sales_invoice_issue:issue SET owned_by = rebase_tenant:default, invoice = sales_invoice:invoice,
         issued_at = d'2026-06-01T12:00:00Z',
         lines = [{ line_key: 'base', source: stock_out:dispatch, billed_quantity: 1dec, unit_price: 10dec }];
-      CREATE ONLY cash_in:main SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY cash_in:main SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = treasury_account:cash, amount = 100dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_in:invoice SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY cash_in:invoice SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = treasury_account:cash_invoice, amount = 10dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY receivable_cash_allocation:main SET owned_by = rebase_group:root, source = cash_in:main,
+      CREATE ONLY receivable_cash_allocation:main SET owned_by = rebase_tenant:default, source = cash_in:main,
         target = receivable:main, amount = 60dec, effective_at = d'2026-06-03T00:00:00Z';
-      CREATE ONLY sales_invoice_cash_allocation:invoice SET owned_by = rebase_group:root, source = cash_in:invoice,
+      CREATE ONLY sales_invoice_cash_allocation:invoice SET owned_by = rebase_tenant:default, source = cash_in:invoice,
         target = sales_invoice_issue:issue, amount = 10dec, effective_at = d'2026-06-03T00:00:00Z';
     `);
 
@@ -255,10 +256,10 @@ async function main() {
     assert.equal(measure(byId(state.receivable_allocations, 'receivable_cash_allocation:main'), 'z_refunds', 'remaining'), 60,
       'allocation self-seed creates a dated refund grant exactly once');
 
-    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:before SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:before SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';`,
     'refund at allocation timestamp is rejected; time must be strictly later');
-    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:precision SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 1.001dec, effective_at = d'2026-06-04T00:00:00Z';`,
     'currency-inexact refund rejects');
 
@@ -271,23 +272,23 @@ async function main() {
     await db.query('UPDATE receivable_cash_allocation:main SET amount = 60dec, effective_at = d\'2026-06-03T00:00:00Z\';');
     state = assertOracles(await snapshot(db), 0);
 
-    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_allocation:wrong_party SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_allocation:wrong_party SET owned_by = rebase_tenant:default,
       source = cash_in:main, target = receivable:wrong_party, amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';`,
     'wrong customer source/target allocation rejects before refund eligibility');
 
-    await db.query(`CREATE ONLY receivable_cash_refund:first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:first SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-04T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 20);
     assert.equal(String(byId(state.refunds, stableId).allocation), 'receivable_cash_allocation:main');
-    await db.query(`CREATE ONLY receivable_cash_refund:sibling SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:sibling SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-04T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 40);
     assert.equal(measure(byId(state.receivable_allocations, 'receivable_cash_allocation:main'),
       'z_refunds', 'remaining', 'instant_min'), 0, 'same-time siblings preserve complete-time capacity');
-    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:excess SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY receivable_cash_refund:excess SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 21dec, effective_at = d'2026-06-05T00:00:00Z';`,
     'cumulative refund beyond the allocation cap rejects');
-    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-05T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 60);
     assert.equal(measure(byId(state.receivable_allocations, 'receivable_cash_allocation:main'), 'z_refunds', 'remaining'), 0,
@@ -319,7 +320,7 @@ async function main() {
     state = assertOracles(await snapshot(db), 60);
     await db.query('DELETE receivable_cash_refund:final;');
     state = assertOracles(await snapshot(db), 40);
-    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-05T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 60);
     assert.equal(String(byId(state.refunds, 'receivable_cash_refund:first').id), stableId,
@@ -339,18 +340,18 @@ async function main() {
     state = await snapshot(db);
     assert.equal(state.cashins.some((row) => String(row.id) === 'cash_in:main'), false,
       'cash-in self-seed owner deletes after all references and consumers are removed');
-    await db.query(`CREATE ONLY cash_in:main SET owned_by = rebase_group:root, from_party = organization:customer,
+    await db.query(`CREATE ONLY cash_in:main SET owned_by = rebase_tenant:default, from_party = organization:customer,
       to_account = treasury_account:cash, amount = 100dec, effective_at = d'2026-06-02T00:00:00Z';`);
-    await db.query(`CREATE ONLY receivable_cash_allocation:main SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_allocation:main SET owned_by = rebase_tenant:default,
       source = cash_in:main, target = receivable:main, amount = 60dec, effective_at = d'2026-06-03T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 0);
     assert.equal(measure(byId(state.receivable_allocations, 'receivable_cash_allocation:main'), 'z_refunds', 'remaining'), 60,
       're-created allocation has one fresh dated self-seed');
-    await db.query(`CREATE ONLY receivable_cash_refund:first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:first SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-04T00:00:00Z';`);
-    await db.query(`CREATE ONLY receivable_cash_refund:sibling SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:sibling SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-04T00:00:00Z';`);
-    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY receivable_cash_refund:final SET owned_by = rebase_tenant:default,
       allocation = receivable_cash_allocation:main, amount = 20dec, effective_at = d'2026-06-05T00:00:00Z';`);
     state = assertOracles(await snapshot(db), 60);
     assert.equal(state.cashouts.length, 0, 'self-seed teardown/recreation still produces no cash_out');

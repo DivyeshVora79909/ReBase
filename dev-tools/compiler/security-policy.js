@@ -1,19 +1,21 @@
 function actorAccess(actor = "$auth") {
-  return `${actor}.z_access_index`;
+  return `${actor}.parent_groups`;
 }
 
 function ownerPredicate({ actor = "$auth", row = "", includeSelf = true } = {}) {
   const owner = row ? `${row}.owned_by` : "owned_by";
-  const access = actorAccess(actor);
-  return includeSelf ? `<string>${owner} IN ${access}` : `(${owner} = ${actor} OR ${owner} IN ${actor}.dominates)`;
+  return includeSelf
+    ? `fn::rebase::can_access(${actor}, ${owner})`
+    : `(${owner} = ${actor} OR fn::rebase::dominates(${actor}, ${owner}))`;
 }
 
 function readPredicate({ actor = "$auth", row = "", includeReaders = true } = {}) {
   const prefix = row ? `${row}.` : "";
   const owner = ownerPredicate({ actor, row, includeSelf: true });
-  const visibility = `!!${prefix}visibility`;
-  const readers = includeReaders ? ` OR ${prefix}readers_index CONTAINSANY ${actor}.z_access_index` : "";
-  return `(${visibility}${readers} OR ${owner})`;
+  const readers = includeReaders
+    ? ` OR array::any(${prefix}readers_index ?? [], |$reader| fn::rebase::can_access(${actor}, $reader))`
+    : "";
+  return `(${actor} != NONE AND ${prefix}tenant = ${actor}.tenant AND (${owner}${readers}))`;
 }
 
 function tableSelectPredicate(table, options = {}) {

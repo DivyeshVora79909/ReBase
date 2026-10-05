@@ -33,7 +33,7 @@ function dependencies(schema) {
         if (!/\bREFERENCE\b/i.test(source.definition)) throw new Error(`${table.name}.${reference}: reactive references require REFERENCE`);
         for (const target of source.recordType.targets) {
           const remote = schema.tables.get(target)?.fields.get(tail[0]);
-          if (!remote && !['owned_by', 'readers_index', 'visibility'].includes(tail[0])) {
+          if (!remote && !['owned_by', 'readers_index', 'tenant'].includes(tail[0])) {
             throw new Error(`${table.name}.${field.name}: unknown dependency ${target}.${tail[0]}`);
           }
           if (remote?.recordType && tail.length > 1) {
@@ -125,7 +125,35 @@ function requiredOutputContract(schema) {
       throw new Error(`${output.name}.rebase_managed_role must be a string field marked @rebase-system`);
     }
   }
-  return { sources, outputs };
+  return { sources, outputs: managedOutputOrder(outputs) };
+}
+
+function managedOutputOrder(outputs) {
+  const names = new Set(outputs.map(table => table.name));
+  const prerequisites = new Map(outputs.map(table => [table.name, new Set()]));
+  for (const output of outputs) {
+    for (const field of output.fields.values()) {
+      if (!field.recordType || !/\bREFERENCE\b/i.test(field.definition)) continue;
+      for (const target of field.recordType.targets) {
+        if (names.has(target)) prerequisites.get(output.name).add(target);
+      }
+    }
+  }
+
+  const state = new Map(), stack = [], ordered = [];
+  const visit = name => {
+    if (state.get(name) === 2) return;
+    if (state.get(name) === 1) {
+      const start = stack.indexOf(name);
+      throw new Error(`Managed-output reference dependency cycle is not supported: ${[...stack.slice(start), name].join(' -> ')}`);
+    }
+    state.set(name, 1); stack.push(name);
+    for (const prerequisite of [...prerequisites.get(name)].sort()) visit(prerequisite);
+    stack.pop(); state.set(name, 2); ordered.push(name);
+  };
+  for (const name of [...names].sort()) visit(name);
+  const tables = new Map(outputs.map(table => [table.name, table]));
+  return ordered.map(name => tables.get(name));
 }
 
 function refreshExpression(expression, table, row) {
@@ -137,7 +165,7 @@ function refreshExpression(expression, table, row) {
       : match.replaceAll('$this', row)).replaceAll('$this', row));
 }
 
-function adapters(schema, routes, trees, derivedOrder) {
+function adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs) {
   const tables = [...schema.tables.values()];
   let sql = treeAdapters(trees);
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::slots($rid: record) {\n';
@@ -145,7 +173,13 @@ function adapters(schema, routes, trees, derivedOrder) {
     const slots = marked(table, 'treeNode').map((f) => f.name);
     if (slots.length) sql += `IF record::tb($rid) = '${table.name}' { RETURN ${list(slots)}; };\n`;
   }
-  sql += 'RETURN []; } PERMISSIONS NONE;\n';
+  // Pure schema metadata is also used by the caller's generated VALUE fields.
+  sql += 'RETURN []; } PERMISSIONS FULL;\n';
+  // Readers follow the maintained memberships, after derived values have been
+  // calculated and coalescing has selected the stored representatives.
+  sql += `DEFINE FUNCTION OVERWRITE fn::rebase::tree_roots($row: object) {
+RETURN array::distinct(fn::rebase::slots($row.id).map(|$slot| $row[$slot].owner.rid).filter(|$root| $root != NONE));
+} PERMISSIONS FULL;\n`;
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::members($row: option<object>) {\nIF $row = NONE { RETURN []; };\n';
   for (const table of tables) {
     if (table.treeMembers) sql += `IF record::tb($row.id) = '${table.name}' { RETURN ${table.treeMembers}($row); };\n`;
@@ -157,7 +191,6 @@ function adapters(schema, routes, trees, derivedOrder) {
   }
   sql += '} PERMISSIONS NONE;\n';
   const recipes = tables.filter(table => table.requiredOutputs);
-  const managedOutputs = tables.filter(table => table.managedOutput);
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::has_required_outputs($rid: record) {\n';
   sql += `RETURN record::tb($rid) IN ${recipes.length ? list(recipes.map(table => table.name)) : '[]'};\n} PERMISSIONS NONE;\n`;
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::required_outputs($row: option<object>) {\nIF $row = NONE { RETURN []; };\n';
@@ -167,12 +200,27 @@ function adapters(schema, routes, trees, derivedOrder) {
   sql += 'RETURN []; } PERMISSIONS NONE;\n';
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::is_managed_output_table($name: string) {\n';
   sql += `RETURN $name IN ${managedOutputs.length ? list(managedOutputs.map(table => table.name)) : '[]'};\n} PERMISSIONS NONE;\n`;
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::order_required_outputs($outputs: array) {\n';
+  if (managedOutputs.length) {
+    const ordered = managedOutputs.map(table => `$outputs.filter(|$output| record::tb($output.id) = '${table.name}')`);
+    sql += `RETURN array::concat(${ordered.join(', ')});\n`;
+  } else sql += 'RETURN [];\n';
+  sql += '} PERMISSIONS NONE;\n';
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::managed_outputs($source: record) {\n';
   if (managedOutputs.length) {
     managedOutputs.forEach((table, index) => {
       sql += `LET $outputs_${index} = SELECT * FROM ${table.name} WHERE rebase_managed_source = <string>$source;\n`;
     });
     sql += `RETURN array::concat(${managedOutputs.map((_, index) => `$outputs_${index}`).join(', ')});\n`;
+  } else sql += 'RETURN [];\n';
+  sql += '} PERMISSIONS NONE;\n';
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::managed_outputs_reverse($source: record) {\n';
+  if (managedOutputs.length) {
+    const reverse = [...managedOutputs].reverse();
+    reverse.forEach((table, index) => {
+      sql += `LET $outputs_${index} = SELECT * FROM ${table.name} WHERE rebase_managed_source = <string>$source;\n`;
+    });
+    sql += `RETURN array::concat(${reverse.map((_, index) => `$outputs_${index}`).join(', ')});\n`;
   } else sql += 'RETURN [];\n';
   sql += '} PERMISSIONS NONE;\n';
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object) {\n';
@@ -221,11 +269,13 @@ function events(schema, routes, systemTables) {
       return !field?.reactive && !field?.treeRoot && !field?.treeNode;
     });
     const changed = changedFields([...businessFields(table), ...nativeOutputs, 'owned_by']);
-    // Every reachable contribution must be a cached slot on this deleted row.
-    // Coalesced-away legs are absent; count stored representatives, not providers.
+    // Use current node summaries: the public root summary is published only
+    // after all required outputs settle and may still count removed children.
+    // Every remaining contribution must be a cached slot on this deleted row.
     const ownSlots = list(marked(table, 'treeNode').map((field) => field.name));
     const deleteGuards = marked(table, 'treeRoot').map((field) =>
-      `IF $before.${field.name}.summary.count != array::len(${ownSlots}.filter(|$slot| $before[$slot].owner = { rid: $before.id, slot: '${field.name}' })) { THROW 'TREE_OWNER_NOT_EMPTY'; };`).join('\n');
+      `IF (fn::tree::load($before.${field.name}.root, { rid: $before.id, slots: $before }).summary.count ?? 0)
+        != array::len(${ownSlots}.filter(|$slot| $before[$slot].owner = { rid: $before.id, slot: '${field.name}' })) { THROW 'TREE_OWNER_NOT_EMPTY'; };`).join('\n');
     const finish = 'fn::rebase::finish(fn::rebase::refresh($after.id ?? $before.id, $before_image, true));';
     const independentFinish = table.managedOutput
       ? `IF ($after.rebase_managed_source ?? $before.rebase_managed_source) = NONE { ${finish} };`
@@ -241,7 +291,7 @@ WHEN $event != 'UPDATE' OR (${changed}) OR $before.system_ping != $after.system_
 }
 
 function resolveTemporalModel(schema, systemTables) {
-  requiredOutputContract(schema);
+  const required = requiredOutputContract(schema);
   const trees = resolveTreeContract(schema);
   const derivedOrder = new Map([...schema.tables.values()].map(table => [table.name, resolveDerivedOrder(table)]));
   const derivedHelpers = new Map();
@@ -258,11 +308,11 @@ function resolveTemporalModel(schema, systemTables) {
   const enabled = [...schema.tables.values()].some((t) => t.treeMembers || t.validate || t.requiredOutputs || t.managedOutput
     || marked(t, 'treeRoot').length || marked(t, 'reactive').length);
   const routes = dependencies(schema);
-  return { trees, derivedOrder, derivedHelpers, routes, enabled, systemTables };
+  return { trees, derivedOrder, derivedHelpers, routes, enabled, systemTables, managedOutputs: required.outputs };
 }
 
 function generateTemporal(schema, options, systemTables, resolved = resolveTemporalModel(schema, systemTables)) {
-  const { trees, derivedOrder, derivedHelpers, routes, enabled } = resolved;
+  const { trees, derivedOrder, derivedHelpers, routes, enabled, managedOutputs } = resolved;
   if (!enabled) return { sql: '', routes: [], trees, derivedOrder, derivedHelpers };
   const sourceFields = new Map();
   for (const route of routes) {
@@ -272,7 +322,7 @@ function generateTemporal(schema, options, systemTables, resolved = resolveTempo
   const sources = [...sourceFields].map(([table, fields]) =>
     `REMOVE FIELD IF EXISTS rebase_dependency_sources.* ON ${table};\nDEFINE FIELD OVERWRITE rebase_dependency_sources ON ${table} TYPE array<record> COMPUTED array::distinct([${[...fields].map((f) => `$this.${f}`).join(', ')}]).filter(|$r| $r != NONE) PERMISSIONS NONE;`).join('\n');
   const sql = [fs.readFileSync(path.join(__dirname, '..', 'temporal.surql'), 'utf8'),
-    treeFields(trees), sources, adapters(schema, routes, trees, derivedOrder), derivedFields(schema, derivedOrder, derivedHelpers),
+    treeFields(trees), sources, adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs), derivedFields(schema, derivedOrder, derivedHelpers),
     events(schema, routes, systemTables), queryFunction(trees, options)].join('\n');
   return { sql, routes, trees, derivedOrder, derivedHelpers };
 }

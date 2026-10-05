@@ -4,13 +4,13 @@
 DEFINE TABLE OVERWRITE organization SCHEMAFULL;
 DEFINE FIELD OVERWRITE name ON organization TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE code ON organization TYPE option<string> ASSERT $value = NONE OR string::len($value) > 0 READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE organization_code ON organization FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE organization_code ON organization FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE currency SCHEMAFULL;
 DEFINE FIELD OVERWRITE code ON currency TYPE string ASSERT string::matches($value, /^[A-Z0-9][A-Z0-9._-]{0,15}$/) READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE name ON currency TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE precision ON currency TYPE int DEFAULT 2 READONLY ASSERT $value >= 0 AND $value <= 18 COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE currency_code ON currency FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE currency_code ON currency FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE treasury SCHEMAFULL;
 DEFINE FIELD OVERWRITE name ON treasury TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
@@ -20,8 +20,8 @@ DEFINE FIELD OVERWRITE economic_entity ON treasury_account TYPE record<rebase_us
 DEFINE FIELD OVERWRITE treasury ON treasury_account TYPE record<treasury> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE currency ON treasury_account TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE minimum_balance ON treasury_account TYPE decimal DEFAULT 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_history ON treasury_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS economic_entity, treasury, currency UNIQUE;
+DEFINE FIELD OVERWRITE z_history ON treasury_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS tenant, economic_entity, treasury, currency UNIQUE;
 DEFINE FUNCTION OVERWRITE fn::account::treasury_account($row: object) {
     -- Cash capacity is measured after all same-timestamp movements; record-ID order is not economic order.
     IF ($row.z_history.summary.measures.balance.instant_min ?? 0dec) < $row.minimum_balance { THROW 'ACCOUNT_TREASURY_MINIMUM_BALANCE'; };
@@ -45,8 +45,8 @@ DEFINE FIELD OVERWRITE opponent ON claim_account TYPE record<rebase_user | organ
 DEFINE FIELD OVERWRITE currency ON claim_account TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE net_floor ON claim_account TYPE option<decimal> COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE net_ceiling ON claim_account TYPE option<decimal> COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_history ON claim_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE claim_account_dimensions ON claim_account FIELDS economic_entity, opponent, currency UNIQUE;
+DEFINE FIELD OVERWRITE z_history ON claim_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE claim_account_dimensions ON claim_account FIELDS tenant, economic_entity, opponent, currency UNIQUE;
 DEFINE FUNCTION OVERWRITE fn::account::claim_account($row: object) {
     -- Financial claim capacity is measured after all same-timestamp effects; record-ID tie order is not economic order.
     IF ($row.z_history.summary.measures.receivable.instant_min ?? 0dec) < 0dec
@@ -75,31 +75,31 @@ DEFINE TABLE OVERWRITE operating_unit SCHEMAFULL;
 DEFINE FIELD OVERWRITE economic_entity ON operating_unit TYPE record<rebase_user | organization> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE name ON operating_unit TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE code ON operating_unit TYPE option<string> ASSERT $value = NONE OR string::len($value) > 0 READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE operating_unit_entity_code ON operating_unit FIELDS economic_entity, code UNIQUE;
+DEFINE INDEX OVERWRITE operating_unit_entity_code ON operating_unit FIELDS tenant, economic_entity, code UNIQUE;
 
 DEFINE TABLE OVERWRITE measure_unit SCHEMAFULL;
 DEFINE FIELD OVERWRITE code ON measure_unit TYPE string ASSERT string::matches($value, /^[a-z][a-z0-9._-]{0,31}$/) READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE dimension ON measure_unit TYPE string ASSERT $value IN ['count', 'mass', 'volume', 'duration'] READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE name ON measure_unit TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE measure_unit_code ON measure_unit FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE measure_unit_code ON measure_unit FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE item SCHEMAFULL;
 DEFINE FIELD OVERWRITE name ON item TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE code ON item TYPE option<string> ASSERT $value = NONE OR string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE unit ON item TYPE record<measure_unit> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE item_code ON item FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE item_code ON item FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE service SCHEMAFULL;
 DEFINE FIELD OVERWRITE name ON service TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE code ON service TYPE option<string> ASSERT $value = NONE OR string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE unit ON service TYPE record<measure_unit> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE service_code ON service FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE service_code ON service FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE work_type SCHEMAFULL;
 DEFINE FIELD OVERWRITE name ON work_type TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE code ON work_type TYPE option<string> ASSERT $value = NONE OR string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE unit ON work_type TYPE record<measure_unit> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE work_type_code ON work_type FIELDS code UNIQUE;
+DEFINE INDEX OVERWRITE work_type_code ON work_type FIELDS tenant, code UNIQUE;
 
 DEFINE TABLE OVERWRITE stock_account SCHEMAFULL COMMENT '@rebase-validate fn::account::stock_account';
 DEFINE FIELD OVERWRITE economic_entity ON stock_account TYPE record<rebase_user | organization> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
@@ -107,9 +107,9 @@ DEFINE FIELD OVERWRITE operating_unit ON stock_account TYPE record<operating_uni
 DEFINE FIELD OVERWRITE resource ON stock_account TYPE record<item | service | work_type> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE unit ON stock_account TYPE record<measure_unit> VALUE $this.resource.unit READONLY COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE minimum_quantity ON stock_account TYPE decimal DEFAULT 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_history ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_gross_input ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE stock_account_dimensions ON stock_account FIELDS economic_entity, operating_unit, resource UNIQUE;
+DEFINE FIELD OVERWRITE z_history ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_gross_input ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE stock_account_dimensions ON stock_account FIELDS tenant, economic_entity, operating_unit, resource UNIQUE;
 DEFINE FUNCTION OVERWRITE fn::account::stock_account($row: object) {
     IF $row.economic_entity != $row.operating_unit.economic_entity { THROW 'ACCOUNT_STOCK_ENTITY_MISMATCH'; };
     -- Stock capacity is measured after all same-timestamp movements; record-ID order is not economic order.

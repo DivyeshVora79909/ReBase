@@ -5,6 +5,7 @@ const { createServer } = require("node:http");
 const path = require("node:path");
 const { once } = require("node:events");
 const { createAuthenticationService } = require("./authentication");
+const { createPasskeyService } = require('./passkeys');
 const { createAuthenticationPayloadCipher } = require("./authentication-payload");
 const { createRuntimeApp } = require("./app");
 const {
@@ -18,8 +19,10 @@ const { createWebhookRouteCodec } = require("./webhook-routes");
 const { loadWebhookHandlers } = require("./webhooks");
 const { createAdapters, createWebhookAdapters } = require("./providers");
 const { createQueue } = require("./queues");
+const { designQueuePrefix } = require('./queues/port');
 const { createReconciler } = require("./reconciler");
 const { createRuntime } = require("./runtime");
+const { startLiveWakeups } = require('./live');
 const { createTableStore } = require("./store");
 const {
   resolveConfiguration,
@@ -125,7 +128,7 @@ async function startServer(options = {}) {
   const queue = options.queue || createQueue({
     bullmq: {
       url: config.queue.redis.url,
-      prefix: config.queue.prefix,
+      prefix: designQueuePrefix(config.queue.prefix, config.surreal.defaultContext),
       connectTimeoutMs: config.queue.redis.connectTimeoutMs,
       startupTimeoutMs: config.queue.startupTimeoutMs,
       healthTimeoutMs: config.queue.healthTimeoutMs,
@@ -185,7 +188,7 @@ async function startServer(options = {}) {
     ? createAuthenticationService({
         stores,
         principals: loaded.principals,
-        allowedContexts: configuredContexts,
+        defaultContext,
         sealAuthenticationPayload: authenticationPayloadCipher.seal,
         rateLimiter,
         challengeTtlMs: config.authentication?.challengeTtlMs,
@@ -193,7 +196,12 @@ async function startServer(options = {}) {
         onError: options.onAuthenticationError,
       })
     : null);
+  const passkeys = options.passkeys || (config.authentication.passkeys.rpId
+    ? createPasskeyService({ stores, defaultContext, endpoint: config.surreal.endpoint, rateLimiter,
+        ...config.authentication.passkeys })
+    : null);
   runtimeOptions.allowedContexts = configuredContexts;
+  runtimeOptions.defaultContext = defaultContext;
   runtimeOptions.terminalTaskRetentionMs = config.server.terminalTaskRetentionDays * 24 * 60 * 60 * 1000;
   const routeCodec = options.routeCodec || createWebhookRouteCodec(runtimeSecret);
   const runtime = createRuntime({
@@ -210,6 +218,7 @@ async function startServer(options = {}) {
   const workerStops = [];
   let reconciler;
   let stopReconciler;
+  let stopLiveWakeups;
   let server;
   let app;
   try {
@@ -223,6 +232,15 @@ async function startServer(options = {}) {
     stopReconciler = reconciler.start({
       immediate: options.reconcileOnStartup !== false,
     });
+    // Store lookup and live subscription attachment are retried by the wakeup
+    // lifecycle; durable periodic reconciliation continues during the outage.
+    stopLiveWakeups = await startLiveWakeups({
+      getStore: () => stores.forContext(defaultContext.namespace, defaultContext.database),
+      runtime,
+      handlers,
+      reconciler,
+      onError: options.onLiveError || (error => console.error('Live wakeup:', error.message)),
+    });
     app = createRuntimeApp({
       handlers,
       webhooks,
@@ -233,6 +251,7 @@ async function startServer(options = {}) {
         requiresStorageBucket: options.adapters === undefined,
       },
       authentication,
+      passkeys,
       oauth,
       queue,
       runtime,
@@ -257,6 +276,7 @@ async function startServer(options = {}) {
         once(server, "error").then(([error]) => Promise.reject(error)),
       ]);
   } catch (error) {
+    await stopLiveWakeups?.().catch(() => {});
     await stopReconciler?.().catch(() => {});
     await Promise.all(workerStops.map((stop) => stop?.().catch(() => {})));
     if (ownsRateLimiter) await rateLimiter.close?.().catch(() => {});
@@ -270,6 +290,7 @@ async function startServer(options = {}) {
     if (closing) return closing;
     closing = (async () => {
       await new Promise((resolve) => server.close(resolve));
+      await stopLiveWakeups?.();
       await stopReconciler?.();
       await Promise.all(workerStops.map((stop) => stop?.()));
       if (ownsRateLimiter) await rateLimiter.close?.();
@@ -281,6 +302,7 @@ async function startServer(options = {}) {
   return {
     app,
     authentication,
+    passkeys,
     close,
     contracts: loaded.contracts,
     handlers,

@@ -17,7 +17,7 @@ const fixture = [
     table: "organization",
     id: "organization:demo_owner",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       name: "Northwind Supply",
       code: "NORTHWIND",
     },
@@ -26,7 +26,7 @@ const fixture = [
     table: "organization",
     id: "organization:demo_customer",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       name: "Harbor Market",
     },
   },
@@ -34,7 +34,7 @@ const fixture = [
     table: "currency",
     id: "currency:demo_usd",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       code: "USD",
       name: "US dollar",
       precision: 2,
@@ -44,7 +44,7 @@ const fixture = [
     table: "treasury",
     id: "treasury:demo_bank",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       name: "Operating bank",
     },
   },
@@ -52,7 +52,7 @@ const fixture = [
     table: "treasury_account",
     id: "treasury_account:demo_cash",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       economic_entity: "organization:demo_owner",
       treasury: "treasury:demo_bank",
       currency: "currency:demo_usd",
@@ -63,7 +63,7 @@ const fixture = [
     table: "cash_in",
     id: "cash_in:demo_receipt",
     content: {
-      owned_by: "rebase_group:root",
+      owned_by: "rebase_tenant:default",
       from_party: "organization:demo_customer",
       to_account: "treasury_account:demo_cash",
       amount: "42.50",

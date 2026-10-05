@@ -34,4 +34,4 @@ DEFINE FIELD OVERWRITE valid_until ON sales_tax_rule_version TYPE datetime READO
 DEFINE FIELD OVERWRITE kind ON sales_tax_rule_version TYPE string ASSERT $value IN ['fixed', 'proportional'] READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE fixed_amount ON sales_tax_rule_version TYPE option<decimal> READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE rate ON sales_tax_rule_version TYPE option<decimal> READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE sales_tax_rule_version_key ON sales_tax_rule_version FIELDS tax_claim_account, component_key, version UNIQUE;
+DEFINE INDEX OVERWRITE sales_tax_rule_version_key ON sales_tax_rule_version FIELDS tenant, tax_claim_account, component_key, version UNIQUE;

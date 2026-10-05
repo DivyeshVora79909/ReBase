@@ -18,7 +18,7 @@ DEFINE FIELD OVERWRITE policy_key ON customer_withholding_policy_version TYPE st
 DEFINE FIELD OVERWRITE version ON customer_withholding_policy_version TYPE string ASSERT string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_from ON customer_withholding_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_until ON customer_withholding_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE customer_withholding_policy_identity ON customer_withholding_policy_version FIELDS tax_claim_account, policy_key, version UNIQUE;
+DEFINE INDEX OVERWRITE customer_withholding_policy_identity ON customer_withholding_policy_version FIELDS tenant, tax_claim_account, policy_key, version UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::customer_withholding_members($row: object) {
     RETURN [
@@ -86,4 +86,4 @@ DEFINE FIELD OVERWRITE cash_at ON customer_withholding TYPE datetime VALUE $this
 DEFINE FIELD OVERWRITE z_customer ON customer_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
 DEFINE FIELD OVERWRITE z_invoice ON customer_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_outstanding';
 DEFINE FIELD OVERWRITE z_tax_credit ON customer_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
-DEFINE INDEX OVERWRITE customer_withholding_allocation ON customer_withholding FIELDS allocation UNIQUE;
+DEFINE INDEX OVERWRITE customer_withholding_allocation ON customer_withholding FIELDS tenant, allocation UNIQUE;

@@ -22,7 +22,7 @@ DEFINE FIELD OVERWRITE policy_key ON purchase_tax_credit_policy_version TYPE str
 DEFINE FIELD OVERWRITE version ON purchase_tax_credit_policy_version TYPE string ASSERT string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_from ON purchase_tax_credit_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_until ON purchase_tax_credit_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE purchase_tax_credit_policy_identity ON purchase_tax_credit_policy_version FIELDS tax_claim_account, policy_key, version UNIQUE;
+DEFINE INDEX OVERWRITE purchase_tax_credit_policy_identity ON purchase_tax_credit_policy_version FIELDS tenant, tax_claim_account, policy_key, version UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::purchase_tax_credit_recognition_validate($row: object) {
     IF $row.amount <= 0dec { THROW 'ACCOUNTING_PURCHASE_TAX_RECOGNITION_POSITIVE'; };
@@ -58,4 +58,4 @@ DEFINE FIELD OVERWRITE assessed_tax_amount ON purchase_tax_credit_recognition TY
 DEFINE FIELD OVERWRITE economic_entity ON purchase_tax_credit_recognition TYPE record<rebase_user | organization> VALUE $this.receipt.economic_entity READONLY COMMENT '@rebase-derived @rebase-depends receipt.economic_entity';
 DEFINE FIELD OVERWRITE currency ON purchase_tax_credit_recognition TYPE record<currency> VALUE $this.receipt.currency READONLY COMMENT '@rebase-derived @rebase-depends receipt.currency';
 DEFINE FIELD OVERWRITE z_claim ON purchase_tax_credit_recognition TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
-DEFINE INDEX OVERWRITE purchase_tax_credit_recognition_receipt ON purchase_tax_credit_recognition FIELDS receipt UNIQUE;
+DEFINE INDEX OVERWRITE purchase_tax_credit_recognition_receipt ON purchase_tax_credit_recognition FIELDS tenant, receipt UNIQUE;

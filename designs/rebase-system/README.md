@@ -1,5 +1,18 @@
 # ReBase system redesign
 
+The active route is the [tenant/tree execution handoff](tenant-tree-handoff.md)
+and its [development contract](tenant-tree-redesign.md). It supersedes the older
+root-group, visibility and database-per-tenant assumptions below. The current
+public references are [tenant authentication and aggregate views](tenant-authentication.md),
+[ordered trees](ordered-tree-contract.md), and [the single-design runtime](single-design-runtime.md).
+Frontend tenant compatibility is a subsequent packet in the separate MetaSol
+repository; older browser results do not establish that compatibility.
+
+Backend T0–T6 is **ready for lead review**. The
+[2026-10-05 evidence](evidence/2026-10-05-tenant-tree-verification.json) records
+the complete backend/accounting suites, three builds, positions, mocked refunds
+and developer-tool checks, with source hashes and the retained native scan limit.
+
 This index routes design history; the [core handoff](./core-handoff.md) owns
 K1–K5 implementation and restart requirements, while the [accounting handoff](../all-in-accounting/implementation-handoff.md)
 owns H1–H8 packet status, evidence, and domain limits. H4b5c is resolved for current invoice tax paths. H8 has three matching transaction-layer counter samples; physical storage cost remains open there. Start core work with the

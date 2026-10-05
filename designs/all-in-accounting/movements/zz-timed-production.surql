@@ -31,7 +31,7 @@ DEFINE FIELD OVERWRITE output_a_account ON production_recipe_version TYPE record
 DEFINE FIELD OVERWRITE output_a_quantity ON production_recipe_version TYPE int ASSERT $value > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE output_b_account ON production_recipe_version TYPE record<stock_account> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE output_b_quantity ON production_recipe_version TYPE int ASSERT $value > 0 READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE production_recipe_version_key ON production_recipe_version FIELDS economic_entity, recipe_key, version UNIQUE;
+DEFINE INDEX OVERWRITE production_recipe_version_key ON production_recipe_version FIELDS tenant, economic_entity, recipe_key, version UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_run_outputs($row: object) {
     IF $row.status = 'draft' OR ($row.status = 'cancelled' AND $row.cancelled_at <= $row.planned_start) {
@@ -150,7 +150,7 @@ DEFINE FIELD OVERWRITE stock_account ON production_output TYPE record<stock_acco
 DEFINE FIELD OVERWRITE quantity ON production_output TYPE int ASSERT $value > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON production_output TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_stock ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history';
-DEFINE FIELD OVERWRITE z_capacity ON production_output TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_capacity ON production_output TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 -- Preserve H7's managed assembly link and add one independent production link.
 DEFINE FUNCTION OVERWRITE fn::accounting::stock_out_members($row: object) {

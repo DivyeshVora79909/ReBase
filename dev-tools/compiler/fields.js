@@ -2,7 +2,7 @@ const { extractClauseExpression, findTopLevelKeyword, sqlCode } = require('./sur
 
 const SYSTEM_FIELDS = new Set([
   'id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'system_ping',
-  'readers_index', 'rebase_reader_sources', 'rebase_dependency_sources', 'rebase_derived_ready',
+  'tenant', 'readers_index', 'rebase_reader_sources', 'rebase_dependency_sources', 'rebase_derived_ready',
 ]);
 const VALUE_END = ['ASSERT', 'REFERENCE', 'READONLY', 'PERMISSIONS', 'COMMENT'];
 

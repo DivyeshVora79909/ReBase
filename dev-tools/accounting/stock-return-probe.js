@@ -122,29 +122,30 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY misc_account:opening SET owned_by = rebase_group:root, label = 'Opening stock';
-      CREATE ONLY misc_account:recipient SET owned_by = rebase_group:root, label = 'Original recipient';
-      CREATE ONLY misc_account:wrong_recipient SET owned_by = rebase_group:root, label = 'Wrong recipient';
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', dimension = 'count', name = 'Each';
-      CREATE ONLY measure_unit:box SET owned_by = rebase_group:root, code = 'box', dimension = 'count', name = 'Box';
-      CREATE ONLY item:widget SET owned_by = rebase_group:root, name = 'Widget', unit = measure_unit:each;
-      CREATE ONLY item:gadget SET owned_by = rebase_group:root, name = 'Gadget', unit = measure_unit:each;
-      CREATE ONLY item:boxed_widget SET owned_by = rebase_group:root, name = 'Boxed widget', unit = measure_unit:box;
-      CREATE ONLY operating_unit:origin SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Origin', code = 'origin';
-      CREATE ONLY operating_unit:alternate SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Alternate', code = 'alternate';
-      CREATE ONLY operating_unit:wrong_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity, name = 'Wrong entity', code = 'wrong_entity';
-      CREATE ONLY operating_unit:wrong_resource SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Wrong resource', code = 'wrong_resource';
-      CREATE ONLY operating_unit:wrong_unit SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Wrong unit', code = 'wrong_unit';
-      CREATE ONLY stock_account:origin SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:origin, resource = item:widget;
-      CREATE ONLY stock_account:alternate SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:alternate, resource = item:widget;
-      CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity, operating_unit = operating_unit:wrong_entity, resource = item:widget;
-      CREATE ONLY stock_account:wrong_resource SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:wrong_resource, resource = item:gadget;
-      CREATE ONLY stock_account:wrong_unit SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:wrong_unit, resource = item:boxed_widget;
-      CREATE ONLY stock_in:opening SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:origin, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_out:main SET owned_by = rebase_group:root, from_account = stock_account:origin, to_party = misc_account:recipient, quantity = 8dec, effective_at = d'2026-07-02T00:00:00Z';
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY misc_account:opening SET owned_by = rebase_tenant:default, label = 'Opening stock';
+      CREATE ONLY misc_account:recipient SET owned_by = rebase_tenant:default, label = 'Original recipient';
+      CREATE ONLY misc_account:wrong_recipient SET owned_by = rebase_tenant:default, label = 'Wrong recipient';
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', dimension = 'count', name = 'Each';
+      CREATE ONLY measure_unit:box SET owned_by = rebase_tenant:default, code = 'box', dimension = 'count', name = 'Box';
+      CREATE ONLY item:widget SET owned_by = rebase_tenant:default, name = 'Widget', unit = measure_unit:each;
+      CREATE ONLY item:gadget SET owned_by = rebase_tenant:default, name = 'Gadget', unit = measure_unit:each;
+      CREATE ONLY item:boxed_widget SET owned_by = rebase_tenant:default, name = 'Boxed widget', unit = measure_unit:box;
+      CREATE ONLY operating_unit:origin SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Origin', code = 'origin';
+      CREATE ONLY operating_unit:alternate SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Alternate', code = 'alternate';
+      CREATE ONLY operating_unit:wrong_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity, name = 'Wrong entity', code = 'wrong_entity';
+      CREATE ONLY operating_unit:wrong_resource SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Wrong resource', code = 'wrong_resource';
+      CREATE ONLY operating_unit:wrong_unit SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Wrong unit', code = 'wrong_unit';
+      CREATE ONLY stock_account:origin SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:origin, resource = item:widget;
+      CREATE ONLY stock_account:alternate SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:alternate, resource = item:widget;
+      CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity, operating_unit = operating_unit:wrong_entity, resource = item:widget;
+      CREATE ONLY stock_account:wrong_resource SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:wrong_resource, resource = item:gadget;
+      CREATE ONLY stock_account:wrong_unit SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:wrong_unit, resource = item:boxed_widget;
+      CREATE ONLY stock_in:opening SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:origin, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_out:main SET owned_by = rebase_tenant:default, from_account = stock_account:origin, to_party = misc_account:recipient, quantity = 8dec, effective_at = d'2026-07-02T00:00:00Z';
     `);
 
     let state = await snapshot(db);
@@ -154,11 +155,11 @@ async function main() {
     assertAccount(state, 'stock_account:origin', 2);
     assertCapacity(state, 'stock_out:main');
 
-    await rejectsUnchanged(db, `CREATE ONLY stock_return:before_source SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY stock_return:before_source SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:origin,
       quantity = 1dec, effective_at = d'2026-07-01T12:00:00Z';`, 'return before source is rejected');
 
-    await db.query(`CREATE ONLY stock_return:main_a SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_return:main_a SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:alternate,
       quantity = 3dec, effective_at = d'2026-07-02T00:00:00Z';`);
     state = await snapshot(db);
@@ -174,7 +175,7 @@ async function main() {
     assertAccount(state, 'stock_account:alternate', 3);
     assertCapacity(state, 'stock_out:main');
 
-    await db.query(`CREATE ONLY stock_return:main_equal_z SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_return:main_equal_z SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:origin,
       quantity = 1dec, effective_at = d'2026-07-02T00:00:00Z';`);
     state = await snapshot(db);
@@ -185,7 +186,7 @@ async function main() {
     assertAccount(state, 'stock_account:alternate', 3);
     assertCapacity(state, 'stock_out:main');
 
-    await db.query(`CREATE ONLY stock_return:main_b SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_return:main_b SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:origin,
       quantity = 1dec, effective_at = d'2026-07-04T00:00:00Z';`);
     state = await snapshot(db);
@@ -195,7 +196,7 @@ async function main() {
       'capacity tracks original quantity minus dated returns');
     assertCapacity(state, 'stock_out:main');
 
-    await rejectsUnchanged(db, `CREATE ONLY stock_return:competing_overreturn SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY stock_return:competing_overreturn SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:alternate,
       quantity = 4dec, effective_at = d'2026-07-04T00:00:00Z';`, 'competing returns cannot exceed shared source capacity');
     await rejectsUnchanged(db, `UPDATE stock_return:main_b SET quantity = 0dec;`, 'zero return quantity rejects atomically');
@@ -236,7 +237,7 @@ async function main() {
     assertAccount(state, 'stock_account:alternate', 3);
     assert.equal(number(byId(state.outgoing, 'stock_out:main').z_returns.summary.measures.quantity.sum), 4);
     assertCapacity(state, 'stock_out:main');
-    await db.query(`CREATE ONLY stock_return:main_b SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_return:main_b SET owned_by = rebase_tenant:default,
       source = stock_out:main, return_party = misc_account:recipient, destination_account = stock_account:origin,
       quantity = 1dec, effective_at = d'2026-07-04T00:00:00Z';`);
     state = await snapshot(db);

@@ -1,5 +1,21 @@
 # Redesign verification and algorithm decision
 
+## Tenant/tree continuation — 2026-10-05
+
+The [execution handoff](tenant-tree-handoff.md#continuation--2026-10-05) and
+[dated evidence](evidence/2026-10-05-tenant-tree-verification.json) record completed
+T0–T6 acceptance: all three builds, full `npm run verify` (1,006.086s), full
+`npm run verify:accounting` (694.793s), positions (291.274s), mocked refunds
+(1.028s), 26 developer-tool tests and syntax checks for 84 JS files passed.
+The [archived output](evidence/2026-10-05-tenant-tree-verification-output.txt)
+preserves final runs and resolved failures. Source hashes explicitly account
+for the isolated H7 fixture repair after the build/backend passes.
+
+The backend is ready for lead review. The documented 3.3.0 ID-order source-scan
+workaround remains; the unchanged frontend needs its tenant migration. Live
+providers, production deployment/migration and capacity are excluded. Results
+below retain their original source and acceptance boundaries.
+
 ## Redesign review — 2026-10-03
 
 The [current audit](./core-audit.md#current-redesign-review--2026-10-03) and

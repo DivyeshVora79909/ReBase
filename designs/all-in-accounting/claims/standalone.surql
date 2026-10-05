@@ -25,7 +25,7 @@ DEFINE FIELD OVERWRITE claim_account ON receivable TYPE record<claim_account> RE
 DEFINE FIELD OVERWRITE amount ON receivable TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON receivable TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_claim ON receivable TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
-DEFINE FIELD OVERWRITE z_settlement ON receivable TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_settlement ON receivable TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE payable SCHEMAFULL
     COMMENT '@rebase-members fn::accounting::payable_members @rebase-validate fn::accounting::claim_entry_validate';
@@ -34,4 +34,4 @@ DEFINE FIELD OVERWRITE claim_account ON payable TYPE record<claim_account> REFER
 DEFINE FIELD OVERWRITE amount ON payable TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON payable TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_claim ON payable TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
-DEFINE FIELD OVERWRITE z_settlement ON payable TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_settlement ON payable TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';

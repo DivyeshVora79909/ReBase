@@ -1,4 +1,4 @@
-const EXTENSION_TABLES = new Set(["rebase_user", "rebase_group"]);
+const EXTENSION_TABLES = new Set(["rebase_user", "rebase_group", "rebase_tenant"]);
 const { contributesReaders } = require("./readers");
 
 function analyzeSchema(schema, frameworkTables = EXTENSION_TABLES) {

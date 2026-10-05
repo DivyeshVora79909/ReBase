@@ -99,86 +99,87 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:vendor SET owned_by = rebase_group:root, name = 'Vendor';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Authority';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:unit SET owned_by = rebase_group:root, name = 'Unit', unit = measure_unit:each;
-      CREATE ONLY tax_account:authority SET owned_by = rebase_group:root,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:vendor SET owned_by = rebase_tenant:default, name = 'Vendor';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Authority';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:unit SET owned_by = rebase_tenant:default, name = 'Unit', unit = measure_unit:each;
+      CREATE ONLY tax_account:authority SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Tax';
-      CREATE ONLY tax_account:authority_alt SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:authority_alt SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Other tax identity';
-      CREATE ONLY operating_unit:store SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Store';
-      CREATE ONLY stock_account:stock SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY operating_unit:store SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Store';
+      CREATE ONLY stock_account:stock SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         operating_unit = operating_unit:store, resource = item:unit;
-      CREATE ONLY claim_account:supplier SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:supplier SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:vendor, currency = currency:usd;
-      CREATE ONLY claim_account:tax SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:authority, currency = currency:usd;
-      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:authority, currency = currency:eur;
-      CREATE ONLY claim_account:tax_alt SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax_alt SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:authority_alt, currency = currency:usd;
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY claim_account:tax_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY claim_account:tax_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         opponent = tax_account:authority, currency = currency:usd;
-      CREATE ONLY purchase_invoice:invoice SET owned_by = rebase_group:root,
+      CREATE ONLY purchase_invoice:invoice SET owned_by = rebase_tenant:default,
         claim_account = claim_account:supplier, number = 'H4B3-1';
-      CREATE ONLY purchase_receipt:receipt SET owned_by = rebase_group:root, invoice = purchase_invoice:invoice,
+      CREATE ONLY purchase_receipt:receipt SET owned_by = rebase_tenant:default, invoice = purchase_invoice:invoice,
         stock_account = stock_account:stock, tax_claim_account = claim_account:tax,
         quantity = 10dec, unit_price = 10dec, tax_amount = 18dec,
         effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY purchase_tax_credit_policy_version:policy_v1 SET owned_by = rebase_group:root,
+      CREATE ONLY purchase_tax_credit_policy_version:policy_v1 SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax, policy_key = 'fixture', version = 'v1',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY purchase_tax_credit_policy_version:policy_eur SET owned_by = rebase_group:root,
+      CREATE ONLY purchase_tax_credit_policy_version:policy_eur SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_eur, policy_key = 'fixture', version = 'v1',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY purchase_tax_credit_policy_version:policy_alt SET owned_by = rebase_group:root,
+      CREATE ONLY purchase_tax_credit_policy_version:policy_alt SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_alt, policy_key = 'fixture', version = 'v1',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY purchase_tax_credit_policy_version:policy_other SET owned_by = rebase_group:root,
+      CREATE ONLY purchase_tax_credit_policy_version:policy_other SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_other, policy_key = 'fixture', version = 'v1',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
     `);
 
     await assertOracle(db, 0);
-    await db.query(`CREATE ONLY purchase_tax_credit_recognition:recognition SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY purchase_tax_credit_recognition:recognition SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 12dec, effective_at = d'2026-06-02T00:00:00Z';`);
     await assertOracle(db, 12);
     const stableId = String((await snapshot(db)).recognition[0].id);
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:zero SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:zero SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 0dec, effective_at = d'2026-06-02T00:00:00Z';`, 'zero amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:negative SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:negative SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = -1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'negative amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:excess_precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:excess_precision SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 12.001dec, effective_at = d'2026-06-02T00:00:00Z';`, 'amount beyond currency precision rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:too_large SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:too_large SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 19dec, effective_at = d'2026-06-02T00:00:00Z';`, 'amount above assessed tax rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:before_receipt SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:before_receipt SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2026-05-31T00:00:00Z';`, 'recognition before receipt rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:outside_policy SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:outside_policy SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2027-01-01T00:00:00Z';`, 'recognition outside selected interval rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_account SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_account SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_alt,
       amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'nonmatching tax identity in same entity and currency rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_currency SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_currency SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_eur,
       amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'policy currency mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:wrong_entity SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_other,
       amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'policy entity mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:duplicate SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY purchase_tax_credit_recognition:duplicate SET owned_by = rebase_tenant:default,
       receipt = purchase_receipt:receipt, policy_version = purchase_tax_credit_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'second current recognition for one receipt rejects');
     await rejectsUnchanged(db, 'DELETE purchase_receipt:receipt;', 'receipt delete is protected while recognition exists');

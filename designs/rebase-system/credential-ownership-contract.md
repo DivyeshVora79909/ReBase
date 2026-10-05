@@ -1,5 +1,12 @@
 # Credential ownership and use contract (K4a)
 
+This is the historical K4a/K4b contract. The active
+[tenant credential contract](tenant-authentication.md#provider-credentials)
+supersedes its root-group and database-global binding assumptions: platform
+credentials belong to an explicit tenant, user/group BYOC uses current grants,
+and each tenant has its own private delivery policy. The older matrix and
+evidence below remain tied to their recorded sources.
+
 This is a design contract for the existing `rebase_email_delivery_config` and
 `rebase_sms_delivery_config` tables. It does not add a provider DSL, platform
 key family, automatic default, or credential-policy hierarchy. `rebase_group:root`

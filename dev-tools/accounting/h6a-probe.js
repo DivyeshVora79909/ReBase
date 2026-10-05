@@ -143,58 +143,59 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY rebase_group:second SET name = 'Second owner', parents = [rebase_group:root];
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY currency:jpy SET owned_by = rebase_group:root, code = 'JPY', name = 'JPY', precision = 0;
-      CREATE ONLY treasury:usd SET owned_by = rebase_group:root, name = 'USD';
-      CREATE ONLY treasury:eur SET owned_by = rebase_group:root, name = 'EUR';
-      CREATE ONLY treasury:jpy SET owned_by = rebase_group:root, name = 'JPY';
-      CREATE ONLY treasury:floor SET owned_by = rebase_group:root, name = 'Floor account';
-      CREATE ONLY treasury:usd_other SET owned_by = rebase_group:root, name = 'USD other entity';
-      CREATE ONLY treasury:eur_other SET owned_by = rebase_group:root, name = 'EUR other entity';
-      CREATE ONLY treasury_account:usd SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY rebase_group:second SET name = 'Second owner', parents = [rebase_tenant:default];
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY currency:jpy SET owned_by = rebase_tenant:default, code = 'JPY', name = 'JPY', precision = 0;
+      CREATE ONLY treasury:usd SET owned_by = rebase_tenant:default, name = 'USD';
+      CREATE ONLY treasury:eur SET owned_by = rebase_tenant:default, name = 'EUR';
+      CREATE ONLY treasury:jpy SET owned_by = rebase_tenant:default, name = 'JPY';
+      CREATE ONLY treasury:floor SET owned_by = rebase_tenant:default, name = 'Floor account';
+      CREATE ONLY treasury:usd_other SET owned_by = rebase_tenant:default, name = 'USD other entity';
+      CREATE ONLY treasury:eur_other SET owned_by = rebase_tenant:default, name = 'EUR other entity';
+      CREATE ONLY treasury_account:usd SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:usd, currency = currency:usd, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:eur, currency = currency:eur, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:jpy SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:jpy SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:jpy, currency = currency:jpy, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:floor SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:floor SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:floor, currency = currency:usd, minimum_balance = 0dec;
-      CREATE ONLY treasury_account:usd_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY treasury_account:usd_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         treasury = treasury:usd_other, currency = currency:usd, minimum_balance = -1000dec;
-      CREATE ONLY treasury_account:eur_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY treasury_account:eur_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         treasury = treasury:eur_other, currency = currency:eur, minimum_balance = -1000dec;
-      CREATE ONLY exchange_pair:main SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:main SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:usd, received_resource = currency:eur;
-      CREATE ONLY exchange_pair:inverse SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:inverse SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:eur, received_resource = currency:usd;
-      CREATE ONLY exchange_pair:other_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY exchange_pair:other_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         given_resource = currency:usd, received_resource = currency:eur;
       CREATE ONLY exchange_pair:other_owner SET owned_by = rebase_group:second, economic_entity = organization:entity,
         given_resource = currency:usd, received_resource = currency:eur;
-      CREATE ONLY exchange_pair:jpy_usd SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY exchange_pair:jpy_usd SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = currency:jpy, received_resource = currency:usd;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:widget SET owned_by = rebase_group:root, name = 'Widget', unit = measure_unit:each;
-      CREATE ONLY service:repair SET owned_by = rebase_group:root, name = 'Repair', unit = measure_unit:each;
-      CREATE ONLY exchange_pair:identity_only SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:widget SET owned_by = rebase_tenant:default, name = 'Widget', unit = measure_unit:each;
+      CREATE ONLY service:repair SET owned_by = rebase_tenant:default, name = 'Repair', unit = measure_unit:each;
+      CREATE ONLY exchange_pair:identity_only SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         given_resource = item:widget, received_resource = service:repair;
-      CREATE ONLY currency_exchange:quote SET owned_by = rebase_group:root, pair = exchange_pair:main, from_currency = currency:usd,
+      CREATE ONLY currency_exchange:quote SET owned_by = rebase_tenant:default, pair = exchange_pair:main, from_currency = currency:usd,
         to_currency = currency:eur, rate = 0.5dec, effective_at = d'2026-01-01T00:00:00Z';
     `);
     await assertOracle(db);
 
-    await rejectsUnchanged(db, `CREATE ONLY exchange_pair:duplicate SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY exchange_pair:duplicate SET owned_by = rebase_tenant:default,
       economic_entity = organization:entity, given_resource = currency:usd, received_resource = currency:eur;`,
     'same-owner/entity ordered pair duplicate rejects');
-    await rejectsUnchanged(db, `CREATE ONLY exchange_pair:same SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY exchange_pair:same SET owned_by = rebase_tenant:default,
       economic_entity = organization:entity, given_resource = currency:usd, received_resource = currency:usd;`,
     'same-resource pair rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:identity_execution SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:identity_execution SET owned_by = rebase_tenant:default,
       pair = exchange_pair:identity_only, from_account = treasury_account:usd, to_account = treasury_account:eur,
       given_amount = 1dec, received_amount = 1dec, effective_at = d'2026-06-01T00:00:00Z';`,
     'item/service identity pair cannot be executed as a cash currency exchange');
@@ -208,7 +209,7 @@ async function main() {
         await client.use({ namespace, database: 'probe' });
       }));
       race = await Promise.allSettled(raceClients.map((client, index) => client.query(
-        `CREATE ONLY exchange_pair:race_${index} SET owned_by = rebase_group:root, economic_entity = organization:other_entity, given_resource = currency:eur, received_resource = currency:jpy;`
+        `CREATE ONLY exchange_pair:race_${index} SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity, given_resource = currency:eur, received_resource = currency:jpy;`
       )));
     } finally {
       await Promise.all(raceClients.map((client) => client.close().catch(() => {})));
@@ -216,13 +217,13 @@ async function main() {
     assert.equal(race.filter((result) => result.status === 'fulfilled').length, 1, 'concurrent ordered-pair creation has one winner');
     assert.equal(race.filter((result) => result.status === 'rejected').length, 1, 'unique index rejects concurrent duplicate');
 
-    await db.query(`CREATE ONLY cash_exchange:z_exec SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await db.query(`CREATE ONLY cash_exchange:z_exec SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd, to_account = treasury_account:eur, given_amount = 100dec,
       received_amount = 90dec, effective_at = d'2026-06-01T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_exchange:a_exec SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await db.query(`CREATE ONLY cash_exchange:a_exec SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd, to_account = treasury_account:eur, given_amount = 30dec,
       received_amount = 27dec, effective_at = d'2026-06-01T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_exchange:jpy_exec SET owned_by = rebase_group:root, pair = exchange_pair:jpy_usd,
+    await db.query(`CREATE ONLY cash_exchange:jpy_exec SET owned_by = rebase_tenant:default, pair = exchange_pair:jpy_usd,
       from_account = treasury_account:jpy, to_account = treasury_account:usd, given_amount = 7dec,
       received_amount = 6dec, effective_at = d'2026-06-01T00:00:00Z';`);
     let state = await assertOracle(db);
@@ -232,38 +233,38 @@ async function main() {
     const quote = row(state.quotes, 'currency_exchange:quote');
     assert.equal(quote.z_usage.summary.count, 0, 'entered exchange does not consume quote usage');
 
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_orientation SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_orientation SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:eur, to_account = treasury_account:usd, given_amount = 1dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'wrong currency orientation rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_entity SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_entity SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd_other, to_account = treasury_account:eur, given_amount = 1dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'wrong economic entity rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_precision SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_precision SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd, to_account = treasury_account:eur, given_amount = 1.001dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'non-currency-precision amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_zero SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:bad_zero SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd, to_account = treasury_account:eur, given_amount = 0dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'zero amount rejects');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:wrong_owner SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:wrong_owner SET owned_by = rebase_tenant:default,
       pair = exchange_pair:other_owner, from_account = treasury_account:usd, to_account = treasury_account:eur,
       given_amount = 1dec, received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`,
     'root execution cannot use a same-entity pair owned by another group', /ACCOUNTING_CASH_EXCHANGE_OWNER_MISMATCH/);
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:jpy_bad_precision SET owned_by = rebase_group:root, pair = exchange_pair:jpy_usd,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:jpy_bad_precision SET owned_by = rebase_tenant:default, pair = exchange_pair:jpy_usd,
       from_account = treasury_account:jpy, to_account = treasury_account:usd, given_amount = 1.5dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'zero-decimal currency rejects fractional given amount');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:floor_guard SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange:floor_guard SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:floor, to_account = treasury_account:eur, given_amount = 1dec,
       received_amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`,
     'treasury floor rejects and rolls back the other treasury and pair roots');
 
-    await db.query(`CREATE ONLY cash_exchange_reversal:z_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_exchange_reversal:z_reverse SET owned_by = rebase_tenant:default,
       source = cash_exchange:z_exec, effective_at = d'2026-06-01T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_given'), 30, 'asymmetric reversal subtracts source given volume');
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_received'), 27, 'asymmetric reversal subtracts source received volume');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange_reversal:z_duplicate SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange_reversal:z_duplicate SET owned_by = rebase_tenant:default,
       source = cash_exchange:z_exec, effective_at = d'2026-06-01T00:00:00Z';`, 'one reversal per source rejects duplicate');
-    await rejectsUnchanged(db, `CREATE ONLY cash_exchange_reversal:before SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_exchange_reversal:before SET owned_by = rebase_tenant:default,
       source = cash_exchange:a_exec, effective_at = d'2026-05-31T00:00:00Z';`, 'reversal before source rejects');
     await rejectsUnchanged(db, "UPDATE cash_exchange:z_exec SET effective_at = d'2026-06-02T00:00:00Z';",
       'source date edit that would put dependent reversal before source rejects atomically');
@@ -309,11 +310,11 @@ async function main() {
     await db.query('DELETE cash_exchange_reversal:z_reverse;');
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_given'), 140, 'reversal deletion restores all edited source amounts');
-    await db.query(`CREATE ONLY cash_exchange_reversal:z_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_exchange_reversal:z_reverse SET owned_by = rebase_tenant:default,
       source = cash_exchange:z_exec, effective_at = d'2026-06-01T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(id(row(state.reversals, 'cash_exchange_reversal:z_reverse')), stableReversal, 'reversal re-add preserves stable ID');
-    await db.query(`CREATE ONLY cash_exchange_reversal:a_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_exchange_reversal:a_reverse SET owned_by = rebase_tenant:default,
       source = cash_exchange:a_exec, effective_at = d'2026-06-01T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_given'), 0, 'full reversals empty the net given denominator');
@@ -322,11 +323,11 @@ async function main() {
     await db.query('DELETE cash_exchange:a_exec;');
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_given'), 0, 'execution deletion removes its original and reversed contributions');
-    await db.query(`CREATE ONLY cash_exchange:a_exec SET owned_by = rebase_group:root, pair = exchange_pair:main,
+    await db.query(`CREATE ONLY cash_exchange:a_exec SET owned_by = rebase_tenant:default, pair = exchange_pair:main,
       from_account = treasury_account:usd, to_account = treasury_account:eur, given_amount = 30dec,
       received_amount = 24dec, effective_at = d'2026-06-01T00:00:00Z';`);
     state = await assertOracle(db);
-    await db.query(`CREATE ONLY cash_exchange_reversal:a_reverse SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_exchange_reversal:a_reverse SET owned_by = rebase_tenant:default,
       source = cash_exchange:a_exec, effective_at = d'2026-06-01T00:00:00Z';`);
     state = await assertOracle(db);
     assert.equal(measure(row(state.pairs, 'exchange_pair:main'), 'executed_given'), 0, 'execution re-addition plus its one full reversal returns to zero');

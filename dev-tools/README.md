@@ -4,6 +4,12 @@ The developer tools are ordinary JavaScript modules. Import the public
 functions from `dev-tools/index.js`, or start the Node.js REPL with
 `dev-tools/workbench.js` for an interactive session.
 
+For the current backend model, read the [tenant/tree contract](../designs/rebase-system/tenant-tree-redesign.md).
+Use SurrealDB 3.3.0. Provision tenant records deliberately before population;
+`populate({ tenant: "rebase_tenant:demo" })` or `--tenant rebase_tenant:demo`
+limits sample owners/references to that tenant. If exactly one tenant exists,
+population can infer it. The compiler never creates a production tenant.
+
 ## Workbench
 
 The default project is `all-in-accounting`:
@@ -60,8 +66,8 @@ check results display a compact summary in the REPL. Assign the result to a
 variable to inspect its full properties deliberately; these can contain private
 schema and process configuration.
 
-When a process profile contains more than one allowed namespace/database,
-choose one explicitly:
+A process profile selects exactly one namespace/database design. An explicit
+context must match it; tenants are records within that database:
 
 ```js
 const admin = await connect({ namespace: "demo", database: "books" })

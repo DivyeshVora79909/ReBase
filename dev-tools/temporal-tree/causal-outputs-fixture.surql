@@ -5,7 +5,7 @@ DEFINE TABLE OVERWRITE calc_owner SCHEMAFULL
     COMMENT '@rebase-validate fn::c2d::validate_owner';
 DEFINE FIELD OVERWRITE a_floor ON calc_owner TYPE decimal DEFAULT 0dec;
 DEFINE FIELD OVERWRITE z_history ON calc_owner TYPE object
-    COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+    COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE input_seed SCHEMAFULL
     COMMENT '@rebase-members fn::c2d::seed_members';

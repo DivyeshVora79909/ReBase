@@ -53,7 +53,7 @@
     "probe:derived-order": "node dev-tools/temporal-tree/derived-order-probe.js",
     "probe:required-outputs": "node dev-tools/temporal-tree/required-outputs-probe.js",
     "probe:causal-outputs": "node dev-tools/temporal-tree/causal-outputs-probe.js",
-    "verify": "npm run check && npm run check:all-in-one && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && surreal validate build/test/migrate-one-shot-backfill.surql && surreal validate build/test/migrate-one-shot-finalize.surql && surreal validate build/all-in-one/migrate-one-shot-backfill.surql && surreal validate build/all-in-one/migrate-one-shot-finalize.surql && npm run probe:environment && npm run probe:authentication && npm run probe:credentials && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:admission && npm run probe:dead-letters && npm run probe:runtime && npm run probe:scheduling && npm run probe:webhook-inbox && npm run probe:adapters && npm run probe:temporal-tree && npm run probe:typed-tree && npm run probe:boundary-tree && npm run probe:derived-order && npm run probe:required-outputs && npm run probe:causal-outputs && npm run probe:accounts && npm run probe:suite && npm run probe",
+    "verify": "npm run check && npm run check:all-in-one && npm run check:all-in-accounting && surreal validate build/all-in-accounting/schema.surql && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && surreal validate build/test/migrate-one-shot-backfill.surql && surreal validate build/test/migrate-one-shot-finalize.surql && surreal validate build/all-in-one/migrate-one-shot-backfill.surql && surreal validate build/all-in-one/migrate-one-shot-finalize.surql && npm run probe:environment && npm run probe:authentication && npm run probe:tenant-auth && npm run probe:tenant-records && npm run probe:passkeys && npm run probe:credentials && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:admission && npm run probe:dead-letters && npm run probe:runtime && npm run probe:live && npm run probe:scheduling && npm run probe:webhook-inbox && npm run probe:adapters && npm run probe:temporal-tree && npm run probe:typed-tree && npm run probe:ordered-tree && npm run probe:boundary-tree && npm run probe:derived-order && npm run probe:required-outputs && npm run probe:causal-outputs && npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools",
     "probe:suite": "node dev-tools/checks/suite-probe.js",
     "probe:accounting-h6a": "node dev-tools/accounting/h6a-probe.js",
     "probe:accounting-h6b": "node dev-tools/accounting/h6b-probe.js",
@@ -61,7 +61,15 @@
     "probe:accounting-h7-assembly": "node dev-tools/accounting/h7-assembly-probe.js",
     "probe:accounting-h8-feasibility": "node dev-tools/accounting/h8-production-feasibility-probe.js",
     "probe:accounting-h8": "node dev-tools/accounting/h8-timed-production-probe.js",
-    "probe:accounting-h8-metrics": "node dev-tools/accounting/h8-measurement-probe.js --metric-sample"
+    "probe:accounting-h8-metrics": "node dev-tools/accounting/h8-measurement-probe.js --metric-sample",
+    "test:dev-tools": "node --test dev-tools/tests/*.test.js",
+    "probe:tenant-auth": "node dev-tools/checks/tenant-auth-probe.js",
+    "probe:tenant-records": "node dev-tools/checks/tenant-record-probe.js",
+    "probe:passkeys": "node dev-tools/checks/passkey-probe.js",
+    "probe:ordered-tree": "node dev-tools/temporal-tree/ordered-probe.js",
+    "probe:live": "node dev-tools/checks/live-probe.js",
+    "probe:delivery-taxes": "node dev-tools/accounting/delivery-tax-probe.js",
+    "verify:accounting": "npm run probe:accounting-core && npm run probe:accounting-h4a && npm run probe:accounting-h4b && npm run probe:accounting-h4b2 && npm run probe:accounting-h4b3 && npm run probe:accounting-h4b4a && npm run probe:accounting-h4b4b && npm run probe:accounting-h4b5a && npm run probe:accounting-h4b5b && npm run probe:stock-timestamp-guard && npm run probe:accounting-h5b && npm run probe:accounting-h5c && npm run probe:treasury-timestamp-guard && npm run probe:accounting-h6a && npm run probe:accounting-h6b && npm run probe:accounting-h7-gross-input && npm run probe:accounting-h7-assembly && npm run probe:accounting-h8 && npm run probe:delivery-taxes"
   },
   "engines": {
     "node": ">=20.6.0"
@@ -70,12 +78,14 @@
     "@aws-sdk/client-s3": "^3.1117.0",
     "@aws-sdk/s3-request-presigner": "^3.1117.0",
     "@faker-js/faker": "^9.9.0",
+    "@simplewebauthn/server": "^13.3.3",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "bullmq": "6.2.0",
     "ioredis": "6.0.0",
     "json-schema-faker": "^0.5.9",
     "seedrandom": "^3.0.5",
-    "surrealdb": "^2.0.8"
+    "surrealdb": "^2.0.8",
+    "ws": "^8.22.0"
   }
 }

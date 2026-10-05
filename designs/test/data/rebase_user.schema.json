@@ -15,19 +15,19 @@
     },
     "parents": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
       "minItems": 1,
       "maxItems": 5,
       "uniqueItems": true
     },
     "a_favorite_primitive": {
       "type": "string",
-      "pattern": "^test_primitive:[a-z0-9-]+$",
+      "pattern": "^test_primitive:.+$",
       "x-rebase-optional-probability": 0.35
     },
     "a_friends": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^rebase_user:[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^rebase_user:.+$" },
       "minItems": 0,
       "maxItems": 5,
       "uniqueItems": true,
@@ -37,7 +37,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^(test_primitive|test_tree):[a-z0-9-]+$"
+        "pattern": "^(test_primitive|test_tree):.+$"
       },
       "minItems": 0,
       "maxItems": 5,

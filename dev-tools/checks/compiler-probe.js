@@ -153,13 +153,13 @@ async function main() {
     }, readerSystemTables);
     const indexLine = security => security.match(/DEFINE FIELD OVERWRITE readers_index ON TABLE reader_child[^\n]+/)[0];
     assert.equal(indexLine(readersSecurity), indexLine(ownerSecurity), 'both select policies compute the same protected reader index');
-    assert.match(indexLine(readersSecurity), /\[<string>\$this\.parent\.owned_by\].*PERMISSIONS NONE/);
+    assert.match(indexLine(readersSecurity), /\[\$this\.parent\.owned_by\].*PERMISSIONS NONE/);
     assert.doesNotMatch(indexLine(readersSecurity), /parent\.readers_index/);
-    assert.match(readersSecurity, /readers_index CONTAINSANY \$auth\.z_access_index/,
+    assert.match(readersSecurity, /array::any\(readers_index.*fn::rebase::can_access/,
       'reader grants intersect both user and group authorization principals');
-    assert.doesNotMatch(ownerSecurity, /readers_index CONTAINSANY/,
+    assert.doesNotMatch(ownerSecurity, /array::any\(readers_index/,
       'owner policy does not apply reader grants');
-    assert.match(ownerSecurity, /owned_by IN \$auth\.z_access_index/,
+    assert.match(ownerSecurity, /fn::rebase::can_access\(\$auth, owned_by\)/,
       'owner policy includes directly owned users and groups');
     const explicit = classifyMaterials([{
       group: 'project', path: 'explicit.surql', relative: 'explicit.surql',
@@ -195,7 +195,7 @@ async function main() {
       assert.throws(() => compile(dir, path.join(temp, `${name}-build`)), error);
     }
     const badTreeDir = path.join(temp, 'bad-tree-source-location');
-    project(badTreeDir, fixture.replace('@rebase-tree-root @rebase-tree-key datetime', '@rebase-tree-root'), null);
+    project(badTreeDir, fixture.replace('@rebase-tree-key datetime', ''), null);
     assert.throws(() => compile(badTreeDir, path.join(temp, 'bad-tree-build')),
       /tree_owner\.z_book.*project:material\.surql:\d+:\d+/);
     const forwardSource = fixture.replace('VALUE $this.a_user.name', 'VALUE $this.z_zz')
@@ -278,20 +278,24 @@ async function main() {
     assert.deepEqual(result.contracts.principals, {
       user: "rebase_user",
       group: "rebase_group",
-      root: "rebase_group:root",
+      tenant: "rebase_tenant",
     });
     assert.deepEqual(result.contracts.tables.delivery.events, ["CREATE"]);
     assert.deepEqual(result.contracts.tables.delivery.patchFields, ["result"]);
     assert.deepEqual(result.contracts.tables.delivery.adapters, ["sendDelivery"]);
-    assert.match(result.bundle, /session::ns\(\)/);
-    assert.match(result.bundle, /session::db\(\)/);
+    assert.doesNotMatch(result.bundle, /session::ns\(\)/);
+    assert.doesNotMatch(result.bundle, /session::db\(\)/);
     const oauthAccess = result.bundle.match(/-- REBASE: oauth access\n([\s\S]*?)(?=\n-- REBASE:)/)?.[1] || "";
     assert.match(oauthAccess, /DEFINE ACCESS OVERWRITE oauth/);
     assert.match(oauthAccess, /internal\/oauth/);
     assert.match(oauthAccess, /token: \$oauth_token/);
     assert.doesNotMatch(oauthAccess, /provider_token/);
     assert.match(oauthAccess, /login_access = true/);
-    assert.doesNotMatch(oauthAccess, /\b(?:SIGNUP|CREATE|UPDATE|UPSERT|INSERT)\b/);
+    // OAuth can verify an existing tenant identity, but must not provision
+    // accounts or perform any other mutation during sign-in.
+    const identityVerification = "UPDATE $identity.id SET verified_revision = revision, verified_at = time::now();";
+    assert(oauthAccess.includes(identityVerification));
+    assert.doesNotMatch(oauthAccess.replace(identityVerification, ""), /\b(?:SIGNUP|CREATE|UPDATE|UPSERT|INSERT|DELETE)\b/);
     assert.match(result.bundle, /execute_at ON TABLE delivery TYPE datetime DEFAULT time::now\(\)/);
     assert.match(result.bundle, /priority ON TABLE delivery TYPE int DEFAULT 50/);
     assert.match(result.bundle, /rebase_attempt ON TABLE delivery TYPE int DEFAULT 0/);

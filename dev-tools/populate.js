@@ -118,6 +118,7 @@ function parseArgs(argv) {
     else if (option === "--source") options.sourceDir = next();
     else if (option === "--build") options.buildDir = next();
     else if (option === "--table") options.table = next();
+    else if (option === "--tenant") options.tenant = next();
     else if (option === "--count") options.count = Number(next());
     else if (option === "--batch-size") options.batchSize = Number(next());
     else if (option === "--reservoir-size")
@@ -147,6 +148,7 @@ Options:
   --source <directory>       Explicit design source directory
   --build <directory>        Explicit compiled artifact directory
   --table <name|all>        Populate one table or every data schema
+  --tenant <record-id>     Existing tenant (inferred only when exactly one exists)
   --count <n>               Records per table (default: 25)
   --batch-size <n>          Insert batch size (default: 100)
   --reservoir-size <n>      Maximum sampled IDs per table (default: 2000)
@@ -183,14 +185,14 @@ function loadDataSchemas(sourceDir) {
   );
 }
 
-async function loadReservoir(db, table, reservoir, pageSize) {
+async function loadReservoir(db, table, reservoir, pageSize, tenant) {
   let after;
   for (;;) {
     const rows =
       queryResult(
         await db.query(
-          `SELECT VALUE <string>id FROM ${identifier(table, "table")} WHERE $after = NONE OR <string>id > $after ORDER BY id LIMIT $limit;`,
-          { after, limit: pageSize },
+          `SELECT VALUE <string>id FROM ${identifier(table, "table")} WHERE tenant = type::record($tenant) AND ($after = NONE OR <string>id > $after) ORDER BY id LIMIT $limit;`,
+          { after, limit: pageSize, tenant },
         ),
       ) || [];
     for (const id of rows) reservoir.add(id);
@@ -220,6 +222,7 @@ function generationSchema(schema, table, tableDefinition, pools, random, princip
       const owners = [
         ...(pools.get(principals.user)?.values || []),
         ...(pools.get(principals.group)?.values || []),
+        ...(pools.get(principals.tenant)?.values || []),
       ];
       if (!owners.length) blocked.push(`${table}.owned_by`);
       else {
@@ -261,6 +264,7 @@ function generationSchema(schema, table, tableDefinition, pools, random, princip
     const parents = [
       ...(pools.get(principals.group)?.values || []),
       ...(pools.get(principals.user)?.values || []),
+      ...(pools.get(principals.tenant)?.values || []),
     ];
     if (!parents.length) blocked.push(`${table}.parents`);
     else
@@ -366,7 +370,7 @@ async function populate(options) {
   if (!dataSchemas.size)
     throw new Error(`No data schemas found in ${path.join(sourceDir, "data")}`);
   const parsed = parseSchema(fs.readFileSync(compiledPath, "utf8"), "");
-  const principals = { user: "rebase_user", group: "rebase_group" };
+  const principals = { user: "rebase_user", group: "rebase_group", tenant: "rebase_tenant" };
   if (!parsed.tables.has(principals.user) || !parsed.tables.has(principals.group)) {
     throw new Error("Compiled schema must define rebase_user and rebase_group");
   }
@@ -409,7 +413,12 @@ async function populate(options) {
   });
   const db = connection.db;
   try {
-    const targetTables = new Set([principals.group, principals.user]);
+    const tenants = queryResult(await db.query('SELECT VALUE <string>id FROM rebase_tenant WHERE $tenant = NONE OR id = type::record($tenant) LIMIT 2;', {
+      tenant: options.tenant ? String(options.tenant) : undefined,
+    })) || [];
+    if (tenants.length !== 1) throw new Error('Populate requires one existing tenant; provision it explicitly and select --tenant when several exist');
+    const tenant = String(tenants[0]);
+    const targetTables = new Set([principals.group, principals.user, principals.tenant]);
     for (const table of tables) {
       for (const field of parsed.tables.get(table).fields.values()) {
         for (const target of field.recordType?.targets || [])
@@ -423,7 +432,7 @@ async function populate(options) {
       ]),
     );
     for (const [table, reservoir] of pools)
-      await loadReservoir(db, table, reservoir, options.pageSize);
+      await loadReservoir(db, table, reservoir, options.pageSize, tenant);
 
     const remaining = new Map(tables.map((table) => [table, options.count]));
     const created = Object.fromEntries(tables.map((table) => [table, 0]));

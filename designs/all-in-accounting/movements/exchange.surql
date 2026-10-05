@@ -31,9 +31,9 @@ DEFINE FIELD OVERWRITE owned_by ON exchange_pair TYPE record<rebase_user | rebas
 DEFINE FIELD OVERWRITE economic_entity ON exchange_pair TYPE record<rebase_user | organization> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE given_resource ON exchange_pair TYPE record<currency | item | service> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE received_resource ON exchange_pair TYPE record<currency | item | service> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_history ON exchange_pair TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_history ON exchange_pair TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE INDEX OVERWRITE exchange_pair_scope_orientation ON exchange_pair
-    FIELDS owned_by, economic_entity, given_resource, received_resource UNIQUE;
+    FIELDS tenant, owned_by, economic_entity, given_resource, received_resource UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::cash_exchange_members($row: object) {
     RETURN [
@@ -120,4 +120,4 @@ DEFINE FIELD OVERWRITE effective_at ON cash_exchange_reversal TYPE datetime COMM
 DEFINE FIELD OVERWRITE z_given ON cash_exchange_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
 DEFINE FIELD OVERWRITE z_received ON cash_exchange_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
 DEFINE FIELD OVERWRITE z_pair ON cash_exchange_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_history';
-DEFINE INDEX OVERWRITE cash_exchange_reversal_source ON cash_exchange_reversal FIELDS source UNIQUE;
+DEFINE INDEX OVERWRITE cash_exchange_reversal_source ON cash_exchange_reversal FIELDS tenant, source UNIQUE;

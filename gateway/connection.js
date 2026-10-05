@@ -1,4 +1,5 @@
 const { Surreal } = require("surrealdb");
+const WebSocket = require('ws');
 
 function sessionEndpoint(endpoint) {
   if (!endpoint) throw new Error("SURREAL_ENDPOINT is required");
@@ -38,7 +39,9 @@ async function connectDatabase(options = {}) {
   const { namespace, database } = options;
   if (!namespace || !database) throw new Error("Namespace and database are required");
   const timeoutMs = options.connectTimeoutMs || 10000;
-  const db = new Surreal();
+  // ws closes failed handshakes reliably; Node's built-in WebSocket can emit
+  // only an error, leaving the SDK waiting forever before its next reconnect.
+  const db = new Surreal({ websocketImpl: WebSocket });
   await connectWithTimeout(
     db,
     sessionEndpoint(options.endpoint),

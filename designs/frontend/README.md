@@ -1,13 +1,16 @@
-# Frontend implementation
+# Frontend implementation and tenant migration
 
-Started 2026-10-02 as separate work from the completed developer-tools redesign.
-The current request authorizes direct frontend implementation, including breaking
-changes and removal of superseded frontend code. This package owns the frontend
-plan and evidence; the existing core and accounting handoffs retain their scope.
+The source in the separate MetaSol repository remains the frontend verified
+on 2026-10-03, unchanged at `ada483e`. The tenant/tree backend changes tenant
+login, identity ownership and authorization; its
+[2026-10-05 evidence](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
+records backend acceptance separately. **Frontend migration is deferred;
+the old frontend is not certified against the new backend.**
 
-The user's 2026-10-03 request includes fresh frontend and backend verification.
-See [the current review](verification.md#redesign-review--2026-10-03) for the
-passed baseline, invoice timestamp correction and acceptance boundary.
+Start the next frontend change with the [tenant migration continuation](continuation-prompts.md#tenant-backend-migration--next-required-packet)
+and [backend contract](../rebase-system/tenant-tree-redesign.md). Keep the small
+Solid/native SDK structure. The older source descriptions and verification
+below describe the unchanged frontend baseline.
 
 ## Reading route
 

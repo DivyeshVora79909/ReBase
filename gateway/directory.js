@@ -1,18 +1,24 @@
-const { connectDatabase } = require("./connection");
-const { createTableStore } = require("./store");
+const { connectDatabase } = require('./connection');
+const { createTableStore } = require('./store');
 
 function contextKey(namespace, database) {
-  if (typeof namespace !== "string" || !namespace || typeof database !== "string" || !database) {
-    throw new Error("Namespace and database are required");
+  if (typeof namespace !== 'string' || !namespace || typeof database !== 'string' || !database) {
+    throw new Error('Namespace and database are required');
   }
   return `${namespace}\u0000${database}`;
+}
+
+function assertDesign(design, namespace, database) {
+  if ((namespace !== undefined && namespace !== design.namespace)
+    || (database !== undefined && database !== design.database)) {
+    throw new Error('Database design context mismatch');
+  }
 }
 
 function fixedStoreDirectory(store, context = {}) {
   return {
     async forContext(namespace, database) {
-      if (context.namespace && namespace !== context.namespace) throw new Error("Namespace context mismatch");
-      if (context.database && database !== context.database) throw new Error("Database context mismatch");
+      assertDesign(context, namespace, database);
       return store;
     },
     async close() {},
@@ -20,89 +26,47 @@ function fixedStoreDirectory(store, context = {}) {
   };
 }
 
-function wrapStore(entry, store) {
-  return new Proxy(store, {
-    get(target, property, receiver) {
-      const value = Reflect.get(target, property, receiver);
-      if (typeof value !== "function" || property === "close") return value;
-      return async (...args) => {
-        entry.active += 1;
-        entry.usedAt = Date.now();
-        try {
-          return await value.apply(target, args);
-        } finally {
-          entry.active -= 1;
-          entry.usedAt = Date.now();
-        }
-      };
-    },
-  });
-}
-
-function createStoreDirectory({ connect, idleMs = 15 * 60 * 1000, maxContexts = 1000 }) {
-  const contexts = new Map();
-
-  async function closeEntry(key, entry) {
-    if (entry.active > 0 || contexts.get(key) !== entry) return false;
-    contexts.delete(key);
-    const resolved = await entry.promise.catch(() => null);
-    await resolved?.close?.();
-    return true;
-  }
-
-  async function sweep(exceptKey) {
-    const now = Date.now();
-    const idle = [...contexts].filter(([key, entry]) => key !== exceptKey && entry.active === 0 && now - entry.usedAt > idleMs);
-    for (const [key, entry] of idle) await closeEntry(key, entry);
-  }
-
+// One lazy shared connection per process design. Tenants do not allocate
+// connections, caches or reconciliation loops. A failed connect can retry.
+function createStoreDirectory({ connect, context } = {}) {
+  let design = context;
+  let pending;
+  let closed = false;
   return {
-    async forContext(namespace, database) {
-      const key = contextKey(namespace, database);
-      let entry = contexts.get(key);
-      if (entry) {
-        entry.usedAt = Date.now();
-        return entry.promise;
+    async forContext(namespace = design?.namespace, database = design?.database) {
+      if (closed) throw new Error('Database connection is closed');
+      if (!design) {
+        contextKey(namespace, database);
+        design = { namespace, database };
       }
-      await sweep();
-      entry = contexts.get(key);
-      if (entry) {
-        entry.usedAt = Date.now();
-        return entry.promise;
+      assertDesign(design, namespace, database);
+      if (!pending) {
+        pending = Promise.resolve().then(() => connect(design)).catch(error => {
+          pending = undefined;
+          throw error;
+        });
       }
-      if (contexts.size >= maxContexts) throw new Error(`SurrealDB context limit reached: ${maxContexts}`);
-      entry = { active: 0, usedAt: Date.now(), promise: null };
-      contexts.set(key, entry);
-      entry.promise = (async () => {
-        const store = await connect({ namespace, database });
-        return wrapStore(entry, store);
-      })().catch((error) => {
-        if (contexts.get(key) === entry) contexts.delete(key);
-        throw error;
-      });
-      return entry.promise;
+      return pending;
     },
     async close() {
-      for (const [key, entry] of [...contexts]) {
-        await entry.promise.catch(() => null);
-        await closeEntry(key, entry);
-      }
+      if (closed) return;
+      closed = true;
+      const store = await pending?.catch(() => null);
+      await store?.close?.();
+      pending = undefined;
     },
-    async sweep() { return sweep(); },
-    size() { return contexts.size; },
+    size() { return pending ? 1 : 0; },
   };
 }
 
 function createSurrealStoreDirectory(options = {}) {
+  const databaseOptions = options.databaseOptions || {};
+  const context = databaseOptions.defaultContext || databaseOptions;
+  contextKey(context.namespace, context.database);
   return createStoreDirectory({
-    idleMs: options.idleMs,
-    maxContexts: options.maxContexts,
-    async connect({ namespace, database }) {
-      const connection = await connectDatabase({
-        ...(options.databaseOptions || {}),
-        namespace,
-        database,
-      });
+    context: { namespace: context.namespace, database: context.database },
+    async connect(design) {
+      const connection = await connectDatabase({ ...databaseOptions, ...design });
       return { ...createTableStore(connection), close: () => connection.close() };
     },
   });

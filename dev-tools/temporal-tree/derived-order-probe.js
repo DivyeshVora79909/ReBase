@@ -48,11 +48,11 @@ const snapshot = q => q(`RETURN {
 
 async function runFixture(server, q, bundle, database) {
   await applySchema(q, bundle);
-  await q(`CREATE natural_rule:base SET owned_by=rebase_group:root, a_add=3dec;
-    CREATE tree_owner:one SET owned_by=rebase_group:root;
-    CREATE natural_fact:sample SET owned_by=rebase_group:root, a_owner=tree_owner:one, a_rule=natural_rule:base,
+  await q(`CREATE natural_rule:base SET owned_by=rebase_tenant:default, a_add=3dec;
+    CREATE tree_owner:one SET owned_by=rebase_tenant:default;
+    CREATE natural_fact:sample SET owned_by=rebase_tenant:default, a_owner=tree_owner:one, a_rule=natural_rule:base,
       a_at=d'2026-10-01T00:00:00Z', a_quantity=2dec;`);
-  await q(`CREATE c3_profile:sample SET owned_by=rebase_group:root,
+  await q(`CREATE c3_profile:sample SET owned_by=rebase_tenant:default,
     profile={ email: 'public@example.test', secret: 'private nested value' }, private_note='private top-level value';`);
   let audit = [];
   for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -62,7 +62,7 @@ async function runFixture(server, q, bundle, database) {
   }
   assert.equal(audit.length, 1, 'nested audit event settles');
   assert.deepEqual(audit[0].after, { profile: { email: 'public@example.test' } });
-  await q(`CREATE c3_profile:missing SET owned_by=rebase_group:root,
+  await q(`CREATE c3_profile:missing SET owned_by=rebase_tenant:default,
     profile={ secret: 'must stay private' }, private_note='another private value';`);
   let missingAudit = [];
   for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -120,7 +120,7 @@ async function runFixture(server, q, bundle, database) {
   assert(derivedAudit.every(entry => !entry.after?.__rebase_derived_0000 && !entry.after?.a_total),
     'private staging and derived output fields stay out of table audit snapshots');
 
-  await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_group:root];
+  await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_tenant:default];
     DEFINE ACCESS c3_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:reader;
     CREATE tree_owner:reader SET owned_by=rebase_user:reader;`);
   const response = await fetch(`${server.url}/signin`, {

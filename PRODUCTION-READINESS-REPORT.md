@@ -1,6 +1,33 @@
 # Production Readiness Report
 
-## Current status — 2026-10-03
+## Current status — 2026-10-05
+
+**Tenant/tree backend T0–T6 passed; ready for lead review.** The
+[execution handoff](designs/rebase-system/tenant-tree-handoff.md) and
+[verification evidence](designs/rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
+record commands, source/build hashes, versions, archived output and resolved failures.
+
+| Gate | Result |
+| --- | --- |
+| Three profile builds and full `npm run verify` | Passed; 1,006.086 seconds for verification, including native validation and all 26 developer-tool tests. |
+| Full `npm run verify:accounting` | Passed in 694.793 seconds, including delivery taxes, existing tax/withholding paths, returns/refunds, exchange and production. |
+| Positions and mocked Razorpay refunds | Passed in 291.274 and 1.028 seconds respectively. |
+| Changed/new JavaScript | All 84 files passed syntax checks. |
+
+Aggregate views preserve their declared owner/reader policy. Managed outputs
+follow dependency order, and live subscriptions recover after failed initial
+attachment. The final source differs from the retained build/backend passes
+only in the isolated H7 feasibility probe, which those commands do not load;
+the complete accounting suite passed after that repair.
+
+SurrealDB 3.3.0 produced duplicate rows in one indexed ID-order source scan.
+Affected snapshots use `WITH NOINDEX ORDER BY id`; the reproduction and limited
+workaround are documented without a broader engine or performance claim.
+MetaSol remains unchanged and needs its separate tenant migration. Live providers,
+production deployment/data migration and representative capacity remain outside
+this acceptance. The 2026-10-03 results below retain their original scope.
+
+## Historical verified baseline — 2026-10-03
 
 **Verified for the requested scope:** developer tools, local SurrealDB
 consistency, and the delivered MetaSol frontend. The

@@ -2,11 +2,13 @@
 const { extractClauseExpression, findTopLevelKeyword } = require('./surql');
 
 // Compile-time contracts only. No persisted registry or runtime comparator code.
-const KEY_TYPES = Object.freeze({
-  datetime: '[datetime, string, string]',
-  int: '[int, string, string]',
-});
-const KNOWN_MARKERS = new Set(['root', 'node', 'key', 'owner']);
+const KEY_TYPES = Object.freeze(['datetime', 'int', 'decimal', 'string', 'record', 'bool', 'uuid']);
+const MAX_KEY_PARTS = 8;
+const KNOWN_MARKERS = new Set(['root', 'node', 'key', 'owner', 'duplicates']);
+
+function keyStorageType(keyType) {
+  return `[${[...keyType.split(','), 'string', 'string'].join(', ')}]`;
+}
 
 function argumentsFor(comment, marker, name) {
   const occurrences = [...comment.matchAll(new RegExp(`@rebase-tree-${marker}\\b`, 'gi'))];
@@ -32,7 +34,7 @@ function resolveTreeContract(schema) {
         if (!KNOWN_MARKERS.has(marker)) throw new Error(`${name}: unknown @rebase-tree-${marker}`);
       }
       if (!markers.length) continue;
-      for (const marker of ['root', 'node']) {
+      for (const marker of ['root', 'node', 'duplicates']) {
         if (markers.filter(value => value === marker).length > 1) throw new Error(`${name}: declare @rebase-tree-${marker} only once`);
       }
       if (!field.treeRoot && !field.treeNode) throw new Error(`${name}: tree key/owner requires @rebase-tree-root or @rebase-tree-node`);
@@ -46,9 +48,14 @@ function resolveTreeContract(schema) {
       }
       const keys = argumentsFor(comment, 'key', name).map(value => value.toLowerCase());
       if (keys.length > 1) throw new Error(`${name}: declare @rebase-tree-key only once`);
-      if (!keys.length) throw new Error(`${name}: requires explicit @rebase-tree-key datetime or int`);
+      if (!keys.length) throw new Error(`${name}: requires explicit @rebase-tree-key ${KEY_TYPES.join(', ')}`);
       const keyType = keys[0];
-      if (!Object.hasOwn(KEY_TYPES, keyType)) throw new Error(`${name}: unsupported tree key '${keyType}'; expected datetime or int`);
+      const keyParts = keyType.split(',');
+      if (keyParts.length > MAX_KEY_PARTS || keyParts.some(part => !KEY_TYPES.includes(part))) {
+        throw new Error(`${name}: unsupported tree key '${keyType}'; expected 1..${MAX_KEY_PARTS} comma-separated components from ${KEY_TYPES.join(', ')}`);
+      }
+      const duplicates = markers.includes('duplicates');
+      if (duplicates && !field.treeRoot) throw new Error(`${name}: @rebase-tree-duplicates belongs on a root field`);
       const owners = argumentsFor(comment, 'owner', name);
       if (new Set(owners).size !== owners.length) throw new Error(`${name}: duplicate @rebase-tree-owner target`);
       for (const owner of owners) {
@@ -61,7 +68,8 @@ function resolveTreeContract(schema) {
         throw new Error(`${name}: nodes require an explicit @rebase-tree-owner table.root_field`);
       }
       if (field.treeNode && !table.treeMembers) throw new Error(`${table.name} requires @rebase-members fn::...`);
-      (field.treeRoot ? roots : nodes).push({ name, table: table.name, slot: field.name, field, keyType, ownerNames: owners });
+      (field.treeRoot ? roots : nodes).push({ name, table: table.name, slot: field.name, field,
+        keyType, keyParts, unique: !duplicates, ownerNames: owners });
     }
     if (table.treeMembers && !nodes.some(node => node.table === table.name)) throw new Error(`${table.name}: @rebase-members requires at least one tree node field`);
   }
@@ -86,4 +94,4 @@ function resolveTreeContract(schema) {
   return { roots, nodes };
 }
 
-module.exports = { KEY_TYPES, resolveTreeContract };
+module.exports = { KEY_TYPES, MAX_KEY_PARTS, keyStorageType, resolveTreeContract };

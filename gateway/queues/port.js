@@ -5,29 +5,29 @@ const ACTIONS = new Set(["ack", "retry", "dead-letter"]);
 const WORK_KINDS = new Set(["operation", "receipt"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function designQueuePrefix(prefix, { namespace, database } = {}) {
+  if (!namespace || !database) throw new Error('Queue requires a configured database design');
+  const digest = crypto.createHash('sha256').update(JSON.stringify([namespace, database])).digest('hex').slice(0, 16);
+  return `${prefix}:${digest}`;
+}
+
 function assertLocator(locator) {
   const valid = locator && typeof locator === "object" && !Array.isArray(locator)
-    && typeof locator.namespace === "string" && locator.namespace.length > 0
-    && typeof locator.database === "string" && locator.database.length > 0
     && typeof locator.id === "string" && /^[A-Za-z_][A-Za-z0-9_]*:.+/.test(locator.id);
-  if (!valid || Object.keys(locator).some((key) => !["namespace", "database", "id"].includes(key))) {
-    throw new RuntimeError("INVALID_QUEUE_LOCATOR", "Queue locator must contain only namespace, database, and id", 400);
+  if (!valid || Object.keys(locator).some((key) => key !== "id")) {
+    throw new RuntimeError("INVALID_QUEUE_LOCATOR", "Queue locator must contain only a record id; the process selects the design", 400);
   }
-  return {
-    namespace: locator.namespace,
-    database: locator.database,
-    id: locator.id,
-  };
+  return { id: locator.id };
 }
 
 function locatorKey(locator) {
   const value = assertLocator(locator);
-  return Buffer.from(JSON.stringify([value.namespace, value.database, value.id])).toString("base64url");
+  return Buffer.from(value.id).toString("base64url");
 }
 
 function assertWorkEnvelope(envelope) {
   const commonValid = envelope && typeof envelope === "object" && !Array.isArray(envelope)
-    && envelope.version === 1
+    && envelope.version === 2
     && WORK_KINDS.has(envelope.kind)
     && typeof envelope.revision === "string" && UUID_PATTERN.test(envelope.revision);
   const expectedKeys = envelope?.kind === "receipt"
@@ -42,7 +42,7 @@ function assertWorkEnvelope(envelope) {
     throw new RuntimeError("INVALID_WORK_ENVELOPE", "Work envelope must be a versioned operation or receipt identity", 400);
   }
   return {
-    version: 1,
+    version: 2,
     kind: envelope.kind,
     locator: assertLocator(envelope.locator),
     ...(envelope.kind === "operation" ? { executionId: envelope.executionId.toLowerCase() } : {}),
@@ -63,7 +63,7 @@ function operationEnvelope(locator, record) {
     throw new RuntimeError("WORK_RECORD_REQUIRED", "A current task record is required to create a work envelope", 409);
   }
   return assertWorkEnvelope({
-    version: 1,
+    version: 2,
     kind: "operation",
     locator: assertLocator(locator),
     executionId: String(record.execution_id || ""),
@@ -73,7 +73,7 @@ function operationEnvelope(locator, record) {
 
 function receiptEnvelope(locator, revision) {
   return assertWorkEnvelope({
-    version: 1,
+    version: 2,
     kind: "receipt",
     locator: assertLocator(locator),
     revision: String(revision || ""),
@@ -85,8 +85,6 @@ function workEnvelopeKey(envelope) {
   const canonical = JSON.stringify([
     value.version,
     value.kind,
-    value.locator.namespace,
-    value.locator.database,
     value.locator.id,
     value.executionId || null,
     value.revision,
@@ -128,6 +126,7 @@ module.exports = {
   assertOperationEnvelope,
   assertPriority,
   assertWorkEnvelope,
+  designQueuePrefix,
   locatorKey,
   normalizeDecision,
   operationEnvelope,

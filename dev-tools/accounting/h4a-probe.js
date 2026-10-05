@@ -138,66 +138,67 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:customer SET owned_by = rebase_group:root, name = 'Customer';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Authority';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:unit SET owned_by = rebase_group:root, name = 'Unit', unit = measure_unit:each;
-      CREATE ONLY operating_unit:store SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Store';
-      CREATE ONLY stock_account:stock SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:customer SET owned_by = rebase_tenant:default, name = 'Customer';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Authority';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:unit SET owned_by = rebase_tenant:default, name = 'Unit', unit = measure_unit:each;
+      CREATE ONLY operating_unit:store SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Store';
+      CREATE ONLY stock_account:stock SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         operating_unit = operating_unit:store, resource = item:unit;
-      CREATE ONLY stock_in:seed SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY stock_in:seed SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = stock_account:stock, quantity = 10dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY stock_out:dispatch_a SET owned_by = rebase_group:root, from_account = stock_account:stock,
+      CREATE ONLY stock_out:dispatch_a SET owned_by = rebase_tenant:default, from_account = stock_account:stock,
         to_party = organization:customer, quantity = 2dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_out:dispatch_b SET owned_by = rebase_group:root, from_account = stock_account:stock,
+      CREATE ONLY stock_out:dispatch_b SET owned_by = rebase_tenant:default, from_account = stock_account:stock,
         to_party = organization:customer, quantity = 2dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY tax_account:identity_a SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:identity_a SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'A';
-      CREATE ONLY tax_account:identity_b SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:identity_b SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'B';
-      CREATE ONLY claim_account:customer SET owned_by = rebase_group:root,
+      CREATE ONLY claim_account:customer SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, opponent = organization:customer, currency = currency:usd;
-      CREATE ONLY claim_account:tax_a SET owned_by = rebase_group:root,
+      CREATE ONLY claim_account:tax_a SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, opponent = tax_account:identity_a, currency = currency:usd;
-      CREATE ONLY claim_account:tax_b SET owned_by = rebase_group:root,
+      CREATE ONLY claim_account:tax_b SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, opponent = tax_account:identity_b, currency = currency:usd;
-      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_group:root,
+      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, opponent = tax_account:identity_a, currency = currency:eur;
-      CREATE ONLY sales_invoice:invoice_a SET owned_by = rebase_group:root,
+      CREATE ONLY sales_invoice:invoice_a SET owned_by = rebase_tenant:default,
         claim_account = claim_account:customer, number = 'H4A-A';
-      CREATE ONLY sales_invoice:invoice_b SET owned_by = rebase_group:root,
+      CREATE ONLY sales_invoice:invoice_b SET owned_by = rebase_tenant:default,
         claim_account = claim_account:customer, number = 'H4A-B';
-      CREATE ONLY sales_tax_rule_version:fixed_v1 SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:fixed_v1 SET owned_by = rebase_tenant:default,
         component_key = 'fixed', version = 'v1', tax_claim_account = claim_account:tax_a,
         regime = 'fixture', provision = 'fixed', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'fixed', fixed_amount = 1dec;
-      CREATE ONLY sales_tax_rule_version:rate_v1 SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:rate_v1 SET owned_by = rebase_tenant:default,
         component_key = 'rate', version = 'v1', tax_claim_account = claim_account:tax_b,
         regime = 'fixture', provision = 'proportional', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'proportional', rate = 0.10dec;
-      CREATE ONLY sales_tax_rule_version:rate_v2 SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:rate_v2 SET owned_by = rebase_tenant:default,
         component_key = 'rate', version = 'v2', tax_claim_account = claim_account:tax_b,
         regime = 'fixture', provision = 'proportional', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'proportional', rate = 0.20dec;
-      CREATE ONLY sales_tax_rule_version:wrong_key SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:wrong_key SET owned_by = rebase_tenant:default,
         component_key = 'other', version = 'v1', tax_claim_account = claim_account:tax_a,
         regime = 'fixture', provision = 'wrong key', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'fixed', fixed_amount = 1dec;
-      CREATE ONLY sales_tax_rule_version:wrong_currency SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:wrong_currency SET owned_by = rebase_tenant:default,
         component_key = 'fixed', version = 'eur', tax_claim_account = claim_account:tax_eur,
         regime = 'fixture', provision = 'wrong currency', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'fixed', fixed_amount = 1dec;
-      CREATE ONLY sales_tax_rule_version:tiny SET owned_by = rebase_group:root,
+      CREATE ONLY sales_tax_rule_version:tiny SET owned_by = rebase_tenant:default,
         component_key = 'rate', version = 'tiny', tax_claim_account = claim_account:tax_b,
         regime = 'fixture', provision = 'rounds to zero', valid_from = d'2026-07-01T00:00:00Z',
         valid_until = d'2026-09-01T00:00:00Z', kind = 'proportional', rate = 0.00001dec;
     `);
     await oracle(db);
-    await db.query(`CREATE ONLY sales_invoice_issue:current SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY sales_invoice_issue:current SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:invoice_a, issued_at = d'2026-07-02T00:00:00Z',
       lines = [{ line_key: 'dispatch', source: stock_out:dispatch_a, billed_quantity: 2dec, unit_price: 5dec }],
       tax_components = [
@@ -218,7 +219,7 @@ async function main() {
     assert.equal(id(data.taxes.find((row) => row.rebase_managed_role === 'tax:fixed').id), fixedId);
     assert.equal(id(data.taxes.find((row) => row.rebase_managed_role === 'tax:rate').id), rateId);
 
-    await db.query(`CREATE ONLY sales_invoice_issue:old SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY sales_invoice_issue:old SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:invoice_b, issued_at = d'2026-07-02T00:00:00Z',
       lines = [{ line_key: 'dispatch', source: stock_out:dispatch_b, billed_quantity: 2dec, unit_price: 5dec }],
       tax_components = [
@@ -243,22 +244,22 @@ async function main() {
 
     await rejectsWithoutChange(db, `UPDATE sales_tax_rule_version:rate_v1 SET rate = 0.30dec;`, 'selected version is immutable');
     await rejectsWithoutChange(db, `DELETE sales_tax_rule_version:rate_v1;`, 'selected version cannot be deleted');
-    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_shape SET owned_by = rebase_group:root,
+    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_shape SET owned_by = rebase_tenant:default,
       component_key = 'bad', version = 'v1', tax_claim_account = claim_account:tax_a,
       regime = 'fixture', provision = 'invalid shape', valid_from = d'2026-07-01T00:00:00Z',
       valid_until = d'2026-09-01T00:00:00Z', kind = 'proportional', rate = 0.10dec,
       fixed_amount = 1dec;`, 'rule calculation shape is exclusive');
-    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_precision SET owned_by = rebase_group:root,
+    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_precision SET owned_by = rebase_tenant:default,
       component_key = 'bad', version = 'precision', tax_claim_account = claim_account:tax_a,
       regime = 'fixture', provision = 'amount exceeds currency precision', valid_from = d'2026-07-01T00:00:00Z',
       valid_until = d'2026-09-01T00:00:00Z', kind = 'fixed', fixed_amount = 1.001dec;`,
     'fixed amount obeys its selected currency precision');
-    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_interval SET owned_by = rebase_group:root,
+    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_interval SET owned_by = rebase_tenant:default,
       component_key = 'bad', version = 'v2', tax_claim_account = claim_account:tax_a,
       regime = 'fixture', provision = 'invalid interval', valid_from = d'2026-09-01T00:00:00Z',
       valid_until = d'2026-07-01T00:00:00Z', kind = 'fixed', fixed_amount = 1dec;`,
     'rule interval is ordered');
-    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_account SET owned_by = rebase_group:root,
+    await rejectsWithoutChange(db, `CREATE ONLY sales_tax_rule_version:bad_account SET owned_by = rebase_tenant:default,
       component_key = 'bad', version = 'v3', tax_claim_account = claim_account:customer,
       regime = 'fixture', provision = 'invalid account', valid_from = d'2026-07-01T00:00:00Z',
       valid_until = d'2026-09-01T00:00:00Z', kind = 'fixed', fixed_amount = 1dec;`,

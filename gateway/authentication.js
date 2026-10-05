@@ -13,15 +13,24 @@ function identifier(value) {
   return value;
 }
 
-function contextKey(namespace, database) {
-  return `${namespace}\u0000${database}`;
-}
-
 function contextPart(value, label) {
   if (typeof value !== "string" || !value || value.length > 256 || /[\u0000-\u001f\u007f]/.test(value)) {
     throw new RuntimeError("INVALID_AUTHENTICATION_REQUEST", `${label} is invalid`, 400);
   }
   return value;
+}
+
+function tenantId(value) {
+  const tenant = contextPart(value, "Tenant");
+  if (!tenant.startsWith("rebase_tenant:") || tenant.length <= "rebase_tenant:".length) {
+    throw new RuntimeError("INVALID_AUTHENTICATION_REQUEST", "A tenant record ID is required", 400);
+  }
+  return tenant;
+}
+
+async function resolveTenant(store, value) {
+  return store.execute(`RETURN (SELECT VALUE <string>id FROM type::record($tenant)
+    WHERE record::tb(id) = 'rebase_tenant')[0];`, { tenant: tenantId(value) });
 }
 
 function digest(value) {
@@ -89,15 +98,14 @@ function challengeMessage(identity, context, code, ttlMs, channel, expiresAt) {
     `Your ReBase ${channel} verification code is ${code}.`,
     `It expires at ${expires}.`,
     "",
-    `Namespace: ${context.namespace}`,
-    `Database: ${context.database}`,
+    `Tenant: ${context.tenant}`,
     "",
     "If you did not request this code, you can ignore this message.",
   ].join("\n");
   const html = `<p>Hello ${escapeHtml(name)},</p>
 <p>Your ReBase ${escapeHtml(channel)} verification code is <strong>${escapeHtml(code)}</strong>.</p>
 <p>It expires at ${escapeHtml(expires)}.</p>
-<p>Namespace: <code>${escapeHtml(context.namespace)}</code><br>Database: <code>${escapeHtml(context.database)}</code></p>
+<p>Tenant: <code>${escapeHtml(context.tenant)}</code></p>
 <p>If you did not request this code, you can ignore this message.</p>`;
   if (channel === "phone") {
     return {
@@ -129,13 +137,11 @@ function unavailableError(code = "AUTHENTICATION_UNAVAILABLE", cause) {
 
 function createAuthenticationService(options = {}) {
   if (!options.stores?.forContext) throw new Error("Authentication requires a store directory");
-  const userTable = identifier(options.principals?.user || "user");
-  const allowedContexts = options.allowedContexts
-    ? new Set(options.allowedContexts.map((context) => contextKey(
-        contextPart(context?.namespace, "Namespace"),
-        contextPart(context?.database, "Database"),
-      )))
-    : null;
+  const userTable = identifier(options.principals?.user || "rebase_user");
+  const design = {
+    namespace: contextPart(options.defaultContext?.namespace, "Design namespace"),
+    database: contextPart(options.defaultContext?.database, "Design database"),
+  };
   const sealAuthenticationPayload = typeof options.sealAuthenticationPayload === "function"
     ? options.sealAuthenticationPayload
     : null;
@@ -165,7 +171,7 @@ function createAuthenticationService(options = {}) {
           limit: rateLimits.ip,
           windowMs: rateLimits.windowMs,
         }),
-        rateLimiter.consume(`authentication:account:${digest(`${contextKey(context.namespace, context.database)}\u0000${channel}\u0000${accountIdentifier}`)}`, {
+        rateLimiter.consume(`authentication:account:${digest(`${design.namespace}\u0000${design.database}\u0000${context.tenant}\u0000${channel}\u0000${accountIdentifier}`)}`, {
           limit: rateLimits.identifier,
           windowMs: rateLimits.windowMs,
         }),
@@ -197,49 +203,49 @@ function createAuthenticationService(options = {}) {
     }
   }
 
-  async function findIdentity(store, channel, accountIdentifier) {
+  async function findIdentity(store, tenant, channel, accountIdentifier) {
     const table = IDENTITY_TABLES[channel];
     const field = channel === "phone" ? "number" : "address";
     return store.execute(`
-      RETURN (SELECT id, principal, ${field}, revision,
-        principal.name AS name,
-        principal.authentication_revision AS principal_revision,
+      RETURN (SELECT id, owned_by, <string>tenant AS tenant, ${field}, revision,
+        owned_by.name AS name,
+        owned_by.authentication_revision AS principal_revision,
         '${channel}' AS channel,
         priority
         FROM ${table}
-        WHERE ${field} = $identifier AND principal.login_access = true)[0];
-    `, { identifier: accountIdentifier });
+        WHERE tenant = type::record($tenant) AND ${field} = $identifier AND owned_by.login_access = true)[0];
+    `, { tenant, identifier: accountIdentifier });
   }
 
-  async function findUsernameIdentities(store, accountIdentifier) {
+  async function findUsernameIdentities(store, tenant, accountIdentifier) {
     return store.execute(`
       LET $principal = (SELECT VALUE id FROM ${userTable}
-        WHERE username = $identifier AND login_access = true)[0];
+        WHERE tenant = type::record($tenant) AND username = $identifier AND login_access = true)[0];
       RETURN {
         principal: $principal,
-        email: (SELECT id, principal, address, revision,
-          principal.name AS name,
-          principal.authentication_revision AS principal_revision,
+        email: (SELECT id, owned_by, <string>tenant AS tenant, address, revision,
+          owned_by.name AS name,
+          owned_by.authentication_revision AS principal_revision,
           'email' AS channel, priority
           FROM authentication_email
-          WHERE principal = $principal AND principal.login_access = true
+          WHERE tenant = type::record($tenant) AND owned_by = $principal AND owned_by.login_access = true
           ORDER BY priority DESC, id ASC),
-        phone: (SELECT id, principal, number, revision,
-          principal.name AS name,
-          principal.authentication_revision AS principal_revision,
+        phone: (SELECT id, owned_by, <string>tenant AS tenant, number, revision,
+          owned_by.name AS name,
+          owned_by.authentication_revision AS principal_revision,
           'phone' AS channel, priority
           FROM authentication_phone
-          WHERE principal = $principal AND principal.login_access = true
+          WHERE tenant = type::record($tenant) AND owned_by = $principal AND owned_by.login_access = true
           ORDER BY priority DESC, id ASC)
       };
-    `, { identifier: accountIdentifier });
+    `, { tenant, identifier: accountIdentifier });
   }
 
-  async function findDeliveryPolicy(store) {
+  async function findDeliveryPolicy(store, tenant) {
     return store.execute(`
       RETURN (SELECT email_configuration, phone_configuration
-        FROM rebase_authentication_delivery_policy:default)[0];
-    `);
+        FROM rebase_authentication_delivery_policy WHERE tenant = type::record($tenant))[0];
+    `, { tenant });
   }
 
   async function enqueueChallenge(store, identity, channel, configuration, code, expiresAt, context) {
@@ -279,7 +285,7 @@ function createAuthenticationService(options = {}) {
       RETURN true;
     `, {
       new_challenge_id: challengeId,
-      principal: String(identity.principal),
+      principal: String(identity.owned_by),
       target: String(identity.id),
       configuration: String(configuration),
       principal_revision: Number(identity.principal_revision),
@@ -293,14 +299,12 @@ function createAuthenticationService(options = {}) {
   }
 
   async function requestChallenge({
-    namespace,
-    database,
+    tenant: rawTenant,
     identifier: rawIdentifier,
     channel: requestedChannel,
     clientAddress,
   }) {
-    namespace = contextPart(namespace, "Namespace");
-    database = contextPart(database, "Database");
+    tenantId(rawTenant);
     const inferred = inferChannel(rawIdentifier);
     let channel = String(requestedChannel || inferred || "").trim().toLowerCase();
     if (channel !== "username" && !IDENTITY_TABLES[channel]) {
@@ -324,15 +328,14 @@ function createAuthenticationService(options = {}) {
         503,
       );
     }
-    const context = { namespace, database };
-    const retryAfterMs = await limit(clientAddress, context, channel, accountIdentifier);
-    if (retryAfterMs != null) return { accepted: false, rateLimited: true, retryAfterMs };
-    if (allowedContexts && !allowedContexts.has(contextKey(namespace, database))) {
-      return { accepted: true, delivered: false };
-    }
     try {
-      const store = await options.stores.forContext(namespace, database);
-      const policy = await findDeliveryPolicy(store);
+      const store = await options.stores.forContext(design.namespace, design.database);
+      const tenant = await resolveTenant(store, rawTenant);
+      const context = { ...design, tenant: tenant || "unknown" };
+      const retryAfterMs = await limit(clientAddress, context, channel, accountIdentifier);
+      if (retryAfterMs != null) return { accepted: false, rateLimited: true, retryAfterMs };
+      if (!tenant) return { accepted: true, delivered: false };
+      const policy = await findDeliveryPolicy(store, tenant);
       if (!policy) return { accepted: true, delivered: false };
       const deliveryConfigurations = {
         email: policy.email_configuration ? String(policy.email_configuration) : null,
@@ -340,7 +343,7 @@ function createAuthenticationService(options = {}) {
       };
       let identity;
       if (channel === "username") {
-        const candidates = await findUsernameIdentities(store, accountIdentifier);
+        const candidates = await findUsernameIdentities(store, tenant, accountIdentifier);
         const selected = [
           ...(deliveryConfigurations.email ? (candidates?.email || []) : []),
           ...(deliveryConfigurations.phone ? (candidates?.phone || []) : []),
@@ -349,14 +352,16 @@ function createAuthenticationService(options = {}) {
         identity = selected[0];
         channel = identity?.channel || channel;
       } else {
-        identity = await findIdentity(store, channel, accountIdentifier);
+        identity = await findIdentity(store, tenant, channel, accountIdentifier);
       }
-      if (!identity?.id || identity.principal_revision == null || identity.revision == null) {
+      if (!identity?.id || String(identity.tenant) !== tenant || identity.principal_revision == null || identity.revision == null) {
         return { accepted: true, delivered: false };
       }
       const configuration = deliveryConfigurations[channel];
       if (!configuration) return { accepted: true, delivered: false };
-      if (!await store.load(configuration)) return { accepted: true, delivered: false };
+      const configurationMatches = await store.execute(`RETURN (SELECT VALUE tenant = type::record($tenant)
+        FROM type::record($configuration))[0];`, { configuration, tenant });
+      if (configurationMatches !== true) return { accepted: true, delivered: false };
       const code = String(generateCode());
       if (!/^[0-9]{6}$/.test(code)) throw new Error("Authentication code generator returned an invalid code");
       const expiresAt = Date.now() + challengeTtlMs;
@@ -366,8 +371,8 @@ function createAuthenticationService(options = {}) {
       reportError({
         code: String(error?.code || "AUTHENTICATION_DELIVERY_FAILED"),
         channel,
-        namespace,
-        database,
+        namespace: design.namespace,
+        database: design.database,
         cause: error,
       });
       throw unavailableError("AUTHENTICATION_DELIVERY_UNAVAILABLE", error);
@@ -407,5 +412,7 @@ module.exports = {
   normalizePhone,
   normalizeUsername,
   randomCode,
+  resolveTenant,
+  tenantId,
   unavailableError,
 };

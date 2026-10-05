@@ -4,7 +4,7 @@ DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL ;
 DEFINE TABLE OVERWRITE tree_owner SCHEMAFULL
     COMMENT '@rebase-validate fn::c3::validate_owner';
 DEFINE FIELD OVERWRITE z_history ON tree_owner TYPE object
-    COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+    COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE natural_rule SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_add ON natural_rule TYPE decimal;

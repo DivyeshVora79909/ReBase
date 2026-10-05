@@ -16,8 +16,8 @@ DEFINE FIELD OVERWRITE a_order_limit ON position_owner TYPE number DEFAULT 1000 
 DEFINE FIELD OVERWRITE a_instant_floor ON position_owner TYPE option<decimal>;
 DEFINE FIELD OVERWRITE a_instant_capacity ON position_owner TYPE option<decimal>;
 DEFINE FIELD OVERWRITE a_floor ON position_owner TYPE option<decimal>;
-DEFINE FIELD OVERWRITE rb_time ON position_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE rb_order ON position_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-key int';
+DEFINE FIELD OVERWRITE rb_time ON position_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE rb_order ON position_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key int';
 DEFINE FIELD OVERWRITE a_time_z ON position_owner TYPE option<datetime>;
 DEFINE FIELD OVERWRITE a_order_z ON position_owner TYPE option<number>
     ASSERT $value = NONE OR fn::tree::valid_key([$value], 'int', false);

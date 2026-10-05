@@ -16,6 +16,9 @@ function generateOAuthAccess(principals, options = {}) {
   const authorization = quote(`Bearer ${options.runtimeSecret}`);
   return `DEFINE ACCESS OVERWRITE oauth ON DATABASE TYPE RECORD
     SIGNIN {
+        IF $tenant = NONE { RETURN NONE; };
+        LET $tenant_id = type::record($tenant);
+        IF record::tb($tenant_id) != 'rebase_tenant' OR !record::exists($tenant_id) { RETURN NONE; };
         LET $verification = http::post(${quote(`${runtimeUrl}/internal/oauth`)}, {
             provider: string::lowercase(string::trim($provider ?? "")),
             token: $oauth_token
@@ -23,11 +26,12 @@ function generateOAuthAccess(principals, options = {}) {
         IF $verification.verified != true OR !string::is_email($verification.email ?? "") {
             RETURN NONE;
         };
-        LET $identity = (SELECT VALUE principal FROM authentication_email
-            WHERE address = string::lowercase(string::trim($verification.email))
-              AND principal.login_access = true)[0];
+        LET $identity = (SELECT * FROM authentication_email
+            WHERE tenant = $tenant_id AND address = string::lowercase(string::trim($verification.email))
+              AND owned_by.login_access = true)[0];
         IF $identity = NONE { RETURN NONE; };
-        RETURN (SELECT VALUE id FROM ${user} WHERE id = $identity AND login_access = true)[0];
+        UPDATE $identity.id SET verified_revision = revision, verified_at = time::now();
+        RETURN (SELECT VALUE id FROM ${user} WHERE id = $identity.owned_by AND login_access = true)[0];
     }
     AUTHENTICATE {
         IF !$auth OR !$auth.login_access { RETURN NONE; };

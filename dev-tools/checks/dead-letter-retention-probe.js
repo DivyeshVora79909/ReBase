@@ -7,9 +7,9 @@ const { createBullMqPort } = require("../../gateway/queues/bullmq");
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const envelope = (id) => ({
-  version: 1,
+  version: 2,
   kind: "operation",
-  locator: { namespace: "audit", database: "retention", id: `task:${id}` },
+  locator: { id: `task:${id}` },
   executionId: crypto.randomUUID(),
   revision: crypto.randomUUID(),
 });

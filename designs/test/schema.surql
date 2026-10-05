@@ -62,7 +62,6 @@ DEFINE FIELD e_guard ON test_tree TYPE bool VALUE {
 -- 6. NATIVE EXTERNAL RESOURCE TABLES
 DEFINE TABLE OVERWRITE file_storage_config SCHEMAFULL;
 DEFINE FIELD provider ON file_storage_config TYPE string DEFAULT 'local-storage' COMMENT '@rebase-audit';
-DEFINE FIELD visibility ON file_storage_config TYPE bool DEFAULT false COMMENT '@rebase-audit';
 DEFINE FIELD access_key_id ON file_storage_config TYPE string ASSERT $value.len() > 0
     PERMISSIONS FOR select NONE FOR create, update WHERE true;
 DEFINE FIELD secret_access_key ON file_storage_config TYPE string ASSERT $value.len() > 0
@@ -75,7 +74,6 @@ DEFINE FIELD default_expiry_seconds ON file_storage_config TYPE int DEFAULT 900 
 
 DEFINE TABLE OVERWRITE razorpay_config SCHEMAFULL;
 DEFINE FIELD label ON razorpay_config TYPE string ASSERT $value.len() > 0 COMMENT '@rebase-audit';
-DEFINE FIELD visibility ON razorpay_config TYPE bool DEFAULT false COMMENT '@rebase-audit';
 DEFINE FIELD key_id ON razorpay_config TYPE string ASSERT $value.len() > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD key_secret ON razorpay_config TYPE string ASSERT $value.len() > 0
     PERMISSIONS FOR select NONE FOR create, update WHERE true;
@@ -122,10 +120,10 @@ DEFINE EVENT OVERWRITE rebase_create_attachment_cleanup ON TABLE test_attachment
 
 -- 7. TABLE-KEYED EFFECT EXAMPLES
 DEFINE TABLE OVERWRITE send_brevo_email SCHEMAFULL COMMENT '@rebase-effect async @rebase-adapter sendBrevoEmail @rebase-adapter getBrevoEmailEvents @rebase-timeout 30s';
-DEFINE FIELD config ON send_brevo_email TYPE option<record<rebase_email_delivery_config>> DEFAULT NONE
+DEFINE FIELD config ON send_brevo_email TYPE record<rebase_email_delivery_config>
     ASSERT $value = NONE OR (!$auth OR (record::exists($value)
-        AND $value.owned_by != rebase_group:root
-        AND <string>$value.owned_by IN $auth.z_access_index))
+        AND record::tb($value.owned_by) != 'rebase_tenant'
+        AND fn::rebase::can_access($auth, $value.owned_by)))
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input @rebase-audit';
 DEFINE FIELD to ON send_brevo_email TYPE array<string>
     ASSERT $value.len() > 0 AND array::all($value, |$email| string::is_email($email)) READONLY
@@ -143,10 +141,10 @@ DEFINE FIELD result ON send_brevo_email TYPE option<object> FLEXIBLE DEFAULT NON
     PERMISSIONS FOR select WHERE true FOR create, update NONE
     COMMENT '@rebase-effect-output';
 DEFINE TABLE OVERWRITE send_twilio_sms SCHEMAFULL COMMENT '@rebase-effect async @rebase-adapter sendTwilioSms @rebase-timeout 30s';
-DEFINE FIELD config ON send_twilio_sms TYPE option<record<rebase_sms_delivery_config>> DEFAULT NONE
+DEFINE FIELD config ON send_twilio_sms TYPE record<rebase_sms_delivery_config>
     ASSERT $value = NONE OR (!$auth OR (record::exists($value)
-        AND $value.owned_by != rebase_group:root
-        AND <string>$value.owned_by IN $auth.z_access_index))
+        AND record::tb($value.owned_by) != 'rebase_tenant'
+        AND fn::rebase::can_access($auth, $value.owned_by)))
     REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-effect-input';
 DEFINE FIELD to ON send_twilio_sms TYPE string
     ASSERT string::matches($value, /^\+[1-9][0-9]{7,14}$/) READONLY
@@ -192,7 +190,7 @@ DEFINE FIELD error_code ON razorpay_payment TYPE option<string> DEFAULT NONE
 DEFINE FIELD error_description ON razorpay_payment TYPE option<string> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-audit';
 
-DEFINE INDEX OVERWRITE idx_razorpay_order_provider_order_id ON TABLE razorpay_order FIELDS provider_order_id UNIQUE;
-DEFINE INDEX OVERWRITE idx_razorpay_order_receipt ON TABLE razorpay_order FIELDS receipt UNIQUE;
-DEFINE INDEX OVERWRITE idx_razorpay_payment_provider_payment_id ON TABLE razorpay_payment FIELDS provider_payment_id UNIQUE;
-DEFINE INDEX OVERWRITE idx_test_attachment_attached_to ON TABLE test_attachment FIELDS attached_to UNIQUE;
+DEFINE INDEX OVERWRITE idx_razorpay_order_provider_order_id ON TABLE razorpay_order FIELDS tenant, provider_order_id UNIQUE;
+DEFINE INDEX OVERWRITE idx_razorpay_order_receipt ON TABLE razorpay_order FIELDS tenant, receipt UNIQUE;
+DEFINE INDEX OVERWRITE idx_razorpay_payment_provider_payment_id ON TABLE razorpay_payment FIELDS tenant, provider_payment_id UNIQUE;
+DEFINE INDEX OVERWRITE idx_test_attachment_attached_to ON TABLE test_attachment FIELDS tenant, attached_to UNIQUE;

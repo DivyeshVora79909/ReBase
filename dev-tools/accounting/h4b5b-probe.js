@@ -93,79 +93,80 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Tax authority';
-      CREATE ONLY organization:other_authority SET owned_by = rebase_group:root, name = 'Other authority';
-      CREATE ONLY organization:vendor SET owned_by = rebase_group:root, name = 'Vendor';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:jpy SET owned_by = rebase_group:root, code = 'JPY', name = 'JPY', precision = 0;
-      CREATE ONLY tax_account:main SET owned_by = rebase_group:root,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Tax authority';
+      CREATE ONLY organization:other_authority SET owned_by = rebase_tenant:default, name = 'Other authority';
+      CREATE ONLY organization:vendor SET owned_by = rebase_tenant:default, name = 'Vendor';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:jpy SET owned_by = rebase_tenant:default, code = 'JPY', name = 'JPY', precision = 0;
+      CREATE ONLY tax_account:main SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Main tax authority';
-      CREATE ONLY tax_account:cap SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:cap SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Allocation cap';
-      CREATE ONLY tax_account:paycap SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:paycap SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Payable cap';
-      CREATE ONLY tax_account:other SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:other SET owned_by = rebase_tenant:default,
         authority = organization:other_authority, jurisdiction = organization:entity, label = 'Other tax authority';
-      CREATE ONLY treasury:main SET owned_by = rebase_group:root, name = 'Main treasury';
-      CREATE ONLY treasury:capacity SET owned_by = rebase_group:root, name = 'Allocation capacity treasury';
-      CREATE ONLY treasury:payable_capacity SET owned_by = rebase_group:root, name = 'Payable capacity treasury';
-      CREATE ONLY treasury:wrong_entity SET owned_by = rebase_group:root, name = 'Wrong entity treasury';
-      CREATE ONLY treasury:wrong_currency SET owned_by = rebase_group:root, name = 'Wrong currency treasury';
-      CREATE ONLY treasury:wrong_party SET owned_by = rebase_group:root, name = 'Wrong party treasury';
-      CREATE ONLY treasury:wrong_type SET owned_by = rebase_group:root, name = 'Wrong type treasury';
-      CREATE ONLY treasury:non_tax SET owned_by = rebase_group:root, name = 'Non tax treasury';
-      CREATE ONLY treasury_account:main SET owned_by = rebase_group:root,
+      CREATE ONLY treasury:main SET owned_by = rebase_tenant:default, name = 'Main treasury';
+      CREATE ONLY treasury:capacity SET owned_by = rebase_tenant:default, name = 'Allocation capacity treasury';
+      CREATE ONLY treasury:payable_capacity SET owned_by = rebase_tenant:default, name = 'Payable capacity treasury';
+      CREATE ONLY treasury:wrong_entity SET owned_by = rebase_tenant:default, name = 'Wrong entity treasury';
+      CREATE ONLY treasury:wrong_currency SET owned_by = rebase_tenant:default, name = 'Wrong currency treasury';
+      CREATE ONLY treasury:wrong_party SET owned_by = rebase_tenant:default, name = 'Wrong party treasury';
+      CREATE ONLY treasury:wrong_type SET owned_by = rebase_tenant:default, name = 'Wrong type treasury';
+      CREATE ONLY treasury:non_tax SET owned_by = rebase_tenant:default, name = 'Non tax treasury';
+      CREATE ONLY treasury_account:main SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:main, currency = currency:usd, minimum_balance = -12dec;
-      CREATE ONLY treasury_account:capacity SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:capacity SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:capacity, currency = currency:usd, minimum_balance = -10dec;
-      CREATE ONLY treasury_account:payable_capacity SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:payable_capacity SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:payable_capacity, currency = currency:usd, minimum_balance = -12dec;
-      CREATE ONLY treasury_account:wrong_entity SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:wrong_entity SET owned_by = rebase_tenant:default,
         economic_entity = organization:other_entity, treasury = treasury:wrong_entity, currency = currency:usd, minimum_balance = -2dec;
-      CREATE ONLY treasury_account:wrong_currency SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:wrong_currency SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:wrong_currency, currency = currency:jpy, minimum_balance = -2dec;
-      CREATE ONLY treasury_account:wrong_party SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:wrong_party SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:wrong_party, currency = currency:usd, minimum_balance = -2dec;
-      CREATE ONLY treasury_account:wrong_type SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:wrong_type SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:wrong_type, currency = currency:usd, minimum_balance = -2dec;
-      CREATE ONLY treasury_account:non_tax SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:non_tax SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:non_tax, currency = currency:usd, minimum_balance = -2dec;
-      CREATE ONLY claim_account:main SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:main SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:main, currency = currency:usd;
-      CREATE ONLY claim_account:capacity SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:capacity SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:cap, currency = currency:usd;
-      CREATE ONLY claim_account:payable_capacity SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:payable_capacity SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:paycap, currency = currency:usd;
-      CREATE ONLY claim_account:wrong_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY claim_account:wrong_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         opponent = tax_account:main, currency = currency:usd;
-      CREATE ONLY claim_account:wrong_currency SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:wrong_currency SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:main, currency = currency:jpy;
-      CREATE ONLY claim_account:wrong_type SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:wrong_type SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:vendor, currency = currency:usd;
-      CREATE ONLY payable:main_open SET owned_by = rebase_group:root, claim_account = claim_account:main,
+      CREATE ONLY payable:main_open SET owned_by = rebase_tenant:default, claim_account = claim_account:main,
         amount = 12dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY payable:capacity_open SET owned_by = rebase_group:root, claim_account = claim_account:capacity,
+      CREATE ONLY payable:capacity_open SET owned_by = rebase_tenant:default, claim_account = claim_account:capacity,
         amount = 20dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY payable:payable_capacity_open SET owned_by = rebase_group:root, claim_account = claim_account:payable_capacity,
+      CREATE ONLY payable:payable_capacity_open SET owned_by = rebase_tenant:default, claim_account = claim_account:payable_capacity,
         amount = 7dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY cash_out:main SET owned_by = rebase_group:root, from_account = treasury_account:main,
+      CREATE ONLY cash_out:main SET owned_by = rebase_tenant:default, from_account = treasury_account:main,
         to_party = tax_account:main, amount = 12dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:capacity SET owned_by = rebase_group:root, from_account = treasury_account:capacity,
+      CREATE ONLY cash_out:capacity SET owned_by = rebase_tenant:default, from_account = treasury_account:capacity,
         to_party = tax_account:cap, amount = 10dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:payable_capacity SET owned_by = rebase_group:root, from_account = treasury_account:payable_capacity,
+      CREATE ONLY cash_out:payable_capacity SET owned_by = rebase_tenant:default, from_account = treasury_account:payable_capacity,
         to_party = tax_account:paycap, amount = 12dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:wrong_entity SET owned_by = rebase_group:root, from_account = treasury_account:wrong_entity,
+      CREATE ONLY cash_out:wrong_entity SET owned_by = rebase_tenant:default, from_account = treasury_account:wrong_entity,
         to_party = tax_account:main, amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:wrong_currency SET owned_by = rebase_group:root, from_account = treasury_account:wrong_currency,
+      CREATE ONLY cash_out:wrong_currency SET owned_by = rebase_tenant:default, from_account = treasury_account:wrong_currency,
         to_party = tax_account:main, amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:wrong_party SET owned_by = rebase_group:root, from_account = treasury_account:wrong_party,
+      CREATE ONLY cash_out:wrong_party SET owned_by = rebase_tenant:default, from_account = treasury_account:wrong_party,
         to_party = tax_account:other, amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:wrong_type SET owned_by = rebase_group:root, from_account = treasury_account:wrong_type,
+      CREATE ONLY cash_out:wrong_type SET owned_by = rebase_tenant:default, from_account = treasury_account:wrong_type,
         to_party = organization:vendor, amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY cash_out:non_tax SET owned_by = rebase_group:root, from_account = treasury_account:non_tax,
+      CREATE ONLY cash_out:non_tax SET owned_by = rebase_tenant:default, from_account = treasury_account:non_tax,
         to_party = organization:vendor, amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';
     `);
 
@@ -174,7 +175,7 @@ async function main() {
     assert.equal(measure(mainTreasury, 'z_history', 'balance'), -12,
       'the actual cash_out debits treasury once by 12 before tax remittance');
 
-    await db.query(`CREATE ONLY tax_claim_remittance:main SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY tax_claim_remittance:main SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = 12dec,
       effective_at = d'2026-06-02T00:00:00Z';`);
     let state = await assertClaimAndSource(db, 'claim_account:main', 'cash_out:main', 12, 12);
@@ -183,50 +184,50 @@ async function main() {
     assert.equal(state.cashouts.filter((row) => String(row.id) === 'cash_out:main').length, 1,
       'remittance does not create another cash_out row');
 
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:zero SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:zero SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = 0dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'zero remittance rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:negative SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:negative SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = -1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'negative remittance rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:precision SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = 1.001dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'currency-inexact remittance rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:before_cash_out SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:before_cash_out SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = 1dec,
       effective_at = d'2026-06-01T00:00:00Z';`, 'remittance before cash-out rejects');
 
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_entity SET owned_by = rebase_tenant:default,
       source = cash_out:wrong_entity, claim_account = claim_account:main, amount = 1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'economic entity mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_currency SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_currency SET owned_by = rebase_tenant:default,
       source = cash_out:wrong_currency, claim_account = claim_account:main, amount = 1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'currency mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_party SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_party SET owned_by = rebase_tenant:default,
       source = cash_out:wrong_party, claim_account = claim_account:main, amount = 1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'cash-out party and claim opponent mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_type SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_type SET owned_by = rebase_tenant:default,
       source = cash_out:wrong_type, claim_account = claim_account:wrong_type, amount = 1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'non-tax claim opponent rejects');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_source_type SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:wrong_source_type SET owned_by = rebase_tenant:default,
       source = payable:main_open, claim_account = claim_account:main, amount = 1dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'source must be a typed cash_out');
 
     // Multiple facts share only the existing cash_out allocation root.
-    await db.query(`CREATE ONLY tax_claim_remittance:capacity_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY tax_claim_remittance:capacity_first SET owned_by = rebase_tenant:default,
       source = cash_out:capacity, claim_account = claim_account:capacity, amount = 6dec,
       effective_at = d'2026-06-03T00:00:00Z';`);
-    await db.query(`CREATE ONLY tax_claim_remittance:capacity_second SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY tax_claim_remittance:capacity_second SET owned_by = rebase_tenant:default,
       source = cash_out:capacity, claim_account = claim_account:capacity, amount = 4dec,
       effective_at = d'2026-06-03T00:00:00Z';`);
     state = await assertClaimAndSource(db, 'claim_account:capacity', 'cash_out:capacity', 20, 10);
     assert.equal(number(byId(state.cashouts, 'cash_out:capacity').z_allocations.summary.measures.allocated.sum), 10,
       'two remittances share the source allocation cap exactly once');
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:capacity_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:capacity_overdraw SET owned_by = rebase_tenant:default,
       source = cash_out:capacity, claim_account = claim_account:capacity, amount = 0.01dec,
       effective_at = d'2026-06-04T00:00:00Z';`, 'cash-out allocation capacity rejects cumulative overdraw');
 
-    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:payable_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY tax_claim_remittance:payable_overdraw SET owned_by = rebase_tenant:default,
       source = cash_out:payable_capacity, claim_account = claim_account:payable_capacity, amount = 8dec,
       effective_at = d'2026-06-03T00:00:00Z';`, 'claim payable guard independently rejects overdraw');
     state = await snapshot(db);
@@ -255,7 +256,7 @@ async function main() {
     state = await assertClaimAndSource(db, 'claim_account:main', 'cash_out:main', 12, 0);
     assert.equal(number(byId(state.treasuries, 'treasury_account:main').z_history.summary.measures.balance.sum), -12,
       'deleting remittance leaves the original cash-out only');
-    await db.query(`CREATE ONLY tax_claim_remittance:main SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY tax_claim_remittance:main SET owned_by = rebase_tenant:default,
       source = cash_out:main, claim_account = claim_account:main, amount = 12dec,
       effective_at = d'2026-06-02T00:00:00Z';`);
     state = await assertClaimAndSource(db, 'claim_account:main', 'cash_out:main', 12, 12);

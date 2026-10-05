@@ -3,7 +3,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL ;
 DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL ;
 DEFINE TABLE OVERWRITE tree_owner SCHEMAFULL COMMENT '@rebase-validate fn::fixture::owner';
 DEFINE FIELD OVERWRITE a_nonnegative ON tree_owner TYPE bool DEFAULT false;
-DEFINE FIELD OVERWRITE z_book ON tree_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_book ON tree_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE FUNCTION OVERWRITE fn::fixture::owner($row: object) {
     IF $row.a_nonnegative AND ($row.z_book.summary.measures.amount.min_prefix ?? 0dec) < 0dec {
@@ -40,7 +40,7 @@ DEFINE FIELD OVERWRITE a_effective_at ON charge TYPE datetime;
 DEFINE FIELD OVERWRITE z10_rate ON charge TYPE decimal VALUE $this.a_rule.a_rate COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_cap ON charge TYPE decimal VALUE $this.a_rule.a_cap COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z20_basis ON charge TYPE decimal VALUE
-    fn::tree::before({ rid: $this.a_owner, slot: 'z_book' }, [$this.a_effective_at, <string>$this.id, 'z_leg']).measures.amount.sum ?? 0dec
+    fn::tree::read($this.a_owner, 'z_book', 'before', [$this.a_effective_at, <string>$this.id, 'z_leg']).measures.amount.sum ?? 0dec
     COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z30_amount ON charge TYPE decimal VALUE math::min([$this.z11_cap, $this.z10_rate * $this.z20_basis]) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z_leg ON charge TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';

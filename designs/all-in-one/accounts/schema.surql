@@ -2,13 +2,13 @@
 DEFINE TABLE OVERWRITE organization SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON organization TYPE string ASSERT string::len($value) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_code ON organization TYPE option<string> COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE organization_code ON organization FIELDS a_code UNIQUE;
+DEFINE INDEX OVERWRITE organization_code ON organization FIELDS tenant, a_code UNIQUE;
 
 DEFINE TABLE OVERWRITE currency SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_code ON currency TYPE string READONLY ASSERT string::matches($value, /^[A-Z0-9][A-Z0-9._-]{0,15}$/);
 DEFINE FIELD OVERWRITE a_name ON currency TYPE string;
 DEFINE FIELD OVERWRITE a_precision ON currency TYPE int DEFAULT 2 READONLY ASSERT $value >= 0 AND $value <= 18;
-DEFINE INDEX OVERWRITE currency_code ON currency FIELDS a_code UNIQUE;
+DEFINE INDEX OVERWRITE currency_code ON currency FIELDS tenant, a_code UNIQUE;
 
 DEFINE TABLE OVERWRITE treasury_account SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON treasury_account TYPE string COMMENT '@rebase-audit';
@@ -34,8 +34,8 @@ DEFINE FIELD OVERWRITE a_entity ON money_account TYPE record<organization | trea
 DEFINE FIELD OVERWRITE a_currency ON money_account TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_nonnegative ON money_account TYPE bool DEFAULT true COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z10_party ON money_account TYPE option<record<money_account>> REFERENCE ON DELETE REJECT VALUE fn::calc::party($this.a_entity, $this.a_currency) COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_book ON money_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE money_account_dimension ON money_account FIELDS a_entity, a_currency UNIQUE;
+DEFINE FIELD OVERWRITE z_book ON money_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE money_account_dimension ON money_account FIELDS tenant, a_entity, a_currency UNIQUE;
 
 -- Resolve once through the native unique dimension index. Dimensions are immutable;
 -- the stored tracked reference protects deletion and supplies direct ancestor access.
@@ -60,7 +60,7 @@ DEFINE FIELD OVERWRITE a_from ON currency_exchange TYPE record<currency> REFEREN
 DEFINE FIELD OVERWRITE a_to ON currency_exchange TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_rate ON currency_exchange TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_effective_at ON currency_exchange TYPE datetime COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_usage ON currency_exchange TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_usage ON currency_exchange TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FUNCTION OVERWRITE fn::calc::exchange_owner($row: object) {
     IF $row.z_usage.summary.count > 0 AND $row.z_usage.summary.first[0] < $row.a_effective_at { THROW 'CALC_EXCHANGE_AFTER_USAGE'; };
 } PERMISSIONS FULL;
@@ -74,14 +74,14 @@ DEFINE TABLE OVERWRITE operating_unit SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON operating_unit TYPE string;
 DEFINE FIELD OVERWRITE a_organization ON operating_unit TYPE record<organization> REFERENCE ON DELETE REJECT READONLY;
 -- Activity is unitless: heterogeneous item quantities/currencies are never summed here.
-DEFINE FIELD OVERWRITE z_activity ON operating_unit TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_activity ON operating_unit TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE TABLE OVERWRITE misc_inventory_node SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON misc_inventory_node TYPE string;
 DEFINE TABLE OVERWRITE item SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON item TYPE string;
 DEFINE FIELD OVERWRITE a_unit ON item TYPE string DEFAULT 'unit' READONLY;
 DEFINE FIELD OVERWRITE a_sku ON item TYPE option<string>;
-DEFINE INDEX OVERWRITE item_sku ON item FIELDS a_sku UNIQUE;
+DEFINE INDEX OVERWRITE item_sku ON item FIELDS tenant, a_sku UNIQUE;
 DEFINE TABLE OVERWRITE service SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_name ON service TYPE string;
 DEFINE FIELD OVERWRITE a_unit ON service TYPE string DEFAULT 'unit' READONLY;
@@ -92,8 +92,8 @@ DEFINE FIELD OVERWRITE a_endpoint ON stock_account TYPE record<operating_unit | 
 DEFINE FIELD OVERWRITE a_subject ON stock_account TYPE record<item | service> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_nonnegative ON stock_account TYPE bool DEFAULT true COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z10_organization ON stock_account TYPE option<record<organization>> REFERENCE ON DELETE REJECT VALUE fn::calc::stock_party($this.a_endpoint) COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_book ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE stock_account_dimension ON stock_account FIELDS a_endpoint, a_subject UNIQUE;
+DEFINE FIELD OVERWRITE z_book ON stock_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE stock_account_dimension ON stock_account FIELDS tenant, a_endpoint, a_subject UNIQUE;
 DEFINE FUNCTION OVERWRITE fn::calc::stock_party($endpoint: record) {
     RETURN IF record::tb($endpoint) = 'organization' THEN $endpoint ELSE $endpoint.a_organization END;
 } PERMISSIONS FULL;
@@ -115,7 +115,7 @@ DEFINE FIELD OVERWRITE a_reason ON adjustment_note TYPE string ASSERT string::le
 DEFINE FIELD OVERWRITE a_number ON adjustment_note TYPE option<string> COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_currency ON adjustment_note TYPE record<currency> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_invoice ON adjustment_note TYPE option<record<invoice>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_book ON adjustment_note TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_book ON adjustment_note TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FUNCTION OVERWRITE fn::calc::note_owner($row: object) {
     LET $s = $row.z_book.summary;
     IF $s.count > 0 AND $s.last[0] > $row.a_effective_at { THROW 'CALC_CORRECTION_AFTER_NOTE'; };

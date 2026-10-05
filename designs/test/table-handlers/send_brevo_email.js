@@ -1,7 +1,7 @@
 module.exports = {
   table: "send_brevo_email",
   async reconcile({ record, load, adapters }) {
-    const config = await load(record.config || "rebase_email_delivery_config:platform");
+    const config = await load(record.config);
     const tag = `rebase_${String(record.execution_id).toLowerCase()}`;
     const recipients = [...new Set((record.to || []).map((email) => String(email).toLowerCase()))];
     const matches = await Promise.all(recipients.map(async (email) => {
@@ -22,7 +22,7 @@ module.exports = {
   },
   on: {
     async CREATE({ record, load, adapters, signal }) {
-      const config = await load(record.config || "rebase_email_delivery_config:platform");
+      const config = await load(record.config);
       const result = await adapters.sendBrevoEmail({
         apiKey: config.api_key,
         fromEmail: config.from_email,

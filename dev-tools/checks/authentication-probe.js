@@ -22,7 +22,13 @@ function fakeDirectory({ mode = "identity", identity = {} } = {}) {
     async execute(statement, variables = {}) {
       calls += 1;
       if (mode === "store-error") throw new Error("database unavailable");
-      if (statement.includes("rebase_authentication_delivery_policy:default")) {
+      if (statement.includes("SELECT VALUE <string>id FROM type::record($tenant)")) {
+        return variables.tenant === "rebase_tenant:probe" ? variables.tenant : null;
+      }
+      if (statement.includes("SELECT VALUE tenant = type::record($tenant)")) {
+        return mode !== "missing-config";
+      }
+      if (statement.includes("FROM rebase_authentication_delivery_policy")) {
         if (mode === "no-policy") return null;
         return {
           email_configuration: "rebase_email_delivery_config:probe",
@@ -32,7 +38,7 @@ function fakeDirectory({ mode = "identity", identity = {} } = {}) {
       if (statement.includes("RETURN {")) {
         if (mode === "missing") return { principal: null, email: [], phone: [] };
         return {
-          principal: identity.principal || "rebase_user:probe",
+          principal: identity.owned_by || "rebase_user:probe",
           email: identity.channel === "phone" ? [] : [identity],
           phone: identity.channel === "phone" ? [identity] : [],
         };
@@ -48,7 +54,7 @@ function fakeDirectory({ mode = "identity", identity = {} } = {}) {
     },
     async load(id) {
       if (mode === "missing-config") return null;
-      return String(id).startsWith("rebase_") ? { id } : null;
+      return String(id).startsWith("rebase_") ? { id, tenant: "rebase_tenant:probe" } : null;
     },
   };
   return {
@@ -65,8 +71,9 @@ function fakeDirectory({ mode = "identity", identity = {} } = {}) {
 function serviceOptions(directory, overrides = {}) {
   return {
     stores: directory,
+    defaultContext: { namespace: "probe", database: "auth" },
     principals: { user: "rebase_user" },
-    allowedContexts: [{ namespace: "probe", database: "auth" }],
+    defaultContext: { namespace: "probe", database: "auth" },
     rateLimiter: createMemoryRateLimiter(),
     rateLimits: { windowMs: 1000, ip: 10, identifier: 3 },
     challengeTtlMs: 60000,
@@ -90,7 +97,8 @@ async function main() {
   const directory = fakeDirectory({
     identity: {
       id: "authentication_email:probe",
-      principal: "rebase_user:probe",
+      owned_by: "rebase_user:probe",
+      tenant: "rebase_tenant:probe",
       address: "probe@example.com",
       revision: 1,
       principal_revision: 1,
@@ -103,8 +111,7 @@ async function main() {
     sealAuthenticationPayload(message) { messages.push(message); return cipher.seal(message); },
   }));
   const delivered = await service.requestChallenge({
-    namespace: "probe",
-    database: "auth",
+    tenant: "rebase_tenant:probe",
     identifier: "probe_user",
     clientAddress: "192.0.2.1",
     recipient: "attacker@example.net",
@@ -135,8 +142,9 @@ async function main() {
     },
   });
   const requestBody = JSON.stringify({
-    namespace: "probe",
-    database: "auth",
+    tenant: "rebase_tenant:probe",
+    namespace: "untrusted_namespace",
+    database: "untrusted_database",
     identifier: "probe@example.com",
     channel: "email",
     recipient: "attacker@example.net",
@@ -163,8 +171,7 @@ async function main() {
   await app(request, response);
   assert.equal(response.statusCode, 202);
   assert.deepEqual(routedChallenge, {
-    namespace: "probe",
-    database: "auth",
+    tenant: "rebase_tenant:probe",
     identifier: "probe@example.com",
     channel: "email",
     clientAddress: "192.0.2.8",
@@ -175,7 +182,7 @@ async function main() {
     sealAuthenticationPayload: cipher.seal,
   }));
   assert.deepEqual(await missingService.requestChallenge({
-    namespace: "probe", database: "auth", identifier: "missing@example.com", clientAddress: "192.0.2.2",
+    tenant: "rebase_tenant:probe", identifier: "missing@example.com", clientAddress: "192.0.2.2",
   }), { accepted: true, delivered: false });
 
   const disallowedDirectory = fakeDirectory({ mode: "missing" });
@@ -183,31 +190,32 @@ async function main() {
     sealAuthenticationPayload: cipher.seal,
   }));
   assert.deepEqual(await disallowedService.requestChallenge({
-    namespace: "other", database: "auth", identifier: "probe@example.com", clientAddress: "192.0.2.3",
+    tenant: "rebase_tenant:other", identifier: "probe@example.com", clientAddress: "192.0.2.3",
   }), { accepted: true, delivered: false });
-  assert.equal(disallowedDirectory.calls, 0);
+  assert(disallowedDirectory.calls > 0);
 
   const unavailableDirectory = fakeDirectory({ mode: "store-error" });
   const unavailableService = createService(serviceOptions(unavailableDirectory, {
     sealAuthenticationPayload: cipher.seal,
   }));
   await assert.rejects(
-    unavailableService.requestChallenge({ namespace: "probe", database: "auth", identifier: "probe@example.com", clientAddress: "192.0.2.4" }),
+    unavailableService.requestChallenge({ tenant: "rebase_tenant:probe", identifier: "probe@example.com", clientAddress: "192.0.2.4" }),
     (error) => error.status === 503 && error.code === "AUTHENTICATION_DELIVERY_UNAVAILABLE",
   );
 
   const noLimiter = createService({
     stores: directory,
+    defaultContext: { namespace: "probe", database: "auth" },
     principals: { user: "rebase_user" },
     sealAuthenticationPayload: cipher.seal,
   });
   await assert.rejects(
-    noLimiter.requestChallenge({ namespace: "probe", database: "auth", identifier: "probe@example.com" }),
+    noLimiter.requestChallenge({ tenant: "rebase_tenant:probe", identifier: "probe@example.com" }),
     (error) => error.status === 503,
   );
 
   await assert.rejects(
-    service.requestChallenge({ namespace: "probe", database: "auth", identifier: "bad", clientAddress: "192.0.2.6" }),
+    service.requestChallenge({ tenant: "rebase_tenant:probe", identifier: "bad", clientAddress: "192.0.2.6" }),
     (error) => error.status === 400,
   );
 
@@ -227,15 +235,15 @@ async function main() {
   assert.throws(() => createOAuthVerifier({ invalid: null }), /must be a function/);
 
   const noPolicyDirectory = fakeDirectory({ mode: "no-policy", identity: {
-    id: "authentication_email:probe", principal: "rebase_user:probe", revision: 1, principal_revision: 1,
+    id: "authentication_email:probe", owned_by: "rebase_user:probe", tenant: "rebase_tenant:probe", revision: 1, principal_revision: 1,
   } });
   const noPolicyService = createService(serviceOptions(noPolicyDirectory, { sealAuthenticationPayload: cipher.seal }));
   assert.deepEqual(await noPolicyService.requestChallenge({
-    namespace: "probe", database: "auth", identifier: "probe@example.com", clientAddress: "192.0.2.7",
+    tenant: "rebase_tenant:probe", identifier: "probe@example.com", clientAddress: "192.0.2.7",
   }), { accepted: true, delivered: false });
   assert.equal(noPolicyDirectory.transaction, null);
 
-  console.log("authentication: normalization, context isolation, generic responses, fixed target/config routing, encrypted atomic queueing, failure mapping, and OAuth allowlist passed");
+  console.log("authentication: normalization, tenant isolation, generic responses, fixed target/config routing, encrypted atomic queueing, failure mapping, and OAuth allowlist passed");
 }
 
 if (require.main === module) main().catch((error) => {

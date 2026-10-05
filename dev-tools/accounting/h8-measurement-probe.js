@@ -174,22 +174,22 @@ function assertSourceOracle(state, expectedRuns) {
 
 function foundationSql() {
   return `
-    CREATE ONLY organization:entity SET owned_by=rebase_group:root,name='Entity';
-    CREATE ONLY misc_account:opening SET owned_by=rebase_group:root,label='Opening';
-    CREATE ONLY measure_unit:each SET owned_by=rebase_group:root,code='each',dimension='count',name='Each';
-    ${stockIds.map((name) => `CREATE ONLY item:${name} SET owned_by=rebase_group:root,name='${name}',unit=measure_unit:each;`).join('\n')}
-    ${stockIds.map((name) => `CREATE ONLY operating_unit:${name} SET owned_by=rebase_group:root,economic_entity=organization:entity,name='${name}',code='${name}';`).join('\n')}
-    ${stockIds.map((name) => `CREATE ONLY stock_account:${name} SET owned_by=rebase_group:root,economic_entity=organization:entity,operating_unit=operating_unit:${name},resource=item:${name},minimum_quantity=0dec;`).join('\n')}
-    CREATE ONLY stock_in:open_a SET owned_by=rebase_group:root,from_party=misc_account:opening,to_account=stock_account:input_a,quantity=100dec,effective_at=d'2026-07-01T00:00:00Z';
-    CREATE ONLY stock_in:open_b SET owned_by=rebase_group:root,from_party=misc_account:opening,to_account=stock_account:input_b,quantity=100dec,effective_at=d'2026-07-01T00:00:00Z';
-    CREATE ONLY production_recipe_version:split SET owned_by=rebase_group:root,recipe_key='split',version='1',economic_entity=organization:entity,duration=1h,
+    CREATE ONLY organization:entity SET owned_by=rebase_tenant:default,name='Entity';
+    CREATE ONLY misc_account:opening SET owned_by=rebase_tenant:default,label='Opening';
+    CREATE ONLY measure_unit:each SET owned_by=rebase_tenant:default,code='each',dimension='count',name='Each';
+    ${stockIds.map((name) => `CREATE ONLY item:${name} SET owned_by=rebase_tenant:default,name='${name}',unit=measure_unit:each;`).join('\n')}
+    ${stockIds.map((name) => `CREATE ONLY operating_unit:${name} SET owned_by=rebase_tenant:default,economic_entity=organization:entity,name='${name}',code='${name}';`).join('\n')}
+    ${stockIds.map((name) => `CREATE ONLY stock_account:${name} SET owned_by=rebase_tenant:default,economic_entity=organization:entity,operating_unit=operating_unit:${name},resource=item:${name},minimum_quantity=0dec;`).join('\n')}
+    CREATE ONLY stock_in:open_a SET owned_by=rebase_tenant:default,from_party=misc_account:opening,to_account=stock_account:input_a,quantity=100dec,effective_at=d'2026-07-01T00:00:00Z';
+    CREATE ONLY stock_in:open_b SET owned_by=rebase_tenant:default,from_party=misc_account:opening,to_account=stock_account:input_b,quantity=100dec,effective_at=d'2026-07-01T00:00:00Z';
+    CREATE ONLY production_recipe_version:split SET owned_by=rebase_tenant:default,recipe_key='split',version='1',economic_entity=organization:entity,duration=1h,
       input_a_account=stock_account:input_a,input_a_quantity=1,input_b_account=stock_account:input_b,input_b_quantity=1,
       output_a_account=stock_account:output_a,output_a_quantity=2,output_b_account=stock_account:output_b,output_b_quantity=1;
   `;
 }
 
 function runSql(name, batch, day) {
-  return `CREATE ONLY production_run:${name} SET owned_by=rebase_group:root,recipe_version=production_recipe_version:split,batch_count=${batch},planned_start=d'2026-07-${String(day).padStart(2, '0')}T00:00:00Z',status='scheduled';`;
+  return `CREATE ONLY production_run:${name} SET owned_by=rebase_tenant:default,recipe_version=production_recipe_version:split,batch_count=${batch},planned_start=d'2026-07-${String(day).padStart(2, '0')}T00:00:00Z',status='scheduled';`;
 }
 
 async function oneRun(priorRuns, repeat, { captureCounters = false } = {}) {

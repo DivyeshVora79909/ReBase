@@ -187,82 +187,83 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY misc_account:opening SET owned_by = rebase_group:root, label = 'Opening stock';
-      CREATE ONLY misc_account:customer SET owned_by = rebase_group:root, label = 'Customer';
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', dimension = 'count', name = 'Each';
-      CREATE ONLY measure_unit:kg SET owned_by = rebase_group:root, code = 'kg', dimension = 'mass', name = 'Kilogram';
-      CREATE ONLY item:shared SET owned_by = rebase_group:root, name = 'Shared', unit = measure_unit:each;
-      CREATE ONLY item:input_a SET owned_by = rebase_group:root, name = 'Input A', unit = measure_unit:each;
-      CREATE ONLY item:input_b SET owned_by = rebase_group:root, name = 'Input B', unit = measure_unit:each;
-      CREATE ONLY item:output_a SET owned_by = rebase_group:root, name = 'Output A', unit = measure_unit:each;
-      CREATE ONLY item:output_b SET owned_by = rebase_group:root, name = 'Output B', unit = measure_unit:each;
-      CREATE ONLY item:bulk SET owned_by = rebase_group:root, name = 'Bulk', unit = measure_unit:kg;
-      CREATE ONLY operating_unit:shared SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Shared', code = 'shared';
-      CREATE ONLY operating_unit:zero SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Zero', code = 'zero';
-      CREATE ONLY operating_unit:cap_a SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Capacity A', code = 'cap_a';
-      CREATE ONLY operating_unit:cap_b SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Capacity B', code = 'cap_b';
-      CREATE ONLY operating_unit:range SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Range', code = 'range';
-      CREATE ONLY operating_unit:input_a SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Input A', code = 'input_a';
-      CREATE ONLY operating_unit:input_b SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Input B', code = 'input_b';
-      CREATE ONLY operating_unit:output_a SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Output A', code = 'output_a';
-      CREATE ONLY operating_unit:output_b SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Output B', code = 'output_b';
-      CREATE ONLY operating_unit:wrong_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity, name = 'Wrong entity', code = 'wrong_entity';
-      CREATE ONLY operating_unit:wrong_unit SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Wrong unit', code = 'wrong_unit';
-      CREATE ONLY stock_account:shared SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:shared, resource = item:shared;
-      CREATE ONLY stock_account:zero SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:zero, resource = item:shared;
-      CREATE ONLY stock_account:cap_a SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:cap_a, resource = item:shared;
-      CREATE ONLY stock_account:cap_b SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:cap_b, resource = item:shared;
-      CREATE ONLY stock_account:range SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:range, resource = item:shared;
-      CREATE ONLY stock_account:input_a SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:input_a, resource = item:input_a, minimum_quantity = -100dec;
-      CREATE ONLY stock_account:input_b SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:input_b, resource = item:input_b, minimum_quantity = -100dec;
-      CREATE ONLY stock_account:output_a SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:output_a, resource = item:output_a, minimum_quantity = -100dec;
-      CREATE ONLY stock_account:output_b SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:output_b, resource = item:output_b, minimum_quantity = -100dec;
-      CREATE ONLY stock_account:wrong_unit SET owned_by = rebase_group:root, economic_entity = organization:entity, operating_unit = operating_unit:wrong_unit, resource = item:bulk;
-      CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_group:root, economic_entity = organization:other_entity, operating_unit = operating_unit:wrong_entity, resource = item:shared;
-      CREATE ONLY stock_in:open_shared SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:shared, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_in:open_cap_a SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:cap_a, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_in:open_cap_b SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:cap_b, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_in:open_range SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:range, quantity = 6dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_in:open_input_a SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:input_a, quantity = 20dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY stock_in:open_input_b SET owned_by = rebase_group:root, from_party = misc_account:opening, to_account = stock_account:input_b, quantity = 20dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY assembly_recipe_version:shared SET owned_by = rebase_group:root, recipe_key = 'shared', version = '1', economic_entity = organization:entity,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY misc_account:opening SET owned_by = rebase_tenant:default, label = 'Opening stock';
+      CREATE ONLY misc_account:customer SET owned_by = rebase_tenant:default, label = 'Customer';
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', dimension = 'count', name = 'Each';
+      CREATE ONLY measure_unit:kg SET owned_by = rebase_tenant:default, code = 'kg', dimension = 'mass', name = 'Kilogram';
+      CREATE ONLY item:shared SET owned_by = rebase_tenant:default, name = 'Shared', unit = measure_unit:each;
+      CREATE ONLY item:input_a SET owned_by = rebase_tenant:default, name = 'Input A', unit = measure_unit:each;
+      CREATE ONLY item:input_b SET owned_by = rebase_tenant:default, name = 'Input B', unit = measure_unit:each;
+      CREATE ONLY item:output_a SET owned_by = rebase_tenant:default, name = 'Output A', unit = measure_unit:each;
+      CREATE ONLY item:output_b SET owned_by = rebase_tenant:default, name = 'Output B', unit = measure_unit:each;
+      CREATE ONLY item:bulk SET owned_by = rebase_tenant:default, name = 'Bulk', unit = measure_unit:kg;
+      CREATE ONLY operating_unit:shared SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Shared', code = 'shared';
+      CREATE ONLY operating_unit:zero SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Zero', code = 'zero';
+      CREATE ONLY operating_unit:cap_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Capacity A', code = 'cap_a';
+      CREATE ONLY operating_unit:cap_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Capacity B', code = 'cap_b';
+      CREATE ONLY operating_unit:range SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Range', code = 'range';
+      CREATE ONLY operating_unit:input_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Input A', code = 'input_a';
+      CREATE ONLY operating_unit:input_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Input B', code = 'input_b';
+      CREATE ONLY operating_unit:output_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Output A', code = 'output_a';
+      CREATE ONLY operating_unit:output_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Output B', code = 'output_b';
+      CREATE ONLY operating_unit:wrong_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity, name = 'Wrong entity', code = 'wrong_entity';
+      CREATE ONLY operating_unit:wrong_unit SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Wrong unit', code = 'wrong_unit';
+      CREATE ONLY stock_account:shared SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:shared, resource = item:shared;
+      CREATE ONLY stock_account:zero SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:zero, resource = item:shared;
+      CREATE ONLY stock_account:cap_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:cap_a, resource = item:shared;
+      CREATE ONLY stock_account:cap_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:cap_b, resource = item:shared;
+      CREATE ONLY stock_account:range SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:range, resource = item:shared;
+      CREATE ONLY stock_account:input_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:input_a, resource = item:input_a, minimum_quantity = -100dec;
+      CREATE ONLY stock_account:input_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:input_b, resource = item:input_b, minimum_quantity = -100dec;
+      CREATE ONLY stock_account:output_a SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:output_a, resource = item:output_a, minimum_quantity = -100dec;
+      CREATE ONLY stock_account:output_b SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:output_b, resource = item:output_b, minimum_quantity = -100dec;
+      CREATE ONLY stock_account:wrong_unit SET owned_by = rebase_tenant:default, economic_entity = organization:entity, operating_unit = operating_unit:wrong_unit, resource = item:bulk;
+      CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity, operating_unit = operating_unit:wrong_entity, resource = item:shared;
+      CREATE ONLY stock_in:open_shared SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:shared, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_in:open_cap_a SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:cap_a, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_in:open_cap_b SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:cap_b, quantity = 10dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_in:open_range SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:range, quantity = 6dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_in:open_input_a SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:input_a, quantity = 20dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY stock_in:open_input_b SET owned_by = rebase_tenant:default, from_party = misc_account:opening, to_account = stock_account:input_b, quantity = 20dec, effective_at = d'2026-07-01T00:00:00Z';
+      CREATE ONLY assembly_recipe_version:shared SET owned_by = rebase_tenant:default, recipe_key = 'shared', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:shared, input_a_quantity = 3, input_b_account = stock_account:shared, input_b_quantity = 3,
         output_a_account = stock_account:shared, output_a_quantity = 1, output_b_account = stock_account:shared, output_b_quantity = 1;
-      CREATE ONLY assembly_recipe_version:zero SET owned_by = rebase_group:root, recipe_key = 'zero', version = '1', economic_entity = organization:entity,
+      CREATE ONLY assembly_recipe_version:zero SET owned_by = rebase_tenant:default, recipe_key = 'zero', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:zero, input_a_quantity = 1, input_b_account = stock_account:zero, input_b_quantity = 1,
         output_a_account = stock_account:zero, output_a_quantity = 1, output_b_account = stock_account:zero, output_b_quantity = 1;
-      CREATE ONLY assembly_recipe_version:cap_a SET owned_by = rebase_group:root, recipe_key = 'cap_a', version = '1', economic_entity = organization:entity,
+      CREATE ONLY assembly_recipe_version:cap_a SET owned_by = rebase_tenant:default, recipe_key = 'cap_a', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:cap_a, input_a_quantity = 3, input_b_account = stock_account:cap_a, input_b_quantity = 3,
         output_a_account = stock_account:cap_a, output_a_quantity = 1, output_b_account = stock_account:cap_a, output_b_quantity = 1;
-      CREATE ONLY assembly_recipe_version:cap_b SET owned_by = rebase_group:root, recipe_key = 'cap_b', version = '1', economic_entity = organization:entity,
+      CREATE ONLY assembly_recipe_version:cap_b SET owned_by = rebase_tenant:default, recipe_key = 'cap_b', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:cap_b, input_a_quantity = 3, input_b_account = stock_account:cap_b, input_b_quantity = 3,
         output_a_account = stock_account:cap_b, output_a_quantity = 1, output_b_account = stock_account:cap_b, output_b_quantity = 1;
-      CREATE ONLY assembly_recipe_version:range SET owned_by = rebase_group:root, recipe_key = 'range', version = '1', economic_entity = organization:entity,
+      CREATE ONLY assembly_recipe_version:range SET owned_by = rebase_tenant:default, recipe_key = 'range', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:range, input_a_quantity = 3, input_b_account = stock_account:range, input_b_quantity = 3,
         output_a_account = stock_account:output_a, output_a_quantity = 1, output_b_account = stock_account:output_b, output_b_quantity = 1;
-      CREATE ONLY assembly_recipe_version:output_use SET owned_by = rebase_group:root, recipe_key = 'output_use', version = '1', economic_entity = organization:entity,
+      CREATE ONLY assembly_recipe_version:output_use SET owned_by = rebase_tenant:default, recipe_key = 'output_use', version = '1', economic_entity = organization:entity,
         input_a_account = stock_account:input_a, input_a_quantity = 1, input_b_account = stock_account:input_b, input_b_quantity = 1,
         output_a_account = stock_account:output_a, output_a_quantity = 1, output_b_account = stock_account:output_b, output_b_quantity = 1;
     `);
 
-    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:missing SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:missing SET owned_by = rebase_tenant:default,
       recipe_key = 'missing', version = '1', economic_entity = organization:entity,
       input_b_account = stock_account:shared, input_b_quantity = 1,
       output_a_account = stock_account:shared, output_a_quantity = 1,
       output_b_account = stock_account:shared, output_b_quantity = 1;`, 'recipe version with a missing typed role rejects');
     await rejectsUnchanged(db, `UPDATE assembly_recipe_version:shared SET input_a_quantity = 99;`,
       'immutable recipe version cannot be changed');
-    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:bad_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:bad_entity SET owned_by = rebase_tenant:default,
       recipe_key = 'bad_entity', version = '1', economic_entity = organization:entity,
       input_a_account = stock_account:wrong_entity, input_a_quantity = 1,
       input_b_account = stock_account:input_b, input_b_quantity = 1,
       output_a_account = stock_account:output_a, output_a_quantity = 1,
       output_b_account = stock_account:output_b, output_b_quantity = 1;`,
     'recipe entity mismatch is rejected');
-    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:bad_unit SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_recipe_version:bad_unit SET owned_by = rebase_tenant:default,
       recipe_key = 'bad_unit', version = '1', economic_entity = organization:entity,
       input_a_account = stock_account:wrong_unit, input_a_quantity = 1,
       input_b_account = stock_account:input_b, input_b_quantity = 1,
@@ -271,7 +272,7 @@ async function main() {
     'non-count role unit rejects recipe version');
 
     // Drafts have no managed legs and no stock effect until all four roles are reconciled.
-    await db.query(`CREATE ONLY assembly_batch:draft SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:draft SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:shared, batch_count = 1, state = 'draft', effective_at = d'2026-07-02T00:00:00Z';`);
     let data = await assertOracleAt(db);
     assert.equal(data.inputs.length, 0);
@@ -286,7 +287,7 @@ async function main() {
       'same-account two-input/two-output recipe posts net stock once across distinct child identities');
     assert.equal(n(byId(data.accounts, 'stock_account:shared').z_gross_input.summary.measures.gross_input.sum), 6,
       'same-account input roles aggregate gross demand on their separate root');
-    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:draft SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:draft SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:shared, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`,
     'duplicate batch source retry rejects with unchanged managed children and roots');
     const completeBeforeRepeat = await state(db);
@@ -294,7 +295,7 @@ async function main() {
     assert.deepEqual(await state(db), completeBeforeRepeat,
       'repeating completion preserves stable children and all root summaries');
 
-    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:zero_self_funding SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:zero_self_funding SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:zero, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`,
     'same-time assembly outputs cannot fund zero-prior gross inputs', /ACCOUNTING_ASSEMBLY_GROSS_INPUT_CAPACITY/);
     let accountZero = byId(await state(db).then((s) => s.accounts), 'stock_account:zero');
@@ -303,29 +304,29 @@ async function main() {
 
     // Shared same-time capacity is checked against all completed input roles,
     // not just the member or ID that sorts first.
-    await db.query(`CREATE ONLY assembly_batch:a_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:a_first SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:cap_a, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`);
-    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:z_second SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:z_second SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:cap_a, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`,
     'aggregate same-time input 12 exceeds stock 10', /ACCOUNTING_ASSEMBLY_GROSS_INPUT_CAPACITY/);
     data = await assertOracleAt(db);
     assert.equal(n(byId(data.accounts, 'stock_account:cap_a').z_history.summary.measures.quantity.sum), 6);
     assert.equal(n(byId(data.accounts, 'stock_account:cap_a').z_gross_input.summary.measures.gross_input.sum), 6);
 
-    await db.query(`CREATE ONLY assembly_batch:z_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:z_first SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:cap_b, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`);
-    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:a_second SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY assembly_batch:a_second SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:cap_b, batch_count = 1, state = 'complete', effective_at = d'2026-07-02T00:00:00Z';`,
     'reverse ID order aggregate same-time input 12 exceeds stock 10', /ACCOUNTING_ASSEMBLY_GROSS_INPUT_CAPACITY/);
     await assertOracleAt(db);
 
     // Nanosecond-bounded same-time demand: future demand/replenishment are
     // already present when the earlier batch is created.
-    await db.query(`CREATE ONLY assembly_batch:range_later SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:range_later SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:range, batch_count = 1, state = 'complete', effective_at = d'2026-07-04T00:00:00.000750Z';`);
-    await db.query(`CREATE ONLY stock_in:range_replenish SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_in:range_replenish SET owned_by = rebase_tenant:default,
       from_party = misc_account:opening, to_account = stock_account:range, quantity = 6dec, effective_at = d'2026-07-04T00:00:00.000500Z';`);
-    await db.query(`CREATE ONLY assembly_batch:range_earlier SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:range_earlier SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:range, batch_count = 1, state = 'complete', effective_at = d'2026-07-04T00:00:00.000000Z';`);
     data = await assertOracleAt(db);
     assert.equal(n(byId(data.accounts, 'stock_account:range').z_history.summary.measures.quantity.sum), 0,
@@ -346,14 +347,14 @@ async function main() {
     assert.equal(n(rangeCheck.one_ms), 12, 'millisecond interval would combine a distinct later demand');
 
     // Per-output dated use capacity preserves a stock_out's one physical debit.
-    await db.query(`CREATE ONLY assembly_batch:output_use SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:output_use SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:output_use, batch_count = 2, state = 'complete', effective_at = d'2026-07-05T00:00:00Z';`);
     data = await assertOracleAt(db);
     const outputId = rid(data.outputs.find((x) => x.rebase_managed_source === 'assembly_batch:output_use'
       && x.rebase_managed_role === 'output_a')?.id);
     const otherOutputId = rid(data.outputs.find((x) => x.rebase_managed_source === 'assembly_batch:output_use'
       && x.rebase_managed_role === 'output_b')?.id);
-    await db.query(`CREATE ONLY stock_out:output_dispatch SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_out:output_dispatch SET owned_by = rebase_tenant:default,
       from_account = stock_account:output_a, to_party = misc_account:customer, assembly_output = ${outputId},
       quantity = 2dec, effective_at = d'2026-07-05T00:00:00Z';`);
     data = await assertOracleAt(db);
@@ -361,10 +362,10 @@ async function main() {
       'linked dispatch records exactly one stock debit');
     assert.equal(n(byId(data.outputs, outputId).z_capacity.summary.measures.quantity.sum), -2,
       'linked dispatch consumes the output’s dated use capacity once');
-    await db.query(`CREATE ONLY stock_out:ordinary_dispatch SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_out:ordinary_dispatch SET owned_by = rebase_tenant:default,
       from_account = stock_account:output_b, to_party = misc_account:customer,
       quantity = 1dec, effective_at = d'2026-07-05T00:00:00Z';`);
-    await rejectsUnchanged(db, `CREATE ONLY stock_out:wrong_output_account SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY stock_out:wrong_output_account SET owned_by = rebase_tenant:default,
       from_account = stock_account:output_b, to_party = misc_account:customer, assembly_output = ${outputId},
       quantity = 1dec, effective_at = d'2026-07-05T00:00:00Z';`,
     'linked dispatch rejects a source account that differs from its output account', /ACCOUNTING_STOCK_OUT_ASSEMBLY_ACCOUNT_MISMATCH/);
@@ -372,7 +373,7 @@ async function main() {
       'linked output reference cannot be cleared after dispatch creation');
     await rejectsUnchanged(db, `UPDATE stock_out:output_dispatch SET assembly_output = ${otherOutputId};`,
       'linked output reference cannot be changed to a different role after dispatch creation');
-    await rejectsUnchanged(db, `CREATE ONLY stock_out:output_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY stock_out:output_overdraw SET owned_by = rebase_tenant:default,
       from_account = stock_account:output_a, to_party = misc_account:customer, assembly_output = ${outputId},
       quantity = 1dec, effective_at = d'2026-07-06T00:00:00Z';`,
     'shared linked output capacity rejects consumption beyond source quantity', /ACCOUNTING_ASSEMBLY_OUTPUT_CAPACITY/);
@@ -387,7 +388,7 @@ async function main() {
     data = await assertOracleAt(db);
 
     // Updating an existing completed source is atomic across sibling legs and roots.
-    await db.query(`CREATE ONLY assembly_batch:editable SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY assembly_batch:editable SET owned_by = rebase_tenant:default,
       recipe_version = assembly_recipe_version:output_use, batch_count = 1, state = 'draft', effective_at = d'2026-07-02T00:00:00Z';`);
     data = await assertOracleAt(db);
     assert.equal(data.inputs.filter((x) => x.rebase_managed_source === 'assembly_batch:editable').length, 0,
@@ -413,7 +414,7 @@ async function main() {
     data = await assertOracleAt(db);
     assert.equal(data.outputs.filter((x) => x.rebase_managed_source === 'assembly_batch:output_use').length, 2,
       'recompletion re-adds stable output IDs and capacity roots');
-    await db.query(`CREATE ONLY stock_out:output_dispatch SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY stock_out:output_dispatch SET owned_by = rebase_tenant:default,
       from_account = stock_account:output_a, to_party = misc_account:customer, assembly_output = ${outputId},
       quantity = 2dec, effective_at = d'2026-07-05T00:00:00Z';`);
     await assertOracleAt(db);

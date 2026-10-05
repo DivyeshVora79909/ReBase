@@ -1,10 +1,9 @@
 # Core configuration and verification reference
 
-Source snapshot: 2026-09-28, HEAD `a6626c0` plus the audited working tree and
-the K1–K3 core stabilization continuation. This describes the **current
-implementation**. K4 in the
-[handoff](./core-handoff.md) deliberately change some of these contracts;
-update this file when they do. Defaults below are not blanket recommendations.
+Updated 2026-10-05 for the [tenant/tree development contract](tenant-tree-redesign.md)
+and [single-design runtime](single-design-runtime.md). Source settings in
+`config/environment.js` are authoritative. Historical K1-K5 evidence records
+its own baseline; it does not certify a later source snapshot.
 
 ## 1. Configuration resolution
 
@@ -40,13 +39,14 @@ keys are not all rejected.
 | `SURREAL_NAMESPACE` | Absent | Must accompany database; simple SurrealDB identifier. |
 | `SURREAL_DATABASE` | Absent | Must accompany namespace. |
 | `SURREAL_CONNECT_TIMEOUT_MS` | `10000` | Positive integer. |
-| `REBASE_ALLOWED_CONTEXTS` | `[]` | JSON array of unique `{namespace,database}` objects; no extra keys or wildcard. |
+| `REBASE_ALLOWED_CONTEXTS` | `[]` | Optional JSON array containing at most the one design context; no extra keys or wildcard. |
 | `REBASE_RUNTIME_URL` | Absent | `http`/`https`; must accompany runtime secret. |
 | `REBASE_RUNTIME_SECRET` | Absent | Internal service/event capability; protect generated bound artifacts too. |
 
-The default namespace/database is added to the allowed contexts if missing.
-Compiling without any connection details is valid. Starting connected tools
-requires the connection triple; runtime startup needs configured contexts.
+The default namespace/database and optional allowed-context entry must describe
+the same design. Multiple designs in one process are rejected. A sole allowed
+context can supply the default. Compiling without connection details remains
+valid; connected tools require the connection triple and runtime needs one design.
 URL validation rejects embedded username/password and fragments, including
 in Redis URLs. Authenticated Redis URL support is therefore **not implemented
 by the current profile parser**; do not invent a password option to work around
@@ -55,7 +55,9 @@ it in deployment instructions.
 There are two independent compiler facts:
 
 - No namespace/database means a context-neutral artifact.
-- No runtime URL/secret means external-effect HTTP events are omitted.
+- No runtime URL/secret omits synchronous/grant/inline HTTP bindings. Queued
+  tasks still have lifecycle/revision events and are discovered through live
+  queries and durable reconciliation.
 
 A neutral build that parses successfully does not prove bound event dispatch.
 Compile and check with the same profile. Never dump a bound schema or
@@ -80,19 +82,19 @@ Each scan schedules its next scan one interval after the completed run. An
 entirely admitted page with a durable cursor schedules a prompt continuation;
 queue-capacity or publishing deferral waits for the regular interval. The scan
 interval is a best-effort cadence, not a strict end-to-end lateness bound under
-long scans, many contexts, or sustained capacity exhaustion.
+long scans or sustained capacity exhaustion.
 
 ## 4. Queue and storage
 
 | Environment variable | Default | Contract |
 |---|---|---|
-| `REBASE_QUEUE_PREFIX` | `rebase` | Starts alphanumeric; remaining characters `[A-Za-z0-9_.:-]`. Use isolated prefixes in probes. |
+| `REBASE_QUEUE_PREFIX` | `rebase` | Starts alphanumeric; remaining characters `[A-Za-z0-9_.:-]`. The server appends a stable design hash; use isolated base prefixes in probes. |
 | `REBASE_QUEUE_REDIS_URL` | Absent | `redis`/`rediss`, currently without embedded credentials. Required by the normal BullMQ startup path. |
 | `REBASE_QUEUE_REDIS_CONNECT_TIMEOUT_MS` | `5000` | Positive integer. |
 | `REBASE_QUEUE_STARTUP_TIMEOUT_MS` | `10000` | Positive integer. |
 | `REBASE_QUEUE_HEALTH_TIMEOUT_MS` | `2000` | Positive integer. |
 | `REBASE_QUEUE_DRIVER` | Absent | If supplied, only `bullmq` is accepted; no SQS path. |
-| `REBASE_STORAGE_BUCKET` | Absent | Shared bucket; generated object keys include context isolation. |
+| `REBASE_STORAGE_BUCKET` | Absent | Shared bucket; object keys include design identity; native record permissions isolate tenants. |
 
 Provider API credentials are typed database data. Do not add Brevo/Twilio/S3
 tenant secrets to the shared process config. The shared bucket name is an
@@ -106,7 +108,10 @@ infrastructure setting; per-tenant bucket selection is not the current contract.
 | `REBASE_AUTHENTICATION_CHALLENGE_TTL_MS` | `600000` | Integer `60000..86400000`. |
 | `REBASE_AUTHENTICATION_RATE_LIMIT_WINDOW_MS` | `900000` | Integer at least `1000`. |
 | `REBASE_AUTHENTICATION_RATE_LIMIT_IP` | `10` | Integer at least one per window. |
-| `REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER` | `3` | Integer at least one per window. |
+| `REBASE_AUTHENTICATION_RATE_LIMIT_IDENTIFIER` | `3` | Integer at least one per canonical tenant/identifier window. |
+| `REBASE_PASSKEY_RP_ID` | Absent | WebAuthn relying-party ID; configure with allowed origins. |
+| `REBASE_PASSKEY_RP_NAME` | `ReBase` | WebAuthn display name. |
+| `REBASE_PASSKEY_ORIGINS` | Absent | Comma-separated exact allowed origins; configure with RP ID. |
 
 Use a separate value for payload encryption and runtime event authentication.
 The code requires a production payload key and its minimum length, but does
@@ -118,15 +123,19 @@ Current typed provider fields:
 
 | Table | Fields | Current boundary |
 |---|---|---|
-| `rebase_email_delivery_config` | `api_key`, `from_email`, `from_name`, optional `reply_to` | Table and fields are native private; no generated owner metadata. |
-| `rebase_sms_delivery_config` | `account_sid`, optional `auth_token`, optional `api_key_sid`/`api_key_secret`, `from_number` | Native private; Twilio adapter consumes the supported credential form. |
-| `rebase_authentication_delivery_policy:default` | Optional references `email_configuration`, `phone_configuration` | Private, developer-populated auth selector. |
+| `rebase_email_delivery_config` | `api_key`, `from_email`, `from_name`, optional `reply_to` | Explicit tenant/user/group owner and immutable tenant; tenant-owned platform rows are private, user/group BYOC follows current grants, and the API key is write-only to record clients. |
+| `rebase_sms_delivery_config` | `account_sid`, optional `auth_token`, optional `api_key_sid`/`api_key_secret`, `from_number` | Same ownership boundary; secrets are write-only and the Twilio adapter consumes the selected credential form. |
+| `rebase_authentication_delivery_policy` | Unique `tenant`, optional `email_configuration`, `phone_configuration` | Private, explicitly provisioned per-tenant selector; configuration references must share its tenant. |
 
-The two credential tables exist, but shared root-group ownership and ordinary
-authenticated reuse are **K4 work**, not implemented by the current private
-schema. Identity tables (`authentication_email`/`authentication_phone`) identify
-recipients; they are not provider credential stores. Auth service routing uses
-an allowlisted context and existing identity, not arbitrary guest record input.
+Generic email/SMS operations require an explicit configuration. The worker
+checks tenant agreement and the creator's current operation/owner grants before
+loading secrets. Authentication delivery uses the tenant's private policy and
+rechecks its user, identity, challenge and revisions. There is no implicit
+`:default` policy, `:platform` configuration or hardcoded group root.
+Identity tables (`authentication_email`/`authentication_phone`) identify
+recipients; they are not provider credential stores. The
+[tenant/authentication contract](tenant-authentication.md) specifies these native
+permissions and the public code/passkey routes.
 
 `REBASE_TEST_RECORD__*` entries in `.env.example` are documentation-only fixture
 placeholders. The shared resolver does not load them into database rows.
@@ -151,6 +160,8 @@ personal `.env` or use real service keys in disposable verification.
 | Same, completed jobs | `removeOnComplete` | Age 3600 seconds, count 1000. |
 | Same, failed jobs | `removeOnFail` | Age 7 days, count 5000. |
 | Same, dead-letter diagnostics | `deadLetterRetentionMs` / prune interval / batch | `30 days` / `60 seconds` / up to `1000` waiting diagnostics per pass. Startup and periodic cleanup remove expired entries; this is an age policy, not a hard count or memory bound. |
+| `gateway/live.js` lifecycle | `maxPending` / retry delay / maximum retry delay | `1000` coalesced IDs / `1000ms` / `30000ms`; one active watcher or attachment attempt. |
+| Same, shutdown | `attachShutdownTimeoutMs` | `1000ms`; late attachment resolution cleans up its subscription because the SDK has no abort signal. |
 
 Several other constructor options still use `||` defaults. They are not uniformly
 validated configuration APIs. Verify allowed zero/absence behavior at the
@@ -168,7 +179,8 @@ surreal validate build/test/schema.surql
 Existing switches: `--project` (alias `--source`), `--framework`, `--output`,
 `--check`, `--print-raw`, `--no-root-permissions`, `--help`. Default project is
 `designs/test`, framework `framework`, output `build/<project basename>`.
-Root permission bootstrap is included unless explicitly disabled.
+The generated tenant permission vocabulary is included unless explicitly
+disabled. This creates no tenant or group record.
 
 The `gateway/server.js` executable currently accepts **no application flags**
 and loads `build/test`. For a different compiled artifact directory, the
@@ -190,12 +202,18 @@ pipeline or assume the CLI is the only entrypoint.
 
 ## 8. Small source contracts worth remembering
 
-- Roots declare `@rebase-tree-root @rebase-tree-key datetime|int`; node fields
-  declare `@rebase-tree-node`, the key type, and finite
+- Roots declare `@rebase-tree-root` and `@rebase-tree-key` with one to eight
+  components from `datetime`, `int`, `decimal`, `string`, `record`, `bool`, and
+  `uuid`. Logical keys are unique unless the root has `@rebase-tree-duplicates`.
+  Node fields declare `@rebase-tree-node`, the same key type, and finite
   `@rebase-tree-owner table.root_field` targets. Use current fixtures for exact
   field storage types. Membership identity is `(record, slot)`, independent
   of mutable order. Optional absence omits membership; zero/net-zero is not
   automatically absence.
+- Public tree reads and native CREATE formulas use `fn::tree::read`; storage
+  and traversal helpers stay private. Materialized views require explicit
+  record scope or tenant publication, as described in the
+  [view policy](tenant-authentication.md#materialized-aggregate-views).
 - `@rebase-members`, `@rebase-derived`, explicit opaque dependencies, and
   required-output contracts are compiled; do not infer arbitrary SurrealQL
   dependencies or manually mutate private AVL fields.
@@ -216,7 +234,8 @@ pipeline or assume the CLI is the only entrypoint.
 
 ## 9. Verification selection and bootstrap
 
-Audited tools: Node `v22.23.2`, SurrealDB `3.2.0`, Redis `7.0.15`, BullMQ `6.2.0`.
+Backend baseline: SurrealDB `3.3.0` (pinned in `.surreal-version`), BullMQ `6.2.0`.
+Dated evidence records the Node/Redis versions used for each verification.
 `package.json` permits Node `>=20.6.0`; exact audited behavior is tied to the
 versions above. Use the existing lockfile; do not upgrade dependencies while
 fixing an unrelated packet. Install with `npm ci` only if dependencies need it.
@@ -226,11 +245,11 @@ fixing an unrelated packet. Install with `npm ci` only if dependencies need it.
 | Docs only | Links, scoped diff, `git diff --check` | No database suite. |
 | Config | `npm run probe:environment` | `probe:runtime` if startup/binding changes. |
 | Queue/runtime | Relevant smallest case, `npm run probe:queues` | `npm run probe:runtime`. |
-| Authentication/credentials | `npm run probe:authentication`; `node dev-tools/checks/probe.js security` | Runtime + affected compiler fixture. |
+| Authentication/credentials | `probe:authentication`, `probe:tenant-auth`, `probe:tenant-records`, `probe:credentials`; `probe:passkeys` for WebAuthn | Runtime + affected compiler fixture. |
 | Compiler or readers/audit | `npm run probe:compiler`; `npm run probe:architecture` | Security and affected generated/tree checks. |
 | AVL/ordering | Affected typed/position/temporal fixture | Full tree and dependent fixtures at integration. |
 | Required/causal outputs | Corresponding `probe:required-outputs` / `probe:causal-outputs` | Affected foundation and source-oracle integration. |
-| Final core integration | Rebuild/check matching profiles and native validation | `npm run verify` once, plus changed coverage omitted from it. |
+| Final backend integration | Rebuild/check all three profiles and native validation | `npm run verify`, `npm run verify:accounting`, explicit positions and mock Razorpay-refund probes; see T6 in the execution handoff. |
 
 The main probes start their own loopback servers. `dev-tools/checks/probe.js` is
 disposable by default; **do not set `REBASE_PROBE_ENDPOINT`** for this audit

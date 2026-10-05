@@ -1,4 +1,47 @@
-# Core audit
+# Core audit and tenant redesign
+
+## Tenant/tree integration review — 2026-10-05
+
+**Requested backend scope passed and is ready for lead review.** The
+[execution handoff](tenant-tree-handoff.md) and
+[dated evidence](evidence/2026-10-05-tenant-tree-verification.json) retain exact
+commands, versions, source/build hashes and raw output. All three builds, full
+`npm run verify` (1,006.086s), full `npm run verify:accounting` (694.793s),
+positions (291.274s) and mocked refunds (1.028s) passed. Verification includes
+26/26 developer-tool tests; syntax checks cover all 84 changed/new JS files.
+
+F1 now preserves owner/reader and configured owner-only policies in scoped
+views and generated computed fields. F2 creates managed prerequisites first,
+removes dependents first and permits cleanup of roots emptied inside the same
+transaction. F3 retains the existing local dependency resolver. F4 retries
+failed initial live attachment with bounded backoff and verifies shutdown and
+actual reconnect. Tenant/reference rollback, record/system public tree reads,
+guest/private-helper denial, typed keys and independent-session uniqueness pass.
+
+Integration also repaired native null-coalescing precedence in seek generation,
+prefix formulas that called newly private helpers, and an obsolete OAuth test
+assertion. The last failure was confined to handwritten H7 feasibility roots
+missing their duplicate policy. The retained build/backend passes load none of
+that probe; per-file hashes establish unchanged production and executed test
+dependencies. Full accounting, positions, refunds and final syntax passed after
+the repair. Earlier failures remain in the evidence instead of being counted
+as successful suite runs.
+
+One multi-reader fixture exposed duplicate rows from an indexed `ORDER BY id`
+scan on SurrealDB 3.3.0. `WITH NOINDEX ORDER BY id` and unordered scans agreed on
+the actual two records. A smaller reproduction was inconsistent; no internal
+engine cause is established. Affected source snapshots use the explicit unindexed
+scan without deduplication. The [ordered-tree contract](ordered-tree-contract.md)
+carries this limit into frontend planning.
+
+The unchanged MetaSol at `ada483e` still requires its tenant migration.
+Disposable databases and mocked providers establish local correctness only;
+production migration/deployment, live providers and capacity are excluded.
+
+The sections below retain the **2026-10-03 and earlier baseline**. Their root,
+context and ownership descriptions are historical where the active contract
+supersedes them; their old pass counts do not certify this redesign.
+
 
 ## Current redesign review — 2026-10-03
 

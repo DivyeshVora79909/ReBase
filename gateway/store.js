@@ -1,4 +1,5 @@
 const { clean, queryResult, recordIdString } = require("./utils");
+const { Table } = require('surrealdb');
 
 const FINAL_OUTCOMES = new Set(["succeeded", "failed", "ambiguous", "partial"]);
 const RECONCILIATION_CURSOR_ID = "rebase_reconciliation_cursor:operation_scan";
@@ -441,6 +442,44 @@ function createTableStore(database) {
     return queryResult(await db.query("RETURN true;")) === true;
   }
 
+  async function watch(tables, onChange, onReconnect, onError = () => {}) {
+    const subscriptions = [];
+    const unsubscribers = [];
+    let stopped = false;
+    async function stop() {
+      if (stopped) return;
+      stopped = true;
+      for (const unsubscribe of unsubscribers) unsubscribe();
+      // kill() detaches the managed callback before awaiting the server. A
+      // disconnected server must not hold local shutdown open indefinitely.
+      const killed = Promise.allSettled(subscriptions.map(subscription => subscription.kill()));
+      if (!db.isConnected) return;
+      let timer;
+      try { await Promise.race([killed, new Promise(resolve => { timer = setTimeout(resolve, 1000); })]); }
+      finally { clearTimeout(timer); }
+    }
+    try {
+      for (const table of [...new Set(tables)]) {
+        const subscription = await db.live(new Table(identifier(table)))
+          .fields('id', 'rebase_outcome', 'rebase_lease_until');
+        subscriptions.push(subscription);
+        unsubscribers.push(subscription.subscribe(message => {
+          if (message.action === 'KILLED') { onError(new Error(`Live query stopped for ${table}`)); return; }
+          if (message.action === 'DELETE') return;
+          const value = message.value;
+          if (value?.rebase_outcome && value.rebase_outcome !== 'ambiguous') return;
+          if (value?.rebase_lease_until && new Date(String(value.rebase_lease_until)).getTime() > Date.now()) return;
+          onChange(String(message.recordId));
+        }));
+      }
+      unsubscribers.push(db.subscribe('connected', () => onReconnect?.()));
+    } catch (error) {
+      await stop();
+      throw error;
+    }
+    return stop;
+  }
+
   return {
     ambiguous,
     claim,
@@ -456,6 +495,7 @@ function createTableStore(database) {
     markProviderStarted,
     pendingPage,
     retry,
+    watch,
   };
 }
 

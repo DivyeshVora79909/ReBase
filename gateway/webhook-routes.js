@@ -2,8 +2,8 @@ const crypto = require("node:crypto");
 const { RuntimeError } = require("./errors");
 const { tableFromId } = require("./handlers");
 
-const VERSION = "v1";
-const PURPOSE = Buffer.from("rebase:webhook-route:v1", "utf8");
+const VERSION = "v2";
+const PURPOSE = Buffer.from("rebase:webhook-route:v2", "utf8");
 
 function routeKey(secret) {
   if (!secret) throw new Error("Webhook route secret is required");
@@ -13,15 +13,14 @@ function routeKey(secret) {
 function assertRoute(route) {
   const normalized = {
     provider: String(route?.provider || "").toLowerCase(),
-    namespace: String(route?.namespace || ""),
-    database: String(route?.database || ""),
+    tenant: String(route?.tenant || ""),
     config: String(route?.config || ""),
     id: String(route?.id || ""),
   };
   if (
     !/^[a-z][a-z0-9_-]*$/.test(normalized.provider)
-    || !normalized.namespace
-    || !normalized.database
+    || tableFromId(normalized.tenant) !== 'rebase_tenant'
+    || Object.keys(route || {}).some(key => !['provider', 'tenant', 'config', 'id'].includes(key))
     || !tableFromId(normalized.config)
     || !tableFromId(normalized.id)
   ) {
@@ -40,8 +39,7 @@ function createWebhookRouteCodec(secret) {
     cipher.setAAD(PURPOSE);
     const plaintext = Buffer.from(JSON.stringify({
       p: value.provider,
-      n: value.namespace,
-      d: value.database,
+      t: value.tenant,
       c: value.config,
       i: value.id,
     }));
@@ -64,8 +62,7 @@ function createWebhookRouteCodec(secret) {
       const payload = JSON.parse(Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8"));
       return assertRoute({
         provider: payload.p,
-        namespace: payload.n,
-        database: payload.d,
+        tenant: payload.t,
         config: payload.c,
         id: payload.i,
       });

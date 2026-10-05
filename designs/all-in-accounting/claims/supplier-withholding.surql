@@ -18,7 +18,7 @@ DEFINE FIELD OVERWRITE policy_key ON supplier_withholding_policy_version TYPE st
 DEFINE FIELD OVERWRITE version ON supplier_withholding_policy_version TYPE string ASSERT string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_from ON supplier_withholding_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE valid_until ON supplier_withholding_policy_version TYPE datetime READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE supplier_withholding_policy_identity ON supplier_withholding_policy_version FIELDS tax_claim_account, policy_key, version UNIQUE;
+DEFINE INDEX OVERWRITE supplier_withholding_policy_identity ON supplier_withholding_policy_version FIELDS tenant, tax_claim_account, policy_key, version UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::supplier_withholding_members($row: object) {
     RETURN [
@@ -86,4 +86,4 @@ DEFINE FIELD OVERWRITE payment_at ON supplier_withholding TYPE datetime VALUE $t
 DEFINE FIELD OVERWRITE z_claim ON supplier_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
 DEFINE FIELD OVERWRITE z_invoice ON supplier_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner purchase_invoice.z_outstanding';
 DEFINE FIELD OVERWRITE z_tax ON supplier_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner claim_account.z_history';
-DEFINE INDEX OVERWRITE supplier_withholding_allocation ON supplier_withholding FIELDS allocation UNIQUE;
+DEFINE INDEX OVERWRITE supplier_withholding_allocation ON supplier_withholding FIELDS tenant, allocation UNIQUE;

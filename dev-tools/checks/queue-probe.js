@@ -7,6 +7,7 @@ const {
   assertOperationEnvelope,
   assertPriority,
   assertWorkEnvelope,
+  designQueuePrefix,
   normalizeDecision,
   operationEnvelope,
   receiptEnvelope,
@@ -14,7 +15,11 @@ const {
 } = require("../../gateway/queues/port");
 
 function main() {
-  const locator = { namespace: "tenant", database: "app", id: "send_brevo_email:one" };
+  assert.notEqual(designQueuePrefix('shared', { namespace: 'design', database: 'a' }),
+    designQueuePrefix('shared', { namespace: 'design', database: 'b' }));
+  assert.equal(designQueuePrefix('shared', { namespace: 'design', database: 'a' }),
+    designQueuePrefix('shared', { database: 'a', namespace: 'design' }));
+  const locator = { id: "send_brevo_email:one" };
   const record = { execution_id: crypto.randomUUID(), revision: crypto.randomUUID() };
   const envelope = operationEnvelope(locator, record);
   assert.deepEqual(assertWorkEnvelope(envelope), envelope);
@@ -25,7 +30,7 @@ function main() {
   assert.equal(assertPriority(10), 10);
   assert.equal(assertPriority(100), 100);
   assert.equal(assertPriority(undefined, "receipt"), 1);
-  const receipt = receiptEnvelope({ namespace: "tenant", database: "app", id: "provider_receipt:one" }, crypto.randomUUID());
+  const receipt = receiptEnvelope({ id: "provider_receipt:one" }, crypto.randomUUID());
   assert.deepEqual(Object.keys(receipt).sort(), ["kind", "locator", "revision", "version"]);
   assert.equal(assertPriority(undefined, receipt.kind), 1);
   assert.throws(() => assertPriority(0), /Priority/);

@@ -162,6 +162,8 @@ function parseSchema(schemaSource, viewsSource) {
       projections,
       groupKeys: splitTopLevel(groupSource.replace(/;$/, "")),
       hasWhere: /\bWHERE\b/i.test(between),
+      tenantPublished: /@rebase-view-tenant-published\b/i.test(statement),
+      recordScoped: /@rebase-view-record-scoped\b/i.test(statement),
     });
   }
   return { tables, views, rawViews: viewsSource };

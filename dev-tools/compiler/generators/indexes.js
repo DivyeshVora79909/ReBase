@@ -14,6 +14,7 @@ function generateIndexes(schema, viewIndexes, options, systemTables) {
 
   for (const table of schema.tables.values()) {
     if (systemTables.has(table.name)) continue;
+    add(`idx_${table.name}_tenant`, table.name, ["tenant"], "tenant partition");
     add(`idx_${table.name}_owned_by`, table.name, ["owned_by"], "ownership");
     add(`idx_${table.name}_readers`, table.name, ["readers_index.*"], "permission fan-out");
     for (const field of table.fields.values()) {

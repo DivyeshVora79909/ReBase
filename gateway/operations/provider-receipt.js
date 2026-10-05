@@ -13,10 +13,13 @@ async function applyProviderReceipt({ context, record, webhooks, store }) {
     store.load(record.target_id),
   ]);
   if (!config || !target) return failure("WEBHOOK_TARGET_NOT_FOUND", "Receipt configuration or target no longer exists");
+  if (!record.tenant || String(config.tenant) !== String(record.tenant)
+    || String(target.tenant) !== String(record.tenant)) {
+    return failure('WEBHOOK_TENANT_MISMATCH', 'Receipt configuration and target must remain in its tenant');
+  }
   const route = {
     provider: record.provider,
-    namespace: context.namespace,
-    database: context.database,
+    tenant: String(record.tenant),
     config: record.config_id,
     id: record.target_id,
   };

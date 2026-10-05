@@ -8,7 +8,7 @@ const { isDeepStrictEqual } = require('node:util');
 const { execFileSync } = require('node:child_process');
 const { loadMaterials } = require('../compiler/materials');
 const { generateBundle } = require('../compiler/pipeline');
-const { start, client, applySchema, compareKey, compareIntKey } = require('./harness');
+const { start, client, recordClient, applySchema, compareKey, compareIntKey } = require('./harness');
 const oracle = require('./oracle');
 
 const suffixes = ['z', 'a', 'm', 'b']; // Declaration order, deliberately not lexical.
@@ -24,7 +24,7 @@ const snapshot = q => q(`RETURN {
 const keyFields = (keys, kind) => suffixes.map((suffix, i) => `a_${kind}_${suffix}=${keys[i] == null ? 'NONE'
   : kind === 'time' ? `d'${at(keys[i])}'` : keys[i]}`).join(', ');
 const bothKeys = (time, order = time) => `${keyFields(time, 'time')}, ${keyFields(order, 'order')}`;
-const createFact = (name, keys, extra = '', order = keys) => `CREATE position_fact:${name} SET owned_by=rebase_group:root,
+const createFact = (name, keys, extra = '', order = keys) => `CREATE position_fact:${name} SET owned_by=rebase_tenant:default,
     a_time_owner=position_owner:left, a_order_owner=position_owner:left, ${bothKeys(keys, order)}${extra ? `, ${extra}` : ''};`;
 
 async function setup() {
@@ -170,9 +170,12 @@ async function main() {
     verify(before); rejections++;
   };
   try {
+    await q(`CREATE rebase_user:tree_reader SET name='Tree reader', parents=[rebase_tenant:default];
+      DEFINE ACCESS position_tree_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:tree_reader;`);
+    const reader = await recordClient(env.server.url, 'position_tree_reader');
     const version = execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim();
     console.log(`Compiled multi-position trees: SurrealDB ${version}, Node ${process.version}, ${env.server.engine}`);
-    for (const name of ['left', 'right', 'limited']) await mutate(`CREATE position_owner:${name} SET owned_by=rebase_group:root;`);
+    for (const name of ['left', 'right', 'limited']) await mutate(`CREATE position_owner:${name} SET owned_by=rebase_tenant:default;`);
     assert.deepEqual(await q('RETURN fn::rebase::slots(position_fact:example);'), slots);
     await mutate(createFact('edge', [30, 10, 20, 40]));
     const original = await snapshot(q);
@@ -200,7 +203,7 @@ async function main() {
     await mutate(`UPDATE position_fact:edge SET ${bothKeys([])};`);
     await mutate(`UPDATE position_fact:edge SET a_time_owner=position_owner:left, a_order_owner=position_owner:left,
       ${bothKeys([40, 20, 60, 50])}, a_weight_z=1dec, a_weight_a=1dec, a_weight_m=1dec, a_weight_b=1dec;`);
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(reader, verify(await snapshot(q)));
     console.log('PASS distinct datetime/int positions, schema-order identities, merge/split, absence, net zero, nanosecond ties, rekeys and owner moves');
 
     await reject('UPDATE position_fact:edge SET a_fail=true, a_order_z=21, a_time_owner=position_owner:right;', /POSITIONS_SOURCE_GUARD/);
@@ -236,7 +239,7 @@ async function main() {
     }
     console.log(`PASS 24 insertion permutations and linked-slot deletion paths: ${[...coverage].sort().join(', ')}`);
 
-    const composedOrder = `CREATE position_owner:composed SET owned_by=rebase_group:root,
+    const composedOrder = `CREATE position_owner:composed SET owned_by=rebase_tenant:default,
       a_order_owner=position_owner:right, ${keyFields([40, 20, 60, 50], 'order')};`;
     await mutate(composedOrder);
     await mutate('DELETE position_owner:composed;');
@@ -266,7 +269,7 @@ async function main() {
       else if (operation < 0.65) await mutate(`UPDATE position_fact:${name} SET a_weight_z=${Math.floor(random() * 9) - 4}dec, a_reverse=${random() < 0.5};`);
       else await mutate(`UPDATE position_fact:${name} SET ${bothKeys(randomKeys(), randomKeys())};`);
     }
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(reader, verify(await snapshot(q)));
     const populated = await snapshot(q);
     await applySchema(q, env.bundle);
     assert.deepEqual(await snapshot(q), populated, 'populated schema reapplication is a no-op');
@@ -303,7 +306,7 @@ async function main() {
     for (const kind of ['time', 'order']) assert.equal(afterRace.owners.find(row => row.id === 'position_owner:limited')[`rb_${kind}`].summary.count, 4);
     console.log(`PASS six competing eight-slot writes: one commit, five complete rollbacks (${conflicts} conflict retries)`);
 
-    await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_group:root];
+    await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_tenant:default];
       DEFINE ACCESS positions_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:reader;`);
     const response = await fetch(`${env.server.url}/signin`, { method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -316,9 +319,9 @@ async function main() {
     await mutate(createFact('reader', [40, 20, 60, 50], 'owned_by=rebase_user:reader, a_time_owner=position_owner:reader, a_order_owner=position_owner:reader'), user);
     await mutate('DELETE position_fact:reader;', user);
     await mutate('DELETE position_owner:reader;', user);
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(reader, verify(await snapshot(q)));
     for (const row of (await snapshot(q)).facts) await mutate(`DELETE ${row.id};`);
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(reader, verify(await snapshot(q)));
     for (const row of (await snapshot(q)).owners) await mutate(`DELETE ${row.id};`);
     assert.deepEqual(await snapshot(q), { owners: [], facts: [] });
     console.log(`PASS ${mutations} mutation checkpoints, ${reads} ordered reads, ${rejections} rejection snapshots; private frames, record-user deletion and complete cleanup`);

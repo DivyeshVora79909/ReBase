@@ -2,7 +2,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL;
 DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL;
 
 DEFINE TABLE OVERWRITE stress_owner SCHEMAFULL;
-DEFINE FIELD OVERWRITE z_book ON stress_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_book ON stress_owner TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE stress_rule SCHEMAFULL;
 DEFINE FIELD OVERWRITE a_rate ON stress_rule TYPE decimal;

@@ -156,34 +156,34 @@ async function assertOracle(db) {
 
 async function setup(db) {
   await db.query(`
-    CREATE ONLY organization:h3c_owner SET owned_by = rebase_group:root, name = 'H3c owner';
-    CREATE ONLY organization:h3c_customer SET owned_by = rebase_group:root, name = 'H3c customer';
-    CREATE ONLY currency:h3c_usd SET owned_by = rebase_group:root, code = 'USD', name = 'H3c dollar', precision = 2;
-    CREATE ONLY measure_unit:h3c_kg SET owned_by = rebase_group:root, code = 'kg', name = 'H3c kilogram', dimension = 'mass';
-    CREATE ONLY item:h3c_item SET owned_by = rebase_group:root, name = 'H3c item', unit = measure_unit:h3c_kg;
-    CREATE ONLY operating_unit:h3c_unit SET owned_by = rebase_group:root,
+    CREATE ONLY organization:h3c_owner SET owned_by = rebase_tenant:default, name = 'H3c owner';
+    CREATE ONLY organization:h3c_customer SET owned_by = rebase_tenant:default, name = 'H3c customer';
+    CREATE ONLY currency:h3c_usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'H3c dollar', precision = 2;
+    CREATE ONLY measure_unit:h3c_kg SET owned_by = rebase_tenant:default, code = 'kg', name = 'H3c kilogram', dimension = 'mass';
+    CREATE ONLY item:h3c_item SET owned_by = rebase_tenant:default, name = 'H3c item', unit = measure_unit:h3c_kg;
+    CREATE ONLY operating_unit:h3c_unit SET owned_by = rebase_tenant:default,
       economic_entity = organization:h3c_owner, name = 'H3c warehouse';
-    CREATE ONLY stock_account:h3c_stock SET owned_by = rebase_group:root,
+    CREATE ONLY stock_account:h3c_stock SET owned_by = rebase_tenant:default,
       economic_entity = organization:h3c_owner, operating_unit = operating_unit:h3c_unit, resource = item:h3c_item;
-    CREATE ONLY claim_account:h3c_customer SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3c_customer SET owned_by = rebase_tenant:default,
       economic_entity = organization:h3c_owner, opponent = organization:h3c_customer, currency = currency:h3c_usd;
-    CREATE ONLY sales_invoice:h3c_invoice_a SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3c_invoice_a SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3c_customer, number = 'H3C-A';
-    CREATE ONLY sales_invoice:h3c_invoice_c SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3c_invoice_c SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3c_customer, number = 'H3C-C';
-    CREATE ONLY stock_in:h3c_opening SET owned_by = rebase_group:root,
+    CREATE ONLY stock_in:h3c_opening SET owned_by = rebase_tenant:default,
       from_party = organization:h3c_customer, to_account = stock_account:h3c_stock,
       quantity = 8dec, effective_at = d'2026-06-29T00:00:00Z';
-    CREATE ONLY stock_out:h3c_dispatch_a SET owned_by = rebase_group:root,
+    CREATE ONLY stock_out:h3c_dispatch_a SET owned_by = rebase_tenant:default,
       from_account = stock_account:h3c_stock, to_party = organization:h3c_customer,
       quantity = 4dec, effective_at = d'2026-07-01T00:00:00Z';
-    CREATE ONLY stock_out:h3c_dispatch_c SET owned_by = rebase_group:root,
+    CREATE ONLY stock_out:h3c_dispatch_c SET owned_by = rebase_tenant:default,
       from_account = stock_account:h3c_stock, to_party = organization:h3c_customer,
       quantity = 4dec, effective_at = d'2026-07-01T00:00:00Z';
-    CREATE ONLY sales_invoice_issue:h3c_issue_a SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_issue:h3c_issue_a SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:h3c_invoice_a, issued_at = d'2026-07-02T00:00:00Z',
       lines = [{ line_key: 'main', source: stock_out:h3c_dispatch_a, billed_quantity: 4dec, unit_price: 1dec }];
-    CREATE ONLY sales_invoice_issue:h3c_issue_c SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_issue:h3c_issue_c SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:h3c_invoice_c, issued_at = d'2026-07-02T00:00:00Z',
       lines = [{ line_key: 'main', source: stock_out:h3c_dispatch_c, billed_quantity: 4dec, unit_price: 1dec }];
   `);
@@ -192,9 +192,9 @@ async function setup(db) {
   const lineC = data.lines.find((row) => String(row.invoice) === 'sales_invoice:h3c_invoice_c');
   assert(lineA && lineC, 'real managed sales invoice lines exist before H3c ancestry');
   await db.query(`
-    CREATE ONLY h3c_header:a SET owned_by = rebase_group:root, line = ${lineA.id}, available_quantity = 4dec;
-    CREATE ONLY h3c_header:b SET owned_by = rebase_group:root, line = ${lineA.id}, available_quantity = 4dec;
-    CREATE ONLY h3c_header:c SET owned_by = rebase_group:root, line = ${lineC.id}, available_quantity = 4dec;
+    CREATE ONLY h3c_header:a SET owned_by = rebase_tenant:default, line = ${lineA.id}, available_quantity = 4dec;
+    CREATE ONLY h3c_header:b SET owned_by = rebase_tenant:default, line = ${lineA.id}, available_quantity = 4dec;
+    CREATE ONLY h3c_header:c SET owned_by = rebase_tenant:default, line = ${lineC.id}, available_quantity = 4dec;
   `);
   for (const [prefix, header, count] of [
     ['a', 'h3c_header:a', 8], ['b', 'h3c_header:b', 3], ['c', 'h3c_header:c', 3],
@@ -202,24 +202,24 @@ async function setup(db) {
     for (let depth = 1; depth <= count; depth += 1) {
       const parent = depth === 1 ? header : `h3c_package:${prefix}${depth - 1}`;
       const declared = prefix === 'a' && depth === 4 ? ', declared_invoice = sales_invoice:h3c_invoice_a' : '';
-      await db.query(`CREATE ONLY h3c_package:${prefix}${depth} SET owned_by = rebase_group:root,
+      await db.query(`CREATE ONLY h3c_package:${prefix}${depth} SET owned_by = rebase_tenant:default,
         parent = ${parent}${declared};`);
     }
   }
   for (let depth = 6; depth <= 8; depth += 1) {
     const parent = depth === 6 ? 'h3c_package:a5' : `h3c_package:s${depth - 1}`;
-    await db.query(`CREATE ONLY h3c_package:s${depth} SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY h3c_package:s${depth} SET owned_by = rebase_tenant:default,
       parent = ${parent};`);
   }
   for (let depth = 4; depth <= 8; depth += 1) {
     const parent = depth === 4 ? 'h3c_package:c3' : `h3c_package:c${depth - 1}`;
-    await db.query(`CREATE ONLY h3c_package:c${depth} SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY h3c_package:c${depth} SET owned_by = rebase_tenant:default,
       parent = ${parent};`);
   }
   await db.query(`
-    CREATE ONLY h3c_delivery:main SET owned_by = rebase_group:root, parent = h3c_package:a8,
+    CREATE ONLY h3c_delivery:main SET owned_by = rebase_tenant:default, parent = h3c_package:a8,
       declared_invoice = sales_invoice:h3c_invoice_a, declared_direction = 'sales', quantity = 1.5dec;
-    CREATE ONLY h3c_delivery:sibling SET owned_by = rebase_group:root, parent = h3c_package:s8,
+    CREATE ONLY h3c_delivery:sibling SET owned_by = rebase_tenant:default, parent = h3c_package:s8,
       declared_invoice = sales_invoice:h3c_invoice_a, declared_direction = 'sales', quantity = 1.5dec;
   `);
 }
@@ -232,22 +232,22 @@ async function probe(db) {
     .z_deliveries.summary.measures.quantity.sum), 3, 'two bounded partial leaves contribute 1.5 each');
   assert.equal(data.headers.find((row) => String(row.id) === 'h3c_header:b').z_deliveries.summary.count, 0);
   let before = await graph(db);
-  await rejects(() => db.query(`CREATE ONLY h3c_delivery:short SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_delivery:short SET owned_by = rebase_tenant:default,
     parent = h3c_package:a3, declared_invoice = sales_invoice:h3c_invoice_a,
     declared_direction = 'sales', quantity = 1dec;`), 'a delivery cannot skip required package ancestors');
-  await rejects(() => db.query(`CREATE ONLY h3c_package:missing SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_package:missing SET owned_by = rebase_tenant:default,
     parent = h3c_package:absent;`), 'a package cannot omit a typed parent');
-  await rejects(() => db.query(`CREATE ONLY h3c_delivery:wrong_document SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_delivery:wrong_document SET owned_by = rebase_tenant:default,
     parent = h3c_package:a8, declared_invoice = sales_invoice:h3c_invoice_c,
     declared_direction = 'sales', quantity = 0.25dec;`), 'mixed invoice tags cannot enter the populated root');
-  await rejects(() => db.query(`CREATE ONLY h3c_delivery:mixed_direction SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_delivery:mixed_direction SET owned_by = rebase_tenant:default,
     parent = h3c_package:a8, declared_invoice = sales_invoice:h3c_invoice_a,
     declared_direction = 'purchase', quantity = 0.25dec;`), 'mixed sales/purchase direction cannot enter the populated root');
-  await rejects(() => db.query(`CREATE ONLY h3c_delivery:uniform_wrong_document SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_delivery:uniform_wrong_document SET owned_by = rebase_tenant:default,
     parent = h3c_package:c8, declared_invoice = sales_invoice:h3c_invoice_a,
     declared_direction = 'sales', quantity = 0.25dec;`),
   'uniform invoice tag still must match its otherwise empty header root');
-  await rejects(() => db.query(`CREATE ONLY h3c_delivery:uniform_wrong_direction SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY h3c_delivery:uniform_wrong_direction SET owned_by = rebase_tenant:default,
     parent = h3c_package:c8, declared_invoice = sales_invoice:h3c_invoice_c,
     declared_direction = 'purchase', quantity = 0.25dec;`),
   'uniform direction tag still must match its otherwise empty header root');
@@ -279,8 +279,8 @@ async function probe(db) {
     'ancestor capacity edit refreshes every descendant shadow and root tag');
   await db.query("UPDATE sales_invoice_issue:h3c_issue_a SET issued_at = d'2026-07-03T00:00:00Z';");
   data = await assertOracle(db);
-  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::read(h3c_header:b,
-    'z_deliveries', 'before', [d'2026-07-03T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
+  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::before({rid:h3c_header:b,
+    slot:'z_deliveries'}, [d'2026-07-03T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
   'recognition edit moves both leaf positions away from the old date');
   await db.query("UPDATE stock_out:h3c_dispatch_a SET effective_at = d'2026-07-02T00:00:00Z';");
   data = await assertOracle(db);
@@ -291,7 +291,7 @@ async function probe(db) {
   data = await assertOracle(db);
   assert.equal(data.headers.find((row) => String(row.id) === 'h3c_header:b').z_deliveries.summary.count, 1,
     'leaf deletion removes exactly one root position');
-  await db.query(`CREATE ONLY h3c_delivery:sibling SET owned_by = rebase_group:root,
+  await db.query(`CREATE ONLY h3c_delivery:sibling SET owned_by = rebase_tenant:default,
     parent = h3c_package:s8, declared_invoice = sales_invoice:h3c_invoice_a,
     declared_direction = 'sales', quantity = 1.5dec;`);
   await assertOracle(db);
@@ -329,6 +329,7 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(compiled.bundle);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await probe(db);
     process.stdout.write('H3c fixture: ten typed levels, bounded branch, reactive reparent and rollback passed\n');
   } finally {

@@ -9,7 +9,7 @@ const { spawn } = require("node:child_process");
 const { splitStatements } = require("../compiler/surql");
 const binary = process.env.REBASE_TREE_SURREAL_BIN || "surreal";
 
-async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surrealkv" } = {}) {
+async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surrealkv", allowGuests = false } = {}) {
   if (!/^[a-z]+$/.test(engine)) throw new Error(`Invalid storage engine: ${engine}`);
   const socket = net.createServer();
   await new Promise(resolve => socket.listen(0, "127.0.0.1", resolve));
@@ -18,7 +18,8 @@ async function start({ engine = process.env.REBASE_TREE_STORAGE_ENGINE || "surre
   const directory = engine === "memory" ? null : fs.mkdtempSync(path.join(os.tmpdir(), "rebase-temporal-tree-"));
   const storage = engine === "memory" ? "memory" : `${engine}://${directory}`;
   const child = spawn(binary, ["start", storage, "--bind", `127.0.0.1:${port}`,
-    "--user", "root", "--pass", "root", "--no-banner", "--log", "error"], { stdio: ["ignore", "ignore", "pipe"] });
+    "--user", "root", "--pass", "root", "--no-banner", "--log", "error",
+    ...(allowGuests ? ["--allow-guests"] : [])], { stdio: ["ignore", "ignore", "pipe"] });
   let log = "";
   child.stderr.on("data", chunk => { log += chunk; });
   child.on("error", error => { log += error.message; });
@@ -62,6 +63,16 @@ function client(url, database = "fixture", token) {
   };
 }
 
+async function recordClient(url, access) {
+  const response = await fetch(`${url}/signin`, {
+    method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ns: 'temporal_probe', db: 'fixture', ac: access }),
+  });
+  const { token } = await response.json();
+  if (!response.ok || !token) throw new Error(`Fixture record access ${access} failed`);
+  return client(url, 'fixture', token);
+}
+
 // Large typed profiles exceed /sql's default body limit. DDL is already executed
 // statement by statement; split only at parser-recognized statement boundaries.
 async function applySchema(q, sql) {
@@ -71,6 +82,11 @@ async function applySchema(q, sql) {
     chunk += statement + '\n';
   }
   if (chunk) await q(chunk);
+  // Disposable probes choose their tenant explicitly. Production bundles never
+  // bootstrap a magic group/root or infer an application tenant from a database.
+  if (/DEFINE TABLE(?: OVERWRITE)? rebase_tenant\b/i.test(sql)) {
+    await q("IF !record::exists(rebase_tenant:default) { CREATE rebase_tenant:default SET name='Fixture tenant'; };");
+  }
 }
 
 function instant(value) {
@@ -100,4 +116,4 @@ function compareIntKey(a, b) {
 const identity = link => `${link.rid}/${link.slot}`;
 
 
-module.exports = { start, client, applySchema, compareKey, compareIntKey, instant };
+module.exports = { start, client, recordClient, applySchema, compareKey, compareIntKey, instant };

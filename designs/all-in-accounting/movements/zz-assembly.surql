@@ -29,7 +29,7 @@ DEFINE FIELD OVERWRITE output_a_account ON assembly_recipe_version TYPE record<s
 DEFINE FIELD OVERWRITE output_a_quantity ON assembly_recipe_version TYPE int ASSERT $value > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE output_b_account ON assembly_recipe_version TYPE record<stock_account> ASSERT $value != NONE REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE output_b_quantity ON assembly_recipe_version TYPE int ASSERT $value > 0 READONLY COMMENT '@rebase-audit';
-DEFINE INDEX OVERWRITE assembly_recipe_version_key ON assembly_recipe_version FIELDS economic_entity, recipe_key, version UNIQUE;
+DEFINE INDEX OVERWRITE assembly_recipe_version_key ON assembly_recipe_version FIELDS tenant, economic_entity, recipe_key, version UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::assembly_batch_outputs($row: object) {
     IF $row.state != 'complete' { RETURN []; };
@@ -121,7 +121,7 @@ DEFINE FIELD OVERWRITE unit ON assembly_output TYPE record<measure_unit> VALUE $
 DEFINE FIELD OVERWRITE quantity ON assembly_output TYPE int ASSERT $value > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON assembly_output TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_stock ON assembly_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history';
-DEFINE FIELD OVERWRITE z_capacity ON assembly_output TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_capacity ON assembly_output TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 -- Existing stock_out remains the one physical/capacity debit. H7 adds only a
 -- typed optional link and a second, non-stock usage tree for that output role.

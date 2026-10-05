@@ -127,7 +127,7 @@ DEFINE FIELD OVERWRITE rate ON currency_exchange TYPE decimal ASSERT $value > 0d
 DEFINE FIELD OVERWRITE effective_at ON currency_exchange TYPE datetime READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE from_precision ON currency_exchange TYPE int VALUE $this.from_currency.precision READONLY COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE to_precision ON currency_exchange TYPE int VALUE $this.to_currency.precision READONLY COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_usage ON currency_exchange TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_usage ON currency_exchange TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FUNCTION OVERWRITE fn::accounting::currency_exchange_validate($row: object) {
     IF $row.from_currency = $row.to_currency
         OR $row.pair.given_resource = $row.pair.received_resource {
@@ -180,7 +180,7 @@ DEFINE FIELD OVERWRITE effective_at ON cash_fx_transfer_reversal TYPE datetime C
 DEFINE FIELD OVERWRITE z_from ON cash_fx_transfer_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
 DEFINE FIELD OVERWRITE z_to ON cash_fx_transfer_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
 DEFINE FIELD OVERWRITE z_pair ON cash_fx_transfer_reversal TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_history';
-DEFINE INDEX OVERWRITE cash_fx_transfer_reversal_source ON cash_fx_transfer_reversal FIELDS source UNIQUE;
+DEFINE INDEX OVERWRITE cash_fx_transfer_reversal_source ON cash_fx_transfer_reversal FIELDS tenant, source UNIQUE;
 
 DEFINE TABLE OVERWRITE cash_in SCHEMAFULL
     COMMENT '@rebase-members fn::accounting::cash_in_members @rebase-validate fn::accounting::cash_in_validate';
@@ -190,7 +190,7 @@ DEFINE FIELD OVERWRITE to_account ON cash_in TYPE record<treasury_account> REFER
 DEFINE FIELD OVERWRITE amount ON cash_in TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON cash_in TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_to ON cash_in TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
-DEFINE FIELD OVERWRITE z_allocations ON cash_in TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_allocations ON cash_in TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_available_grant ON cash_in TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner cash_in.z_allocations';
 
 DEFINE TABLE OVERWRITE cash_out SCHEMAFULL
@@ -201,7 +201,7 @@ DEFINE FIELD OVERWRITE to_party ON cash_out TYPE record<rebase_user | organizati
 DEFINE FIELD OVERWRITE amount ON cash_out TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON cash_out TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_from ON cash_out TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury_account.z_history';
-DEFINE FIELD OVERWRITE z_allocations ON cash_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_allocations ON cash_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE cash_transfer SCHEMAFULL
     COMMENT '@rebase-members fn::accounting::cash_transfer_members @rebase-validate fn::accounting::cash_transfer_validate';

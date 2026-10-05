@@ -1,6 +1,28 @@
 # Accounting architecture handoff
 
-## Redesign verification — 2026-10-03
+## Tenant/tree accounting acceptance — 2026-10-05
+
+The complete `npm run verify:accounting` suite passed in **694.793 seconds**
+on SurrealDB 3.3.0. The [backend handoff](../rebase-system/tenant-tree-handoff.md)
+and [dated evidence](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
+record the source, commands and raw output. Tenant principals, explicit temporal
+duplicate policy, dependency-ordered managed outputs and per-line sales taxes
+are integrated. The H7 handwritten feasibility roots now declare their duplicate
+policy; this isolated probe repair changed no production code or build output.
+
+The [delivery-tax contract](delivery-taxes.md) passed 20 mutation checkpoints
+and nine complete rollback snapshots, including foreign-tenant references,
+per-portion rounding, four tax-input modes, same-time settlement and full issue
+cleanup. Existing invoice-wide taxes remain additive inputs. Purchase tax,
+withholding, remittance, returns/refunds, exchange, assembly and timed production
+passed their existing regressions without adopting the sales-line recipe.
+
+MetaSol migration remains deferred. Affected source snapshots use the documented
+SurrealDB 3.3.0 `WITH NOINDEX ORDER BY id` workaround. Local correctness evidence
+does not establish live providers, production migration or physical capacity.
+The older results below retain their original source and acceptance boundaries.
+
+## Historical redesign verification — 2026-10-03
 
 The user requested review of the delivered backend and frontend through local
 SurrealDB consistency. See the

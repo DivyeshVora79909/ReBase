@@ -4,12 +4,12 @@
   "additionalProperties": false,
   "required": ["owned_by", "a_name"],
   "properties": {
-    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+    "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
     "a_name": { "type": "string", "minLength": 2 },
-    "a_parent": { "type": "string", "pattern": "^test_tree:[a-z0-9-]+$", "x-rebase-optional-probability": 0.7 },
+    "a_parent": { "type": "string", "pattern": "^test_tree:.+$", "x-rebase-optional-probability": 0.7 },
     "a_related_nodes": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^test_tree:[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^test_tree:.+$" },
       "minItems": 0,
       "maxItems": 5,
       "uniqueItems": true

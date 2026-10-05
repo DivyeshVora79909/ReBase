@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE a_person ON employment TYPE record<rebase_user> REFERENCE
 DEFINE FIELD OVERWRITE a_unit ON employment TYPE record<operating_unit> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_effective_at ON employment TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_until ON employment TYPE option<datetime> ASSERT $value = NONE OR $value >= $this.a_effective_at COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z_history ON employment TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_history ON employment TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FUNCTION OVERWRITE fn::hrm::employment($row: object) {
     LET $s = $row.z_history.summary;
     IF $s.count > 0 AND ($s.first[0] < $row.a_effective_at OR ($row.a_until != NONE AND $s.last[0] > $row.a_until)) { THROW 'HRM_OUTSIDE_EMPLOYMENT'; };
@@ -16,8 +16,8 @@ DEFINE TABLE OVERWRITE leave_account SCHEMAFULL COMMENT '@rebase-validate fn::hr
 DEFINE FIELD OVERWRITE a_employment ON leave_account TYPE record<employment> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_service ON leave_account TYPE record<service> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z20_ctx ON leave_account TYPE { employment: record<employment>, unit: record<operating_unit>, service: record<service>, start: datetime, until: option<datetime> } VALUE { employment: $this.a_employment, unit: $this.a_employment.a_unit, service: $this.a_service, start: $this.a_employment.a_effective_at, until: $this.a_employment.a_until } COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_book ON leave_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE leave_account_dimension ON leave_account FIELDS a_employment, a_service UNIQUE;
+DEFINE FIELD OVERWRITE z_book ON leave_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE leave_account_dimension ON leave_account FIELDS tenant, a_employment, a_service UNIQUE;
 DEFINE FUNCTION OVERWRITE fn::hrm::capacity($row: object) {
     IF ($row.z_book.summary.measures.quantity.min_prefix ?? 0dec) < 0dec { THROW 'HRM_INSUFFICIENT_ALLOWANCE'; };
 } PERMISSIONS FULL;

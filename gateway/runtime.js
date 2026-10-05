@@ -31,20 +31,28 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
   if (!Number.isSafeInteger(terminalTaskRetentionMs) || terminalTaskRetentionMs < 1) {
     throw new Error("Terminal task retention must be a positive safe integer in milliseconds");
   }
-  const allowedContexts = options.allowedContexts
-    ? new Set(options.allowedContexts.map((value) => `${value.namespace}\u0000${value.database}`))
-    : null;
+  if (options.allowedContexts?.length > 1) throw new Error('A runtime serves exactly one database design');
+  const design = options.defaultContext || options.allowedContexts?.[0] || database || {};
 
   function assertContext(namespace, databaseName) {
-    if (!namespace || !databaseName) throw new RuntimeError("INVALID_CONTEXT", "Namespace and database are required", 400);
-    if (allowedContexts && !allowedContexts.has(`${namespace}\u0000${databaseName}`)) {
-      throw new RuntimeError("CONTEXT_NOT_ALLOWED", "The runtime is not configured for this database context", 403);
+    if ((namespace !== undefined && namespace !== design.namespace)
+      || (databaseName !== undefined && databaseName !== design.database)) {
+      throw new RuntimeError("CONTEXT_NOT_ALLOWED", "This runtime serves one configured database design", 403);
     }
   }
 
   function storeFor(namespace, databaseName) {
     assertContext(namespace, databaseName);
-    return directory.forContext(namespace, databaseName);
+    return directory.forContext(design.namespace, design.database);
+  }
+
+  // Native HTTP snapshots and SDK record keys use different valid quoting for
+  // UUIDs (and composite keys). Compare their parsed identities when necessary.
+  async function sameRecord(store, left, right) {
+    if (left == null || right == null) return false;
+    if (String(left) === String(right)) return true;
+    return await store.execute('RETURN type::record($left) = type::record($right);',
+      { left: String(left), right: String(right) }) === true;
   }
 
   function resolve(id) {
@@ -108,11 +116,6 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
   function scopedLoad(store, record, contract) {
     const allowed = new Set();
     const sourceTable = tableFromId(String(record.id));
-    const platformCredential = sourceTable === "send_brevo_email"
-      ? "rebase_email_delivery_config:platform"
-      : sourceTable === "send_twilio_sms"
-        ? "rebase_sms_delivery_config:platform"
-        : null;
     function allowReferences(value, valueContract) {
       for (const reference of valueContract?.references || []) {
         const referenced = value?.[reference.field];
@@ -121,7 +124,6 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
       }
     }
     allowReferences(record, contract);
-    if (platformCredential && record.config == null) allowed.add(platformCredential);
     return async (id) => {
       const key = String(id);
       if (!allowed.has(key)) {
@@ -129,36 +131,28 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
       }
       const targetTable = tableFromId(key);
       if (targetTable === "rebase_email_delivery_config" || targetTable === "rebase_sms_delivery_config") {
-        const owner = await store.execute("RETURN (SELECT VALUE owned_by FROM type::record($id))[0];", { id: key });
-        if (!owner) {
-          throw new RuntimeError("CREDENTIAL_USE_FORBIDDEN", "Delivery configuration is unavailable", 403);
+        // Read authorization metadata before loading any provider secret.
+        const credential = await store.execute("RETURN (SELECT owned_by, tenant FROM type::record($id))[0];", { id: key });
+        if (!credential || !await sameRecord(store, credential.tenant, record.tenant)) {
+          throw new RuntimeError("CREDENTIAL_USE_FORBIDDEN", "Delivery configuration belongs to another tenant or is unavailable", 403);
         }
-        if (key === platformCredential && record.config == null && String(owner) !== "rebase_group:root") {
-          throw new RuntimeError("CREDENTIAL_USE_FORBIDDEN", "Platform delivery configuration is unavailable", 403);
-        }
-        if (sourceTable !== "authentication_delivery_task") {
-          const creator = record.created_by ? String(record.created_by) : "";
-          let authorized = false;
-          if (!creator) {
-            // A system connection may create a system-owned operation, but it
-            // cannot use a tenant BYOC credential without an authenticated
-            // source principal. Client-created rows always carry created_by.
-            authorized = String(record.owned_by) === "rebase_group:root"
-              && String(owner) === "rebase_group:root";
-          } else if (creator.startsWith("rebase_user:")) {
-            const actor = await store.execute("RETURN (SELECT z_access_index, permissions FROM type::record($id))[0];", { id: creator });
-            authorized = Array.isArray(actor?.permissions)
-              && actor.permissions.includes(`${sourceTable}_create`)
-              && (String(owner) === "rebase_group:root"
-                ? key === platformCredential && record.config == null
-                : Array.isArray(actor?.z_access_index) && actor.z_access_index.includes(String(owner)));
-          }
-          if (!authorized) {
+        if (sourceTable !== "authentication_delivery_task" && record.created_by) {
+          const authorized = await store.execute(`
+            LET $actor = type::record($actor_id);
+            RETURN $actor.tenant = type::record($tenant)
+              AND $permission IN $actor.permissions
+              AND fn::rebase::can_access($actor, type::record($owner));
+          `, { actor_id: String(record.created_by), tenant: String(record.tenant),
+            permission: `${sourceTable}_create`, owner: String(credential.owned_by) });
+          if (authorized !== true) {
             throw new RuntimeError("CREDENTIAL_USE_FORBIDDEN", "Delivery configuration is not authorized", 403);
           }
         }
       }
       const loaded = await store.load(key);
+      if (loaded?.tenant && !await sameRecord(store, loaded.tenant, record.tenant)) {
+        throw new RuntimeError("REFERENCE_TENANT_FORBIDDEN", "Handler reference belongs to another tenant", 403);
+      }
       const loadedContract = contractMap instanceof Map ? contractMap.get(targetTable) : contractMap.tables?.[targetTable];
       allowReferences(loaded, loadedContract);
       return loaded;
@@ -207,8 +201,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
         }
         return routeCodec.seal({
           provider,
-          namespace: context.namespace,
-          database: context.database,
+          tenant: String(record.tenant || ''),
           config: configId,
           id: context.id,
         });
@@ -251,7 +244,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     const store = await storeFor(namespace, databaseName);
     try {
       validateRecordShape(record, contract);
-      const context = { namespace, database: databaseName, event: normalizedEvent, id: String(id), table };
+      const context = { namespace: design.namespace, database: design.database, tenant: record.tenant, event: normalizedEvent, id: String(id), table };
       const result = await invoke(handler.on[normalizedEvent], handler, {
         context,
         record,
@@ -290,7 +283,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     const store = await storeFor(namespace, databaseName);
     try {
       validateRecordShape(record, contract);
-      const context = { namespace, database: databaseName, event: normalizedEvent, id: String(id), table };
+      const context = { namespace: design.namespace, database: design.database, tenant: record.tenant, event: normalizedEvent, id: String(id), table };
       const result = await invoke(handler.grant[normalizedEvent], handler, {
         context,
         record,
@@ -322,6 +315,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     }
     const store = await storeFor(normalized.namespace, normalized.database);
     const record = await store.load(normalized.id);
+    if (record) normalized.id = String(record.id);
     if (!record) return { queued: false, state: "missing" };
     if (record.rebase_outcome && record.rebase_outcome !== "ambiguous") {
       return { queued: false, state: "terminal" };
@@ -353,11 +347,12 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
   async function execute(locatorOrEnvelope, delivery = {}) {
     const incomingEnvelope = delivery.envelope
       ? assertOperationEnvelope(delivery.envelope)
-      : (locatorOrEnvelope?.version === 1 ? assertOperationEnvelope(locatorOrEnvelope) : null);
+      : (locatorOrEnvelope?.version === 2 ? assertOperationEnvelope(locatorOrEnvelope) : null);
     const normalizedLocator = incomingEnvelope
       ? incomingEnvelope.locator
       : assertLocator(locatorOrEnvelope);
-    const { namespace, database: databaseName, id } = normalizedLocator;
+    const { id } = normalizedLocator;
+    const { namespace, database: databaseName } = design;
     assertContext(namespace, databaseName);
     const { table, handler, contract, adapters: scopedAdapters } = resolve(id);
     const taskMode = contract.mode === "inline" || contract.mode === "queued";
@@ -395,7 +390,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
       return { action: "ack", state: "ambiguous", id, table };
     }
     try {
-      const context = { namespace, database: databaseName, event: normalizedEvent, id: String(id), table };
+      const context = { namespace, database: databaseName, tenant: record.tenant, event: normalizedEvent, id: String(id), table };
       const method = taskMode ? handler.execute : handler.on[normalizedEvent];
       const result = await invoke(method, handler, {
         context,
@@ -514,16 +509,21 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
       throw new RuntimeError("WEBHOOK_PROVIDER_NOT_FOUND", `No webhook provider for ${provider}`, 404);
     }
     const capsule = routeCapsule || await adapter.extractRoute({ request, rawBody });
-    const route = routeCodec.open(capsule);
+    let route = routeCodec.open(capsule);
     if (route.provider !== provider) throw new RuntimeError("WEBHOOK_PROVIDER_MISMATCH", "Webhook route provider mismatch", 403);
-    assertContext(route.namespace, route.database);
-    const store = await storeFor(route.namespace, route.database);
+    const store = await storeFor();
     const configRoute = route.id === route.config && tableFromId(route.id) === `${provider}_config`;
     const config = await store.load(route.config);
     let record = configRoute ? null : await store.load(route.id);
-    if (!config || (!configRoute && (!record || String(record.config || "") !== route.config))) {
+    if (!config || (!configRoute && (!record || String(record.config || "") !== String(config.id)))) {
       throw new RuntimeError("WEBHOOK_TARGET_NOT_FOUND", "Webhook target was not found", 404);
     }
+    if (!await sameRecord(store, config.tenant, route.tenant)
+      || (record && String(record.tenant) !== String(config.tenant))) {
+      throw new RuntimeError("WEBHOOK_TENANT_MISMATCH", "Webhook configuration and target must belong to the routed tenant", 403);
+    }
+    route = { ...route, tenant: String(config.tenant), config: String(config.id),
+      id: configRoute ? String(config.id) : String(record.id) };
     const verified = await adapter.verify({ request, rawBody, config, route });
     if (!verified) throw new RuntimeError("INVALID_WEBHOOK", "Invalid webhook signature or payload", 401);
     let resolvedRoute = route;
@@ -532,24 +532,27 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
       if (!providerOrderId) throw new RuntimeError("WEBHOOK_TARGET_NOT_FOUND", "Webhook has no provider order identity", 404);
       const matches = await store.execute(`
         SELECT * FROM razorpay_order
-        WHERE config = type::record($config_id) AND provider_order_id = $provider_order_id
+        WHERE tenant = type::record($tenant) AND config = type::record($config_id) AND provider_order_id = $provider_order_id
         LIMIT 2;
-      `, { config_id: route.config, provider_order_id: providerOrderId });
+      `, { tenant: route.tenant, config_id: route.config, provider_order_id: providerOrderId });
       if (!Array.isArray(matches) || matches.length !== 1) {
         throw new RuntimeError("WEBHOOK_TARGET_NOT_FOUND", "Webhook order does not resolve uniquely in its configured context", 404);
       }
       [record] = matches;
+      if (String(record.tenant) !== route.tenant) {
+        throw new RuntimeError("WEBHOOK_TENANT_MISMATCH", "Webhook target belongs to another tenant", 403);
+      }
       resolvedRoute = { ...route, id: String(record.id) };
     }
     const handler = webhooks?.get(provider, verified.event);
     if (!handler) throw new RuntimeError("WEBHOOK_EVENT_NOT_FOUND", `No webhook handler for ${provider}/${verified.event}`, 404);
     await withTimeout(options.webhookTimeoutMs || 30000, (signal) => handler.validate({
-      context: { namespace: resolvedRoute.namespace, database: resolvedRoute.database, provider, event: verified.event },
+      context: { namespace: design.namespace, database: design.database, tenant: route.tenant, provider, event: verified.event },
       config, record, route: resolvedRoute, verified,
       signal,
     }));
     if (!verified.eventId) throw new RuntimeError("WEBHOOK_EVENT_ID_REQUIRED", "Verified webhook event has no identity", 400);
-    const providerAccountId = `${provider}:${route.config}`;
+    const providerAccountId = `${route.tenant}:${provider}:${route.config}`;
     const payloadHash = crypto.createHash("sha256").update(rawBody).digest("hex");
     const receiptDigest = crypto.createHash("sha256")
       .update(`${providerAccountId}\u0000${verified.eventId}`)
@@ -587,14 +590,14 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     }
     let queued = null;
     try {
-      queued = await enqueue({ namespace: resolvedRoute.namespace, database: resolvedRoute.database, id: receiptId });
+      queued = await enqueue({ id: receiptId });
     } catch {
       // The committed receipt remains discoverable by bounded database reconciliation.
     }
     return { accepted: true, duplicate, receiptId, queued: queued?.queued === true };
   }
 
-  async function createWebhookRoute({ provider, namespace, database: databaseName, config } = {}) {
+  async function createWebhookRoute({ provider, config } = {}) {
     if (!routeCodec) throw new RuntimeError("WEBHOOK_ROUTING_UNAVAILABLE", "Webhook routing is not configured", 503);
     const normalizedProvider = String(provider || "").toLowerCase();
     if (normalizedProvider !== "razorpay") {
@@ -607,12 +610,12 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     if (tableFromId(configId) !== `${normalizedProvider}_config`) {
       throw new RuntimeError("WEBHOOK_CONFIG_INVALID", "Webhook route must name a matching provider config", 400);
     }
-    const store = await storeFor(namespace, databaseName);
-    if (!await store.load(configId)) throw new RuntimeError("WEBHOOK_CONFIG_NOT_FOUND", "Webhook config was not found", 404);
+    const store = await storeFor();
+    const configuration = await store.load(configId);
+    if (!configuration) throw new RuntimeError("WEBHOOK_CONFIG_NOT_FOUND", "Webhook config was not found", 404);
     const capsule = routeCodec.seal({
       provider: normalizedProvider,
-      namespace,
-      database: databaseName,
+      tenant: String(configuration.tenant || ''),
       config: configId,
       id: configId,
     });
@@ -626,9 +629,10 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
   async function reconcileWebhook(locatorOrEnvelope, delivery = {}) {
     const incomingEnvelope = delivery.envelope
       ? assertOperationEnvelope(delivery.envelope)
-      : (locatorOrEnvelope?.version === 1 ? assertOperationEnvelope(locatorOrEnvelope) : null);
+      : (locatorOrEnvelope?.version === 2 ? assertOperationEnvelope(locatorOrEnvelope) : null);
     const locator = incomingEnvelope ? incomingEnvelope.locator : assertLocator(locatorOrEnvelope);
-    const { namespace, database: databaseName, id } = locator;
+    const { id } = locator;
+    const { namespace, database: databaseName } = design;
     const { handler, contract, table, adapters: scopedAdapters } = resolve(id);
     if (typeof handler.reconcile !== "function") return { action: "ack", state: "recorded" };
     const store = await storeFor(namespace, databaseName);
@@ -645,7 +649,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     const claimed = await store.claim(id, { token, leaseUntil: Date.now() + leaseMs, outcome: "ambiguous", ...identity });
     if (!claimed) return { action: "ack", state: "busy" };
     try {
-      const context = { namespace, database: databaseName, event: "CREATE", id, table };
+      const context = { namespace, database: databaseName, tenant: record.tenant, event: "CREATE", id, table };
       const result = await invoke(handler.reconcile, handler, {
         context,
         record: claimed,
@@ -751,7 +755,7 @@ function createRuntime({ database, stores, queue, handlers, webhooks, adapters, 
     const deferred = [];
     for (const id of page.ids) {
       try {
-        const result = await enqueue({ namespace, database: databaseName, id });
+        const result = await enqueue({ id });
         if (result?.queued === true || result?.duplicate === true) queuedIds.push(id);
         else deferred.push({ id, state: result?.state || "not-queued" });
       } catch (error) {

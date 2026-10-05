@@ -1,0 +1,712 @@
+{
+  "status": "source-review-only; implementation and integrated verification pending",
+  "captured_at_utc": "2026-10-04T14:36:00.591755+00:00",
+  "workspace": "/home/divyeshvora/javascript/node/projects/ReBase",
+  "head": "eb001a25906abe049ee63d3a46d9f29be4babd6d",
+  "baseline_before_this_handoff_edits": true,
+  "tracked_modified_count": 141,
+  "untracked_count": 17,
+  "changes": [
+    {
+      "status": " M",
+      "path": ".env.example"
+    },
+    {
+      "status": " M",
+      "path": "README.md"
+    },
+    {
+      "status": " M",
+      "path": "config/environment.js"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/README.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/customer-withholding.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/invoices.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/purchase-tax-credit.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/settlements.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/standalone.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/supplier-withholding.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/claims/tax-rules.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/core/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/movements/cash.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/movements/exchange.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/movements/stock.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/movements/zz-assembly.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/movements/zz-timed-production.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/schemas/cash_in.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/schemas/currency.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/schemas/organization.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/schemas/treasury.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-accounting/schemas/treasury_account.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/accounts/billing.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/accounts/logistics.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/accounts/money.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/accounts/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/crm/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/all-in-one/hrm/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/frontend/README.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/frontend/architecture.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/frontend/continuation-prompts.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/frontend/deferred-work.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/rebase-system/core-audit.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/rebase-system/core-configuration.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/rebase-system/core-handoff.md"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/file_storage_config.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/razorpay_config.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/razorpay_order.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/rebase_group.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/rebase_user.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/send_brevo_email.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/send_twilio_sms.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/test_attachment.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/test_multiref.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/test_primitive.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/test_relation.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/data/test_tree.schema.json"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/table-handlers/send_brevo_email.js"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/table-handlers/send_twilio_sms.js"
+    },
+    {
+      "status": " M",
+      "path": "designs/test/views.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/README.md"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/cash-refund-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/core-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/fixture-example.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h3c-fixture/fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h3c-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4a-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b2-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b3-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b4a-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b4b-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b5a-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h4b5b-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h6a-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h6b-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h7-assembly-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h7-gross-input-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h8-measurement-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h8-production-feasibility-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/h8-timed-production-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/stock-return-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/stock-timestamp-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/accounting/treasury-timestamp-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/accounts-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/admission-capacity-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/architecture-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/authentication-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/compiler-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/credential-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/dead-letter-retention-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/queue-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/razorpay-refund-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/runtime-probe-worker.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/runtime-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/suite-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/checks/webhook-inbox-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/analyze.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/fields.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/access.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/audit.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/effects.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/indexes.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/reactivity.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/references.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/security.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/temporal.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/generators/tree.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/pipeline.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/principals.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/security-policy.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/temporal.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/compiler/tree-contract.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/experiments/synthetic-write-amplification/schema.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/populate.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/boundary-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/causal-outputs-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/causal-outputs-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/compiler-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/contract-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/derived-order-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/derived-order-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/harness.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/ordinal-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/positions-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/positions-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/reactivity-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/required-outputs-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/required-outputs-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/typed-fixture.surql"
+    },
+    {
+      "status": " M",
+      "path": "dev-tools/temporal-tree/typed-probe.js"
+    },
+    {
+      "status": " M",
+      "path": "framework/access.surql"
+    },
+    {
+      "status": " M",
+      "path": "framework/audit.surql"
+    },
+    {
+      "status": " M",
+      "path": "framework/auth.surql"
+    },
+    {
+      "status": " M",
+      "path": "framework/authentication.surql"
+    },
+    {
+      "status": " M",
+      "path": "framework/webhooks.surql"
+    },
+    {
+      "status": " M",
+      "path": "gateway/app.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/authentication.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/connection.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/directory.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/operations/authentication-delivery.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/operations/provider-receipt.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/queues/port.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/runtime.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/server.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/store.js"
+    },
+    {
+      "status": " M",
+      "path": "gateway/webhook-routes.js"
+    },
+    {
+      "status": " M",
+      "path": "package-lock.json"
+    },
+    {
+      "status": " M",
+      "path": "package.json"
+    },
+    {
+      "status": "??",
+      "path": ".surreal-version"
+    },
+    {
+      "status": "??",
+      "path": "designs/all-in-accounting/claims/delivery-taxes.surql"
+    },
+    {
+      "status": "??",
+      "path": "designs/all-in-accounting/delivery-taxes.md"
+    },
+    {
+      "status": "??",
+      "path": "designs/rebase-system/ordered-tree-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "designs/rebase-system/single-design-runtime.md"
+    },
+    {
+      "status": "??",
+      "path": "designs/rebase-system/tenant-authentication.md"
+    },
+    {
+      "status": "??",
+      "path": "designs/rebase-system/tenant-tree-redesign.md"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/accounting/delivery-tax-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/checks/live-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/checks/passkey-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/checks/tenant-auth-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/checks/tenant-record-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/temporal-tree/ordered-fixture.surql"
+    },
+    {
+      "status": "??",
+      "path": "dev-tools/temporal-tree/ordered-probe.js"
+    },
+    {
+      "status": "??",
+      "path": "framework/passkeys.surql"
+    },
+    {
+      "status": "??",
+      "path": "gateway/live.js"
+    },
+    {
+      "status": "??",
+      "path": "gateway/passkeys.js"
+    }
+  ],
+  "tracked_diff_sha256": "dfe4374a953353181ff65b67379c8867175c5c209c11aa2a184af86b5b6004c8",
+  "source_sha256": {
+    ".surreal-version": "5eee6c0c5c6901f5e523f0a434bca4106e1ff7136deb451f982b0bb1a7b13716",
+    "package.json": "eb23061c67e31fd2bdc764b8e2de01ca40e1d7c2c41528c87a617149cfca7254",
+    "package-lock.json": "f961d2aae90745be1fedbcc5e70684662dc31b9c226a993caf08fc882a8b33e6",
+    "config/environment.js": "f23883b5905be2d3157bea595c0b747d59c43f0bf7ab28029cd9d42d8ed79b17",
+    "framework/auth.surql": "7f4a6add8b43463cadc0788bf9d912283b039c83b58e48ac2ad8c1cc39a1de90",
+    "framework/access.surql": "b81fe2ce55c57a8ff4d7117755f8147fef71360b200611b11abb7d13143f563c",
+    "framework/authentication.surql": "57805a4767603fc85e9a85ab6ef4f74c9ba00929d44bf846fd5b5d6855809200",
+    "framework/passkeys.surql": "ed88e22f49412a96c24464a578cad9be99ece7c2b2ee5620dc24c976253957b0",
+    "dev-tools/compiler/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "dev-tools/compiler/tree-contract.js": "2c94636ae53061c5f8f2790debaa800d58fc5a86ac8a936c2b65a754746b8828",
+    "dev-tools/compiler/temporal.surql": "d9ec029aa9cd36261bbcf086a153cdc718e0cd3edad543dd0cb471fa6719bb38",
+    "dev-tools/compiler/generators/temporal.js": "ff6609db78e4b19b62b33f8091e42dbc06e39ad8a66563ec3842ad0ff6d32353",
+    "dev-tools/compiler/generators/references.js": "e7094fc77605da1893d313ba0350a1f654571fb55f10af6e62219087385face2",
+    "dev-tools/compiler/generators/reactivity.js": "e6cc93c64c893215cc1fa97d69bf95ba51f0a156e6d0ef8c3afebb3302dde774",
+    "dev-tools/compiler/generators/security.js": "55d24d6817dc1e6c73dde901d03269555328b1631a89c066866ad54c32399af6",
+    "dev-tools/compiler/generators/tree.js": "4a7fb8f58042c804d72df5f5f8fef3672f208bf0190113822d5ebece89163167",
+    "dev-tools/compiler/security-policy.js": "533c15422fc2cddc2121aad1b6929a5076159662572a832f38c4db91866d59e5",
+    "gateway/authentication.js": "889f5d41d9f3b3a3810e9279090b79437f43f7002f39d588332cf99e03a208a9",
+    "gateway/passkeys.js": "a1678cc23b4675d4fa929a0be8c9791f1e2e7abdf7700b4cc3b7e08e35d482e6",
+    "gateway/live.js": "a9fa8ec1f75cbee54393d316ad5792e9e6cf2529b6a292b654ab8cd548bbb38a",
+    "gateway/runtime.js": "8d7be8af900d81cf02ca7629c317556a5b221b54831221ed6effd243e6e5c1e6",
+    "gateway/store.js": "47e525dea6faaf978c6644ad5eb5bead5287e8cb8faac0e7e1e6da400a40d882",
+    "gateway/queues/port.js": "067ba24745eed7b65916442e6258de49231d6234456ea92535163e0866f0aacc",
+    "gateway/webhook-routes.js": "1e626c48825ceb0a507189bdbbc6ac4fbf11dae985c5a80a10d1cd80ee88edfc",
+    "designs/all-in-accounting/claims/invoices.surql": "2aa9a9af615312972df21adec50e7222e68fdfc110103c25debfc580ac362692",
+    "designs/all-in-accounting/claims/delivery-taxes.surql": "0473eea1d7d0aa120d93e7b5446fb7d57011d7caf8f6372a6a48944a3e29e5b6",
+    "dev-tools/accounting/delivery-tax-probe.js": "e91a6127e98ac22342a75ae999fca82c2858316c8dbae1d5ded59f40208d253e",
+    "dev-tools/checks/tenant-record-probe.js": "f1d2cfe3449a524511f4520aec23817a60c70170a16abe23163ebb2369db1a69",
+    "dev-tools/temporal-tree/ordered-probe.js": "31eb267f1c34ca14ccaa41c0c85365328b838a6d5daa627def501b98e2bc012a"
+  },
+  "frontend": {
+    "path": "MetaSol",
+    "head": "ada483e4d3fc389e66e0db9a21a14e3319a0fc12",
+    "status": "",
+    "implementation_reviewed": false,
+    "compatibility_with_new_backend": "deferred; not established"
+  },
+  "context_attachment": {
+    "path": "/home/divyeshvora/.codex/attachments/b7109afa-bf90-4215-ba2d-34a7542b96f9/Pasted text.txt",
+    "sha256": "16701d8ef0127fbd7a94016c7a667722fbec200af99dee1bb94b33e280e6aa95",
+    "lines": 1016
+  },
+  "local_versions": {
+    "node": "v22.23.2",
+    "surreal": "3.3.0 for linux on x86_64",
+    "surreal_pin": "3.3.0"
+  },
+  "verification": {
+    "application_commands_run_this_review": [],
+    "basis": "Git metadata and static source review; prior-agent reported probe results are not new pass evidence",
+    "older_evidence": "2026-10-03-redesign-verification.json applies to its recorded sources"
+  },
+  "remaining_gates": [
+    "owner and reader privacy of aggregate views and ordered public reads",
+    "tenant-reference validation including nested and derived references",
+    "dependency-ordered managed output lifecycle independent of authored table ordering",
+    "delivery tax completion and explicit invoice-wide coexistence",
+    "current native auth, passkey, live and queue regression checks",
+    "all profile builds and full backend/accounting integration on SurrealDB 3.3.0"
+  ],
+  "exclusions": [
+    "live provider credentials",
+    "production databases",
+    "data migration",
+    "high-concurrency capacity claims",
+    "frontend implementation"
+  ]
+}

@@ -6,17 +6,17 @@ const { createWebhookRouteCodec } = require("../../gateway/webhook-routes");
 function createHarness({ failCommit = false, loseCommitResponse = false, queueDown = true, queuePort } = {}) {
   const route = {
     provider: "razorpay",
-    namespace: "test",
-    database: "webhook_inbox_probe",
+    tenant: 'rebase_tenant:probe',
     config: "razorpay_config:probe",
     id: "razorpay_order:probe",
   };
   const routeCodec = createWebhookRouteCodec("webhook-inbox-probe-secret");
   const capsule = routeCodec.seal(route);
   const persisted = new Map([
-    [route.config, { id: route.config }],
+    [route.config, { id: route.config, tenant: route.tenant }],
     [route.id, {
       id: route.id,
+      tenant: route.tenant,
       config: route.config,
       provider_order_id: "order_probe",
       amount_paise: 125,
@@ -109,7 +109,7 @@ function createHarness({ failCommit = false, loseCommitResponse = false, queueDo
     webhooks,
     webhookAdapters: { razorpay: adapter },
     routeCodec,
-    options: { allowedContexts: [route] },
+    options: { defaultContext: { namespace: 'test', database: 'webhook_inbox_probe' } },
   });
   return { runtime, route, routeCodec, capsule, calls, persisted, selectedContexts };
 }
@@ -144,14 +144,16 @@ async function main() {
   assert(lostResponse.persisted.get(recoveredCommit.receiptId));
 
   const contextCount = outage.selectedContexts.length;
-  const foreignCapsule = outage.routeCodec.seal({ ...outage.route, namespace: "foreign" });
+  const foreignCapsule = outage.routeCodec.seal({ ...outage.route, tenant: "rebase_tenant:foreign" });
   await assert.rejects(() => outage.runtime.webhook({
     provider: "razorpay",
     request: { capsule: foreignCapsule },
     rawBody: Buffer.from('{"event":"order.paid"}'),
-  }), (error) => error.code === "CONTEXT_NOT_ALLOWED");
-  assert.equal(outage.selectedContexts.length, contextCount,
-    "a foreign route context must be rejected before selecting its database");
+  }), (error) => error.code === "WEBHOOK_TENANT_MISMATCH");
+  assert.equal(outage.selectedContexts.length, contextCount + 1);
+  assert(outage.selectedContexts.every(([ns, db]) => ns === 'test' && db === 'webhook_inbox_probe'),
+    'capsules cannot select a database');
+  assert.throws(() => outage.routeCodec.seal({ ...outage.route, namespace: 'foreign' }), /invalid/i);
   await assert.rejects(() => outage.runtime.webhook({
     provider: "unknown-provider",
     request: { capsule: outage.capsule },
@@ -170,8 +172,6 @@ async function main() {
   const configuredRoute = createHarness({ queueDown: false });
   const route = await configuredRoute.runtime.createWebhookRoute({
     provider: "razorpay",
-    namespace: configuredRoute.route.namespace,
-    database: configuredRoute.route.database,
     config: configuredRoute.route.config,
   });
   const routed = await configuredRoute.runtime.webhook({
@@ -190,7 +190,7 @@ async function main() {
     rawBody: Buffer.from('{"event":"order.paid"}'),
   }), (error) => error.code === "INVALID_WEBHOOK_ROUTE");
 
-  console.log("webhook inbox: receipt recovery, config-bound route resolution, tamper rejection, unknown providers, and foreign contexts passed");
+  console.log("webhook inbox: receipt recovery, config-bound route resolution, tamper rejection, unknown providers, and tenant isolation passed");
 }
 
 if (require.main === module) main().catch((error) => {

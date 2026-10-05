@@ -65,6 +65,7 @@ function generateAuditEvents(schema, options, excludedTables = new Set()) {
     output += `            table_name: '${table.name}',\n`;
     output += '            target: IF $event = \'DELETE\' THEN $before.id ELSE $after.id END,\n';
     output += '            actor: $auth,\n';
+    output += '            tenant: $after.tenant ?? $before.tenant,\n';
     output += '            changed_fields: $audit_changed_fields,\n';
     output += '            before: $audit_before,\n';
     output += '            after: $audit_after\n';

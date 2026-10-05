@@ -69,7 +69,7 @@ DEFINE FIELD OVERWRITE z_claim ON receivable_cash_allocation TYPE option<object>
 DEFINE FIELD OVERWRITE z_target ON receivable_cash_allocation TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner receivable.z_settlement';
 DEFINE FIELD OVERWRITE z_source ON receivable_cash_allocation TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner cash_in.z_allocations';
 DEFINE FIELD OVERWRITE z_refund_grant ON receivable_cash_allocation TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner receivable_cash_allocation.z_refunds';
-DEFINE FIELD OVERWRITE z_refunds ON receivable_cash_allocation TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_refunds ON receivable_cash_allocation TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE payable_cash_allocation SCHEMAFULL
     COMMENT '@rebase-members fn::accounting::payable_cash_allocation_members @rebase-validate fn::accounting::payable_cash_allocation_validate';

@@ -70,52 +70,53 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY treasury:tie_out_first SET owned_by = rebase_group:root, name = 'Outgoing-first tie target';
-      CREATE ONLY treasury:tie_in_first SET owned_by = rebase_group:root, name = 'Incoming-first tie target';
-      CREATE ONLY treasury:same_time_overdraw SET owned_by = rebase_group:root, name = 'Same-time overdraw target';
-      CREATE ONLY treasury:earlier_outflow SET owned_by = rebase_group:root, name = 'Earlier-outflow target';
-      CREATE ONLY treasury:donor1 SET owned_by = rebase_group:root, name = 'Transfer donor 1';
-      CREATE ONLY treasury:donor2 SET owned_by = rebase_group:root, name = 'Transfer donor 2';
-      CREATE ONLY treasury:donor3 SET owned_by = rebase_group:root, name = 'Transfer donor 3';
-      CREATE ONLY treasury:donor4 SET owned_by = rebase_group:root, name = 'Transfer donor 4';
-      CREATE ONLY treasury:donor5 SET owned_by = rebase_group:root, name = 'Transfer donor 5';
-      CREATE ONLY treasury:donor6 SET owned_by = rebase_group:root, name = 'Transfer donor 6';
-      CREATE ONLY treasury_account:tie_out_first SET owned_by = rebase_group:root,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY treasury:tie_out_first SET owned_by = rebase_tenant:default, name = 'Outgoing-first tie target';
+      CREATE ONLY treasury:tie_in_first SET owned_by = rebase_tenant:default, name = 'Incoming-first tie target';
+      CREATE ONLY treasury:same_time_overdraw SET owned_by = rebase_tenant:default, name = 'Same-time overdraw target';
+      CREATE ONLY treasury:earlier_outflow SET owned_by = rebase_tenant:default, name = 'Earlier-outflow target';
+      CREATE ONLY treasury:donor1 SET owned_by = rebase_tenant:default, name = 'Transfer donor 1';
+      CREATE ONLY treasury:donor2 SET owned_by = rebase_tenant:default, name = 'Transfer donor 2';
+      CREATE ONLY treasury:donor3 SET owned_by = rebase_tenant:default, name = 'Transfer donor 3';
+      CREATE ONLY treasury:donor4 SET owned_by = rebase_tenant:default, name = 'Transfer donor 4';
+      CREATE ONLY treasury:donor5 SET owned_by = rebase_tenant:default, name = 'Transfer donor 5';
+      CREATE ONLY treasury:donor6 SET owned_by = rebase_tenant:default, name = 'Transfer donor 6';
+      CREATE ONLY treasury_account:tie_out_first SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:tie_out_first, currency = currency:usd;
-      CREATE ONLY treasury_account:tie_in_first SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:tie_in_first SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:tie_in_first, currency = currency:usd;
-      CREATE ONLY treasury_account:same_time_overdraw SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:same_time_overdraw SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:same_time_overdraw, currency = currency:usd;
-      CREATE ONLY treasury_account:earlier_outflow SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:earlier_outflow SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:earlier_outflow, currency = currency:usd;
-      CREATE ONLY treasury_account:donor1 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor1 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor1, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY treasury_account:donor2 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor2 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor2, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY treasury_account:donor3 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor3 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor3, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY treasury_account:donor4 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor4 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor4, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY treasury_account:donor5 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor5 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor5, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY treasury_account:donor6 SET owned_by = rebase_group:root,
+      CREATE ONLY treasury_account:donor6 SET owned_by = rebase_tenant:default,
         economic_entity = organization:entity, treasury = treasury:donor6, currency = currency:usd, minimum_balance = -100dec;
-      CREATE ONLY cash_transfer:z_in_out_first SET owned_by = rebase_group:root,
+      CREATE ONLY cash_transfer:z_in_out_first SET owned_by = rebase_tenant:default,
         from_account = treasury_account:donor1, to_account = treasury_account:tie_out_first,
         amount = 5dec, effective_at = d'2026-07-01T00:00:00Z';
-      CREATE ONLY cash_transfer:z_in_same_time_overdraw SET owned_by = rebase_group:root,
+      CREATE ONLY cash_transfer:z_in_same_time_overdraw SET owned_by = rebase_tenant:default,
         from_account = treasury_account:donor3, to_account = treasury_account:same_time_overdraw,
         amount = 5dec, effective_at = d'2026-07-02T00:00:00Z';
-      CREATE ONLY cash_transfer:z_in_later SET owned_by = rebase_group:root,
+      CREATE ONLY cash_transfer:z_in_later SET owned_by = rebase_tenant:default,
         from_account = treasury_account:donor5, to_account = treasury_account:earlier_outflow,
         amount = 5dec, effective_at = d'2026-07-04T00:00:00Z';
     `);
 
     // The incoming event is created first, but its ID sorts after the outgoing event.
-    await db.query(`CREATE ONLY cash_transfer:a_out_out_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_transfer:a_out_out_first SET owned_by = rebase_tenant:default,
       from_account = treasury_account:tie_out_first, to_account = treasury_account:donor2,
       amount = 5dec, effective_at = d'2026-07-01T00:00:00Z';`);
     let state = await snapshot(db);
@@ -126,7 +127,7 @@ async function main() {
       'strict record-order prefix would reject this economically valid same-time pair');
 
     // Incoming ID sorts after the outgoing ID; an aggregate same-time deficit still rejects.
-    await rejectsUnchanged(db, `CREATE ONLY cash_transfer:a_out_same_time_overdraw SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_transfer:a_out_same_time_overdraw SET owned_by = rebase_tenant:default,
       from_account = treasury_account:same_time_overdraw, to_account = treasury_account:donor4,
       amount = 6dec, effective_at = d'2026-07-02T00:00:00Z';`,
     'same-time net outflow of 1 rejects atomically');
@@ -136,7 +137,7 @@ async function main() {
     assert.equal(floor(overdraw), 0, 'same-time overdraw rollback leaves the nonnegative floor intact');
 
     // A later credit cannot fund an earlier outflow.
-    await rejectsUnchanged(db, `CREATE ONLY cash_transfer:a_out_earlier SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY cash_transfer:a_out_earlier SET owned_by = rebase_tenant:default,
       from_account = treasury_account:earlier_outflow, to_account = treasury_account:donor6,
       amount = 1dec, effective_at = d'2026-07-03T00:00:00Z';`,
     'outflow before a later inflow rejects despite a positive final balance');
@@ -146,10 +147,10 @@ async function main() {
     assert.equal(floor(later), 0, 'later inflow does not erase the earlier-time minimum');
 
     // Also exercise the opposite record-ID order; both signed positions remain valid.
-    await db.query(`CREATE ONLY cash_transfer:a_in_in_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_transfer:a_in_in_first SET owned_by = rebase_tenant:default,
       from_account = treasury_account:donor1, to_account = treasury_account:tie_in_first,
       amount = 5dec, effective_at = d'2026-07-05T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_transfer:z_out_in_first SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_transfer:z_out_in_first SET owned_by = rebase_tenant:default,
       from_account = treasury_account:tie_in_first, to_account = treasury_account:donor2,
       amount = 5dec, effective_at = d'2026-07-05T00:00:00Z';`);
     state = await snapshot(db);

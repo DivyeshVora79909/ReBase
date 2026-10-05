@@ -1,6 +1,6 @@
 -- Cases and their dated interactions demonstrate state/capacity algebra without
 -- money. One open unit is created with the case; transitions consume/restore it.
-DEFINE FIELD OVERWRITE z_cases ON organization TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_cases ON organization TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE FUNCTION OVERWRITE fn::crm::members($row: object) {
     LET $c = $row.z20_ctx;
@@ -25,7 +25,7 @@ DEFINE FIELD OVERWRITE a_organization ON crm_case TYPE record<organization> REFE
 DEFINE FIELD OVERWRITE a_subject ON crm_case TYPE string ASSERT string::len(string::trim($value)) > 0 COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_effective_at ON crm_case TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z20_ctx ON crm_case TYPE { origin: record<crm_case>, party: record<organization>, opened_at: datetime, open: decimal, effort: decimal } VALUE { origin: $this.id, party: $this.a_organization, opened_at: $this.a_effective_at, open: 1dec, effort: 0dec } COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_history ON crm_case TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_history ON crm_case TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_case ON crm_case TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner crm_case.z_history';
 DEFINE FIELD OVERWRITE z_party ON crm_case TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_cases';
 

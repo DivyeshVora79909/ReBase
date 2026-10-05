@@ -163,6 +163,7 @@ function createRuntimeApp({
   webhookAdapters,
   adapterConfiguration = {},
   authentication,
+  passkeys,
   oauth,
   runtimeSecret,
   defaultContext = {},
@@ -267,8 +268,7 @@ function createRuntimeApp({
           throw new RuntimeError("AUTHENTICATION_DELIVERY_UNAVAILABLE", "Authentication delivery is not configured", 503);
         }
         const result = await withRequestTimeout(requestTimeoutMs, () => authentication.requestChallenge({
-          namespace: body.namespace,
-          database: body.database,
+          tenant: body.tenant,
           identifier: body.identifier,
           channel: body.channel,
           clientAddress: requestClientAddress(request, { trustProxy }),
@@ -281,6 +281,22 @@ function createRuntimeApp({
           }, { "retry-after": String(retryAfter) });
         }
         return sendJson(response, 202, { ok: true });
+      }
+      const passkeyMethod = {
+        '/authentication/passkeys/registration/options': 'registrationOptions',
+        '/authentication/passkeys/registration/verify': 'register',
+        '/anonymous/authentication/passkeys/options': 'authenticationOptions',
+        '/anonymous/authentication/passkeys/verify': 'authenticate',
+      }[pathname];
+      if (method === 'POST' && passkeyMethod) {
+        const body = await readJsonBody(request);
+        if (!passkeys) throw new RuntimeError('PASSKEYS_UNAVAILABLE', 'Passkeys are not configured', 503);
+        const bearer = /^Bearer (.+)$/i.exec(header(request, 'authorization') || '')?.[1];
+        const result = await withRequestTimeout(requestTimeoutMs, () => passkeys[passkeyMethod]({
+          tenant: body.tenant, token: bearer, challengeId: body.challengeId, response: body.response,
+          clientAddress: requestClientAddress(request, { trustProxy }),
+        }));
+        return sendJson(response, 200, result);
       }
       if (method === "POST" && pathname === "/internal/oauth") {
         requireJsonContentType(request);

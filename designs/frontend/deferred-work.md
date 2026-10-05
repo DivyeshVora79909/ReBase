@@ -9,8 +9,24 @@ Their historical evidence is not a fresh frontend verification claim.
 
 The 2026-10-03 review closes P1 for the delivered invoice workflows; see
 [verification](verification.md). Live email/SMS/payment checks are excluded
-from this task, and no existing data needs migration. The packets below are
-future features, not blockers for the delivered redesign.
+from this task, and no existing data needs migration. The original packets below remain future features. The newer tenant compatibility
+packet is required before using the frontend against the redesigned backend.
+
+## Required compatibility packet: tenant backend (deferred 2026-10-05)
+
+Before P2-P11, migrate the unchanged frontend to the new tenant backend using
+[the continuation](continuation-prompts.md#tenant-backend-migration--next-required-packet).
+The [backend evidence](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
+and lead review establish the starting backend scope, separately from browser acceptance.
+One design connection contains multiple tenants; login/cache/session identity
+must include tenant. Identity owned_by, removal of visibility, root-derived
+readers, scoped aggregate views, typed tree cursors and delivery tax provenance
+are breaking contracts. Preserve per-priced-portion rounding and the explicit
+additive choice of line and invoice-wide tax inputs. Native source scans must
+carry the documented SurrealDB 3.3.0 ID-order workaround where affected.
+Prove two tenants with the same email in one database and switching with a
+pending response. No frontend source work or new browser acceptance is claimed
+by this backend continuation.
 
 ## Recommended sequence
 

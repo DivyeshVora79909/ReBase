@@ -23,10 +23,11 @@ const { createMockOAuthAdapter, createOAuthVerifier } = require("../../gateway/o
 const { createMemoryRateLimiter, createRedisRateLimiter } = require("../../gateway/rate-limit");
 const { createBullMqPort } = require("../../gateway/queues/bullmq");
 const { createRuntime } = require("../../gateway/runtime");
+const { startLiveWakeups } = require("../../gateway/live");
 const providerReceiptOperation = require("../../gateway/operations/provider-receipt");
 const { startServer } = require("../../gateway/server");
 const { createTableStore } = require("../../gateway/store");
-const { operationEnvelope } = require("../../gateway/queues/port");
+const { operationEnvelope, designQueuePrefix } = require("../../gateway/queues/port");
 const { queryResult } = require("../../gateway/utils");
 const { createHarness: createWebhookInboxHarness } = require("./webhook-inbox-probe");
 const { loadMaterials } = require("../compiler/materials");
@@ -208,8 +209,8 @@ async function passwordSignin(endpoint, namespace, database, identifier, passwor
       database,
       access,
       variables: access === "account_password"
-        ? { identifier, password, ...variables }
-        : variables,
+        ? { tenant: "rebase_tenant:default", identifier, password, ...variables }
+        : { tenant: "rebase_tenant:default", ...variables },
     });
     return { client, token };
   } catch (error) {
@@ -288,7 +289,7 @@ async function admissionProbe(redisUrl) {
   const ports = [createBullMqPort(portOptions), createBullMqPort(portOptions)];
   const [port, peer] = ports;
   const operation = (id) => operationEnvelope(
-    { namespace: "tenant", database: "admission", id: `queued_probe:${id}` },
+    { id: `queued_probe:${id}` },
     { execution_id: crypto.randomUUID(), revision: crypto.randomUUID() },
   );
   try {
@@ -323,8 +324,6 @@ async function admissionProbe(redisUrl) {
     assert.equal((await port.queue.getJobs(["wait", "paused", "prioritized", "delayed"])).length, 3);
     await Promise.all(jobs.map((job) => job.remove()));
     const recoveredReceipt = await saturatedWebhookHarness.runtime.enqueue({
-      namespace: saturatedWebhookHarness.route.namespace,
-      database: saturatedWebhookHarness.route.database,
       id: acceptedAtCapacity.receiptId,
     });
     assert.equal(recoveredReceipt.queued, true,
@@ -434,7 +433,7 @@ async function persistentReceiptAdmissionProbe({
     rawBody,
   });
   const operation = (id) => operationEnvelope(
-    { namespace: "tenant", database: "persistent-admission", id: `queued_probe:${id}` },
+    { id: `queued_probe:${id}` },
     { execution_id: crypto.randomUUID(), revision: crypto.randomUUID() },
   );
   const receiptIds = [];
@@ -673,33 +672,33 @@ async function main() {
   const contracts = new Map(Object.entries(generated.contracts.tables));
   const operationSource = `
     DEFINE TABLE grant_probe SCHEMAFULL COMMENT '@rebase-operation grant CREATE UPDATE @rebase-adapter createS3UploadGrant';
-    DEFINE FIELD owned_by ON grant_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON grant_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD key ON grant_probe TYPE string COMMENT '@rebase-operation-input';
     DEFINE FIELD expires_in ON grant_probe TYPE int DEFAULT 60 COMMENT '@rebase-operation-input';
     DEFINE FIELD access_url ON grant_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
     DEFINE TABLE inline_probe SCHEMAFULL COMMENT '@rebase-operation inline CREATE @rebase-timeout 100ms';
-    DEFINE FIELD owned_by ON inline_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON inline_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD mode ON inline_probe TYPE string READONLY ASSERT $value IN ['success', 'failed', 'timeout'] COMMENT '@rebase-operation-input';
     DEFINE FIELD result ON inline_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
     DEFINE TABLE queued_probe SCHEMAFULL COMMENT '@rebase-operation queued CREATE';
-    DEFINE FIELD owned_by ON queued_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON queued_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD value ON queued_probe TYPE string READONLY COMMENT '@rebase-operation-input';
     DEFINE FIELD result ON queued_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
     DEFINE TABLE page_probe SCHEMAFULL COMMENT '@rebase-operation queued CREATE';
-    DEFINE FIELD owned_by ON page_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON page_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD value ON page_probe TYPE string READONLY COMMENT '@rebase-operation-input';
     DEFINE FIELD result ON page_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
     DEFINE TABLE cursor_probe SCHEMAFULL COMMENT '@rebase-operation queued CREATE';
-    DEFINE FIELD owned_by ON cursor_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON cursor_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD value ON cursor_probe TYPE string READONLY COMMENT '@rebase-operation-input';
     DEFINE FIELD result ON cursor_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
     DEFINE TABLE retention_probe SCHEMAFULL COMMENT '@rebase-operation queued CREATE';
-    DEFINE FIELD owned_by ON retention_probe TYPE record<rebase_group>;
+    DEFINE FIELD owned_by ON retention_probe TYPE record<rebase_group | rebase_tenant>;
     DEFINE FIELD value ON retention_probe TYPE string READONLY COMMENT '@rebase-operation-input';
     DEFINE FIELD result ON retention_probe TYPE option<string> DEFAULT NONE
       PERMISSIONS FOR select WHERE true FOR create, update NONE COMMENT '@rebase-operation-output';
@@ -913,6 +912,7 @@ async function main() {
   const authentication = createAuthenticationService({
     stores,
     principals: generated.contracts.principals,
+    defaultContext: { namespace: state.namespace, database: state.database },
     allowedContexts: [{ namespace: state.namespace, database: state.database }],
     sealAuthenticationPayload: authenticationPayloadCipher.seal,
     generateCode() {
@@ -948,6 +948,8 @@ async function main() {
   const enqueue = runtime.enqueue;
   runtime.enqueue = async (...args) => { wakeCalls += 1; return enqueue(...args); };
   const stops = [];
+  const manualLiveTables = new Set();
+  let stopLiveWakeups;
   stops.push(await queue.start((delivery) => runtime.consume(delivery)));
   const app = createRuntimeApp({
     runtime, handlers, webhooks, adapters, webhookAdapters, authentication, oauth, queue, runtimeSecret: secret,
@@ -968,15 +970,22 @@ async function main() {
     httpServer = localRuntime.server;
     appRequest = localRuntime.fetch;
     await state.db.query(generated.bundle);
+    await state.db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await state.db.query(`${operationSource}\n${generateLifecycleFields(operationSchema)}\n${generateOperationEvents(operationSchema, {
       runtimeUrl: `http://127.0.0.1:${runtimePort}`,
       runtimeSecret: secret,
     })}`);
+    stopLiveWakeups = await startLiveWakeups({ store, runtime: {
+      enqueue: locator => manualLiveTables.has(locator.id.split(':')[0]) ? null : runtime.enqueue(locator),
+    }, handlers,
+      reconciler: { run: () => runtime.reconcile({ namespace: state.namespace, database: state.database }) },
+      onError: error => queueErrors.push(error.message),
+    });
     const unauthenticatedGrant = await appRequest("http://runtime/internal/grant", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        namespace: state.namespace, database: state.database, id: "grant_probe:missing",
+        id: "grant_probe:missing",
         event: "CREATE", before: null, after: { id: "grant_probe:missing", key: "object" },
       }),
     });
@@ -984,7 +993,7 @@ async function main() {
     const unauthenticatedInline = await appRequest("http://runtime/internal/inline", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ namespace: state.namespace, database: state.database, id: "inline_probe:missing" }),
+      body: JSON.stringify({ id: "inline_probe:missing" }),
     });
     assert.equal(unauthenticatedInline.status, 401);
     const disallowedOperationContext = await appRequest("http://runtime/internal/inline", {
@@ -992,9 +1001,9 @@ async function main() {
       headers: { "content-type": "application/json", authorization: `Bearer ${secret}` },
       body: JSON.stringify({ namespace: "outside", database: state.database, id: "inline_probe:missing" }),
     });
-    assert.equal(disallowedOperationContext.status, 403);
+    assert.equal(disallowedOperationContext.status, 400);
     const grantProbe = await createAndReload(state.db, "grant_probe", `
-      owned_by = rebase_group:root, key = 'object/a', expires_in = 60
+      owned_by = rebase_tenant:default, key = 'object/a', expires_in = 60
     `);
     assert.match(grantProbe.access_url, /storage\.local\/upload\/object%2Fa/);
     const updatedGrant = queryResult(await state.db.query(`
@@ -1004,7 +1013,7 @@ async function main() {
     assert.match(updatedGrant.access_url, /storage\.local\/upload\/object%2Fb/);
 
     const inlineSucceeded = await createAndReload(state.db, "inline_probe", `
-      owned_by = rebase_group:root, mode = 'success'
+      owned_by = rebase_tenant:default, mode = 'success'
     `);
     const inlineSucceededId = recordId(inlineSucceeded);
     const inlineSucceededRow = await waitFor(
@@ -1016,7 +1025,7 @@ async function main() {
     assert.equal(inlineSucceededRow.result, "completed");
 
     const inlineFailed = await createAndReload(state.db, "inline_probe", `
-      owned_by = rebase_group:root, mode = 'failed'
+      owned_by = rebase_tenant:default, mode = 'failed'
     `);
     const inlineFailedRow = await waitFor(
       async () => (await store.load(recordId(inlineFailed)))?.rebase_outcome === "failed"
@@ -1027,7 +1036,7 @@ async function main() {
     assert.equal(inlineFailedRow.rebase_error.code, "EXPECTED_FAILURE");
 
     const inlineTimedOut = await createAndReload(state.db, "inline_probe", `
-      owned_by = rebase_group:root, mode = 'timeout'
+      owned_by = rebase_tenant:default, mode = 'timeout'
     `);
     const inlineTimedOutRow = await waitFor(
       async () => (await store.load(recordId(inlineTimedOut)))?.rebase_outcome === "ambiguous"
@@ -1037,7 +1046,7 @@ async function main() {
     );
     assert.equal(inlineTimedOutRow.rebase_error.code, "OPERATION_TIMEOUT");
     const queuedCreated = await createAndReload(state.db, "queued_probe", `
-      owned_by = rebase_group:root, value = 'task'
+      owned_by = rebase_tenant:default, value = 'task'
     `);
     let queuedRow;
     try {
@@ -1070,36 +1079,36 @@ async function main() {
       await renewableAdmin.close();
     }
     await assert.rejects(
-      state.db.query("CREATE file_storage_config:missing_credential SET owned_by = rebase_group:root;"),
+      state.db.query("CREATE file_storage_config:missing_credential SET owned_by = rebase_tenant:default;"),
       /access_key_id|secret_access_key|endpoint|region|field|schema|required/i,
     );
     await assert.rejects(
-      state.db.query("CREATE rebase_email_delivery_config:missing_api_key SET owned_by = rebase_group:root, from_email = 'missing@example.com', from_name = 'Missing';"),
+      state.db.query("CREATE rebase_email_delivery_config:missing_api_key SET owned_by = rebase_tenant:default, from_email = 'missing@example.com', from_name = 'Missing';"),
       /api_key|field|schema|required/i,
     );
     await assert.rejects(
-      state.db.query("CREATE razorpay_config:missing_secret SET owned_by = rebase_group:root, label = 'Missing', key_id = 'key';"),
+      state.db.query("CREATE razorpay_config:missing_secret SET owned_by = rebase_tenant:default, label = 'Missing', key_id = 'key';"),
       /key_secret|webhook_secret|field|schema|required/i,
     );
     const storage = await createAndReload(state.db, "file_storage_config", `
-      owned_by = rebase_group:root, visibility = true,
+      owned_by = rebase_tenant:default,
       access_key_id = 'client-storage-id', secret_access_key = 'client-storage-secret',
       endpoint = 'https://storage.local', region = 'local'
     `);
     const storageId = recordId(storage);
     const emailConfig = await createAndReload(state.db, "rebase_email_delivery_config", `
-      owned_by = rebase_group:root,
+      owned_by = rebase_tenant:default,
       from_email = 'from@example.com', from_name = 'Probe', api_key = 'client-brevo-api-key'
     `);
     const emailConfigId = recordId(emailConfig);
     const razorpayConfig = await createAndReload(state.db, "razorpay_config", `
-      owned_by = rebase_group:root, label = 'Probe', visibility = true,
+      owned_by = rebase_tenant:default, label = 'Probe',
       key_id = 'client-razorpay-key', key_secret = 'client-razorpay-secret',
       webhook_secret = 'razorpay-webhook-secret'
     `);
     const razorpayConfigId = recordId(razorpayConfig);
     await state.db.query(`
-      CREATE rebase_group:runtime_clients SET name = 'Runtime Clients', parents = [rebase_group:root], role = [
+      CREATE rebase_group:runtime_clients SET name = 'Runtime Clients', parents = [rebase_tenant:default], role = [
         'send_brevo_email_create', 'send_brevo_email_select', 'send_brevo_email_update',
         'file_storage_config_select',
         'test_attachment_create', 'test_attachment_delete', 'test_primitive_select'
@@ -1114,20 +1123,22 @@ async function main() {
       CREATE rebase_user:no_delivery SET name = 'No Delivery', username = 'no_delivery_user',
         password = crypto::argon2::generate('no-delivery-password'),
         parents = [rebase_group:runtime_clients], login_access = true;
-      CREATE authentication_email:runtime_client SET principal = rebase_user:runtime_client, address = 'runtime-client@example.com';
-      CREATE authentication_email:recovery_client SET principal = rebase_user:recovery_client, address = 'recovery-client@example.com';
-      CREATE authentication_email:oauth_client SET principal = rebase_user:oauth_client, address = 'oauth-client@example.com';
-      CREATE authentication_email:oauth_unverified SET principal = rebase_user:oauth_unverified, address = 'oauth-unverified@example.com';
-      CREATE rebase_email_delivery_config:recovery SET owned_by = rebase_group:root, api_key = 'probe-email-api-key',
+      CREATE authentication_email:runtime_client SET owned_by = rebase_user:runtime_client, address = 'runtime-client@example.com';
+      CREATE authentication_email:recovery_client SET owned_by = rebase_user:recovery_client, address = 'recovery-client@example.com';
+      CREATE authentication_email:oauth_client SET owned_by = rebase_user:oauth_client, address = 'oauth-client@example.com';
+      CREATE authentication_email:oauth_unverified SET owned_by = rebase_user:oauth_unverified, address = 'oauth-unverified@example.com';
+      CREATE rebase_email_delivery_config:recovery SET owned_by = rebase_tenant:default, api_key = 'probe-email-api-key',
         from_email = 'recovery@example.com', from_name = 'ReBase Recovery';
-      CREATE rebase_sms_delivery_config:recovery SET owned_by = rebase_group:root, account_sid = 'ACprobe',
+      CREATE rebase_sms_delivery_config:recovery SET owned_by = rebase_tenant:default, account_sid = 'ACprobe',
         auth_token = 'probe-twilio-token', from_number = '+10000000000';
-      CREATE rebase_authentication_delivery_policy:default SET
+      CREATE rebase_authentication_delivery_policy:default SET tenant = rebase_tenant:default,
         email_configuration = rebase_email_delivery_config:recovery,
         phone_configuration = rebase_sms_delivery_config:recovery;
-      CREATE rebase_email_delivery_config:platform SET owned_by = rebase_group:root,
+      CREATE rebase_email_delivery_config:client SET owned_by = rebase_group:runtime_clients,
         from_email = 'client@example.com', from_name = 'Client', api_key = 'customer-brevo-api-key';
     `);
+
+    await state.db.query("UPDATE type::record($id) SET owned_by = rebase_group:runtime_clients;", { id: storageId });
 
     await assert.rejects(
       passwordSignin(state.endpoint, state.namespace, state.database, "no_delivery_user", "no-delivery-password"),
@@ -1149,8 +1160,7 @@ async function main() {
     `, { nonce: crypto.randomUUID() });
 
     const challengeRequest = {
-      namespace: state.namespace,
-      database: state.database,
+      tenant: "rebase_tenant:default",
       identifier: "RECOVERY_USER",
     };
     const recoveryEmailCount = authenticationEmailMessages.length;
@@ -1238,7 +1248,7 @@ async function main() {
     assert(recovered.token.access);
     await recovered.client.close();
 
-    await state.db.query("CREATE authentication_phone:recovery_phone SET principal = rebase_user:recovery_client, number = '+917990910580', priority = 10;");
+    await state.db.query("CREATE authentication_phone:recovery_phone SET owned_by = rebase_user:recovery_client, number = '+917990910580', priority = 10;");
     const phoneMessageCount = authenticationSmsMessages.length;
     const phoneResponse = await appRequest("http://runtime/anonymous/authentication/challenges", {
       method: "POST",
@@ -1446,11 +1456,11 @@ async function main() {
     );
 
     const target = await createAndReload(state.db, "test_primitive", `
-      owned_by = rebase_group:root, a_string = 'Attachment target', a_decimal = 0dec
+      owned_by = rebase_tenant:default, a_string = 'Attachment target', a_decimal = 0dec
     `);
     const targetId = recordId(target);
     const attachment = await createAndReload(state.db, "test_attachment", `
-      owned_by = rebase_group:root, storage_config = type::record($storage_id),
+      owned_by = rebase_tenant:default, storage_config = type::record($storage_id),
       attached_to = type::record($target_id), file_name = 'invoice.pdf',
       media_type = 'application/pdf', byte_length_limit = 0, access_duration = 60
     `, { storage_id: storageId, target_id: targetId });
@@ -1465,7 +1475,7 @@ async function main() {
       access_mode: "upload",
     };
     const sync = await runtime.sync({
-      namespace: state.namespace, database: state.database, id: syncId,
+      id: syncId,
       event: "UPDATE",
       before: beforeSync,
       after: { ...beforeSync, access_mode: "download" },
@@ -1480,11 +1490,11 @@ async function main() {
     assert.match(automaticSync.access_url, /storage\.local\/access/);
 
     const deleteTarget = await createAndReload(state.db, "test_primitive", `
-      owned_by = rebase_group:root, a_string = 'Delete target', a_decimal = 0dec
+      owned_by = rebase_tenant:default, a_string = 'Delete target', a_decimal = 0dec
     `);
     const deleteTargetId = recordId(deleteTarget);
     const deleteCandidate = await createAndReload(state.db, "test_attachment", `
-      owned_by = rebase_group:root, storage_config = type::record($storage_id),
+      owned_by = rebase_tenant:default, storage_config = type::record($storage_id),
       attached_to = type::record($delete_target_id), file_name = 'delete-me.txt',
       media_type = 'text/plain', byte_length_limit = 0, access_duration = 60
     `, { storage_id: storageId, delete_target_id: deleteTargetId });
@@ -1523,7 +1533,7 @@ async function main() {
     assert.equal(cleanupVersions.has(deleteCandidate.object_key), false);
 
     const retryCandidate = await createAndReload(state.db, "test_attachment", `
-      owned_by = rebase_group:root, storage_config = type::record($storage_id),
+      owned_by = rebase_tenant:default, storage_config = type::record($storage_id),
       attached_to = type::record($delete_target_id), file_name = 'retry-delete.txt',
       media_type = 'text/plain', byte_length_limit = 0, access_duration = 60
     `, { storage_id: storageId, delete_target_id: deleteTargetId });
@@ -1558,7 +1568,7 @@ async function main() {
     assert.equal(cleanupObjects.has(retryCandidate.object_key), false);
 
     const razorpayOrder = await createAndReload(state.db, "razorpay_order", `
-      owned_by = rebase_group:root, config = type::record($config_id),
+      owned_by = rebase_tenant:default, config = type::record($config_id),
       amount_paise = 100, currency = 'INR'
     `, { config_id: razorpayConfigId });
     const razorpayId = recordId(razorpayOrder);
@@ -1568,7 +1578,7 @@ async function main() {
     assert(razorpayOrder.provider_created_at);
 
     const automatic = await createAndReload(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Automatic'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Automatic'
     `, { config_id: emailConfigId });
     const automaticId = recordId(automatic);
     let automaticLast;
@@ -1582,15 +1592,15 @@ async function main() {
     assert(automaticFinished.provider_reference);
     assert(emailIdempotencyKeys.includes(String(automaticFinished.execution_id)));
 
-    await state.db.query("REMOVE EVENT rebase_effect_send_brevo_email ON TABLE send_brevo_email;");
+    manualLiveTables.add('send_brevo_email');
     const duplicate = await createAndReload(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Duplicate'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Duplicate'
     `, { config_id: emailConfigId });
     const duplicateId = recordId(duplicate);
     const callsBefore = emailCalls;
     const duplicateResults = await Promise.all([
-      runtime.execute({ namespace: state.namespace, database: state.database, id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
-      runtime.execute({ namespace: state.namespace, database: state.database, id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
+      runtime.execute({ id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
+      runtime.execute({ id: duplicateId }, { attempts: 1, maxAttempts: 5 }),
     ]);
     assert.equal(emailCalls, callsBefore + 1);
     assert(duplicateResults.some((result) => result.state === "succeeded"));
@@ -1606,13 +1616,14 @@ async function main() {
       database: state.database,
       access: "account_code",
       variables: {
+        tenant: "rebase_tenant:default",
         identifier: "runtime-client@example.com",
         code: (await (async () => {
           const previousMessageCount = authenticationEmailMessages.length;
           const response = await appRequest("http://runtime/anonymous/authentication/challenges", {
             method: "POST",
             headers: { "content-type": "application/json", "x-real-ip": "192.0.2.14" },
-            body: JSON.stringify({ namespace: state.namespace, database: state.database, identifier: "runtime-client@example.com" }),
+            body: JSON.stringify({ tenant: "rebase_tenant:default", identifier: "runtime-client@example.com" }),
           });
           assert.equal(response.status, 202);
           const email = await waitForMessage(authenticationEmailMessages, previousMessageCount, "queued password setup email was not delivered");
@@ -1626,14 +1637,14 @@ async function main() {
       const clientCreated = queryResult(await client.query(`
         CREATE ONLY send_brevo_email SET
           owned_by = rebase_user:runtime_client,
-          config = NONE,
+          config = rebase_email_delivery_config:client,
           to = ['client@example.com'],
           subject = 'Client lifecycle'
         RETURN AFTER;
       `));
       const clientId = recordId(clientCreated);
       assert.equal(queryResult(await client.query(
-        "RETURN type::is_none(rebase_email_delivery_config:platform.api_key);",
+        "RETURN type::is_none(rebase_email_delivery_config:client.api_key);",
       )), true);
       const visibleStorage = queryResult(await client.query(`SELECT id, access_key_id, secret_access_key, endpoint, region FROM ${storageId};`))[0];
       assert.equal(String(visibleStorage.id).split(":", 1)[0], "file_storage_config");
@@ -1641,13 +1652,13 @@ async function main() {
       assert.equal(visibleStorage.secret_access_key, undefined);
       assert.equal(visibleStorage.endpoint, undefined);
       assert.equal(visibleStorage.region, undefined);
-      await client.query("UPDATE rebase_email_delivery_config:platform SET api_key = 'client-must-not-write';");
-      assert.equal(queryResult(await state.db.query("RETURN rebase_email_delivery_config:platform.api_key;")), "customer-brevo-api-key");
+      await client.query("UPDATE rebase_email_delivery_config:recovery SET api_key = 'client-must-not-write';");
+      assert.equal(queryResult(await state.db.query("RETURN rebase_email_delivery_config:recovery.api_key;")), "probe-email-api-key");
       assert.notEqual(clientCreated.rebase_cancel_requested, true);
       assert.equal(clientCreated.rebase_outcome, undefined);
       assert.equal(clientCreated.rebase_lease_token, undefined);
       assert.equal(clientCreated.rebase_status, "pending");
-      assert.equal((await runtime.execute({ namespace: state.namespace, database: state.database, id: clientId })).state, "succeeded");
+      assert.equal((await runtime.execute({ id: clientId })).state, "succeeded");
 
       await client.query(`CREATE test_attachment_cleanup SET
         owned_by = rebase_user:runtime_client,
@@ -1697,7 +1708,7 @@ async function main() {
       assert.equal(clientCleanupDone.rebase_outcome, "succeeded");
       assert.equal(storageDeletes, clientDeleteCalls + 1);
 
-      await state.db.query("REMOVE EVENT rebase_operation_test_attachment_cleanup ON TABLE test_attachment_cleanup;");
+      manualLiveTables.add('test_attachment_cleanup');
       const reusableAttachmentId = "test_attachment:cleanup_reuse";
       const reusableInput = `
         owned_by = rebase_user:runtime_client,
@@ -1742,8 +1753,6 @@ async function main() {
         id: recordId(oldCleanupTask),
       });
       assert.equal((await runtime.execute({
-        namespace: state.namespace,
-        database: state.database,
         id: recordId(oldCleanupTask),
       })).state, "succeeded");
       assert.equal(cleanupObjects.has(oldObjectKey), false);
@@ -1760,14 +1769,12 @@ async function main() {
         id: recordId(newCleanupTask),
       });
       assert.equal((await runtime.execute({
-        namespace: state.namespace,
-        database: state.database,
         id: recordId(newCleanupTask),
       })).state, "succeeded");
       assert.equal(cleanupObjects.has(newObjectKey), false);
 
       const cancelCreated = queryResult(await client.query(`CREATE ONLY send_brevo_email SET
-        owned_by = rebase_user:runtime_client, config = NONE,
+        owned_by = rebase_user:runtime_client, config = rebase_email_delivery_config:client,
         to = ['client@example.com'], subject = 'Client cancel' RETURN AFTER;`));
       const cancelId = recordId(cancelCreated);
       const cancelled = queryResult(await client.query("RETURN (UPDATE type::record($id) SET rebase_cancel_requested = true RETURN AFTER)[0];", { id: cancelId }));
@@ -1776,7 +1783,7 @@ async function main() {
       const monotonic = queryResult(await client.query("RETURN (UPDATE type::record($id) SET rebase_cancel_requested = false RETURN AFTER)[0];", { id: cancelId }));
       assert.equal(monotonic.rebase_cancel_requested, true);
       await assert.rejects(
-        client.query(`CREATE send_brevo_email SET owned_by = rebase_user:runtime_client, config = NONE,
+        client.query(`CREATE send_brevo_email SET owned_by = rebase_user:runtime_client, config = rebase_email_delivery_config:client,
           to = ['client@example.com'], subject = 'Bad priority', priority = 0;`),
         /priority|assert/i,
       );
@@ -1785,10 +1792,10 @@ async function main() {
     }
 
     const retryId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Retry'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Retry'
     `, { config_id: emailConfigId });
     failNextEmail = true;
-    const firstRetry = await runtime.execute({ namespace: state.namespace, database: state.database, id: retryId }, { attempts: 1, maxAttempts: 3 });
+    const firstRetry = await runtime.execute({ id: retryId }, { attempts: 1, maxAttempts: 3 });
     assert.equal(firstRetry.action, "ack");
     assert.equal(firstRetry.state, "waiting");
     const secondRetry = await waitFor(async () => {
@@ -1827,13 +1834,11 @@ async function main() {
       },
     });
     const ambiguousId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Ambiguous'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Ambiguous'
     `, { config_id: emailConfigId });
-    assert.equal((await ambiguousRuntime.execute({ namespace: state.namespace, database: state.database, id: ambiguousId })).state, "ambiguous");
+    assert.equal((await ambiguousRuntime.execute({ id: ambiguousId })).state, "ambiguous");
     await state.db.query(`UPDATE ${ambiguousId} SET rebase_attempt = 100, rebase_wake_at = time::now();`);
     const stillAmbiguous = await ambiguousRuntime.reconcileWebhook({
-      namespace: state.namespace,
-      database: state.database,
       id: ambiguousId,
     });
     assert.equal(stillAmbiguous.state, "waiting");
@@ -1841,8 +1846,6 @@ async function main() {
     reconciliationStillAmbiguous = false;
     await state.db.query(`UPDATE ${ambiguousId} SET rebase_wake_at = time::now();`);
     assert.equal((await ambiguousRuntime.reconcileWebhook({
-      namespace: state.namespace,
-      database: state.database,
       id: ambiguousId,
     })).state, "succeeded");
     const reconciledAmbiguous = await store.load(ambiguousId);
@@ -1850,10 +1853,10 @@ async function main() {
     assert.equal(reconciledAmbiguous.provider_state, "reconciled");
 
     const deadId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Dead letter'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Dead letter'
     `, { config_id: emailConfigId });
     failPermanently = true;
-    await runtime.enqueue({ namespace: state.namespace, database: state.database, id: deadId }, { attempts: 1 });
+    await runtime.enqueue({ id: deadId }, { attempts: 1 });
     await waitFor(async () => (await store.load(deadId))?.rebase_outcome === "failed", "permanent failure was not persisted");
     await waitFor(async () => {
       const counts = await queue.deadLetterQueue.getJobCounts("wait", "active", "completed");
@@ -1867,7 +1870,7 @@ async function main() {
     failPermanently = false;
 
     const staleId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Fence'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Fence'
     `, { config_id: emailConfigId });
     const staleRecord = await store.load(staleId);
     const staleIdentity = {
@@ -1894,7 +1897,7 @@ async function main() {
     ), undefined);
 
     const revisionId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Revision transition'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Revision transition'
     `, { config_id: emailConfigId });
     const revisionRecord = await store.load(revisionId);
     const revisionIdentity = {
@@ -1928,7 +1931,7 @@ async function main() {
     }), undefined);
 
     const expiredLeaseId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Expired lease'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Expired lease'
     `, { config_id: emailConfigId });
     const expiredLeaseRecord = await store.load(expiredLeaseId);
     const expiredLeaseIdentity = {
@@ -1954,15 +1957,15 @@ async function main() {
     ), undefined);
 
     const oldEnvelope = {
-      version: 1,
+      version: 2,
       kind: "operation",
-      locator: { namespace: state.namespace, database: state.database, id: staleId },
+      locator: { id: staleId },
       executionId: staleIdentity.executionId,
       revision: staleIdentity.revision,
     };
     await state.db.query(`DELETE ${staleId};`);
     await state.db.query(`CREATE ONLY ${staleId} SET
-      owned_by = rebase_group:root,
+      owned_by = rebase_tenant:default,
       config = type::record($config_id),
       to = ['to@example.com'],
       subject = 'Recreated fence'
@@ -1973,14 +1976,14 @@ async function main() {
     assert.equal((await runtime.execute(oldEnvelope)).state, "stale");
 
     const cancelledId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'], subject = 'Cancelled'
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'], subject = 'Cancelled'
     `, { config_id: emailConfigId });
     await state.db.query("UPDATE type::record($id) SET rebase_cancel_requested = true;", { id: cancelledId });
     const cancelledCalls = emailCalls;
-    assert.equal((await runtime.execute({ namespace: state.namespace, database: state.database, id: cancelledId })).state, "cancelled");
+    assert.equal((await runtime.execute({ id: cancelledId })).state, "cancelled");
     assert.equal(emailCalls, cancelledCalls);
 
-    const body = JSON.stringify({ namespace: state.namespace, database: state.database, id: cancelledId });
+    const body = JSON.stringify({ id: cancelledId });
     const timestamp = String(Date.now());
     const signature = crypto.createHmac("sha256", secret).update(`${timestamp}.${body}`).digest("hex");
     const wake = await appRequest("http://runtime/internal/wake/task", {
@@ -2002,8 +2005,8 @@ async function main() {
       method: "POST",
       headers: { "content-type": "application/json", "x-rebase-timestamp": wrongContextTimestamp, "x-rebase-signature": wrongContextSignature },
       body: wrongContextBody,
-    })).status, 403);
-    const oversizedBody = JSON.stringify({ namespace: state.namespace, database: state.database, id: cancelledId, padding: "x".repeat(300000) });
+    })).status, 400);
+    const oversizedBody = JSON.stringify({ id: cancelledId, padding: "x".repeat(300000) });
     assert.equal((await appRequest("http://runtime/internal/wake/task", {
       method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${secret}` }, body: oversizedBody,
     })).status, 413);
@@ -2069,8 +2072,6 @@ async function main() {
     assert.equal(acceptedReceipt.data.accepted, true);
     assert.equal(acceptedReceipt.data.duplicate, false);
     const receiptLocator = {
-      namespace: state.namespace,
-      database: state.database,
       id: acceptedReceipt.data.receiptId,
     };
     const paidOrder = await waitFor(async () => {
@@ -2140,8 +2141,6 @@ async function main() {
       headers: { "content-type": "application/json", authorization: `Bearer ${secret}` },
       body: JSON.stringify({
         provider: "razorpay",
-        namespace: state.namespace,
-        database: state.database,
         config: razorpayConfigId,
       }),
     });
@@ -2416,13 +2415,13 @@ async function main() {
     }
 
     const oneShotId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'],
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'],
       subject = 'One shot', execute_at = time::now() + 45s, priority = 20
     `, { config_id: emailConfigId });
     const initialOneShot = await store.load(oneShotId);
     assert.equal(initialOneShot.priority, 20);
     const initialRevision = String(initialOneShot.revision);
-    await runtime.enqueue({ namespace: state.namespace, database: state.database, id: oneShotId });
+    await runtime.enqueue({ id: oneShotId });
     const delayedOneShot = await waitFor(async () => (await queue.queue.getJobs(["delayed"]))
       .find((job) => job.data?.locator?.id === oneShotId), "one-shot task was not delayed");
     assert.equal(delayedOneShot.data.revision, initialRevision);
@@ -2434,12 +2433,12 @@ async function main() {
     }, "pending edit did not rotate the task revision");
     assert.equal(laterRevision.priority, 10);
     assert.notEqual(String(laterRevision.revision), initialRevision);
-    const farFuture = await runtime.enqueue({ namespace: state.namespace, database: state.database, id: oneShotId });
+    const farFuture = await runtime.enqueue({ id: oneShotId });
     assert.equal(farFuture.state, "outside-horizon");
 
     await state.db.query(`UPDATE ${oneShotId} SET execute_at = time::now(), priority = 15;`);
     await waitFor(async () => String((await store.load(oneShotId))?.revision) !== String(laterRevision.revision), "reschedule earlier did not rotate the task revision");
-    await runtime.enqueue({ namespace: state.namespace, database: state.database, id: oneShotId });
+    await runtime.enqueue({ id: oneShotId });
     const oneShotDone = await waitFor(async () => {
       const row = await store.load(oneShotId);
       return row?.rebase_outcome === "succeeded" ? row : null;
@@ -2449,7 +2448,7 @@ async function main() {
     assert.equal(staleOneShotDelivery.state, "stale");
 
     const lostHintId = await createId(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id), to = ['to@example.com'],
+      owned_by = rebase_tenant:default, config = type::record($config_id), to = ['to@example.com'],
       subject = 'Recovered hint', execute_at = time::now() + 2m
     `, { config_id: emailConfigId });
     const lostHints = (await queue.queue.getJobs(["delayed", "wait", "prioritized"]))
@@ -2507,9 +2506,9 @@ async function main() {
       const release = deferred();
       gates.set(value, { started, release, result });
       const id = await createId(state.db, "queued_probe", `
-        owned_by = rebase_group:root, value = $value, execute_at = time::now() - 1s
+        owned_by = rebase_tenant:default, value = $value, execute_at = time::now() - 1s
       `, { value });
-      const execution = cancellationRuntime.execute({ namespace: state.namespace, database: state.database, id });
+      const execution = cancellationRuntime.execute({ id });
       await started.promise;
       return { id, release, execution };
     }
@@ -2544,7 +2543,7 @@ async function main() {
     assert.equal(cancellationPublishes.length, 1);
     await state.db.query(`UPDATE ${activeAmbiguous.id} SET rebase_wake_at = time::now();`);
     assert.equal((await cancellationRuntime.reconcileWebhook({
-      namespace: state.namespace, database: state.database, id: activeAmbiguous.id,
+      id: activeAmbiguous.id,
     })).state, "succeeded");
     const reconciledAfterCancel = await store.load(activeAmbiguous.id);
     assert.equal(reconciledAfterCancel.rebase_outcome, "succeeded");
@@ -2583,7 +2582,7 @@ async function main() {
     });
     async function createPageTask(key) {
       await state.db.query(`CREATE ONLY page_probe:${key} SET
-        owned_by = rebase_group:root, value = $value, execute_at = time::now() + 4m;`, { value: key });
+        owned_by = rebase_tenant:default, value = $value, execute_at = time::now() + 4m;`, { value: key });
     }
     await createPageTask("page_10");
     await createPageTask("page_20");
@@ -2630,7 +2629,7 @@ async function main() {
       });
     async function createTerminalRetentionRecord(key, outcome) {
       const id = await createId(state.db, "retention_probe", `
-        owned_by = rebase_group:root, value = $value, execute_at = time::now() - 1d
+        owned_by = rebase_tenant:default, value = $value, execute_at = time::now() - 1d
       `, { value: key });
       await state.db.query(`UPDATE type::record($id) SET
         rebase_outcome = $outcome, rebase_finished_at = time::now() - 1d;`, { id, outcome });
@@ -2643,7 +2642,7 @@ async function main() {
       createTerminalRetentionRecord("retention-old-e", "succeeded"),
     ]);
     const cancelledRetentionId = await createId(state.db, "retention_probe", `
-      owned_by = rebase_group:root, value = 'retention-old-d', execute_at = time::now() - 1d
+      owned_by = rebase_tenant:default, value = 'retention-old-d', execute_at = time::now() - 1d
     `);
     await state.db.query("UPDATE type::record($id) SET rebase_cancel_requested = true;", { id: cancelledRetentionId });
     const cancelledRetention = await store.load(cancelledRetentionId);
@@ -2652,7 +2651,7 @@ async function main() {
     const recentRetentionId = await createTerminalRetentionRecord("retention-recent", "succeeded");
     await state.db.query("UPDATE type::record($id) SET rebase_finished_at = time::now();", { id: recentRetentionId });
     const ambiguousRetentionId = await createId(state.db, "retention_probe", `
-      owned_by = rebase_group:root, value = 'retention-ambiguous', execute_at = time::now() - 40d
+      owned_by = rebase_tenant:default, value = 'retention-ambiguous', execute_at = time::now() - 40d
     `);
     await state.db.query(`UPDATE type::record($id) SET
       rebase_outcome = 'ambiguous', rebase_wake_at = time::now() - 1d;`, { id: ambiguousRetentionId });
@@ -2695,7 +2694,7 @@ async function main() {
     }
     for (const key of ["cursor_a", "cursor_b", "cursor_c"]) {
       await state.db.query(`CREATE ONLY cursor_probe:${key} SET
-        owned_by = rebase_group:root, value = '${key}', execute_at = time::now() + 4m;`);
+        owned_by = rebase_tenant:default, value = '${key}', execute_at = time::now() + 4m;`);
     }
     const firstCursorRuntime = createCursorRuntime();
     assert.deepEqual((await firstCursorRuntime.reconcile({
@@ -2737,7 +2736,7 @@ async function main() {
         },
       });
       const redisRecoveryId = "page_probe:page_redis_recovery";
-      await state.db.query(`CREATE ONLY ${redisRecoveryId} SET owned_by = rebase_group:root,
+      await state.db.query(`CREATE ONLY ${redisRecoveryId} SET owned_by = rebase_tenant:default,
         value = 'redis-recovery', execute_at = time::now() + 4m;`);
       let firstRedisAdmission = null;
       for (let attempt = 0; attempt < 4 && !firstRedisAdmission; attempt += 1) {
@@ -2777,7 +2776,7 @@ async function main() {
     }
 
     const crashedTaskId = "page_probe:page_crashed_worker";
-    await state.db.query(`CREATE ONLY ${crashedTaskId} SET owned_by = rebase_group:root,
+    await state.db.query(`CREATE ONLY ${crashedTaskId} SET owned_by = rebase_tenant:default,
       value = 'recover-after-worker-crash', execute_at = time::now() - 1s;`);
     const beforeCrash = await store.load(crashedTaskId);
     const crashedIdentity = {
@@ -2818,7 +2817,7 @@ async function main() {
       },
     });
     const recoveredExecution = recoveryRuntime.execute({
-      namespace: state.namespace, database: state.database, id: crashedTaskId,
+      id: crashedTaskId,
     });
     await recoveredStarted.promise;
     assert.equal(await store.finalize(
@@ -2838,7 +2837,7 @@ async function main() {
     assert.equal(recoveredTask.result, "recovered-after-worker-crash");
 
     const providerStartedTaskId = "page_probe:page_provider_started_recovery";
-    await state.db.query(`CREATE ONLY ${providerStartedTaskId} SET owned_by = rebase_group:root,
+    await state.db.query(`CREATE ONLY ${providerStartedTaskId} SET owned_by = rebase_tenant:default,
       value = 'recover-ambiguous-after-provider-start', execute_at = time::now() - 1s;`);
     const providerStartedTask = await store.load(providerStartedTaskId);
     const providerStartedIdentity = {
@@ -2889,7 +2888,7 @@ async function main() {
       },
     });
     const providerExecution = providerRecoveryRuntime.execute({
-      namespace: state.namespace, database: state.database, id: providerStartedTaskId,
+      id: providerStartedTaskId,
     });
     await providerStartedSignal.promise;
     const providerInFlight = await store.load(providerStartedTaskId);
@@ -2900,10 +2899,10 @@ async function main() {
     const expiredProviderAttempt = await store.load(providerStartedTaskId);
     assert.equal(expiredProviderAttempt.rebase_status, "ambiguous");
     assert.equal((await providerRecoveryRuntime.enqueue({
-      namespace: state.namespace, database: state.database, id: providerStartedTaskId,
+      id: providerStartedTaskId,
     })).queued, true);
     const providerRecovery = await providerRecoveryRuntime.execute({
-      namespace: state.namespace, database: state.database, id: providerStartedTaskId,
+      id: providerStartedTaskId,
     });
     assert.equal(providerRecovery.state, "ambiguous");
     assert.equal(providerCalls, 1);
@@ -2918,7 +2917,7 @@ async function main() {
     assert.equal(providerQuarantine.rebase_lease_token, undefined);
 
     const cancelledBeforeProviderId = "page_probe:page_cancel_before_provider_start";
-    await state.db.query(`CREATE ONLY ${cancelledBeforeProviderId} SET owned_by = rebase_group:root,
+    await state.db.query(`CREATE ONLY ${cancelledBeforeProviderId} SET owned_by = rebase_tenant:default,
       value = 'cancel-before-provider-start', execute_at = time::now() - 1s;`);
     const preparationStarted = deferred();
     const preparationRelease = deferred();
@@ -2951,7 +2950,7 @@ async function main() {
       options: { allowedContexts: [{ namespace: state.namespace, database: state.database }] },
     });
     const cancelledBeforeProviderExecution = cancelledBeforeProviderRuntime.execute({
-      namespace: state.namespace, database: state.database, id: cancelledBeforeProviderId,
+      id: cancelledBeforeProviderId,
     });
     await preparationStarted.promise;
     await state.db.query(`UPDATE ${cancelledBeforeProviderId} SET rebase_cancel_requested = true;`);
@@ -2992,25 +2991,18 @@ async function main() {
     await failedDirectory.close();
 
     let activeClosed = false;
-    const idleDirectory = createStoreDirectory({
-      idleMs: 1,
-      async connect() {
-        return {
-          async health() { await new Promise((resolve) => setTimeout(resolve, 10)); return true; },
-          async close() { activeClosed = true; },
-        };
-      },
+    const designDirectory = createStoreDirectory({
+      context: { namespace: 'fixed', database: 'design' },
+      async connect() { return { async close() { activeClosed = true; } }; },
     });
-    const activeStore = await idleDirectory.forContext("active", "db");
-    const inFlight = activeStore.health();
-    await new Promise((resolve) => setTimeout(resolve, 3));
-    await idleDirectory.sweep();
+    const activeStore = await designDirectory.forContext();
+    assert.equal(await designDirectory.forContext('fixed', 'design'), activeStore);
+    await assert.rejects(designDirectory.forContext('another', 'design'), /context mismatch/);
+    assert.equal(designDirectory.size(), 1);
     assert.equal(activeClosed, false);
-    await inFlight;
-    await new Promise((resolve) => setTimeout(resolve, 3));
-    await idleDirectory.sweep();
+    await designDirectory.close();
     assert.equal(activeClosed, true);
-    await idleDirectory.close();
+    await assert.rejects(designDirectory.forContext(), /closed/);
 
     const ready = await appRequest("http://runtime/readyz");
     assert.equal(ready.status, 200);
@@ -3064,7 +3056,8 @@ async function main() {
     gatewayRestartRedis = await startRedis();
     gatewayRestartRedisChild = gatewayRestartRedis.child;
     const gatewayRestartPrefix = `rebase-gateway-restart-${crypto.randomUUID()}`;
-    gatewayRestartQueue = createBullMqPort({ url: gatewayRestartRedis.url, prefix: gatewayRestartPrefix });
+    gatewayRestartQueue = createBullMqPort({ url: gatewayRestartRedis.url,
+      prefix: designQueuePrefix(gatewayRestartPrefix, { namespace: state.namespace, database: state.database }) });
     const childPort = await freePort();
     const childEnvironment = {
       ...process.env,
@@ -3168,7 +3161,7 @@ async function main() {
     runtimeChild = null;
 
     const processLossTask = await createAndReload(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id),
+      owned_by = rebase_tenant:default, config = type::record($config_id),
       to = ['process-loss@example.test'], subject = 'Process loss recovery'
     `, { config_id: emailConfigId });
     const processLossTaskId = recordId(processLossTask);
@@ -3285,7 +3278,7 @@ async function main() {
       options: { leaseMs: 1000, allowedContexts: [{ namespace: state.namespace, database: state.database }] },
     });
     const quarantine = await processRecoveryRuntime.execute({
-      namespace: state.namespace, database: state.database, id: processLossTaskId,
+      id: processLossTaskId,
     });
     assert.equal(quarantine.state, "ambiguous");
     const quarantinedRow = await store.load(processLossTaskId);
@@ -3294,7 +3287,7 @@ async function main() {
     assert.equal(providerRequests.size, 1, "worker recovery must not repeat the provider submission");
     assert.equal(providerRequestCount, 1, "provider must receive exactly one submission");
     const processLossRecovered = await processRecoveryRuntime.execute({
-      namespace: state.namespace, database: state.database, id: processLossTaskId,
+      id: processLossTaskId,
     });
     assert.equal(processLossRecovered.state, "succeeded");
     const processLossResult = await store.load(processLossTaskId);
@@ -3311,7 +3304,7 @@ async function main() {
       "gateway for restart recovery did not become ready");
 
     const gatewayRestartTask = await createAndReload(state.db, "send_brevo_email", `
-      owned_by = rebase_group:root, config = type::record($config_id),
+      owned_by = rebase_tenant:default, config = type::record($config_id),
       to = ['gateway-restart@example.test'], subject = 'Gateway restart recovery',
       execute_at = time::now() + 4m
     `, { config_id: emailConfigId });
@@ -3368,6 +3361,7 @@ async function main() {
     await stopChild(gatewayRestartRedisChild);
     if (gatewayRestartRedis?.directory) fs.rmSync(gatewayRestartRedis.directory, { recursive: true, force: true });
     if (httpServer?.listening) await new Promise((resolve) => httpServer.close(resolve));
+    await stopLiveWakeups?.();
     await Promise.all(stops.map((stop) => stop?.()));
     await authenticationRateLimiter.close();
     await queue.close();

@@ -3,17 +3,20 @@
 
 DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
     SIGNIN {
+        IF $tenant = NONE { RETURN NONE; };
+        LET $tenant_id = type::record($tenant);
+        IF record::tb($tenant_id) != 'rebase_tenant' OR !record::exists($tenant_id) { RETURN NONE; };
         LET $identifier_value = string::lowercase(string::trim($identifier ?? ""));
-        LET $email_principal = (SELECT VALUE principal FROM authentication_email
-            WHERE address = $identifier_value
+        LET $email_principal = (SELECT VALUE owned_by FROM authentication_email
+            WHERE tenant = $tenant_id AND address = $identifier_value
               AND verified_revision = revision
-              AND principal.login_access = true)[0];
-        LET $phone_principal = (SELECT VALUE principal FROM authentication_phone
-            WHERE number = $identifier_value
+              AND owned_by.login_access = true)[0];
+        LET $phone_principal = (SELECT VALUE owned_by FROM authentication_phone
+            WHERE tenant = $tenant_id AND number = $identifier_value
               AND verified_revision = revision
-              AND principal.login_access = true)[0];
+              AND owned_by.login_access = true)[0];
         LET $username_principal = (SELECT VALUE id FROM rebase_user
-            WHERE username = $identifier_value AND login_access = true)[0];
+            WHERE tenant = $tenant_id AND username = $identifier_value AND login_access = true)[0];
         LET $principal = IF $email_principal != NONE THEN $email_principal
             ELSE IF $phone_principal != NONE THEN $phone_principal
             ELSE $username_principal END;
@@ -23,9 +26,10 @@ DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
         -- verified. Email and phone candidates already carry that condition.
         IF $email_principal = NONE AND $phone_principal = NONE {
             LET $verified_count = (SELECT VALUE id FROM authentication_email
-                WHERE principal = $principal AND verified_revision = revision).len()
+                WHERE owned_by = $principal AND verified_revision = revision).len()
                 + (SELECT VALUE id FROM authentication_phone
-                WHERE principal = $principal AND verified_revision = revision).len();
+                WHERE owned_by = $principal AND verified_revision = revision).len()
+                + (SELECT VALUE id FROM authentication_passkey WHERE owned_by = $principal).len();
             IF $verified_count = 0 { RETURN NONE; };
         };
 
@@ -42,6 +46,9 @@ DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
 
 DEFINE ACCESS OVERWRITE account_code ON DATABASE TYPE RECORD
     SIGNIN {
+        IF $tenant = NONE { RETURN NONE; };
+        LET $tenant_id = type::record($tenant);
+        IF record::tb($tenant_id) != 'rebase_tenant' OR !record::exists($tenant_id) { RETURN NONE; };
         LET $identifier_value = string::lowercase(string::trim($identifier ?? ""));
         LET $code_value = string::trim($code ?? "");
         LET $password_action_value = string::lowercase(string::trim($password_action ?? "keep"));
@@ -51,11 +58,11 @@ DEFINE ACCESS OVERWRITE account_code ON DATABASE TYPE RECORD
         IF !string::matches($code_value, /^[0-9]{6}$/) { RETURN NONE; };
 
         LET $email_identity = (SELECT * FROM authentication_email
-            WHERE address = $identifier_value)[0];
+            WHERE tenant = $tenant_id AND address = $identifier_value)[0];
         LET $phone_identity = (SELECT * FROM authentication_phone
-            WHERE number = $identifier_value)[0];
+            WHERE tenant = $tenant_id AND number = $identifier_value)[0];
         LET $username_principal = (SELECT VALUE id FROM rebase_user
-            WHERE username = $identifier_value AND login_access = true)[0];
+            WHERE tenant = $tenant_id AND username = $identifier_value AND login_access = true)[0];
         LET $username_challenge = (SELECT * FROM authentication_challenge
             WHERE principal = $username_principal
               AND consumed_at = NONE
@@ -67,7 +74,7 @@ DEFINE ACCESS OVERWRITE account_code ON DATABASE TYPE RECORD
             ELSE IF $phone_identity != NONE THEN $phone_identity
             ELSE $username_identity END;
         IF $identity = NONE { RETURN NONE; };
-        LET $account = (SELECT * FROM type::record($identity.principal))[0];
+        LET $account = (SELECT * FROM type::record($identity.owned_by))[0];
         LET $challenge = (SELECT * FROM authentication_challenge
             WHERE target = $identity.id)[0];
         IF $account = NONE OR $challenge = NONE OR $account.login_access != true

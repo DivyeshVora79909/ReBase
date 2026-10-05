@@ -87,6 +87,11 @@ async function main() {
   schema = extendFunction(schema, 'fn::rebase::root_key_type', (body) => body.replace(
     "THROW 'TREE_UNKNOWN_ROOT'",
     "IF record::tb($link.rid) = 'h7_account' AND $link.slot IN ['z_stock', 'z_gross_input'] { RETURN 'datetime'; };\nTHROW 'TREE_UNKNOWN_ROOT'"));
+  // These handwritten temporal roots permit independent equal-time batches,
+  // matching @rebase-tree-duplicates in the compiled accounting profile.
+  schema = extendFunction(schema, 'fn::rebase::root_unique', (body) => body.replace(
+    "THROW 'TREE_UNKNOWN_ROOT'",
+    "IF record::tb($link.rid) = 'h7_account' AND $link.slot IN ['z_stock', 'z_gross_input'] { RETURN false; };\nTHROW 'TREE_UNKNOWN_ROOT'"));
   schema = extendFunction(schema, 'fn::rebase::membership_allowed', (body) => body.replace(
     'RETURN false;',
     "IF record::tb($link.rid) = 'h7_batch' AND $owner.rid = h7_account:zero AND $owner.slot IN ['z_stock', 'z_gross_input'] { RETURN $link.slot IN ['z_stock_member', 'z_gross_member']; };\nRETURN false;"));
@@ -117,6 +122,7 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
       DEFINE TABLE h7_account SCHEMAFULL;
       DEFINE FIELD name ON h7_account TYPE string;

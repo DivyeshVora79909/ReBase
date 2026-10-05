@@ -76,7 +76,7 @@ DEFINE FIELD OVERWRITE source_quantity ON h3c_header TYPE decimal VALUE $this.li
 DEFINE FIELD OVERWRITE available_quantity ON h3c_header TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE depth ON h3c_header TYPE int VALUE 0 COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE root ON h3c_header TYPE record<h3c_header> VALUE $this.id COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_deliveries ON h3c_header TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_deliveries ON h3c_header TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE h3c_package SCHEMAFULL COMMENT '@rebase-validate fn::h3c::package_validate';
 DEFINE FIELD OVERWRITE parent ON h3c_package TYPE record<h3c_header | h3c_package> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';

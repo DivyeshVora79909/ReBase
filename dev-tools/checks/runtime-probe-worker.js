@@ -49,8 +49,6 @@ async function main() {
     if (message?.type !== "run" || typeof message.taskId !== "string") return;
     try {
       const result = await runtime.execute({
-        namespace: process.env.SURREAL_NAMESPACE,
-        database: process.env.SURREAL_DATABASE,
         id: message.taskId,
       });
       process.send?.({ type: "done", result });

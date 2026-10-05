@@ -58,7 +58,7 @@ DEFINE FIELD OVERWRITE to_account ON stock_in TYPE record<stock_account> REFEREN
 DEFINE FIELD OVERWRITE quantity ON stock_in TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON stock_in TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_to ON stock_in TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history';
-DEFINE FIELD OVERWRITE z_billing ON stock_in TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_billing ON stock_in TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE TABLE OVERWRITE stock_out SCHEMAFULL
     COMMENT '@rebase-members fn::accounting::stock_out_members @rebase-validate fn::accounting::stock_out_validate';
@@ -68,9 +68,9 @@ DEFINE FIELD OVERWRITE to_party ON stock_out TYPE record<rebase_user | organizat
 DEFINE FIELD OVERWRITE quantity ON stock_out TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON stock_out TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z_from ON stock_out TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history';
-DEFINE FIELD OVERWRITE z_billing ON stock_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_billing ON stock_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_return_grant ON stock_out TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_out.z_returns';
-DEFINE FIELD OVERWRITE z_returns ON stock_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_returns ON stock_out TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 DEFINE FUNCTION OVERWRITE fn::accounting::stock_return_members($row: object) {
     RETURN [

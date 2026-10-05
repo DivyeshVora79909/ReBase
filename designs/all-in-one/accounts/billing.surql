@@ -6,8 +6,8 @@ DEFINE FIELD OVERWRITE a_recipient ON invoice TYPE record<money_account> REFEREN
 DEFINE FIELD OVERWRITE a_effective_at ON invoice TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_number ON invoice TYPE option<string> COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z20_ctx ON invoice TYPE { issuer: record<money_account>, recipient: record<money_account>, currency: record<currency>, issued_at: datetime } VALUE { issuer: $this.a_issuer, recipient: $this.a_recipient, currency: $this.a_issuer.a_currency, issued_at: $this.a_effective_at } COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_book ON invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE invoice_number ON invoice FIELDS a_issuer, a_number UNIQUE;
+DEFINE FIELD OVERWRITE z_book ON invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE invoice_number ON invoice FIELDS tenant, a_issuer, a_number UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::invoice::validate($row: object) {
     IF record::tb($row.a_issuer.a_entity) != 'organization' OR record::tb($row.a_recipient.a_entity) != 'organization' OR $row.a_issuer = $row.a_recipient { THROW 'CALC_INVOICE_PARTIES'; };
@@ -57,7 +57,7 @@ DEFINE FIELD OVERWRITE a_amount ON tax_assessment TYPE decimal ASSERT $value > 0
 DEFINE FIELD OVERWRITE a_effective_at ON tax_assessment TYPE datetime COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_description ON tax_assessment TYPE string DEFAULT '' COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE z20_ctx ON tax_assessment TYPE { origin: record<tax_assessment>, origin_at: datetime, account: record<money_account>, party: record<money_account>, kind: string, currency: record<currency>, amount: decimal } VALUE fn::tax::base($this.id, $this.a_tax_account, $this.a_amount, $this.a_effective_at) COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_history ON tax_assessment TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_history ON tax_assessment TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_claim ON tax_assessment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner money_account.z_book';
 DEFINE FIELD OVERWRITE z_party ON tax_assessment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner money_account.z_book';
 DEFINE FIELD OVERWRITE z_original ON tax_assessment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tax_assessment.z_history';

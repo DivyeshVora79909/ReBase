@@ -5,6 +5,40 @@ It uses ordinary Solid components, TanStack Router/Query and the native SurrealD
 SDK. This document describes code that exists, with further work in the
 [deferred-work map](deferred-work.md).
 
+## Tenant backend target (implementation deferred)
+
+The backend contract and remaining native-engine limit are recorded in the
+[2026-10-05 evidence](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json).
+MetaSol remains unchanged at `ada483e`; this section is its migration target.
+
+A public connection profile identifies one fixed design namespace/database.
+The selected tenant belongs to the authenticated session inside that design;
+it is no longer represented by choosing a database. Include canonical tenant
+identity in route/session/token/query scoping together with normalized endpoint,
+design context, access method and epoch. Changing tenant clears old session
+state and cached data even when the SDK connection can be reused.
+
+Every signin path supplies tenant. Email/phone/passkey identities use owned_by;
+remove visibility controls and old descendant-array assumptions. Native
+permissions remain authoritative; explicit tenant/economic-entity filters can
+reduce query candidates. Only declared published tree paths can use bounded
+seek/page cursors. Keep native key and Decimal values, revision-aware cursors,
+and epoch checks on all late queries/mutations/live notifications.
+
+Record-scoped materialized views can contain several visible authorization
+groups for one business key. Use their declared policy and native permissions
+when reading or combining these groups. Carry the documented SurrealDB 3.3.0
+ID-order scan workaround into affected source queries; do not hide duplicate
+rows with client deduplication.
+
+Sales tax entry uses components on each priced invoice line and exposes delivery,
+invoice, tax-account, currency and rule provenance. One physical delivery may be
+billed in several portions; each portion rounds separately at the issue timestamp.
+Invoice-wide components remain separate inputs. Selecting both levels posts both
+sets of taxes, so the form must make that choice explicit.
+The current browser code has not been changed or reverified for these contracts.
+The following sections retain its 2026-10-03 implementation description.
+
 ## Context ownership
 
 | Context | Owns | Lifetime | Does not own |

@@ -7,7 +7,7 @@
     "name": { "type": "string", "minLength": 2 },
     "parents": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^(rebase_user|rebase_group):[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
       "minItems": 1,
       "maxItems": 5,
       "uniqueItems": true
@@ -68,12 +68,12 @@
     },
     "a_associated_primitive": {
       "type": "string",
-      "pattern": "^test_primitive:[a-z0-9-]+$",
+      "pattern": "^test_primitive:.+$",
       "x-rebase-optional-probability": 0.35
     },
     "a_partner_groups": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^rebase_group:[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^rebase_group:.+$" },
       "minItems": 0,
       "maxItems": 4,
       "uniqueItems": true,

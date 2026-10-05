@@ -1,7 +1,59 @@
 # Instructions for future changes
 
-This frontend was implemented directly. These prompts are for later maintenance
-and extension, not a replacement for the delivered application.
+The tenant backend migration below takes precedence. Other prompts apply after
+that compatibility packet; historical frontend tests do not establish it.
+Start with the [backend execution handoff](../rebase-system/tenant-tree-handoff.md)
+and its [2026-10-05 verification](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json).
+Backend acceptance and the lead review precede this separate frontend migration.
+
+## Tenant backend migration — next required packet
+
+```text
+Continue in ReBase and the separate ignored MetaSol repository. Inspect both
+Git trees. The backend tenant/tree redesign is newer than the existing browser
+implementation; start with designs/rebase-system/tenant-tree-redesign.md,
+ordered-tree-contract.md, tenant-authentication.md, single-design-runtime.md, current auth source and
+designs/all-in-accounting/claims/invoices.surql. Read the 2026-10-05 backend
+evidence and compare its source hashes to the checkout before reusing results.
+
+Keep fixed namespace/database in public design configuration. Make tenant an
+explicit signin/session choice within that design. Scope routes, credentials,
+Query keys and late-response epoch guards by canonical tenant plus endpoint,
+design and access method. Do not reuse a token/cache across tenant changes.
+Pass tenant for password, code, OAuth and passkey signin. Use the new public
+challenge/passkey routes, retain exact native IDs/Decimal and one-use exchange
+semantics. Identity rows use owned_by. Remove visibility UI and old root-group
+or descendant-array assumptions; current native permissions decide authority.
+
+Use explicit tenant filters to narrow normal native table queries. For a sort
+path declared and published by the design, use bounded tree seek/page rather
+than an unbounded chain or one HTTP request per link. Preserve cursor key types
+and reset pages on incompatible root revisions. Never read private managed
+slots/tables to construct a financial ledger in the browser.
+
+Record-scoped materialized views can return multiple visible groups for one
+business key. Respect their owner/reader policy and generated computed-field
+permissions; tenant-published aggregates are an explicit backend contract.
+Carry the SurrealDB 3.3.0 ID-order scan limitation from ordered-tree-contract.md:
+affected native source queries use WITH NOINDEX ORDER BY id until a verified
+replacement is available. Compare complete results; do not hide duplicate rows
+with client deduplication. The primary scan has no indexed-performance promise.
+
+Update invoice forms/projections to distinguish delivery tax components from
+explicit invoice-wide variants. Show delivery, invoice, tax account, currency
+and rule provenance. A physical delivery may have multiple priced portions;
+rounding and tax recognition belong to each line at the issue timestamp. Make
+empty, line-only, invoice-only and combined input modes explicit: selecting
+both posts both. Keep the backend responsible for calculations and final
+transaction validation; don't reimplement tax policy in client code.
+
+Finish one simple tenant-aware login/accounting slice first, using ordinary
+Solid modules and direct SDK/library APIs. Prove two tenants in the SAME database,
+including identical email addresses, failed cross-tenant access, role revocation,
+tenant switching while a response is pending, and native write rollback.
+Then repair the existing browser suite and update source contracts/evidence.
+Do not deploy or call real providers. No generic registry/DSL/form framework.
+```
 
 ## Start from the actual checkout
 

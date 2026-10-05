@@ -22,6 +22,7 @@ alone do not define different execution recipes.
 |---|---|
 | [Blueprint](./blueprint.md) | Current identity/effect model, validation stages, exchange/tax contracts, temporal limits and extension rules. |
 | [Implementation handoff](./implementation-handoff.md) | Ordered H0–H8 tasks, source evidence, proof gates and continuation instruction for smaller models. |
+| [Delivery taxes](./delivery-taxes.md) | Per-delivery decimal bases, managed tax/compound outputs, four-root participation, tenant/currency checks and the separate legacy invoice policies. |
 | [Context map](./context-map.md) | Focused reading route and evidence-preserving compression procedure. |
 | [Plan and checkpoint history](./plan.md) | Earlier A1/A2 implementation evidence and retained detailed acceptance matrix. |
 

@@ -1,5 +1,5 @@
-const PRINCIPAL_TABLES = Object.freeze({ user: "rebase_user", group: "rebase_group" });
-const PRINCIPAL_NAMES = Object.freeze([PRINCIPAL_TABLES.user, PRINCIPAL_TABLES.group]);
+const PRINCIPAL_TABLES = Object.freeze({ tenant: "rebase_tenant", user: "rebase_user", group: "rebase_group" });
+const PRINCIPAL_NAMES = Object.freeze(Object.values(PRINCIPAL_TABLES));
 
 function validatePrincipalTables(schema) {
   for (const table of PRINCIPAL_NAMES) {

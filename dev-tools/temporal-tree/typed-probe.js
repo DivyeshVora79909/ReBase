@@ -21,6 +21,15 @@ const snapshot = q => q(`RETURN {
     privateBoards: (SELECT * FROM private_board ORDER BY id), privateFacts: (SELECT * FROM private_fact ORDER BY id)
 };`);
 
+async function accessClient(env, access) {
+  const response = await fetch(`${env.server.url}/signin`, { method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ns: 'temporal_probe', db: 'fixture', ac: access }) });
+  const { token } = await response.json();
+  assert(token, `record access ${access} returned no token`);
+  return client(env.server.url, 'fixture', token);
+}
+
 async function setup() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-typed-tree-'));
   let server;
@@ -60,7 +69,7 @@ function verify(data) {
     const stage = stages.get(row.a_stage);
     assert.equal(row.z20_code, stage?.a_code, `derived code ${row.id}`);
     assert.equal(row.z10_scale, stage?.a_scale, `derived scale ${row.id}`);
-    const scope = { scope: row.owned_by, visible: row.visibility };
+    const scope = { scope: row.owned_by };
     if (row.a_history && row.a_effective_at) add(row, 'rb_history', row.a_history, 'rb_history', row.a_effective_at,
       { weight: Number(row.a_weight) }, scope, { occurred: row.a_effective_at });
     if (row.a_ranking && stage) add(row, 'rb_rank', row.a_ranking,
@@ -69,7 +78,7 @@ function verify(data) {
   }
   for (const row of data.archiveFacts) {
     if (row.a_code !== undefined) add(row, 'rb_archive', row.a_owner, 'rb_priority', row.a_code,
-      { weight: 1 }, { scale: data.archives.find(owner => owner.id === row.a_owner).a_scale, scope: row.owned_by, visible: row.visibility });
+      { weight: 1 }, { scale: data.archives.find(owner => owner.id === row.a_owner).a_scale, scope: row.owned_by });
   }
   for (const row of data.privateFacts) {
     for (const [slot, root] of [['rb_hidden', 'rb_hidden'], ['rb_owner', 'rb_owner'], ['rb_private', 'rb_public']]) {
@@ -82,6 +91,10 @@ function verify(data) {
 async function queries(q, groups) {
   const requests = [], expected = [];
   for (const { owner, entries } of groups.values()) {
+    // These roots intentionally include hidden/member-only slots. Their exact
+    // publication and traversal behavior is exercised in permissions().
+    // The ACL cases below separately require these roots to reject traversal.
+    if (owner.rid.startsWith('private_board:') || owner.rid === 'stage_board:hidden') continue;
     const read = (operation, argument) => `fn::tree::read(${owner.rid}, '${owner.slot}', '${operation}', ${argument})`;
     requests.push(read('summary', '[]')); expected.push(oracle.scan(entries));
     for (const k of new Set([0, 1, Math.ceil(entries.length / 2), entries.length, entries.length + 1])) {
@@ -116,22 +129,14 @@ async function queries(q, groups) {
 
 async function permissions(env, reject) {
   const q = env.query;
-  await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_group:root];
-    CREATE rebase_user:stranger SET name='Stranger', parents=[rebase_group:root];
+  await q(`CREATE rebase_user:reader SET name='Reader', parents=[rebase_tenant:default];
+    CREATE rebase_user:stranger SET name='Stranger', parents=[rebase_tenant:default];
     DEFINE ACCESS typed_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:reader;
     DEFINE ACCESS typed_stranger ON DATABASE TYPE RECORD SIGNIN rebase_user:stranger;
     CREATE stage_board:hidden SET owned_by=rebase_user:stranger, a_scale=stage_scale:v1;
-    CREATE private_board:example SET owned_by=rebase_user:reader;
+    CREATE private_board:example SET owned_by=rebase_tenant:default, a_reader=rebase_user:reader;
     CREATE private_fact:example SET owned_by=rebase_user:reader, a_owner=private_board:example;`);
-  const signin = async access => {
-    const response = await fetch(`${env.server.url}/signin`, { method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ns: 'temporal_probe', db: 'fixture', ac: access }) });
-    const { token } = await response.json(); assert(token);
-    return client(env.server.url, 'fixture', token);
-  };
-  const reader = await signin('typed_reader'), stranger = await signin('typed_stranger');
-  await reject('UPDATE stage_board:alpha SET visibility=true;', /TYPED_READ_SCOPE/);
+  const reader = await accessClient(env, 'typed_reader'), stranger = await accessClient(env, 'typed_stranger');
   await reject('UPDATE stage_board:alpha SET owned_by=rebase_user:stranger;', /TYPED_READ_SCOPE/);
   await reject('UPDATE archive_fact:one SET owned_by=rebase_user:stranger;', /TYPED_READ_SCOPE/);
   for (const selectPolicy of ['readers', 'owner']) {
@@ -139,6 +144,9 @@ async function permissions(env, reject) {
     await applySchema(q, generateBundle(env.materials, { selectPolicy }).bundle);
     assert.deepEqual(await snapshot(q), before, `reapply populated ${selectPolicy} policy`);
     assert((await reader("RETURN fn::tree::read(stage_board:alpha,'rb_rank','summary',[]);")).count > 0);
+    const page = await reader("RETURN fn::tree::read(stage_board:alpha,'rb_rank','page',[2]);");
+    assert.equal(page.items.length, 2);
+    assert(Array.isArray(page.next));
     assert.equal(await reader("RETURN fn::tree::read(private_board:example,'rb_owner','summary',[]).count;"), 1);
     assert.equal(await stranger("RETURN fn::tree::read(private_board:example,'rb_public','summary',[]).count;"), 1);
     const fields = await reader('SELECT * FROM ONLY private_board:example;');
@@ -150,13 +158,16 @@ async function permissions(env, reject) {
     assert.equal(await reader('SELECT VALUE rb_private.key FROM ONLY private_fact:example;'), null);
     for (const [user, sql, pattern] of [
       [reader, "RETURN fn::tree::read(stage_board:hidden,'rb_rank','summary',[]);", /permission|not allowed/i],
-      [reader, "RETURN fn::tree::read(private_board:example,'rb_hidden','summary',[]);", /MISSING_SLOT/],
-      [stranger, "RETURN fn::tree::read(private_board:example,'rb_owner','summary',[]);", /MISSING_SLOT/],
-      [reader, "RETURN fn::tree::get({rid:private_fact:example,slot:'rb_private'});", /MISSING_SLOT/],
-      [reader, "RETURN fn::tree::get({rid:private_fact:example,slot:'rb_private.summary'});", /MISSING_SLOT/],
-      [reader, "RETURN fn::tree::get({rid:private_board:example,slot:'rb_hidden.summary'});", /MISSING_SLOT/],
-      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','select',[1]);", /MISSING_SLOT/],
-      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','before',[2]);", /MISSING_SLOT/],
+      [reader, "RETURN fn::tree::read(stage_board:hidden,'rb_rank','page',[2]);", /permission|not allowed/i],
+      [reader, "RETURN fn::tree::read(private_board:example,'rb_hidden','summary',[]);", /Tree read not allowed/],
+      [stranger, "RETURN fn::tree::read(private_board:example,'rb_owner','summary',[]);", /Tree read not allowed/],
+      [reader, "RETURN fn::tree::get({rid:private_fact:example,slot:'rb_private'});", /permission|not allowed/i],
+      [reader, "RETURN fn::tree::get({rid:private_fact:example,slot:'rb_private.summary'});", /permission|not allowed/i],
+      [reader, "RETURN fn::tree::get({rid:private_board:example,slot:'rb_hidden.summary'});", /permission|not allowed/i],
+      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','select',[1]);", /Tree read not allowed/],
+      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','before',[2]);", /Tree read not allowed/],
+      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','page',[2]);", /Tree read not allowed/],
+      [reader, "RETURN fn::tree::read(private_board:example,'rb_public','find',[1]);", /Tree read not allowed/],
       [reader, "RETURN fn::tree::patch({rid:stage_board:alpha,slot:'rb_rank'},{root:NONE});", /permission|not allowed/i],
     ]) await reject(sql, pattern, user);
     const stored = await snapshot(q);
@@ -164,8 +175,8 @@ async function permissions(env, reject) {
       UPDATE stage_fact:anchor SET rb_rank.owner={rid:stage_archive:alpha,slot:'rb_priority'}, rb_rank.summary.count=999;`);
     assert.deepEqual(await snapshot(q), stored, 'native ACL protects nested structural updates');
   }
-  await reader(`CREATE stage_board:forged SET owned_by=rebase_group:root, a_scale=stage_scale:v1, rb_rank=stage_board:alpha.rb_rank;
-    CREATE stage_fact:authenticated SET owned_by=rebase_group:root, a_history=stage_board:alpha,
+  await reader(`CREATE stage_board:forged SET owned_by=rebase_tenant:default, a_scale=stage_scale:v1, rb_rank=stage_board:alpha.rb_rank;
+    CREATE stage_fact:authenticated SET owned_by=rebase_tenant:default, a_history=stage_board:alpha,
       a_ranking=stage_board:alpha, a_stage=stage_code:low, a_effective_at=d'${at(8)}',
       z20_code=999, rb_rank=stage_fact:anchor.rb_rank;`);
   const data = await snapshot(q); verify(data);
@@ -184,28 +195,31 @@ async function main() {
     assert.deepEqual(await snapshot(q), before, 'rejection restores sources, derived fields, slots, roots and revisions');
     verify(before); rejections++;
   };
-  const create = (id, stage, tick, extra = '') => mutate(`CREATE stage_fact:${id} SET owned_by=rebase_group:root,
+  const create = (id, stage, tick, extra = '') => mutate(`CREATE stage_fact:${id} SET owned_by=rebase_tenant:default,
     a_history=stage_board:alpha, a_ranking=stage_board:alpha, a_stage=stage_code:${stage},
     a_effective_at=d'${at(tick)}'${extra};`);
   try {
+    await q(`CREATE rebase_user:tree_reader SET name='Tree reader', parents=[rebase_tenant:default];
+      DEFINE ACCESS typed_tree_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:tree_reader;`);
+    const treeReader = await accessClient(env, 'typed_tree_reader');
     const version = execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim();
     console.log(`Compiled typed trees: SurrealDB ${version}, Node ${process.version}, ${env.server.engine}`);
-    await q("CREATE stage_scale:v1 SET owned_by=rebase_group:root, a_name='pipeline', a_version=1; CREATE stage_scale:v2 SET owned_by=rebase_group:root, a_name='pipeline', a_version=2;");
+    await q("CREATE stage_scale:v1 SET owned_by=rebase_tenant:default, a_name='pipeline', a_version=1; CREATE stage_scale:v2 SET owned_by=rebase_tenant:default, a_name='pipeline', a_version=2;");
     for (const [id, code, scale] of [['low', -10, 'v1'], ['zero', 0, 'v1'], ['ten', 10, 'v1'], ['high', 30, 'v1'],
       ['min', -9007199254740991, 'v1'], ['max', 9007199254740991, 'v1'], ['v2', 100, 'v2']]) {
-      await q(`CREATE stage_code:${id} SET owned_by=rebase_group:root, a_scale=stage_scale:${scale}, a_code=${code}, a_label='${id}';`);
+      await q(`CREATE stage_code:${id} SET owned_by=rebase_tenant:default, a_scale=stage_scale:${scale}, a_code=${code}, a_label='${id}';`);
     }
-    for (const name of ['alpha', 'beta', 'limited', 'v2']) await mutate(`CREATE stage_board:${name} SET owned_by=rebase_group:root,
+    for (const name of ['alpha', 'beta', 'limited', 'v2']) await mutate(`CREATE stage_board:${name} SET owned_by=rebase_tenant:default,
       a_scale=stage_scale:${name === 'v2' ? 'v2' : 'v1'}, a_limit=${name === 'limited' ? 0 : 100};`);
-    await mutate('CREATE stage_archive:alpha SET owned_by=rebase_group:root, a_scale=stage_scale:v1;');
-    await mutate('CREATE archive_fact:one SET owned_by=rebase_group:root, a_owner=stage_archive:alpha, a_code=2;');
+    await mutate('CREATE stage_archive:alpha SET owned_by=rebase_tenant:default, a_scale=stage_scale:v1;');
+    await mutate('CREATE archive_fact:one SET owned_by=rebase_tenant:default, a_owner=stage_archive:alpha, a_code=2;');
     for (const [id, stage, tick] of [['anchor', 'low', 3], ['moving', 'ten', 1], ['a_tie', 'ten', 5], ['z_tie', 'ten', 5],
       ['zero', 'zero', 9], ['minimum', 'min', 2], ['maximum', 'max', 2]]) await create(id, stage, tick);
     let data = await snapshot(q);
     const groups = verify(data);
     assert.deepEqual(groups.get('stage_board:alpha/rb_rank').entries.filter(entry => entry.key[0] === 10).map(entry => entry.link.rid),
       ['stage_fact:a_tie', 'stage_fact:moving', 'stage_fact:z_tie']);
-    reads += await queries(q, groups);
+    reads += await queries(treeReader, groups);
 
     const history = data.boards.find(row => row.id === 'stage_board:alpha').rb_history;
     data = await mutate('UPDATE stage_fact:moving SET a_stage=stage_code:high;');
@@ -230,9 +244,8 @@ async function main() {
       'UPDATE stage_scale:v1 SET a_version=3;', 'UPDATE stage_board:alpha SET a_scale=stage_scale:v2;']) {
       await reject(sql, /read.?only/i);
     }
-    await reject('UPDATE stage_fact:anchor SET visibility=true;', /TYPED_READ_SCOPE/);
     await reject('UPDATE stage_fact:anchor SET a_ranking=stage_board:limited;', /TYPED_OWNER_LIMIT/);
-    await reject(`CREATE stage_fact:rejected SET owned_by=rebase_group:root, a_history=stage_board:alpha,
+    await reject(`CREATE stage_fact:rejected SET owned_by=rebase_tenant:default, a_history=stage_board:alpha,
       a_ranking=stage_board:limited, a_stage=stage_code:low, a_effective_at=d'${at(1)}';`, /TYPED_OWNER_LIMIT/);
     await reject('UPDATE stage_board:alpha SET a_limit=0;', /TYPED_OWNER_LIMIT/);
     await reject('DELETE stage_board:alpha;', /reference|TREE_OWNER_NOT_EMPTY/i);
@@ -242,13 +255,13 @@ async function main() {
 
     for (const invalid of ["'high'", "d'2026-09-25T00:00:00Z'", '1.5dec', '1dec', 'true', 'NULL', '9007199254740992', '-9007199254740992']) {
       await reject(`UPDATE archive_fact:one SET a_code=${invalid};`, /a_code|int/i);
-      await reject(`CREATE stage_code:invalid SET owned_by=rebase_group:root, a_scale=stage_scale:v1, a_code=${invalid}, a_label='invalid';`, /a_code|int/i);
+      await reject(`CREATE stage_code:invalid SET owned_by=rebase_tenant:default, a_scale=stage_scale:v1, a_code=${invalid}, a_label='invalid';`, /a_code|int/i);
     }
     for (const [slot, argumentsList] of [
       ['rb_rank', ['[]', '[1.5dec]', '[1dec]', "['10']", `[d'${at(0)}']`, '[true]', '[NONE]', '[NULL]', '[9007199254740992]',
         '[-9007199254740992]', "[10, 'stage_fact:anchor', 1]", '[10, 1]', "[10, 'x', 'rb_rank', 'extra']"]],
       ['rb_history', ['[]', '[1]', `['${at(0)}']`, '[NONE]', `[d'${at(0)}','x',1]`]],
-    ]) for (const args of argumentsList) await reject(`RETURN fn::tree::read(stage_board:alpha,'${slot}','before',${args});`, /TREE_READ_KEY/);
+    ]) for (const args of argumentsList) await reject(`RETURN fn::tree::read(stage_board:alpha,'${slot}','before',${args});`, /TREE_READ_KEY/, treeReader);
     for (const [operation, argument, error] of [
       ['summary', '[1]', /TREE_READ_ARGUMENT/], ['select', '[1.5dec]', /TREE_READ_ARGUMENT/], ['select', '[1dec]', /TREE_READ_ARGUMENT/],
       ['select', "['1']", /TREE_READ_ARGUMENT/], ['select', '[]', /TREE_READ_ARGUMENT/], ['select', '[1,2]', /TREE_READ_ARGUMENT/],
@@ -256,8 +269,8 @@ async function main() {
       ['percentile', "['0.5']", /TREE_READ_ARGUMENT/], ['percentile', '[]', /TREE_READ_ARGUMENT/],
       ['range', '[[0]]', /TREE_READ_KEY/], ['range', '[[0], [1dec]]', /TREE_READ_KEY/], ['range', '[0, 1]', /TREE_READ_KEY/],
       ['unknown', '[]', /TREE_UNKNOWN_OPERATION/],
-    ]) await reject(`RETURN fn::tree::read(stage_board:alpha,'rb_rank','${operation}',${argument});`, error);
-    await reject("RETURN fn::tree::read(stage_board:alpha,'rb_priority','summary',[]);", /TREE_UNKNOWN_ROOT/);
+    ]) await reject(`RETURN fn::tree::read(stage_board:alpha,'rb_rank','${operation}',${argument});`, error, treeReader);
+    await reject("RETURN fn::tree::read(stage_board:alpha,'rb_priority','summary',[]);", /Tree read not allowed/, treeReader);
     await reject("RETURN fn::tree::select({rid:stage_board:alpha,slot:'rb_rank'},1.5dec,false);", /TREE_READ_ARGUMENT/);
     await reject("RETURN fn::tree::before({rid:stage_board:alpha,slot:'rb_rank'},[1.5dec]);", /TREE_READ_KEY/);
     await reject("RETURN fn::tree::range({rid:stage_board:alpha,slot:'rb_rank'},[0],[1dec]);", /TREE_READ_KEY/);
@@ -305,7 +318,7 @@ async function main() {
           a_effective_at=d'${at(Math.floor(random() * 30))}', a_weight=${Math.floor(random() * 11) - 5}dec;`);
       }
     }
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(treeReader, verify(await snapshot(q)));
     console.log('PASS 56 deterministic mixed-order mutations reconstructed from authoritative source fields (seed 250925)');
 
     await mutate('UPDATE stage_board:limited SET a_limit=1;');
@@ -314,7 +327,7 @@ async function main() {
       const rid = `stage_fact:contender_${i}`;
       for (let retry = 0; ; retry++) {
         try {
-          await q(`CREATE ${rid} SET owned_by=rebase_group:root, a_history=stage_board:beta,
+          await q(`CREATE ${rid} SET owned_by=rebase_tenant:default, a_history=stage_board:beta,
             a_ranking=stage_board:limited, a_stage=stage_code:ten, a_effective_at=d'${at(i)}';`);
           return { rid, success: true };
         } catch (error) {
@@ -335,12 +348,12 @@ async function main() {
     const before = await snapshot(q);
     await applySchema(q, env.bundle);
     assert.deepEqual(await snapshot(q), before, 'reapplying the original schema preserves all typed roots and slots');
-    reads += await queries(q, verify(before));
+    reads += await queries(treeReader, verify(before));
     // Delete roots' source records repeatedly, including both slots on a source.
     for (const row of before.facts) await mutate(`DELETE ${row.id};`);
     for (const row of before.archiveFacts) await mutate(`DELETE ${row.id};`);
     for (const row of before.privateFacts) await mutate(`DELETE ${row.id};`);
-    reads += await queries(q, verify(await snapshot(q)));
+    reads += await queries(treeReader, verify(await snapshot(q)));
     for (const row of [...before.boards, ...before.archives, ...before.privateBoards]) await mutate(`DELETE ${row.id};`);
     console.log(`PASS ${mutations} mutation checkpoints, ${reads} ordered reads, ${rejections} rejection snapshots; populated reapplication and empty-tree cleanup`);
     return { mutations, reads, rejections };

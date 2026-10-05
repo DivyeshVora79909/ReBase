@@ -4,8 +4,8 @@ const { analyzeSchema } = require("./analyze");
 const { generateAuditEvents } = require("./generators/audit");
 const { generateOAuthAccess } = require("./generators/access");
 const { generateIndexes } = require("./generators/indexes");
-const { generateReferenceAssertions } = require("./generators/references");
-const { generateCascades, generateReaderCycleGuards, generateViews } = require("./generators/reactivity");
+const { generateReferenceAssertions, generateTenantReferenceGuards } = require("./generators/references");
+const { generateCascades, generateViews } = require("./generators/reactivity");
 const { generateRootPermissions, generateSecurity } = require("./generators/security");
 const {
   generateEffectEvents,
@@ -18,6 +18,7 @@ const { generateTemporal, resolveTemporalModel } = require("./generators/tempora
 const { parseSchema } = require("./schema");
 const { PRINCIPAL_TABLES, detectSelectPolicy, validatePrincipalTables } = require("./principals");
 const { composeProfiles, contextStatement } = require("./materials");
+const { splitStatements, sqlCode } = require("./surql");
 
 function section(name, sql) {
   const body = String(sql || "").trim();
@@ -29,13 +30,12 @@ function contextOptions(context = {}) {
     namespace: context.namespace,
     database: context.database,
     principalTables: PRINCIPAL_NAMES_FOR_CONTEXT,
-    rootGroupId: context.rootGroupId || "rebase_group:root",
     runtimeUrl: context.runtimeUrl,
     runtimeSecret: context.runtimeSecret,
   };
 }
 
-const PRINCIPAL_NAMES_FOR_CONTEXT = [PRINCIPAL_TABLES.user, PRINCIPAL_TABLES.group];
+const PRINCIPAL_NAMES_FOR_CONTEXT = [PRINCIPAL_TABLES.user, PRINCIPAL_TABLES.group, PRINCIPAL_TABLES.tenant];
 
 function discoverFrameworkTables(frameworkSource) {
   return new Set(parseSchema(frameworkSource, "").tables.keys());
@@ -52,7 +52,12 @@ function resolveModel(materials, options = {}) {
   const frameworkSource = rawFrameworkSource;
   const frameworkStatements = framework.frameworkStatements;
   const projectEventsSource = project.events;
-  const projectSchema = [project.schema, project.raw].filter(Boolean).join("\n\n");
+  const projectStatements = splitStatements([project.schema, project.raw].filter(Boolean).join("\n\n"));
+  // Tenant is a generated field. Native indexes referring to it must be
+  // defined after common fields exist (SurrealDB 3.3 validates index fields).
+  const isIndex = statement => /^\s*DEFINE\s+INDEX\b/i.test(sqlCode(statement));
+  const projectSchema = projectStatements.filter(statement => !isIndex(statement)).join("\n\n");
+  const projectIndexes = projectStatements.filter(isIndex).join("\n\n");
   const projectOnlySchema = parseSchema(project.schemaStatements, "");
   const viewsSource = project.views;
   const seedSource = project.seed;
@@ -72,7 +77,6 @@ function resolveModel(materials, options = {}) {
   const generatedOptions = {
     ...context,
     principalTables: PRINCIPAL_NAMES_FOR_CONTEXT,
-    rootGroupId: `${principals.group}:root`,
     selectPolicy: options.selectPolicy || projectSelectPolicy,
   };
   return {
@@ -86,6 +90,7 @@ function resolveModel(materials, options = {}) {
     analysis,
     temporalModel,
     projectSchema,
+    projectIndexes,
     projectEventsSource,
     frameworkSource,
     frameworkSeedSource,
@@ -111,7 +116,7 @@ function withSourceLocation(error, schema) {
 function emitResolvedModel(model) {
   const {
     context, generatedOptions, principals, schema, analysis, projectSchema,
-    projectEventsSource, frameworkSource, frameworkSeedSource, seedSource,
+    projectEventsSource, projectIndexes, frameworkSource, frameworkSeedSource, seedSource,
     viewsSource, projectOnlySchema, rootPermissions,
   } = model;
   const views = generateViews(schema, generatedOptions, analysis.systemTables);
@@ -128,11 +133,12 @@ function emitResolvedModel(model) {
     ["record reference assertions", generateReferenceAssertions(projectOnlySchema, context)],
     ["raw views", viewsSource],
     ["ownership, RLS, and flags", generateSecurity(schema, generatedOptions, analysis.systemTables)],
+    ["tenant reference boundaries", generateTenantReferenceGuards(schema, generatedOptions, analysis.systemTables)],
+    ["authored indexes", projectIndexes],
     ["audit log", generateAuditEvents(schema, generatedOptions, analysis.systemTables)],
     ["reactive views", views.definitions],
     ["upward view events", views.events],
-    ["reader cycle guards", generateReaderCycleGuards(schema, generatedOptions, analysis.systemTables)],
-    ["downward propagation", generateCascades(analysis, generatedOptions)],
+    ["reader ownership propagation", generateCascades(analysis, generatedOptions, model.temporalModel.trees)],
     ["indexes", indexes.sql],
     ["computed view fields", views.computed],
     ["temporal trees and field dependencies", temporal.sql],

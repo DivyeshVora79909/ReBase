@@ -29,7 +29,7 @@ async function freePort() {
 
 async function startDatabase() {
   const port = await freePort();
-  const child = spawn("surreal", [
+  const child = spawn(process.env.REBASE_TREE_SURREAL_BIN || "surreal", [
     "start", "memory", "--user", "root", "--pass", "root",
     "--bind", `127.0.0.1:${port}`, "--no-banner", "--log", "error",
   ], { stdio: ["ignore", "ignore", "pipe"] });
@@ -58,7 +58,7 @@ async function signIn(endpoint, email) {
   await db.connect(endpoint);
   await db.signin({
     namespace, database, access: "account_password",
-    variables: { identifier: email, password: "probe-password" },
+    variables: { tenant: "rebase_tenant:default", identifier: email, password: "probe-password" },
   });
   return db;
 }
@@ -82,11 +82,13 @@ async function main() {
     await root.use({ namespace, database });
     await root.query(fs.readFileSync(path.resolve("build/test/schema.surql"), "utf8"));
     await root.query(`
-      CREATE rebase_group:tenant SET name = 'Tenant', parents = [rebase_group:root],
+      CREATE rebase_tenant:default SET name='Credential tenant';
+      CREATE rebase_tenant:foreign SET name='Foreign tenant';
+      CREATE rebase_group:tenant SET name = 'Tenant', parents = [rebase_tenant:default],
         role = ['send_brevo_email_create', 'send_brevo_email_select', 'send_twilio_sms_create', 'send_twilio_sms_select'];
-      CREATE rebase_group:unrelated SET name = 'Unrelated', parents = [rebase_group:root],
+      CREATE rebase_group:unrelated SET name = 'Unrelated', parents = [rebase_tenant:default],
         role = ['send_brevo_email_create', 'send_brevo_email_select', 'send_twilio_sms_create', 'send_twilio_sms_select'];
-      CREATE rebase_group:unauthorized SET name = 'Unauthorized', parents = [rebase_group:root], role = [];
+      CREATE rebase_group:unauthorized SET name = 'Unauthorized', parents = [rebase_tenant:default], role = [];
       CREATE rebase_user:alice SET name = 'Alice', parents = [rebase_group:tenant],
         password = crypto::argon2::generate('probe-password');
       CREATE rebase_user:delegate SET name = 'Delegate', parents = [rebase_group:tenant],
@@ -95,18 +97,22 @@ async function main() {
         password = crypto::argon2::generate('probe-password');
       CREATE rebase_user:charlie SET name = 'Charlie', parents = [rebase_group:unauthorized],
         password = crypto::argon2::generate('probe-password');
-      CREATE authentication_email:alice SET principal = rebase_user:alice, address = 'alice@example.test';
-      CREATE authentication_email:delegate SET principal = rebase_user:delegate, address = 'delegate@example.test';
-      CREATE authentication_email:bob SET principal = rebase_user:bob, address = 'bob@example.test';
-      CREATE authentication_email:charlie SET principal = rebase_user:charlie, address = 'charlie@example.test';
+      CREATE authentication_email:alice SET owned_by = rebase_user:alice, address = 'alice@example.test';
+      CREATE authentication_email:delegate SET owned_by = rebase_user:delegate, address = 'delegate@example.test';
+      CREATE authentication_email:bob SET owned_by = rebase_user:bob, address = 'bob@example.test';
+      CREATE authentication_email:charlie SET owned_by = rebase_user:charlie, address = 'charlie@example.test';
       UPDATE authentication_email:alice SET verified_revision = revision, verified_at = time::now();
       UPDATE authentication_email:delegate SET verified_revision = revision, verified_at = time::now();
       UPDATE authentication_email:bob SET verified_revision = revision, verified_at = time::now();
       UPDATE authentication_email:charlie SET verified_revision = revision, verified_at = time::now();
-      CREATE rebase_email_delivery_config:platform SET owned_by = rebase_group:root,
+      CREATE rebase_email_delivery_config:platform_a SET owned_by = rebase_tenant:default,
         api_key = 'platform-email-secret', from_email = 'platform@example.test', from_name = 'Platform';
-      CREATE rebase_sms_delivery_config:platform SET owned_by = rebase_group:root,
+      CREATE rebase_sms_delivery_config:platform_a SET owned_by = rebase_tenant:default,
         account_sid = 'ACplatform', auth_token = 'platform-sms-secret', from_number = '+10000000001';
+      CREATE rebase_email_delivery_config:platform_b SET owned_by = rebase_tenant:foreign,
+        api_key = 'foreign-email-secret', from_email = 'foreign@example.test', from_name = 'Foreign';
+      CREATE rebase_sms_delivery_config:platform_b SET owned_by = rebase_tenant:foreign,
+        account_sid = 'ACforeign', auth_token = 'foreign-sms-secret', from_number = '+10000000009';
     `);
     const alice = await signIn(disposable.endpoint, "alice@example.test");
     const delegate = await signIn(disposable.endpoint, "delegate@example.test");
@@ -117,23 +123,23 @@ async function main() {
     clients.push(alice, delegate, bob, charlie, anonymous);
 
     await anonymous.use({ namespace, database }).catch(() => {});
-    await anonymous.query("SELECT * FROM rebase_email_delivery_config:platform;").catch(() => {});
+    await anonymous.query("SELECT * FROM rebase_email_delivery_config:platform_a;").catch(() => {});
     await anonymous.query(`CREATE rebase_email_delivery_config:anonymous SET owned_by = rebase_user:alice,
       api_key = 'anonymous-secret', from_email = 'anonymous@example.test', from_name = 'Anonymous';`).catch(() => {});
     assert.equal(result(await root.query("SELECT VALUE id FROM rebase_email_delivery_config:anonymous;" )).length, 0);
 
-    assert.equal(result(await alice.query("SELECT id FROM rebase_email_delivery_config:platform;" )).length, 0);
-    assert.equal(result(await bob.query("SELECT id FROM rebase_sms_delivery_config:platform;" )).length, 0);
-    await alice.query("UPDATE rebase_email_delivery_config:platform SET api_key = 'client-tamper';").catch(() => {});
-    await alice.query("DELETE rebase_email_delivery_config:platform;").catch(() => {});
-    await bob.query("UPDATE rebase_sms_delivery_config:platform SET auth_token = 'client-tamper';").catch(() => {});
-    await bob.query("DELETE rebase_sms_delivery_config:platform;").catch(() => {});
-    assert.equal(result(await root.query("RETURN rebase_email_delivery_config:platform.api_key;")), "platform-email-secret");
-    assert.equal(result(await root.query("RETURN rebase_sms_delivery_config:platform.auth_token;")), "platform-sms-secret");
+    assert.equal(result(await alice.query("SELECT id FROM rebase_email_delivery_config:platform_a;" )).length, 0);
+    assert.equal(result(await bob.query("SELECT id FROM rebase_sms_delivery_config:platform_a;" )).length, 0);
+    await alice.query("UPDATE rebase_email_delivery_config:platform_a SET api_key = 'client-tamper';").catch(() => {});
+    await alice.query("DELETE rebase_email_delivery_config:platform_a;").catch(() => {});
+    await bob.query("UPDATE rebase_sms_delivery_config:platform_a SET auth_token = 'client-tamper';").catch(() => {});
+    await bob.query("DELETE rebase_sms_delivery_config:platform_a;").catch(() => {});
+    assert.equal(result(await root.query("RETURN rebase_email_delivery_config:platform_a.api_key;")), "platform-email-secret");
+    assert.equal(result(await root.query("RETURN rebase_sms_delivery_config:platform_a.auth_token;")), "platform-sms-secret");
     await assertNoRecord(alice, root, "rebase_email_delivery_config:forged", `CREATE rebase_email_delivery_config:forged SET
-      owned_by = rebase_group:root, api_key = 'forged', from_email = 'a@example.test', from_name = 'A';`);
+      owned_by = rebase_tenant:default, api_key = 'forged', from_email = 'a@example.test', from_name = 'A';`);
     await assertNoRecord(alice, root, "rebase_sms_delivery_config:forged", `CREATE rebase_sms_delivery_config:forged SET
-      owned_by = rebase_group:root, account_sid = 'ACforged', auth_token = 'forged', from_number = '+10000000002';`);
+      owned_by = rebase_tenant:default, account_sid = 'ACforged', auth_token = 'forged', from_number = '+10000000002';`);
 
     const emailCreated = firstRecord(await alice.query(`CREATE rebase_email_delivery_config:alice SET
       owned_by = rebase_user:alice, api_key = 'alice-email-secret',
@@ -154,7 +160,8 @@ async function main() {
     assert.equal(result(await delegate.query("SELECT * FROM rebase_sms_delivery_config:tenant;" ))[0].auth_token, undefined);
     assert.equal(result(await bob.query("UPDATE rebase_email_delivery_config:alice SET from_name = 'Other' RETURN AFTER;" )).length, 0);
     assert.equal(result(await root.query("RETURN rebase_email_delivery_config:alice.from_name;")), "Alice");
-    await assert.rejects(alice.query("UPDATE rebase_email_delivery_config:alice SET owned_by = rebase_user:bob;"));
+    await alice.query("UPDATE rebase_email_delivery_config:alice SET owned_by = rebase_user:bob;").catch(() => {});
+    assert.equal(String(result(await root.query("RETURN rebase_email_delivery_config:alice.owned_by;"))), "rebase_user:alice");
 
     const emailAfter = firstRecord(await alice.query(`UPDATE rebase_email_delivery_config:alice SET
       from_name = api_key ?? 'blocked',
@@ -186,30 +193,33 @@ async function main() {
     await assertNoRecord(bob, root, "send_brevo_email:cross_owner", `CREATE send_brevo_email:cross_owner SET owned_by = rebase_user:bob,
       config = rebase_email_delivery_config:alice, to = ['recipient@example.test'], subject = 'denied';`);
     await assertNoRecord(alice, root, "send_brevo_email:root_reference", `CREATE send_brevo_email:root_reference SET owned_by = rebase_user:alice,
-      config = rebase_email_delivery_config:platform, to = ['recipient@example.test'], subject = 'denied';`);
+      config = rebase_email_delivery_config:platform_a, to = ['recipient@example.test'], subject = 'denied';`);
     await assertNoRecord(charlie, root, "send_brevo_email:unauthorized", `CREATE send_brevo_email:unauthorized SET owned_by = rebase_user:charlie,
-      to = ['recipient@example.test'], subject = 'No permission';`);
+      config = rebase_email_delivery_config:alice, to = ['recipient@example.test'], subject = 'No permission';`);
     const byocEmail = firstRecord(await alice.query(`CREATE send_brevo_email:byoc SET owned_by = rebase_user:alice,
       config = rebase_email_delivery_config:alice, to = ['recipient@example.test'], subject = 'BYOC';`));
-    const platformEmail = firstRecord(await alice.query(`CREATE send_brevo_email:platform SET owned_by = rebase_user:alice,
-      to = ['recipient@example.test'], subject = 'Platform';`));
+    const platformEmail = firstRecord(await root.query(`CREATE send_brevo_email:platform SET owned_by = rebase_user:alice,
+      config = rebase_email_delivery_config:platform_a, to = ['recipient@example.test'], subject = 'Platform';`));
     const byocSms = firstRecord(await delegate.query(`CREATE send_twilio_sms:byoc SET owned_by = rebase_user:delegate,
       config = rebase_sms_delivery_config:tenant, to = '+10000000005', body = 'BYOC';`));
-    const platformSms = firstRecord(await alice.query(`CREATE send_twilio_sms:platform SET owned_by = rebase_user:alice,
-      to = '+10000000005', body = 'Platform';`));
+    const platformSms = firstRecord(await root.query(`CREATE send_twilio_sms:platform SET owned_by = rebase_user:alice,
+      config = rebase_sms_delivery_config:platform_a, to = '+10000000005', body = 'Platform';`));
     const roleRevoked = firstRecord(await alice.query(`CREATE send_brevo_email:role_revoked SET owned_by = rebase_user:alice,
       config = rebase_email_delivery_config:alice, to = ['recipient@example.test'], subject = 'Role revoked';`));
     const denied = firstRecord(await alice.query(`CREATE send_brevo_email:revoked SET owned_by = rebase_user:alice,
       config = rebase_email_delivery_config:alice, to = ['recipient@example.test'], subject = 'Owner revoked';`));
     assert(denied?.id);
     const missingCreator = firstRecord(await root.query(`CREATE send_brevo_email:missing_creator SET owned_by = rebase_group:tenant,
-      to = ['recipient@example.test'], subject = 'Missing creator';`));
+      config = rebase_email_delivery_config:platform_a, to = ['recipient@example.test'], subject = 'Explicit system task';`));
     assert(missingCreator?.id);
     assert(missingCreator.created_by == null, "system-created operation fixture should have no user creator");
     assert.equal(String(byocEmail.created_by), "rebase_user:alice");
-    assert.equal(String(platformEmail.created_by), "rebase_user:alice");
+    assert(platformEmail.created_by == null);
     assert.equal(String(byocSms.created_by), "rebase_user:delegate");
-    assert.equal(String(platformSms.created_by), "rebase_user:alice");
+    assert(platformSms.created_by == null);
+
+    await assert.rejects(root.query(`CREATE send_brevo_email:cross_tenant SET owned_by=rebase_user:alice,
+      config=rebase_email_delivery_config:platform_b,to=['recipient@example.test'],subject='Cross tenant';`), /TENANT/);
 
     const contracts = new Map(Object.entries(JSON.parse(fs.readFileSync(path.resolve("build/test/runtime-contracts.json"), "utf8")).tables));
     const handlers = loadTableHandlers("designs/test/table-handlers", { contracts });
@@ -222,13 +232,14 @@ async function main() {
     const sends = [];
     const runtime = createRuntime({
       stores: { async forContext() { return store; } }, handlers, contracts,
+      options: { defaultContext: { namespace, database } },
       adapters: {
         async sendBrevoEmail(input) { sends.push({ channel: "email", credential: input.apiKey }); return { messageId: "mock-email", provider: "mock", accepted: input.to }; },
         async getBrevoEmailEvents() { return []; },
         async sendTwilioSms(input) { sends.push({ channel: "phone", credential: input.configuration.auth_token }); return { messageId: "mock-sms" }; },
       },
     });
-    const execute = (id) => runtime.execute({ namespace, database, id });
+    const execute = (id) => runtime.execute({ id });
     assert.equal((await execute("send_brevo_email:byoc")).state, "succeeded");
     assert.equal((await execute("send_brevo_email:platform")).state, "succeeded");
     assert.equal((await execute("send_twilio_sms:byoc")).state, "succeeded");
@@ -261,12 +272,10 @@ async function main() {
     assert.equal(roleRevokedResult.action, "dead-letter");
     assert.equal(secretLoads, loadsBeforeRoleRevocation, "worker must recheck the operation permission before loading BYOC secrets");
     assert.equal(sends.length, sendsBeforeRoleRevocation);
-    const noCreatorLoads = secretLoads;
     const noCreatorSends = sends.length;
     const noCreator = await execute("send_brevo_email:missing_creator");
-    assert.equal(noCreator.action, "dead-letter");
-    assert.equal(secretLoads, noCreatorLoads, "worker must reject a task without a creator before loading a secret");
-    assert.equal(sends.length, noCreatorSends);
+    assert.equal(noCreator.state, "succeeded");
+    assert.equal(sends.length, noCreatorSends + 1, "explicit same-tenant system task may load its configured credential");
     console.log(`credentials: owner, delegation, redaction, platform binding, BYOC, unauthorized operation, and pre-load guards passed (${Date.now() - started}ms)`);
   } finally {
     await Promise.all(clients.map((client) => client.close().catch(() => {})));

@@ -29,9 +29,9 @@ DEFINE FIELD OVERWRITE claim_account ON sales_invoice TYPE record<claim_account>
 DEFINE FIELD OVERWRITE number ON sales_invoice TYPE string ASSERT string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE currency ON sales_invoice TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.claim_account.currency COMMENT '@rebase-derived @rebase-depends claim_account.currency';
 DEFINE FIELD OVERWRITE currency_precision ON sales_invoice TYPE int VALUE $this.currency.precision COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_outstanding ON sales_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_taxable_input ON sales_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE sales_invoice_number ON sales_invoice FIELDS economic_entity, number UNIQUE;
+DEFINE FIELD OVERWRITE z_outstanding ON sales_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE FIELD OVERWRITE z_taxable_input ON sales_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE sales_invoice_number ON sales_invoice FIELDS tenant, economic_entity, number UNIQUE;
 
 DEFINE TABLE OVERWRITE purchase_invoice SCHEMAFULL
     COMMENT '@rebase-validate fn::accounting::invoice_validate';
@@ -40,8 +40,8 @@ DEFINE FIELD OVERWRITE claim_account ON purchase_invoice TYPE record<claim_accou
 DEFINE FIELD OVERWRITE number ON purchase_invoice TYPE string ASSERT string::len($value) > 0 READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE currency ON purchase_invoice TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.claim_account.currency COMMENT '@rebase-derived @rebase-depends claim_account.currency';
 DEFINE FIELD OVERWRITE currency_precision ON purchase_invoice TYPE int VALUE $this.currency.precision COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_outstanding ON purchase_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
-DEFINE INDEX OVERWRITE purchase_invoice_number ON purchase_invoice FIELDS economic_entity, number UNIQUE;
+DEFINE FIELD OVERWRITE z_outstanding ON purchase_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
+DEFINE INDEX OVERWRITE purchase_invoice_number ON purchase_invoice FIELDS tenant, economic_entity, number UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::invoice_issue_validate($row: object) {
     IF array::len($row.lines) = 0 { THROW 'ACCOUNTING_INVOICE_ISSUE_LINES_REQUIRED'; };
@@ -56,7 +56,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::invoice_issue_validate($row: object) {
 
 DEFINE FUNCTION OVERWRITE fn::accounting::sales_invoice_issue_validate($row: object) {
     fn::accounting::invoice_issue_validate($row);
-    IF $row.lines.any(|$line| string::matches($line.line_key, /^tax:/)) {
+    fn::accounting::sales_delivery_inputs_validate($row);
+    IF $row.lines.any(|$line| string::matches($line.line_key, /^(tax|delivery):/)) {
         THROW 'ACCOUNTING_INVOICE_LINE_KEY_RESERVED';
     };
     LET $keys = ($row.tax_components ?? []).map(|$component| $component.tax_key);
@@ -205,8 +206,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::sales_invoice_issue_outputs($row: obje
             }
         };
     });
-    RETURN array::concat(array::concat(array::concat(array::concat($lines, $taxes),
-        $aggregate_bases), $aggregate_taxes), $compound_taxes);
+    RETURN array::concat($lines, fn::accounting::sales_delivery_tax_outputs($row),
+        $taxes, $aggregate_bases, $aggregate_taxes, $compound_taxes);
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::purchase_invoice_issue_outputs($row: object) {
@@ -232,6 +233,16 @@ DEFINE FIELD OVERWRITE lines.*.line_key ON sales_invoice_issue TYPE string ASSER
 DEFINE FIELD OVERWRITE lines.*.source ON sales_invoice_issue TYPE record<stock_out>;
 DEFINE FIELD OVERWRITE lines.*.billed_quantity ON sales_invoice_issue TYPE decimal ASSERT $value > 0dec;
 DEFINE FIELD OVERWRITE lines.*.unit_price ON sales_invoice_issue TYPE decimal ASSERT $value > 0dec;
+DEFINE FIELD OVERWRITE lines.*.tax_components ON sales_invoice_issue TYPE array<object> DEFAULT [] VALUE $value ?? [];
+DEFINE FIELD OVERWRITE lines.*.tax_components.*.tax_key ON sales_invoice_issue TYPE string ASSERT string::len($value) > 0;
+DEFINE FIELD OVERWRITE lines.*.tax_components.*.tax_claim_account ON sales_invoice_issue TYPE record<claim_account>;
+DEFINE FIELD OVERWRITE lines.*.tax_components.*.amount ON sales_invoice_issue TYPE option<decimal> ASSERT $value = NONE OR $value > 0dec;
+DEFINE FIELD OVERWRITE lines.*.tax_components.*.rule_version ON sales_invoice_issue TYPE option<record<sales_tax_rule_version>>;
+DEFINE FIELD OVERWRITE lines.*.compound_tax_components ON sales_invoice_issue TYPE array<object> DEFAULT [] VALUE $value ?? [];
+DEFINE FIELD OVERWRITE lines.*.compound_tax_components.*.tax_key ON sales_invoice_issue TYPE string ASSERT string::len($value) > 0;
+DEFINE FIELD OVERWRITE lines.*.compound_tax_components.*.tax_claim_account ON sales_invoice_issue TYPE record<claim_account>;
+DEFINE FIELD OVERWRITE lines.*.compound_tax_components.*.rule_version ON sales_invoice_issue TYPE record<sales_tax_rule_version>;
+DEFINE FIELD OVERWRITE lines.*.compound_tax_components.*.predecessor_tax_key ON sales_invoice_issue TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE tax_components ON sales_invoice_issue TYPE array<object> DEFAULT [] COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE compound_tax_components ON sales_invoice_issue TYPE array<object> DEFAULT [] COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE tax_components.*.tax_key ON sales_invoice_issue TYPE string ASSERT string::len($value) > 0;
@@ -243,7 +254,7 @@ DEFINE FIELD OVERWRITE compound_tax_components.*.tax_key ON sales_invoice_issue 
 DEFINE FIELD OVERWRITE compound_tax_components.*.tax_claim_account ON sales_invoice_issue TYPE record<claim_account>;
 DEFINE FIELD OVERWRITE compound_tax_components.*.rule_version ON sales_invoice_issue TYPE record<sales_tax_rule_version>;
 DEFINE FIELD OVERWRITE compound_tax_components.*.predecessor_tax_key ON sales_invoice_issue TYPE string ASSERT string::len($value) > 0;
-DEFINE INDEX OVERWRITE sales_invoice_issue_invoice ON sales_invoice_issue FIELDS invoice UNIQUE;
+DEFINE INDEX OVERWRITE sales_invoice_issue_invoice ON sales_invoice_issue FIELDS tenant, invoice UNIQUE;
 
 DEFINE TABLE OVERWRITE purchase_invoice_issue SCHEMAFULL
     COMMENT '@rebase-required-outputs fn::accounting::purchase_invoice_issue_outputs @rebase-validate fn::accounting::invoice_issue_validate';
@@ -254,7 +265,7 @@ DEFINE FIELD OVERWRITE lines.*.line_key ON purchase_invoice_issue TYPE string AS
 DEFINE FIELD OVERWRITE lines.*.source ON purchase_invoice_issue TYPE record<stock_in>;
 DEFINE FIELD OVERWRITE lines.*.billed_quantity ON purchase_invoice_issue TYPE decimal ASSERT $value > 0dec;
 DEFINE FIELD OVERWRITE lines.*.unit_price ON purchase_invoice_issue TYPE decimal ASSERT $value > 0dec;
-DEFINE INDEX OVERWRITE purchase_invoice_issue_invoice ON purchase_invoice_issue FIELDS invoice UNIQUE;
+DEFINE INDEX OVERWRITE purchase_invoice_issue_invoice ON purchase_invoice_issue FIELDS tenant, invoice UNIQUE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::sales_invoice_line_members($row: object) {
     RETURN [
@@ -285,6 +296,10 @@ DEFINE FUNCTION OVERWRITE fn::accounting::sales_invoice_line_validate($row: obje
         THROW 'ACCOUNTING_SALES_INVOICE_SOURCE_MISMATCH';
     };
     IF $row.effective_at < $row.source_at { THROW 'ACCOUNTING_SALES_INVOICE_BEFORE_DELIVERY'; };
+    LET $currency = $row.z_taxes.summary.tags.currency;
+    IF $currency != NONE AND (!$currency.uniform OR $currency.value != $row.invoice.currency) {
+        THROW 'ACCOUNTING_DELIVERY_TAX_DIMENSION_MISMATCH';
+    };
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::purchase_invoice_line_validate($row: object) {
@@ -310,6 +325,7 @@ DEFINE FIELD OVERWRITE z_claim ON sales_invoice_line TYPE option<object> COMMENT
 DEFINE FIELD OVERWRITE z_invoice ON sales_invoice_line TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_outstanding';
 DEFINE FIELD OVERWRITE z_taxable_input ON sales_invoice_line TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_taxable_input';
 DEFINE FIELD OVERWRITE z_source ON sales_invoice_line TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_out.z_billing';
+DEFINE FIELD OVERWRITE z_taxes ON sales_invoice_line TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 
 -- The tree-less basis child reads only the input-only rounded-line root.
 -- Its issue-owned tax sibling consumes the published value by typed reference.

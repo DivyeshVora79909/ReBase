@@ -59,8 +59,10 @@ async function treeSum(db, id, measure) {
 }
 
 async function treeBefore(db, id, measure, cutoff) {
+  // Source oracles use the privileged primitive, including private managed nodes.
+  // Record-user traversal permissions are covered by the tenant/tree probes.
   return numeric(queryResult(await db.query(
-    `RETURN fn::tree::read(${id}, 'z_history', 'before', [d'${cutoff}']).measures.${measure}.sum ?? 0dec;`,
+    `RETURN fn::tree::before({rid:${id}, slot:'z_history'}, [d'${cutoff}']).measures.${measure}.sum ?? 0dec;`,
   )));
 }
 
@@ -207,11 +209,11 @@ async function assertOpeningClaimSnapshots(db) {
 
 async function probeStandaloneClaims(db) {
   await db.query(`
-    CREATE ONLY receivable:ar_opening SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 12dec, effective_at = d'2025-12-31T00:00:00Z';
-    CREATE ONLY payable:ap_opening SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 7dec, effective_at = d'2025-12-31T00:00:00Z';
-    CREATE ONLY receivable:ar_open SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 80dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY payable:ap_open SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 20dec, effective_at = d'2026-03-02T00:00:00Z';
-    CREATE ONLY payable:tax_open SET owned_by = rebase_group:root, claim_account = claim_account:claim_tax, amount = 50dec, effective_at = d'2026-03-03T00:00:00Z';
+    CREATE ONLY receivable:ar_opening SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 12dec, effective_at = d'2025-12-31T00:00:00Z';
+    CREATE ONLY payable:ap_opening SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 7dec, effective_at = d'2025-12-31T00:00:00Z';
+    CREATE ONLY receivable:ar_open SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 80dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY payable:ap_open SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 20dec, effective_at = d'2026-03-02T00:00:00Z';
+    CREATE ONLY payable:tax_open SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_tax, amount = 50dec, effective_at = d'2026-03-03T00:00:00Z';
   `);
   await assertClaimOracles(db);
   await assertOpeningClaimSnapshots(db);
@@ -227,31 +229,31 @@ async function probeStandaloneClaims(db) {
 
 async function probeClaimSettlements(db) {
   await db.query(`
-    CREATE ONLY organization:org_c SET owned_by = rebase_group:root, name = 'Book owner C';
-    CREATE ONLY claim_account:claim_foreign SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+    CREATE ONLY organization:org_c SET owned_by = rebase_tenant:default, name = 'Book owner C';
+    CREATE ONLY claim_account:claim_foreign SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
       opponent = organization:org_c, currency = currency:usd;
-    CREATE ONLY receivable:ar_open2 SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 50dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY receivable:ar_open3 SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, amount = 50dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY receivable:ar_misc_scope SET owned_by = rebase_group:root, claim_account = claim_account:claim_misc, amount = 10dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY receivable:ar_foreign SET owned_by = rebase_group:root, claim_account = claim_account:claim_foreign, amount = 20dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY payable:ap_foreign SET owned_by = rebase_group:root, claim_account = claim_account:claim_foreign, amount = 20dec, effective_at = d'2026-03-01T00:00:00Z';
-    CREATE ONLY treasury_account:cash_b SET owned_by = rebase_group:root, economic_entity = organization:org_b,
+    CREATE ONLY receivable:ar_open2 SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 50dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY receivable:ar_open3 SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, amount = 50dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY receivable:ar_misc_scope SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_misc, amount = 10dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY receivable:ar_foreign SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_foreign, amount = 20dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY payable:ap_foreign SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_foreign, amount = 20dec, effective_at = d'2026-03-01T00:00:00Z';
+    CREATE ONLY treasury_account:cash_b SET owned_by = rebase_tenant:default, economic_entity = organization:org_b,
       treasury = treasury:bank_b, currency = currency:usd;
-    CREATE ONLY cash_in:ar_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_a,
+    CREATE ONLY cash_in:ar_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_a,
       amount = 100dec, effective_at = d'2026-03-02T00:00:00Z';
-    CREATE ONLY cash_in:ar_second_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_a,
+    CREATE ONLY cash_in:ar_second_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_a,
       amount = 50dec, effective_at = d'2026-03-03T00:00:00Z';
-    CREATE ONLY cash_in:eur_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_eur,
+    CREATE ONLY cash_in:eur_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_eur,
       amount = 10dec, effective_at = d'2026-03-02T00:00:00Z';
-    CREATE ONLY cash_in:entity_b_receipt SET owned_by = rebase_group:root, from_party = organization:org_c, to_account = treasury_account:cash_b,
+    CREATE ONLY cash_in:entity_b_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_c, to_account = treasury_account:cash_b,
       amount = 20dec, effective_at = d'2026-03-02T00:00:00Z';
-    CREATE ONLY cash_out:eur_payment SET owned_by = rebase_group:root, from_account = treasury_account:cash_eur, to_party = tax_account:tax_a,
+    CREATE ONLY cash_out:eur_payment SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_eur, to_party = tax_account:tax_a,
       amount = 5dec, effective_at = d'2026-03-03T00:00:00Z';
-    CREATE ONLY cash_out:entity_b_payment SET owned_by = rebase_group:root, from_account = treasury_account:cash_b, to_party = organization:org_c,
+    CREATE ONLY cash_out:entity_b_payment SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_b, to_party = organization:org_c,
       amount = 10dec, effective_at = d'2026-03-03T00:00:00Z';
-    CREATE ONLY cash_out:tax_payment SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = tax_account:tax_a,
+    CREATE ONLY cash_out:tax_payment SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = tax_account:tax_a,
       amount = 30dec, effective_at = d'2026-03-04T00:00:00Z';
-    CREATE ONLY cash_out:tax_second_payment SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = tax_account:tax_a,
+    CREATE ONLY cash_out:tax_second_payment SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = tax_account:tax_a,
       amount = 50dec, effective_at = d'2026-03-04T00:00:00Z';
   `);
   await assertMovementOracles(db);
@@ -259,19 +261,19 @@ async function probeClaimSettlements(db) {
   await assertClaimOracles(db);
 
   await db.query(`
-    CREATE ONLY receivable_cash_allocation:ar_payment_one SET owned_by = rebase_group:root,
+    CREATE ONLY receivable_cash_allocation:ar_payment_one SET owned_by = rebase_tenant:default,
       source = cash_in:ar_receipt, target = receivable:ar_open, amount = 60dec,
       effective_at = d'2026-03-03T00:00:00Z';
-    CREATE ONLY receivable_cash_allocation:ar_payment_split SET owned_by = rebase_group:root,
+    CREATE ONLY receivable_cash_allocation:ar_payment_split SET owned_by = rebase_tenant:default,
       source = cash_in:ar_receipt, target = receivable:ar_open2, amount = 40dec,
       effective_at = d'2026-03-03T00:00:00Z';
-    CREATE ONLY receivable_cash_allocation:ar_second_payment SET owned_by = rebase_group:root,
+    CREATE ONLY receivable_cash_allocation:ar_second_payment SET owned_by = rebase_tenant:default,
       source = cash_in:ar_second_receipt, target = receivable:ar_open, amount = 10dec,
       effective_at = d'2026-03-04T00:00:00Z';
-    CREATE ONLY payable_cash_allocation:ap_payment_one SET owned_by = rebase_group:root,
+    CREATE ONLY payable_cash_allocation:ap_payment_one SET owned_by = rebase_tenant:default,
       source = cash_out:tax_payment, target = payable:tax_open, amount = 20dec,
       effective_at = d'2026-03-05T00:00:00Z';
-    CREATE ONLY payable_cash_allocation:ap_payment_two SET owned_by = rebase_group:root,
+    CREATE ONLY payable_cash_allocation:ap_payment_two SET owned_by = rebase_tenant:default,
       source = cash_out:tax_second_payment, target = payable:tax_open, amount = 10dec,
       effective_at = d'2026-03-05T00:00:00Z';
   `);
@@ -287,11 +289,11 @@ async function probeClaimSettlements(db) {
     "RETURN claim_account:claim_tax.z_history.summary.measures.payable.sum;",
   ))), 20, "cash payments reduce only the payable family");
 
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_over_source SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_over_source SET owned_by = rebase_tenant:default,
     source = cash_in:ar_receipt, target = receivable:ar_open3, amount = 1dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "one receipt cannot be allocated beyond its source amount");
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_over_target SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_over_target SET owned_by = rebase_tenant:default,
     source = cash_in:ar_second_receipt, target = receivable:ar_open, amount = 11dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "several receipts cannot settle one claim beyond its amount");
@@ -303,11 +305,11 @@ async function probeClaimSettlements(db) {
     "a source cash date cannot move past its allocation dates");
   await rejects(() => db.query("UPDATE receivable:ar_open SET effective_at = d'2026-03-06T00:00:00Z';"),
     "a claim date cannot move past its settlement dates");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_over_source SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_over_source SET owned_by = rebase_tenant:default,
     source = cash_out:tax_payment, target = payable:tax_open, amount = 11dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "one payment cannot be allocated beyond its source amount");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_over_target SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_over_target SET owned_by = rebase_tenant:default,
     source = cash_out:tax_second_payment, target = payable:tax_open, amount = 21dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "several payments cannot settle one payable beyond its amount");
@@ -320,39 +322,39 @@ async function probeClaimSettlements(db) {
   await rejects(() => db.query("UPDATE payable:tax_open SET effective_at = d'2026-03-06T00:00:00Z';"),
     "a payable date cannot move past its settlement dates");
 
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_zero SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_zero SET owned_by = rebase_tenant:default,
     source = cash_in:ar_receipt, target = receivable:ar_open, amount = 0dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "settlement allocations must be positive");
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_before_source SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_before_source SET owned_by = rebase_tenant:default,
     source = cash_in:ar_second_receipt, target = receivable:ar_open, amount = 1dec,
     effective_at = d'2026-03-02T00:00:00Z';`),
   "a receivable cannot settle before cash is received");
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_party SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_party SET owned_by = rebase_tenant:default,
     source = cash_in:ar_receipt, target = receivable:ar_misc_scope, amount = 1dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "cash and claim counterparties must match");
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_currency SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_currency SET owned_by = rebase_tenant:default,
     source = cash_in:eur_receipt, target = receivable:ar_open, amount = 1dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "cash and claim currencies must match");
-  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_cash_allocation:ar_wrong_entity SET owned_by = rebase_tenant:default,
     source = cash_in:entity_b_receipt, target = receivable:ar_foreign, amount = 1dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "cash and claim entities must match");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_party SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_party SET owned_by = rebase_tenant:default,
     source = cash_out:tax_payment, target = payable:ap_open, amount = 1dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "payment and payable counterparties must match");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_currency SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_currency SET owned_by = rebase_tenant:default,
     source = cash_out:eur_payment, target = payable:tax_open, amount = 1dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "payment and payable currencies must match");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_wrong_entity SET owned_by = rebase_tenant:default,
     source = cash_out:entity_b_payment, target = payable:ap_foreign, amount = 1dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "payment and payable entities must match");
-  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_before_source SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY payable_cash_allocation:ap_before_source SET owned_by = rebase_tenant:default,
     source = cash_out:tax_second_payment, target = payable:tax_open, amount = 1dec,
     effective_at = d'2026-03-03T12:00:00Z';`),
   "a payable cannot settle before cash is paid");
@@ -368,13 +370,13 @@ async function probeClaimSettlements(db) {
 }
 
 async function probeClaimAdjustments(db) {
-  await rejects(() => db.query(`CREATE ONLY receivable_adjustment:ar_zero SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_adjustment:ar_zero SET owned_by = rebase_tenant:default,
     claim_account = claim_account:claim_a, delta = 0dec,
     effective_at = d'2026-03-04T00:00:00Z';`),
   "claim adjustments must have a nonzero signed delta");
   await db.query(`
-    CREATE ONLY receivable_adjustment:ar_credit SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, delta = -5dec, effective_at = d'2026-03-04T00:00:00Z';
-    CREATE ONLY payable_adjustment:ap_correction SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, delta = 3dec, effective_at = d'2026-03-05T00:00:00Z';
+    CREATE ONLY receivable_adjustment:ar_credit SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, delta = -5dec, effective_at = d'2026-03-04T00:00:00Z';
+    CREATE ONLY payable_adjustment:ap_correction SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, delta = 3dec, effective_at = d'2026-03-05T00:00:00Z';
   `);
   await assertClaimOracles(db);
   assert.equal(numeric(queryResult(await db.query(
@@ -385,7 +387,7 @@ async function probeClaimAdjustments(db) {
   ))), 30, "a signed payable correction stays in the payable family");
 
   const beforeOverCorrection = await treeSum(db, "claim_account:claim_a", "receivable");
-  await rejects(() => db.query(`CREATE ONLY receivable_adjustment:ar_overcorrect SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY receivable_adjustment:ar_overcorrect SET owned_by = rebase_tenant:default,
     claim_account = claim_account:claim_a, delta = -100dec,
     effective_at = d'2026-03-06T00:00:00Z';`),
   "a correction cannot reduce outstanding receivables below zero");
@@ -468,51 +470,51 @@ async function assertInvoiceTimestamp(db, invoiceId, balance, minPrefix) {
 
 async function probeInvoices(db) {
   await db.query(`
-    CREATE ONLY stock_in:invoiced_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = stock_account:stock_a,
+    CREATE ONLY stock_in:invoiced_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = stock_account:stock_a,
       quantity = 3dec, effective_at = d'2026-03-06T00:00:00Z';
-    CREATE ONLY stock_out:invoiced_delivery SET owned_by = rebase_group:root, from_account = stock_account:stock_a, to_party = organization:org_b,
+    CREATE ONLY stock_out:invoiced_delivery SET owned_by = rebase_tenant:default, from_account = stock_account:stock_a, to_party = organization:org_b,
       quantity = 5dec, effective_at = d'2026-03-06T00:00:00Z';
-    CREATE ONLY stock_out:invoiced_delivery2 SET owned_by = rebase_group:root, from_account = stock_account:stock_a, to_party = organization:org_b,
+    CREATE ONLY stock_out:invoiced_delivery2 SET owned_by = rebase_tenant:default, from_account = stock_account:stock_a, to_party = organization:org_b,
       quantity = 2dec, effective_at = d'2026-03-06T00:00:00Z';
-    CREATE ONLY sales_invoice:invoice_one SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, number = 'S-1';
-    CREATE ONLY sales_invoice:invoice_two SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, number = 'S-2';
-    CREATE ONLY purchase_invoice:bill_one SET owned_by = rebase_group:root, claim_account = claim_account:claim_a, number = 'P-1';
+    CREATE ONLY sales_invoice:invoice_one SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, number = 'S-1';
+    CREATE ONLY sales_invoice:invoice_two SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, number = 'S-2';
+    CREATE ONLY purchase_invoice:bill_one SET owned_by = rebase_tenant:default, claim_account = claim_account:claim_a, number = 'P-1';
   `);
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:empty_issue SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:empty_issue SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:invoice_two, issued_at = d'2026-03-07T00:00:00Z', lines = [];`),
   "an issued invoice requires at least one line");
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:duplicate_keys SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:duplicate_keys SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:invoice_two, issued_at = d'2026-03-07T00:00:00Z', lines = [
       { line_key: 'same', source: stock_out:invoiced_delivery, billed_quantity: 1dec, unit_price: 1dec },
       { line_key: 'same', source: stock_out:invoiced_delivery2, billed_quantity: 1dec, unit_price: 1dec }
     ];`), "issued line keys are unique");
   await db.query(`
-    CREATE ONLY sales_invoice_issue:sale_issue_one SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_issue:sale_issue_one SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:invoice_one, issued_at = d'2026-03-07T00:00:00Z', lines = [
         { line_key: 'sale_a', source: stock_out:invoiced_delivery, billed_quantity: 4dec, unit_price: 2.50dec },
         { line_key: 'sale_b', source: stock_out:invoiced_delivery2, billed_quantity: 2dec, unit_price: 1.755dec }
       ];
-    CREATE ONLY sales_invoice_issue:sale_issue_two SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_issue:sale_issue_two SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:invoice_two, issued_at = d'2026-03-07T00:00:00Z', lines = [
         { line_key: 'sale_c', source: stock_out:invoiced_delivery, billed_quantity: 1dec, unit_price: 2.50dec }
       ];
-    CREATE ONLY purchase_invoice_issue:purchase_issue_one SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice_issue:purchase_issue_one SET owned_by = rebase_tenant:default,
       invoice = purchase_invoice:bill_one, issued_at = d'2026-03-07T00:00:00Z', lines = [
         { line_key: 'purchase_a', source: stock_in:invoiced_receipt, billed_quantity: 3dec, unit_price: 4dec }
       ];
-    CREATE ONLY cash_in:invoice_funding SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_a,
+    CREATE ONLY cash_in:invoice_funding SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_a,
       amount = 40dec, effective_at = d'2026-03-08T00:00:00Z';
-    CREATE ONLY cash_in:invoice_receipt SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_a,
+    CREATE ONLY cash_in:invoice_receipt SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_a,
       amount = 12dec, effective_at = d'2026-03-08T00:00:00Z';
-    CREATE ONLY cash_out:invoice_payment SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = organization:org_b,
+    CREATE ONLY cash_out:invoice_payment SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = organization:org_b,
       amount = 20dec, effective_at = d'2026-03-08T00:00:00Z';
-    CREATE ONLY sales_invoice_cash_allocation:sale_payment SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_cash_allocation:sale_payment SET owned_by = rebase_tenant:default,
       source = cash_in:invoice_receipt, target = sales_invoice_issue:sale_issue_one,
       amount = 8dec, effective_at = d'2026-03-09T00:00:00Z';
-    CREATE ONLY receivable_cash_allocation:shared_invoice_source SET owned_by = rebase_group:root,
+    CREATE ONLY receivable_cash_allocation:shared_invoice_source SET owned_by = rebase_tenant:default,
       source = cash_in:invoice_receipt, target = receivable:ar_open3,
       amount = 4dec, effective_at = d'2026-03-09T00:00:00Z';
-    CREATE ONLY purchase_invoice_cash_allocation:purchase_payment SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice_cash_allocation:purchase_payment SET owned_by = rebase_tenant:default,
       source = cash_out:invoice_payment, target = purchase_invoice_issue:purchase_issue_one,
       amount = 7dec, effective_at = d'2026-03-09T00:00:00Z';
   `);
@@ -532,27 +534,27 @@ async function probeInvoices(db) {
   ];`), "a receipt cannot be billed beyond its quantity");
   await rejects(() => db.query("UPDATE stock_in:invoiced_receipt SET quantity = 2.9dec;"),
     "a billed receipt cannot be reduced below shared billed quantity");
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:over_source SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:over_source SET owned_by = rebase_tenant:default,
     source = cash_in:invoice_receipt, target = sales_invoice_issue:sale_issue_one,
     amount = 1dec, effective_at = d'2026-03-09T00:00:00Z';`),
   "standalone and invoice allocations share one receipt's capacity");
-  await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:over_target SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:over_target SET owned_by = rebase_tenant:default,
     source = cash_out:invoice_payment, target = purchase_invoice_issue:purchase_issue_one,
     amount = 6dec, effective_at = d'2026-03-09T00:00:00Z';`),
   "several allocations cannot exceed invoice claim capacity");
-  await rejects(() => db.query(`CREATE ONLY sales_invoice:duplicate_number SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice:duplicate_number SET owned_by = rebase_tenant:default,
     claim_account = claim_account:claim_a, number = 'S-1';`), "invoice numbers are unique per entity");
   await db.query(`
-    CREATE ONLY sales_invoice:foreign_party SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:foreign_party SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_foreign, number = 'S-3';
-    CREATE ONLY purchase_invoice:foreign_party SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice:foreign_party SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_foreign, number = 'P-2';
   `);
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:wrong_party SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:wrong_party SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:foreign_party, issued_at = d'2026-03-07T00:00:00Z', lines = [
       { line_key: 'wrong', source: stock_out:stock_out_org, billed_quantity: 0.1dec, unit_price: 1dec }
     ];`), "invoice line party must match its delivery");
-  await rejects(() => db.query(`CREATE ONLY purchase_invoice_issue:wrong_party SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_invoice_issue:wrong_party SET owned_by = rebase_tenant:default,
     invoice = purchase_invoice:foreign_party, issued_at = d'2026-03-07T00:00:00Z', lines = [
       { line_key: 'wrong', source: stock_in:stock_in_org, billed_quantity: 0.1dec, unit_price: 1dec }
     ];`), "purchase line party must match its receipt");
@@ -560,7 +562,7 @@ async function probeInvoices(db) {
     "invalid output creation leaves no partial issue source");
   assert.equal((await rows(db, "sales_invoice_line")).some(row => String(row.invoice) === "sales_invoice:foreign_party"), false,
     "invalid output creation leaves no partial invoice lines");
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:wrong_currency SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:wrong_currency SET owned_by = rebase_tenant:default,
     source = cash_in:eur_receipt, target = sales_invoice_issue:sale_issue_one,
     amount = 1dec, effective_at = d'2026-03-09T00:00:00Z';`), "invoice allocation currency must agree");
   await rejects(() => db.query("UPDATE stock_out:invoiced_delivery SET effective_at = d'2026-03-10T00:00:00Z';"),
@@ -601,39 +603,39 @@ async function probeInvoices(db) {
 async function probeInvoiceTimestampBoundaries(db) {
   const invoiceAt = "2026-04-02T00:00:00Z";
   await db.query(`
-    CREATE ONLY stock_out:invoice_timestamp_sale_source SET owned_by = rebase_group:root,
+    CREATE ONLY stock_out:invoice_timestamp_sale_source SET owned_by = rebase_tenant:default,
       from_account = stock_account:stock_a, to_party = organization:org_b,
       quantity = 1dec, effective_at = d'2026-04-01T00:00:00Z';
-    CREATE ONLY stock_in:invoice_timestamp_purchase_source SET owned_by = rebase_group:root,
+    CREATE ONLY stock_in:invoice_timestamp_purchase_source SET owned_by = rebase_tenant:default,
       from_party = organization:org_b, to_account = stock_account:stock_a,
       quantity = 1dec, effective_at = d'2026-04-01T00:00:00Z';
-    CREATE ONLY sales_invoice:invoice_timestamp_sale SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:invoice_timestamp_sale SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_a, number = 'S-TIMESTAMP';
-    CREATE ONLY sales_invoice_issue:invoice_timestamp_sale_issue SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice_issue:invoice_timestamp_sale_issue SET owned_by = rebase_tenant:default,
       invoice = sales_invoice:invoice_timestamp_sale, issued_at = d'${invoiceAt}', lines = [
         { line_key: 'timestamp-sale', source: stock_out:invoice_timestamp_sale_source,
           billed_quantity: 1dec, unit_price: 10dec }
       ];
-    CREATE ONLY cash_in:invoice_timestamp_sale_funds SET owned_by = rebase_group:root,
+    CREATE ONLY cash_in:invoice_timestamp_sale_funds SET owned_by = rebase_tenant:default,
       from_party = organization:org_b, to_account = treasury_account:cash_a,
       amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
-    CREATE ONLY purchase_invoice:invoice_timestamp_purchase SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice:invoice_timestamp_purchase SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_a, number = 'P-TIMESTAMP';
-    CREATE ONLY purchase_invoice_issue:invoice_timestamp_purchase_issue SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice_issue:invoice_timestamp_purchase_issue SET owned_by = rebase_tenant:default,
       invoice = purchase_invoice:invoice_timestamp_purchase, issued_at = d'${invoiceAt}', lines = [
         { line_key: 'timestamp-purchase', source: stock_in:invoice_timestamp_purchase_source,
           billed_quantity: 1dec, unit_price: 10dec }
       ];
-    CREATE ONLY cash_out:invoice_timestamp_purchase_funds SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:invoice_timestamp_purchase_funds SET owned_by = rebase_tenant:default,
       from_account = treasury_account:cash_a, to_party = organization:org_b,
       amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
-    CREATE ONLY purchase_invoice:invoice_timestamp_receipt SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice:invoice_timestamp_receipt SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_a, number = 'P-TIMESTAMP-RECEIPT';
-    CREATE ONLY purchase_receipt:invoice_timestamp_receipt_source SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_receipt:invoice_timestamp_receipt_source SET owned_by = rebase_tenant:default,
       invoice = purchase_invoice:invoice_timestamp_receipt, stock_account = stock_account:stock_a,
       tax_claim_account = claim_account:claim_tax, quantity = 1dec, unit_price = 9dec,
       tax_amount = 1dec, effective_at = d'${invoiceAt}';
-    CREATE ONLY cash_out:invoice_timestamp_receipt_funds SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:invoice_timestamp_receipt_funds SET owned_by = rebase_tenant:default,
       from_account = treasury_account:cash_a, to_party = organization:org_b,
       amount = 30dec, effective_at = d'2026-03-30T00:00:00Z';
   `);
@@ -647,25 +649,25 @@ async function probeInvoiceTimestampBoundaries(db) {
   };
   let before = await invoiceTimestampGraph(db, sale);
   await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_early
-    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+    SET owned_by = rebase_tenant:default, source = cash_in:invoice_timestamp_sale_funds,
       target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 1dec,
       effective_at = d'2026-04-01T00:00:00Z';`),
   "sales invoice settlement before issue rejects");
   assert.deepEqual(await invoiceTimestampGraph(db, sale), before,
     "pre-issue sales settlement leaves invoice outputs, allocations, claim and cash roots unchanged");
   await db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_partial
-    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+    SET owned_by = rebase_tenant:default, source = cash_in:invoice_timestamp_sale_funds,
       target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 4dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, sale.invoiceId, 6, -4);
   await db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_final
-    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+    SET owned_by = rebase_tenant:default, source = cash_in:invoice_timestamp_sale_funds,
       target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 6dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, sale.invoiceId, 0, -10);
   before = await invoiceTimestampGraph(db, sale);
   await rejects(() => db.query(`CREATE ONLY sales_invoice_cash_allocation:invoice_timestamp_sale_excess
-    SET owned_by = rebase_group:root, source = cash_in:invoice_timestamp_sale_funds,
+    SET owned_by = rebase_tenant:default, source = cash_in:invoice_timestamp_sale_funds,
       target = sales_invoice_issue:invoice_timestamp_sale_issue, amount = 1dec,
       effective_at = d'${invoiceAt}';`),
   "same-time sales invoice excess rejects");
@@ -681,25 +683,25 @@ async function probeInvoiceTimestampBoundaries(db) {
   };
   before = await invoiceTimestampGraph(db, purchase);
   await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_early
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_purchase_funds,
       target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 1dec,
       effective_at = d'2026-04-01T00:00:00Z';`),
   "purchase invoice settlement before issue rejects");
   assert.deepEqual(await invoiceTimestampGraph(db, purchase), before,
     "pre-issue purchase settlement leaves invoice outputs, allocations, claim and cash roots unchanged");
   await db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_partial
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_purchase_funds,
       target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 4dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, purchase.invoiceId, 6, -4);
   await db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_final
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_purchase_funds,
       target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 6dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, purchase.invoiceId, 0, -10);
   before = await invoiceTimestampGraph(db, purchase);
   await rejects(() => db.query(`CREATE ONLY purchase_invoice_cash_allocation:invoice_timestamp_purchase_excess
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_purchase_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_purchase_funds,
       target = purchase_invoice_issue:invoice_timestamp_purchase_issue, amount = 1dec,
       effective_at = d'${invoiceAt}';`),
   "same-time purchase invoice excess rejects");
@@ -714,18 +716,18 @@ async function probeInvoiceTimestampBoundaries(db) {
     fundingId: "cash_out:invoice_timestamp_receipt_funds",
   };
   await db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_partial
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_receipt_funds,
       target = purchase_receipt:invoice_timestamp_receipt_source, amount = 4dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, receipt.invoiceId, 6, 0);
   await db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_final
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_receipt_funds,
       target = purchase_receipt:invoice_timestamp_receipt_source, amount = 6dec,
       effective_at = d'${invoiceAt}';`);
   await assertInvoiceTimestamp(db, receipt.invoiceId, 0, 0);
   before = await invoiceTimestampGraph(db, receipt);
   await rejects(() => db.query(`CREATE ONLY purchase_receipt_cash_allocation:invoice_timestamp_receipt_excess
-    SET owned_by = rebase_group:root, source = cash_out:invoice_timestamp_receipt_funds,
+    SET owned_by = rebase_tenant:default, source = cash_out:invoice_timestamp_receipt_funds,
       target = purchase_receipt:invoice_timestamp_receipt_source, amount = 1dec,
       effective_at = d'${invoiceAt}';`),
   "same-time purchase receipt excess rejects");
@@ -755,44 +757,44 @@ async function assertMovementOracles(db) {
 
 async function probeMovements(db) {
   await db.query(`
-    CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'Euro', precision = 2;
-    CREATE ONLY misc_account:opening_balance SET owned_by = rebase_group:root, label = 'Opening balance', purpose = 'opening_balance';
-    CREATE ONLY treasury:bank_eur SET owned_by = rebase_group:root, name = 'Euro bank';
-    CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+    CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'Euro', precision = 2;
+    CREATE ONLY misc_account:opening_balance SET owned_by = rebase_tenant:default, label = 'Opening balance', purpose = 'opening_balance';
+    CREATE ONLY treasury:bank_eur SET owned_by = rebase_tenant:default, name = 'Euro bank';
+    CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
       treasury = treasury:bank_eur, currency = currency:eur;
-    CREATE ONLY operating_unit:unit_a2 SET owned_by = rebase_group:root, economic_entity = organization:org_a, name = 'A second warehouse';
-    CREATE ONLY stock_account:stock_b SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+    CREATE ONLY operating_unit:unit_a2 SET owned_by = rebase_tenant:default, economic_entity = organization:org_a, name = 'A second warehouse';
+    CREATE ONLY stock_account:stock_b SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
       operating_unit = operating_unit:unit_a2, resource = item:grain;
-    CREATE ONLY item:copper SET owned_by = rebase_group:root, name = 'Copper', unit = measure_unit:kg;
-    CREATE ONLY stock_account:stock_copper SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+    CREATE ONLY item:copper SET owned_by = rebase_tenant:default, name = 'Copper', unit = measure_unit:kg;
+    CREATE ONLY stock_account:stock_copper SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
       operating_unit = operating_unit:unit_a, resource = item:copper;
-    CREATE ONLY exchange_pair:usd_eur SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+    CREATE ONLY exchange_pair:usd_eur SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
       given_resource = currency:usd, received_resource = currency:eur;
-    CREATE ONLY currency_exchange:usd_eur SET owned_by = rebase_group:root, pair = exchange_pair:usd_eur,
+    CREATE ONLY currency_exchange:usd_eur SET owned_by = rebase_tenant:default, pair = exchange_pair:usd_eur,
       from_currency = currency:usd, to_currency = currency:eur, rate = 0.9dec,
       effective_at = d'2026-01-07T00:00:00Z';
   `);
 
   await db.query(`
-    CREATE ONLY cash_in:cash_opening SET owned_by = rebase_group:root, from_party = misc_account:opening_balance, to_account = treasury_account:cash_a,
+    CREATE ONLY cash_in:cash_opening SET owned_by = rebase_tenant:default, from_party = misc_account:opening_balance, to_account = treasury_account:cash_a,
       amount = 100dec, effective_at = d'2025-12-31T00:00:00Z';
-    CREATE ONLY cash_in:in_org SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-01T00:00:00Z';
-    CREATE ONLY cash_in:in_tax SET owned_by = rebase_group:root, from_party = tax_account:tax_a, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-02T00:00:00Z';
-    CREATE ONLY cash_in:in_misc SET owned_by = rebase_group:root, from_party = misc_account:purpose_a, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-03T00:00:00Z';
-    CREATE ONLY cash_out:out_org SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = organization:org_b, amount = 1dec, effective_at = d'2026-01-04T00:00:00Z';
-    CREATE ONLY cash_out:out_tax SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = tax_account:tax_a, amount = 1dec, effective_at = d'2026-01-05T00:00:00Z';
-    CREATE ONLY cash_out:out_misc SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_party = misc_account:purpose_a, amount = 1dec, effective_at = d'2026-01-06T00:00:00Z';
-    CREATE ONLY cash_transfer:cash_move SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_account = treasury_account:cash_overdraft,
+    CREATE ONLY cash_in:in_org SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-01T00:00:00Z';
+    CREATE ONLY cash_in:in_tax SET owned_by = rebase_tenant:default, from_party = tax_account:tax_a, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-02T00:00:00Z';
+    CREATE ONLY cash_in:in_misc SET owned_by = rebase_tenant:default, from_party = misc_account:purpose_a, to_account = treasury_account:cash_a, amount = 10dec, effective_at = d'2026-01-03T00:00:00Z';
+    CREATE ONLY cash_out:out_org SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = organization:org_b, amount = 1dec, effective_at = d'2026-01-04T00:00:00Z';
+    CREATE ONLY cash_out:out_tax SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = tax_account:tax_a, amount = 1dec, effective_at = d'2026-01-05T00:00:00Z';
+    CREATE ONLY cash_out:out_misc SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_party = misc_account:purpose_a, amount = 1dec, effective_at = d'2026-01-06T00:00:00Z';
+    CREATE ONLY cash_transfer:cash_move SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_account = treasury_account:cash_overdraft,
       amount = 5dec, effective_at = d'2026-01-07T00:00:00Z';
-    CREATE ONLY stock_in:stock_opening SET owned_by = rebase_group:root, from_party = misc_account:opening_balance, to_account = stock_account:stock_a,
+    CREATE ONLY stock_in:stock_opening SET owned_by = rebase_tenant:default, from_party = misc_account:opening_balance, to_account = stock_account:stock_a,
       quantity = 20dec, effective_at = d'2025-12-31T00:00:00Z';
-    CREATE ONLY stock_in:stock_in_org SET owned_by = rebase_group:root, from_party = organization:org_b, to_account = stock_account:stock_a, quantity = 10dec, effective_at = d'2026-01-01T00:00:00Z';
-    CREATE ONLY stock_in:stock_in_misc SET owned_by = rebase_group:root, from_party = misc_account:purpose_a, to_account = stock_account:stock_a, quantity = 10dec, effective_at = d'2026-01-02T00:00:00Z';
-    CREATE ONLY stock_out:stock_out_org SET owned_by = rebase_group:root, from_account = stock_account:stock_a, to_party = organization:org_b, quantity = 1dec, effective_at = d'2026-01-03T00:00:00Z';
-    CREATE ONLY stock_out:stock_out_misc SET owned_by = rebase_group:root, from_account = stock_account:stock_a, to_party = misc_account:purpose_a, quantity = 1dec, effective_at = d'2026-01-04T00:00:00Z';
-    CREATE ONLY stock_transfer:stock_move SET owned_by = rebase_group:root, from_account = stock_account:stock_a, to_account = stock_account:stock_b,
+    CREATE ONLY stock_in:stock_in_org SET owned_by = rebase_tenant:default, from_party = organization:org_b, to_account = stock_account:stock_a, quantity = 10dec, effective_at = d'2026-01-01T00:00:00Z';
+    CREATE ONLY stock_in:stock_in_misc SET owned_by = rebase_tenant:default, from_party = misc_account:purpose_a, to_account = stock_account:stock_a, quantity = 10dec, effective_at = d'2026-01-02T00:00:00Z';
+    CREATE ONLY stock_out:stock_out_org SET owned_by = rebase_tenant:default, from_account = stock_account:stock_a, to_party = organization:org_b, quantity = 1dec, effective_at = d'2026-01-03T00:00:00Z';
+    CREATE ONLY stock_out:stock_out_misc SET owned_by = rebase_tenant:default, from_account = stock_account:stock_a, to_party = misc_account:purpose_a, quantity = 1dec, effective_at = d'2026-01-04T00:00:00Z';
+    CREATE ONLY stock_transfer:stock_move SET owned_by = rebase_tenant:default, from_account = stock_account:stock_a, to_account = stock_account:stock_b,
       quantity = 3dec, effective_at = d'2026-01-05T00:00:00Z';
-    CREATE ONLY cash_fx_transfer:fx_move SET owned_by = rebase_group:root, from_account = treasury_account:cash_a, to_account = treasury_account:cash_eur,
+    CREATE ONLY cash_fx_transfer:fx_move SET owned_by = rebase_tenant:default, from_account = treasury_account:cash_a, to_account = treasury_account:cash_eur,
       exchange = currency_exchange:usd_eur, from_amount = 2.01dec,
       effective_at = d'2026-02-06T00:00:00Z';
   `);
@@ -826,19 +828,19 @@ async function probeMovements(db) {
   await db.query("DELETE cash_out:out_tax;");
   await assertMovementOracles(db);
   const beforeRejectedCash = await treeSum(db, "treasury_account:cash_a", "balance");
-  await rejects(() => db.query(`CREATE ONLY cash_out:overdraw SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY cash_out:overdraw SET owned_by = rebase_tenant:default,
     from_account = treasury_account:cash_a, to_party = misc_account:purpose_a,
     amount = 1000dec, effective_at = d'2026-02-01T00:00:00Z';`),
   "cash history cannot fall below the account's configured minimum");
   assert.equal(await treeSum(db, "treasury_account:cash_a", "balance"), beforeRejectedCash,
     "rejected cash movement must restore the complete source tree");
   await assertMovementOracles(db);
-  await rejects(() => db.query(`CREATE ONLY cash_transfer:cross_currency SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY cash_transfer:cross_currency SET owned_by = rebase_tenant:default,
     from_account = treasury_account:cash_a, to_account = treasury_account:cash_eur,
     amount = 1dec, effective_at = d'2026-02-02T00:00:00Z';`),
   "cash transfers cannot combine currencies");
   const cashAfterFx = await treeSum(db, "treasury_account:cash_a", "balance");
-  await rejects(() => db.query(`CREATE ONLY cash_fx_transfer:before_quote SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY cash_fx_transfer:before_quote SET owned_by = rebase_tenant:default,
     from_account = treasury_account:cash_a, to_account = treasury_account:cash_eur,
     exchange = currency_exchange:usd_eur, from_amount = 1dec,
     effective_at = d'2026-01-06T00:00:00Z';`),
@@ -846,15 +848,15 @@ async function probeMovements(db) {
   assert.equal(await treeSum(db, "treasury_account:cash_a", "balance"), cashAfterFx,
     "rejected early FX use must roll back all treasury positions");
   await assertMovementOracles(db);
-  await rejects(() => db.query(`CREATE ONLY stock_transfer:cross_resource SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY stock_transfer:cross_resource SET owned_by = rebase_tenant:default,
     from_account = stock_account:stock_a, to_account = stock_account:stock_copper,
     quantity = 1dec, effective_at = d'2026-02-03T00:00:00Z';`),
   "stock transfers cannot convert one resource into another");
-  await rejects(() => db.query(`CREATE ONLY stock_out:overdraw SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY stock_out:overdraw SET owned_by = rebase_tenant:default,
     from_account = stock_account:stock_a, to_party = misc_account:purpose_a,
     quantity = 1000dec, effective_at = d'2026-02-04T00:00:00Z';`),
   "stock history cannot fall below its configured minimum");
-  await rejects(() => db.query(`CREATE ONLY cash_transfer:external_to_external SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY cash_transfer:external_to_external SET owned_by = rebase_tenant:default,
     from_account = organization:org_a, to_account = organization:org_b,
     amount = 1dec, effective_at = d'2026-02-05T00:00:00Z';`),
   "real money cannot move between unmodeled external endpoints");
@@ -862,26 +864,26 @@ async function probeMovements(db) {
 
 async function probeH1Identity(db) {
   await db.query(`
-    CREATE ONLY rebase_user:personal SET name = 'Personal entity', parents = [rebase_group:root];
-    CREATE ONLY rebase_user:counterparty SET name = 'User counterparty', parents = [rebase_group:root];
-    CREATE ONLY organization:managed SET owned_by = rebase_group:root, name = 'Managed organization';
-    CREATE ONLY treasury:shared SET owned_by = rebase_group:root, name = 'Reusable treasury';
-    CREATE ONLY operating_unit:personal_unit SET owned_by = rebase_group:root,
+    CREATE ONLY rebase_user:personal SET name = 'Personal entity', parents = [rebase_tenant:default];
+    CREATE ONLY rebase_user:counterparty SET name = 'User counterparty', parents = [rebase_tenant:default];
+    CREATE ONLY organization:managed SET owned_by = rebase_tenant:default, name = 'Managed organization';
+    CREATE ONLY treasury:shared SET owned_by = rebase_tenant:default, name = 'Reusable treasury';
+    CREATE ONLY operating_unit:personal_unit SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, name = 'Personal store';
-    CREATE ONLY treasury_account:personal_usd SET owned_by = rebase_group:root,
+    CREATE ONLY treasury_account:personal_usd SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, treasury = treasury:shared, currency = currency:usd;
-    CREATE ONLY treasury_account:managed_usd SET owned_by = rebase_group:root,
+    CREATE ONLY treasury_account:managed_usd SET owned_by = rebase_tenant:default,
       economic_entity = organization:managed, treasury = treasury:shared, currency = currency:usd;
-    CREATE ONLY treasury_account:personal_eur SET owned_by = rebase_group:root,
+    CREATE ONLY treasury_account:personal_eur SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, treasury = treasury:shared, currency = currency:eur;
-    CREATE ONLY stock_account:personal_stock SET owned_by = rebase_group:root,
+    CREATE ONLY stock_account:personal_stock SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, operating_unit = operating_unit:personal_unit, resource = item:grain;
-    CREATE ONLY claim_account:personal_claim SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:personal_claim SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, opponent = rebase_user:counterparty, currency = currency:usd;
-    CREATE ONLY cash_in:personal_opening SET owned_by = rebase_group:root,
+    CREATE ONLY cash_in:personal_opening SET owned_by = rebase_tenant:default,
       from_party = rebase_user:counterparty, to_account = treasury_account:personal_usd,
       amount = 10dec, effective_at = d'2026-04-01T00:00:00Z';
-    CREATE ONLY receivable:personal_receivable SET owned_by = rebase_group:root,
+    CREATE ONLY receivable:personal_receivable SET owned_by = rebase_tenant:default,
       claim_account = claim_account:personal_claim, amount = 2dec,
       effective_at = d'2026-04-01T00:00:00Z';
   `);
@@ -892,21 +894,21 @@ async function probeH1Identity(db) {
   assert.equal(String(queryResult(await db.query('RETURN receivable:personal_receivable.economic_entity;'))),
     'rebase_user:personal', 'claim source inherits the account entity');
   assert.equal(String(queryResult(await db.query('RETURN treasury_account:personal_usd.owned_by;'))),
-    'rebase_group:root', 'authorization ownership is independent of economic entity');
+    'rebase_tenant:default', 'authorization ownership is independent of economic entity');
   assert.equal(await treeSum(db, 'treasury_account:personal_usd', 'balance'), 10);
-  await rejects(() => db.query(`CREATE ONLY treasury_account:duplicate_personal SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY treasury_account:duplicate_personal SET owned_by = rebase_tenant:default,
     economic_entity = rebase_user:personal, treasury = treasury:shared, currency = currency:usd;`),
   'multi-currency profile forbids duplicate entity, treasury and currency');
-  await rejects(() => db.query(`CREATE ONLY stock_account:cross_unit SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY stock_account:cross_unit SET owned_by = rebase_tenant:default,
     economic_entity = organization:managed, operating_unit = operating_unit:personal_unit, resource = item:grain;`),
   'stock account cannot borrow an operating unit from another entity');
-  await rejects(() => db.query(`CREATE ONLY cash_transfer:cross_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY cash_transfer:cross_entity SET owned_by = rebase_tenant:default,
     from_account = treasury_account:personal_usd, to_account = treasury_account:managed_usd,
     amount = 1dec, effective_at = d'2026-04-02T00:00:00Z';`),
   'treasury endpoints must agree on entity');
   assert.equal(await treeSum(db, 'treasury_account:personal_usd', 'balance'), 10,
     'cross-entity rejection leaves history intact');
-  await rejects(() => db.query(`CREATE ONLY stock_transfer:cross_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY stock_transfer:cross_entity SET owned_by = rebase_tenant:default,
     from_account = stock_account:personal_stock, to_account = stock_account:stock_a,
     quantity = 1dec, effective_at = d'2026-04-02T00:00:00Z';`),
   'stock endpoints must agree on entity');
@@ -922,7 +924,7 @@ async function probeH1Identity(db) {
 
 async function probeH1Authorization(db, endpoint, namespace) {
   await db.query(`
-    CREATE ONLY rebase_group:h1_actor SET name = 'H1 actor', parents = [rebase_group:root],
+    CREATE ONLY rebase_group:h1_actor SET name = 'H1 actor', parents = [rebase_tenant:default],
       role = ['cash_in_create', 'cash_in_select', 'treasury_account_select', 'treasury_account_update'];
     CREATE ONLY rebase_user:h1_actor SET name = 'H1 actor', parents = [rebase_group:h1_actor];
     DEFINE ACCESS h1_probe_actor ON DATABASE TYPE RECORD SIGNIN rebase_user:h1_actor;
@@ -949,21 +951,22 @@ async function probeH1Authorization(db, endpoint, namespace) {
 }
 
 async function probeSingleCurrencyVariant(db, namespace, schema) {
-  const index = 'DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS economic_entity, treasury, currency UNIQUE;';
+  const index = 'DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS tenant, economic_entity, treasury, currency UNIQUE;';
   assert(schema.includes(index), 'multi-currency index must have an exact replacement point');
   const singleSchema = schema.replace(index,
-    'DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS economic_entity, treasury UNIQUE;');
+    'DEFINE INDEX OVERWRITE treasury_account_dimensions ON treasury_account FIELDS tenant, economic_entity, treasury UNIQUE;');
   await db.use({ namespace, database: 'single_currency_variant' });
   await db.query(singleSchema);
   await db.query(`
-    CREATE ONLY rebase_user:personal SET name = 'Personal entity', parents = [rebase_group:root];
-    CREATE ONLY treasury:shared SET owned_by = rebase_group:root, name = 'Shared';
-    CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'US dollar';
-    CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'Euro';
-    CREATE ONLY treasury_account:usd SET owned_by = rebase_group:root,
+    CREATE rebase_tenant:default SET name = 'Single currency fixture';
+    CREATE ONLY rebase_user:personal SET name = 'Personal entity', parents = [rebase_tenant:default];
+    CREATE ONLY treasury:shared SET owned_by = rebase_tenant:default, name = 'Shared';
+    CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'US dollar';
+    CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'Euro';
+    CREATE ONLY treasury_account:usd SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, treasury = treasury:shared, currency = currency:usd;
   `);
-  await rejects(() => db.query(`CREATE ONLY treasury_account:eur SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY treasury_account:eur SET owned_by = rebase_tenant:default,
     economic_entity = rebase_user:personal, treasury = treasury:shared, currency = currency:eur;`),
   'single-currency variant forbids a second currency for the same entity and treasury');
   await db.use({ namespace, database: 'probe' });
@@ -1095,22 +1098,22 @@ async function assertH2ReceiptOracle(db) {
 
 async function probeH2Receipt(db) {
   await db.query(`
-    CREATE ONLY organization:h2_vendor SET owned_by = rebase_group:root, name = 'H2 vendor';
-    CREATE ONLY tax_account:h2_tax SET owned_by = rebase_group:root,
+    CREATE ONLY organization:h2_vendor SET owned_by = rebase_tenant:default, name = 'H2 vendor';
+    CREATE ONLY tax_account:h2_tax SET owned_by = rebase_tenant:default,
       authority = organization:org_b, jurisdiction = organization:org_a, label = 'Input tax';
-    CREATE ONLY operating_unit:h2_unit SET owned_by = rebase_group:root,
+    CREATE ONLY operating_unit:h2_unit SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, name = 'H2 warehouse';
-    CREATE ONLY stock_account:h2_stock SET owned_by = rebase_group:root,
+    CREATE ONLY stock_account:h2_stock SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, operating_unit = operating_unit:h2_unit, resource = item:grain;
-    CREATE ONLY claim_account:h2_supplier SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_supplier SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = organization:h2_vendor, currency = currency:usd;
-    CREATE ONLY claim_account:h2_tax_claim SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_tax_claim SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h2_tax, currency = currency:usd;
-    CREATE ONLY claim_account:h2_tax_eur SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_tax_eur SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h2_tax, currency = currency:eur;
-    CREATE ONLY claim_account:h2_tax_other_entity SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_tax_other_entity SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, opponent = tax_account:h2_tax, currency = currency:usd;
-    CREATE ONLY purchase_invoice:h2_invoice SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice:h2_invoice SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_supplier, number = 'H2-1';
   `);
   const beforeStockIn = (await rows(db, 'stock_in')).length;
@@ -1120,7 +1123,7 @@ async function probeH2Receipt(db) {
     stock_account = stock_account:h2_stock,
     tax_claim_account = claim_account:h2_tax_claim, quantity = 3dec, unit_price = 7.33dec,
     tax_amount = 2.01dec, effective_at = d'2026-05-01T00:00:00Z'`;
-  await db.query(`CREATE ONLY purchase_receipt:h2 SET owned_by = rebase_group:root, ${common};`);
+  await db.query(`CREATE ONLY purchase_receipt:h2 SET owned_by = rebase_tenant:default, ${common};`);
   let snapshot = await assertH2ReceiptOracle(db);
   assert.equal(numeric(queryResult(await db.query('RETURN purchase_receipt:h2.base_amount;'))), 21.99);
   assert.equal(numeric(queryResult(await db.query('RETURN purchase_receipt:h2.gross_amount;'))), 24);
@@ -1137,13 +1140,13 @@ async function probeH2Receipt(db) {
   assert.equal((await rows(db, 'stock_in')).length, beforeStockIn, 'receipt adds no old stock source');
   assert.equal((await rows(db, 'purchase_invoice_issue')).length, beforeIssues, 'receipt adds no invoice issue');
   assert.equal((await rows(db, 'purchase_invoice_line')).length, beforeLines, 'receipt adds no invoice line');
-  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_entity SET owned_by = rebase_tenant:default,
     ${common.replace('stock_account:h2_stock', 'stock_account:personal_stock')};`), 'stock endpoint must share entity');
-  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_tax_entity SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_tax_entity SET owned_by = rebase_tenant:default,
     ${common.replace('claim_account:h2_tax_claim', 'claim_account:h2_tax_other_entity')};`), 'tax claim must share entity');
-  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_currency SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_currency SET owned_by = rebase_tenant:default,
     ${common.replace('claim_account:h2_tax_claim', 'claim_account:h2_tax_eur')};`), 'tax claim must use invoice currency');
-  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_tax_opponent SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY purchase_receipt:h2_wrong_tax_opponent SET owned_by = rebase_tenant:default,
     ${common.replace('claim_account:h2_tax_claim', 'claim_account:claim_misc')};`), 'tax claim opponent must be a tax account');
   await rejects(() => db.query('UPDATE purchase_receipt:h2 SET from_party = organization:org_b;'),
     'supplier is protected by the invoice claim');
@@ -1160,13 +1163,13 @@ async function probeH2Receipt(db) {
   assert.equal(numeric(queryResult(await db.query('RETURN purchase_receipt:h2.base_amount;'))), 29.32);
   await db.query("UPDATE purchase_receipt:h2 SET effective_at = d'2027-01-01T00:00:00Z';");
   await assertH2ReceiptOracle(db);
-  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::read(stock_account:h2_stock,
-    'z_history', 'before', [d'2026-12-31T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
+  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::before({rid:stock_account:h2_stock,
+    slot:'z_history'}, [d'2026-12-31T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
   'future-effective receipt has no earlier stock position');
   await db.query("UPDATE purchase_receipt:h2 SET effective_at = d'2026-05-03T00:00:00Z';");
   snapshot = await assertH2ReceiptOracle(db);
-  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::read(stock_account:h2_stock,
-    'z_history', 'before', [d'2026-05-02T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
+  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::before({rid:stock_account:h2_stock,
+    slot:'z_history'}, [d'2026-05-02T00:00:00Z']).measures.quantity.sum ?? 0dec;`))), 0,
   'date move removes the old dated position');
   await db.query('UPDATE claim_account:h2_supplier SET net_floor = -33dec;');
   await rejects(() => db.query('UPDATE purchase_receipt:h2 SET unit_price = 8.50dec;'),
@@ -1211,38 +1214,38 @@ async function assertH2NetOracle(db, accountId) {
 
 async function probeH2NetBounds(db) {
   await db.query(`
-    CREATE ONLY misc_account:h2_net_a SET owned_by = rebase_group:root, label = 'Net order A';
-    CREATE ONLY misc_account:h2_net_b SET owned_by = rebase_group:root, label = 'Net order B';
-    CREATE ONLY misc_account:h2_peak SET owned_by = rebase_group:root, label = 'Net peak';
-    CREATE ONLY misc_account:h2_trough SET owned_by = rebase_group:root, label = 'Net trough';
-    CREATE ONLY misc_account:h2_unbounded SET owned_by = rebase_group:root, label = 'No net bound';
-    CREATE ONLY claim_account:h2_net_a SET owned_by = rebase_group:root,
+    CREATE ONLY misc_account:h2_net_a SET owned_by = rebase_tenant:default, label = 'Net order A';
+    CREATE ONLY misc_account:h2_net_b SET owned_by = rebase_tenant:default, label = 'Net order B';
+    CREATE ONLY misc_account:h2_peak SET owned_by = rebase_tenant:default, label = 'Net peak';
+    CREATE ONLY misc_account:h2_trough SET owned_by = rebase_tenant:default, label = 'Net trough';
+    CREATE ONLY misc_account:h2_unbounded SET owned_by = rebase_tenant:default, label = 'No net bound';
+    CREATE ONLY claim_account:h2_net_a SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = misc_account:h2_net_a, currency = currency:usd;
-    CREATE ONLY claim_account:h2_net_b SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_net_b SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = misc_account:h2_net_b, currency = currency:usd;
-    CREATE ONLY claim_account:h2_peak SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_peak SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = misc_account:h2_peak, currency = currency:usd;
-    CREATE ONLY claim_account:h2_trough SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_trough SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = misc_account:h2_trough, currency = currency:usd;
-    CREATE ONLY claim_account:h2_unbounded SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h2_unbounded SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = misc_account:h2_unbounded, currency = currency:usd;
-    CREATE ONLY receivable:h2_a_r SET owned_by = rebase_group:root,
+    CREATE ONLY receivable:h2_a_r SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_net_a, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY payable:h2_z_p SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h2_z_p SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_net_a, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY payable:h2_a_p SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h2_a_p SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_net_b, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY receivable:h2_z_r SET owned_by = rebase_group:root,
+    CREATE ONLY receivable:h2_z_r SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_net_b, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY receivable:h2_peak_r SET owned_by = rebase_group:root,
+    CREATE ONLY receivable:h2_peak_r SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_peak, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY payable:h2_peak_p SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h2_peak_p SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_peak, amount = 100dec, effective_at = d'2026-06-02T00:00:00Z';
-    CREATE ONLY payable:h2_trough_p SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h2_trough_p SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_trough, amount = 100dec, effective_at = d'2026-06-01T00:00:00Z';
-    CREATE ONLY receivable:h2_trough_r SET owned_by = rebase_group:root,
+    CREATE ONLY receivable:h2_trough_r SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_trough, amount = 100dec, effective_at = d'2026-06-02T00:00:00Z';
-    CREATE ONLY payable:h2_unbounded_p SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h2_unbounded_p SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h2_unbounded, amount = 50dec, effective_at = d'2026-06-03T00:00:00Z';
   `);
   const a = await assertH2NetOracle(db, 'claim_account:h2_net_a');
@@ -1371,55 +1374,55 @@ async function probeH3bReceiptSettlement(db) {
     lines: (await rows(db, 'purchase_invoice_line')).length,
   };
   await db.query(`
-    CREATE ONLY organization:h3b_vendor SET owned_by = rebase_group:root, name = 'H3b vendor';
-    CREATE ONLY tax_account:h3b_tax SET owned_by = rebase_group:root,
+    CREATE ONLY organization:h3b_vendor SET owned_by = rebase_tenant:default, name = 'H3b vendor';
+    CREATE ONLY tax_account:h3b_tax SET owned_by = rebase_tenant:default,
       authority = organization:org_b, jurisdiction = organization:org_a, label = 'H3b input tax';
-    CREATE ONLY operating_unit:h3b_unit SET owned_by = rebase_group:root,
+    CREATE ONLY operating_unit:h3b_unit SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, name = 'H3b warehouse';
-    CREATE ONLY stock_account:h3b_stock SET owned_by = rebase_group:root,
+    CREATE ONLY stock_account:h3b_stock SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, operating_unit = operating_unit:h3b_unit, resource = item:grain;
-    CREATE ONLY claim_account:h3b_supplier SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3b_supplier SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = organization:h3b_vendor, currency = currency:usd;
-    CREATE ONLY claim_account:h3b_tax_claim SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3b_tax_claim SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h3b_tax, currency = currency:usd;
-    CREATE ONLY purchase_invoice:h3b_invoice SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_invoice:h3b_invoice SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3b_supplier, number = 'H3b-1';
-    CREATE ONLY purchase_receipt:h3b_receipt SET owned_by = rebase_group:root,
+    CREATE ONLY purchase_receipt:h3b_receipt SET owned_by = rebase_tenant:default,
       invoice = purchase_invoice:h3b_invoice, stock_account = stock_account:h3b_stock,
       tax_claim_account = claim_account:h3b_tax_claim, quantity = 3dec, unit_price = 7.33dec,
       tax_amount = 2.01dec, effective_at = d'2026-08-01T00:00:00Z';
-    CREATE ONLY treasury:h3b_bank SET owned_by = rebase_group:root, name = 'H3b bank';
-    CREATE ONLY treasury_account:h3b_cash SET owned_by = rebase_group:root,
+    CREATE ONLY treasury:h3b_bank SET owned_by = rebase_tenant:default, name = 'H3b bank';
+    CREATE ONLY treasury_account:h3b_cash SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, treasury = treasury:h3b_bank, currency = currency:usd;
-    CREATE ONLY cash_in:h3b_funding SET owned_by = rebase_group:root,
+    CREATE ONLY cash_in:h3b_funding SET owned_by = rebase_tenant:default,
       from_party = misc_account:opening_balance, to_account = treasury_account:h3b_cash,
       amount = 50dec, effective_at = d'2026-07-31T00:00:00Z';
-    CREATE ONLY cash_out:h3b_pay_a SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_pay_a SET owned_by = rebase_tenant:default,
       from_account = treasury_account:h3b_cash, to_party = organization:h3b_vendor,
       amount = 13dec, effective_at = d'2026-08-02T00:00:00Z';
-    CREATE ONLY cash_out:h3b_pay_b SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_pay_b SET owned_by = rebase_tenant:default,
       from_account = treasury_account:h3b_cash, to_party = organization:h3b_vendor,
       amount = 14dec, effective_at = d'2026-08-03T00:00:00Z';
-    CREATE ONLY cash_out:h3b_pay_c SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_pay_c SET owned_by = rebase_tenant:default,
       from_account = treasury_account:h3b_cash, to_party = organization:h3b_vendor,
       amount = 1dec, effective_at = d'2026-08-03T00:00:00Z';
-    CREATE ONLY payable:h3b_shared_due SET owned_by = rebase_group:root,
+    CREATE ONLY payable:h3b_shared_due SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3b_supplier, amount = 3dec,
       effective_at = d'2026-08-01T00:00:00Z';
-    CREATE ONLY payable_cash_allocation:h3b_shared SET owned_by = rebase_group:root,
+    CREATE ONLY payable_cash_allocation:h3b_shared SET owned_by = rebase_tenant:default,
       source = cash_out:h3b_pay_a, target = payable:h3b_shared_due,
       amount = 3dec, effective_at = d'2026-08-03T00:00:00Z';
   `);
   let graph = await assertH3bOracle(db);
   assert.equal(numeric(graph.invoice.z_outstanding.summary.measures.outstanding.sum), 24);
   await db.query(`
-    CREATE ONLY cash_out:h3b_wrong_party SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_wrong_party SET owned_by = rebase_tenant:default,
       from_account = treasury_account:h3b_cash, to_party = organization:org_b,
       amount = 1dec, effective_at = d'2026-08-03T00:00:00Z';
-    CREATE ONLY cash_out:h3b_wrong_currency SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_wrong_currency SET owned_by = rebase_tenant:default,
       from_account = treasury_account:cash_eur, to_party = organization:h3b_vendor,
       amount = 0.50dec, effective_at = d'2026-08-03T00:00:00Z';
-    CREATE ONLY cash_out:h3b_wrong_entity SET owned_by = rebase_group:root,
+    CREATE ONLY cash_out:h3b_wrong_entity SET owned_by = rebase_tenant:default,
       from_account = treasury_account:personal_usd, to_party = organization:h3b_vendor,
       amount = 0.50dec, effective_at = d'2026-08-03T00:00:00Z';
   `);
@@ -1430,19 +1433,19 @@ async function probeH3bReceiptSettlement(db) {
     ['entity', 'cash_out:h3b_wrong_entity'],
   ]) {
     await rejects(() => db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_wrong_${id} SET
-      owned_by = rebase_group:root, source = ${source}, target = purchase_receipt:h3b_receipt,
+      owned_by = rebase_tenant:default, source = ${source}, target = purchase_receipt:h3b_receipt,
       amount = 0.50dec, effective_at = d'2026-08-04T00:00:00Z';`),
     `receipt settlement rejects a cash source with mismatched ${id}`);
   }
   assert.deepEqual(await h3bGraph(db), beforeWrongSource,
     'rejected cash endpoints restore receipt, claim, invoice, source and cash roots');
-  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_a SET owned_by = rebase_group:root,
+  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_a SET owned_by = rebase_tenant:default,
     source = cash_out:h3b_pay_a, target = purchase_receipt:h3b_receipt,
     amount = 10dec, effective_at = d'2026-08-04T00:00:00Z';`);
   graph = await assertH3bOracle(db);
   assert.equal(numeric(graph.invoice.z_outstanding.summary.measures.outstanding.sum), 14,
     'first independently dated payment leaves a partial invoice balance');
-  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_b SET owned_by = rebase_group:root,
+  await db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_b SET owned_by = rebase_tenant:default,
     source = cash_out:h3b_pay_b, target = purchase_receipt:h3b_receipt,
     amount = 14dec, effective_at = d'2026-08-05T00:00:00Z';`);
   graph = await assertH3bOracle(db);
@@ -1456,7 +1459,7 @@ async function probeH3bReceiptSettlement(db) {
 
   let before = await h3bGraph(db);
   await rejects(() => db.query(`CREATE ONLY purchase_receipt_cash_allocation:h3b_over_invoice SET
-    owned_by = rebase_group:root, source = cash_out:h3b_pay_c, target = purchase_receipt:h3b_receipt,
+    owned_by = rebase_tenant:default, source = cash_out:h3b_pay_c, target = purchase_receipt:h3b_receipt,
     amount = 1dec, effective_at = d'2026-08-06T00:00:00Z';`),
   'invoice outstanding guard rejects payment beyond the receipt gross');
   await rejects(() => db.query('UPDATE cash_out:h3b_pay_a SET amount = 12.99dec;'),
@@ -1492,8 +1495,8 @@ async function probeH3bReceiptSettlement(db) {
     'receipt price edit reprices the unpaid balance once');
   await db.query("UPDATE purchase_receipt:h3b_receipt SET effective_at = d'2026-08-03T00:00:00Z';");
   await assertH3bOracle(db);
-  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::read(purchase_invoice:h3b_invoice,
-    'z_outstanding', 'before', [d'2026-08-02T00:00:00Z']).measures.outstanding.sum ?? 0dec;`))), 0,
+  assert.equal(numeric(queryResult(await db.query(`RETURN fn::tree::before({rid:purchase_invoice:h3b_invoice,
+    slot:'z_outstanding'}, [d'2026-08-02T00:00:00Z']).measures.outstanding.sum ?? 0dec;`))), 0,
   'receipt date move removes its old invoice posting');
   before = await h3bGraph(db);
   await rejects(() => db.query("UPDATE purchase_receipt:h3b_receipt SET effective_at = d'2026-08-05T00:00:00Z';"),
@@ -1583,58 +1586,58 @@ async function assertH3Oracle(db) {
 
 async function probeH3SalesTax(db, endpoint, namespace) {
   await db.query(`
-    CREATE ONLY organization:h3_customer SET owned_by = rebase_group:root, name = 'H3 customer';
-    CREATE ONLY tax_account:h3_tax_identity_a SET owned_by = rebase_group:root,
+    CREATE ONLY organization:h3_customer SET owned_by = rebase_tenant:default, name = 'H3 customer';
+    CREATE ONLY tax_account:h3_tax_identity_a SET owned_by = rebase_tenant:default,
       authority = organization:org_b, jurisdiction = organization:org_a, label = 'H3 tax A';
-    CREATE ONLY tax_account:h3_tax_identity_b SET owned_by = rebase_group:root,
+    CREATE ONLY tax_account:h3_tax_identity_b SET owned_by = rebase_tenant:default,
       authority = organization:org_b, jurisdiction = organization:org_a, label = 'H3 tax B';
-    CREATE ONLY tax_account:h3_tax_identity_c SET owned_by = rebase_group:root,
+    CREATE ONLY tax_account:h3_tax_identity_c SET owned_by = rebase_tenant:default,
       authority = organization:org_b, jurisdiction = organization:org_a, label = 'H3 tax C';
-    CREATE ONLY claim_account:h3_customer SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_customer SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = organization:h3_customer, currency = currency:usd;
-    CREATE ONLY claim_account:h3_tax_a SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_tax_a SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h3_tax_identity_a, currency = currency:usd;
-    CREATE ONLY claim_account:h3_tax_b SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_tax_b SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h3_tax_identity_b, currency = currency:usd;
-    CREATE ONLY claim_account:h3_tax_c SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_tax_c SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h3_tax_identity_c, currency = currency:usd;
-    CREATE ONLY claim_account:h3_tax_wrong_currency SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_tax_wrong_currency SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = tax_account:h3_tax_identity_a, currency = currency:eur;
-    CREATE ONLY claim_account:h3_tax_wrong_entity SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_tax_wrong_entity SET owned_by = rebase_tenant:default,
       economic_entity = rebase_user:personal, opponent = tax_account:h3_tax_identity_a, currency = currency:usd;
-    CREATE ONLY claim_account:h3_customer_eur SET owned_by = rebase_group:root,
+    CREATE ONLY claim_account:h3_customer_eur SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = organization:h3_customer, currency = currency:eur;
-    CREATE ONLY sales_invoice:h3_invoice_a SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3_invoice_a SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3_customer, number = 'H3-A';
-    CREATE ONLY sales_invoice:h3_invoice_b SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3_invoice_b SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3_customer, number = 'H3-B';
-    CREATE ONLY sales_invoice:h3_invoice_wrong_party SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3_invoice_wrong_party SET owned_by = rebase_tenant:default,
       claim_account = claim_account:claim_a, number = 'H3-WP';
-    CREATE ONLY sales_invoice:h3_invoice_wrong_currency SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3_invoice_wrong_currency SET owned_by = rebase_tenant:default,
       claim_account = claim_account:h3_customer_eur, number = 'H3-WC';
-    CREATE ONLY sales_invoice:h3_invoice_wrong_entity SET owned_by = rebase_group:root,
+    CREATE ONLY sales_invoice:h3_invoice_wrong_entity SET owned_by = rebase_tenant:default,
       claim_account = claim_account:personal_claim, number = 'H3-WE';
-    CREATE ONLY stock_out:h3_dispatch SET owned_by = rebase_group:root,
+    CREATE ONLY stock_out:h3_dispatch SET owned_by = rebase_tenant:default,
       from_account = stock_account:stock_a, to_party = organization:h3_customer,
       quantity = 2dec, effective_at = d'2026-07-01T00:00:00Z';
-    CREATE ONLY stock_out:h3_unbilled SET owned_by = rebase_group:root,
+    CREATE ONLY stock_out:h3_unbilled SET owned_by = rebase_tenant:default,
       from_account = stock_account:stock_a, to_party = organization:h3_customer,
       quantity = 1dec, effective_at = d'2026-07-01T00:00:00Z';
   `);
   await assertH3Oracle(db);
   const baseLines = `[{ line_key: 'dispatch', source: stock_out:h3_dispatch,
     billed_quantity: 2dec, unit_price: 5dec }]`;
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_duplicate_tax_keys SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_duplicate_tax_keys SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:h3_invoice_a, issued_at = d'2026-07-02T00:00:00Z', lines = ${baseLines},
     tax_components = [
       { tax_key: 'same', tax_claim_account: claim_account:h3_tax_a, amount: 1dec },
       { tax_key: 'same', tax_claim_account: claim_account:h3_tax_b, amount: 1dec }
     ];`), 'tax component keys must be distinct');
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_zero_tax SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_zero_tax SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:h3_invoice_a, issued_at = d'2026-07-02T00:00:00Z', lines = ${baseLines},
     tax_components = [{ tax_key: 'zero', tax_claim_account: claim_account:h3_tax_a, amount: 0dec }];`),
   'entered tax components must be positive');
-  await db.query(`CREATE ONLY sales_invoice_issue:h3_issue SET owned_by = rebase_group:root,
+  await db.query(`CREATE ONLY sales_invoice_issue:h3_issue SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:h3_invoice_a, issued_at = d'2026-07-02T00:00:00Z', lines = ${baseLines},
     tax_components = [
       { tax_key: 'vat', tax_claim_account: claim_account:h3_tax_a, amount: 2dec },
@@ -1668,7 +1671,7 @@ async function probeH3SalesTax(db, endpoint, namespace) {
   assert.deepEqual(await h3Graph(db), beforeExcessBilling,
     'excess billed quantity restores issue, managed children, and every affected root');
 
-  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_duplicate_issue SET owned_by = rebase_group:root,
+  await rejects(() => db.query(`CREATE ONLY sales_invoice_issue:h3_duplicate_issue SET owned_by = rebase_tenant:default,
     invoice = sales_invoice:h3_invoice_a, issued_at = d'2026-07-02T00:00:00Z', lines = ${baseLines};`),
   'one issue per invoice remains unique');
   const beforeMismatch = await h3Graph(db);
@@ -1725,11 +1728,11 @@ async function probeH3SalesTax(db, endpoint, namespace) {
   assert.deepEqual(await h3Graph(db), beforeBadReparent, 'failed reparent restores old and candidate roots');
 
   await db.query(`
-    CREATE ONLY rebase_group:h3_tax_actor SET name = 'H3 managed-output actor', parents = [rebase_group:root],
+    CREATE ONLY rebase_group:h3_tax_actor SET name = 'H3 managed-output actor', parents = [rebase_tenant:default],
       role = ['sales_invoice_tax_component_select', 'sales_invoice_tax_component_create',
         'sales_invoice_tax_component_update', 'sales_invoice_tax_component_delete'];
     CREATE ONLY rebase_user:h3_tax_actor SET name = 'H3 managed-output actor',
-      parents = [rebase_group:h3_tax_actor, rebase_group:root];
+      parents = [rebase_group:h3_tax_actor, rebase_tenant:default];
     DEFINE ACCESS h3_tax_actor ON DATABASE TYPE RECORD SIGNIN rebase_user:h3_tax_actor;
   `);
   const actor = new Surreal();
@@ -1786,43 +1789,44 @@ async function main() {
     await db.query(`DEFINE DATABASE ${database};`);
     await db.use({ namespace, database });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:org_a SET owned_by = rebase_group:root, name = 'Book owner A';
-      CREATE ONLY organization:org_b SET owned_by = rebase_group:root, name = 'Book owner B';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'US dollar', precision = 2;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY measure_unit:kg SET owned_by = rebase_group:root, code = 'kg', name = 'Kilogram', dimension = 'mass';
-      CREATE ONLY treasury:bank_a SET owned_by = rebase_group:root, name = 'Bank A';
-      CREATE ONLY treasury:bank_b SET owned_by = rebase_group:root, name = 'Bank B';
-      CREATE ONLY treasury:overdraft SET owned_by = rebase_group:root, name = 'Overdraft facility';
-      CREATE ONLY operating_unit:unit_a SET owned_by = rebase_group:root, economic_entity = organization:org_a, name = 'A warehouse';
-      CREATE ONLY operating_unit:unit_b SET owned_by = rebase_group:root, economic_entity = organization:org_b, name = 'B warehouse';
-      CREATE ONLY item:grain SET owned_by = rebase_group:root, name = 'Grain', unit = measure_unit:kg;
-      CREATE ONLY tax_account:tax_a SET owned_by = rebase_group:root, authority = organization:org_b, jurisdiction = organization:org_b, label = 'Tax A';
-      CREATE ONLY misc_account:purpose_a SET owned_by = rebase_group:root, label = 'Purpose A';
-      CREATE ONLY treasury_account:cash_a SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY organization:org_a SET owned_by = rebase_tenant:default, name = 'Book owner A';
+      CREATE ONLY organization:org_b SET owned_by = rebase_tenant:default, name = 'Book owner B';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'US dollar', precision = 2;
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY measure_unit:kg SET owned_by = rebase_tenant:default, code = 'kg', name = 'Kilogram', dimension = 'mass';
+      CREATE ONLY treasury:bank_a SET owned_by = rebase_tenant:default, name = 'Bank A';
+      CREATE ONLY treasury:bank_b SET owned_by = rebase_tenant:default, name = 'Bank B';
+      CREATE ONLY treasury:overdraft SET owned_by = rebase_tenant:default, name = 'Overdraft facility';
+      CREATE ONLY operating_unit:unit_a SET owned_by = rebase_tenant:default, economic_entity = organization:org_a, name = 'A warehouse';
+      CREATE ONLY operating_unit:unit_b SET owned_by = rebase_tenant:default, economic_entity = organization:org_b, name = 'B warehouse';
+      CREATE ONLY item:grain SET owned_by = rebase_tenant:default, name = 'Grain', unit = measure_unit:kg;
+      CREATE ONLY tax_account:tax_a SET owned_by = rebase_tenant:default, authority = organization:org_b, jurisdiction = organization:org_b, label = 'Tax A';
+      CREATE ONLY misc_account:purpose_a SET owned_by = rebase_tenant:default, label = 'Purpose A';
+      CREATE ONLY treasury_account:cash_a SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         treasury = treasury:bank_a, currency = currency:usd, minimum_balance = 0dec;
-      CREATE ONLY treasury_account:cash_overdraft SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY treasury_account:cash_overdraft SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         treasury = treasury:overdraft, currency = currency:usd, minimum_balance = -500dec;
-      CREATE ONLY claim_account:claim_a SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY claim_account:claim_a SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         opponent = organization:org_b, currency = currency:usd;
-      CREATE ONLY claim_account:claim_misc SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY claim_account:claim_misc SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         opponent = misc_account:purpose_a, currency = currency:usd;
-      CREATE ONLY claim_account:claim_tax SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY claim_account:claim_tax SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         opponent = tax_account:tax_a, currency = currency:usd;
-      CREATE ONLY stock_account:stock_a SET owned_by = rebase_group:root, economic_entity = organization:org_a,
+      CREATE ONLY stock_account:stock_a SET owned_by = rebase_tenant:default, economic_entity = organization:org_a,
         operating_unit = operating_unit:unit_a, resource = item:grain;
     `);
 
     const stockUnit = queryResult(await db.query("RETURN (SELECT VALUE unit FROM stock_account:stock_a)[0];"));
     assert.equal(String(stockUnit), "measure_unit:kg", "stock-account unit must follow its resource's immutable unit");
-    await rejects(() => db.query(`CREATE ONLY treasury_account:duplicate SET owned_by = rebase_group:root,
+    await rejects(() => db.query(`CREATE ONLY treasury_account:duplicate SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, treasury = treasury:bank_a, currency = currency:usd, minimum_balance = 0dec;`),
     "treasury account dimensions must be unique");
-    await rejects(() => db.query(`CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_group:root,
+    await rejects(() => db.query(`CREATE ONLY stock_account:wrong_entity SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_b, operating_unit = operating_unit:unit_a, resource = item:grain;`),
     "a stock account cannot cross economic entities");
-    await rejects(() => db.query(`CREATE ONLY claim_account:wrong_opponent SET owned_by = rebase_group:root,
+    await rejects(() => db.query(`CREATE ONLY claim_account:wrong_opponent SET owned_by = rebase_tenant:default,
       economic_entity = organization:org_a, opponent = treasury:bank_a, currency = currency:usd;`),
     "claim opponents must use the declared user/organization/tax/misc union");
     await rejects(() => db.query("UPDATE currency:usd SET precision = 3;"),

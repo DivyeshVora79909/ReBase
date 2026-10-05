@@ -29,7 +29,11 @@ function createAuthenticationDeliveryHandler() {
       if (!configuration || !principal || !target || !challenge
         || principal.login_access !== true
         || !sameRecord(principal.id, record.principal)
-        || !sameRecord(target.principal, record.principal)
+        || !sameRecord(target.owned_by, record.principal)
+        || !sameRecord(record.tenant, principal.tenant)
+        || !sameRecord(configuration.tenant, record.tenant)
+        || !sameRecord(target.tenant, record.tenant)
+        || !sameRecord(challenge.tenant, record.tenant)
         || Number(principal.authentication_revision) !== Number(record.principal_revision)
         || Number(target.revision) !== Number(record.target_revision)
         || !sameRecord(challenge.principal, record.principal)

@@ -34,7 +34,8 @@ function changedExpression(fields) {
 }
 
 function snapshotExpression(source, fields) {
-  return `{ id: ${source}.id, owned_by: ${source}.owned_by${fields.length ? ", " : ""}${fields
+  const selected = fields.filter(field => !['id', 'owned_by', 'tenant', 'created_by'].includes(field));
+  return `{ id: ${source}.id, owned_by: ${source}.owned_by, tenant: ${source}.tenant, created_by: ${source}.created_by${selected.length ? ", " : ""}${selected
     .map((field) => `${field}: ${source}.${field}`)
     .join(", ")} }`;
 }
@@ -58,10 +59,10 @@ function lifecycleFields(table) {
     PERMISSIONS FOR select WHERE true FOR create WHERE true FOR update WHERE rebase_attempt = 0 AND rebase_lease_token = NONE AND rebase_outcome = NONE;`);
   output.push(`DEFINE FIELD OVERWRITE execution_id ON TABLE ${name} TYPE uuid
     VALUE IF $before = NONE THEN rand::uuid::v7() ELSE $before END
-    PERMISSIONS FOR select, create, update NONE;`);
+    PERMISSIONS FOR select NONE FOR create WHERE true FOR update NONE;`);
   output.push(`DEFINE FIELD OVERWRITE revision ON TABLE ${name} TYPE uuid
     VALUE IF $before = NONE THEN rand::uuid::v7() ELSE IF $value != NONE AND $value != $before THEN $value ELSE $before END
-    PERMISSIONS FOR select, create, update NONE;`);
+    PERMISSIONS FOR select NONE FOR create WHERE true FOR update NONE;`);
   output.push(`DEFINE INDEX OVERWRITE idx_${name}_execution_id ON TABLE ${name} FIELDS execution_id UNIQUE;`);
   output.push(`DEFINE FIELD OVERWRITE rebase_cancel_requested ON TABLE ${name} TYPE bool
     VALUE IF $before = NONE THEN false ELSE $value END
@@ -80,9 +81,9 @@ function lifecycleFields(table) {
     ASSERT $value = NONE OR $value IN ['succeeded', 'failed', 'ambiguous', 'partial']
     PERMISSIONS FOR select WHERE true FOR create, update NONE;`);
   output.push(`DEFINE FIELD OVERWRITE rebase_attempt ON TABLE ${name} TYPE int DEFAULT 0
-    VALUE IF $before = NONE THEN ($value ?? 0) ELSE IF $value != NONE AND $value >= $before THEN $value ELSE $before END
+    VALUE IF $before = NONE THEN IF $auth != NONE THEN 0 ELSE ($value ?? 0) END ELSE IF $value != NONE AND $value >= $before THEN $value ELSE $before END
     ASSERT $value >= 0
-    PERMISSIONS FOR select WHERE true FOR create, update NONE;`);
+    PERMISSIONS FOR select, create WHERE true FOR update NONE;`);
   output.push(`DEFINE FIELD OVERWRITE rebase_wake_at ON TABLE ${name} TYPE option<datetime> DEFAULT NONE
     PERMISSIONS FOR select WHERE true FOR create, update NONE;`);
   output.push(`DEFINE FIELD OVERWRITE rebase_finished_at ON TABLE ${name} TYPE option<datetime> DEFAULT NONE
@@ -232,61 +233,38 @@ function generateLifecycleMigration(schema, options = {}) {
 }
 
 function generateEffectEvents(schema, options = {}) {
-  if (!options.runtimeUrl || !options.runtimeSecret) return "";
-  const runtimeUrl = String(options.runtimeUrl).replace(/\/+$/, "");
+  const runtimeUrl = String(options.runtimeUrl || "").replace(/\/+$/, "");
   let output = use(options.namespace, options.database);
   for (const table of schema.tables.values()) {
     if (!table.effectProcess) continue;
     const tableName = identifier(table.name);
-    const inputFields = [...table.fields.values()]
-      .filter((field) => field.effectInput)
-      .map((field) => field.name);
-    const outputFields = [...table.fields.values()]
-      .filter((field) => field.effectOutput && !/^rebase_/.test(field.name));
+    const inputFields = [...table.fields.values()].filter(field => field.effectInput).map(field => field.name);
+    if (table.effectProcess === "async") {
+      const taskChanged = changedExpression([...new Set([...inputFields, "execute_at", "priority"])]);
+      output += `REMOVE EVENT IF EXISTS rebase_effect_${tableName} ON TABLE ${tableName};\n`;
+      output += `DEFINE EVENT OVERWRITE rebase_effect_${tableName}_revise ON TABLE ${tableName}
+        WHEN $event = 'UPDATE' AND $before.rebase_attempt = 0 AND $before.rebase_lease_token = NONE AND (${taskChanged}) THEN {
+          UPDATE $after.id SET revision = rand::uuid::v7() WHERE rebase_attempt = 0 AND rebase_lease_token = NONE AND rebase_outcome = NONE;
+        };\n`;
+      continue;
+    }
+    if (!runtimeUrl || !options.runtimeSecret) continue;
+    const outputFields = [...table.fields.values()].filter(field => field.effectOutput && !/^rebase_/.test(field.name));
     const events = table.effectEvents?.length ? table.effectEvents : ["CREATE"];
-    const taskFields = [...new Set([...inputFields, "execute_at", "priority"] )];
-    const taskChanged = changedExpression(taskFields);
-    const when = table.effectProcess === "async"
-      ? `($event = 'CREATE' OR ($event = 'UPDATE' AND $before.rebase_attempt = 0 AND $before.rebase_lease_token = NONE AND (${taskChanged})))`
-      : eventPredicate(events, inputFields);
-    const snapshotFields = [...new Set([
-      ...inputFields,
-      ...outputFields.map((field) => field.name),
-    ])];
-    const patchFields = outputFields.map((field) => `${field.name}: ${outputExpression(field)}`);
+    const snapshotFields = [...new Set([...inputFields, ...outputFields.map(field => field.name), "tenant", "owned_by", "created_by"])];
+    const patchFields = outputFields.map(field => `${field.name}: ${outputExpression(field)}`);
     const auth = `{ authorization: ${quote(`Bearer ${options.runtimeSecret}`)} }`;
-    let body;
-    if (table.effectProcess === "sync") {
-      body = `
+    output += `DEFINE EVENT OVERWRITE rebase_effect_${tableName} ON TABLE ${tableName}
+      WHEN ${eventPredicate(events, inputFields)} THEN {
         LET $response = http::post(${quote(`${runtimeUrl}/internal/sync`)}, {
-            namespace: session::ns(),
-            database: session::db(),
-            id: <string>(IF $event = 'DELETE' THEN $before.id ELSE $after.id END),
-            event: $event,
-            before: IF $event = 'CREATE' THEN NONE ELSE ${snapshotExpression("$before", snapshotFields)} END,
-            after: IF $event = 'DELETE' THEN NONE ELSE ${snapshotExpression("$after", snapshotFields)} END
+          id: <string>(IF $event = 'DELETE' THEN $before.id ELSE $after.id END), event: $event,
+          before: IF $event = 'CREATE' THEN NONE ELSE ${snapshotExpression("$before", snapshotFields)} END,
+          after: IF $event = 'DELETE' THEN NONE ELSE ${snapshotExpression("$after", snapshotFields)} END
         }, ${auth});
         IF $response.outcome = 'success' AND $event != 'DELETE' AND $response.patch {
-            UPDATE $after.id MERGE { ${patchFields.join(", ")} };
-        } ELSE IF $response.outcome != NONE AND $response.outcome != 'success' {
-            THROW 'REBASE_SYNC_EFFECT_FAILED';
-        };
-      `;
-    } else {
-      body = `
-        LET $response = http::post(${quote(`${runtimeUrl}/internal/wake/task`)}, {
-            namespace: session::ns(), database: session::db(), id: <string>$after.id
-        }, ${auth});
-      `;
-    }
-    if (table.effectProcess === "async") {
-      output += `DEFINE EVENT OVERWRITE rebase_effect_${tableName}_revise ON TABLE ${tableName}\n`;
-      output += `    WHEN $event = 'UPDATE' AND $before.rebase_attempt = 0 AND $before.rebase_lease_token = NONE AND (${taskChanged}) THEN {\n`;
-      output += `        UPDATE $after.id SET revision = rand::uuid::v7() WHERE rebase_attempt = 0 AND rebase_lease_token = NONE AND rebase_outcome = NONE;\n`;
-      output += `    };\n\n`;
-    }
-    output += `DEFINE EVENT OVERWRITE rebase_effect_${tableName} ON TABLE ${tableName}\n`;
-    output += `    WHEN ${when}${table.effectProcess === "async" ? " ASYNC RETRY 0 MAXDEPTH 0" : ""} THEN {${body}};\n\n`;
+          UPDATE $after.id MERGE { ${patchFields.join(", ")} };
+        } ELSE IF $response.outcome != NONE AND $response.outcome != 'success' { THROW 'REBASE_SYNC_EFFECT_FAILED'; };
+      };\n`;
   }
   return output;
 }
@@ -301,8 +279,7 @@ function generateLifecycleFields(schema) {
 }
 
 function generateOperationEvents(schema, options = {}) {
-  if (!options.runtimeUrl || !options.runtimeSecret) return "";
-  const runtimeUrl = String(options.runtimeUrl).replace(/\/+$/, "");
+  const runtimeUrl = String(options.runtimeUrl || "").replace(/\/+$/, "");
   let output = use(options.namespace, options.database);
   for (const table of schema.tables.values()) {
     if (!table.operation) continue;
@@ -310,18 +287,17 @@ function generateOperationEvents(schema, options = {}) {
     const auth = `{ authorization: ${quote(`Bearer ${options.runtimeSecret}`)} }`;
     const operationInputs = [...table.fields.values()].filter((field) => field.operationInput);
     if (table.operation.mode === "grant") {
+      if (!runtimeUrl || !options.runtimeSecret) continue;
       const inputFields = operationInputs.map((field) => field.name);
       const outputFields = [...table.fields.values()]
         .filter((field) => field.operationOutput);
       const snapshotFields = [...new Set([
         ...inputFields,
-        ...outputFields.map((field) => field.name),
+        ...outputFields.map((field) => field.name), "tenant", "owned_by", "created_by",
       ])];
       const patchFields = outputFields.map((field) => `${field.name}: ${outputExpression(field)}`);
       const body = `
         LET $response = http::post(${quote(`${runtimeUrl}/internal/grant`)}, {
-            namespace: session::ns(),
-            database: session::db(),
             id: <string>$after.id,
             event: $event,
             before: IF $event = 'CREATE' THEN NONE ELSE ${snapshotExpression("$before", snapshotFields)} END,
@@ -348,6 +324,11 @@ function generateOperationEvents(schema, options = {}) {
     output += `    WHEN $event = 'UPDATE' AND $before.rebase_attempt = 0 AND $before.rebase_lease_token = NONE AND (${taskChanged}) THEN {\n`;
     output += `        UPDATE $after.id SET revision = rand::uuid::v7() WHERE rebase_attempt = 0 AND rebase_lease_token = NONE AND rebase_outcome = NONE;\n`;
     output += `    };\n\n`;
+    if (table.operation.mode === "queued") {
+      output += `REMOVE EVENT IF EXISTS rebase_operation_${tableName} ON TABLE ${tableName};\n`;
+      continue;
+    }
+    if (!runtimeUrl || !options.runtimeSecret) continue;
     output += `DEFINE EVENT OVERWRITE rebase_operation_${tableName} ON TABLE ${tableName}\n`;
     output += `    WHEN $event = 'CREATE' OR ($event = 'UPDATE' AND $before.rebase_attempt = 0 AND $before.rebase_lease_token = NONE AND (${taskChanged})) ASYNC RETRY 0 MAXDEPTH 0 THEN {\n`;
     if (table.operation.mode === "inline") {
@@ -356,7 +337,7 @@ function generateOperationEvents(schema, options = {}) {
     } else {
       output += `        LET $response = http::post(${quote(`${runtimeUrl}/internal/wake/task`)}, {\n`;
     }
-    output += `            namespace: session::ns(), database: session::db(), id: <string>$after.id\n`;
+    output += `            id: <string>$after.id\n`;
     output += `        }, ${auth});\n`;
     output += `    };\n\n`;
   }
@@ -459,7 +440,7 @@ function generateRuntimeContracts(schema, principals) {
     principals: principals ? {
       user: principals.user,
       group: principals.group,
-      root: `${principals.group}:root`,
+      tenant: principals.tenant || 'rebase_tenant',
     } : undefined,
     tables,
     webhooks: {},

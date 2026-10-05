@@ -121,77 +121,78 @@ async function main() {
     await db.query('DEFINE DATABASE probe;');
     await db.use({ namespace, database: 'probe' });
     await db.query(schema);
+    await db.query("UPSERT rebase_tenant:default SET name = 'Fixture tenant';");
     await db.query(`
-      CREATE ONLY organization:entity SET owned_by = rebase_group:root, name = 'Entity';
-      CREATE ONLY organization:other_entity SET owned_by = rebase_group:root, name = 'Other entity';
-      CREATE ONLY organization:customer SET owned_by = rebase_group:root, name = 'Customer';
-      CREATE ONLY organization:other_customer SET owned_by = rebase_group:root, name = 'Other customer';
-      CREATE ONLY organization:authority SET owned_by = rebase_group:root, name = 'Invoice tax authority';
-      CREATE ONLY organization:withholding_authority SET owned_by = rebase_group:root, name = 'Withholding authority';
-      CREATE ONLY currency:usd SET owned_by = rebase_group:root, code = 'USD', name = 'USD', precision = 2;
-      CREATE ONLY currency:eur SET owned_by = rebase_group:root, code = 'EUR', name = 'EUR', precision = 2;
-      CREATE ONLY measure_unit:each SET owned_by = rebase_group:root, code = 'each', name = 'Each', dimension = 'count';
-      CREATE ONLY item:unit SET owned_by = rebase_group:root, name = 'Unit', unit = measure_unit:each;
-      CREATE ONLY tax_account:invoice_tax SET owned_by = rebase_group:root,
+      CREATE ONLY organization:entity SET owned_by = rebase_tenant:default, name = 'Entity';
+      CREATE ONLY organization:other_entity SET owned_by = rebase_tenant:default, name = 'Other entity';
+      CREATE ONLY organization:customer SET owned_by = rebase_tenant:default, name = 'Customer';
+      CREATE ONLY organization:other_customer SET owned_by = rebase_tenant:default, name = 'Other customer';
+      CREATE ONLY organization:authority SET owned_by = rebase_tenant:default, name = 'Invoice tax authority';
+      CREATE ONLY organization:withholding_authority SET owned_by = rebase_tenant:default, name = 'Withholding authority';
+      CREATE ONLY currency:usd SET owned_by = rebase_tenant:default, code = 'USD', name = 'USD', precision = 2;
+      CREATE ONLY currency:eur SET owned_by = rebase_tenant:default, code = 'EUR', name = 'EUR', precision = 2;
+      CREATE ONLY measure_unit:each SET owned_by = rebase_tenant:default, code = 'each', name = 'Each', dimension = 'count';
+      CREATE ONLY item:unit SET owned_by = rebase_tenant:default, name = 'Unit', unit = measure_unit:each;
+      CREATE ONLY tax_account:invoice_tax SET owned_by = rebase_tenant:default,
         authority = organization:authority, jurisdiction = organization:entity, label = 'Invoice component tax';
-      CREATE ONLY tax_account:withholding_tax SET owned_by = rebase_group:root,
+      CREATE ONLY tax_account:withholding_tax SET owned_by = rebase_tenant:default,
         authority = organization:withholding_authority, jurisdiction = organization:entity, label = 'Withholding credit';
-      CREATE ONLY treasury:main SET owned_by = rebase_group:root, name = 'Main';
-      CREATE ONLY treasury:other SET owned_by = rebase_group:root, name = 'Other entity fixture';
-      CREATE ONLY treasury_account:cash SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury:main SET owned_by = rebase_tenant:default, name = 'Main';
+      CREATE ONLY treasury:other SET owned_by = rebase_tenant:default, name = 'Other entity fixture';
+      CREATE ONLY treasury_account:cash SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:main, currency = currency:usd;
-      CREATE ONLY treasury_account:cash_bad SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:cash_bad SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:other, currency = currency:usd;
-      CREATE ONLY treasury_account:cash_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY treasury_account:cash_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         treasury = treasury:other, currency = currency:usd;
-      CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY treasury_account:cash_eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         treasury = treasury:main, currency = currency:eur;
-      CREATE ONLY cash_in:fund_bad SET owned_by = rebase_group:root, from_party = organization:other_customer,
+      CREATE ONLY cash_in:fund_bad SET owned_by = rebase_tenant:default, from_party = organization:other_customer,
         to_account = treasury_account:cash_bad, amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';
-      CREATE ONLY cash_in:fund_other SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY cash_in:fund_other SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = treasury_account:cash_other, amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';
-      CREATE ONLY cash_in:fund_eur SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY cash_in:fund_eur SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = treasury_account:cash_eur, amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';
-      CREATE ONLY operating_unit:store SET owned_by = rebase_group:root, economic_entity = organization:entity, name = 'Store';
-      CREATE ONLY stock_account:stock SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY operating_unit:store SET owned_by = rebase_tenant:default, economic_entity = organization:entity, name = 'Store';
+      CREATE ONLY stock_account:stock SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         operating_unit = operating_unit:store, resource = item:unit;
-      CREATE ONLY stock_in:inventory SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY stock_in:inventory SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = stock_account:stock, quantity = 1dec, effective_at = d'2026-06-01T00:00:00Z';
-      CREATE ONLY stock_out:dispatch SET owned_by = rebase_group:root, from_account = stock_account:stock,
+      CREATE ONLY stock_out:dispatch SET owned_by = rebase_tenant:default, from_account = stock_account:stock,
         to_party = organization:customer, quantity = 1dec, effective_at = d'2026-06-02T00:00:00Z';
-      CREATE ONLY claim_account:customer SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:customer SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:customer, currency = currency:usd;
-      CREATE ONLY claim_account:tax_invoice SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax_invoice SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:invoice_tax, currency = currency:usd;
-      CREATE ONLY claim_account:tax_tds SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax_tds SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:withholding_tax, currency = currency:usd;
-      CREATE ONLY claim_account:tax_other SET owned_by = rebase_group:root, economic_entity = organization:other_entity,
+      CREATE ONLY claim_account:tax_other SET owned_by = rebase_tenant:default, economic_entity = organization:other_entity,
         opponent = tax_account:withholding_tax, currency = currency:usd;
-      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:tax_eur SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = tax_account:withholding_tax, currency = currency:eur;
-      CREATE ONLY claim_account:not_tax SET owned_by = rebase_group:root, economic_entity = organization:entity,
+      CREATE ONLY claim_account:not_tax SET owned_by = rebase_tenant:default, economic_entity = organization:entity,
         opponent = organization:withholding_authority, currency = currency:usd;
-      CREATE ONLY sales_invoice:invoice SET owned_by = rebase_group:root,
+      CREATE ONLY sales_invoice:invoice SET owned_by = rebase_tenant:default,
         claim_account = claim_account:customer, number = 'H4B4B-1';
-      CREATE ONLY sales_invoice_issue:issue SET owned_by = rebase_group:root, invoice = sales_invoice:invoice,
+      CREATE ONLY sales_invoice_issue:issue SET owned_by = rebase_tenant:default, invoice = sales_invoice:invoice,
         issued_at = d'2026-06-02T01:00:00Z',
         lines = [{ line_key: 'base', source: stock_out:dispatch, billed_quantity: 1dec, unit_price: 90dec }],
         tax_components = [{ tax_key: 'tcs_fixture_only', tax_claim_account: claim_account:tax_invoice, amount: 10dec }];
-      CREATE ONLY customer_withholding_policy_version:policy_v1 SET owned_by = rebase_group:root,
+      CREATE ONLY customer_withholding_policy_version:policy_v1 SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_tds, policy_key = 'fixture-customer-withholding', version = 'v1',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY customer_withholding_policy_version:policy_eur SET owned_by = rebase_group:root,
+      CREATE ONLY customer_withholding_policy_version:policy_eur SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_eur, policy_key = 'fixture-customer-withholding', version = 'eur',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY customer_withholding_policy_version:policy_other SET owned_by = rebase_group:root,
+      CREATE ONLY customer_withholding_policy_version:policy_other SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_other, policy_key = 'fixture-customer-withholding', version = 'other',
         valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';
-      CREATE ONLY customer_withholding_policy_version:policy_expired SET owned_by = rebase_group:root,
+      CREATE ONLY customer_withholding_policy_version:policy_expired SET owned_by = rebase_tenant:default,
         tax_claim_account = claim_account:tax_tds, policy_key = 'fixture-customer-withholding', version = 'expired',
         valid_from = d'2025-01-01T00:00:00Z', valid_until = d'2026-06-05T00:00:00Z';
-      CREATE ONLY cash_in:receipt SET owned_by = rebase_group:root, from_party = organization:customer,
+      CREATE ONLY cash_in:receipt SET owned_by = rebase_tenant:default, from_party = organization:customer,
         to_account = treasury_account:cash, amount = 90dec, effective_at = d'2026-06-03T00:00:00Z';
-      CREATE ONLY sales_invoice_cash_allocation:allocation SET owned_by = rebase_group:root,
+      CREATE ONLY sales_invoice_cash_allocation:allocation SET owned_by = rebase_tenant:default,
         source = cash_in:receipt, target = sales_invoice_issue:issue, amount = 90dec,
         effective_at = d'2026-06-04T00:00:00Z';
     `);
@@ -201,29 +202,29 @@ async function main() {
     const sourcePoolBefore = JSON.stringify(state.cashins.find((row) => String(row.id) === 'cash_in:receipt').z_allocations);
     const stockBefore = JSON.stringify(state.stock.z_history);
 
-    await db.query(`CREATE ONLY cash_in:wrong_party SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_in:wrong_party SET owned_by = rebase_tenant:default,
       from_party = organization:other_customer, to_account = treasury_account:cash_bad,
       amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_in:wrong_entity SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_in:wrong_entity SET owned_by = rebase_tenant:default,
       from_party = organization:customer, to_account = treasury_account:cash_other,
       amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';`);
-    await db.query(`CREATE ONLY cash_in:wrong_currency SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY cash_in:wrong_currency SET owned_by = rebase_tenant:default,
       from_party = organization:customer, to_account = treasury_account:cash_eur,
       amount = 1dec, effective_at = d'2026-06-03T00:00:00Z';`);
-    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_party SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_party SET owned_by = rebase_tenant:default,
       source = cash_in:wrong_party, target = sales_invoice_issue:issue, amount = 1dec,
       effective_at = d'2026-06-04T00:00:00Z';`, 'wrong source party allocation rejects');
-    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_entity SET owned_by = rebase_tenant:default,
       source = cash_in:wrong_entity, target = sales_invoice_issue:issue, amount = 1dec,
       effective_at = d'2026-06-04T00:00:00Z';`, 'wrong source entity allocation rejects');
-    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_currency SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY sales_invoice_cash_allocation:wrong_currency SET owned_by = rebase_tenant:default,
       source = cash_in:wrong_currency, target = sales_invoice_issue:issue, amount = 1dec,
       effective_at = d'2026-06-04T00:00:00Z';`, 'wrong source currency allocation rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_source_type SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_source_type SET owned_by = rebase_tenant:default,
       allocation = cash_in:receipt, policy_version = customer_withholding_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2026-06-05T00:00:00Z';`, 'non-allocation source type rejects');
 
-    await db.query(`CREATE ONLY customer_withholding:withheld SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY customer_withholding:withheld SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation,
       policy_version = customer_withholding_policy_version:policy_v1,
       amount = 10dec, effective_at = d'2026-06-05T00:00:00Z';`);
@@ -235,33 +236,33 @@ async function main() {
 
     await rejectsUnchanged(db, "UPDATE customer_withholding_policy_version:policy_v1 SET valid_until = d'2028-01-01T00:00:00Z';",
       'selected immutable policy version rejects mutation');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:duplicate SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:duplicate SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation,
       policy_version = customer_withholding_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2026-06-05T00:00:00Z';`, 'duplicate withholding per allocation rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:zero SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:zero SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_v1,
       amount = 0dec, effective_at = d'2026-06-05T00:00:00Z';`, 'zero withholding rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:precision SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:precision SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_v1,
       amount = 1.001dec, effective_at = d'2026-06-05T00:00:00Z';`, 'excess currency precision rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:too_large SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:too_large SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_v1,
       amount = 11dec, effective_at = d'2026-06-05T00:00:00Z';`, 'shared customer and invoice over-clear rejects atomically');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_entity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_entity SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_other,
       amount = 1dec, effective_at = d'2026-06-05T00:00:00Z';`, 'policy entity mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_currency SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:wrong_currency SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_eur,
       amount = 1dec, effective_at = d'2026-06-05T00:00:00Z';`, 'policy currency mismatch rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding_policy_version:wrong_tax_identity SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding_policy_version:wrong_tax_identity SET owned_by = rebase_tenant:default,
       tax_claim_account = claim_account:not_tax, policy_key = 'fixture-customer-withholding', version = 'not-tax',
       valid_from = d'2026-01-01T00:00:00Z', valid_until = d'2027-01-01T00:00:00Z';`,
     'policy without a tax-account opponent rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:outside_policy SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:outside_policy SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_expired,
       amount = 1dec, effective_at = d'2026-06-05T00:00:00Z';`, 'expired policy version rejects');
-    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:before_invoice SET owned_by = rebase_group:root,
+    await rejectsUnchanged(db, `CREATE ONLY customer_withholding:before_invoice SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation, policy_version = customer_withholding_policy_version:policy_v1,
       amount = 1dec, effective_at = d'2026-06-02T00:00:00Z';`, 'withholding before invoice/allocation rejects');
     await rejectsUnchanged(db, 'UPDATE customer_withholding:withheld SET amount = 11dec;',
@@ -284,7 +285,7 @@ async function main() {
     assert.equal(JSON.stringify(state.cashins.find((row) => String(row.id) === 'cash_in:receipt').z_allocations),
       sourcePoolBefore, 'fact removal leaves cash allocation capacity unchanged');
     assert.equal(JSON.stringify(state.stock.z_history), stockBefore, 'fact removal leaves stock unchanged');
-    await db.query(`CREATE ONLY customer_withholding:withheld SET owned_by = rebase_group:root,
+    await db.query(`CREATE ONLY customer_withholding:withheld SET owned_by = rebase_tenant:default,
       allocation = sales_invoice_cash_allocation:allocation,
       policy_version = customer_withholding_policy_version:policy_v1,
       amount = 10dec, effective_at = d'2026-06-05T00:00:00Z';`);

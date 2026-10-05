@@ -39,6 +39,8 @@ DEFINE FUNCTION fn::rebase::root_key_type($link: object) {
     RETURN 'int';
 } PERMISSIONS FULL;
 
+DEFINE FUNCTION fn::rebase::root_unique($link: object) { RETURN false; } PERMISSIONS FULL;
+
 DEFINE FUNCTION fn::rebase::membership_allowed($link: object, $owner: object) {
     RETURN record::tb($link.rid) = 'ordinal_fact' AND $link.slot = 'rb_order'
         AND fn::rebase::root_allowed($owner);

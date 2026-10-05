@@ -1,4 +1,34 @@
-# Core stabilization handoff
+# Core backend handoff
+
+## Tenant/tree acceptance — 2026-10-05
+
+**T0–T6 is complete and ready for lead review.** Start with the
+[execution handoff](tenant-tree-handoff.md) and
+[verification evidence](evidence/2026-10-05-tenant-tree-verification.json).
+All three builds, full backend/accounting suites, explicit positions and mocked
+refund probes passed. The backend suite includes all 26 developer-tool tests;
+all 84 changed/new JavaScript files passed syntax checks.
+
+The backend uses tenant records inside one configured design database, protected
+authorization closure, typed/composite unique trees, root-derived readers,
+passkeys and durable live wakeups. Scoped aggregate privacy, dependency-ordered
+managed lifecycle, nested reference guards and initial live-attachment recovery
+now have passing integration evidence. Retain the existing local derived-field
+topological resolver. See the [development contract](tenant-tree-redesign.md),
+[ordered trees](ordered-tree-contract.md), [tenant authentication](tenant-authentication.md)
+and [runtime contract](single-design-runtime.md).
+
+The retained build/backend passes precede only the isolated H7 fixture adapter
+repair; their executed dependencies are unchanged. Full accounting and trailing
+gates match the final source fingerprint. Compare those hashes before deciding
+which checks to repeat. Affected source snapshots retain the documented 3.3.0
+`WITH NOINDEX ORDER BY id` workaround. MetaSol migration remains subsequent work;
+live providers, production deployment/migration and capacity are excluded.
+
+The sections below retain the **2026-10-03 and earlier baseline**. Their root,
+context and ownership descriptions are historical where the active contract
+supersedes them; their old pass counts do not certify this redesign.
+
 
 Updated 2026-10-03. **Start here for core work.** This file retains K1–K5
 acceptance and restart requirements. The [core audit](./core-audit.md) and its

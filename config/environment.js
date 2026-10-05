@@ -228,6 +228,8 @@ function validateConfiguration(configuration) {
     contextKeys.add(key);
   }
   if (defaultContext && !contextKeys.has(contextKey(defaultContext))) contexts.push(defaultContext);
+  if (contexts.length > 1) throw new Error("One namespace/database design is allowed per process; tenants are records within that design");
+  if (!defaultContext && contexts.length === 1) defaultContext = contexts[0];
   surreal.defaultContext = defaultContext;
   surreal.contexts = contexts;
 
@@ -258,10 +260,19 @@ function validateConfiguration(configuration) {
   const storage = { bucket: optionalString(storageInput.bucket, "REBASE_STORAGE_BUCKET") };
 
   const authInput = requireRecord(input.authentication, "Configuration.authentication");
-  assertOnlyKeys(authInput, ["payloadSecret", "challengeTtlMs", "rateLimits"], "Configuration.authentication");
+  assertOnlyKeys(authInput, ["payloadSecret", "challengeTtlMs", "rateLimits", "passkeys"], "Configuration.authentication");
+  const passkeyInput = authInput.passkeys || {};
+  assertOnlyKeys(passkeyInput, ['rpId', 'rpName', 'origins'], 'Configuration.authentication.passkeys');
+  const rpId = optionalString(passkeyInput.rpId, 'REBASE_PASSKEY_RP_ID');
+  const origins = passkeyInput.origins || [];
+  if (!Array.isArray(origins) || origins.some(origin => typeof origin !== 'string' || !origin)) {
+    throw new Error('Passkey origins must be an array of origins');
+  }
+  if (Boolean(rpId) !== (origins.length > 0)) throw new Error('REBASE_PASSKEY_RP_ID and REBASE_PASSKEY_ORIGINS must be configured together');
   const limitsInput = requireRecord(authInput.rateLimits, "Configuration.authentication.rateLimits");
   assertOnlyKeys(limitsInput, ["windowMs", "ip", "identifier"], "Configuration.authentication.rateLimits");
   const authentication = {
+    passkeys: { rpId, rpName: optionalString(passkeyInput.rpName, 'REBASE_PASSKEY_RP_NAME') || 'ReBase', origins: [...origins] },
     payloadSecret: optionalString(authInput.payloadSecret, "REBASE_AUTHENTICATION_PAYLOAD_SECRET", { allowWhitespace: true }),
     challengeTtlMs: integer(authInput.challengeTtlMs, "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS", 60000, 86400000),
     rateLimits: {
@@ -349,6 +360,11 @@ function resolveConfiguration(values = process.env) {
     },
     storage: { bucket: envString(values, "REBASE_STORAGE_BUCKET") },
     authentication: {
+      passkeys: {
+        rpId: envString(values, 'REBASE_PASSKEY_RP_ID'),
+        rpName: envString(values, 'REBASE_PASSKEY_RP_NAME'),
+        origins: (envString(values, 'REBASE_PASSKEY_ORIGINS') || '').split(',').map(value => value.trim()).filter(Boolean),
+      },
       payloadSecret: envString(values, "REBASE_AUTHENTICATION_PAYLOAD_SECRET", { secret: true }),
       challengeTtlMs: envInteger(values, "REBASE_AUTHENTICATION_CHALLENGE_TTL_MS", DEFAULTS.authenticationChallengeTtlMs, 60000, 86400000),
       rateLimits: {
