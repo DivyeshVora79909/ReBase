@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "resource_exchange.schema.json",
+  "title": "resource_exchange",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "from_account": {
+      "type": "string",
+      "pattern": "^(?:treasury|misc_currency_account|stock_account|misc_stock_account):.+$"
+    },
+    "to_account": {
+      "type": "string",
+      "pattern": "^(?:treasury|misc_currency_account|stock_account|misc_stock_account):.+$"
+    },
+    "production_output": {
+      "type": "string",
+      "pattern": "^(?:production_output):.+$"
+    },
+    "from_amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owned_by",
+    "from_account",
+    "to_account",
+    "from_amount",
+    "exchange_rate",
+    "effective_at"
+  ]
+}

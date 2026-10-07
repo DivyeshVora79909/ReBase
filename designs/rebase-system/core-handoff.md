@@ -1,5 +1,13 @@
 # Core backend handoff
 
+The [October 7 accounting redesign](../all-in-accounting/implementation-handoff.md)
+uses the existing compiler/tree engine with direct currency-bearing accounts,
+invoice-date validation, temporal tax corrections and ordinary production rows.
+Its [verification](../all-in-accounting/verification.md) owns current accounting
+acceptance. The user requested deletion of the recipe profile; its sources and
+commands are no longer an active continuation route. Historical evidence below
+retains its original meaning and source fingerprint.
+
 ## Tenant/tree acceptance — 2026-10-05
 
 **T0–T6 is complete and ready for lead review.** Start with the

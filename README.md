@@ -21,6 +21,14 @@ Use SurrealDB **3.3.0** as pinned by `.surreal-version`. One configured
 namespace/database identifies a design; explicitly provisioned `rebase_tenant`
 records isolate users and data inside it.
 
+**Accounting redesign (2026-10-07):** the active
+[all-in-accounting profile](./designs/all-in-accounting/README.md) uses typed
+currency-bearing accounts, required invoice ancestry, covered advances,
+temporal taxes/corrections and normalized future production/capacity records.
+The recipe profile and its commands were removed at the user's request.
+Use the [accounting verification](./designs/all-in-accounting/verification.md)
+for this model; the earlier backend accounting results describe older sources.
+
 Tables define record types. Their records can participate in several independent
 augmented ordered trees, with explicit roots, key types, slots, contributions
 and validation. New roots use unique logical keys unless they declare duplicate
@@ -50,6 +58,7 @@ designs/<name>/data/          Development data JSON Schemas
 designs/<name>/schemas/       Explicitly public JSON validation schemas
 designs/<name>/table-handlers Table-keyed effect handlers
 designs/all-in-one/          Composed calculation suite (core, accounts, CRM, HRM)
+designs/all-in-accounting/   Direct accounting records and temporal validators
 designs/rebase-system/        Cross-domain system blueprint and tree catalog
 ```
 
@@ -62,6 +71,7 @@ npm run check
 npm run check:all-in-one
 npm run build:all-in-accounting
 npm run check:all-in-accounting
+npm run verify:accounting
 npm run verify
 npm run probe:temporal-tree
 npm run probe:accounts

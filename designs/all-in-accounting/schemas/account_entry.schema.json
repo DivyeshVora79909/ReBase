@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "account_entry.schema.json",
+  "title": "account_entry",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "account": {
+      "type": "string",
+      "pattern": "^(?:organization|treasury|direct_tax_account|indirect_tax_account|misc_currency_account):.+$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "note": {
+      "type": "string"
+    },
+    "real": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "receivable": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "payable": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "account",
+    "effective_at"
+  ]
+}

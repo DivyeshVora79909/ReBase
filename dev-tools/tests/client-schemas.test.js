@@ -19,6 +19,42 @@ const { fixture, prepareFixture } = require("../accounting/fixture-example");
 
 const repositoryRoot = path.resolve(__dirname, "../..");
 const accountingSchemas = path.resolve(__dirname, "../../designs/all-in-accounting/schemas");
+const accountingSchemaFiles = [
+  "account_entry.schema.json",
+  "adjustment_tax.schema.json",
+  "currency.schema.json",
+  "direct_tax_account.schema.json",
+  "indirect_tax_account.schema.json",
+  "invoice_settlement.schema.json",
+  "issue_adjustment.schema.json",
+  "issue_net_tax.schema.json",
+  "issue_return.schema.json",
+  "issue_tax.schema.json",
+  "item.schema.json",
+  "measure_unit.schema.json",
+  "misc_currency_account.schema.json",
+  "misc_stock_account.schema.json",
+  "operating_unit.schema.json",
+  "organization.schema.json",
+  "payment_adjustment.schema.json",
+  "payment_refund.schema.json",
+  "payment_withholding.schema.json",
+  "production.schema.json",
+  "production_capacity.schema.json",
+  "production_cost.schema.json",
+  "production_input.schema.json",
+  "production_output.schema.json",
+  "purchase_invoice.schema.json",
+  "purchase_issue.schema.json",
+  "resource_exchange.schema.json",
+  "sales_invoice.schema.json",
+  "sales_issue.schema.json",
+  "service.schema.json",
+  "stock_account.schema.json",
+  "stock_entry.schema.json",
+  "tax_adjustment.schema.json",
+  "treasury.schema.json"
+];
 
 function temporaryDirectory() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "rebase-client-schemas-"));
@@ -47,13 +83,100 @@ function snapshotTree(directory) {
   return entries;
 }
 
+function validCreateExample(schema) {
+  const required = new Set(schema.required || []);
+  const properties = { ...(schema.properties || {}) };
+  for (const [keyword, pick] of [["oneOf", clauses => clauses[0]], ["anyOf", clauses => clauses[0]]]) {
+    const clause = pick(schema[keyword] || []);
+    for (const key of clause?.required || []) required.add(key);
+    Object.assign(properties, clause?.properties || {});
+  }
+  const example = {};
+  for (const key of required) {
+    const property = properties[key] || schema.properties?.[key];
+    assert(property, `public contract has a schema for required property ${key}`);
+    if (property.type === "string" && property.format === "date-time") example[key] = "2026-10-05T00:00:00Z";
+    else if (property.type === "string" && property.pattern?.includes(":.+$")) {
+      const table = property.pattern.match(/^\^\(\?:([^|)]+)/)?.[1];
+      assert(table, `record pattern is a supported table union: ${property.pattern}`);
+      example[key] = `${table}:example`;
+    } else if (property.type === "string" && property.pattern?.includes("[0-9]")) {
+      example[key] = "0.5";
+    } else if (property.type === "string") example[key] = "example";
+    else if (property.type === "integer" || property.type === "number") example[key] = property.minimum ?? 0;
+    else if (property.type === "boolean") example[key] = false;
+    else assert.fail(`Add a small fixture value for ${key} (${property.type})`);
+  }
+  return example;
+}
+
+test("accounting exports and validates exactly its public create schemas", (t) => {
+  const root = temporaryDirectory();
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const directCatalog = loadClientSchemas(accountingSchemas);
+  assert.deepEqual([...directCatalog.schemas.keys()].map(name => `${name}.schema.json`), accountingSchemaFiles);
+
+  for (const [name, entry] of directCatalog.schemas) {
+    const valid = validCreateExample(entry.schema);
+    assert.doesNotThrow(() => assertClientInput(directCatalog, name, valid), `${name} representative input`);
+    assert.equal(Object.keys(entry.schema.properties).some(field => field.startsWith("z_")), false,
+      `${name} does not expose internal tree fields`);
+    const missingRequired = { ...valid };
+    delete missingRequired[entry.schema.required[0]];
+    assert.equal(entry.validate(missingRequired), false, `${name} requires ${entry.schema.required[0]}`);
+    assert.equal(entry.validate({ ...valid, _unexpected_client_field: true }), false, `${name} rejects unknown inputs`);
+  }
+
+  const issue = directCatalog.schemas.get("sales_issue");
+  const issueExample = validCreateExample(issue.schema);
+  issueExample.price = "0.335";
+  assert.doesNotThrow(() => assertClientInput(directCatalog, "sales_issue", issueExample));
+  assert.equal(issue.validate({ ...issueExample, owned_by: "untrusted:example" }), false,
+    "public create inputs reject unrecognized record table prefixes");
+  assert.equal(issue.validate({ ...issueExample, exchange_rate: "exchange_rate:another" }), false,
+    "an issue requires a decimal scalar exchange rate");
+  const missingInvoice = { ...issueExample }; delete missingInvoice.invoice;
+  assert.equal(issue.validate(missingInvoice), false, "an issue requires its invoice parent");
+  const accountEntry = validCreateExample(directCatalog.schemas.get("account_entry").schema);
+  accountEntry.real = "0";
+  assert.doesNotThrow(() => assertClientInput(directCatalog, "account_entry", accountEntry),
+    "explicit zero is a valid client value when selected");
+  const returned = validCreateExample(directCatalog.schemas.get("issue_return").schema);
+  returned.entered_amount = "0.66";
+  assert.doesNotThrow(() => assertClientInput(directCatalog, "issue_return", returned));
+  assert.equal(directCatalog.schemas.get("issue_return").validate({ ...returned, entered_amount: "-0.66" }), false);
+
+  const outputDir = path.join(root, "build", "accounting", "client", "schemas");
+  const exported = writeClientSchemas({ sourceDir: accountingSchemas, outputDir });
+  assert.deepEqual(exported.schemas, accountingSchemaFiles);
+  assert.deepEqual(fs.readdirSync(outputDir).sort(), accountingSchemaFiles);
+  for (const file of accountingSchemaFiles) {
+    assert.deepEqual(fs.readFileSync(path.join(outputDir, file)), fs.readFileSync(path.join(accountingSchemas, file)));
+  }
+  assert.deepEqual(writeClientSchemas({ sourceDir: accountingSchemas, outputDir, check: true }).schemas,
+    accountingSchemaFiles);
+
+  const buildOutput = path.join(root, "direct-profile-build");
+  const result = buildProject({
+    projectDir: path.resolve(repositoryRoot, "designs/all-in-accounting"),
+    frameworkDir: path.resolve(repositoryRoot, "framework"),
+    outputDir: buildOutput,
+    configuration: resolveConfiguration({ NODE_ENV: "test" }),
+  }, repositoryRoot);
+  assert.deepEqual(result.clientSchemas.schemas, accountingSchemaFiles);
+  const builtClientDir = path.join(buildOutput, "client", "schemas");
+  assert.deepEqual(fs.readdirSync(builtClientDir).sort(), accountingSchemaFiles);
+  assert.equal(fs.existsSync(path.join(builtClientDir, "rebase_user.schema.json")), false);
+  assert.equal(fs.existsSync(path.join(builtClientDir, "issue_return.surql")), false);
+});
+
 test("exports only authored schemas as byte-identical client artifacts", (t) => {
   const root = temporaryDirectory();
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const outputDir = path.join(root, "build", "client", "schemas");
 
   const result = writeClientSchemas({ sourceDir: accountingSchemas, outputDir });
-  assert.equal(result.schemas.length, 5);
+  assert.equal(result.schemas.length, accountingSchemaFiles.length);
   for (const file of result.schemas) {
     assert.deepEqual(
       fs.readFileSync(path.join(outputDir, file)),
@@ -67,13 +190,7 @@ test("buildProject exports only public schemas into each independent build direc
   const root = temporaryDirectory();
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const outputs = [path.join(root, "build-a"), path.join(root, "build-b")];
-  const expected = [
-    "cash_in.schema.json",
-    "currency.schema.json",
-    "organization.schema.json",
-    "treasury.schema.json",
-    "treasury_account.schema.json",
-  ];
+  const expected = accountingSchemaFiles;
   const build = (outputDir, check = false) => buildProject({
     projectDir: path.join(repositoryRoot, "designs/all-in-accounting"),
     frameworkDir: path.join(repositoryRoot, "framework"),
@@ -318,103 +435,56 @@ test("check detects stale public schemas even if the source directory is gone", 
   assert.deepEqual(writeClientSchemas({ sourceDir, outputDir, check: true }).schemas, []);
 });
 
-test("accounting fixture validates the same input schemas and binds native SDK values", () => {
+test("accounting fixture validates native SDK values and explicit temporal sources", () => {
   const rows = prepareFixture();
-  assert.equal(rows.length, 6);
+  assert.equal(rows.length, 11);
   assert(rows[0].id instanceof RecordId);
-  assert.equal(String(rows[0].id), "organization:demo_owner");
-  assert(rows[4].content.economic_entity instanceof RecordId);
-  assert.equal(String(rows[4].content.economic_entity), "organization:demo_owner");
-  assert(rows[5].content.to_account instanceof RecordId);
-  assert.equal(String(rows[5].content.to_account), "treasury_account:demo_cash");
-  assert(rows[4].content.minimum_balance instanceof Decimal);
-  assert(rows[5].content.amount instanceof Decimal);
-  assert(rows[5].content.effective_at instanceof Date);
-  assert.equal(rows[5].content.effective_at.toISOString(), "2026-10-01T00:00:00.000Z");
-
-  const invalid = structuredClone(fixture[5]);
-  invalid.content.amount = "0.00";
-  assert.throws(() => prepareFixture([invalid]), /Invalid cash_in input/);
+  assert.equal(String(rows[0].id), "currency:demo_usd");
+  const invoice = rows.find(row => row.table === "sales_invoice");
+  const issue = rows.find(row => row.table === "sales_issue");
+  const payment = rows.find(row => row.table === "invoice_settlement");
+  assert(invoice.content.organization instanceof RecordId);
+  assert(issue.content.price instanceof Decimal);
+  assert(payment.content.amount instanceof Decimal);
+  assert(payment.content.effective_at instanceof Date);
+  assert(payment.content.effective_at < issue.content.effective_at, "covered advance uses its real earlier date");
+  assert(issue.content.effective_at < invoice.content.invoice_date);
+  const invalid = structuredClone(fixture.find(row => row.table === "invoice_settlement"));
+  invalid.content.amount = "not-a-decimal";
+  assert.throws(() => prepareFixture([invalid]), /Invalid invoice_settlement input/);
 });
 
 test("populate transform defaults to identity, supports overrides, then rejects invalid rows", async () => {
-  const catalog = loadClientSchemas(accountingSchemas);
-  const schema = catalog.schemas.get("cash_in");
-  const input = {
-    owned_by: "rebase_group:root",
-    from_party: "organization:demo_customer",
-    to_account: "treasury_account:demo_cash",
-    amount: "42.50",
-    effective_at: "2026-10-01T00:00:00Z",
-  };
-
-  assert.strictEqual(await prepareDocument(input, {
-    table: "cash_in", index: 0, seed: "repeatable", validate: schema.validate,
-  }), input);
-
+  const catalog = loadClientSchemas(accountingSchemas), schema = catalog.schemas.get("invoice_settlement");
+  const input = { owned_by: "rebase_tenant:default", invoice: "sales_invoice:demo", treasury: "treasury:demo_cash",
+    amount: "42.50", exchange_rate: "1", effective_at: "2027-01-02T00:00:00Z" };
+  assert.strictEqual(await prepareDocument(input, {table:"invoice_settlement",index:0,seed:"repeatable",validate:schema.validate}),input);
   let context;
-  const adjusted = await prepareDocument(input, {
-    table: "cash_in",
-    index: 7,
-    seed: "repeatable",
-    validate: schema.validate,
-    transform: async (document, options) => {
-      context = options;
-      return { ...document, amount: "100.25" };
-    },
-  });
-  assert.deepEqual(context, { table: "cash_in", index: 7, seed: "repeatable" });
-  assert.equal(adjusted.amount, "100.25");
-
-  await assert.rejects(() => prepareDocument(input, {
-    table: "cash_in",
-    index: 0,
-    seed: "repeatable",
-    validate: schema.validate,
-    transform: (document) => ({ ...document, amount: "not-a-decimal" }),
-  }), /Generated invalid cash_in/);
+  const adjusted = await prepareDocument(input, {table:"invoice_settlement",index:7,seed:"repeatable",validate:schema.validate,
+    transform:async(document, options)=>{context=options;return {...document,amount:"100.25"};}});
+  assert.deepEqual(context,{table:"invoice_settlement",index:7,seed:"repeatable"});assert.equal(adjusted.amount,"100.25");
+  await assert.rejects(()=>prepareDocument(input,{table:"invoice_settlement",index:0,seed:"repeatable",validate:schema.validate,
+    transform:document=>({...document,amount:"not-a-decimal"})}),/Generated invalid invoice_settlement/);
 });
 
-test("public accounting schemas express client input shape without tree fields or fixture keywords", () => {
+test("public accounting schemas expose inputs and preserve native record identities", () => {
   const catalog = loadClientSchemas(accountingSchemas);
-  const account = {
-    owned_by: "rebase_group:root",
-    economic_entity: "organization:demo_owner",
-    treasury: "treasury:demo_bank",
-    currency: "currency:demo_usd",
-    minimum_balance: "0.00",
-  };
-  assert.strictEqual(assertClientInput(catalog, "treasury_account", account), account);
-
-  const sdkId = new RecordId("organization", Uuid.v7());
-  const canonical = String(sdkId);
-  assert.match(canonical, /^organization:u"[0-9a-f-]{36}"$/i);
-  assert(recordId(canonical).equals(sdkId));
+  const input = {owned_by:"rebase_tenant:default",organization:"organization:demo_customer",invoice_date:"2027-01-10T00:00:00Z"};
+  assert.strictEqual(assertClientInput(catalog,"sales_invoice",input),input);
+  const sdkId = new RecordId("organization",Uuid.v7()), canonical = String(sdkId);
+  assert.match(canonical,/^organization:u"[0-9a-f-]{36}"$/i);assert(recordId(canonical).equals(sdkId));
   const canonicalV4 = 'organization:u"550e8400-e29b-41d4-a716-446655440000"';
-  assert.equal(String(recordId(canonicalV4)), canonicalV4);
-  for (const customKey of [
-    "fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix",
-    "0198f92c-8a8a-7abc-8def-0123456789ab",
-  ]) {
-    const original = new RecordId("organization", customKey);
-    assert(recordId(String(original)).equals(original));
-    assert(recordId(`organization:${customKey}`).equals(original));
+  assert.equal(String(recordId(canonicalV4)),canonicalV4);
+  for (const customKey of ["fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix","0198f92c-8a8a-7abc-8def-0123456789ab"]) {
+    const original = new RecordId("organization",customKey);
+    assert(recordId(String(original)).equals(original));assert(recordId(`organization:${customKey}`).equals(original));
+    assertClientInput(catalog,"sales_invoice",{...input,organization:String(original)});
   }
-  const sdkCustomId = new RecordId("organization", "fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix");
-  assertClientInput(catalog, "treasury_account", {
-    ...account,
-    economic_entity: String(sdkCustomId),
-  });
-  assertClientInput(catalog, "treasury_account", {
-    ...account,
-    owned_by: String(new RecordId("rebase_group", Uuid.v7())),
-    economic_entity: canonicalV4,
-  });
-
-  assert.throws(() => assertClientInput(catalog, "treasury_account", { ...account, z_history: {} }), /Invalid treasury_account input/);
+  assertClientInput(catalog,"sales_invoice",{...input,owned_by:String(new RecordId("rebase_group",Uuid.v7())),organization:canonicalV4});
+  assert.throws(()=>assertClientInput(catalog,"sales_invoice",{...input,z_history:{}}),/Invalid sales_invoice input/);
   for (const entry of catalog.schemas.values()) {
-    assert.equal(Object.keys(entry.schema.properties).some((field) => field.startsWith("z_")), false);
-    assert.equal(Object.keys(entry.schema.properties).some((field) => field.startsWith("x-rebase-")), false);
+    assert.equal(Object.keys(entry.schema.properties).some(field=>field.startsWith("z_")),false);
+    assert.equal(Object.keys(entry.schema.properties).some(field=>field.startsWith("x-rebase-")),false);
   }
 });
 

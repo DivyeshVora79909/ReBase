@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "service.schema.json",
+  "title": "service",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^(?:measure_unit):.+$"
+    },
+    "available_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "available_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "minimum_duration": {
+      "type": "string",
+      "pattern": "^(?:[0-9]+(?:ns|\u00b5s|us|ms|s|m|h|d|w|y))+$"
+    },
+    "maximum_duration": {
+      "type": "string",
+      "pattern": "^(?:[0-9]+(?:ns|\u00b5s|us|ms|s|m|h|d|w|y))+$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "name",
+    "unit"
+  ]
+}

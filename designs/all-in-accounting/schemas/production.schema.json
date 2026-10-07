@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "production.schema.json",
+  "title": "production",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "owned_by",
+    "name",
+    "starts_at",
+    "ends_at"
+  ]
+}

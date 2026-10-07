@@ -1,119 +1,47 @@
 #!/usr/bin/env node
+'use strict';
+const path = require('node:path');
+const { Decimal } = require('surrealdb');
+const { assertClientInput, loadClientSchemas } = require('../client-schemas');
+const { recordId } = require('../populate');
+const schemaDirectory = path.resolve(__dirname, '../../designs/all-in-accounting/schemas');
+const owned_by = 'rebase_tenant:default';
+const row = (table, id, content) => ({table,id:`${table}:${id}`,content:{owned_by,...content}});
 
-"use strict";
-
-const path = require("node:path");
-const { Decimal } = require("surrealdb");
-const { assertClientInput, loadClientSchemas } = require("../client-schemas");
-const { recordId } = require("../populate");
-
-const schemaDirectory = path.resolve(__dirname, "../../designs/all-in-accounting/schemas");
-
-// Edit these JSON-native input values. This preview reads authored schemas so
-// it works before the first build; the compiler copies those schemas unchanged
-// to build/all-in-accounting/client/schemas for applications to consume.
+// Explicit dependency order. These are ordinary public records; running this
+// file validates and binds them without opening a database connection.
 const fixture = [
-  {
-    table: "organization",
-    id: "organization:demo_owner",
-    content: {
-      owned_by: "rebase_tenant:default",
-      name: "Northwind Supply",
-      code: "NORTHWIND",
-    },
-  },
-  {
-    table: "organization",
-    id: "organization:demo_customer",
-    content: {
-      owned_by: "rebase_tenant:default",
-      name: "Harbor Market",
-    },
-  },
-  {
-    table: "currency",
-    id: "currency:demo_usd",
-    content: {
-      owned_by: "rebase_tenant:default",
-      code: "USD",
-      name: "US dollar",
-      precision: 2,
-    },
-  },
-  {
-    table: "treasury",
-    id: "treasury:demo_bank",
-    content: {
-      owned_by: "rebase_tenant:default",
-      name: "Operating bank",
-    },
-  },
-  {
-    table: "treasury_account",
-    id: "treasury_account:demo_cash",
-    content: {
-      owned_by: "rebase_tenant:default",
-      economic_entity: "organization:demo_owner",
-      treasury: "treasury:demo_bank",
-      currency: "currency:demo_usd",
-      minimum_balance: "0.00",
-    },
-  },
-  {
-    table: "cash_in",
-    id: "cash_in:demo_receipt",
-    content: {
-      owned_by: "rebase_tenant:default",
-      from_party: "organization:demo_customer",
-      to_account: "treasury_account:demo_cash",
-      amount: "42.50",
-      effective_at: "2026-10-01T00:00:00Z",
-    },
-  },
+  row('currency','demo_usd',{code:'USD',name:'Dollar',precision:2}),
+  row('measure_unit','demo_each',{code:'each',name:'Each'}),
+  row('item','demo_item',{name:'Item',unit:'measure_unit:demo_each'}),
+  row('operating_unit','demo_store',{name:'Store'}),
+  row('organization','demo_customer',{name:'Customer',currency:'currency:demo_usd',effective_at:'2027-01-01T00:00:00Z'}),
+  row('treasury','demo_cash',{name:'Cash',currency:'currency:demo_usd',effective_at:'2027-01-01T00:00:00Z'}),
+  row('stock_account','demo_stock',{name:'Stock',currency:'currency:demo_usd',resource:'item:demo_item',operating_unit:'operating_unit:demo_store',effective_at:'2027-01-01T00:00:00Z'}),
+  row('stock_entry','demo_opening',{account:'stock_account:demo_stock',real:'10',effective_at:'2027-01-01T00:00:00Z'}),
+  row('sales_invoice','demo_sale',{organization:'organization:demo_customer',invoice_date:'2027-01-10T00:00:00Z'}),
+  row('sales_issue','demo_issue',{invoice:'sales_invoice:demo_sale',stock_account:'stock_account:demo_stock',quantity:'1',price:'100',exchange_rate:'1',effective_at:'2027-01-05T00:00:00Z'}),
+  row('invoice_settlement','demo_advance',{invoice:'sales_invoice:demo_sale',treasury:'treasury:demo_cash',amount:'80',exchange_rate:'1',effective_at:'2027-01-02T00:00:00Z'}),
 ];
-
 const recordFields = {
-  organization: ["owned_by"],
-  currency: ["owned_by"],
-  treasury: ["owned_by"],
-  treasury_account: ["owned_by", "economic_entity", "treasury", "currency"],
-  cash_in: ["owned_by", "from_party", "to_account"],
+  currency:[],measure_unit:[],item:['unit'],operating_unit:[],organization:['currency'],treasury:['currency'],
+  stock_account:['currency','resource','operating_unit'],stock_entry:['account'],sales_invoice:['organization'],
+  sales_issue:['invoice','stock_account'],invoice_settlement:['invoice','treasury'],
 };
-
-const decimalFields = {
-  treasury_account: ["minimum_balance"],
-  cash_in: ["amount"],
-};
-
-function bindValues(table, input) {
-  const bound = { ...input };
-  for (const field of recordFields[table] || []) {
-    if (bound[field] !== undefined) bound[field] = recordId(bound[field]);
-  }
-  for (const field of decimalFields[table] || []) {
-    if (bound[field] !== undefined) bound[field] = new Decimal(bound[field]);
-  }
-  if (table === "cash_in") bound.effective_at = new Date(bound.effective_at);
+const decimalFields = {stock_entry:['real','receivable','payable'],sales_issue:['quantity','price','exchange_rate'],invoice_settlement:['amount','exchange_rate']};
+function bindValues(table,input) {
+  const bound={...input};
+  for(const field of ['owned_by',...(recordFields[table]||[])]) if(bound[field]!==undefined)bound[field]=recordId(bound[field]);
+  for(const field of decimalFields[table]||[])if(bound[field]!==undefined)bound[field]=new Decimal(bound[field]);
+  for(const field of ['effective_at','invoice_date'])if(bound[field]!==undefined)bound[field]=new Date(bound[field]);
   return bound;
 }
-
-function prepareFixture(rows = fixture) {
-  const catalog = loadClientSchemas(schemaDirectory);
-  return rows.map(({ table, id, content }) => {
-    assertClientInput(catalog, table, content);
-    return {
-      table,
-      id: recordId(id),
-      content: bindValues(table, content),
-    };
+function prepareFixture(rows=fixture) {
+  const catalog=loadClientSchemas(schemaDirectory);
+  return rows.map(({table,id,content})=>{
+    assertClientInput(catalog,table,content);
+    return {table,id:recordId(id),content:bindValues(table,content)};
   });
 }
-
-if (require.main === module) {
-  const rows = prepareFixture();
-  console.log(`Validated ${rows.length} explicit all-in-accounting fixture rows.`);
-  console.log("SDK RecordId, Decimal, and Date values are ready for bound client writes.");
-  console.log("No database connection is opened by this example.");
-}
-
-module.exports = { bindValues, fixture, prepareFixture };
+if(require.main===module)console.log(`Validated ${prepareFixture().length} explicit accounting records with native RecordId, Decimal and Date bindings; no database connection opened.`);
+module.exports={bindValues,fixture,prepareFixture};

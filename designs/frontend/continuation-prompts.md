@@ -1,20 +1,23 @@
 # Instructions for future changes
 
-The tenant backend migration below takes precedence. Other prompts apply after
-that compatibility packet; historical frontend tests do not establish it.
-Start with the [backend execution handoff](../rebase-system/tenant-tree-handoff.md)
-and its [2026-10-05 verification](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json).
-Backend acceptance and the lead review precede this separate frontend migration.
+The next frontend packet combines the existing tenant migration with the
+[October 7 accounting contract](../all-in-accounting/blueprint.md). Start with
+the [accounting handoff](../all-in-accounting/implementation-handoff.md) and
+[verification](../all-in-accounting/verification.md), then the shared
+[tenant backend handoff](../rebase-system/tenant-tree-handoff.md). Historical
+frontend tests do not establish compatibility with the revised accounting API.
 
-## Tenant backend migration — next required packet
+## Tenant and accounting migration — next required packet
 
 ```text
 Continue in ReBase and the separate ignored MetaSol repository. Inspect both
 Git trees. The backend tenant/tree redesign is newer than the existing browser
 implementation; start with designs/rebase-system/tenant-tree-redesign.md,
-ordered-tree-contract.md, tenant-authentication.md, single-design-runtime.md, current auth source and
-designs/all-in-accounting/claims/invoices.surql. Read the 2026-10-05 backend
-evidence and compare its source hashes to the checkout before reusing results.
+ordered-tree-contract.md, tenant-authentication.md, single-design-runtime.md,
+current auth source and designs/all-in-accounting/postings/issues.surql.
+Read the current accounting blueprint, source map and verification. October 5
+backend evidence covers the shared tenant engine, not the new accounting API;
+compare source hashes to the checkout before reusing results.
 
 Keep fixed namespace/database in public design configuration. Make tenant an
 explicit signin/session choice within that design. Scope routes, credentials,
@@ -39,13 +42,14 @@ affected native source queries use WITH NOINDEX ORDER BY id until a verified
 replacement is available. Compare complete results; do not hide duplicate rows
 with client deduplication. The primary scan has no indexed-performance promise.
 
-Update invoice forms/projections to distinguish delivery tax components from
-explicit invoice-wide variants. Show delivery, invoice, tax account, currency
-and rule provenance. A physical delivery may have multiple priced portions;
-rounding and tax recognition belong to each line at the issue timestamp. Make
-empty, line-only, invoice-only and combined input modes explicit: selecting
-both posts both. Keep the backend responsible for calculations and final
-transaction validation; don't reimplement tax policy in client code.
+Use direct currency-bearing accounts and the 34 public create schemas. Issues
+require invoices; invoices validate without posting. Use scalar exchange rates
+and distinguish base taxes from strictly earlier net taxes, each with one issue
+parent. Author adjustment-tax rows explicitly with their correction and original
+tax. Returns/refunds are on/before invoice_date; adjustments, including negative
+cash adjustments, follow it. Production uses explicit input/output/cost/capacity
+rows with two dated positions. Use temporal prefixes for as-of balances. Keep
+calculations and final transaction validation in the backend.
 
 Finish one simple tenant-aware login/accounting slice first, using ordinary
 Solid modules and direct SDK/library APIs. Prove two tenants in the SAME database,

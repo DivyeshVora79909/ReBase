@@ -1,6 +1,18 @@
 # Production Readiness Report
 
-## Current status — 2026-10-05
+## Accounting redesign — 2026-10-07
+
+The active [accounting profile](designs/all-in-accounting/README.md) has direct
+currency-bearing accounts, invoice-date solvency, temporal taxes/corrections,
+and explicit production/capacity records. The recipe profile was removed at the
+user's request. Current acceptance is recorded in the
+[accounting verification](designs/all-in-accounting/verification.md).
+
+The [October 5 normalization evidence](designs/rebase-system/evidence/2026-10-05-accounting-normalized-acceptance.json)
+and older H1–H8 results below describe their original source snapshots. They do
+not certify this API, a populated database conversion or production capacity.
+
+## Tenant/tree baseline — 2026-10-05
 
 **Tenant/tree backend T0–T6 passed; ready for lead review.** The
 [execution handoff](designs/rebase-system/tenant-tree-handoff.md) and

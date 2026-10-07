@@ -30,7 +30,7 @@ module and tree catalogs remain the design baseline.
 | **1a — this change** | Exercise integer order keys through the unchanged AVL runtime using a small handwritten fixture. | Independent source reconstruction agrees after rotations, duplicate ranks, edits, reparenting, omissions, deletion, and rejected writes. Numeric prefix/range/select queries agree. |
 | 1b | Add explicit compiler contracts for temporal and integer-ordinal root/node slots. | Native strict types; incompatible modes, owner/slot routes, and malformed query boundaries fail closed; existing temporal output stays compatible. |
 | 1c | Prove a versioned stage reference and a separate chronological history in a compiled fixture. | Consumed-field reactivity, domain isolation, permissions, concurrency, schema reapplication, and rollback pass. Only then enable an ordinal domain feature. |
-| 2 | Resume temporal gates A/B, then required-output gates C/D in the [accounting plan](../all-in-accounting/plan.md#2-engine-feasibility-gates). | Each capability has a separate database proof before a module relies on it. |
+| 2 | Resume temporal gates A/B, then required-output gates C/D in the historical accounting plan (retained in Git; the [current plan](../all-in-accounting/plan.md) supersedes its domain scope). | Each capability has a separate database proof before a module relies on it. |
 | 3 | Implement one bounded module slice at a time using the existing catalog. | Named invariants, independent oracle, and whole-operation costs for each slice. |
 
 This pass stops after 1a and records what it proved. Compiler integration is the

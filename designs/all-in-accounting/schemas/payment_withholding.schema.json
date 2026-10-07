@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "payment_withholding.schema.json",
+  "title": "payment_withholding",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^(?:invoice_settlement):.+$"
+    },
+    "tax_account": {
+      "type": "string",
+      "pattern": "^(?:direct_tax_account):.+$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "owned_by",
+    "source",
+    "tax_account",
+    "amount",
+    "exchange_rate",
+    "effective_at"
+  ]
+}

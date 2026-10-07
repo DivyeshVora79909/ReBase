@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "issue_net_tax.schema.json",
+  "title": "issue_net_tax",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^(?:sales_issue|purchase_issue):.+$"
+    },
+    "tax_account": {
+      "type": "string",
+      "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "label": {
+      "type": "string"
+    },
+    "rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "lower_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "source",
+    "tax_account",
+    "effective_at",
+    "rate",
+    "exchange_rate"
+  ]
+}

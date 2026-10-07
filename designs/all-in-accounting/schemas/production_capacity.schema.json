@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "production_capacity.schema.json",
+  "title": "production_capacity",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "production": {
+      "type": "string",
+      "pattern": "^(?:production):.+$"
+    },
+    "operating_unit": {
+      "type": "string",
+      "pattern": "^(?:operating_unit):.+$"
+    },
+    "service": {
+      "type": "string",
+      "pattern": "^(?:service):.+$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "production",
+    "operating_unit",
+    "service",
+    "quantity"
+  ]
+}

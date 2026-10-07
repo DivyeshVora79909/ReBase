@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "invoice_settlement.schema.json",
+  "title": "invoice_settlement",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "invoice": {
+      "type": "string",
+      "pattern": "^(?:sales_invoice|purchase_invoice):.+$"
+    },
+    "treasury": {
+      "type": "string",
+      "pattern": "^(?:treasury|misc_currency_account):.+$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "owned_by",
+    "invoice",
+    "treasury",
+    "amount",
+    "exchange_rate",
+    "effective_at"
+  ]
+}

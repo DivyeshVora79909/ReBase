@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "production_cost.schema.json",
+  "title": "production_cost",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "production": {
+      "type": "string",
+      "pattern": "^(?:production):.+$"
+    },
+    "treasury": {
+      "type": "string",
+      "pattern": "^(?:treasury|misc_currency_account):.+$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "production",
+    "treasury",
+    "amount"
+  ]
+}

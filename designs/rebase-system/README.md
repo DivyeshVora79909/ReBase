@@ -13,9 +13,16 @@ Backend T0–T6 is **ready for lead review**. The
 the complete backend/accounting suites, three builds, positions, mocked refunds
 and developer-tool checks, with source hashes and the retained native scan limit.
 
+The subsequent [direct accounting model](../all-in-accounting/README.md) makes
+ordinary records and declared ancestor memberships the active accounting API.
+Its [handoff](../all-in-accounting/implementation-handoff.md) owns its acceptance.
+The October 7 redesign removed the recipe profile and its commands. Historical
+H1–H8 evidence remains in Git and the verification chronology.
+
 This index routes design history; the [core handoff](./core-handoff.md) owns
-K1–K5 implementation and restart requirements, while the [accounting handoff](../all-in-accounting/implementation-handoff.md)
-owns H1–H8 packet status, evidence, and domain limits. H4b5c is resolved for current invoice tax paths. H8 has three matching transaction-layer counter samples; physical storage cost remains open there. Start core work with the
+K1–K5 implementation and restart requirements. The active accounting handoff
+owns the revised domain contract and its current evidence. Earlier H1–H8 results
+retain their original snapshot and do not certify current source semantics. Start core work with the
 [core handoff](./core-handoff.md), then its packet-specific
 source list and [configuration reference](./core-configuration.md).
 The [fresh audit](./core-audit.md) and linked evidence record current checks,
@@ -51,7 +58,7 @@ active packet; reading every document on each model switch wastes context.
 |---|---|
 | [Developer-tools handoff](./developer-experience-handoff.md) | Current review, source boundaries, executor guidance, and focused verification commands. |
 | [Core handoff](./core-handoff.md) | Current core scope, K1–K5 requirements, restart instruction. |
-| [Accounting handoff](../all-in-accounting/implementation-handoff.md) | Revised economic identities, multi-effect sources, net limits, and H0–H8 domain packets. |
+| [Accounting handoff](../all-in-accounting/implementation-handoff.md) | Direct source records, effective-time parent validation, and current acceptance. |
 | [Configuration reference](./core-configuration.md) | Existing settings/defaults, internal constants, traps, focused checks. |
 | [Credential ownership contract](./credential-ownership-contract.md) | K4a actor/action matrix and source gaps; K4b acceptance. |
 | [Core audit](./core-audit.md) | Fresh evidence, reproduced defects, retained decisions, and remaining limits. |

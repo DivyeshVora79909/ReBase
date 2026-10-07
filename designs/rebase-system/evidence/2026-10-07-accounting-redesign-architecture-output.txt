@@ -1,0 +1,7 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:architecture
+npm notice run node dev-tools/checks/architecture-probe.js
+architecture: UUIDv7 record ID behavior passed
+architecture: synchronous snapshot and rollback boundary passed
+architecture: reference authorization and event permission boundary passed
+architecture: fixed principal compiler contract passed
+architecture: PASS

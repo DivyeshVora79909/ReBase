@@ -1,5 +1,43 @@
 # Frontend execution plan
 
+## Accounting contract update — 2026-10-07
+
+The [current backend blueprint](../all-in-accounting/blueprint.md) supersedes the
+older accounting API below. The existing MetaSol worktree has ongoing tenant
+changes and was left untouched by this backend redesign. Its data modules still
+reference removed claim-account and invoice-issue tables; no browser acceptance
+for the October 7 accounting contract is claimed.
+
+Continue the frontend with direct currency-bearing account records, mandatory
+invoice parents and invoice dates, scalar exchange rates, base/net taxes and
+explicit adjustment-tax rows. Respect the confirmed refund-before/adjustment-after
+date split. Replace recipe-based production inputs with ordinary production,
+input/output/cost/capacity rows, and use temporal prefixes for as-of balances.
+Use the 34 authored public input schemas and the backend's worked examples.
+Preserve the existing session/tenant fencing and the user's current frontend work.
+
+## Tenant and delivery-tax continuation — 2026-10-05
+
+Baseline: ReBase `78671715764437af606ebfe6408824d81ca5d284` and MetaSol
+`ada483e4d3fc389e66e0db9a21a14e3319a0fc12`; both worktrees were clean.
+The user has authorized this frontend continuation after backend acceptance.
+
+1. Keep namespace/database fixed in runtime profiles. Move workspace routes to
+   profile/tenant and validate the authenticated tenant with native record equality
+   before accepting any session. Canonical IDs govern credentials and query scope.
+2. Migrate the existing disposable fixtures and data reads. Prove two tenants in
+   one database, matching login identifiers, denied cross-tenant references,
+   current role revocation, and held responses during tenant changes.
+3. Extend the ordinary invoice editor with separately selected delivery and
+   invoice-wide taxes, bounded compound input and multiple priced portions per
+   source. Read public issue provenance and leave calculation to the backend.
+4. Run native and browser acceptance, inspect desktop/mobile views, and update
+   contracts and evidence. Preserve the simple Solid/JavaScript modules; no
+   provider deployment or framework rewrite is part of this packet.
+
+Status: implementation in progress; no frontend acceptance claimed yet.
+
+
 2026-10-02. Execute directly; lower-model prompts are maintenance aids, not a
 substitute for this implementation. No compatibility shim for the removed generic
 console is required. Keep this work visible in the new `designs/frontend/` package

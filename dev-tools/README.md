@@ -12,7 +12,9 @@ population can infer it. The compiler never creates a production tenant.
 
 ## Workbench
 
-The default project is `all-in-accounting`:
+The default project is the [direct accounting model](../designs/all-in-accounting/README.md),
+`all-in-accounting`. The October 7 model uses direct accounts, temporal taxes
+and ordinary production rows; the old recipe profile was removed.
 
 ```bash
 node dev-tools/workbench.js
@@ -45,7 +47,7 @@ Use standard JavaScript, including top-level `await`:
 ```js
 await build()
 const admin = await connect()
-const [rows] = await admin.db.query("SELECT id, treasury, currency FROM treasury_account LIMIT 10;")
+const [rows] = await admin.db.query("SELECT id, name, currency FROM treasury LIMIT 10;")
 rows
 ```
 
@@ -94,7 +96,7 @@ const accounting = { project: "all-in-accounting" }
 const built = build(accounting)
 const admin = await connect({ namespace: "demo", database: "books" })
 await deploy(admin, accounting)
-const [accounts] = await admin.db.query("SELECT id, treasury, currency FROM treasury_account LIMIT 20;")
+const [accounts] = await admin.db.query("SELECT id, name, currency FROM treasury LIMIT 20;")
 await admin.close()
 ```
 
@@ -141,9 +143,10 @@ source bytes into `build/<project>/client/schemas/`. A missing source directory
 removes an older public schema export on build; check mode reports stale files
 without changing them. Keep output directories separate from source directories.
 
-The first accounting inputs are `organization`, `currency`, `treasury`,
-`treasury_account`, and `cash_in`. They describe editable create inputs, not
-complete database responses or every accounting table. Decimal quantities use
+The direct accounting profile exports thirty editable create-input schemas for
+identities, accounts, issues, taxes, payments, corrections, and exchange. They
+exclude protected derived fields and tree storage. The preserved recipe profile
+retains its original five-schema subset. Decimal quantities use
 strings, dates use ISO strings, and record references accept simple
 `table:custom-key`, SDK `table:⟨custom-key⟩`, or canonical `table:u"uuid"` strings;
 bind their native SDK types before writing. Reference existence,
@@ -169,16 +172,18 @@ matter for that input. Computed fields belong in database output.
 
 ## Development data in JavaScript
 
-Preview the explicit accounting example without opening a database:
+The [direct accounting examples](../designs/all-in-accounting/examples.md) show
+ordinary source records and their dependencies. Preview the current example
+without opening a database:
 
 ```bash
 node dev-tools/accounting/fixture-example.js
 ```
 
-`prepareFixture()` from that module validates six editable objects and returns
+`prepareFixture()` from that module validates eleven editable objects and returns
 rows with SDK `RecordId`, `Decimal`, and `Date` values ready for bound writes.
-Use this example for dependent accounting rows; a field generator cannot infer
-an accounting scenario. Re-running it uses the same explicit record IDs.
+It targets `all-in-accounting`; a field generator cannot infer an accounting
+scenario. Re-running it uses the same explicit record IDs.
 
 The population adapter also recognizes the database's `<string>id` output:
 single-quoted UUID literals and backtick-quoted simple keys. UUID literals stay
@@ -186,7 +191,8 @@ typed UUIDs; UUID-looking custom keys stay strings. This bounded fixture helper
 does not parse arbitrary SurrealQL record keys.
 
 To insert them deliberately, use a configured disposable database with the
-accounting schema and `rebase_group:root` already present. From the workbench
+`all-in-accounting` schema and an explicitly provisioned `rebase_tenant:default`.
+From the workbench
 started in the ReBase root:
 
 ```js

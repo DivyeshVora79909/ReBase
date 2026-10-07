@@ -1,0 +1,176 @@
+npm notice run rebase-surreal-compiler@0.2.0 test:dev-tools
+npm notice run node --test dev-tools/tests/*.test.js
+TAP version 13
+# Subtest: accounting exports and validates exactly its public create schemas
+ok 1 - accounting exports and validates exactly its public create schemas
+  ---
+  duration_ms: 1285.442875
+  type: 'test'
+  ...
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 2 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 129.63662
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 3 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 917.307286
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 4 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 2.860853
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 5 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 6.59588
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 6 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 2.405277
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 7 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 387.643619
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 8 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 62.31306
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 9 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 59.781675
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 10 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 15.681659
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 11 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 6.166857
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates native SDK values and explicit temporal sources
+ok 12 - accounting fixture validates native SDK values and explicit temporal sources
+  ---
+  duration_ms: 133.871257
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 13 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 54.76637
+  type: 'test'
+  ...
+# Subtest: public accounting schemas expose inputs and preserve native record identities
+ok 14 - public accounting schemas expose inputs and preserve native record identities
+  ---
+  duration_ms: 59.960062
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 15 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.683772
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 16 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 240.395117
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 17 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 6.189103
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 18 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 11.1929
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 19 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 88.534472
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 20 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 7.910856
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 21 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 28.238826
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 22 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 14.593306
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 23 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 13.953304
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 24 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 8.662407
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 25 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 11.439275
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 26 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 11.366603
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 27 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 11.946622
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3750.263842
+ELAPSED_SECONDS=4.05
+EXIT_STATUS=0

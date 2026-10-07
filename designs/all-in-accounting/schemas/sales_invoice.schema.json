@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "sales_invoice.schema.json",
+  "title": "sales_invoice",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "organization": {
+      "type": "string",
+      "pattern": "^(?:organization):.+$"
+    },
+    "invoice_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "number": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owned_by",
+    "organization",
+    "invoice_date"
+  ]
+}
