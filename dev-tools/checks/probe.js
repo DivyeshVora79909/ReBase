@@ -175,7 +175,7 @@ async function securityProbe(options) {
       assert(aliceByUsername.token);
       await assert.rejects(
         db.query("CREATE rebase_user:duplicate_username SET name = 'Duplicate', username = 'alice_user', parents = [rebase_tenant:default];"),
-        /unique|index|username/i,
+        /TREE_DUPLICATE_VALUE|unique|index|username/i,
       );
       await db.query(`
         CREATE rebase_user:username_claim_1 SET name = 'Claim 1', parents = [rebase_tenant:default];
@@ -379,20 +379,20 @@ async function securityProbe(options) {
       assert.equal(rows(await alice.db.query("SELECT id FROM test_relation:group_reader;")).length, 1,
         "the direct reader group belongs to the caller's authorization graph");
       assert.equal(rows(await bob.db.query("SELECT id FROM test_relation:group_reader;")).length, 0);
-      assert.deepEqual(rows(await db.query("SELECT readers_index FROM test_relation:group_reader;"))[0].readers_index.map(String),
-        ["rebase_group:team"]);
+      assert.deepEqual(rows(await db.query("SELECT read_by FROM test_relation:group_reader;"))[0].read_by.toString(),
+        "rebase_group:team");
       assert.equal(rows(await alice.db.query("SELECT id FROM unmarked_relation:unmarked_reader;")).length, 0,
         "an unmarked reference grants no reader access");
-      const protectedReaderIndex = rows(await alice.db.query("SELECT readers_index FROM test_relation:group_reader;"))[0];
-      assert.equal(protectedReaderIndex?.readers_index, undefined, "reader metadata is not exposed to clients");
+      const protectedReaderIndex = rows(await alice.db.query("SELECT read_by FROM test_relation:group_reader;"))[0];
+      assert.equal(String(protectedReaderIndex?.read_by), "rebase_group:team", "the derived reader is visible to authorized clients");
       try {
-        await alice.db.query("CREATE test_relation:forged_reader SET owned_by = $auth, a_primitive = test_primitive:scalar_source, readers_index = ['rebase_user:bob'];");
+        await alice.db.query("CREATE test_relation:forged_reader SET owned_by = $auth, a_primitive = test_primitive:scalar_source, read_by = rebase_user:bob;");
       } catch {
         // If the engine ignores a computed-field input, the stored index below
         // must still be calculated only from the marked parent.
       }
-      const forgedReaderIndex = rows(await db.query("SELECT readers_index FROM test_relation:forged_reader;"))[0]?.readers_index;
-      if (forgedReaderIndex) assert(!forgedReaderIndex.map(String).includes("rebase_user:bob"));
+      const forgedReaderIndex = rows(await db.query("SELECT read_by FROM test_relation:forged_reader;"))[0]?.read_by;
+      if (forgedReaderIndex) assert.notEqual(String(forgedReaderIndex), "rebase_user:bob");
       await assert.rejects(
         alice.db.query(`
           CREATE test_relation:missing_reference SET
@@ -435,8 +435,8 @@ async function securityProbe(options) {
           a_primitive_array = [test_primitive:array_source]
         RETURN AFTER;
       `)).length, 1);
-      let derived = rows(await db.query("SELECT readers_index FROM test_relation:derived;"))[0];
-      assert.deepEqual(new Set(derived.readers_index.map(String)), new Set(["rebase_user:alice"]));
+      let derived = rows(await db.query("SELECT read_by FROM test_relation:derived;"))[0];
+      assert.deepEqual(String(derived.read_by), "rebase_user:alice");
       assert.equal(String(rows(await alice.db.query("SELECT id FROM test_relation:derived;"))[0].id), "test_relation:derived");
       assert.equal(rows(await alice.db.query("SELECT id FROM test_multiref:principal_refs;")).length, 0);
       assert.equal(rows(await alice.db.query("SELECT id FROM file_storage_config:public;")).length, 0,
@@ -447,18 +447,18 @@ async function securityProbe(options) {
 
       await db.query("UPDATE test_primitive:scalar_source SET owned_by = rebase_user:bob;");
       await db.query("UPDATE test_primitive:array_source SET owned_by = rebase_user:bob;");
-      derived = rows(await db.query("SELECT readers_index FROM test_relation:derived;"))[0];
-      assert.deepEqual(new Set(derived.readers_index.map(String)), new Set(["rebase_user:bob"]));
+      derived = rows(await db.query("SELECT read_by FROM test_relation:derived;"))[0];
+      assert.deepEqual(String(derived.read_by), "rebase_user:bob");
       assert.equal(rows(await alice.db.query("SELECT id FROM test_relation:derived;")).length, 0);
-      assert(rows(await alice.db.query("SELECT * FROM v_test_prim WHERE target = test_primitive:scalar_source;")).length > 0);
+      assert.equal(rows(await alice.db.query("SELECT * FROM v_test_prim WHERE target = test_primitive:scalar_source;")).length, 0, "views use the new chosen reader too");
 
       await db.query(`
         CREATE test_tree:root_a SET owned_by = rebase_user:alice, a_name = 'A';
         CREATE test_tree:child_b SET owned_by = rebase_user:carol, a_name = 'B', a_parent = test_tree:root_a;
         CREATE test_tree:child_c SET owned_by = rebase_user:bob, a_name = 'C', a_parent = test_tree:child_b;
       `);
-      let chain = rows(await db.query("SELECT id, readers_index FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
-      const childReaders = new Map(chain.map((record) => [String(record.id), new Set(record.readers_index.map(String))]));
+      let chain = rows(await db.query("SELECT id, read_by FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
+      const childReaders = new Map(chain.map((record) => [String(record.id), new Set([String(record.read_by)])]));
       assert(childReaders.get("test_tree:child_b").has("rebase_user:alice"));
       assert(!childReaders.get("test_tree:child_c").has("rebase_user:alice"), "grandparent owners are not copied transitively");
       assert.equal(rows(await alice.db.query("SELECT id FROM test_tree:child_c;")).length, 0,
@@ -468,18 +468,18 @@ async function securityProbe(options) {
         /TOPOLOGY_ERR|REBASE_READER_CYCLE/,
       );
       await db.query("UPDATE test_tree:root_a SET a_parent = test_tree:child_c;");
-      assert.deepEqual(rows(await db.query("SELECT readers_index FROM test_tree:root_a;"))[0].readers_index.map(String),
-        ["rebase_user:bob"], "immediate readers do not require a recursive inheritance-cycle guard");
+      assert.deepEqual(rows(await db.query("SELECT read_by FROM test_tree:root_a;"))[0].read_by.toString(),
+        "rebase_user:bob", "immediate readers do not require a recursive inheritance-cycle guard");
       await db.query("UPDATE test_tree:root_a SET a_parent=NONE;");
       await db.query("UPDATE test_tree:root_a SET owned_by = rebase_user:bob;");
-      chain = rows(await db.query("SELECT id, readers_index FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
-      const changedParentReaders = new Map(chain.map((record) => [String(record.id), new Set(record.readers_index.map(String))]));
+      chain = rows(await db.query("SELECT id, read_by FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
+      const changedParentReaders = new Map(chain.map((record) => [String(record.id), new Set([String(record.read_by)])]));
       assert(!changedParentReaders.get("test_tree:child_b").has("rebase_user:alice"));
       assert(!changedParentReaders.get("test_tree:child_c").has("rebase_user:alice"));
       await db.query("CREATE test_tree:root_other SET owned_by = rebase_group:team, a_name = 'Other';");
       await db.query("UPDATE test_tree:child_b SET a_parent = test_tree:root_other;");
-      chain = rows(await db.query("SELECT id, readers_index FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
-      const reparentedReaders = new Map(chain.map((record) => [String(record.id), new Set(record.readers_index.map(String))]));
+      chain = rows(await db.query("SELECT id, read_by FROM test_tree WHERE id IN [test_tree:child_b, test_tree:child_c] ORDER BY id;"));
+      const reparentedReaders = new Map(chain.map((record) => [String(record.id), new Set([String(record.read_by)])]));
       assert(reparentedReaders.get("test_tree:child_b").has("rebase_group:team"));
       assert(!reparentedReaders.get("test_tree:child_c").has("rebase_group:team"), "reparented ancestors do not grant grandchild access");
       assert.equal(rows(await alice.db.query("SELECT id FROM test_tree:child_b;")).length, 1,
@@ -487,8 +487,8 @@ async function securityProbe(options) {
       assert.equal(rows(await bob.db.query("SELECT id FROM test_tree:child_b;")).length, 0,
         "an unrelated user cannot read through the inherited group");
       await db.query("UPDATE test_tree:root_other SET owned_by = rebase_group:other;");
-      const finalReaders = rows(await db.query("SELECT readers_index FROM test_tree:child_b;"))[0].readers_index;
-      assert.deepEqual(finalReaders.map(String), ["rebase_group:other"], "parent owner changes refresh direct readers");
+      const finalReaders = rows(await db.query("SELECT read_by FROM test_tree:child_b;"))[0].read_by;
+      assert.deepEqual(String(finalReaders), "rebase_group:other", "parent owner changes refresh direct readers");
       assert.equal(rows(await alice.db.query("SELECT id FROM test_tree:child_b;")).length, 0,
         "reparenting and parent owner changes revoke stale access");
       await db.query("UPDATE authentication_email:alice SET address = 'alice-final@example.com'; UPDATE rebase_group:team SET role = ['node_select'];");
@@ -538,11 +538,11 @@ async function ownerSelectPolicyProbe(options) {
       "group ownership uses the same authorized principal intersection");
     assert.equal(rows(await reader.query("SELECT id FROM test_relation:inherited;")).length, 0,
       "the owner profile does not use inherited reader grants");
-    const computed = rows(await db.query("SELECT readers_index FROM test_relation:inherited;"))[0].readers_index;
-    assert.deepEqual(computed.map(String), ["rebase_user:reader"],
+    const computed = rows(await db.query("SELECT read_by FROM test_relation:inherited;"))[0].read_by;
+    assert.deepEqual(String(computed), "rebase_user:reader",
       "the protected reader index is computed identically under the owner profile");
-    const projected = rows(await reader.query("SELECT readers_index FROM test_primitive:owned;"));
-    assert.equal(projected[0]?.readers_index, undefined, "the protected reader index is not visible to clients");
+    const projected = rows(await reader.query("SELECT read_by FROM test_primitive:owned;"));
+    assert.equal(String(projected[0]?.read_by), "rebase_user:reader", "the owner is the reader fallback");
     console.log("security: owner select policy keeps the direct reader index protected and unchanged");
   } finally {
     await reader?.close().catch(() => {});

@@ -7,16 +7,16 @@ DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
         LET $tenant_id = type::record($tenant);
         IF record::tb($tenant_id) != 'rebase_tenant' OR !record::exists($tenant_id) { RETURN NONE; };
         LET $identifier_value = string::lowercase(string::trim($identifier ?? ""));
-        LET $email_principal = (SELECT VALUE owned_by FROM authentication_email
-            WHERE tenant = $tenant_id AND address = $identifier_value
+        LET $email_principal = (SELECT VALUE owned_by FROM fn::rebase::identity($tenant_id, 'email', $identifier_value)
+            WHERE true
               AND verified_revision = revision
               AND owned_by.login_access = true)[0];
-        LET $phone_principal = (SELECT VALUE owned_by FROM authentication_phone
-            WHERE tenant = $tenant_id AND number = $identifier_value
+        LET $phone_principal = (SELECT VALUE owned_by FROM fn::rebase::identity($tenant_id, 'phone', $identifier_value)
+            WHERE true
               AND verified_revision = revision
               AND owned_by.login_access = true)[0];
-        LET $username_principal = (SELECT VALUE id FROM rebase_user
-            WHERE tenant = $tenant_id AND username = $identifier_value AND login_access = true)[0];
+        LET $username_principal = (SELECT VALUE id FROM fn::rebase::identity($tenant_id, 'username', $identifier_value)
+            WHERE login_access = true)[0];
         LET $principal = IF $email_principal != NONE THEN $email_principal
             ELSE IF $phone_principal != NONE THEN $phone_principal
             ELSE $username_principal END;
@@ -25,11 +25,11 @@ DEFINE ACCESS OVERWRITE account_password ON DATABASE TYPE RECORD
         -- A username is usable only after at least one identity has been
         -- verified. Email and phone candidates already carry that condition.
         IF $email_principal = NONE AND $phone_principal = NONE {
-            LET $verified_count = (SELECT VALUE id FROM authentication_email
-                WHERE owned_by = $principal AND verified_revision = revision).len()
-                + (SELECT VALUE id FROM authentication_phone
-                WHERE owned_by = $principal AND verified_revision = revision).len()
-                + (SELECT VALUE id FROM authentication_passkey WHERE owned_by = $principal).len();
+            LET $verified_count = (SELECT VALUE id FROM $principal<~(authentication_email FIELD owned_by)
+                WHERE verified_revision = revision).len()
+                + (SELECT VALUE id FROM $principal<~(authentication_phone FIELD owned_by)
+                WHERE verified_revision = revision).len()
+                + (SELECT VALUE id FROM $principal<~(authentication_passkey FIELD owned_by)).len();
             IF $verified_count = 0 { RETURN NONE; };
         };
 
@@ -57,12 +57,12 @@ DEFINE ACCESS OVERWRITE account_code ON DATABASE TYPE RECORD
         IF $password_action_value = "set" AND $password_value.len() < 8 { RETURN NONE; };
         IF !string::matches($code_value, /^[0-9]{6}$/) { RETURN NONE; };
 
-        LET $email_identity = (SELECT * FROM authentication_email
-            WHERE tenant = $tenant_id AND address = $identifier_value)[0];
-        LET $phone_identity = (SELECT * FROM authentication_phone
-            WHERE tenant = $tenant_id AND number = $identifier_value)[0];
-        LET $username_principal = (SELECT VALUE id FROM rebase_user
-            WHERE tenant = $tenant_id AND username = $identifier_value AND login_access = true)[0];
+        LET $email_identity = (SELECT * FROM fn::rebase::identity($tenant_id, 'email', $identifier_value)
+            WHERE true)[0];
+        LET $phone_identity = (SELECT * FROM fn::rebase::identity($tenant_id, 'phone', $identifier_value)
+            WHERE true)[0];
+        LET $username_principal = (SELECT VALUE id FROM fn::rebase::identity($tenant_id, 'username', $identifier_value)
+            WHERE login_access = true)[0];
         LET $username_challenge = (SELECT * FROM authentication_challenge
             WHERE principal = $username_principal
               AND consumed_at = NONE

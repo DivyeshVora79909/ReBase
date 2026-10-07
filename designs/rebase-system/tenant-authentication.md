@@ -1,6 +1,6 @@
 # Tenant and authentication contract
 
-Updated 2026-10-05. This is the current tenant, principal, identity, and provider
+Updated 2026-10-07. This is the current tenant, principal, identity, and provider
 credential contract for the [tenant/tree redesign](./tenant-tree-redesign.md).
 It supersedes root-group and database-per-tenant assumptions in older handoffs.
 The database schema and probes below are the executable authority.
@@ -77,6 +77,22 @@ Current permission data remains authoritative; permission arrays are not copied
 into JWT `CONTEXT`. Existing HTTP tokens and WebSocket sessions were tested
 against role and ancestry revocation.
 
+## Single reader and explicit analytics
+
+Ordinary design records derive one `read_by` through a VALUE expression. The
+[developer blueprint](developer-blueprint.md#one-reader-separate-write-authority)
+defines candidate order and the deliberate first-choice rule for incomparable
+principals. SELECT uses that principal with the same-tenant/table-permission
+checks; writes use `owned_by`. A record's own owner is the reader fallback only
+when no declared candidates exist. Reader choices refresh after source-owner
+and DAG changes. There is no persisted public reader array.
+
+Analytics roots may be declared on tenants, users and groups by a design. The
+[executable example](../index-analytics/README.md) includes creation/effective-time
+and composite owner/creation keys. Its membership slots use
+`@rebase-tree-no-reader` so shared index membership grants no read access. Tenant
+aggregates are private; changing that policy deliberately publishes summaries.
+
 ## Materialized aggregate views
 
 Grouped `v_*` definitions in `views.surql` must select and group by `tenant`
@@ -85,15 +101,15 @@ The compiler rejects missing or conflicting policies. Aggregate rows cannot
 recover the ownership of source rows after that information has been grouped
 away, so each policy defines the scope of the stored result explicitly.
 
-`@rebase-view-record-scoped` also requires direct `owned_by` and `readers_index`
+`@rebase-view-record-scoped` also requires direct `owned_by` and `read_by`
 projections and both fields in `GROUP BY`, alongside the business grouping keys:
 
 ```surql
 -- @rebase-view-record-scoped
 DEFINE TABLE OVERWRITE v_entry_totals AS
-    SELECT tenant, owned_by, readers_index, account, count() AS entries,
+    SELECT tenant, owned_by, read_by, account, count() AS entries,
         math::sum(amount) AS total
-    FROM entry GROUP BY tenant, owned_by, readers_index, account;
+    FROM entry GROUP BY tenant, owned_by, read_by, account;
 ```
 
 The generated SELECT permission uses the source table's current operation
@@ -127,9 +143,13 @@ owner-only builds, another tenant, anonymous access, and computed-field reads.
 
 Email and phone identities use immutable `owned_by: record<rebase_user>` and
 derive an immutable tenant. Email is normalized to lowercase and phone uses
-E.164 form. Native unique indexes enforce `(tenant, address)`, `(tenant, number)`,
-and `(tenant, username)` within their respective tables. The same address or
-username may exist in different tenants.
+E.164 form. The private `rebase_tenant.z_auth_identifiers` tree enforces unique
+`[kind, normalized value]` keys across username, email, phone and passkey source
+tables. Their former native identity/owner lookup indexes are removed. Trusted
+sign-in and gateway code use the private exact-tree lookup; owner lists use
+native REFERENCE backlinks. The same identifier may exist in different tenants.
+Adding a table can share the same kind/unique domain or choose a new kind.
+Neither choice exposes the index or automatically implements a login method.
 
 `account_password`, `account_code`, and generated `oauth` sign-in requests must
 include a tenant record ID. Password sign-in by email or phone requires a current

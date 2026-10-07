@@ -19,7 +19,7 @@ function generateViews(schema, options, systemTables = new Set(["rebase_user", "
       throw new Error(`${view.name}: views over system tables must be explicitly tenant-published`);
     }
     if (view.recordScoped) {
-      for (const field of ['owned_by', 'readers_index']) {
+      for (const field of ['owned_by', 'read_by']) {
         if (!view.groupKeys.includes(field) || view.projections.get(field) !== field) {
           throw new Error(`${view.name}: @rebase-view-record-scoped requires ${field} as a direct projection and GROUP BY key`);
         }

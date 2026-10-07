@@ -85,6 +85,7 @@ function parseSchema(schemaSource, viewsSource) {
       inheritReaders: /@rebase-readers\b/i.test(fieldComment),
       treeRoot: /@rebase-tree-root\b/i.test(fieldComment),
       treeNode: /@rebase-tree-node\b/i.test(fieldComment),
+      treeNoReader: /@rebase-tree-no-reader\b/i.test(fieldComment),
       reactive: /@rebase-derived\b/i.test(fieldComment),
       system: /@rebase-system\b/i.test(fieldComment),
       derived,

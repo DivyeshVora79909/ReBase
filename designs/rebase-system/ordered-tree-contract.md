@@ -32,10 +32,19 @@ fn::tree::ordered_member($row.id, 'directory_node', $row.directory,
 The developer defines normalization, required fields, and the allowed root types
 in ordinary schema. Roots and nodes must declare the same ordered key types.
 Allowed atomic types are `datetime`, `int`, `decimal`, `string`, `record`, `bool`,
-and `uuid`; a composite declaration has up to eight comma-separated components,
+and `uuid`; a composite declaration has an explicit list of comma-separated components,
 for example `@rebase-tree-key record,string,datetime`. Each position keeps its
 native type. Integers use the exact JavaScript transport range; decimal inputs
 must be native decimals. Float and mixed-number domains are deliberately absent.
+The arbitrary eight-component ceiling was removed; sixteen-component keys pass
+the current probe. This does not imply unlimited practical key width.
+
+Principal records may hold design-declared roots; the compiler generates their
+maintenance events without replacing principal permissions. On a node,
+`@rebase-tree-no-reader` excludes that membership from `read_by` candidates while
+preserving all tree integrity and aggregate behavior. See the
+[developer blueprint](developer-blueprint.md) for explicit analytics and the
+private cross-table authentication index.
 
 The stored key is `[business components..., canonical source ID, slot name]`.
 The last two strings come from the database; callers retain returned keys as

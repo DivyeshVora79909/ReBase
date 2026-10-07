@@ -71,7 +71,7 @@ DEFINE TABLE OVERWRITE authentication_email SCHEMAFULL PERMISSIONS
     FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by))
     FOR update WHERE $auth AND tenant = $auth.tenant AND ((owned_by = $auth AND $token.iat >= time::unix(time::now()) - 600) OR fn::rebase::dominates($auth, owned_by))
     FOR delete WHERE $auth AND tenant = $auth.tenant AND ((owned_by = $auth AND $token.iat >= time::unix(time::now()) - 600) OR fn::rebase::dominates($auth, owned_by))
-    COMMENT '@rebase-authentication';
+    COMMENT '@rebase-authentication @rebase-members fn::rebase::email_members';
 
     DEFINE FIELD OVERWRITE id ON authentication_email TYPE string | uuid | array | int | object DEFAULT rand::uuid::v7();
     DEFINE FIELD OVERWRITE tenant ON authentication_email TYPE record<rebase_tenant>
@@ -95,15 +95,16 @@ DEFINE TABLE OVERWRITE authentication_email SCHEMAFULL PERMISSIONS
         }
         ASSERT $value >= 1
         PERMISSIONS FOR create WHERE true FOR update NONE
-        ;
+         COMMENT '@rebase-system';
     DEFINE FIELD OVERWRITE verified_revision ON authentication_email TYPE option<int> DEFAULT NONE
         PERMISSIONS FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by)) FOR create, update NONE
-        ;
+         COMMENT '@rebase-system';
     DEFINE FIELD OVERWRITE verified_at ON authentication_email TYPE option<datetime> DEFAULT NONE
         PERMISSIONS FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by)) FOR create, update NONE
-        ;
-    DEFINE INDEX OVERWRITE idx_authentication_email_address ON authentication_email COLUMNS tenant, address UNIQUE;
-    DEFINE INDEX OVERWRITE idx_authentication_email_owner ON authentication_email COLUMNS owned_by;
+         COMMENT '@rebase-system';
+    REMOVE INDEX IF EXISTS idx_authentication_email_address ON authentication_email;
+    REMOVE INDEX IF EXISTS idx_authentication_email_owner ON authentication_email;
+    DEFINE FIELD OVERWRITE read_by ON authentication_email TYPE record<rebase_user> VALUE $this.owned_by PERMISSIONS FOR select, create WHERE true FOR update NONE;
 
 -- PHONE IDENTITIES
 DEFINE TABLE OVERWRITE authentication_phone SCHEMAFULL PERMISSIONS
@@ -111,7 +112,7 @@ DEFINE TABLE OVERWRITE authentication_phone SCHEMAFULL PERMISSIONS
     FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by))
     FOR update WHERE $auth AND tenant = $auth.tenant AND ((owned_by = $auth AND $token.iat >= time::unix(time::now()) - 600) OR fn::rebase::dominates($auth, owned_by))
     FOR delete WHERE $auth AND tenant = $auth.tenant AND ((owned_by = $auth AND $token.iat >= time::unix(time::now()) - 600) OR fn::rebase::dominates($auth, owned_by))
-    COMMENT '@rebase-authentication';
+    COMMENT '@rebase-authentication @rebase-members fn::rebase::phone_members';
 
     DEFINE FIELD OVERWRITE id ON authentication_phone TYPE string | uuid | array | int | object DEFAULT rand::uuid::v7();
     DEFINE FIELD OVERWRITE tenant ON authentication_phone TYPE record<rebase_tenant>
@@ -135,15 +136,16 @@ DEFINE TABLE OVERWRITE authentication_phone SCHEMAFULL PERMISSIONS
         }
         ASSERT $value >= 1
         PERMISSIONS FOR create WHERE true FOR update NONE
-        ;
+         COMMENT '@rebase-system';
     DEFINE FIELD OVERWRITE verified_revision ON authentication_phone TYPE option<int> DEFAULT NONE
         PERMISSIONS FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by)) FOR create, update NONE
-        ;
+         COMMENT '@rebase-system';
     DEFINE FIELD OVERWRITE verified_at ON authentication_phone TYPE option<datetime> DEFAULT NONE
         PERMISSIONS FOR select WHERE $auth AND tenant = $auth.tenant AND (owned_by = $auth OR fn::rebase::dominates($auth, owned_by)) FOR create, update NONE
-        ;
-    DEFINE INDEX OVERWRITE idx_authentication_phone_number ON authentication_phone COLUMNS tenant, number UNIQUE;
-    DEFINE INDEX OVERWRITE idx_authentication_phone_owner ON authentication_phone COLUMNS owned_by;
+         COMMENT '@rebase-system';
+    REMOVE INDEX IF EXISTS idx_authentication_phone_number ON authentication_phone;
+    REMOVE INDEX IF EXISTS idx_authentication_phone_owner ON authentication_phone;
+    DEFINE FIELD OVERWRITE read_by ON authentication_phone TYPE record<rebase_user> VALUE $this.owned_by PERMISSIONS FOR select, create WHERE true FOR update NONE;
 
 -- ONE ACTIVE CHALLENGE PER IDENTITY
 DEFINE TABLE OVERWRITE authentication_challenge SCHEMAFULL PERMISSIONS NONE

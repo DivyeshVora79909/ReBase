@@ -1,0 +1,30 @@
+npm notice run rebase-surreal-compiler@0.2.0 verify:accounting
+npm notice run npm run check:all-in-accounting && surreal validate build/all-in-accounting/schema.surql && npm run probe:accounting-core
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 51 tables and 0 views.
+Material files: 18
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+build/all-in-accounting/schema.surql: OK
+
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-core
+npm notice run node dev-tools/accounting/probe.js
+PASS direct accounts, shared unique dimensions, required invoices and covered advances
+PASS strictly earlier net taxes, parallel equal-time taxes and backdated cascading recalculation
+PASS return versus adjustment dates, stock reversal, signed debit corrections and reactive adjustment taxes
+PASS marginal capped rules, explicit parent matching and old/new ancestor repair
+PASS purchase direction, same-family withholding, scalar FX and rate corrections
+PASS exact native rounding and explicit split-return remainder
+PASS future production, gross shared inputs, cash reservation, service windows and half-open capacity
+PASS competing sessions, authenticated source writes and native SDK decimals
+CHECK populated schema reapplication
+PASS exact populated schema reapplication
+PASS accounting redesign: 63 mutation checkpoints, 35 complete rollback snapshots; explicit child-first cleanup
+ELAPSED_SECONDS=2122.88
+EXIT_STATUS=0

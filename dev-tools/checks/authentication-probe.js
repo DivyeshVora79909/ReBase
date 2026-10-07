@@ -43,7 +43,7 @@ function fakeDirectory({ mode = "identity", identity = {} } = {}) {
           phone: identity.channel === "phone" ? [identity] : [],
         };
       }
-      if (statement.includes("FROM authentication_email")) {
+      if (statement.includes("FROM fn::rebase::identity(")) {
         return mode === "missing" ? null : identity;
       }
       if (statement.includes("BEGIN TRANSACTION")) {

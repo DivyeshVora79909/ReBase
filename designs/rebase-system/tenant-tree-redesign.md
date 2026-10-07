@@ -85,15 +85,17 @@ application routing does not remove this database boundary.
 - Token context may carry small identity metadata. Stored permissions and
   enabled-login state remain authoritative so revocation affects existing
   tokens. Do not copy an unbounded permission/ancestor graph into tokens.
-- Derive reader principals from the declared tree roots' `owned_by`, with a
-  bounded distinct set determined by membership declarations. Do not recursively
-  copy other records' readers. Retain explicit direct reader declarations only
-  for deliberate non-tree relations. Such relations do not require an acyclic
-  reader graph because only the immediate owner is inherited.
-- A reader edge table is optional. A bounded reader array is acceptable when
-  authorization is correct and an edge projection does not improve the measured
-  query. Do not claim native indexed permission evaluation without EXPLAIN and
-  authenticated execution evidence.
+- Derive one `read_by` from immediate declared reference/root owners; a later
+  descendant replaces its ancestor, incomparable candidates retain the first,
+  and absent candidates fall back to `owned_by`. Use explicit groups for shared
+  access. Do not inherit another record's reader recursively. Graph and source
+  owner edits refresh the choice through dependency backlinks.
+- Index membership may explicitly opt out of reader inheritance with
+  `@rebase-tree-no-reader`. Tenant/owner analytics is design-authored. The
+  [developer blueprint](developer-blueprint.md) is the current authoring route.
+- The framework uses the custom tenant tree for username/email/phone/passkey
+  identity keys. Generic native lookup indexes are no longer generated;
+  authored indexes and concrete private runtime/view lookup indexes remain.
 
 ## Ordered data and aggregate boundary
 

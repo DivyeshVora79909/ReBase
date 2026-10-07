@@ -297,30 +297,20 @@ database's tracked-reference contract requires it.
 
 ## 7. Identity, readers, and configuration
 
-Framework principals are `rebase_user` and `rebase_group`; the root is
-`rebase_group:root`. These fixed names replace principal discovery/rebinding.
-Framework definitions own their native privacy policies. Remove
-`@rebase-internal` and `@rebase-authentication-private`; `PERMISSIONS` and the
-explicit material ownership boundary express the policy.
+Framework principals are `rebase_tenant`, `rebase_user` and `rebase_group`.
+Tenants are explicitly provisioned parentless roots. Framework definitions own
+their native privacy policies; there is no implicit `rebase_group:root`.
 
-For marked direct parent references:
+The [developer blueprint](developer-blueprint.md) defines one VALUE-derived
+`read_by`, ownership-based writes, explicit reader candidates and their stable
+selection rule. Immediate source-owner changes and authorization DAG edits
+refresh those choices. Another record's reader is never recursively copied.
+`selectPolicy: 'readers' | 'owner'` remains the profile switch.
 
-```text
-readers_index(child) = distinct(non-NONE parent.owned_by values)
-```
-
-Do not copy `parent.readers_index` and do not walk ancestors or tree links.
-A parent's owner change refreshes its marked children. A child's parent edit
-refreshes that child's index. A mere index change does not fan out again.
-Missing parents are rejected by the native reference contract or contribute
-nothing for an optional absent reference. Typed bounded reference arrays may
-participate only when explicitly marked and covered by the same tests.
-
-The owner rule already covers the child's owner. Reader permission tests
-intersection with the caller's authorized user/group principals, not only a
-literal user ID. `selectPolicy: 'readers' | 'owner'` is the single profile
-choice; both compute the same reader index. This policy never grants writes.
-Authorization group ancestry is a separate existing graph and remains intact.
+Authentication identifiers use the private tenant-wide unique ordered tree.
+Design analytics explicitly declares its own roots/slots; no-reader memberships
+separate indexing from visibility. These October 7 contracts supersede the
+older bounded-reader-array and per-table identity-index design.
 
 Provider credentials live in protected typed rows, including recovery delivery.
 A small JS configuration supplies only process wiring, endpoints, bootstrap DB

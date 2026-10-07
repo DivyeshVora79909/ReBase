@@ -26,9 +26,8 @@ function generateOAuthAccess(principals, options = {}) {
         IF $verification.verified != true OR !string::is_email($verification.email ?? "") {
             RETURN NONE;
         };
-        LET $identity = (SELECT * FROM authentication_email
-            WHERE tenant = $tenant_id AND address = string::lowercase(string::trim($verification.email))
-              AND owned_by.login_access = true)[0];
+        LET $identity = (SELECT * FROM fn::rebase::identity($tenant_id, 'email', string::lowercase(string::trim($verification.email)))
+            WHERE owned_by.login_access = true)[0];
         IF $identity = NONE { RETURN NONE; };
         UPDATE $identity.id SET verified_revision = revision, verified_at = time::now();
         RETURN (SELECT VALUE id FROM ${user} WHERE id = $identity.owned_by AND login_access = true)[0];

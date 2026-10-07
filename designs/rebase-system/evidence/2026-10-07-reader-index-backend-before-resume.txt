@@ -1,0 +1,169 @@
+npm notice run rebase-surreal-compiler@0.2.0 verify
+npm notice run npm run check && npm run check:all-in-one && npm run check:all-in-accounting && npm run check:index-analytics && surreal validate build/index-analytics/schema.surql && surreal validate build/all-in-accounting/schema.surql && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && surreal validate build/test/migrate-one-shot-backfill.surql && surreal validate build/test/migrate-one-shot-finalize.surql && surreal validate build/all-in-one/migrate-one-shot-backfill.surql && surreal validate build/all-in-one/migrate-one-shot-finalize.surql && npm run probe:environment && npm run probe:authentication && npm run probe:tenant-auth && npm run probe:tenant-records && npm run probe:reader-index && npm run probe:passkeys && npm run probe:credentials && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:admission && npm run probe:dead-letters && npm run probe:runtime && npm run probe:live && npm run probe:scheduling && npm run probe:webhook-inbox && npm run probe:adapters && npm run probe:temporal-tree && npm run probe:typed-tree && npm run probe:ordered-tree && npm run probe:boundary-tree && npm run probe:derived-order && npm run probe:required-outputs && npm run probe:causal-outputs && npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools
+npm notice run rebase-surreal-compiler@0.2.0 check
+npm notice run node dev-tools/compiler/cli.js --check
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 31 tables and 8 views.
+Material files: 11
+Table handlers: 7
+Webhook handlers: 1
+Output: build/test
+Schema: build/test/schema.surql
+One-shot upgrade batches: build/test/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/test/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 59 tables and 0 views.
+Material files: 15
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-one
+Schema: build/all-in-one/schema.surql
+One-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 51 tables and 0 views.
+Material files: 18
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:index-analytics
+npm notice run node dev-tools/compiler/cli.js --check --project designs/index-analytics --output build/index-analytics
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 19 tables and 0 views.
+Material files: 10
+Table handlers: 2
+Webhook handlers: 0
+Output: build/index-analytics
+Schema: build/index-analytics/schema.surql
+One-shot upgrade batches: build/index-analytics/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/index-analytics/migrate-one-shot-finalize.surql
+build/index-analytics/schema.surql: OK
+
+build/all-in-accounting/schema.surql: OK
+
+build/test/schema.surql: OK
+
+build/all-in-one/schema.surql: OK
+
+build/test/migrate-one-shot-backfill.surql: OK
+
+build/test/migrate-one-shot-finalize.surql: OK
+
+build/all-in-one/migrate-one-shot-backfill.surql: OK
+
+build/all-in-one/migrate-one-shot-finalize.surql: OK
+
+npm notice run rebase-surreal-compiler@0.2.0 probe:environment
+npm notice run node dev-tools/checks/environment-probe.js
+environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:authentication
+npm notice run node dev-tools/checks/authentication-probe.js
+authentication: normalization, tenant isolation, generic responses, fixed target/config routing, encrypted atomic queueing, failure mapping, and OAuth allowlist passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:tenant-auth
+npm notice run node dev-tools/checks/tenant-auth-probe.js
+tenant-auth: {"tenantIsolation":true,"scopedIdentityUniqueness":true,"diamondRemoval":true,"existingTokenRevocation":true,"concurrentCycleRejected":true,"protectedClosure":true,"nativeCreatesWithoutNodeSelect":true,"parentRoleEscalationRejected":true,"defaultUuidV7":true,"closurePairs":29,"rejectedInvalidMutations":8,"exactMembershipPlan":{"children":[{"attributes":{"record_id":"rebase_access:[rebase_user:peer, rebase_user:leaf]"},"context":"Db","expressions":[{"role":"record_id","sql":"rebase_access:[rebase_user:peer, rebase_user:leaf]"}],"operator":"RecordIdScan"}],"context":"Db","operator":"Project"}}
+npm notice run rebase-surreal-compiler@0.2.0 probe:tenant-records
+npm notice run node dev-tools/checks/tenant-record-probe.js
+Tenant records passed: native isolation, reference rollback, root-derived readers, ownership refresh, local uniqueness, direct-reader cycles, populated schema reapplication.
+npm notice run rebase-surreal-compiler@0.2.0 probe:reader-index
+npm notice run node dev-tools/checks/reader-index-probe.js
+PASS scalar readers, branch order, dominance moves, ownership refresh, groups and fallback
+PASS custom identifier lookup, normalization, cross-table uniqueness, concurrency, record writes and privacy
+PASS opted-in cross-table analytics, creation/effective times, owner moves, ranges, pages, privacy and 16-part keys
+PASS reader/index acceptance: 51 source checkpoints, 6 complete rollback snapshots; reapplication and cleanup
+npm notice run rebase-surreal-compiler@0.2.0 probe:passkeys
+npm notice run node dev-tools/checks/passkey-probe.js
+passkeys: {"realP256Verification":true,"rpOriginChallengeUserVerification":true,"recentNativeSession":true,"tenantIsolation":true,"canonicalUuidTenantRateLimits":true,"httpBearerBoundary":true,"counterReplayDenied":true,"concurrentExchangeOneWinner":true,"revocation":true,"scope":"Software authenticator and disposable SurrealDB; browser/device UX and live deployment not tested."}
+npm notice run rebase-surreal-compiler@0.2.0 probe:credentials
+npm notice run node dev-tools/checks/credential-probe.js
+credentials: owner, delegation, redaction, platform binding, BYOC, unauthorized operation, and pre-load guards passed (3432ms)
+npm notice run rebase-surreal-compiler@0.2.0 probe:compiler
+npm notice run node dev-tools/checks/compiler-probe.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:architecture
+npm notice run node dev-tools/checks/architecture-probe.js
+architecture: UUIDv7 record ID behavior passed
+architecture: synchronous snapshot and rollback boundary passed
+architecture: reference authorization and event permission boundary passed
+architecture: fixed principal compiler contract passed
+architecture: PASS
+npm notice run rebase-surreal-compiler@0.2.0 probe:queues
+npm notice run node dev-tools/checks/queue-probe.js
+queues: versioned work identity, positive priority, shared admission defaults, and decisions passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:admission
+npm notice run node dev-tools/checks/admission-capacity-probe.js
+admission: atomic cap, delayed/prioritized entries, duplicate, completion/re-add, and producer-death recovery passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:dead-letters
+npm notice run node dev-tools/checks/dead-letter-retention-probe.js
+dead letters: bounded-age cleanup, batched repeated failures, multiple producers, restart pruning, and durable outcomes passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:runtime
+npm notice run node dev-tools/checks/runtime-probe.js
+runtime: one-shot legacy backfill processes bounded repeat-safe batches, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: one-shot legacy backfill processes bounded repeat-safe batches across a file-backed database restart, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: operation tasks, bounded terminal retention, durable attachment cleanup, worker and gateway process recovery, cancellation/reconciliation, one-shot timing, cross-client admission, durable keyset recovery, Redis restart, revision fencing, authentication, effects, webhooks, readiness, and context races passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:live
+npm notice run node dev-tools/checks/live-probe.js
+live: failed initial attachment retried, reconciliation continued, and shutdown cleaned the watcher/timer
+live: committed-only notifications passed
+live: socket reconnect and durable recovery passed
+live: managed subscription resumed
+Live wakeups passed: initial-attach recovery, partial-attachment cleanup, committed-only hints, actual socket loss, durable reconnect recovery, managed resubscription, bounded bursts, and shutdown.
+npm notice run rebase-surreal-compiler@0.2.0 probe:scheduling
+npm notice run node dev-tools/checks/scheduling-probe.js
+scheduling: timer-driven horizon admission, shared query/queue horizon, full-page continuation, and capacity backoff passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:webhook-inbox
+npm notice run node dev-tools/checks/webhook-inbox-probe.js
+webhook inbox: receipt recovery, config-bound route resolution, tamper rejection, unknown providers, and tenant isolation passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:adapters
+npm notice run node dev-tools/checks/adapter-probe.js
+adapters: static registry, flat mappings, normalization, retries, shared bucket, dynamic Twilio credentials, and overrides passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:temporal-tree
+npm notice run node dev-tools/temporal-tree/probe.js
+PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable causal slots
+PASS compiled multi-tree chronology, range/rank/percentile oracle, inherited references, capped-prefix invalidation, final guards and timestamps
+PASS 240 randomized compiled mutations against independent source oracle
+PASS repeated root deletion, empty trees and singleton-owner lifecycle without reverse references
+PASS record/system queries, anonymous and private-helper denial, forged metadata/shadows, authenticated live-rule create/update and hidden-prefix rollback
+PASS concurrent owner fencing (36 conflict retries)
+PASS ascending AVL bound, nanosecond ordering, stable ties/date edits and populated schema reapplication
+npm notice run rebase-surreal-compiler@0.2.0 probe:typed-tree
+npm notice run node dev-tools/temporal-tree/typed-probe.js
+AssertionError [ERR_ASSERTION]: unbounded composite
+    at Object.main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/contract-probe.js:62:57)
+    at main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/typed-probe.js:188:31)
+    at Object.<anonymous> (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/typed-probe.js:363:30)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: Error: fact.rb_rank: int key is incompatible with board.rb_rank (string,string,string,string,string,string,string,string,string)
+      at /home/divyeshvora/javascript/node/projects/ReBase/dev-tools/compiler/tree-contract.js:83:48
+      at Array.map (<anonymous>)
+      at resolveTreeContract (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/compiler/tree-contract.js:80:35)
+      at resolve (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/contract-probe.js:15:26)
+      at /home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/contract-probe.js:62:70
+      at getActual (node:assert:609:5)
+      at Function.throws (node:assert:757:24)
+      at Object.main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/contract-probe.js:62:57)
+      at main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/typed-probe.js:188:31)
+      at Object.<anonymous> (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/typed-probe.js:363:30),
+  expected: /comma-separated components/,
+  operator: 'throws',
+  diff: 'simple'
+}
+Command exited with non-zero status 1
+ELAPSED_SECONDS=2042.68
+EXIT_STATUS=1

@@ -14,16 +14,15 @@ function generateIndexes(schema, viewIndexes, options, systemTables) {
 
   for (const table of schema.tables.values()) {
     if (systemTables.has(table.name)) continue;
-    add(`idx_${table.name}_tenant`, table.name, ["tenant"], "tenant partition");
-    add(`idx_${table.name}_owned_by`, table.name, ["owned_by"], "ownership");
-    add(`idx_${table.name}_readers`, table.name, ["readers_index.*"], "permission fan-out");
+    // Secondary lookup indexes are an authored design choice. Native REFERENCE
+    // backlinks still route dependency/ownership repairs without table scans.
+    const obsolete = new Set([`idx_${table.name}_tenant`, `idx_${table.name}_owned_by`, `idx_${table.name}_readers`]);
     for (const field of table.fields.values()) {
-      // SurrealDB cannot index COMPUTED fields. VALUE shadows are write-time
-      // material and may be indexed when they are deliberate lookup keys.
       if (field.recordType && !field.recordType.isArray && !field.computed) {
-        add(`idx_${table.name}_${field.name}`, table.name, [field.name], "record reference");
+        obsolete.add(`idx_${table.name}_${field.name}`);
       }
     }
+    for (const name of obsolete) output += `REMOVE INDEX IF EXISTS ${name} ON TABLE ${table.name};\n`;
   }
   for (const view of viewIndexes) {
     add(`idx_${view.table}_${view.fields.join("_")}`, view.table, view.fields, "computed view lookup");

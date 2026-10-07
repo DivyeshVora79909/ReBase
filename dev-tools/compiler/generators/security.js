@@ -11,7 +11,7 @@ function readerExpression(field, systemTables) {
   if (!contributesReaders(field, systemTables)) return null;
   const reference = `$this.${field.name}`;
   const branch = field.recordType.isArray ? "$reference" : reference;
-  const inherited = `[${branch}.owned_by]`;
+  const inherited = `[fn::rebase::reader_owner(${branch})]`;
   if (!field.recordType.isArray) {
     return `IF ${reference} != NONE THEN ${inherited} ELSE [] END`;
   }
@@ -41,6 +41,7 @@ function hasNativePrivateTablePermissions(table) {
 
 function generateSecurity(schema, options, systemTables) {
   let output = use(options.namespace, options.database);
+  const readerTables = [];
   const [userTable, groupTable] = options.principalTables || ["rebase_user", "rebase_group"];
   const tenantTable = options.principalTables?.[2] || "rebase_tenant";
   for (const table of schema.tables.values()) {
@@ -75,12 +76,10 @@ function generateSecurity(schema, options, systemTables) {
     }
     if ([...table.fields.values()].some(field => field.treeNode)) {
       sources.push('fn::rebase::tree_roots($this)');
-      inherited.push('(fn::rebase::tree_roots($this)).map(|$root| $root.owned_by)');
+      inherited.push('(fn::rebase::tree_roots($this)).map(|$root| fn::rebase::reader_owner($root))');
     }
     const combinedReaders = combineArrays(inherited);
-    const readersValue = inherited.length
-      ? `array::distinct(${combinedReaders}).filter(|$reader| $reader != NONE)`
-      : "[]";
+    const readersValue = `fn::rebase::choose_reader(${combinedReaders}, $this.owned_by)`;
     output += `DEFINE FIELD OVERWRITE owned_by ON TABLE ${table.name} TYPE record<${userTable} | ${groupTable} | ${tenantTable}> ASSERT ($auth != NONE AND fn::rebase::can_access($auth, $value)) OR record::exists($value) REFERENCE ON DELETE REJECT PERMISSIONS FOR select WHERE true FOR create WHERE true FOR update WHERE $value = $before OR $before = $auth OR fn::rebase::dominates($auth, $before);\n`;
     output += `DEFINE FIELD OVERWRITE tenant ON TABLE ${table.name} TYPE record<${tenantTable}> VALUE {
     LET $tenant = fn::rebase::owner_tenant($this.owned_by);
@@ -88,8 +87,11 @@ function generateSecurity(schema, options, systemTables) {
     IF $before != NONE AND $before != $tenant { THROW 'REBASE_TENANT_IMMUTABLE'; };
     RETURN $tenant;
 } ASSERT record::exists($value) READONLY PERMISSIONS FOR select, create WHERE true FOR update NONE;\n`;
-    output += `DEFINE FIELD OVERWRITE readers_index ON TABLE ${table.name} TYPE array<record<${userTable} | ${groupTable} | ${tenantTable}>> VALUE ${readersValue} PERMISSIONS NONE;\n\n`;
+    output += `REMOVE INDEX IF EXISTS idx_${table.name}_readers ON TABLE ${table.name};\n`;
+    output += `REMOVE FIELD IF EXISTS readers_index ON TABLE ${table.name};\n`;
+    output += `DEFINE FIELD OVERWRITE read_by ON TABLE ${table.name} TYPE record<${userTable} | ${groupTable} | ${tenantTable}> VALUE ${readersValue} PERMISSIONS FOR select, create WHERE true FOR update NONE;\n\n`;
     if (sources.length) {
+      readerTables.push(table.name);
       // Native reference entries index this bounded set of immediate roots.
       // A root's owner change can refresh its members without a table scan.
       output += `REMOVE FIELD IF EXISTS rebase_reader_sources.* ON TABLE ${table.name};\n`;
@@ -105,6 +107,18 @@ function generateSecurity(schema, options, systemTables) {
     output += `DEFINE EVENT OVERWRITE rebase_touch ON ${table.name} WHEN $event = 'CREATE' OR ($event = 'UPDATE' AND (${changed})) THEN {\n`;
     output += `    UPDATE $after.id SET updated_at = time::now(), updated_by = $auth RETURN NONE;\n};\n\n`;
   }
+  // Choosing one principal depends on the current dominance graph. A DAG edit
+  // can change that choice even when no business reference or owner changed.
+  const ownedTables = [...schema.tables.values()].filter(table => !systemTables.has(table.name));
+  const owned = ownedTables.map(table => `array::flatten($principals.map(|$principal| $principal<~(${table.name} FIELD owned_by)))`);
+  const readers = readerTables.map(table => `array::flatten($roots.map(|$root| $root<~(${table} FIELD rebase_reader_sources)))`);
+  output += `DEFINE FUNCTION OVERWRITE fn::rebase::refresh_readers($principals: array<record>) {
+    LET $owned = array::distinct(${combineArrays(owned)});
+    LET $roots = array::distinct(array::concat($principals, $owned));
+    LET $targets = array::distinct(array::concat($owned, ${combineArrays(readers)}));
+    IF $targets { UPDATE $targets; };
+    RETURN NONE;
+} PERMISSIONS NONE;\n`;
   return output;
 }
 

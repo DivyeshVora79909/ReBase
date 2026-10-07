@@ -1,5 +1,11 @@
 # Accounting verification — 2026-10-07
 
+The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
+updates the shared framework and reruns accounting regression. The original
+accounting redesign evidence below remains tied to commit `88c5ae7` and its
+recorded hashes; it does not imply the shared framework stayed unchanged later.
+
+
 Local acceptance passed against the final October 7 sources. The
 [acceptance record](../rebase-system/evidence/2026-10-07-accounting-redesign-acceptance.json)
 contains commands, results, source and generated-artifact SHA-256 hashes, and

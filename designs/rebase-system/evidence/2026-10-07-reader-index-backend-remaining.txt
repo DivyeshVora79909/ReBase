@@ -1,0 +1,254 @@
+Remaining verify gates after updating the obsolete eight-component contract assertion.
+
+COMMAND=npm run probe:typed-tree
+npm notice run rebase-surreal-compiler@0.2.0 probe:typed-tree
+npm notice run node dev-tools/temporal-tree/typed-probe.js
+PASS explicit tree contracts and 34 invalid declaration diagnostics
+Compiled typed trees: SurrealDB 3.3.0 for linux on x86_64, Node v22.23.2, surrealkv
+PASS compiled dual ordering, nanosecond ties, safe int extremes, absence, rekeys, independent owners, scale versions and rollback
+PASS malformed inputs before int coercion, public read bounds, exact structural pairs and pre-coalescing validation
+PASS 56 deterministic mixed-order mutations reconstructed from authoritative source fields (seed 250925)
+PASS competing dual-tree writes: one commit, five complete rollbacks (5 conflict retries)
+PASS root/slot ACL, conditional fields, deliberate aggregate publication, forged writes and both select policies
+PASS 113 mutation checkpoints, 1101 ordered reads, 105 rejection snapshots; populated reapplication and empty-tree cleanup
+
+COMMAND=npm run probe:ordered-tree
+npm notice run rebase-surreal-compiler@0.2.0 probe:ordered-tree
+npm notice run node dev-tools/temporal-tree/ordered-probe.js
+PASS explicit tree contracts and 34 invalid declaration diagnostics
+PASS ordered trees: 22 mutations, 683 typed reads/pages, 10 rollback cases, exact decimals, composite, nominal, bool, UUID and record keys, cross-table uniqueness and independent-session concurrent serialization
+
+COMMAND=npm run probe:boundary-tree
+npm notice run rebase-surreal-compiler@0.2.0 probe:boundary-tree
+npm notice run node dev-tools/temporal-tree/boundary-probe.js
+PASS complete-key algebra: 4665 timestamp/delta sequences, 57909 binary folds, identity and direct reconstructions
+PASS missing-measure boundary algebra: 777 sequences, 3477 binary folds and identities
+PASS compiled adjacent [start,end) intervals, tie-order independence, complete-timestamp range, and rollback
+
+COMMAND=npm run probe:derived-order
+npm notice run rebase-surreal-compiler@0.2.0 probe:derived-order
+npm notice run node dev-tools/temporal-tree/derived-order-probe.js
+PASS topological CREATE shadows, opaque dependency refresh, local updates, native ASSERT rollback, reordered declarations and populated reapplication
+
+COMMAND=npm run probe:required-outputs
+npm notice run rebase-surreal-compiler@0.2.0 probe:required-outputs
+npm notice run node dev-tools/temporal-tree/required-outputs-probe.js
+PASS required-output recipes compile without temporal tree roots
+PASS unsupported managed-output reference cycles fail clearly at compile time
+PASS paired required outputs settle together at the complete timestamp
+PASS final guard failure restores the source and complete required-output set
+PASS record-user create, update and delete cannot alter managed outputs
+PASS source edits update stable managed values and remove obsolete roles without duplicates
+PASS source deletion removes outputs, restores owner histories and leaves no managed rows
+
+COMMAND=npm run probe:causal-outputs
+npm notice run rebase-surreal-compiler@0.2.0 probe:causal-outputs
+npm notice run node dev-tools/temporal-tree/causal-outputs-probe.js
+PASS two input roots publish before one basis refresh and the diamond joins both branches
+PASS final downstream floor failure restores the complete input and output graph
+PASS future date and amount edits rekey every downstream branch and final output
+PASS a required output cannot feed a root consumed by its own derived basis
+PASS deleting basis and source rows clears the causal graph and every owned membership
+
+COMMAND=npm run probe:accounts
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounts
+npm notice run node dev-tools/checks/accounts-probe.js
+PASS entity/currency dimensions, FX quote reactivity, independent refund legs, target-only corrections, shared-owner coalescing and atomic solvency
+PASS direct-tax asset allocation, accountable destination, independent recovery and linked reversal capacity
+PASS inbound/outbound invoices, issue-time claim recognition, stock/service capacity, unit ancestry, correction-note invoice scope and live compound assessments
+PASS assets versus receivables/payables, partial settlements, standalone tax claims, remittance/recovery, mutable histories, rollback, range queries and timestamps
+PASS authenticated writes, protected derived metadata and populated schema reapplication
+entity calculation suite: all independent source/AVL checks passed
+
+COMMAND=npm run probe:suite
+npm notice run rebase-surreal-compiler@0.2.0 probe:suite
+npm notice run node dev-tools/checks/suite-probe.js
+PASS CRM dated close/reopen invariants, effort history, edits/deletion and direct organization inheritance
+PASS HRM service allowances, historical capacity, employment bounds, reassignment, corrections, deletion rollback and timestamps
+PASS populated CRM/HRM schema reapplication
+
+COMMAND=npm run probe
+npm notice run rebase-surreal-compiler@0.2.0 probe
+npm notice run node dev-tools/checks/probe.js all
+security: tenant authentication, closure, immediate readers, revocation, domain self-parent guard, and synchronous field audit passed
+security: owner select policy keeps the direct reader index protected and unchanged
+data: schema-driven generation, strict references, batching, reservoirs, and seed replay passed
+probe: PASS
+
+COMMAND=npm run test:dev-tools
+npm notice run rebase-surreal-compiler@0.2.0 test:dev-tools
+npm notice run node --test dev-tools/tests/*.test.js
+TAP version 13
+# Subtest: accounting exports and validates exactly its public create schemas
+ok 1 - accounting exports and validates exactly its public create schemas
+  ---
+  duration_ms: 844.499116
+  type: 'test'
+  ...
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 2 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 119.704018
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 3 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 801.036372
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 4 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 2.618963
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 5 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 5.269322
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 6 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 1.979981
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 7 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 371.476732
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 8 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 69.042354
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 9 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 61.809261
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 10 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 14.44266
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 11 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 4.040406
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates native SDK values and explicit temporal sources
+ok 12 - accounting fixture validates native SDK values and explicit temporal sources
+  ---
+  duration_ms: 117.086406
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 13 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 42.521361
+  type: 'test'
+  ...
+# Subtest: public accounting schemas expose inputs and preserve native record identities
+ok 14 - public accounting schemas expose inputs and preserve native record identities
+  ---
+  duration_ms: 44.438665
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 15 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.387807
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 16 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 247.938571
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 17 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 4.302743
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 18 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 6.349698
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 19 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 63.822587
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 20 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 5.290617
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 21 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 14.440667
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 22 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 8.674613
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 23 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 8.745129
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 24 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 6.097228
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 25 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 14.20294
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 26 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 5.487023
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 27 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 6.073548
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3046.341094
+ELAPSED_SECONDS=791.40
+EXIT_STATUS=0

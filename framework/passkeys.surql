@@ -7,7 +7,7 @@ DEFINE TABLE OVERWRITE authentication_passkey SCHEMAFULL PERMISSIONS
     FOR update, delete WHERE $auth AND tenant = $auth.tenant
         AND ((owned_by = $auth AND $token.iat >= time::unix(time::now()) - 600)
             OR fn::rebase::dominates($auth, owned_by))
-    COMMENT '@rebase-authentication';
+    COMMENT '@rebase-authentication @rebase-members fn::rebase::passkey_members';
 DEFINE FIELD OVERWRITE id ON authentication_passkey TYPE string | uuid | array | int | object DEFAULT rand::uuid::v7();
 DEFINE FIELD OVERWRITE owned_by ON authentication_passkey TYPE record<rebase_user> READONLY
     ASSERT record::exists($value) REFERENCE ON DELETE CASCADE;
@@ -27,8 +27,9 @@ DEFINE FIELD OVERWRITE device_type ON authentication_passkey TYPE string READONL
 DEFINE FIELD OVERWRITE backed_up ON authentication_passkey TYPE bool DEFAULT false PERMISSIONS FOR create, update NONE;
 DEFINE FIELD OVERWRITE verified_at ON authentication_passkey TYPE datetime DEFAULT time::now() READONLY;
 DEFINE FIELD OVERWRITE label ON authentication_passkey TYPE option<string> DEFAULT NONE;
-DEFINE INDEX OVERWRITE idx_authentication_passkey_credential ON authentication_passkey COLUMNS tenant, credential_id UNIQUE;
-DEFINE INDEX OVERWRITE idx_authentication_passkey_owner ON authentication_passkey COLUMNS owned_by;
+REMOVE INDEX IF EXISTS idx_authentication_passkey_credential ON authentication_passkey;
+REMOVE INDEX IF EXISTS idx_authentication_passkey_owner ON authentication_passkey;
+DEFINE FIELD OVERWRITE read_by ON authentication_passkey TYPE record<rebase_user> VALUE $this.owned_by PERMISSIONS FOR select, create WHERE true FOR update NONE;
 
 DEFINE TABLE OVERWRITE authentication_passkey_challenge SCHEMAFULL PERMISSIONS NONE;
 DEFINE FIELD OVERWRITE tenant ON authentication_passkey_challenge TYPE record<rebase_tenant> READONLY

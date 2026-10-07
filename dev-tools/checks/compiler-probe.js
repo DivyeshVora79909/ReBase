@@ -151,16 +151,13 @@ async function main() {
     const ownerSecurity = generateSecurity(readerSchema, {
       principalTables: ['rebase_user', 'rebase_group'], selectPolicy: 'owner',
     }, readerSystemTables);
-    const indexLine = security => security.match(/DEFINE FIELD OVERWRITE readers_index ON TABLE reader_child[^\n]+/)[0];
-    assert.equal(indexLine(readersSecurity), indexLine(ownerSecurity), 'both select policies compute the same protected reader index');
-    assert.match(indexLine(readersSecurity), /\[\$this\.parent\.owned_by\].*PERMISSIONS NONE/);
-    assert.doesNotMatch(indexLine(readersSecurity), /parent\.readers_index/);
-    assert.match(readersSecurity, /array::any\(readers_index.*fn::rebase::can_access/,
-      'reader grants intersect both user and group authorization principals');
-    assert.doesNotMatch(ownerSecurity, /array::any\(readers_index/,
-      'owner policy does not apply reader grants');
-    assert.match(ownerSecurity, /fn::rebase::can_access\(\$auth, owned_by\)/,
-      'owner policy includes directly owned users and groups');
+    const readerLine = security => security.match(/DEFINE FIELD OVERWRITE read_by ON TABLE reader_child[^\n]+/)[0];
+    assert.equal(readerLine(readersSecurity), readerLine(ownerSecurity), 'both select policies derive the same single reader');
+    assert.match(readerLine(readersSecurity), /fn::rebase::choose_reader/);
+    assert.doesNotMatch(readerLine(readersSecurity), /parent\.read_by|unmarked_parent/);
+    assert.match(readersSecurity, /fn::rebase::can_access\(\$auth, \(read_by \?\? owned_by\)\)/);
+    assert.doesNotMatch(ownerSecurity, /can_access\(\$auth, \(read_by/);
+    assert.match(ownerSecurity, /fn::rebase::can_access\(\$auth, owned_by\)/);
     const explicit = classifyMaterials([{
       group: 'project', path: 'explicit.surql', relative: 'explicit.surql',
       source: "-- fixture\n-- REBASE SECTION schema BEGIN\nDEFINE TABLE explicit_example SCHEMAFULL;\n-- REBASE SECTION schema END\n",

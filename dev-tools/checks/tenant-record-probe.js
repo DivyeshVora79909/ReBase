@@ -15,6 +15,7 @@ DEFINE FIELD share_anchor ON entity TYPE option<record<entity>> REFERENCE ON DEL
 DEFINE FIELD history ON entity TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE TABLE entry SCHEMAFULL COMMENT '@rebase-members fn::tenant_fixture::entry';
 DEFINE FIELD entity ON entry TYPE record<entity> REFERENCE ON DELETE REJECT;
+DEFINE FIELD share_anchor ON entry TYPE option<record<entity>> REFERENCE ON DELETE REJECT COMMENT '@rebase-readers';
 DEFINE FIELD amount ON entry TYPE decimal;
 DEFINE FIELD effective_at ON entry TYPE datetime;
 DEFINE FIELD position ON entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner entity.history';
@@ -77,8 +78,8 @@ DEFINE FIELD amount ON metric TYPE decimal;
 const views = `
 -- @rebase-view-record-scoped
 DEFINE TABLE OVERWRITE v_metric_totals AS
-  SELECT tenant, target, owned_by, readers_index, count() AS total_rows, math::sum(amount) AS total_amount
-  FROM metric GROUP BY tenant, target, owned_by, readers_index;
+  SELECT tenant, target, owned_by, read_by, count() AS total_rows, math::sum(amount) AS total_amount
+  FROM metric GROUP BY tenant, target, owned_by, read_by;
 -- @rebase-view-tenant-published
 DEFINE TABLE OVERWRITE v_tenant_user_count AS
   SELECT tenant, count() AS total_users FROM rebase_user GROUP BY tenant;
@@ -121,13 +122,13 @@ async function main() {
       CREATE entry:a SET owned_by=rebase_user:bob,entity=entity:a,amount=7dec,effective_at=d'2026-10-04T00:00:00Z';
       CREATE secret_entry:a SET owned_by=rebase_user:alice,entity=entity:a,amount=99dec,effective_at=d'2026-10-04T01:00:00Z';
       CREATE hidden_entry:a SET owned_by=rebase_user:alice,entity=entity:a,amount=101dec,effective_at=d'2026-10-04T02:00:00Z';
-      CREATE entry:under_private_root SET owned_by=rebase_user:alice,entity=entity:private_root,amount=5dec,effective_at=d'2026-10-04T00:00:00Z';
+      CREATE entry:under_private_root SET owned_by=rebase_user:alice,entity=entity:private_root,share_anchor=entity:a,amount=5dec,effective_at=d'2026-10-04T00:00:00Z';
       CREATE public_entry:native SET owned_by=rebase_user:bob,entity=public_entity:native,amount=3dec,effective_at=d'2026-10-04T00:00:00Z';
       CREATE public_entry:grant_member SET owned_by=rebase_group:limited,entity=public_entity:grant_root,amount=5dec,effective_at=d'2026-10-04T00:00:00Z';
       CREATE entity:shared SET owned_by=rebase_tenant:a,title='Shared target';
       CREATE entity:reader_anchor SET owned_by=rebase_user:bob,title='Reader anchor';
-      UPDATE entity:a SET share_anchor=entity:reader_anchor;
-      UPDATE public_entity:native SET share_anchor=entity:reader_anchor;
+
+
       CREATE metric:alice SET owned_by=rebase_user:alice,target=entity:shared,amount=7dec;
       CREATE metric:bob_private SET owned_by=rebase_user:bob,target=entity:shared,amount=11dec;
       CREATE metric:bob_shared SET owned_by=rebase_user:bob,target=entity:shared,shared_with=entity:a,amount=3dec;
@@ -161,20 +162,18 @@ async function main() {
     assert.equal((await alice('SELECT * FROM rebase_user:bob;')).length, 0, 'system-view permission does not bypass principal node-select and dominance checks');
     await limited("CREATE code:forged SET owned_by=rebase_group:limited,tenant=rebase_tenant:b,value='forged';");
     assert.equal(await q('RETURN code:forged.tenant;'), 'rebase_tenant:a', 'VALUE derives tenant despite forged client input');
-    assert.deepEqual(await q('RETURN public_entry:native.readers_index;'), ['rebase_user:alice']);
+    assert.deepEqual(await q('RETURN public_entry:native.read_by;'), 'rebase_user:alice');
     const treePage = await alice("RETURN fn::tree::read(public_entity:native, 'history', 'page', [10]);");
     assert.equal(treePage.items.length, 1, 'authenticated root owner can read an ordered-tree page');
     assert.equal(treePage.items[0].link.rid, 'public_entry:native');
     const treeSeek = await alice("RETURN fn::tree::read(public_entity:native, 'history', 'seek', [[d'2026-10-04T00:00:00Z']]);");
     assert.equal(treeSeek.rid, 'public_entry:native', 'authenticated root owner can seek an ordered tree');
-    const readerTreePage = await bob("RETURN fn::tree::read(public_entity:native, 'history', 'page', [10]);");
-    assert.equal(readerTreePage.items[0].link.rid, 'public_entry:native', 'a root reader can return a member it may read independently');
+    await assert.rejects(bob("RETURN fn::tree::read(public_entity:native, 'history', 'page', [10]);"), /permission|not allowed/i, 'root readability alone does not grant its members');
     assert.equal((await alice('SELECT * FROM entity:a;')).length, 1, 'the tree root is readable');
-    assert.equal((await bob('SELECT * FROM entity:a;')).length, 1, 'a declared root reader can read the root');
+    assert.equal((await bob('SELECT * FROM entity:a;')).length, 0, 'an unrelated principal cannot read the root');
     const privateSummary = await alice("RETURN fn::tree::read(entity:a, 'history', 'summary', []);");
     assert.equal(privateSummary.count, 3, 'root policy authorizes its stored summary across private descendants');
-    assert.equal((await bob("RETURN fn::tree::read(entity:a, 'history', 'summary', []);")).count, 3,
-      'a declared root reader may request the stored aggregate');
+    await assert.rejects(bob("RETURN fn::tree::read(entity:a, 'history', 'summary', []);"), /permission|not allowed/i);
     await assert.rejects(alice("RETURN fn::tree::read(entity:a, 'history', 'before', [d'2026-10-04T01:30:00Z']);"), /permission|not allowed|TREE_READ/i,
       'before fails when traversal encounters a private member');
     await assert.rejects(alice("RETURN fn::tree::read(entity:a, 'history', 'rank', [d'2026-10-04T01:30:00Z']);"), /permission|not allowed|TREE_READ/i,
@@ -263,23 +262,23 @@ async function main() {
     assert.equal(await q('RETURN bundle:valid.tenant;'), 'rebase_tenant:a', 'same-tenant owner changes preserve nested reference validity');
     assert((await q('SELECT * FROM audit_mutation;')).length > 0, 'reference rollback oracle includes committed audit records');
     assert.equal(await q('RETURN entry:a.tenant;'), 'rebase_tenant:a');
-    assert.deepEqual(await q('RETURN entry:a.readers_index;'), ['rebase_user:alice']);
+    assert.deepEqual(await q('RETURN entry:a.read_by;'), 'rebase_user:alice');
     assert.deepEqual(await q('RETURN entry:a.rebase_reader_sources;'), ['entity:a']);
     assert.equal((await alice('SELECT * FROM entry:a;')).length, 1);
-    assert.equal((await bob('SELECT * FROM entry:a;')).length, 1);
+    assert.deepEqual(await bob('SELECT * FROM entry:a;'), [], 'an incomparable writer is not an additional reader');
     assert.deepEqual(await charlie('SELECT * FROM entry:a;'), []);
     assert.deepEqual(await other('SELECT * FROM entry;'), []);
     const aliceView = await alice('SELECT id, owned_by, total_rows, total_amount FROM v_metric_totals WHERE target=entity:shared;');
-    const bobView = await bob('SELECT id, owned_by, readers_index, total_rows, total_amount FROM v_metric_totals WHERE target=entity:shared;');
+    const bobView = await bob('SELECT id, owned_by, read_by, total_rows, total_amount FROM v_metric_totals WHERE target=entity:shared;');
     const charlieView = await charlie('SELECT id, owned_by, total_rows, total_amount FROM v_metric_totals WHERE target=entity:shared;');
     assert.deepEqual(new Set(aliceView.map(row => row.owned_by)), new Set(['rebase_user:alice', 'rebase_user:bob']), 'owner and declared reader can read grouped records');
     assert.deepEqual(new Set(bobView.map(row => row.owned_by)), new Set(['rebase_user:bob']), 'sibling owner cannot infer another owner aggregate');
     assert.deepEqual(new Set(charlieView.map(row => row.owned_by)), new Set(['rebase_user:charlie']), 'sibling owner cannot infer another owner aggregate');
     assert.equal(String(aliceView.find(row => row.owned_by === 'rebase_user:bob').total_amount), '3', 'reader sees only the explicitly shared source group');
-    const stableViewId = bobView.find(row => row.owned_by === 'rebase_user:bob' && row.readers_index.length === 0)?.id;
+    const stableViewId = bobView.find(row => row.owned_by === 'rebase_user:bob' && row.read_by === 'rebase_user:bob')?.id;
     await q('UPDATE metric:bob_private SET amount=12dec;');
-    const replacedViews = await bob('SELECT id, total_amount, readers_index FROM v_metric_totals WHERE target=entity:shared AND owned_by=rebase_user:bob;');
-    const replacedView = replacedViews.find(row => (row.readers_index ?? []).length === 0);
+    const replacedViews = await bob('SELECT id, total_amount, read_by FROM v_metric_totals WHERE target=entity:shared AND owned_by=rebase_user:bob;');
+    const replacedView = replacedViews.find(row => row.read_by === 'rebase_user:bob');
     assert(replacedView, 'the private Bob group remains visible to its owner');
     assert.equal(replacedView.id, stableViewId, 'group row identity remains stable when its aggregate is replaced');
     assert.equal(String(replacedView.total_amount), '12');
@@ -317,23 +316,23 @@ async function main() {
     // The source field has no @rebase-readers marker: the cached membership
     // alone must transfer the read grant when the root owner changes.
     await q('UPDATE entity:a SET owned_by=rebase_user:charlie;');
-    assert.deepEqual(await q('RETURN entry:a.readers_index;'), ['rebase_user:charlie']);
+    assert.deepEqual(await q('RETURN entry:a.read_by;'), 'rebase_user:charlie');
     assert.deepEqual(await alice('SELECT * FROM entry:a;'), []);
     assert.equal((await charlie('SELECT * FROM entry:a;')).length, 1);
-    assert.equal((await bob('SELECT * FROM entry:a;')).length, 1);
+    assert.deepEqual(await bob('SELECT * FROM entry:a;'), [], 'an incomparable writer is not an additional reader');
 
     // Immediate owner inheritance can form a cycle safely: readers never
     // inherit another record's readers, and only owner changes propagate.
     await q(`CREATE note:a SET owned_by=rebase_user:alice,title='A';
       CREATE note:b SET owned_by=rebase_user:bob,title='B',other=note:a;
       UPDATE note:a SET other=note:b;`);
-    assert.deepEqual(await q('RETURN note:a.readers_index;'), ['rebase_user:bob']);
-    assert.deepEqual(await q('RETURN note:b.readers_index;'), ['rebase_user:alice']);
+    assert.deepEqual(await q('RETURN note:a.read_by;'), 'rebase_user:bob');
+    assert.deepEqual(await q('RETURN note:b.read_by;'), 'rebase_user:alice');
     await q('UPDATE note:a SET owned_by=rebase_user:charlie;');
-    assert.deepEqual(await q('RETURN note:b.readers_index;'), ['rebase_user:charlie']);
+    assert.deepEqual(await q('RETURN note:b.read_by;'), 'rebase_user:charlie');
     await assert.rejects(q('UPDATE note:a SET other=entity:b;'), /record|type|assert/i);
     await applySchema(q, compiled.bundle);
-    assert.deepEqual(await q('RETURN entry:a.readers_index;'), ['rebase_user:charlie']);
+    assert.deepEqual(await q('RETURN entry:a.read_by;'), 'rebase_user:charlie');
     console.log('Tenant records passed: native isolation, reference rollback, root-derived readers, ownership refresh, local uniqueness, direct-reader cycles, populated schema reapplication.');
   } finally {
     await server?.close();

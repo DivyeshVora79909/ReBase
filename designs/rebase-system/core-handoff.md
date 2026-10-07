@@ -1,5 +1,14 @@
 # Core backend handoff
 
+## Reader/index continuation — 2026-10-07
+
+The [developer blueprint](developer-blueprint.md), [execution plan](reader-index-plan.md)
+and [current verification](reader-index-verification.md) govern the new single
+`read_by`, custom authentication identity tree and explicit tenant/owner analytics.
+The accounting baseline was committed as `88c5ae7`. Older evidence below remains
+tied to its original source; reader-array descriptions are superseded.
+
+
 The [October 7 accounting redesign](../all-in-accounting/implementation-handoff.md)
 uses the existing compiler/tree engine with direct currency-bearing accounts,
 invoice-date validation, temporal tax corrections and ordinary production rows.

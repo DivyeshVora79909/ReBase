@@ -204,7 +204,6 @@ function createAuthenticationService(options = {}) {
   }
 
   async function findIdentity(store, tenant, channel, accountIdentifier) {
-    const table = IDENTITY_TABLES[channel];
     const field = channel === "phone" ? "number" : "address";
     return store.execute(`
       RETURN (SELECT id, owned_by, <string>tenant AS tenant, ${field}, revision,
@@ -212,30 +211,30 @@ function createAuthenticationService(options = {}) {
         owned_by.authentication_revision AS principal_revision,
         '${channel}' AS channel,
         priority
-        FROM ${table}
-        WHERE tenant = type::record($tenant) AND ${field} = $identifier AND owned_by.login_access = true)[0];
+        FROM fn::rebase::identity(type::record($tenant), '${channel}', $identifier)
+        WHERE owned_by.login_access = true)[0];
     `, { tenant, identifier: accountIdentifier });
   }
 
   async function findUsernameIdentities(store, tenant, accountIdentifier) {
     return store.execute(`
-      LET $principal = (SELECT VALUE id FROM ${userTable}
-        WHERE tenant = type::record($tenant) AND username = $identifier AND login_access = true)[0];
+      LET $principal = (SELECT VALUE id FROM fn::rebase::identity(type::record($tenant), 'username', $identifier)
+        WHERE login_access = true)[0];
       RETURN {
         principal: $principal,
         email: (SELECT id, owned_by, <string>tenant AS tenant, address, revision,
           owned_by.name AS name,
           owned_by.authentication_revision AS principal_revision,
           'email' AS channel, priority
-          FROM authentication_email
-          WHERE tenant = type::record($tenant) AND owned_by = $principal AND owned_by.login_access = true
+          FROM $principal<~(authentication_email FIELD owned_by)
+          WHERE owned_by.login_access = true
           ORDER BY priority DESC, id ASC),
         phone: (SELECT id, owned_by, <string>tenant AS tenant, number, revision,
           owned_by.name AS name,
           owned_by.authentication_revision AS principal_revision,
           'phone' AS channel, priority
-          FROM authentication_phone
-          WHERE tenant = type::record($tenant) AND owned_by = $principal AND owned_by.login_access = true
+          FROM $principal<~(authentication_phone FIELD owned_by)
+          WHERE owned_by.login_access = true
           ORDER BY priority DESC, id ASC)
       };
     `, { tenant, identifier: accountIdentifier });

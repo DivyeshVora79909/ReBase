@@ -18,7 +18,8 @@ function main() {
   assert.equal(contract.roots[0].unique, true);
   assert.equal(resolve(source.replace(root, root + ' @rebase-tree-duplicates')).roots[0].unique, false);
   assert.deepEqual(contract.nodes[0].owners.map(owner => owner.name), ['board.rb_rank']);
-  for (const key of ['datetime', 'decimal', 'string', 'record', 'bool', 'uuid', 'record,string,datetime']) {
+  for (const key of ['datetime', 'decimal', 'string', 'record', 'bool', 'uuid', 'record,string,datetime',
+    Array(9).fill('string').join(','), Array(16).fill('string').join(',')]) {
     const typed = resolve(source.replaceAll('@rebase-tree-key int', `@rebase-tree-key ${key}`));
     assert.equal(typed.roots[0].keyType, key);
     assert.equal(keyStorageType(key), `[${key.split(',').join(', ')}, string, string]`);
@@ -33,7 +34,7 @@ function main() {
     ['int alias', s => s.replace(root, root.replace('int', 'ordinal')), /comma-separated components/],
     ['mixed numeric type', s => s.replace(root, root.replace('int', 'number')), /comma-separated components/],
     ['empty composite component', s => s.replace(root, root.replace('int', 'record,,string')), /comma-separated components/],
-    ['unbounded composite', s => s.replace(root, root.replace('int', Array(9).fill('string').join(','))), /comma-separated components/],
+    ['reader opt-out on root', s => s.replace(root, root + ' @rebase-tree-no-reader'), /belongs on a node/],
     ['incompatible keys', s => s.replace(root, root.replace('int', 'datetime')), /incompatible/],
     ['unknown table', s => s.replace('owner board.', 'owner missing.'), /unknown tree owner/],
     ['unknown slot', s => s.replace('owner board.rb_rank', 'owner board.rb_missing'), /unknown tree owner/],

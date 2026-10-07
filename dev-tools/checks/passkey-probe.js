@@ -5,12 +5,13 @@
 // This verifies backend cryptography and durable claims, not browser/device UX.
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const fs = require("node:fs");
+const { loadMaterials } = require("../compiler/materials");
+const { generateBundle } = require("../compiler/pipeline");
 const path = require("node:path");
 const { Readable } = require("node:stream");
 const { Surreal } = require("surrealdb");
 const { isoCBOR } = require("@simplewebauthn/server/helpers");
-const { start, client } = require("../temporal-tree/harness");
+const { start, client, applySchema } = require("../temporal-tree/harness");
 const { signIn } = require("./tenant-auth-probe");
 const { createTableStore } = require("../../gateway/store");
 const { createMemoryRateLimiter } = require("../../gateway/rate-limit");
@@ -84,9 +85,8 @@ async function main() {
   const db = new Surreal();
   try {
     await q("DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;");
-    for (const file of ["auth.surql", "authentication.surql", "passkeys.surql", "access.surql"]) {
-      await q(fs.readFileSync(path.join(__dirname, "../../framework", file), "utf8"));
-    }
+    const materials = loadMaterials({ groups: [{ name: 'framework', roots: [path.join(__dirname, '../../framework')] }] });
+    await applySchema(q, generateBundle(materials).bundle);
     const tenantA = (await q("CREATE rebase_tenant SET name='UUID tenant';"))[0].id;
     const tenantAlternative = tenantA.replace(/u'([^']+)'$/, 'u"$1"');
     assert.notEqual(tenantA, tenantAlternative);

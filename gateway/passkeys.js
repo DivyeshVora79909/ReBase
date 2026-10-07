@@ -137,8 +137,9 @@ function createPasskeyService(options = {}) {
     const { store, tenant } = await tenantStore(rawTenant);
     await limit(tenant, clientAddress);
     const principal = await currentPrincipal(store, tenant, token);
-    const credentials = await store.execute(`SELECT credential_id, transports FROM authentication_passkey
-      WHERE owned_by = type::record($principal) AND rp_id = $rp_id;`, { principal: String(principal.id), rp_id: rpId });
+    const credentials = await store.execute(`LET $owner = type::record($principal);
+      SELECT credential_id, transports FROM $owner<~(authentication_passkey FIELD owned_by)
+      WHERE rp_id = $rp_id;`, { principal: String(principal.id), rp_id: rpId });
     const publicKey = await api.generateRegistrationOptions({
       rpName: options.rpName || "ReBase", rpID: rpId, userID: userHandle(principal.id),
       userName: principal.username || String(principal.id), userDisplayName: principal.name,
@@ -197,8 +198,8 @@ function createPasskeyService(options = {}) {
     const challenge = await claimChallenge(store, tenant, challengeId, "authentication");
     if (!response || typeof response.id !== "string" || response.id.length > 2048) throw rejected();
     const credential = await store.execute(`RETURN (SELECT *, owned_by.authentication_revision AS principal_revision
-      FROM authentication_passkey WHERE tenant = type::record($tenant) AND credential_id = $credential_id
-        AND rp_id = $rp_id AND owned_by.login_access = true)[0];`, { tenant, credential_id: response.id, rp_id: rpId });
+      FROM fn::rebase::identity(type::record($tenant), 'passkey', $credential_id)
+      WHERE rp_id = $rp_id AND owned_by.login_access = true)[0];`, { tenant, credential_id: response.id, rp_id: rpId });
     if (!credential || (response.response?.userHandle != null && response.response.userHandle !== credential.user_handle)) throw rejected();
     let verification;
     try {

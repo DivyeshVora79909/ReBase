@@ -30,7 +30,7 @@ function validateSystemExtensions(schema, extensionTables) {
     const table = schema.tables.get(tableName);
     if (!table) continue;
     for (const field of table.fields.values()) {
-      const safe = /\bTYPE\s+(?:option<|none\s*\|)/i.test(field.definition)
+      const safe = field.treeRoot || field.treeNode || /\bTYPE\s+(?:option<|none\s*\|)/i.test(field.definition)
         || /\bDEFAULT\b/i.test(field.definition)
         || /\b(?:VALUE|COMPUTED)\b/i.test(field.definition);
       if (!safe) {

@@ -16,8 +16,8 @@ DEFINE FIELD OVERWRITE name ON rebase_tenant TYPE string VALUE string::trim($val
 DEFINE FIELD OVERWRITE tenant ON rebase_tenant TYPE record<rebase_tenant> VALUE $this.id READONLY;
 DEFINE FIELD OVERWRITE role ON rebase_tenant TYPE array<string> VALUE fn::rebase::tenant_permissions()
     PERMISSIONS FOR create, update NONE;
-DEFINE FIELD OVERWRITE authorization_depth ON rebase_tenant TYPE int VALUE 0 PERMISSIONS FOR create, update NONE;
-DEFINE FIELD OVERWRITE authorization_revision ON rebase_tenant TYPE int DEFAULT 0 ASSERT $value >= 0 PERMISSIONS NONE;
+DEFINE FIELD OVERWRITE authorization_depth ON rebase_tenant TYPE int VALUE 0 PERMISSIONS FOR create, update NONE COMMENT '@rebase-system';
+DEFINE FIELD OVERWRITE authorization_revision ON rebase_tenant TYPE int DEFAULT 0 ASSERT $value >= 0 PERMISSIONS NONE COMMENT '@rebase-system';
 DEFINE FIELD OVERWRITE created_at ON rebase_tenant TYPE datetime VALUE $before OR time::now() READONLY;
 
 -- Closure pairs use exact record keys. Native relation adjacency is used only
@@ -41,6 +41,25 @@ DEFINE FUNCTION OVERWRITE fn::rebase::can_access($actor: record, $target: record
     RETURN $actor = $target OR $target IN $actor.parent_groups OR fn::rebase::dominates($actor, $target);
 } PERMISSIONS FULL;
 
+-- Readers are immediate owners, never another record's read_by. Keep the first
+-- incomparable candidate; a later descendant replaces its ancestor. Groups are
+-- the explicit way to represent deliberate shared access across branches.
+DEFINE FUNCTION OVERWRITE fn::rebase::reader_owner($source: record) {
+    RETURN IF record::tb($source) IN ['rebase_tenant', 'rebase_user', 'rebase_group']
+        THEN $source ELSE $source.owned_by END;
+} PERMISSIONS FULL;
+DEFINE FUNCTION OVERWRITE fn::rebase::choose_reader($candidates: array, $fallback: record) {
+    RETURN $candidates.filter(|$candidate| $candidate != NONE).fold(NONE, |$chosen, $candidate| {
+        RETURN IF $chosen = NONE OR fn::rebase::dominates($chosen, $candidate)
+            THEN $candidate ELSE $chosen END;
+    }) ?? $fallback;
+} PERMISSIONS FULL;
+
+-- Replaced by the compiler with bounded REFERENCE backlink routes.
+DEFINE FUNCTION OVERWRITE fn::rebase::refresh_readers($principals: array<record>) {
+    RETURN NONE;
+} PERMISSIONS NONE;
+
 -- A direct parent can be usable for ownership without granting node_select.
 -- Valid DAG membership already proves its tenant, so no hidden owner read is
 -- needed for a record client's derived fields. System writes read the owner.
@@ -61,7 +80,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL PERMISSIONS
     FOR select WHERE $auth AND tenant = $auth.tenant AND (id = $auth OR ('node_select' IN $auth.permissions AND fn::rebase::dominates($auth, id)))
     FOR update WHERE $auth AND tenant = $auth.tenant AND (id = $auth OR ('node_update' IN $auth.permissions AND fn::rebase::dominates($auth, id)))
     FOR delete WHERE $auth AND tenant = $auth.tenant AND 'node_delete' IN $auth.permissions AND fn::rebase::dominates($auth, id)
-    ;
+    COMMENT '@rebase-members fn::rebase::username_members';
 
     DEFINE FIELD OVERWRITE id ON rebase_user TYPE string | uuid | array | int | object DEFAULT rand::uuid::v7();
     DEFINE FIELD OVERWRITE name ON rebase_user TYPE string VALUE {
@@ -99,7 +118,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL PERMISSIONS
         }
         ASSERT $value >= 1
         PERMISSIONS FOR select NONE FOR create WHERE true FOR update NONE
-        ;
+         COMMENT '@rebase-system';
 
     DEFINE FIELD OVERWRITE parents ON rebase_user TYPE array<record<rebase_tenant | rebase_user | rebase_group>>
         DEFAULT IF $auth THEN [$auth] ELSE [] END
@@ -118,7 +137,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL PERMISSIONS
         READONLY PERMISSIONS FOR select, create WHERE true FOR update NONE;
     DEFINE FIELD OVERWRITE authorization_depth ON rebase_user TYPE int DEFAULT 1
         VALUE IF $before = NONE THEN 1 ELSE $value END ASSERT $value >= 1
-        PERMISSIONS FOR create WHERE true FOR update NONE;
+        PERMISSIONS FOR create WHERE true FOR update NONE COMMENT '@rebase-system';
 
     DEFINE FIELD OVERWRITE parent_groups ON rebase_user TYPE array<record<rebase_tenant | rebase_group>>
         VALUE array::distinct(($this.parents ?? []).filter(|$p| record::tb($p) IN ['rebase_tenant', 'rebase_group']))
@@ -136,7 +155,7 @@ DEFINE TABLE OVERWRITE rebase_user SCHEMAFULL PERMISSIONS
     DEFINE FIELD OVERWRITE created_by ON rebase_user TYPE option<record<rebase_user>> VALUE $before OR $auth READONLY;
     DEFINE FIELD OVERWRITE updated_by ON rebase_user TYPE option<record<rebase_user>>
         PERMISSIONS FOR select WHERE true FOR create, update NONE ;
-    DEFINE INDEX OVERWRITE idx_user_username ON rebase_user COLUMNS tenant, username UNIQUE;
+    REMOVE INDEX IF EXISTS idx_user_username ON rebase_user;
 
 -- GROUPS
 DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL PERMISSIONS
@@ -168,7 +187,7 @@ DEFINE TABLE OVERWRITE rebase_group SCHEMAFULL PERMISSIONS
         READONLY PERMISSIONS FOR select, create WHERE true FOR update NONE;
     DEFINE FIELD OVERWRITE authorization_depth ON rebase_group TYPE int DEFAULT 1
         VALUE IF $before = NONE THEN 1 ELSE $value END ASSERT $value >= 1
-        PERMISSIONS FOR create WHERE true FOR update NONE;
+        PERMISSIONS FOR create WHERE true FOR update NONE COMMENT '@rebase-system';
     DEFINE FIELD OVERWRITE parent_groups ON rebase_group TYPE array<record<rebase_tenant | rebase_group>>
         VALUE array::distinct(($this.parents ?? []).filter(|$p| record::tb($p) IN ['rebase_tenant', 'rebase_group']))
         PERMISSIONS FOR create, update NONE
@@ -217,6 +236,7 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_access($principal: record, $tenant
         };
         UPDATE $node.id SET authorization_depth = 1 + math::max($node.parents.authorization_depth);
     };
+    fn::rebase::refresh_readers($affected);
     RETURN NONE;
 } PERMISSIONS NONE;
 

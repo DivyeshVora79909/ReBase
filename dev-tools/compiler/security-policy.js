@@ -11,11 +11,8 @@ function ownerPredicate({ actor = "$auth", row = "", includeSelf = true } = {}) 
 
 function readPredicate({ actor = "$auth", row = "", includeReaders = true } = {}) {
   const prefix = row ? `${row}.` : "";
-  const owner = ownerPredicate({ actor, row, includeSelf: true });
-  const readers = includeReaders
-    ? ` OR array::any(${prefix}readers_index ?? [], |$reader| fn::rebase::can_access(${actor}, $reader))`
-    : "";
-  return `(${actor} != NONE AND ${prefix}tenant = ${actor}.tenant AND (${owner}${readers}))`;
+  const target = includeReaders ? `(${prefix}read_by ?? ${prefix}owned_by)` : `${prefix}owned_by`;
+  return `(${actor} != NONE AND ${prefix}tenant = ${actor}.tenant AND fn::rebase::can_access(${actor}, ${target}))`;
 }
 
 function tableSelectPredicate(table, options = {}) {

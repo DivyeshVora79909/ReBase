@@ -33,7 +33,7 @@ function dependencies(schema) {
         if (!/\bREFERENCE\b/i.test(source.definition)) throw new Error(`${table.name}.${reference}: reactive references require REFERENCE`);
         for (const target of source.recordType.targets) {
           const remote = schema.tables.get(target)?.fields.get(tail[0]);
-          if (!remote && !['owned_by', 'readers_index', 'tenant'].includes(tail[0])) {
+          if (!remote && !['owned_by', 'read_by', 'tenant'].includes(tail[0])) {
             throw new Error(`${table.name}.${field.name}: unknown dependency ${target}.${tail[0]}`);
           }
           if (remote?.recordType && tail.length > 1) {
@@ -178,7 +178,11 @@ function adapters(schema, routes, trees, derivedOrder, options, systemTables, ma
   // Readers follow the maintained memberships, after derived values have been
   // calculated and coalescing has selected the stored representatives.
   sql += `DEFINE FUNCTION OVERWRITE fn::rebase::tree_roots($row: object) {
-RETURN array::distinct(fn::rebase::slots($row.id).map(|$slot| $row[$slot].owner.rid).filter(|$root| $root != NONE));
+${tables.map(table => {
+    const slots = marked(table, 'treeNode').filter(field => !field.treeNoReader).map(field => field.name);
+    return slots.length ? `IF record::tb($row.id) = '${table.name}' { RETURN array::distinct(${list(slots)}.map(|$slot| $row[$slot].owner.rid).filter(|$root| $root != NONE)); };` : '';
+  }).filter(Boolean).join('\n')}
+RETURN [];
 } PERMISSIONS FULL;\n`;
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::members($row: option<object>) {\nIF $row = NONE { RETURN []; };\n';
   for (const table of tables) {
@@ -261,7 +265,8 @@ function events(schema, routes, systemTables) {
   const targets = new Set(routes.map((r) => r.target));
   let sql = '';
   for (const table of schema.tables.values()) {
-    if (systemTables.has(table.name) && !targets.has(table.name)) continue;
+    if (systemTables.has(table.name) && !targets.has(table.name) && !table.treeMembers
+        && !marked(table, 'treeRoot').length && !table.validate) continue;
     if (!table.treeMembers && !table.validate && !table.requiredOutputs && !table.managedOutput
         && !marked(table, 'reactive').length && !targets.has(table.name) && !marked(table, 'treeRoot').length) continue;
     const nativeOutputs = routes.filter((r) => r.target === table.name).flatMap((r) => [...r.fields]).filter((name) => {

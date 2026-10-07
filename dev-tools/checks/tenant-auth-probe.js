@@ -4,9 +4,10 @@
 // Real record-token checks against a disposable database. No app profiles,
 // production data, provider calls, or browser authenticator are involved.
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const { loadMaterials } = require("../compiler/materials");
+const { generateBundle } = require("../compiler/pipeline");
 const path = require("node:path");
-const { start, client } = require("../temporal-tree/harness");
+const { start, client, applySchema } = require("../temporal-tree/harness");
 
 async function signIn(url, tenant, identifier, password = "tenant-probe-password") {
   const response = await fetch(`${url}/signin`, {
@@ -21,7 +22,7 @@ async function main() {
   const server = await start();
   const q = client(server.url);
   const failures = [];
-  const reject = async (sql, pattern = /ERR_|assert|readonly|unique|already|exist|permission/i) => {
+  const reject = async (sql, pattern = /ERR_|TREE_DUPLICATE_VALUE|assert|readonly|unique|already|exist|permission/i) => {
     let error;
     try { await q(sql); } catch (caught) { error = caught; }
     assert(error, `Mutation must fail: ${sql}`);
@@ -30,9 +31,8 @@ async function main() {
   };
   try {
     await q("DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;");
-    for (const file of ["auth.surql", "authentication.surql", "passkeys.surql", "access.surql"]) {
-      await q(fs.readFileSync(path.join(__dirname, "../../framework", file), "utf8"));
-    }
+    const materials = loadMaterials({ groups: [{ name: 'framework', roots: [path.join(__dirname, '../../framework')] }] });
+    await applySchema(q, generateBundle(materials).bundle);
     await q(`
       CREATE rebase_tenant:a SET name = 'Tenant A';
       CREATE rebase_tenant:b SET name = 'Tenant B';

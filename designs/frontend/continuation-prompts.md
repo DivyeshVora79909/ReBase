@@ -1,5 +1,9 @@
 # Instructions for future changes
 
+Current permission/index inputs come from the [developer blueprint](../rebase-system/developer-blueprint.md):
+consume scalar `read_by`, group scoped views by that scalar, and use explicit tree
+queries for adopted analytics. Custom authentication identifiers stay private.
+
 The next frontend packet combines the existing tenant migration with the
 [October 7 accounting contract](../all-in-accounting/blueprint.md). Start with
 the [accounting handoff](../all-in-accounting/implementation-handoff.md) and

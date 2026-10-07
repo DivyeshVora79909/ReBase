@@ -1,5 +1,11 @@
 # Accounting redesign handoff — 2026-10-07
 
+The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
+updates the shared framework and reruns accounting regression. The original
+accounting redesign evidence below remains tied to commit `88c5ae7` and its
+recorded hashes; it does not imply the shared framework stayed unchanged later.
+
+
 The active contract is the [blueprint](blueprint.md), with the
 [source map](context-map.md), [tax contract](delivery-taxes.md), and
 [execution record](redesign-2026-10-07.md). These supersede the October 5 direct

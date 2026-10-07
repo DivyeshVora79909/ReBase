@@ -1,5 +1,12 @@
 # ReBase developer tools
 
+For new schemas start with the [developer blueprint](../designs/rebase-system/developer-blueprint.md)
+and [explicit analytics example](../designs/index-analytics/README.md).
+`npm run build:index-analytics` compiles that profile; `npm run probe:reader-index`
+checks custom identity indexes, scalar readers and analytics against source facts.
+Raw framework files now require compilation to install identity-tree maintenance.
+
+
 The developer tools are ordinary JavaScript modules. Import the public
 functions from `dev-tools/index.js`, or start the Node.js REPL with
 `dev-tools/workbench.js` for an interactive session.

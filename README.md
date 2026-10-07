@@ -112,26 +112,24 @@ node --env-file=.env.cloud dev-tools/compiler/cli.js \
 
 ## Database Security
 
-Each business table receives table permissions plus set-based row authorization:
+Business records have one VALUE-derived `read_by` principal for SELECT and an
+`owned_by` principal for writes. Both require the current tenant and table
+operation permission. Direct reader references and membership roots nominate
+immediate owners; descendant candidates replace ancestors, incomparable candidates
+keep the first, and missing candidates fall back to `owned_by`. Explicit groups
+provide shared access. Parent-owner and authorization-DAG edits refresh the choice.
 
-Ordinary record access requires the current actor's tenant, operation permission,
-and ownership or declared reader relationship. Principals are `rebase_tenant`,
-`rebase_user`, and `rebase_group`; users/groups require same-tenant parents.
-The protected `rebase_access` relation stores their transitive closure.
-`visibility` and descendant permission arrays are removed.
-
-A record derives immutable `tenant` from `owned_by`. Its declared tree roots'
-immediate owners contribute to a bounded private `readers_index`.
-Explicit `@rebase-readers` references can add immediate owners for non-tree
-relationships. Readers grant selection, not mutation, and do not recursively
-copy other records' reader arrays. Native field permissions, reference guards
-and transaction validation remain authoritative.
+Start new designs with the [developer blueprint](designs/rebase-system/developer-blueprint.md).
+The [analytics example](designs/index-analytics/README.md) declares tenant and owner
+creation/effective-time trees plus composite keys. Participation is explicit;
+`@rebase-tree-no-reader` keeps indexing independent from visibility.
 
 ## Authentication
 
 Email, phone and passkey identity records use `owned_by: rebase_user` and a
 derived tenant. Email/phone addresses are normalized and unique within their
-tenant. Password/code/OAuth/passkey signin selects a tenant explicitly.
+tenant through one private custom tree shared with usernames and passkeys.
+Password/code/OAuth/passkey signin selects a tenant explicitly.
 Users must remain enabled and use a verified credential. Role changes and
 revocation use live database state rather than token-cached permissions.
 

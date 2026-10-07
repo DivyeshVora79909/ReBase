@@ -1,5 +1,16 @@
 # Frontend execution plan
 
+## Reader/index contract update — 2026-10-07
+
+Use the backend [developer blueprint](../rebase-system/developer-blueprint.md)
+for one native `read_by` RecordId and ownership-based writes. Incomparable reader
+branches use the declared first choice; use groups for deliberate shared access.
+Record-scoped views group by `tenant`, `owned_by`, and `read_by`. Do not expect
+`readers_index` arrays or infer permission from membership in an analytics tree.
+Tree reads require explicit `fn::tree::read` calls and native bound key types.
+Authentication endpoints remain the client boundary; identity trees are private.
+The separate MetaSol worktree is unchanged by this framework update.
+
 ## Accounting contract update — 2026-10-07
 
 The [current backend blueprint](../all-in-accounting/blueprint.md) supersedes the

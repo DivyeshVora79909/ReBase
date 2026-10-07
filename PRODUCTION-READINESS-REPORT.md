@@ -1,5 +1,14 @@
 # Production Readiness Report
 
+## Reader and custom-index continuation — 2026-10-07
+
+The [developer blueprint](designs/rebase-system/developer-blueprint.md) documents
+single-principal readers, private custom identity indexes, and explicit tenant/
+owner analytics. Use the [current verification](designs/rebase-system/reader-index-verification.md)
+for this shared-framework change. Earlier results below retain their original
+source snapshots and do not establish deployment or populated-schema migration.
+
+
 ## Accounting redesign — 2026-10-07
 
 The active [accounting profile](designs/all-in-accounting/README.md) has direct
