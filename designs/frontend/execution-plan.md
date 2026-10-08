@@ -1,191 +1,125 @@
-# Frontend execution plan
+# Frontend meaning and execution plan — October 8, 2026
 
-## Reader/index contract update — 2026-10-07
+## Meaning of the request
 
-Use the backend [developer blueprint](../rebase-system/developer-blueprint.md)
-for one native `read_by` RecordId and ownership-based writes. Incomparable reader
-branches use the declared first choice; use groups for deliberate shared access.
-Record-scoped views group by `tenant`, `owned_by`, and `read_by`. Do not expect
-`readers_index` arrays or infer permission from membership in an analytics tree.
-Tree reads require explicit `fn::tree::read` calls and native bound key types.
-Authentication endpoints remain the client boundary; identity trees are private.
-The separate MetaSol worktree is unchanged by this framework update.
+Build a small engineering boilerplate and demonstrate it with a usable accounting
+application. JavaScript/JSX, Solid, TanStack's Solid Router/Query and the native
+SurrealDB SDK already provide the composition model. Pages author forms and
+queries; shared components remove actual repetition. New business capabilities
+should normally require a route and a data module, without changing startup,
+session handling or other domains.
 
-## Accounting contract update — 2026-10-08
+The supplied history explicitly corrected the earlier generic framework and
+asked for a simple boilerplate. Preserve that correction. Prototype breaking
+changes are authorized; remove superseded domain code instead of retaining an
+adapter. Accounting is a calculation system, with explicit facts and optional
+groupings, rather than a compulsory posting or compliance workflow. Calculations
+and final validation belong to the backend.
 
-The [current backend blueprint](../all-in-accounting/blueprint.md) supersedes the
-older accounting API below. The existing MetaSol worktree has ongoing tenant
-changes and was left untouched by this backend redesign. Its data modules still
-reference removed claim-account and invoice-issue tables; no browser acceptance
-for the October 8 accounting contract is claimed.
+The current request asks for study and a written plan before implementation,
+consideration of notifications and future maintenance cost, and no new automated
+tests in this pass. Build and manually exercise a disposable accounting demo;
+report those checks separately from historical test evidence.
 
-Continue the frontend with direct currency-bearing account records, mandatory
-invoice parents and invoice dates, scalar exchange rates, base/net taxes and
-explicit adjustment-tax rows. Respect the confirmed refund-before/adjustment-after
-date split. Replace recipe-based production inputs with ordinary production,
-input/output/cost/capacity rows, and use temporal prefixes for as-of balances.
-Use the 43 authored public input schemas and the backend's worked examples.
-The [extension contract](../all-in-accounting/extension-contract.md) adds sales/
-purchase adjustment-note drafts/finalization, tax cash/offsets, independent claims,
-inline fee fields and explicit analytics/pair selection. Preserve gross invoice
-settlement versus net cash and keep monetary summaries in their stated currency.
-Preserve the existing session/tenant fencing and the user's current frontend work.
+## Inspected baseline and authority
 
-## Tenant and delivery-tax continuation — 2026-10-05
+- Parent ReBase: clean `cada5e2`, following `a8ecfca` (scalar readers, identity
+  trees, analytics) and `88c5ae7` (direct accounting).
+- Separate MetaSol: `ada483e`, with unfinished dirty tenant migration. The
+  starting diff/untracked routes were saved outside the repositories before
+  replacement. Review both repositories independently.
+- Read the supplied histories for intent, current frontend modules/diff, all 43
+  public accounting input schemas, framework authorization and current contracts.
+  Prior frontend acceptance does not cover this API.
+- Authority: [accounting blueprint](../all-in-accounting/blueprint.md),
+  [October 8 extensions](../all-in-accounting/extension-contract.md),
+  [source map](../all-in-accounting/context-map.md),
+  [framework blueprint](../rebase-system/developer-blueprint.md),
+  [authentication](../rebase-system/tenant-authentication.md),
+  [public tree reader](../rebase-system/ordered-tree-contract.md).
 
-Baseline: ReBase `78671715764437af606ebfe6408824d81ca5d284` and MetaSol
-`ada483e4d3fc389e66e0db9a21a14e3319a0fc12`; both worktrees were clean.
-The user has authorized this frontend continuation after backend acceptance.
+## Engineering decisions
 
-1. Keep namespace/database fixed in runtime profiles. Move workspace routes to
-   profile/tenant and validate the authenticated tenant with native record equality
-   before accepting any session. Canonical IDs govern credentials and query scope.
-2. Migrate the existing disposable fixtures and data reads. Prove two tenants in
-   one database, matching login identifiers, denied cross-tenant references,
-   current role revocation, and held responses during tenant changes.
-3. Extend the ordinary invoice editor with separately selected delivery and
-   invoice-wide taxes, bounded compound input and multiple priced portions per
-   source. Read public issue provenance and leave calculation to the backend.
-4. Run native and browser acceptance, inspect desktop/mobile views, and update
-   contracts and evidence. Preserve the simple Solid/JavaScript modules; no
-   provider deployment or framework rewrite is part of this packet.
+1. Distinct lifetimes: application configuration/query client; workspace SDK;
+   authenticated session/epoch; device appearance; route filters; local forms.
+   Private results and notices belong to tenant plus authenticated session.
+2. Namespace/database stay in configured connections. URLs use
+   `/w/:profile/:tenant/…`. Verify tenant natively after sign-in and use canonical
+   IDs. Native permissions authorize actions; `session.can()` controls affordances.
+3. Keep native RecordId, Decimal, Date and Duration. Bind user values and allowlist
+   interpolated table/order names. Omitted inputs use NONE; zero/false stay
+   explicit. Save only authored input fields.
+4. Retain exact affected-row checks, stable create IDs, optimistic `updated_at`
+   checks and session fences. Never automatically retry uncertain writes; keep
+   the draft and provide record inspection.
+5. Reuse bounded record selection, table/cards, pagination, fields, source-form
+   lifecycle, dialogs, amount/date and feedback. Forms compose explicit JSX and
+   their own content builders. No resource/form/query registry or schema-driven UI.
+6. Notifications have one small session-scoped owner, accessible announcements
+   and recent activity. Confirmed writes publish notices; actionable errors stay
+   in forms. Connection state stays in its provider. A durable inbox needs a
+   public backend contract; worker wake-ups are not user notifications.
+7. Keep semantic CSS, appearance/density settings, responsive navigation and a
+   compact navigation preference. Future docking belongs to the shell alone.
+8. Show units and time meaning. Whole-history positions include future facts;
+   as-of reads use typed boundaries. Never total unlike currencies/resources.
+   Invoices validate descendants; gross settlement, charges and net cash are
+   separate measures. Analytics enrollment is an explicit opt-in.
 
-Status: implementation in progress; no frontend acceptance claimed yet.
+## Accounting demo surface
 
-
-2026-10-02. Execute directly; lower-model prompts are maintenance aids, not a
-substitute for this implementation. No compatibility shim for the removed generic
-console is required. Keep this work visible in the new `designs/frontend/` package
-and the separately versioned `MetaSol/` application.
-
-## Delivery record
-
-| Stage | Delivered result |
+| Page | Explicit records and behavior |
 | --- | --- |
-| F0 | Both Git roots inspected; existing dirty starter snapshot retained; current schemas and installed SDK checked. |
-| F1 | Workspace/session/query fencing, responsive shell, entry/sign-in styling, preferences, bounded single/multi record selection and shared record presentation. |
-| F2 | Treasury list/detail/create and exclusive cutoff; exact cash entry/edit/delete, rollback/conflict handling and uncertain-save inspection. |
-| F3 | Claims, untaxed invoices/allocations, inventory, directory, entered FX/reversal, immutable recipes, assembly and timed production. |
-| F4 | Architecture, screen contracts, developer examples, restart prompts and explicit deferred packets. |
-| F5 | Native, browser, build, screenshot and repository checks recorded in [verification](verification.md). |
+| Overview | Orientation, quick actions and readable unit-specific positions |
+| Accounts | Seven account families, policies/dimensions, historical balances, bounded source history and monetary/resource entries |
+| Directory | Currency, measure unit, item, service, operating unit, directed exchange pair |
+| Invoices | Sales/purchase headers, issues, base/net taxes, payments, withholding, returns/corrections and server totals |
+| Adjustments | Notes, signed correction rows, separate commercial/cash totals, draft/finalize/reopen |
+| Claims and taxes | Independent claims/source settlement; tax settlement/deposit/refund/credit offset |
+| Transfers | Resource/currency exchange, scalar conversion, optional pair/output links |
+| Production | Parent dates and independent inputs, outputs, costs, service/operating capacity |
+| Analytics | Readable root, typed date range and unit-specific trade/payment/pair summaries |
+| Shell | Tenant sign-in, notifications, connection recovery, preferences and user directory |
 
-The [screen contracts](screen-contracts.md) define the delivered feature scope.
-The [deferred-work map](deferred-work.md) distinguishes browser workflows still
-to add from missing backend policies. No compatibility layer or delegation to a
-smaller model was used for this implementation.
+All 43 public accounting record types fit these pages. Fee inputs share one
+small field group. Advanced inputs use labeled disclosures. Empty/loading/denied/
+disconnected/failed-save states must remain usable. Public input schemas guide
+authored forms without generating the UI.
 
-## Product and engineering decisions
+## Execution sequence
 
-1. **One compiled application, ordinary composition.** This application is the
-   accounting suite. A future CRM-only or client-specific application composes
-   explicit routes and the same small session/UI primitives in source. Runtime
-   configuration supplies connections, not tables, routes, business policies or
-   tenant plugins. No route/form/query registry or new query language.
-2. **Distinct contexts.** Application owns public connection settings and the
-   query client; workspace owns the SDK connection and namespace/database;
-   session owns the authenticated principal and an epoch; preferences own local
-   appearance. Economic entity is a filter, never an authorization identity.
-   Switching account or workspace invalidates old work and clears private cache.
-3. **Use the installed libraries directly.** Keep Solid and TanStack's Solid
-   adapters. A library's implementation language is not a reason to replace it.
-   Thin query/mutation helpers may centralize repeated session fences, while
-   exposing the actual SDK and page query callback.
-4. **Native values at the boundary.** Preserve record table and typed key; bind
-   user input. Use decimal strings and SDK Decimal, never Number for money. Show
-   separate currencies/units and explicit time semantics. Whole-history tree
-   totals include future-dated facts and are not an available-today balance.
-5. **Explicit forms.** Source fields are authored by the page. Computed net,
-   balance, invoice outputs, tree fields and managed production roles are never
-   writable controls. Validate locally for usability and on the database for
-   truth. Stable source IDs and exact affected-row checks bound uncertain retries.
-6. **Extract only useful UI.** A lazy single/multi record picker, table, card
-   grid, grouped board, pagination, error/loading state, amount/date display and
-   modal/drawer serve real pages. Columns and render functions are ordinary JSX.
-   Grouping describes its loaded population, caps distinct columns at ten plus
-   Other, and never implies a whole-database aggregate or automatic drag mutation.
-7. **Keep state honest.** Search/sort/page/view belong in the URL; unsaved inputs
-   stay in the form; cosmetic preferences stay on the device; authoritative
-   records stay in the query cache. No financial offline write queue or secret
-   persistence outside the explicit session-storage choice.
+| Step | Deliverable | State |
+| --- | --- | --- |
+| P0 | History/Git/source review and this meaning/plan | Complete |
+| P1 | Shared fields/writes, current lookups, session recovery, notifications/shell | Complete |
+| P2 | Accounts/directory, invoices/adjustments and operations | Complete |
+| P3 | Typed analytics and disposable local demo | Complete |
+| P4 | Build, one-off native/browser walkthrough, desktop/mobile and source review | Complete |
+| P5 | Current documentation, exact verification limits, coherent local commits | Complete |
 
-## Execution order
+Parallel file ownership: foundation/shell, commerce, operations. Lead owns shared
+field/data contracts, accounts/directory, analytics, demo and documentation. Source
+changes follow this plan; agents do not edit each other's files or invent layers.
 
-### F0 — Recover and plan
+The frontend implementation is committed in MetaSol as `89799ec`. Fresh results,
+source fingerprints and prototype limits are in [verification](verification.md).
+The disposable demo was stopped and removed its owned temporary state. This
+parent documentation packet records the implementation; nothing was pushed or
+deployed.
 
-Read the current frontend, backend schema and active handoffs. Preserve a before
-snapshot of the dirty frontend; inspect both repositories. Record the actual
-SDK versions and available tests. State which contracts are implementation,
-historical evidence, or future work. **Exit:** this plan and a scoped baseline.
+## Future additions without rebuilding the foundation
 
-### F1 — Contexts and shared interaction
-
-Build a responsive accounting shell and workspace entry, retain reliable
-connection/session ownership, expose principal permissions for affordances, and
-extend small preferences for density and time display. Implement only the shared
-query/mutation fence and UI used by the accounting routes. Add lazy polymorphic
-record selection with bounded search, selected-value hydration, keyboard support,
-duplicate-free multi-select and stale-context suppression.
-
-**Exit:** a real record session gates reads; account/context changes cannot show
-old results; keyboard/mobile navigation works; no root credentials reach the app.
-
-### F2 — Treasury and source cash workflows
-
-Build account search/detail, account creation, money in/out/transfers and explicit
-source editing/deletion where native rules permit it. Use current schema names
-and derive displays from readable, explicit projections. Include current owner,
-economic entity, currency and date semantics in forms. Add atomic exact-row
-mutation helpers and preserve a stable source ID after ambiguous transport errors.
-
-**Exit:** native compiled-profile tests prove a visible committed balance change,
-rollback on invalid cash use, unauthorized denial, precise decimals, stale-session
-suppression and a bounded activity page. Do not claim a complete ledger from a
-subset of movement tables.
-
-### F3 — Accounting, inventory and operational pages
-
-Implement ordinary pages for claim accounts and standalone claims, invoices,
-inventory and stock movement, exchange, and recipe-based assembly/production.
-Use existing source records for actions; privately managed outputs remain server
-owned. Add explicit entity/master-data setup where these workflows require it.
-Prefer a reviewed bounded action over a generic editor for a complex recipe.
-
-**Exit:** each visible action has its own field/permission/transaction contract
-and focused native verification. Read-only portions say what their numbers mean.
-Unresolved residual, tax-filing, costing and workforce policies receive concrete
-deferred packets rather than invented forms.
-
-### F4 — Developer blueprint and deferred work
-
-Write the context map, file ownership, page/query/form examples, component APIs,
-contract matrix and short restart prompts. Inventory deferred frontend and backend
-work with prerequisites, invariant, smallest proof, allowed files and completion
-criteria. Distinguish implemented accounting tables from unpublished browser
-projections and independent CRM/HRM designs.
-
-**Exit:** a junior can add an ordinary page from one example without knowing
-compiler internals or copying a query framework. New docs link to current source.
-
-### F5 — Integrate and inspect
-
-Run focused native value and mutation tests, production build, browser workflow
-tests on disposable SurrealDB, and relevant existing session regressions. Inspect
-desktop and mobile screenshots, keyboard states, empty/error states and final
-diffs. Verify local links and source fingerprints. Record actual results and
-limits in this package and in MetaSol's usage guide.
-
-**Exit:** tests pass for delivered features; the implementation and evidence agree;
-no hidden production deployment or live-provider activity is claimed.
-
-## Parallel backend work and policy boundaries
-
-The core K1–K5 and accounting H1–H8 source/evidence already exist. This frontend
-work consumes them; it does not restart the developer-tools redesign. H4b5c tax
-residual policy, representative physical-cost measurements, populated legacy
-migration, live providers, workforce, costing, valuation, statutory filing, CRM
-and HRM each need their own contract. Full planning for those items belongs in
-this package's deferred-work record, with canonical backend references.
-
-Routine frontend implementation choices and breaking changes are authorized by
-the current request. Pause only for an actual missing business rule that cannot
-be inferred safely; continue independent implementation while that rule is open.
+- Recovery/OTP/passkeys: ordinary auth routes and gateway functions; tokens enter
+  the existing native tenant check. Expose flows only when configured.
+- Durable notifications: public recipient/read/unread contract, a data module and
+  inbox route; add reconnect catch-up before live ingestion.
+- Live data: a native subscription owned by its route/query, targeted invalidation,
+  reconnect requery and disposal. Add where a real workflow needs it.
+- Bulk import: preview current public inputs and show individual outcomes. Page
+  exports use explicit projections and exact strings. No generic import engine.
+- CRM/HRM or another compiled app: compose routes with the same session/UI modules;
+  no runtime tenant plugin system.
+- Advanced navigation docking: shell/preferences/CSS only, independent of domain.
+- Automated regression work follows the settled demo: tenant fencing, uncertain
+  writes, temporal balances, invoice dates, correction/fee units. Historical
+  evidence remains historical.

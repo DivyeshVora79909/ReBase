@@ -1,129 +1,149 @@
-# Delivered screen contracts
+# Accounting screen contracts
 
-These are the frontend's explicit workflows. A table existing in the backend
-does not imply that every operation on it has a browser form. All lists contain
-accessible records; empty results can mean no records or insufficient access.
-Amounts in different currencies/resources are never added into one total.
+These contracts describe the current [MetaSol](../../MetaSol/README.md) pages and
+native inputs, with [verification](verification.md) tracked separately. All 43
+public accounting record types are represented below. A visible action still
+requires native permission, valid references and successful backend validation.
+Ownership and calculation results are separate from the user's screen filters.
 
-## Screens and source records
+## Page-to-table coverage
 
-| Screen | Reads | Writes available in this application |
+Paths below follow `/w/:profile/:tenant/`. Every listed source has authored
+create/edit/delete forms, subject to immutable dimensions and native guards.
+Invoice corrections also appear in the invoice's source list; adjustment notes
+provide an optional grouping. Each record type is counted once in this table.
+
+| Page | Public record types | Surface |
 | --- | --- | --- |
-| Overview | Cash totals and claim positions grouped by currency; recent direct cash and treasury accounts | Links to the source workflows |
-| Treasury | Treasury accounts with currency, entity, recorded balance and minimum; account detail and exclusive historical cutoff | Create an account |
-| Cash movements | `cash_in`, `cash_out`, `cash_transfer`, filtered by kind/entity/account | Create each family; edit amount/date; delete with concurrency/dependency checks |
-| Receivables & payables | Claim-account receivable/payable/net positions; standalone `receivable` or `payable` remaining amount | Create claim accounts, either claim family and existing-cash allocations |
-| Invoices | Sales/purchase headers, issue inputs and recorded outstanding | Atomically create header + untaxed issue with up to 50 stock-source lines; allocate existing cash |
-| Inventory | Stock accounts by location/resource and their recorded quantity/availability; direct stock movements | Create stock accounts; receive, issue or transfer stock |
-| Currency exchange | Entered-amount `cash_exchange` and `cash_exchange_reversal` | Create ordered currency pairs, execute entered amounts, reverse in full |
-| Production | Timed production runs or immediate assembly batches | Create immutable recipe versions; create runs/batches; edit count/date/state through the source |
-| Directory | Organizations, treasuries, currencies, locations, units, items, services and work types | Explicit create forms for these eight families |
-| Users | Readable principal list/detail | Read only |
-| Settings | Current preferences/session | Appearance, accent, density, display zone and token-storage choice |
+| `directory` (6) | `currency`, `measure_unit`, `item`, `service`, `operating_unit`, `exchange_pair` | Names/codes, precision, resource unit, optional availability/duration/capacity and directed pairs |
+| `accounts`, `accounts/:id` (9) | `treasury`, `organization`, `direct_tax_account`, `indirect_tax_account`, `misc_currency_account`, `stock_account`, `misc_stock_account`, `account_entry`, `stock_entry` | Seven account families, policies/dimensions, recorded/as-of positions, contributing history and signed entries |
+| `invoices`, `invoices/:id` (10) | `sales_invoice`, `purchase_invoice`, `sales_issue`, `purchase_issue`, `issue_tax`, `issue_net_tax`, `invoice_settlement`, `payment_withholding`, `issue_return`, `payment_refund` | Headers, independently authored issues/taxes/payments/returns, settlement and server totals |
+| `adjustments` and invoice details (6) | `sales_adjustment_note`, `purchase_adjustment_note`, `issue_adjustment`, `tax_adjustment`, `adjustment_tax`, `payment_adjustment` | Signed corrections, optional notes, separate commercial/cash totals, finalize/reopen |
+| `claims` (2) | `account_claim`, `claim_settlement` | Explicit receivable/payable claim and source-specific cash settlement |
+| `taxes` (4) | `tax_settlement`, `tax_deposit`, `tax_refund`, `tax_offset` | Liability payments, credit deposits/refunds and cash-free offsets |
+| `exchange` (1) | `resource_exchange` | Cash/resource transfers and scalar conversion, optional pair/production-output links |
+| `production`, `production/:id` (5) | `production`, `production_input`, `production_output`, `production_cost`, `production_capacity` | Parent interval and independently authored stock, cash and service-capacity records |
 
-The corresponding native functions are in
-[`treasury.js`](../../MetaSol/src/data/treasury.js),
-[`claims.js`](../../MetaSol/src/data/claims.js),
+The data functions live in [`directory.js`](../../MetaSol/src/data/directory.js),
+[`accounts.js`](../../MetaSol/src/data/accounts.js),
 [`invoices.js`](../../MetaSol/src/data/invoices.js),
-[`inventory.js`](../../MetaSol/src/data/inventory.js),
-[`exchange.js`](../../MetaSol/src/data/exchange.js),
-[`production.js`](../../MetaSol/src/data/production.js),
-[`directory.js`](../../MetaSol/src/data/directory.js), and
-[`overview.js`](../../MetaSol/src/data/overview.js).
+[`adjustments.js`](../../MetaSol/src/data/adjustments.js),
+[`claims.js`](../../MetaSol/src/data/claims.js),
+[`taxes.js`](../../MetaSol/src/data/taxes.js),
+[`exchange.js`](../../MetaSol/src/data/exchange.js) and
+[`production.js`](../../MetaSol/src/data/production.js).
 
-## Read contracts and time semantics
+Overview shows bounded treasury, organization and stock account panels with their
+own units and links to source pages. Analytics reads public roots without creating
+another business record family. Users list/detail is read-only. Settings owns
+appearance, density, accent, display zone, compact navigation and token-storage
+choice. The shell supplies tenant sign-in, connection recovery and recent activity.
 
-- Main lists request 26 rows, display 25, and use the extra row only to enable
-  Next. Sorts have an ID tie-breaker. Page numbers and search lengths are bounded.
-  Permission filtering remains server-side; there is no misleading total count.
-- Lookups request 13 rows, display 12 and hydrate at most 50 selections. A finite
-  table allowlist bounds polymorphic references. Every option shows its table
-  and ID as well as useful labels/dimensions.
-- Tree summary totals include future-dated effects. Labels say **recorded**.
-  Stock availability is not a promise of availability today. An account cutoff
-  calls `fn::tree::read(id, 'z_history', 'before', [cutoff])`; it excludes all
-  entries at the exact cutoff.
-- Net claims is always `receivable - payable`. It has no input control or
-  independently writable balance. Optional floor/ceiling controls belong to a
-  claim account; the backend's derived net history enforces them.
-- Overview limits each grouped query to ten currency groups plus a sentinel and
-  says when truncated. It hydrates the union of those currencies. Recent cash
-  and account panels show smaller labeled subsets of the bounded first pages.
-- Boards group only the loaded page, with ten groups plus Other. Treasury groups
-  by currency, inventory by location/movement and production by status or a
-  named device-local start-date range. They have no drag-to-write behavior.
-- CSV exports the current page with exact decimal text and spreadsheet-formula
-  escaping. They are not a full ledger or a server export job.
+## Accounts, references and time
 
-List, detail and lookup reads use explicit projections and database timeouts.
-The scalar treasury cutoff uses `RETURN fn::tree::read(...)` without an explicit
-query timeout. No browser `INFO STRUCTURE`, generic `SELECT *`, private
-operation bundle or root login is needed by an application route.
+Regular lists fetch 26 rows, display 25 and expose Next using the extra row.
+Search, kind, page and view are bounded URL state. Sorted scans use an ID
+tie-breaker and `WITH NOINDEX`. Lookups display 12 of 13 fetched choices and
+hydrate at most 50 selections. Their finite table set, native IDs and descriptive
+labels distinguish similarly named records. Custom picker searches include the
+parent invoice/note/source in both their bound query and reactive cache scope.
 
-## Write contracts
+Recorded positions include all dated facts, including future ones. The Account
+Before control uses a typed exclusive instant on `z_history`; it excludes every
+contribution at that exact time. The contributing-record list always covers the
+whole timeline, independently of that balance cutoff. It pages newest-first by
+full typed keys. One source can contribute at several times; those rows remain
+visible. An observed revision change restarts paging with a notice.
 
-Every create explicitly chooses `owned_by`. Master/account forms also choose
-their economic entity and dimensions; movements derive dimensions from their
-references on the server. The form's initial owner is the session principal.
-Clearing the picker clears the value; the UI must never display an implicit
-fallback that differs from the submitted payload.
+Monetary accounts show their currency; resource accounts show the resource unit
+and pricing currency separately. Entry controls stay locked to the selected
+account so their displayed units remain correct. `net = receivable - payable`
+is a server-derived measure. Account floors/ceilings are editable policies checked
+throughout the recorded timeline. Resource identity and account dimensions remain
+fixed in editors. Device-local date input preserves milliseconds; display uses
+the chosen time zone. Optional durations remain native Duration values.
 
-Cash and production edits submit the last-read `updated_at`. A zero-row update
-or delete is a conflict, absence or loss of access, never success. Refresh and
-reopen the current record before editing again. Mutations invalidate the active
-session's queries only after confirmed commit. Financial totals are not updated
-optimistically.
+## Invoices and corrections
 
-Invoices bind a stable header ID and issue ID in one transaction. If a line
-fails its source-capacity checks, neither header nor issue remains. A selected
-stock source creates one line; removing/reselecting sources preserves the
-values of retained lines. Unit prices are exact decimals; currency rounding is
-server-owned. The current form creates invoices without tax components.
+An invoice header selects an organization and invoice date. Issues, taxes,
+payments and corrections are separate explicit records. Header edits revalidate
+descendants; the UI never generates a hidden line bundle or edits tree outputs.
+Issues specify stock account, quantity, price, scalar FX and effective time.
+Base/net taxes select an issue, tax account, percentage, optional bounds and FX.
+A net tax needs an earlier taxable basis; the backend controls compounding and
+rounding. Forms expose only authored inputs, while lists show calculated values.
 
-Cash allocation consumes an already recorded movement; it does not make a new
-payment. The backend rejects incompatible party/entity/currency and exhausted
-capacity. Invoice allocation supports the exact issue timestamp through the
-backend's complete-timestamp outstanding floor. The client keeps the entered
-date without adding an offset. Allocation before its source or beyond the
-outstanding balance is rejected. Standalone claims retain their own
-complete-timestamp capacity rules.
+Original issues, taxes, returns and payment refunds belong on or before the
+invoice date; post-invoice adjustments belong after it. Returns consume source
+quantity, refunds consume a payment, and an issue adjustment changes one signed
+dimension: quantity, price or FX. Tax adjustments and taxes on corrections have
+explicit source links. Native source-capacity and date guards decide acceptance.
 
-An exchange reversal uses the original executed amounts and reverses both
-treasury legs. There is no quote refresh. The database permits one full reversal.
-Production end time comes from start plus immutable recipe duration. The app
-does not infer completion from the clock. Recipe inputs/outputs use the current
-two-input/two-output count-unit contract; all managed effects remain private.
+Adjustment notes optionally group compatible corrections across invoices of the
+same organization and side. Draft notes still validate dimensions and sign.
+Finalization requires a nonzero contribution; reopen before removing the last
+one. Commercial adjustment and settlement totals are shown separately so a price
+reduction and cash return are not counted twice. Notes do not post extra effects.
 
-The browser never directly edits invoice lines/tax outputs, production roles,
-assembly output records, tree nodes or derived balance fields. Their lifecycle
-belongs to the source transaction.
+## Cash, claims, tax and transfers
 
-## Interaction and failure states
+Invoice and claim settlements author actual cash movements. Independent claims
+retain their own dated remaining capacity; a tax-pool transaction does not
+silently settle a selected claim. Settlement lists distinguish gross cash from
+the converted invoice/claim/tax amount. Withholding consumes a payment source
+and transfers claim value without a cash charge.
 
-Record selection is lazy and debounced. Arrow keys move the active choice,
-Enter selects and Escape closes; multi-select is duplicate-free and bounded to
-50. Pending data reads are guarded before accessing Solid Query's suspending
-data getter, so a lookup cannot detach the form or lose input focus.
+Tax settlement pays a liability; deposit creates credit; refund consumes credit.
+An offset consumes tax credit against a liability and has no cash, inline charge
+or analytics enrollment. The same credit/liability account may be selected when
+the native contract permits it. Future and historical capacity remain authoritative.
 
-Native dialogs provide focus containment and restoration, dirty drafts block
-accidental navigation, and long forms scroll within the viewport. On mobile,
-the closed sidebar is hidden from assistive navigation and cannot take focus;
-the open navigation traps Tab and closes with Escape. Reduced motion and clear
-focus outlines are supported. Tables scroll horizontally when their content
-requires it; forms use one column on small screens.
+Nine cash facts share optional inline charge and charge-tax fields through
+`FeeFields`: invoice settlement/refund/payment adjustment, claim settlement,
+tax settlement/deposit/refund, resource exchange and production cost. Clearing
+the charge account clears dependent inputs. Fees preserve gross settlement;
+signed net cash subtracts charge and charge tax from the base cash direction.
+Creditable charge tax requires an indirect-tax account and explicit conversion.
+Refund/correction charges are authored independently of the original charge.
 
-Unknown saves retain their stable reference and provide **Check current record**
-with a nonsecret current-value projection. Failed requests are not automatically
-retried. A found row does not prove that an edited draft matches it; compare the
-values. An absent/inaccessible row does not prove rollback. After an account or
-workspace switch, late results cannot reopen a dialog or mark a new account's
-form successful.
+Transfers select two cash/resource accounts and a scalar rate. Same-resource
+movement requires one. An optional directed exchange pair records the selected
+context; no inverse quote is inferred. An optional production output consumes
+that source's remaining quantity. Charge fields apply to the outgoing currency
+leg when present, otherwise the incoming currency leg; barter has no cash charge.
+The page shows base sent/received values and the charged leg's signed net cash.
 
-## Intentional limits
+## Production and analytics
 
-This is an operational accounting frontend, not a statutory filing system or
-a complete historical ledger explorer. Tax workflows, returns/refunds,
-quote-derived FX, richer account maintenance, credential administration and
-authentication challenges have explicit packets in
-[deferred-work.md](deferred-work.md). Existing backend evidence for those
-features is distinct from frontend acceptance evidence.
+Production owns name/start/end. Inputs reserve stock at start and consume it at
+end; outputs record expected quantity then real stock. Costs reserve base cash
+plus charges at start and pay at end. Capacity records select an operating unit,
+service and quantity over the interval. Each line is independently editable and
+removable; parent changes revalidate later uses and availability. The app derives
+no status from the clock and has no recipe or assembly generator.
+
+Analytics selects a readable root and typed `[start, end)` range. Datetime bounds
+are `[[start], [end]]`; operating-unit bounds are `[[unit, start], [unit, end]]`.
+Trade/payment enrollment is explicit where the source exposes it. Pair selection
+is independent; transfers retain both account legs and pair history. Reports keep
+currencies/resources separate; operating-unit roots have no mixed-unit money sum.
+Rates divide summed values by summed quantities through the native ratio helper;
+a nonpositive denominator has no rate. These observations do not define costing.
+Published summaries follow root visibility policy and can include contributions
+whose source rows the viewer cannot read. CSV exports only displayed projections.
+
+## Shared interaction and limits
+
+Editors preserve their original snapshot across refetch. Dirty/pending navigation
+requires confirmation; busy dialogs cannot close. A 20-second unconfirmed write
+keeps its stable reference and offers current-record inspection, with no automatic
+retry. Session and mounted-form fences prevent late callbacks from changing a new
+session or route. Refresh failures can retain cached rows with an explicit error.
+
+Pickers support keyboard selection, dialogs restore focus, mobile navigation is
+inert while closed, and tables scroll within their panel. Recent activity keeps
+up to 30 confirmed updates in this session's memory, with local unread state and
+accessible announcements. It is not a durable inbox. Gateway auth flows, live data,
+persistent notifications and other extensions are tracked in
+[deferred work](deferred-work.md). See the [developer guide](developer-guide.md)
+for composing another page and [verification](verification.md) for actual checks.

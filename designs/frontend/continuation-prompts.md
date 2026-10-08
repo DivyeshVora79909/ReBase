@@ -1,141 +1,37 @@
-# Instructions for future changes
+# Continue the current frontend
 
-Current permission/index inputs come from the [developer blueprint](../rebase-system/developer-blueprint.md):
-consume scalar `read_by`, group scoped views by that scalar, and use explicit tree
-queries for adopted analytics. Custom authentication identifiers stay private.
-
-The next frontend packet combines the existing tenant migration with the
-[October 8 extension contract](../all-in-accounting/extension-contract.md). Start with
-the [accounting handoff](../all-in-accounting/implementation-handoff.md) and
-[verification](../all-in-accounting/extension-verification.md), then the shared
-[tenant backend handoff](../rebase-system/tenant-tree-handoff.md). Historical
-frontend tests do not establish compatibility with the revised accounting API.
-
-## Tenant and accounting migration — next required packet
+Read [the execution plan](execution-plan.md), [architecture](architecture.md),
+[screen contracts](screen-contracts.md), [verification](verification.md) and the
+[current backend accounting contract](../all-in-accounting/extension-contract.md).
+Inspect both parent ReBase and nested MetaSol Git status/log/diffs before editing.
+The October 8 backend API supersedes the old frontend recipe/claim-account model.
 
 ```text
-Continue in ReBase and the separate ignored MetaSol repository. Inspect both
-Git trees. The backend tenant/tree redesign is newer than the existing browser
-implementation; start with designs/rebase-system/tenant-tree-redesign.md,
-ordered-tree-contract.md, tenant-authentication.md, single-design-runtime.md,
-current auth source and designs/all-in-accounting/postings/issues.surql.
-Read the current accounting blueprint, source map and verification. October 5
-backend evidence covers the shared tenant engine, not the new accounting API;
-compare source hashes to the checkout before reusing results.
+Continue the MetaSol accounting frontend from its actual checkout. Read the current
+frontend documents, both Git histories/diffs and the relevant backend schemas.
+Use direct JavaScript/JSX, Solid/TanStack and native SurrealDB values and queries.
+Keep pages and content builders explicit. Do not add a resource/form/query registry,
+compatibility layer, context per table or custom framework.
 
-Keep fixed namespace/database in public design configuration. Make tenant an
-explicit signin/session choice within that design. Scope routes, credentials,
-Query keys and late-response epoch guards by canonical tenant plus endpoint,
-design and access method. Do not reuse a token/cache across tenant changes.
-Pass tenant for password, code, OAuth and passkey signin. Use the new public
-challenge/passkey routes, retain exact native IDs/Decimal and one-use exchange
-semantics. Identity rows use owned_by. Remove visibility UI and old root-group
-or descendant-array assumptions; current native permissions decide authority.
+Run npm run demo inside MetaSol for an owned disposable current-schema example.
+Use the printed record-user login. Do not use demo/root credentials on an existing
+server or modify a user's configured database. Review which native/browser checks
+were actually performed; historical evidence does not certify newer changes.
 
-Use explicit tenant filters to narrow normal native table queries. For a sort
-path declared and published by the design, use bounded tree seek/page rather
-than an unbounded chain or one HTTP request per link. Preserve cursor key types
-and reset pages on incompatible root revisions. Never read private managed
-slots/tables to construct a financial ledger in the browser.
+Preserve tenant/session fences, mounted-form callbacks, stable create IDs, exact
+Decimal values, optimistic updated_at checks and deliberate handling of uncertain
+writes. A field's actual dependency belongs in its query key (including custom
+picker scope). Use native typed tree bounds/cursors and visible units/time semantics.
+Keep a form's initial record snapshot independent of background refetches.
 
-Record-scoped materialized views can return multiple visible groups for one
-business key. Respect their owner/reader policy and generated computed-field
-permissions; tenant-published aggregates are an explicit backend contract.
-Carry the SurrealDB 3.3.0 ID-order scan limitation from ordered-tree-contract.md:
-affected native source queries use WITH NOINDEX ORDER BY id until a verified
-replacement is available. Compare complete results; do not hide duplicate rows
-with client deduplication. The primary scan has no indexed-performance promise.
-
-Use direct currency-bearing accounts and the 43 public create schemas. Issues
-require invoices; invoices validate without posting. Use scalar exchange rates
-and distinguish base taxes from strictly earlier net taxes, each with one issue
-parent. Author adjustment-tax rows explicitly with their correction and original
-tax. Returns/refunds are on/before invoice_date; adjustments, including negative
-cash adjustments, follow it. Production uses explicit input/output/cost/capacity
-rows with two dated positions. Use temporal prefixes for as-of balances. Keep
-calculations and final transaction validation in the backend. Adjustment notes
-are draft groups finalized only after valid same-sign lines exist. Use inline
-charge inputs instead of generating fee children, and distinguish gross payment
-from net cash. Opt into the documented analytics and pair trees deliberately;
-do not mix currencies, invent average-of-averages or infer FX profit from quotes.
-
-Finish one simple tenant-aware login/accounting slice first, using ordinary
-Solid modules and direct SDK/library APIs. Prove two tenants in the SAME database,
-including identical email addresses, failed cross-tenant access, role revocation,
-tenant switching while a response is pending, and native write rollback.
-Then repair the existing browser suite and update source contracts/evidence.
-Do not deploy or call real providers. No generic registry/DSL/form framework.
+Add only the next concrete workflow. A new capability normally owns one route and
+one data module and composes existing fields/presentation. Update current docs and
+verification/deferred boundaries with the code. No new automated tests were requested
+in the October 8 pass; ask the current task's intent before expanding that scope.
 ```
 
-## Start from the actual checkout
-
-```text
-Work in /home/divyeshvora/javascript/node/projects/ReBase and its separate
-MetaSol repository. Read designs/frontend/README.md, architecture.md,
-screen-contracts.md and verification.md. Inspect Git status in both roots.
-Do not restore the removed generic console, resource registry, query engine,
-compatibility routes or old scripts. Preserve unrelated work.
-
-Implement the requested change yourself. Use ordinary Solid/JavaScript and
-the installed TanStack and SurrealDB libraries directly. Read the relevant
-route, native data function and backend source contract before editing.
-Write down the successful behavior, rejected behavior and smallest check.
-Keep native record keys, decimal amounts, epoch fencing and exact-row writes.
-
-Change the smallest complete user-visible workflow. Run the focused native
-and browser checks that establish its behavior. Update the corresponding
-contract and evidence, distinguishing verified behavior from future work.
-Routine fixes and removal of superseded frontend code are authorized.
-Do not deploy, call real providers or send messages as part of local testing.
-```
-
-## Implement a new screen/action
-
-```text
-Implement packet [ID] from designs/frontend/deferred-work.md.
-Read its named source contract and the current similar route/data module.
-Confirm prerequisites from the checkout; historical evidence alone is not
-acceptance. List the public fields, permissions, dimensions and time meaning.
-
-Create an ordinary route component and explicit native SDK functions. Use
-the existing Records, RecordPicker, feedback and session helpers where they
-fit. Add a shared component only for actual repeated behavior. Do not build
-a registry, form generator, query DSL, universal context or generic editor.
-
-Keep a stable create ID across retries, snapshot Solid stores, bind values,
-and check every transactional result. Use updated_at on changes/deletes.
-Write one native success/rollback case and the actual browser interaction.
-Inspect mobile layout when controls/forms change. Explain any genuine
-remaining policy decision without inventing a browser-side accounting rule.
-```
-
-## Review a change
-
-```text
-Review the requested diff against the working baseline, not against the
-obsolete committed generic console. Identify concrete defects with paths
-for reproducing them. Check permission affordances versus server authorization,
-record-key types, exact decimals, timestamp preservation, stable ordering,
-pagination bounds and the population represented by every total.
-
-For asynchronous code, hold an actual response and change the term, account
-or workspace. Verify the late response cannot replace current data, lose
-form focus, reopen a dialog or report a different account's save as success.
-For writes, test a useful rejected case and inspect the source/aggregate
-after rollback. A build alone is not financial behavior verification.
-
-Keep findings scoped. Do not require unrelated provider/capacity suites or
-propose a framework rewrite to fix a normal route/component problem.
-```
-
-## Verification and completion record
-
-Record the changed behavior and exact source revision/fingerprint, the commands
-actually run, their outcomes, and any material limitations. Keep screenshots
-from disposable fixtures. Link current documentation to actual files. A plan,
-mock screen or passed build is not a native workflow test. A native fixture is
-not a production migration, live-provider test or physical-capacity claim.
-
-The completion response should lead with the result, give the relevant test
-counts and link the implementation/docs. Do not claim deferred tax, filing,
-valuation, CRM or HRM work is implemented because a scaffold or plan exists.
+For persistent notifications, gateway authentication screens, live collaboration,
+import/export or another application, start from the corresponding section of
+[deferred work](deferred-work.md). Complete its missing public contract before
+building user-facing controls around it. Routine implementation and reversible
+local work do not need another permission checkpoint.

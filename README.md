@@ -42,8 +42,9 @@ The [core handoff](./designs/rebase-system/core-handoff.md) and
 [accounting handoff](./designs/all-in-accounting/implementation-handoff.md)
 track validation and domain boundaries. The [configuration reference](./designs/rebase-system/core-configuration.md)
 owns process settings. Historical evidence remains tied to its original sources.
-Frontend implementation is deferred: [the tenant migration](./designs/frontend/continuation-prompts.md)
-must be completed before claiming MetaSol compatible with this backend.
+The [MetaSol accounting prototype](./designs/frontend/README.md) targets the current
+tenant/accounting contract. Its [verification](./designs/frontend/verification.md)
+records the disposable demo, native/browser walkthroughs and remaining coverage.
 Local checks use disposable databases and mock providers; production delivery
 and representative capacity need their own evidence.
 

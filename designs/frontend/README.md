@@ -1,51 +1,27 @@
-# Frontend implementation and tenant migration
+# MetaSol accounting frontend
 
-The source in the separate MetaSol repository remains the frontend verified
-on 2026-10-03, unchanged at `ada483e`. The tenant/tree backend changes tenant
-login, identity ownership and authorization; its
-[2026-10-05 evidence](../rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
-records backend acceptance separately. **Frontend migration is deferred;
-the old frontend is not certified against the new backend.**
+The current frontend targets ReBase `cada5e2`: direct accounting records, explicit
+tenants, scalar readers, adjustment notes, payment charges and typed analytics.
+The separate MetaSol repository contains the implementation at `89799ec`. Earlier October 2/3
+frontend evidence describes the removed API and does not validate this version.
 
-Start the next frontend change with the [tenant migration continuation](continuation-prompts.md#tenant-backend-migration--next-required-packet)
-and [backend contract](../rebase-system/tenant-tree-redesign.md). Keep the small
-Solid/native SDK structure. The older source descriptions and verification
-below describe the unchanged frontend baseline.
+The intended result is a small JavaScript/Solid engineering foundation demonstrated
+by accounting. Business pages author their own forms and queries. Shared code owns
+session lifetime, native values, confirmed writes, reusable UI and scoped notices.
 
-## Reading route
+Start with:
 
-1. [Execution plan](execution-plan.md): decisions, implementation sequence and gates.
-2. [Architecture](architecture.md): contexts, state, native values and extension boundaries.
-3. [Screen contracts](screen-contracts.md): delivered routes, writes and time semantics.
-4. [Developer guide](developer-guide.md): page/query/form examples and component APIs.
-5. [Deferred work](deferred-work.md): concrete frontend packets and unresolved backend policies.
-6. [Continuation prompts](continuation-prompts.md): scoped instructions for future changes.
-7. [Verification](verification.md): results, evidence, screenshots and limits.
-8. The application lives in the separate [MetaSol checkout](../../MetaSol/README.md).
-   ReBase ignores that nested repository. Inspect both Git statuses to review work.
+1. [Meaning and execution plan](execution-plan.md): user intent, current authority and scope.
+2. [Architecture](architecture.md): ownership and extension boundaries.
+3. [Screen contracts](screen-contracts.md): current workflows and record types.
+4. [Developer guide](developer-guide.md): add a page using ordinary composition.
+5. [Verification](verification.md): fresh checks and their limits.
+6. [Deferred work](deferred-work.md): future capabilities and necessary contracts.
+7. [Continuation](continuation-prompts.md): how to resume from current source.
+8. [MetaSol README](../../MetaSol/README.md): run the disposable demo or configure a backend.
 
-## Starting facts
-
-- ReBase HEAD: `0625f9bf6ac370721d22f855d1e904e99479e1e4`, clean before this work.
-- MetaSol HEAD: `cccd1df7c53aba2f43b6c8b1b949452094420fbb`, with the earlier
-  uncommitted small Solid starter replacing the old generic console. That working
-  starter, rather than the obsolete committed console, is the implementation base.
-- Installed: Solid 1.9.14, TanStack Solid Router 1.170.36 / Query 5.101.4,
-  SurrealDB SDK 2.0.8, Vite 8.1.5, Tailwind 4.3.3, daisyUI 5.7.0.
-- Backend source is split across `designs/all-in-accounting/core`, `movements`,
-  and `claims`. The five public JSON Schemas describe create input only.
-- Database permissions, exact decimal arithmetic, derived effects and final
-  transactional guards remain the authority for accounting behavior.
-
-## Scope
-
-Implement a usable accounting application and a small, composable developer
-environment: sessions/workspaces/preferences, explicit routes, typed record
-selection, accessible tables/cards/boards, native SDK reads and source writes.
-Plan independent CRM/HRM and unresolved accounting/operations work with explicit
-prerequisites. A future backend policy is not a reason to invent a browser policy.
-
-The accounting frontend is implemented directly. Final verification is recorded
-in the linked verification document. Historical backend tests remain separate
-from fresh frontend evidence; the deferred-work map identifies the remaining
-tax, returns/refunds, onboarding and policy work explicitly.
+The [backend blueprint](../all-in-accounting/blueprint.md),
+[extension contract](../all-in-accounting/extension-contract.md), and
+[public tree reader](../rebase-system/ordered-tree-contract.md) remain authoritative.
+The frontend does not calculate postings, invent compliance policy or create
+implicit business children. Read both Git repositories when reviewing a change.

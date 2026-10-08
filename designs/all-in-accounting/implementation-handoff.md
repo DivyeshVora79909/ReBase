@@ -11,9 +11,11 @@ October 8 local acceptance passed: core accounting 63 checkpoints/35 full
 rollbacks; extensions 50/24; 27 developer-tool tests; 43 byte-identical public
 schemas; and focused compiler, ordered-tree and reader/index gates. The [fresh
 verification record](extension-verification.md) links the complete evidence and
-limits. The verified working-tree source is being prepared for a separate local
-commit; its hash is not yet available. No push, deployment or MetaSol code change
-is included.
+limits. That backend packet was committed locally as `cada5e2`; it included no
+push, deployment or MetaSol code change. The subsequent
+[MetaSol prototype](../frontend/README.md), committed separately as `89799ec`,
+targets this contract. Its [verification](../frontend/verification.md) records
+frontend walkthroughs and the deliberate automated-workflow-test deferral.
 
 The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
 updates the shared framework and reruns accounting regression. The original
@@ -70,8 +72,9 @@ evidence rather than the older 52-mutation normalization result or H1–H8 timin
   derived/tree data cannot be used as trusted client input.
 - Accounts and resource units are independent. Do not post account subtotals into
   the same monetary root or treat independently priced stock as synchronized.
-- The separate MetaSol frontend still targets previous contracts. Its migration
-  is not part of this backend request; update its work plan before changing it.
+- MetaSol migration was outside that backend packet. Its subsequent
+  [implementation and work plan](../frontend/execution-plan.md) target the current
+  contract without a legacy compatibility layer.
 - Live providers, production deployment, a populated schema conversion and
   representative storage/latency capacity are outside this local acceptance.
 

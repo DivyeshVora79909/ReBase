@@ -1,0 +1,44 @@
+npm notice run metasol@0.0.0 build
+npm notice run vite build
+vite v8.1.5 building client environment for production...
+[2K
+transforming.../*! 🌼 daisyUI 5.7.0 */
+✓ 197 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                     0.45 kB │ gzip:  0.29 kB
+dist/assets/index-D3lKtcuJ.css                                    100.04 kB │ gzip: 17.69 kB
+dist/assets/w._profile._tenant._app.production-Df4Cjwp3.js          0.07 kB │ gzip:  0.08 kB
+dist/assets/w._profile._tenant.index-BdkBs29N.js                    0.19 kB │ gzip:  0.17 kB
+dist/assets/w._profile._tenant-CatfzZKm.js                          0.39 kB │ gzip:  0.27 kB
+dist/assets/AccessLayout-DJRjGnaF.js                                1.22 kB │ gzip:  0.64 kB
+dist/assets/w._profile._tenant._app.users._id-BR4W7fk0.js           1.62 kB │ gzip:  0.84 kB
+dist/assets/OperationForms-Btgr3ehW.js                              1.73 kB │ gzip:  0.75 kB
+dist/assets/routes-ByhLXnC9.js                                      2.23 kB │ gzip:  1.13 kB
+dist/assets/PaymentFields-B-u-_roV.js                               2.56 kB │ gzip:  0.84 kB
+dist/assets/w._profile._tenant._app.users.index-Bf1folqa.js         2.90 kB │ gzip:  1.39 kB
+dist/assets/w._profile._tenant._app.production.index-CWfRC9kw.js    2.96 kB │ gzip:  1.34 kB
+dist/assets/AccountForms-DFrVwfQT.js                                3.03 kB │ gzip:  1.15 kB
+dist/assets/w._profile._tenant._app.accounts.index-CYpWwoR0.js      3.45 kB │ gzip:  1.62 kB
+dist/assets/w._profile._tenant.login-CC3VtYv9.js                    3.59 kB │ gzip:  1.51 kB
+dist/assets/w._profile._tenant._app.overview-B_iRxEq0.js            3.61 kB │ gzip:  1.51 kB
+dist/assets/w._profile._tenant._app.settings-BiOqLFJW.js            3.96 kB │ gzip:  1.40 kB
+dist/assets/w._profile._tenant._app.invoices.index-CC67ZV5j.js      4.07 kB │ gzip:  1.70 kB
+dist/assets/Records-CVqwbiAH.js                                     4.55 kB │ gzip:  1.73 kB
+dist/assets/w._profile._tenant._app.directory-XiYggb3K.js           4.84 kB │ gzip:  1.92 kB
+dist/assets/w._profile._tenant._app.analytics-CHyYn25G.js           5.67 kB │ gzip:  2.43 kB
+dist/assets/SourceForm-BvTjAcEj.js                                  5.87 kB │ gzip:  2.33 kB
+dist/assets/w._profile._tenant._app.accounts._id-DOmKE8H5.js        6.01 kB │ gzip:  2.49 kB
+dist/assets/w._profile._tenant._app.taxes-DnJWhMxz.js               7.46 kB │ gzip:  2.58 kB
+dist/assets/w._profile._tenant._app-DWM0WtRT.js                     8.18 kB │ gzip:  2.95 kB
+dist/assets/w._profile._tenant._app.production._id-D0R8zHvT.js      8.85 kB │ gzip:  3.08 kB
+dist/assets/w._profile._tenant._app.exchange-CIxMifos.js            8.86 kB │ gzip:  3.06 kB
+dist/assets/w._profile._tenant._app.invoices._id-CudgZPkH.js        8.93 kB │ gzip:  2.97 kB
+dist/assets/w._profile._tenant._app.adjustments-D6HbgAMG.js         9.68 kB │ gzip:  3.27 kB
+dist/assets/w._profile._tenant._app.claims-BV-8Kcbr.js             10.21 kB │ gzip:  3.45 kB
+dist/assets/InvoiceForms-ttq8bxV4.js                               19.30 kB │ gzip:  4.87 kB
+dist/assets/index-CaEUN_Hu.js                                     318.64 kB │ gzip: 97.59 kB
+
+[33m[PLUGIN_TIMINGS] [0mYour build spent significant time in plugin `solid`. See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+
+✓ built in 4.02s

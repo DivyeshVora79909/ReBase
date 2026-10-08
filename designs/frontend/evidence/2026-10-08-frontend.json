@@ -1,0 +1,247 @@
+{
+  "packet_date": "2026-10-08",
+  "backend_commit": "cada5e2d8ff2e49f26e20870ede0f4519db8d848",
+  "frontend_commit": "89799ec418ea2e1f1fbee9320c8f306c15bd13c7",
+  "frontend_start": "ada483e",
+  "scope": "Current accounting prototype; one-off native/browser walkthroughs, not a maintained regression suite or production acceptance.",
+  "backend_source_changed": false,
+  "new_automated_tests_added": 0,
+  "environment": {
+    "node": "22.23.2",
+    "surrealdb_server": "3.3.0",
+    "surrealdb_sdk": "2.0.8",
+    "solid": "1.9.14",
+    "solid_router": "1.170.36",
+    "solid_query": "5.101.4",
+    "vite": "8.1.5",
+    "playwright": "1.62.1",
+    "browser_time_zone": "Asia/Kolkata"
+  },
+  "build": {
+    "status": "passed",
+    "command": "npm run build",
+    "environment": "PATH only",
+    "modules": 197,
+    "vite_seconds": 4.02,
+    "log": "2026-10-08-frontend-build.log"
+  },
+  "retained_tests": {
+    "status": "passed",
+    "command": "npm test",
+    "environment": "PATH only",
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "scope": "Native values and token storage",
+    "log": "2026-10-08-frontend-retained-tests.log"
+  },
+  "syntax": {
+    "status": "passed",
+    "files": 66,
+    "parser": "@babel/parser with JSX and importAttributes"
+  },
+  "input_audit": {
+    "public_create_schemas": 43,
+    "authored_paths": 43,
+    "basis": "Static comparison with current public accounting input schemas; not all combinations exercised."
+  },
+  "demo": {
+    "status": "passed",
+    "seeded_records": 41,
+    "writes_as": "record user",
+    "storage": "owned loopback memory database",
+    "shutdown": {
+      "signal": "SIGINT",
+      "demo_exited": true,
+      "database_exited": true,
+      "removed_directories": [
+        "/tmp/metasol-demo-Vfmj2v"
+      ],
+      "ports_closed": {
+        "5173": true,
+        "39035": true
+      },
+      "elapsed_seconds": 0.2
+    }
+  },
+  "native_walkthrough": {
+    "reader_calls": 108,
+    "errors": 0,
+    "focused_reference_reads": 9,
+    "reference_checks": "SDK and server ID spellings; names; partial/malformed IDs; invoice inclusion and exclusion",
+    "empty_only_at_first_read": [
+      "adjustment notes",
+      "tax cash/offset records",
+      "most correction tables"
+    ]
+  },
+  "browser_walkthrough": {
+    "development_routes": 14,
+    "production_pages": [
+      "Overview",
+      "Invoice detail",
+      "Adjustment-note detail",
+      "Payment analytics"
+    ],
+    "page_errors": 0,
+    "writes": [
+      "currency create",
+      "account-entry floor rejection, corrected create, update and delete",
+      "invoice/issue/base-tax create",
+      "charged payment with explicit tax credit",
+      "empty-note finalization rejection",
+      "issue correction and inherited adjustment tax",
+      "payment adjustment",
+      "note finalize and reopen",
+      "partial claim settlement",
+      "tax deposit/refund/offset"
+    ],
+    "charged_payment": {
+      "currency": "INR",
+      "gross": "100",
+      "fee": "1",
+      "fee_tax": "0.18",
+      "net_cash": "98.82"
+    },
+    "note": {
+      "currency": "INR",
+      "commercial": "-11.80",
+      "settlement": "-10",
+      "contributions": 3
+    },
+    "corrected_invoice": {
+      "currency": "INR",
+      "commercial": "106.20",
+      "paid": "90",
+      "outstanding": "16.20"
+    },
+    "claim_remaining": "1080",
+    "analytics_modes": [
+      "trade",
+      "payments",
+      "operating unit",
+      "directed pair"
+    ],
+    "session_checks": [
+      "wrong-password rejection",
+      "valid login and token restoration",
+      "wrong-tenant token rejection/removal",
+      "logout token removal",
+      "principal-read interruption and retry",
+      "blocked WebSocket restoration and reconnect"
+    ],
+    "browser_only_failure_injections": {
+      "count": 4,
+      "native_writes": 0,
+      "checks": [
+        "mounted unknown outcome",
+        "late save after navigation with native inspection",
+        "late rejected removal",
+        "old-session failure suppression after logout/relogin"
+      ]
+    },
+    "form_state": [
+      "creation kind and organization snapshots through Back/Refresh",
+      "dirty Cancel",
+      "pending navigation confirmation"
+    ],
+    "presentation": [
+      "390x844 overview/settings fit",
+      "mobile keyboard trap and Escape restoration",
+      "dialog/activity Escape restoration",
+      "dark/compact/density/UTC persistence",
+      "78px compact and 242px expanded desktop sidebar"
+    ]
+  },
+  "screenshots": [
+    "2026-10-08-invoice-desktop.png",
+    "2026-10-08-adjustment-note.png",
+    "2026-10-08-overview-mobile.png"
+  ],
+  "limits": [
+    "No complete automated coverage for 43 source types or every rejection/field combination",
+    "No broad backend suite rerun; backend source unchanged",
+    "No large-dataset or deployment claim",
+    "Persistent/live inbox and gateway auth screens deferred",
+    "Sorted native source reads retain WITH NOINDEX workaround"
+  ],
+  "source_sha256": {
+    "demo.js": "6d4037c42320dfd88fa7dfc77cd39252ebdc309b5cb02f33918d0c1d7e7ad10a",
+    "package-lock.json": "97d556e11053827f4f9b0e8b1c194b3e90caadc38c63a717d1e28efc71cf7f36",
+    "package.json": "b76331659064b3696d92e0cc3017f281f7ee1e6d3279e8faf80cade0ced0e858",
+    "public/runtime.json": "874405594926be8becdca7ca33bbed611ab10b51e6328cae4d4a2688d511a3b4",
+    "src/app/Application.jsx": "2d42e0750f2eb4229f83efd0bade528b9cb77d93e0b350ee5249f40fe94294a5",
+    "src/app/Notifications.jsx": "f0794b8f187bfda355ebb2a9120ef018a6baae47d1af1afdaae4cb328e541a04",
+    "src/app/PreferencesProvider.jsx": "8bab98975196ea6fb793db17cd101c5e749a4324feba9308bc126b8d77d49810",
+    "src/app/SessionProvider.jsx": "5c03b6ee9d7480b884af984bbdd840c320a51c938e25c4274a76539e310dd390",
+    "src/app/WorkspaceProvider.jsx": "8575aa56dad0460b10163aa02cecf463c4705a944d96297951c75c13f49a1ee7",
+    "src/app/queries.js": "c00a16ca68b17def247a30a3737a23b352d55acd8f68d1bd71c1fa25a28c8db2",
+    "src/app/runtime.js": "db7d8745855b8c355b5044036c734383334d9d4329b4332d27335ae65f219e8a",
+    "src/app/token-storage.js": "fd04c3d347946a115b81c8ccc3c61f50dfdc9969cf23fad6d1d61162b341ee90",
+    "src/data/accounts.js": "1006efe4ef2bb4c32bb0a970a78cac9092484e0e8fd67c7c3ac5558f0ca214a7",
+    "src/data/adjustments.js": "8d7f267ee896842dd4c5da4707ca845bc722f7ceb54adbaf722634144ca7f648",
+    "src/data/analytics.js": "68ddea09cc822aedcf29848b11be0102ab6a6b47f1e3e623e07450230fa307a6",
+    "src/data/auth.js": "508510681feab8a11889941c5184048df30f280c44756fab27d4fc3ab0330aa3",
+    "src/data/claims.js": "0bf8b39fa78659195f13a1023bb7e317570565927054aa75b8d91c42792ee76e",
+    "src/data/directory.js": "c09697838dfdfe21d1c6e0998a3bb77633b0cf4cae52100c26f1d609b541b802",
+    "src/data/exchange.js": "70549ac13018d52e6aac950f9380842a1199c5a424cfdaf36a702e97171653c1",
+    "src/data/fees.js": "b1e99082286dc7e94edd5a27bebbe4c8f407ed5bd835867f6c03ca50144e4d88",
+    "src/data/inputs.js": "d8069c31930710304fd5191da611514aeecbe96e781eb23493c8e2b9178c26da",
+    "src/data/invoices.js": "a979dcac8a7d1f2827e3bd476f92efd5784f39d2cca7675678ce29cb8bb34a2e",
+    "src/data/overview.js": "542a1c804dbd30fc8fdbb9653b91e8f9bc96d53e78626620c7bc903766f431b3",
+    "src/data/production.js": "c126d0da34c26af4b416e29c537112a92e81bdb87769c87977e70a614bf2a685",
+    "src/data/references.js": "465276162136e3126f34ae967115de2f3803f3c690b5fcd43f420d23afcc91a0",
+    "src/data/taxes.js": "a2e8f44cc13ddd665699c93b344287f775b27794b9dcb7f8131a549f263f2902",
+    "src/data/users.js": "d026df1c0748a6098d003f3a25f861ae44894df92d59f958c90858aff67ce629",
+    "src/data/values.js": "c55d5d0fa5b97a959123b128c9ef6a484e29254e3ac9abb7fcfb20f28f2e5cd5",
+    "src/data/writes.js": "a1bd4eb689ce5bf839e4b3881990e8de8d49dcf07bf8069b466c0818526771b6",
+    "src/main.jsx": "f93d43093011d9b262fdd90f45b4330a2493218bf59770034fc7fcac288bb008",
+    "src/routeTree.gen.js": "0a6bab2a12126fad34fc2070190ebe9aeb17661fe8728dfded4178a6730fc0d9",
+    "src/routes/__root.jsx": "a5f0601145bf4d189500df53c67e73c9c5c6a662d0e05c5cf845aba9b59fbc41",
+    "src/routes/index.jsx": "b191ed661ba811f94ee947e59a914a09472ce40dac47fc5ddf2571c80b4c4534",
+    "src/routes/w.$profile.$tenant._app.accounts.$id.jsx": "571952d959d34005d9b411a56cd5c4c21e84c9218805448cf07baec6f8c7eb31",
+    "src/routes/w.$profile.$tenant._app.accounts.index.jsx": "1d4f81a6566d664dc66a4c08d7d07b901f0d964098669ad10249028d236b0e25",
+    "src/routes/w.$profile.$tenant._app.adjustments.jsx": "3cb357d6d41a584af5f2aa9a4fc823636e06c17aa2350fe6decf667bc5938e23",
+    "src/routes/w.$profile.$tenant._app.analytics.jsx": "f121c34534d0e1d0970d115fc04823c1aacd8f44d608f6441ea0dca571115ff5",
+    "src/routes/w.$profile.$tenant._app.claims.jsx": "29091771240ba0dd7979061d9d81e068d83f1d5c1e6b6bad564596b7788aaa5d",
+    "src/routes/w.$profile.$tenant._app.directory.jsx": "8b900f971b5856024cd620230d6f61619d3ed67964bcc68d145aed227600a73f",
+    "src/routes/w.$profile.$tenant._app.exchange.jsx": "cb4527a70a3d99b0fc40b2a946a91ed4df478f32441485b03caed36f8e3a3ee5",
+    "src/routes/w.$profile.$tenant._app.invoices.$id.jsx": "c4f4f638f707e2c9486d72c3bd032a14839258615c3d1412308fe3b51adb127e",
+    "src/routes/w.$profile.$tenant._app.invoices.index.jsx": "8adbdefd6a2e4ae34c824da5e19bc44aaf599f8d8859cdca0fe119457907c513",
+    "src/routes/w.$profile.$tenant._app.jsx": "18997bb987564ee4121bebe1f6d3bbddfe910fd20ab0b49c4364f06470a4f963",
+    "src/routes/w.$profile.$tenant._app.overview.jsx": "8279a9839ec79e786d7d07c8e1619151a17296d7fd94089d33d43ccb6d17196a",
+    "src/routes/w.$profile.$tenant._app.production.$id.jsx": "8eff8b39e67d024183e2aab6f0cfbe1f3ecd5b56d00189229715e7d69cacfa82",
+    "src/routes/w.$profile.$tenant._app.production.index.jsx": "d0250c34ed203567b788bd16239c8e5033b4b8bc3500c361fd08cff9f19c1841",
+    "src/routes/w.$profile.$tenant._app.production.jsx": "f639a3a5337332868bb4c7fdbebee592805f3f92eb49f8c8dd261c6389d3c8b1",
+    "src/routes/w.$profile.$tenant._app.settings.jsx": "c811469064a1d4102ee961907608891ba595d973d190ab9eb000c7f2f2370d1f",
+    "src/routes/w.$profile.$tenant._app.taxes.jsx": "37a93566e698eb5838acb5def2da5cf9cd056a4c45d98d001e2c56b3d7c47709",
+    "src/routes/w.$profile.$tenant._app.users.$id.jsx": "62a690158c2427a13eb1a15c8dd52593e38c3400d49d765ff1ae41391b41ffca",
+    "src/routes/w.$profile.$tenant._app.users.index.jsx": "cead18ea54ae91bd6d4b7bce9f79b80b8c5206171e1095e1fcd3b8f7238bc5eb",
+    "src/routes/w.$profile.$tenant.index.jsx": "6ec8ea124e793f4583c45bb67e3134bbe00bb43ff69aed9f731e821a6a5c41f1",
+    "src/routes/w.$profile.$tenant.jsx": "ebbc8f6b407989a932d082eb244a8be684f03227f426797fcd2ae267eb120be8",
+    "src/routes/w.$profile.$tenant.login.jsx": "b49259f4699175b8ae9f0ffbc11a314592ad31db8132ec2a878df8b7496a2f0f",
+    "src/styles/index.css": "0cf5d057267743a826ccbfd6516b8820d3312790fa241de9561084c9214895ea",
+    "src/styles/shell.css": "7e6689e8ece023b46792d8591ab3ee12ac96a5df472c1e1b2de46f1b02ec62a3",
+    "src/ui/AccessLayout.jsx": "6a5f8550be3adf98833f6ea40273993091eed4e8148e65f9d339ce7e3a9ca628",
+    "src/ui/AccountForms.jsx": "54b9b6614168887dfc820ae77acb814a20fc52e971bacb7a1ed5a4d7748f9f3f",
+    "src/ui/Accounting.jsx": "8914082d8267a39a9b4c50a8fe37fdbceaa54706eaa6a5214278a97b6798d374",
+    "src/ui/Feedback.jsx": "b0245f55c958e4398dcfdc6319a7391c368ff0405d02273c1c125e5f2ccee6c6",
+    "src/ui/Fields.jsx": "55818de65a7f1b744ee85cb375f628de02207a9efad28050131b4c8516357392",
+    "src/ui/Icon.jsx": "841680584cc3d0e245026b5ca1685121f0b438efadbb616dde4ab660664a9e2b",
+    "src/ui/InvoiceForms.jsx": "c93233f9c38fb7b6bf5f308f4a543b88b712fce65bf4702b61653dc599b572d5",
+    "src/ui/OperationForms.jsx": "c142a2b66bd9f24930874fd4c54c5a6706605914095a10a46e0da715524f6080",
+    "src/ui/PaymentFields.jsx": "a4b4718636f651a845e37bb3c409f029b9c9e73b25560484604ddb5872a2322d",
+    "src/ui/RecordPicker.jsx": "ff06a3b1dffe0d5d9dda0a00b7b857c5c6ad70e786635c848ba96a97751354c9",
+    "src/ui/Records.jsx": "bedf49cccc0fd234db8036a3856d5a349734ea5b14e827f83cf877b036c2e63d",
+    "src/ui/SourceForm.jsx": "96de17f859b8b9335c7b98052bffb0e86749bec7dc380343a60e28337a93c95e",
+    "tests/token-storage.test.js": "7a7cd5edf981dd0647db3aacc3d69d6873cde2c3eed1a4202ce176a02ce4f8b0",
+    "tests/values.test.js": "e2485e47ab58907473f0ce4c126c08b0f751ba7c3173ac7961f4f9334eb78135",
+    "vite.config.js": "35095adbf2a338cc48a26d7880859b0539830d00e98e54cfa2d55036701a8762"
+  },
+  "documentation": {
+    "documents": 12,
+    "local_links_checked": 153,
+    "missing": 0
+  }
+}

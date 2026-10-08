@@ -15,8 +15,9 @@ with the [tenant/tree execution handoff](tenant-tree-handoff.md) and its
 root-group, visibility and database-per-tenant assumptions below. The current
 public references are [tenant authentication and aggregate views](tenant-authentication.md),
 [ordered trees](ordered-tree-contract.md), and [the single-design runtime](single-design-runtime.md).
-Frontend tenant compatibility is a subsequent packet in the separate MetaSol
-repository; older browser results do not establish that compatibility.
+The subsequent [MetaSol accounting prototype](../frontend/README.md) implements
+the tenant and October 8 accounting contract. Its [current verification](../frontend/verification.md)
+owns frontend evidence; older browser results remain historical.
 
 Backend T0–T6 is **ready for lead review**. The
 [2026-10-05 evidence](evidence/2026-10-05-tenant-tree-verification.json) records

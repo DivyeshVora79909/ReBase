@@ -1,175 +1,150 @@
-# Adding and maintaining a frontend workflow
+# Adding and maintaining a frontend page
 
-Start with the [architecture](architecture.md) and
-[screen contracts](screen-contracts.md). Work in `MetaSol/` for application code
-and in `designs/frontend/` for this documentation. They are separate Git roots.
-The application's source is the example; there is no secondary scaffolding API.
+Read the [architecture](architecture.md), [screen contracts](screen-contracts.md)
+and the current [accounting inputs](../all-in-accounting/schemas). Application
+code lives in the separate `MetaSol/` Git repository; these documents live in
+ReBase. Inspect both working trees before editing shared code.
 
-## Follow one existing page
+## Start from the native contract
 
-Use [`treasury.js`](../../MetaSol/src/data/treasury.js) and the treasury routes
-for a read/detail/create example. Use [`invoices.js`](../../MetaSol/src/data/invoices.js)
-for a two-source transaction. Use the production route for an explicit state
-transition. Each has a native test using the real compiled accounting schema.
+1. Read the table's public inputs and native source in the accounting
+   [source map](../all-in-accounting/context-map.md). Identify permissions,
+   immutable references, optional fields, units, date guards and derived values.
+2. Add an ordinary `src/routes/w.$profile.$tenant._app.<page>.jsx` file with
+   `createFileRoute`, validated URL search and an explicit component. Vite updates
+   `src/routeTree.gen.js`; do not hand-edit it.
+3. Add reads and content encoders to the appropriate `src/data/` module. Bind all
+   user values; allowlist dynamic table/order choices. Preserve native values.
+4. Compose fields, tables and feedback directly. Extract another shared component
+   only when the same substantial interaction already repeats.
+5. Update this page's contract and record the actual verification performed.
+   [Verification](verification.md) owns evidence; [deferred work](deferred-work.md)
+   owns unfinished capabilities.
 
-1. Read the source table's fields, permissions, immutable dimensions, references
-   and guards. Identify its managed outputs and do not expose them as writable
-   records. Write down a successful example and a rejected example.
-2. Add a normal `src/routes/w.$profile.$namespace.$database._app.<page>.jsx`.
-   Export a `createFileRoute` with URL validation and the page component. Let
-   Vite regenerate the route tree.
-3. Put the actual SDK read/write functions in an appropriate `src/data/` module.
-   Bind values. Only finite local choices may select a table or SQL order clause.
-4. Render the small shared pieces with authored JSX columns and fields. Keep
-   state local until there is a real second consumer and independent lifetime.
-5. Run the domain's native positive/negative case and the visible browser flow.
-   Update the contract and evidence when behavior changes.
+## One page and one form
 
-## Queries are visible and ordinary
-
-This is the pattern used by the treasury page:
-
-```jsx
-const search = Route.useSearch();
-const query = createSessionQuery(
-  () => ['treasury', { ...search() }],
-  (db, [, input]) => listTreasury(db, input),
-);
-
-return <QueryState query={query}>
-  <Records
-    rows={query.data?.rows}
-    view={search().view}
-    columns={[
-      { label: 'Account', cell: row => row.name },
-      { label: 'Balance', cell: row =>
-        <Amount value={row.balance} code={row.currency_code} precision={row.precision}/> },
-    ]}
-    card={row => <article class="record-card">{row.name}</article>}
-  />
-</QueryState>;
-```
-
-`createSessionQuery` adds a session scope and completion check. Its callback
-gets the real SDK, the same input used in the key and an abort signal. The
-signal suppresses obsolete UI results; it does not promise remote cancellation.
-It has no resource metadata, implicit joins or query compiler.
-
-Use `LIMIT pageSize + 1` and an ID tie-breaker for a normal page. Apply optional
-filters with `NONE`, not bound JavaScript `null` (which means SurrealQL `NULL`).
-Preserve the query's empty/loading/error states. An aggregate is a different
-query with a named population and dimensions, not a sum of loaded cards.
-
-Solid Query's `data` getter participates in Suspense. In controls that must
-retain focus, check `isPending` before reading it. The record picker is a tested
-example. Do not retain another query's rows as placeholder data across a session
-or workspace transition.
-
-## Forms keep source identity and input snapshots
-
-Use `createStore` for a route-local draft; use `unwrap` to make a plain snapshot
-for the SDK. Copy nested line objects explicitly. Keep native values such as
-RecordId/Decimal instead of JSON round-tripping them.
+This reduced currency page uses the real Directory API. The full
+[Directory route](../../MetaSol/src/routes/w.$profile.$tenant._app.directory.jsx)
+adds URL filters, pagination, cards and editing. For a new page, change the route
+path and import its explicit data functions; no registration layer is needed.
 
 ```jsx
-const id = newRecord('cash_in'); // Once per form, never inside submit.
-const [values, setValues] = createStore({
-  owned_by: session.principal().id,
-  amount: '',
-  effective_at: localDateTime(),
+import { createSignal, Show } from "solid-js";
+import { createFileRoute } from "@tanstack/solid-router";
+import { createSessionQuery } from "@/app/queries.js";
+import { useSession } from "@/app/SessionProvider.jsx";
+import { directoryContent, listDirectory } from "@/data/directory.js";
+import { QueryState } from "@/ui/Feedback.jsx";
+import { Records } from "@/ui/Records.jsx";
+import { SourceForm } from "@/ui/SourceForm.jsx";
+import { TextField } from "@/ui/Fields.jsx";
+
+export const Route = createFileRoute("/w/$profile/$tenant/_app/directory")({
+  component: CurrencyPage,
 });
-const [dirty, setDirty] = createSignal(false);
-const mutation = createSessionMutation(saveCash, () => {
-  setDirty(false);
-  props.onClose();
-});
-const submit = event => {
-  event.preventDefault();
-  mutation.mutate({ id, kind: 'in', values: { ...unwrap(values) } });
-};
-useUnsavedChanges(dirty);
+function CurrencyPage() {
+  const session = useSession();
+  const [creating, setCreating] = createSignal(false);
+  const close = () => setCreating(false);
+  const query = createSessionQuery(
+    () => ["directory", { kind: "currency", q: "", page: 0 }],
+    (db, [, input]) => listDirectory(db, input),
+  );
+  return <div class="page">
+    <Show when={session.can("currency_create")}>
+      <button class="btn" onClick={() => setCreating(true)}>New currency</button>
+    </Show>
+    <QueryState query={query}>
+      <Records rows={query.isPending ? [] : query.data?.rows} view="table"
+        columns={[{ label: "Currency", cell: row => `${row.name} (${row.code})` }]} />
+    </QueryState>
+    <Show when={creating()}>
+      <SourceForm table="currency" initial={{ precision: "2" }} title="Currency"
+        encode={values => directoryContent("currency", values)}
+        onSaved={close} onCancel={close}>
+        {form => <>
+          <TextField form={form} name="name" label="Name" required />
+          <TextField form={form} name="code" label="Code" required />
+          <TextField form={form} name="precision" label="Decimal places"
+            type="number" min="0" max="18" step="1" required />
+        </>}
+      </SourceForm>
+    </Show>
+  </div>;
+}
 ```
 
-The data function builds an allowlisted content object and converts strings
-with `record`, `decimal`, `integer` and `instant`. Do not spread an entire form
-or database row into a write. Catch expected business failures at the form with
-`FormError`. Unknown outcomes should expose the stable draft reference and the
-existing inspection action; do not add an automatic retry.
+`createSessionQuery` adds identity/epoch scope and completion fencing. Its read
+callback gets the real SDK and key input. `SourceForm` supplies the owner, stable
+ID, confirmation/error handling, dirty protection and success notice. Its callback
+runs after session query invalidation. New business payloads still need their
+own encoder: never spread a database row or arbitrary form values into a write.
 
-Updates pass the last-read `updated_at`. Immutable dimensions stay fixed in the
-editor. Native `RETURN BEFORE` plus an exact-row assertion is required for
-deletion; an empty deleted result must not look successful. A custom transaction
-can call `commitSource(db, boundQuery, stableId)` after returning exactly one
-native source ID. Always include BEGIN/COMMIT and check every intermediate
-statement response.
+## Extending queries and pickers
 
-Successful writes clear dirty state before navigation. A late completion must
-not navigate after its captured session has changed. Never update a financial
-summary optimistically or add a writable `net` field.
+Use explicit projections and `tenant = $auth.tenant`; native permissions remain
+authoritative. Normal pages use an ID sort tie-breaker, `WITH NOINDEX`, a bounded
+`LIMIT` and the extra-row Next sentinel. The shared `pageResult` displays 25 of
+26 fetched rows. Aggregates need an explicit population and unit; adding loaded
+cards is not a ledger total. Put every read dependency in its query key.
 
-## Shared component APIs
+Use `ReferenceField` with a finite `tables` array and native field value. For an
+invoice-scoped search, the existing API is:
 
-| Component/helper | Inputs and responsibility |
+```jsx
+<ReferenceField form={form} name="source" label="Issue"
+  tables={["sales_issue"]} required
+  scope={String(form.value("invoice") ?? "")}
+  search={(db, tables, input) =>
+    searchInvoiceReferences(db, tables, input, form.value("invoice"))} />
+```
+
+Import `searchInvoiceReferences` from `src/data/invoices.js`. Choose the matching
+issue table for the invoice side. A custom search must bind its filter and return
+`{ rows, hasMore }`; `scope` must include every external dependency it captures.
+Clear incompatible selected references when their parent changes. Add a
+new reference type to the finite allowlist in `src/data/references.js`, not to a
+resource or form registry. Preserve pending-state guards around picker query data.
+
+## Editing and shared controls
+
+Capture the selected original row when opening an editor. Mount SourceForm with
+that stable `record` and `table`; key the surrounding `Show` by editor selection.
+Do not key it by a refetching query result. `form.value(name)`, `form.set(name,
+value)` and `form.editing` are the field API. Pass immutable field names through
+`immutable` and disable their controls. SourceForm uses the original `updated_at`
+for update/delete and suppresses local callbacks after unmount or session change.
+A failure after unmount can still report its record and inspection action in the
+same session; it cannot publish into another session.
+
+| Shared piece | Responsibility |
 | --- | --- |
-| `PageHeader` | `title`, optional `eyebrow`, `description`, action children |
-| `QueryState` | Query object; pending/error/retry around result children |
-| `Records` | `rows`, JSX `columns`, JSX `card`, `view`, optional `groupBy`; presentation only |
-| `ListToolbar` | Validated `search`, `onChange`, input label, optional finite sorts/views |
-| `Pagination` | Current page/count, `hasMore`, `busy`, `onPage`; no guessed total |
-| `ExportButton` | Current rows and explicit export value functions; exact CSV cells |
-| `RecordPicker` | Finite `tables`, native `value`, `onChange`, label; optional `multiple`, entity, disabled and explicit search callback |
-| `Amount` / `DateTime` | Exact amount with currency/unit; saved instant with display preference |
-| `EntityFilter` | URL entity value and change callback; never changes authentication |
-| `OwnershipField` | Controlled owner value; caller supplies the initial principal |
-| `Modal` | `open`, title, optional wide, `onClose`; caller owns dirty/pending decisions |
-| `FormError` | Friendly error and stable-ID current-record inspection when available |
-| `useUnsavedChanges` | Dirty accessor; router and before-unload protection |
+| `TextField`, `ReferenceField`, `CheckField`, `SelectField` | Authored input JSX over the form API |
+| `FeeFields`, `AnalyticsFields` | Actual repeated optional payment/analytics inputs |
+| `Records`, `ListToolbar`, `Pagination` | Explicit columns/cards, bounded filters and paging |
+| `Amount`, `DateTime` | Exact values with currency/resource unit and display time zone |
+| `PageHeader`, `QueryState`, `RefreshButton` | Page actions and pending/error/refresh feedback |
+| `Modal`, `useUnsavedChanges`, `FormError` | Focus, draft protection, errors and record inspection |
+| `ExportButton` | Current explicit rows/projections as exact CSV cells |
 
-When a new reference type is needed, add it to the finite list in
-[`references.js`](../../MetaSol/src/data/references.js), choose an explicit
-projection/search contract and add native permission checks. Do not turn that
-lookup allowlist into a generic resource/form definition. Currency, resource,
-location, source ID and effective date help distinguish similarly named records.
+Encoders use `src/data/values.js` and `inputs.js`: native IDs/decimals/instants/
+durations, allowlisted references and `undefined` for cleared optional fields.
+Keep zero and false. Quantity, pricing currency, invoice currency and cash currency
+can differ; label the input's actual unit. Calculations and date/capacity checks
+belong to the backend. Never optimistically adjust balances or retry an uncertain
+write automatically. Inspect its stable reference and compare current values.
 
-## Public configuration and deployment
+## Run and verify the concrete change
 
-`public/runtime.json` is fetched without a build-time environment dependency.
-It contains only public connection profiles. Configure the access method for
-record sign-in and serve `dist/` with SPA fallback. Runtime JSON can be replaced
-in the built output without rebuilding application routes.
+From `MetaSol/`, `npm run demo` compiles the current sibling accounting schema,
+starts a disposable loopback memory database, seeds native records and launches
+Vite. It prints the URL and record-user credentials; Ctrl+C discards the demo.
+The `surreal` executable and installed dependencies in both repositories are
+required. `npm run dev` instead uses `public/runtime.json`; keep that configuration
+public and provision the database separately.
 
-The frontend does not provision databases. Apply the intended compiled profile
-with the backend developer tools and provision a record principal independently.
-Do not put root/database credentials, provider secrets or private SurrealQL in
-the frontend, and do not import the backend Node toolchain into a browser bundle.
-
-## Verification commands
-
-From `MetaSol/`:
-
-```bash
-npm test
-npm run test:browser
-npm run build
-git diff --check
-```
-
-For a focused follow-up, run the relevant test only, for example:
-
-```bash
-node --test tests/values.test.js
-node --test --test-name-pattern="invoice" tests/accounting.test.js
-npm run test:browser -- tests/accounting.spec.js -g "invoice"
-```
-
-The native fixture compiles the sibling ReBase schema into a disposable
-directory, starts a loopback memory database and signs in through the real
-record access method. It does not use deployment settings or personal `.env`.
-The browser suite uses production Vite output and both accounting and session
-fixtures. `surreal` 3.2.0 and Chromium must be available; override
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when needed.
-
-Use a failure to decide the next check: a syntax failure needs the data query;
-a wrong balance needs the native contract; a lost form needs the browser state;
-a context leak needs the existing runtime regressions. Do not rerun unrelated
-Redis/provider/capacity suites for a CSS change.
+Run `npm run build`, exercise the changed native/browser flow, and run
+`git diff --check` in each edited repository. Check denied/error/empty states,
+dirty navigation and the relevant tenant/time/unit boundary. Do not infer current
+integration acceptance from utility tests or old evidence. Record actual results
+in [verification](verification.md) and missing coverage in [deferred work](deferred-work.md).

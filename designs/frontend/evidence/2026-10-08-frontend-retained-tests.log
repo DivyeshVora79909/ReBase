@@ -1,0 +1,72 @@
+npm notice run metasol@0.0.0 test
+npm notice run node --test tests/*.test.js
+TAP version 13
+# Subtest: memory sessions belong to one application and one connection identity
+ok 1 - memory sessions belong to one application and one connection identity
+  ---
+  duration_ms: 4.334577
+  type: 'test'
+  ...
+# Subtest: moving a token writes the destination before removing the old copy and keeps other scopes
+ok 2 - moving a token writes the destination before removing the old copy and keeps other scopes
+  ---
+  duration_ms: 1.468783
+  type: 'test'
+  ...
+# Subtest: failed persistence retains the current session in memory and reports the actual storage mode
+ok 3 - failed persistence retains the current session in memory and reports the actual storage mode
+  ---
+  duration_ms: 0.748111
+  type: 'test'
+  ...
+# Subtest: failed removal cannot restore a forgotten session in the same application
+ok 4 - failed removal cannot restore a forgotten session in the same application
+  ---
+  duration_ms: 2.234664
+  type: 'test'
+  ...
+# Subtest: malformed tokens and old global tokens are never adopted
+ok 5 - malformed tokens and old global tokens are never adopted
+  ---
+  duration_ms: 1.631074
+  type: 'test'
+  ...
+# Subtest: financial input and display retain digits beyond binary floating point precision
+ok 6 - financial input and display retain digits beyond binary floating point precision
+  ---
+  duration_ms: 4.097997
+  type: 'test'
+  ...
+# Subtest: native record identities preserve typed keys and unusual names without SQL interpolation
+ok 7 - native record identities preserve typed keys and unusual names without SQL interpolation
+  ---
+  duration_ms: 2.249752
+  type: 'test'
+  ...
+# Subtest: editing a local datetime does not truncate its seconds or milliseconds
+ok 8 - editing a local datetime does not truncate its seconds or milliseconds
+  ---
+  duration_ms: 1.006574
+  type: 'test'
+  ...
+# Subtest: CSV keeps exact values, quotes cells and neutralizes spreadsheet formulas
+ok 9 - CSV keeps exact values, quotes cells and neutralizes spreadsheet formulas
+  ---
+  duration_ms: 0.751375
+  type: 'test'
+  ...
+# Subtest: untrusted URL state cannot introduce arbitrary SQL order or unbounded pages
+ok 10 - untrusted URL state cannot introduce arbitrary SQL order or unbounded pages
+  ---
+  duration_ms: 0.446656
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.020595
