@@ -27,6 +27,10 @@
     "amount_delta": {
       "type": "string",
       "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "adjustment_note": {
+      "type": "string",
+      "pattern": "^(?:sales_adjustment_note|purchase_adjustment_note):.+$"
     }
   },
   "required": [

@@ -211,6 +211,8 @@ async function main() {
     assert.equal(composite.count, owner.entries.length);
     await reject('UPDATE activity:n0 SET owned_by=rebase_user:other;', /TENANT|readonly/i);
     await reject('DELETE rebase_user:a;', /TREE_OWNER|reference/i);
+    assert.equal(await q("RETURN fn::tree::valid_key(array::range(0,16).map(|$i| 'part'),'"+wide+"',false);"),true);
+    assert.equal(await q("RETURN fn::tree::valid_key(array::range(0,17).map(|$i| 'part'),'"+Array(17).fill('string').join(',')+"',false);"),false);
     await mutate("CREATE wide_key:one SET owned_by=rebase_user:a,value='wide';");
     assert.equal((await q("RETURN fn::tree::read(rebase_tenant:a,'z_wide','find',array::range(0,16).map(|$i| 'wide'));" )).rid, 'wide_key:one');
     await reject("CREATE wide_key:duplicate SET owned_by=rebase_user:a,value='wide';", /TREE_DUPLICATE_VALUE/);

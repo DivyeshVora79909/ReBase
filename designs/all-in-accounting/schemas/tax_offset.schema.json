@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tax_offset.schema.json",
+  "title": "tax_offset",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "credit_account": {
+      "type": "string",
+      "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
+    },
+    "liability_account": {
+      "type": "string",
+      "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owned_by",
+    "credit_account",
+    "liability_account",
+    "amount",
+    "exchange_rate",
+    "effective_at"
+  ]
+}

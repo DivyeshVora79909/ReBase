@@ -1,0 +1,4 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:compiler
+npm notice run node dev-tools/checks/compiler-probe.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed

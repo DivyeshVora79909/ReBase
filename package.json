@@ -49,10 +49,11 @@
     "probe:passkeys": "node dev-tools/checks/passkey-probe.js",
     "probe:ordered-tree": "node dev-tools/temporal-tree/ordered-probe.js",
     "probe:live": "node dev-tools/checks/live-probe.js",
-    "verify:accounting": "npm run check:all-in-accounting && surreal validate build/all-in-accounting/schema.surql && npm run probe:accounting-core",
+    "verify:accounting": "npm run check:all-in-accounting && surreal validate build/all-in-accounting/schema.surql && npm run probe:accounting-core && npm run probe:accounting-extensions",
     "build:index-analytics": "node dev-tools/compiler/cli.js --project designs/index-analytics --output build/index-analytics",
     "check:index-analytics": "node dev-tools/compiler/cli.js --check --project designs/index-analytics --output build/index-analytics",
-    "probe:reader-index": "node dev-tools/checks/reader-index-probe.js"
+    "probe:reader-index": "node dev-tools/checks/reader-index-probe.js",
+    "probe:accounting-extensions": "node dev-tools/accounting/extension-probe.js"
   },
   "engines": {
     "node": ">=20.6.0"

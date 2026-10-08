@@ -105,3 +105,37 @@ Add another table with explicit units, memberships and validators. A foreign
 key alone neither changes a balance nor discovers all ancestors automatically.
 The source oracle and acceptance probe illustrate backdating, rollback and
 reparenting checks for a new composition.
+
+## Adjustment document and inline payment charge
+
+Starting from the `issue_adjustment:quantity` above, group the correction and its
+linked tax rows in one sales note, then finalize it:
+
+```surql
+CREATE sales_adjustment_note:correction SET owned_by=rebase_tenant:demo,
+    organization=organization:customer, number='A-001';
+UPDATE issue_adjustment:quantity SET adjustment_note=sales_adjustment_note:correction;
+UPDATE sales_adjustment_note:correction SET draft=false;
+```
+
+Every nonzero line must have the same sign and organization. Linked tax rows
+inherit the grouping. Zero tax changes are neutral. A payment correction can be
+included explicitly; its settlement total remains separate from commercial value.
+
+```surql
+-- Independent example: use an invoice with at least 10 outstanding.
+-- The selected charge/tax accounts already exist in this tenant.
+CREATE invoice_settlement:charged SET owned_by=rebase_tenant:demo,
+    invoice=sales_invoice:sale, treasury=treasury:cash, amount=10dec,
+    exchange_rate=1dec, effective_at=d'2027-01-12',
+    fee_account=misc_currency_account:charges, fee_rate=1dec,
+    fee_tax_rate=18dec, fee_tax_creditable=true,
+    fee_tax_account=indirect_tax_account:input_credit, include_analytics=true;
+```
+
+The example rule charges 0.10, its tax rounds to 0.02, and treasury receives
+9.88 while invoice settlement stays 10. The charge account receives 0.10 real;
+the tax account receives 0.02 real and 0.02 receivable. These are authored example
+rates and an explicit creditability choice, not a legal schedule. Use the
+[extension contract](extension-contract.md) for tax cash, transfers and analytics
+queries, including currency and resource boundaries.

@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tax_settlement.schema.json",
+  "title": "tax_settlement",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "tax_account": {
+      "type": "string",
+      "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
+    },
+    "treasury": {
+      "type": "string",
+      "pattern": "^(?:treasury|misc_currency_account):.+$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "fee_account": {
+      "type": "string",
+      "pattern": "^(?:misc_currency_account):.+$"
+    },
+    "fee_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_lower_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_lower_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_account": {
+      "type": "string",
+      "pattern": "^(?:indirect_tax_account):.+$"
+    },
+    "fee_tax_creditable": {
+      "type": "boolean"
+    },
+    "include_analytics": {
+      "type": "boolean"
+    },
+    "fx_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    }
+  },
+  "required": [
+    "owned_by",
+    "tax_account",
+    "treasury",
+    "amount",
+    "exchange_rate",
+    "effective_at"
+  ]
+}

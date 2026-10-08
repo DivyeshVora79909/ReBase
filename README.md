@@ -21,13 +21,16 @@ Use SurrealDB **3.3.0** as pinned by `.surreal-version`. One configured
 namespace/database identifies a design; explicitly provisioned `rebase_tenant`
 records isolate users and data inside it.
 
-**Accounting redesign (2026-10-07):** the active
-[all-in-accounting profile](./designs/all-in-accounting/README.md) uses typed
-currency-bearing accounts, required invoice ancestry, covered advances,
-temporal taxes/corrections and normalized future production/capacity records.
-The recipe profile and its commands were removed at the user's request.
-Use the [accounting verification](./designs/all-in-accounting/verification.md)
-for this model; the earlier backend accounting results describe older sources.
+**Accounting model (extended 2026-10-08):** the active
+[all-in-accounting profile](./designs/all-in-accounting/README.md) has typed
+accounts, dated invoices/taxes, production, adjustment-note groups, tax cash
+and credit offsets, independent claims, inline payment charges and optional
+trade/payment/exchange analytics. The
+[extension contract](./designs/all-in-accounting/extension-contract.md) states the
+units and participation rules; [current verification](./designs/all-in-accounting/extension-verification.md)
+records acceptance. Start framework authoring with the
+[developer blueprint](./designs/rebase-system/developer-blueprint.md).
+The removed recipe profile and older evidence retain their historical meaning.
 
 Tables define record types. Their records can participate in several independent
 augmented ordered trees, with explicit roots, key types, slots, contributions

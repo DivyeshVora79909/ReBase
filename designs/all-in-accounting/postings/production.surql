@@ -76,13 +76,14 @@ DEFINE FIELD OVERWRITE z_end ON production_output TYPE option<object> COMMENT '@
 DEFINE FIELD OVERWRITE z_self ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner production_output.z_capacity';
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_cost_validate($row: object) {
+    fn::accounting::fee_validate($row);
     fn::accounting::precision_validate($row.amount, $row.currency);
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_cost_members($row: object) {
-    RETURN [fn::accounting::balance_member($row, 'z_start', $row.treasury, $row.starts_at, fn::accounting::effects(0dec, 0dec, $row.amount), false),
+    RETURN array::concat([fn::accounting::balance_member($row, 'z_start', $row.treasury, $row.starts_at, fn::accounting::effects(0dec, 0dec, $row.amount), false),
         fn::accounting::balance_member($row, 'z_end', $row.treasury, $row.ends_at, fn::accounting::effects(-$row.amount, 0dec, -$row.amount), false),
-        fn::accounting::production_line($row, $row.ends_at, 'cost')];
+        fn::accounting::production_line($row, $row.ends_at, 'cost')], fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE production_cost SCHEMAFULL COMMENT '@rebase-members fn::accounting::production_cost_members @rebase-validate fn::accounting::production_cost_validate';

@@ -1,5 +1,9 @@
 # Reader and index implementation — 2026-10-07
 
+This historical packet is committed as `a8ecfca`. The October 8 accounting
+extension now sets an explicit 16-component key limit; see the current
+[ordered-tree contract](ordered-tree-contract.md).
+
 Baseline: clean accounting commit `88c5ae7`. The supplied October 7 conversation
 and confirmed continuation govern this change.
 

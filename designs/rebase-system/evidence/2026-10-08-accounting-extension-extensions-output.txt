@@ -1,0 +1,14 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-extensions
+npm notice run node dev-tools/accounting/extension-probe.js
+PASS adjustment-note dimensions, signs, finalization, source edits, neutral capped taxes and rollback
+PASS tax deposits, settlements, refunds, offsets, independent claims, FX settlement and chronological capacity
+PASS inline bounded charges, creditable/noncreditable tax, native VALUE protection, aliased legs, FX and production reservations
+PASS directed pair uniqueness, correction-aware ratios, separate sales/purchases, explicit enrollment and currency/unit ranges
+PASS existing transfers cover damage locations; FX corrections change value without inventing quantity or observed quotes
+PASS analytics reparenting, independent currency totals, and converted tax offsets/refunds
+PASS authenticated extension writes, tenant isolation and competing claim settlements
+PASS exact populated extension schema reapplication
+PASS explicit child-first cleanup of extension records and all financial/analytics histories
+PASS accounting extension slice: 50 checkpoints, 24 complete rollback snapshots
+ELAPSED_SECONDS=7597.18
+EXIT_STATUS=0

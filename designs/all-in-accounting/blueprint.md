@@ -1,4 +1,9 @@
-# Accounting calculation contract — October 7
+# Accounting calculation contract — October 7, extended October 8
+
+The [October 8 extension contract](extension-contract.md) specifies adjustment
+notes, tax cash/credit capacity, independent claims, inline charges, exchange
+contexts and analytics. Tax account R/P now have intrinsic complete-time zero
+floors in addition to the configurable account policies below.
 
 A source record is an authored fact. It can contribute to several accounts and
 validator roots. A validator need not post a transaction; a participant need not

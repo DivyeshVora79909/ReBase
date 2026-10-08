@@ -1,6 +1,6 @@
 # Accounting as explicit calculation records
 
-The October 7 redesign uses strict SurrealDB tables, explicit account effects,
+The October 7 redesign, extended October 8, uses strict SurrealDB tables, explicit account effects,
 ordered validators and reactive formulas. Organization, treasury, direct tax,
 indirect tax, stock, miscellaneous stock and miscellaneous currency records are
 actual currency-bearing accounts. Invoices only validate their descendants.
@@ -9,6 +9,11 @@ Start with the [blueprint](blueprint.md), [worked examples](examples.md), and
 [implementation handoff](implementation-handoff.md). The [execution plan](redesign-2026-10-07.md)
 records how the request was interpreted; [verification](verification.md) records
 fresh evidence and its limits.
+
+The [extension contract](extension-contract.md) adds adjustment-note groups, tax
+cash/credit offsets, independent claims, inline charges, directed exchange pairs
+and optional trade/payment analytics. Read its
+[verification](extension-verification.md) for the current acceptance packet.
 
 The profile includes required invoice parents, covered advance payments,
 base/net taxes, bounded percentage rules, quantity/price/FX corrections,
@@ -22,7 +27,7 @@ npm run verify:accounting
 node dev-tools/accounting/fixture-example.js
 ```
 
-There are 34 authored public create schemas in `schemas/`. The compiler exports
+There are 43 authored public create schemas in `schemas/`. The compiler exports
 these unchanged to `build/all-in-accounting/client/schemas/`; derived values,
 authorization internals and tree slots are not public inputs. Send native SDK
 `RecordId`, `Decimal` and date values in bound queries.

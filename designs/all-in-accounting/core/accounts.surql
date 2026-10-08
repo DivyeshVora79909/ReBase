@@ -49,7 +49,7 @@ DEFINE FIELD OVERWRITE net_ceiling ON treasury TYPE option<decimal> COMMENT '@re
 DEFINE FIELD OVERWRITE z_history ON treasury TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_currency ON treasury TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner currency.z_accounts';
 
-DEFINE TABLE OVERWRITE direct_tax_account SCHEMAFULL COMMENT '@rebase-members fn::accounting::account_members @rebase-validate fn::accounting::account_validate';
+DEFINE TABLE OVERWRITE direct_tax_account SCHEMAFULL COMMENT '@rebase-members fn::accounting::account_members @rebase-validate fn::accounting::tax_account_validate';
 DEFINE FIELD OVERWRITE name ON direct_tax_account TYPE string COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE currency ON direct_tax_account TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON direct_tax_account TYPE datetime COMMENT '@rebase-audit';
@@ -63,7 +63,7 @@ DEFINE FIELD OVERWRITE net_ceiling ON direct_tax_account TYPE option<decimal> CO
 DEFINE FIELD OVERWRITE z_history ON direct_tax_account TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z_currency ON direct_tax_account TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner currency.z_accounts';
 
-DEFINE TABLE OVERWRITE indirect_tax_account SCHEMAFULL COMMENT '@rebase-members fn::accounting::account_members @rebase-validate fn::accounting::account_validate';
+DEFINE TABLE OVERWRITE indirect_tax_account SCHEMAFULL COMMENT '@rebase-members fn::accounting::account_members @rebase-validate fn::accounting::tax_account_validate';
 DEFINE FIELD OVERWRITE name ON indirect_tax_account TYPE string COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE currency ON indirect_tax_account TYPE record<currency> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE effective_at ON indirect_tax_account TYPE datetime COMMENT '@rebase-audit';

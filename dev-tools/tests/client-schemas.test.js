@@ -20,10 +20,13 @@ const { fixture, prepareFixture } = require("../accounting/fixture-example");
 const repositoryRoot = path.resolve(__dirname, "../..");
 const accountingSchemas = path.resolve(__dirname, "../../designs/all-in-accounting/schemas");
 const accountingSchemaFiles = [
+  "account_claim.schema.json",
   "account_entry.schema.json",
   "adjustment_tax.schema.json",
+  "claim_settlement.schema.json",
   "currency.schema.json",
   "direct_tax_account.schema.json",
+  "exchange_pair.schema.json",
   "indirect_tax_account.schema.json",
   "invoice_settlement.schema.json",
   "issue_adjustment.schema.json",
@@ -44,15 +47,21 @@ const accountingSchemaFiles = [
   "production_cost.schema.json",
   "production_input.schema.json",
   "production_output.schema.json",
+  "purchase_adjustment_note.schema.json",
   "purchase_invoice.schema.json",
   "purchase_issue.schema.json",
   "resource_exchange.schema.json",
+  "sales_adjustment_note.schema.json",
   "sales_invoice.schema.json",
   "sales_issue.schema.json",
   "service.schema.json",
   "stock_account.schema.json",
   "stock_entry.schema.json",
   "tax_adjustment.schema.json",
+  "tax_deposit.schema.json",
+  "tax_offset.schema.json",
+  "tax_refund.schema.json",
+  "tax_settlement.schema.json",
   "treasury.schema.json"
 ];
 
@@ -95,7 +104,8 @@ function validCreateExample(schema) {
   for (const key of required) {
     const property = properties[key] || schema.properties?.[key];
     assert(property, `public contract has a schema for required property ${key}`);
-    if (property.type === "string" && property.format === "date-time") example[key] = "2026-10-05T00:00:00Z";
+    if (property.enum) example[key] = property.enum[0];
+    else if (property.type === "string" && property.format === "date-time") example[key] = "2026-10-05T00:00:00Z";
     else if (property.type === "string" && property.pattern?.includes(":.+$")) {
       const table = property.pattern.match(/^\^\(\?:([^|)]+)/)?.[1];
       assert(table, `record pattern is a supported table union: ${property.pattern}`);
@@ -145,6 +155,18 @@ test("accounting exports and validates exactly its public create schemas", (t) =
   returned.entered_amount = "0.66";
   assert.doesNotThrow(() => assertClientInput(directCatalog, "issue_return", returned));
   assert.equal(directCatalog.schemas.get("issue_return").validate({ ...returned, entered_amount: "-0.66" }), false);
+
+  const payment = validCreateExample(directCatalog.schemas.get("invoice_settlement").schema);
+  Object.assign(payment, { fee_account: "misc_currency_account:fees", fee_rate: "0.4",
+    fee_tax_rate: "18", fee_tax_creditable: true, fee_tax_account: "indirect_tax_account:input",
+    include_analytics: true, fx_pair: "exchange_pair:fx" });
+  assert.doesNotThrow(() => assertClientInput(directCatalog, "invoice_settlement", payment));
+  for (const field of ["fee_amount", "fee_credit_amount", "read_by", "z_payment_currency"]) {
+    assert.equal(directCatalog.schemas.get("invoice_settlement").validate({ ...payment, [field]: "1" }), false);
+  }
+  const adjustment = validCreateExample(directCatalog.schemas.get("adjustment_tax").schema);
+  assert.equal(directCatalog.schemas.get("adjustment_tax").validate({ ...adjustment, adjustment_note: "sales_adjustment_note:note" }), false,
+    "a rule-linked tax inherits the adjustment note rather than accepting a second grouping input");
 
   const outputDir = path.join(root, "build", "accounting", "client", "schemas");
   const exported = writeClientSchemas({ sourceDir: accountingSchemas, outputDir });

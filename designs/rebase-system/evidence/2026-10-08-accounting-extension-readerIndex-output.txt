@@ -1,0 +1,6 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:reader-index
+npm notice run node dev-tools/checks/reader-index-probe.js
+PASS scalar readers, branch order, dominance moves, ownership refresh, groups and fallback
+PASS custom identifier lookup, normalization, cross-table uniqueness, concurrency, record writes and privacy
+PASS opted-in cross-table analytics, creation/effective times, owner moves, ranges, pages, privacy and 16-part keys
+PASS reader/index acceptance: 53 source checkpoints, 6 complete rollback snapshots; reapplication and cleanup

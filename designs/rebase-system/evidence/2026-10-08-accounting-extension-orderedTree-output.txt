@@ -1,0 +1,4 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:ordered-tree
+npm notice run node dev-tools/temporal-tree/ordered-probe.js
+PASS explicit tree contracts and 35 invalid declaration diagnostics
+PASS ordered trees: 22 mutations, 683 typed reads/pages, 10 rollback cases, exact decimals, composite, nominal, bool, UUID and record keys, cross-table uniqueness and independent-session concurrent serialization

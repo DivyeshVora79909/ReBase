@@ -1,6 +1,6 @@
 # Developer blueprint: records, permissions and calculation trees
 
-This is the October 7 authoring contract. It accompanies the executable
+This is the authoring contract, updated October 8. It accompanies the executable
 [analytics design](../index-analytics/README.md),
 [accounting design](../all-in-accounting/blueprint.md),
 [tree API](ordered-tree-contract.md) and
@@ -142,8 +142,9 @@ the member. Duplicate datetime roots admit equal-time facts. The stored suffix
 `[canonical source ID, slot]` orders ties; it is not a business uniqueness rule.
 
 Keys support datetime, int, decimal, string, record, bool and uuid components.
-There is no arbitrary eight-component compiler/runtime limit. Sixteen components
-are tested; wider keys still consume storage, comparison and query resources.
+The compiler and runtime accept 1–16 business-key components. Seventeen are
+rejected. Key width is separate from the number of node memberships on a record;
+adding a tree does not add a component to another tree's key.
 An index ordered by `[owned_by, created_at]` efficiently supports its leading
 owner partition. It does not efficiently answer every arbitrary status or
 reader predicate. Declare another index only when the query needs it.
@@ -237,6 +238,30 @@ A source with m memberships costs the sum of affected balanced paths plus
 dependent recalculation. A backdated change can invalidate a large suffix.
 Authorization graph closure/reader repair and shared-root contention have their
 own costs. Functional tests do not establish universal throughput or capacity.
+
+## A compact accounting extension pattern
+
+The [accounting extension contract](../all-in-accounting/extension-contract.md)
+is a worked example of choosing dimensions and source participation. Independent
+claims, adjustment documents and directed exchange contexts are new facts.
+A deterministic payment charge is fields and memberships on its payment, using
+one shared rule and no automatic child. An adjustment document only validates;
+it does not repeat its children's financial effects.
+
+Keep aggregate units explicit. A resource root can sum its own quantities. A
+currency root can sum money. Use `[operating_unit, effective_at]` under a currency
+root for unit turnover; do not sum unlike currencies under a unit. Keep sales,
+purchases, gross cash, charges and taxes separate. Store additive numerator and
+denominator components, then divide the selected summary. A zero denominator
+means no average. Rate corrections are signed value changes, not new observations.
+
+Read immutable dimensions directly when safe; materialize mutable referenced
+values one hop at a time. A source's several slots at the same temporal root and
+timestamp are combined by the coordinator; do not combine them again in a second
+business row. Guard optional inputs before constructing a membership requiring
+a concrete record. Final root validation still runs after the affected closure.
+Use drafts where a document's nonempty constraint would otherwise make its first
+row impossible under the statement-by-statement mutation boundary.
 
 ## Before adding a new domain
 

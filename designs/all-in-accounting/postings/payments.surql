@@ -1,6 +1,7 @@
 -- Cash has its actual effective time. The invoice guard permits covered advances.
 
 DEFINE FUNCTION OVERWRITE fn::accounting::settlement_validate($row: object) {
+    fn::accounting::fee_validate($row);
     fn::accounting::rate_validate($row.treasury_currency, $row.currency, $row.exchange_rate);
     fn::accounting::precision_validate($row.amount, $row.treasury_currency);
     IF ($row.z_capacity.summary.measures.cash.instant_min ?? 0dec) < 0dec
@@ -8,11 +9,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::settlement_validate($row: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::settlement_members($row: object) {
-    RETURN array::concat(fn::accounting::commercial_members($row, 0dec, $row.invoice_amount), [
+    RETURN array::concat(array::concat(array::concat(fn::accounting::commercial_members($row, 0dec, $row.invoice_amount), [
         fn::accounting::balance_member($row, 'z_treasury', $row.treasury, $row.effective_at,
             fn::accounting::effects(IF $row.is_sale THEN $row.amount ELSE -$row.amount END, 0dec, 0dec), false),
         fn::tree::member($row.id, 'z_self', $row.id, 'z_capacity', $row.effective_at,
-            { cash: $row.amount, invoice_amount: $row.invoice_amount }, {}, {}, false)]);
+            { cash: $row.amount, invoice_amount: $row.invoice_amount }, {}, {}, false)]), fn::accounting::fee_members($row)), fn::accounting::payment_pair($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE invoice_settlement SCHEMAFULL COMMENT '@rebase-members fn::accounting::settlement_members @rebase-validate fn::accounting::settlement_validate';
@@ -35,6 +36,7 @@ DEFINE FIELD OVERWRITE z_treasury ON invoice_settlement TYPE option<object> COMM
 DEFINE FIELD OVERWRITE z_self ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner invoice_settlement.z_capacity';
 
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_change_validate($row: object) {
+    fn::accounting::fee_validate($row);
     IF $row.effective_at < $row.source_at { THROW 'PAYMENT_CHANGE_BEFORE_SOURCE'; };
     fn::accounting::phase($row.effective_at, $row.invoice_date, record::tb($row.id) = 'payment_adjustment');
     fn::accounting::precision_validate($row.cash_delta, $row.treasury_currency);
@@ -44,11 +46,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::payment_change_validate($row: object) 
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_change_members($row: object) {
-    RETURN array::concat(fn::accounting::commercial_members($row, 0dec, $row.invoice_delta), [
+    RETURN array::concat(array::concat(array::concat(fn::accounting::commercial_members($row, 0dec, $row.invoice_delta), [
         fn::accounting::balance_member($row, 'z_treasury', $row.treasury, $row.effective_at,
             fn::accounting::effects(IF $row.is_sale THEN $row.cash_delta ELSE -$row.cash_delta END, 0dec, 0dec), false),
         fn::tree::member($row.id, 'z_source', $row.source, 'z_capacity', $row.effective_at,
-            { cash: $row.cash_delta, invoice_amount: $row.invoice_delta }, {}, {}, false)]);
+            { cash: $row.cash_delta, invoice_amount: $row.invoice_delta }, {}, {}, false)]), fn::accounting::fee_members($row)), fn::accounting::payment_pair($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE payment_refund SCHEMAFULL COMMENT '@rebase-members fn::accounting::payment_change_members @rebase-validate fn::accounting::payment_change_validate';

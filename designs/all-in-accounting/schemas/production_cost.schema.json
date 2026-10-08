@@ -20,6 +20,52 @@
     "amount": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_account": {
+      "type": "string",
+      "pattern": "^(?:misc_currency_account):.+$"
+    },
+    "fee_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_lower_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_lower_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_exchange_rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee_tax_account": {
+      "type": "string",
+      "pattern": "^(?:indirect_tax_account):.+$"
+    },
+    "fee_tax_creditable": {
+      "type": "boolean"
+    },
+    "include_analytics": {
+      "type": "boolean"
     }
   },
   "required": [

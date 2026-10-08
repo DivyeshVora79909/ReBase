@@ -20,8 +20,11 @@ population can infer it. The compiler never creates a production tenant.
 ## Workbench
 
 The default project is the [direct accounting model](../designs/all-in-accounting/README.md),
-`all-in-accounting`. The October 7 model uses direct accounts, temporal taxes
-and ordinary production rows; the old recipe profile was removed.
+`all-in-accounting`. The October 8 extension adds adjustment documents, tax cash,
+inline charges and optional analytics to direct accounts and temporal production.
+The [extension contract](../designs/all-in-accounting/extension-contract.md) is the
+input and unit guide. `npm run verify:accounting` runs both the original scenarios
+and `probe:accounting-extensions`; the old recipe profile was removed.
 
 ```bash
 node dev-tools/workbench.js

@@ -41,4 +41,3 @@ DEFINE FUNCTION OVERWRITE fn::analytics::members($row: object) {
                 'z_owned_effective', [$row.effective_at], $measure, {}) END
     ];
 } PERMISSIONS NONE;
-

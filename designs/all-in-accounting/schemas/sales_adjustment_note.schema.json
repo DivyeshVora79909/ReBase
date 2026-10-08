@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "sales_adjustment_note.schema.json",
+  "title": "sales_adjustment_note",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "organization": {
+      "type": "string",
+      "pattern": "^(?:organization):.+$"
+    },
+    "number": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "draft": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "owned_by",
+    "organization"
+  ]
+}

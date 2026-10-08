@@ -11,20 +11,24 @@ Tree reads require explicit `fn::tree::read` calls and native bound key types.
 Authentication endpoints remain the client boundary; identity trees are private.
 The separate MetaSol worktree is unchanged by this framework update.
 
-## Accounting contract update — 2026-10-07
+## Accounting contract update — 2026-10-08
 
 The [current backend blueprint](../all-in-accounting/blueprint.md) supersedes the
 older accounting API below. The existing MetaSol worktree has ongoing tenant
 changes and was left untouched by this backend redesign. Its data modules still
 reference removed claim-account and invoice-issue tables; no browser acceptance
-for the October 7 accounting contract is claimed.
+for the October 8 accounting contract is claimed.
 
 Continue the frontend with direct currency-bearing account records, mandatory
 invoice parents and invoice dates, scalar exchange rates, base/net taxes and
 explicit adjustment-tax rows. Respect the confirmed refund-before/adjustment-after
 date split. Replace recipe-based production inputs with ordinary production,
 input/output/cost/capacity rows, and use temporal prefixes for as-of balances.
-Use the 34 authored public input schemas and the backend's worked examples.
+Use the 43 authored public input schemas and the backend's worked examples.
+The [extension contract](../all-in-accounting/extension-contract.md) adds sales/
+purchase adjustment-note drafts/finalization, tax cash/offsets, independent claims,
+inline fee fields and explicit analytics/pair selection. Preserve gross invoice
+settlement versus net cash and keep monetary summaries in their stated currency.
 Preserve the existing session/tenant fencing and the user's current frontend work.
 
 ## Tenant and delivery-tax continuation — 2026-10-05

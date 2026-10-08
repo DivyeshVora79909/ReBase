@@ -1,6 +1,7 @@
 # Accounting execution plan
 
-The [October 7 execution record](redesign-2026-10-07.md) is the current plan.
+The [October 8 extension plan](expansion-2026-10-08.md) is the current packet.
+The [October 7 execution record](redesign-2026-10-07.md) records its baseline.
 The [blueprint](blueprint.md) defines the implementation contract and the
 [verification record](verification.md) distinguishes fresh results from history.
 

@@ -36,8 +36,9 @@ and `uuid`; a composite declaration has an explicit list of comma-separated comp
 for example `@rebase-tree-key record,string,datetime`. Each position keeps its
 native type. Integers use the exact JavaScript transport range; decimal inputs
 must be native decimals. Float and mixed-number domains are deliberately absent.
-The arbitrary eight-component ceiling was removed; sixteen-component keys pass
-the current probe. This does not imply unlimited practical key width.
+Business keys have 1–16 components, enforced by compiler and runtime. The two
+internal tie-break components do not count toward this limit. Node membership
+count is independent of key width. Sixteen components pass; seventeen reject.
 
 Principal records may hold design-declared roots; the compiler generates their
 maintenance events without replacing principal permissions. On a node,

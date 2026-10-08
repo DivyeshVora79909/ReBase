@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "exchange_pair.schema.json",
+  "title": "exchange_pair",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "from_resource": {
+      "type": "string",
+      "pattern": "^(?:currency|item|service):.+$"
+    },
+    "to_resource": {
+      "type": "string",
+      "pattern": "^(?:currency|item|service):.+$"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owned_by",
+    "from_resource",
+    "to_resource"
+  ]
+}

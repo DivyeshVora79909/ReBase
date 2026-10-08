@@ -12,7 +12,13 @@
 | `postings/exchange.surql` | Explicit two-account resource/currency exchange and optional output linkage |
 | `postings/production.surql` | Normalized inputs, outputs, cash reservations and operating/service capacity |
 | `postings/entries.surql` | Minimal monetary and resource extension examples |
-| `schemas/` | Thirty-four public create-input schemas |
+| `postings/adjustment-notes.surql` | Sales/purchase document dimensions, sign and finalization guards |
+| `postings/tax-cash.surql` | Tax cash settlement, deposits, refunds, offsets and chronological credit/liability floors |
+| `postings/claims.surql` | Explicit non-invoice claims and source-specific cash settlement |
+| `postings/zz-payment-charges.surql` | Shared bounded inline charges, optional tax credit and production reservations |
+| `postings/analytics.surql` | Directed pair contexts, opt-in trade/payment measures and query units |
+| `../../dev-tools/accounting/extension-probe.js` | Source-derived extension acceptance and complete rollback snapshots |
+| `schemas/` | Forty-three public create-input schemas |
 | `../../dev-tools/accounting/source-oracle.js` | Independent rational arithmetic, chronological replay and structural oracle |
 | `../../dev-tools/accounting/probe.js` | Compiled, disposable acceptance with complete rollback snapshots |
 | `../../dev-tools/accounting/fixture-example.js` | Eleven editable public inputs and native SDK bindings |

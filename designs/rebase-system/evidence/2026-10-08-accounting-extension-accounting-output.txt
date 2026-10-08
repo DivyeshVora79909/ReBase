@@ -1,0 +1,15 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-core
+npm notice run node dev-tools/accounting/probe.js
+PASS direct accounts, shared unique dimensions, required invoices and covered advances
+PASS strictly earlier net taxes, parallel equal-time taxes and backdated cascading recalculation
+PASS return versus adjustment dates, stock reversal, signed debit corrections and reactive adjustment taxes
+PASS marginal capped rules, explicit parent matching and old/new ancestor repair
+PASS purchase direction, same-family withholding, scalar FX and rate corrections
+PASS exact native rounding and explicit split-return remainder
+PASS future production, gross shared inputs, cash reservation, service windows and half-open capacity
+PASS competing sessions, authenticated source writes and native SDK decimals
+CHECK populated schema reapplication
+PASS exact populated schema reapplication
+PASS accounting redesign: 63 mutation checkpoints, 35 complete rollback snapshots; explicit child-first cleanup
+ELAPSED_SECONDS=538.37
+EXIT_STATUS=0

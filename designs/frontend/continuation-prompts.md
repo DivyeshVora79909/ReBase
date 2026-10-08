@@ -5,9 +5,9 @@ consume scalar `read_by`, group scoped views by that scalar, and use explicit tr
 queries for adopted analytics. Custom authentication identifiers stay private.
 
 The next frontend packet combines the existing tenant migration with the
-[October 7 accounting contract](../all-in-accounting/blueprint.md). Start with
+[October 8 extension contract](../all-in-accounting/extension-contract.md). Start with
 the [accounting handoff](../all-in-accounting/implementation-handoff.md) and
-[verification](../all-in-accounting/verification.md), then the shared
+[verification](../all-in-accounting/extension-verification.md), then the shared
 [tenant backend handoff](../rebase-system/tenant-tree-handoff.md). Historical
 frontend tests do not establish compatibility with the revised accounting API.
 
@@ -46,14 +46,18 @@ affected native source queries use WITH NOINDEX ORDER BY id until a verified
 replacement is available. Compare complete results; do not hide duplicate rows
 with client deduplication. The primary scan has no indexed-performance promise.
 
-Use direct currency-bearing accounts and the 34 public create schemas. Issues
+Use direct currency-bearing accounts and the 43 public create schemas. Issues
 require invoices; invoices validate without posting. Use scalar exchange rates
 and distinguish base taxes from strictly earlier net taxes, each with one issue
 parent. Author adjustment-tax rows explicitly with their correction and original
 tax. Returns/refunds are on/before invoice_date; adjustments, including negative
 cash adjustments, follow it. Production uses explicit input/output/cost/capacity
 rows with two dated positions. Use temporal prefixes for as-of balances. Keep
-calculations and final transaction validation in the backend.
+calculations and final transaction validation in the backend. Adjustment notes
+are draft groups finalized only after valid same-sign lines exist. Use inline
+charge inputs instead of generating fee children, and distinguish gross payment
+from net cash. Opt into the documented analytics and pair trees deliberately;
+do not mix currencies, invent average-of-averages or infer FX profit from quotes.
 
 Finish one simple tenant-aware login/accounting slice first, using ordinary
 Solid modules and direct SDK/library APIs. Prove two tenants in the SAME database,

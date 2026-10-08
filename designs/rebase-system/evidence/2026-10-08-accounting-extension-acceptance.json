@@ -1,0 +1,375 @@
+{
+  "reviewDate": "2026-10-08",
+  "recordedAt": "2026-10-08T07:31:43.474507+00:00",
+  "status": "passed-local-accounting-extension-acceptance",
+  "baselineCommit": "a8ecfca77fc6566dff89c5dde57452e1e6f5d2a3",
+  "accountingBaselineCommit": "88c5ae7794abc11f7ecad0e0b39d2e55ed56d2e9",
+  "scope": "Native accounting facts, validators, inline charges and optional typed analytics; business-key limit 16 in compiler/runtime.",
+  "versions": {
+    "node": "v22.23.2",
+    "npm": "12.0.2",
+    "surrealDb": "3.3.0 for linux on x86_64"
+  },
+  "results": {
+    "domainTables": 43,
+    "publicCreateSchemas": 43,
+    "nativeDomainFiles": 15,
+    "compiledTables": 60,
+    "materials": 23,
+    "views": 0,
+    "accountingCheckpoints": 63,
+    "accountingRollbacks": 35,
+    "extensionCheckpoints": 50,
+    "extensionRollbacks": 24,
+    "developerToolTests": 27,
+    "clientSchemaTestsIncluded": 15,
+    "orderedTreeMutations": 22,
+    "orderedTreeReadsAndPages": 683,
+    "orderedTreeRollbacks": 10,
+    "readerIndexCheckpoints": 53,
+    "readerIndexRollbacks": 6,
+    "compiledAndRuntimeKeyComponents": {
+      "accepted": 16,
+      "rejected": 17
+    },
+    "publicInputsMatchAuthoredFields": true,
+    "publicExportsByteIdentical": true
+  },
+  "commands": [
+    {
+      "command": "npm run build; npm run build:all-in-one; npm run build:all-in-accounting; npm run build:index-analytics",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run check && npm run check:all-in-one && npm run check:all-in-accounting && npm run check:index-analytics",
+      "exitCode": 0
+    },
+    {
+      "command": "surreal validate on all four generated schemas and default/all-in-one migration backfill/finalizer files",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run probe:accounting-core",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-accounting-output.txt",
+      "elapsedSeconds": 538.37
+    },
+    {
+      "command": "npm run probe:accounting-extensions",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-extensions-output.txt",
+      "elapsedSeconds": 7597.18
+    },
+    {
+      "command": "npm run test:dev-tools",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-developerTools-output.txt",
+      "elapsedSeconds": 6.61
+    },
+    {
+      "command": "npm run probe:compiler",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-compiler-output.txt"
+    },
+    {
+      "command": "npm run probe:ordered-tree",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-orderedTree-output.txt"
+    },
+    {
+      "command": "npm run probe:reader-index",
+      "exitCode": 0,
+      "transcript": "designs/rebase-system/evidence/2026-10-08-accounting-extension-readerIndex-output.txt"
+    },
+    {
+      "command": "node dev-tools/temporal-tree/contract-probe.js",
+      "exitCode": 0,
+      "summary": "35 invalid declaration diagnostics, including 17-component rejection."
+    },
+    {
+      "command": "node --check for source-oracle.js, extension-probe.js and reader-index-probe.js",
+      "exitCode": 0
+    },
+    {
+      "command": "node dev-tools/accounting/fixture-example.js",
+      "exitCode": 0,
+      "summary": "Eleven public inputs validated/prepared with native SDK bindings; no database connection."
+    },
+    {
+      "command": "Public schema-to-authored-field audit using parseSchema over project and framework statements",
+      "exitCode": 0,
+      "summary": "43 schemas; only authored inputs, no tree or derived fields."
+    }
+  ],
+  "transcripts": {
+    "accounting": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-accounting-output.txt",
+      "sha256": "5c010fd308c761c4d3aaec90e32c307b4ecd225cf1d6a6f39215e3fb292e9df1"
+    },
+    "extensions": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-extensions-output.txt",
+      "sha256": "3c66bd663412092a89097880a0b113ce8731bfce1d9a1839fea59884c1d4159b"
+    },
+    "developerTools": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-developerTools-output.txt",
+      "sha256": "c91e253701d06efde05e27276217e2dbd3b6d5e370e975c14736e25fd594b5f3"
+    },
+    "compiler": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-compiler-output.txt",
+      "sha256": "a218f94a7e25ef1918e19c0b5b5a4dedb347abe1d405709c7f9fb60118ce9629"
+    },
+    "orderedTree": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-orderedTree-output.txt",
+      "sha256": "fdc661d3931b541346945f671735edb8d29d89a07f65beed0935484f631c3e7c"
+    },
+    "readerIndex": {
+      "path": "designs/rebase-system/evidence/2026-10-08-accounting-extension-readerIndex-output.txt",
+      "sha256": "fc4d5a7e4f0c201cae7c20146230cdf83daadc5d19f65d953ad8988e4b5b4798"
+    }
+  },
+  "passedPhases": {
+    "accounting": [
+      "direct accounts, shared unique dimensions, required invoices and covered advances",
+      "strictly earlier net taxes, parallel equal-time taxes and backdated cascading recalculation",
+      "return versus adjustment dates, stock reversal, signed debit corrections and reactive adjustment taxes",
+      "marginal capped rules, explicit parent matching and old/new ancestor repair",
+      "purchase direction, same-family withholding, scalar FX and rate corrections",
+      "exact native rounding and explicit split-return remainder",
+      "future production, gross shared inputs, cash reservation, service windows and half-open capacity",
+      "competing sessions, authenticated source writes and native SDK decimals",
+      "exact populated schema reapplication",
+      "accounting redesign: 63 mutation checkpoints, 35 complete rollback snapshots; explicit child-first cleanup"
+    ],
+    "extensions": [
+      "adjustment-note dimensions, signs, finalization, source edits, neutral capped taxes and rollback",
+      "tax deposits, settlements, refunds, offsets, independent claims, FX settlement and chronological capacity",
+      "inline bounded charges, creditable/noncreditable tax, native VALUE protection, aliased legs, FX and production reservations",
+      "directed pair uniqueness, correction-aware ratios, separate sales/purchases, explicit enrollment and currency/unit ranges",
+      "existing transfers cover damage locations; FX corrections change value without inventing quantity or observed quotes",
+      "analytics reparenting, independent currency totals, and converted tax offsets/refunds",
+      "authenticated extension writes, tenant isolation and competing claim settlements",
+      "exact populated extension schema reapplication",
+      "explicit child-first cleanup of extension records and all financial/analytics histories",
+      "accounting extension slice: 50 checkpoints, 24 complete rollback snapshots"
+    ],
+    "orderedTree": [
+      "explicit tree contracts and 35 invalid declaration diagnostics",
+      "ordered trees: 22 mutations, 683 typed reads/pages, 10 rollback cases, exact decimals, composite, nominal, bool, UUID and record keys, cross-table uniqueness and independent-session concurrent serialization"
+    ],
+    "readerIndex": [
+      "scalar readers, branch order, dominance moves, ownership refresh, groups and fallback",
+      "custom identifier lookup, normalization, cross-table uniqueness, concurrency, record writes and privacy",
+      "opted-in cross-table analytics, creation/effective times, owner moves, ranges, pages, privacy and 16-part keys",
+      "reader/index acceptance: 53 source checkpoints, 6 complete rollback snapshots; reapplication and cleanup"
+    ]
+  },
+  "oracle": {
+    "financial": "Independent rational BigInt replay from authored inputs; exact derived amount comparisons, ties-to-even quantization.",
+    "structure": "Source-derived memberships reconstruct ordered AVL roots, chronology and summaries using the existing numerical-tolerance structural oracle. Rates in structural comparisons use JavaScript numbers.",
+    "rollback": "Core probe snapshots all 43 domain tables plus audit_mutation. Extension probe snapshots all 60 compiled tables, including private authorization state, exactly.",
+    "coalescing": "Expected source slots at one root/key are combined independently of persisted links. Aliased tax credit and production cash reservation legs exercised.",
+    "counts": "Checkpoints are oracle verification boundaries, not row counts or throughput measurements."
+  },
+  "designChoices": {
+    "adjustmentNotes": "Optional grouping; draft defaults true. Every stage enforces dimensions and no mixed signs; finalization requires a nonzero line. Optional draft clarification received no answer; proceeded with documented assumption.",
+    "inlineCharges": "One bounded charge and one bounded tax rule on nine cash fact types, no generated child. Creditability is explicit.",
+    "analytics": "Explicit enrollment; independent currency and resource units. Net/gross sales/purchases, gross/net payment components, pair observations versus signed corrections. No average-of-averages or inferred FX P&L.",
+    "transferCoverage": "Existing resource_exchange reused for treasury/misc and stock/misc/operating-unit transfers; no table per account permutation.",
+    "zeroPrecision": "Native math::fixed rejects precision zero; scaled ties-to-even rounding supports zero-decimal currencies."
+  },
+  "sharedImplementation": {
+    "changedCompilerFiles": [
+      "dev-tools/compiler/temporal.surql",
+      "dev-tools/compiler/tree-contract.js"
+    ],
+    "changeMeaning": "Only compiler/runtime business-key component ceiling; accounting extends the existing coordinator.",
+    "frameworkGatewayConfigRuntimeDiff": [],
+    "fullBackendVerifyRepeated": false,
+    "focusedAffectedGatesPassed": true
+  },
+  "sourceSha256": {
+    ".surreal-version": "5eee6c0c5c6901f5e523f0a434bca4106e1ff7136deb451f982b0bb1a7b13716",
+    "config/environment.js": "f23883b5905be2d3157bea595c0b747d59c43f0bf7ab28029cd9d42d8ed79b17",
+    "config/runtime-timing.js": "fec7a643993e2fecaa79884dfd3cd3ca86a3d02bc4bc7b56cf1db57b2d55ecea",
+    "designs/all-in-accounting/core/accounts.surql": "259208af345fbcc79cc55b9ab46425bc5716c6c7a7a9c297104ac6b1b083339c",
+    "designs/all-in-accounting/core/schema.surql": "5028624abb6d2986e9011fa7cadaf5a40f7dfc88ddcf0f6ed7db63b1e7004cec",
+    "designs/all-in-accounting/postings/adjustment-notes.surql": "28e286dbb53f3fd5a0e4cd704cb7e52668f48538cf976f380f3e1ab98091d3c1",
+    "designs/all-in-accounting/postings/analytics.surql": "1dc13c5fe2e6486d98635229e44ff72fe5d149efbce5d0b7aa4d9dfeba0dd078",
+    "designs/all-in-accounting/postings/claims.surql": "47994a400c040a6b4ac0a71210d2cc07910782a5ca338e6b27536191f30f51be",
+    "designs/all-in-accounting/postings/corrections.surql": "4b031a1199477f3c89aeb12289fc40e8bda314985a351e73396726fedf107a8a",
+    "designs/all-in-accounting/postings/entries.surql": "20c7e8a7685af33161ffbb83af7b4170231f2f9995c010b99c7ddd7ec838df78",
+    "designs/all-in-accounting/postings/exchange.surql": "8ee2afa979bcc9dfacf0d51a25772b3a8ac193154589e4e98328e6f7d9c29f9c",
+    "designs/all-in-accounting/postings/issues.surql": "9f6e2da51cda66cbbde8959c5d1a1cb7bdff4eed21c3a4bf0bdda26c34ad686e",
+    "designs/all-in-accounting/postings/payments.surql": "8c37486bd51b66c794f8d87ae483b802a0e42a6e9d2030d136185fa6365b6804",
+    "designs/all-in-accounting/postings/production.surql": "3d7ce8f7ebea6080ffa2350d6d8c6ef4e8ffed624bdbba584be1aea4719408a0",
+    "designs/all-in-accounting/postings/tax-cash.surql": "21cb52536849b3b90c00e8e40a4ad362f11011ce2ba06e34fd91b8a51a432509",
+    "designs/all-in-accounting/postings/taxes.surql": "185e01d9b9b104377fcffb5098ca1421676f85dab1d12344d3b6b304bbbed11d",
+    "designs/all-in-accounting/postings/withholding.surql": "6ba0706964d32db58084c8b61cfeee2bdf9df7428b27ec0c3677a03c0ed1f102",
+    "designs/all-in-accounting/postings/zz-payment-charges.surql": "e36fb7d440caeb166e630ccf9cc71c57393eb250782584257d2b0b27a74c6d75",
+    "designs/all-in-accounting/schemas/account_claim.schema.json": "b81d8e4a790c833f1845859c471d7af68c74e69c603b16ed62124843966f5ccb",
+    "designs/all-in-accounting/schemas/account_entry.schema.json": "abe1d19325599e471ff9cbae658ea32ede5cd52ddba74f261bb1b3aa9ab1d0ec",
+    "designs/all-in-accounting/schemas/adjustment_tax.schema.json": "2e9099cad4b9046146dd592e2017d2777083881c29c7929f75b2203f751e4459",
+    "designs/all-in-accounting/schemas/claim_settlement.schema.json": "30ee0e880379e3ed344c0950abdfb2a8b463a737705c169b19d5a58d52c43054",
+    "designs/all-in-accounting/schemas/currency.schema.json": "15ce2d79b0acfc562551f95a539c006fb953354b5a5200ec419c012000067564",
+    "designs/all-in-accounting/schemas/direct_tax_account.schema.json": "962951e5df73bfe2d2cd9083750197e8ea3c907cb8f5525338f51259aef89771",
+    "designs/all-in-accounting/schemas/exchange_pair.schema.json": "69a3d1bc3cc08f120e3b5c170c992cf0f66ab1292e64adbbb200e1e6daa8926a",
+    "designs/all-in-accounting/schemas/indirect_tax_account.schema.json": "d874cc3634cf864407797cd748b27016c5e8dc0813a5a2f3d44fe0b109467f3c",
+    "designs/all-in-accounting/schemas/invoice_settlement.schema.json": "aaea90dc59bed3675e28f31e8013959b829ebc491715dcaa1c5aa58ae8123542",
+    "designs/all-in-accounting/schemas/issue_adjustment.schema.json": "7e42fcba46428f2cb9b095742d08249f71b5aa8b793aac24edd9e9e7d863f972",
+    "designs/all-in-accounting/schemas/issue_net_tax.schema.json": "c05f000aad7ee8e02bb5856cd6b339a9a12a08809267c8192ee039936337ae5e",
+    "designs/all-in-accounting/schemas/issue_return.schema.json": "b5cc794b8c6d6b87e5c67248b362a7f6c36db6ad6005576bd1fc44ad93d8f919",
+    "designs/all-in-accounting/schemas/issue_tax.schema.json": "9e3b006893daa336a4d9fbe537b34de5233e4ecc25e01e6dc3219363ebceba82",
+    "designs/all-in-accounting/schemas/item.schema.json": "5b66c986b49e8661bfc0002cb40e883eceb8fb8bb40db6f8c26bb3f0af91cb0b",
+    "designs/all-in-accounting/schemas/measure_unit.schema.json": "e27e24043824cff373c9fdeb0296ce6019b48733cec5ecc42cd5397037062f66",
+    "designs/all-in-accounting/schemas/misc_currency_account.schema.json": "ac0a13a5ed9376603788a59408c4f7ce2c358fdfadc6edd4c14ce962c5f08adb",
+    "designs/all-in-accounting/schemas/misc_stock_account.schema.json": "b8034fd996ec87c1e0d64e91d88be99c886269ba86e11e3f2c2b87032332eef7",
+    "designs/all-in-accounting/schemas/operating_unit.schema.json": "6d172df8d8ff2465ace3ecfab14fb2bd99d63df7290395b7f4f8c5065132133b",
+    "designs/all-in-accounting/schemas/organization.schema.json": "abc7ded07db9ef1dcc7f1812829c628b250519567b9377345807f76bd5561b67",
+    "designs/all-in-accounting/schemas/payment_adjustment.schema.json": "d2ad6f1868a8c88f2d86dcab25dbef3ea4903a00fd1e33ded7c10432cc1dd940",
+    "designs/all-in-accounting/schemas/payment_refund.schema.json": "3e963bb5c5bf0333e8618588ad914c6481757385718c454f2d3d291411b92bee",
+    "designs/all-in-accounting/schemas/payment_withholding.schema.json": "87a49bc419621ee1c73cd96071ad424c461feadb3347de7d92c2a7a676074b5d",
+    "designs/all-in-accounting/schemas/production.schema.json": "3a7a44c188cf612aa8095a76dbf14b29e2b0a6de042b5d2ce72cc65efa48bc07",
+    "designs/all-in-accounting/schemas/production_capacity.schema.json": "3f21a5afc4d041f1f7b8b30d01afaea69ae29f9882a610af5640c3965c43c24e",
+    "designs/all-in-accounting/schemas/production_cost.schema.json": "eefd8b6201cd957a1904d54c7c3618986ec5fdfa83eecf1379a91e715dff1ea0",
+    "designs/all-in-accounting/schemas/production_input.schema.json": "18ee25f2d0a25ce8038529630dd7789af9f1a3a68f62704f44b023d04f98096d",
+    "designs/all-in-accounting/schemas/production_output.schema.json": "6175b4b2a71e87ea5a807f8aa313599a22b4fa244ec1c65816571c520cd60edd",
+    "designs/all-in-accounting/schemas/purchase_adjustment_note.schema.json": "794c3f904a2794ea43559cd7de17f53254052c43cd654d216631406be39d9bb9",
+    "designs/all-in-accounting/schemas/purchase_invoice.schema.json": "20eb3ce6855b0b7176a6ec2bbb4c644fc220b97092c1ef800fd3cc6e3f2aee10",
+    "designs/all-in-accounting/schemas/purchase_issue.schema.json": "c5fdd6e063bddd37296d0cf5a053917a02eab92636740cad8453aa38a9036716",
+    "designs/all-in-accounting/schemas/resource_exchange.schema.json": "6102c2199709206655a984ab5172b8291c1c5367f43e9995282c32b1b6ac46c6",
+    "designs/all-in-accounting/schemas/sales_adjustment_note.schema.json": "2e1ca11c3eb46ade93dcdae772af8b1d7f3acf5efaec142104e59f77fbe2ee92",
+    "designs/all-in-accounting/schemas/sales_invoice.schema.json": "37aa8ac8e6742853c019771deef777699dd9816e268dae3ef9cbb1f94881d540",
+    "designs/all-in-accounting/schemas/sales_issue.schema.json": "565e418a2bbe60c6b7363eaacb51c3386eb89cd36ba3b6313a37a6c843fe6b2a",
+    "designs/all-in-accounting/schemas/service.schema.json": "7f47de43ca54442e89c69ffa424cc16197c2d7e8100649e5818990e35e08e94f",
+    "designs/all-in-accounting/schemas/stock_account.schema.json": "1b0359f56e832aeb0d7835f3db38b81a15b95c78123b4c42a431196c027732cc",
+    "designs/all-in-accounting/schemas/stock_entry.schema.json": "bdbcf7f749404456563f11415eca090777f453fe071be6005f7165db3cadbbba",
+    "designs/all-in-accounting/schemas/tax_adjustment.schema.json": "fac0fccfceefff07d2832525cb4c91f42a2226d45a304d78923b7f93c648db5a",
+    "designs/all-in-accounting/schemas/tax_deposit.schema.json": "d81926afb4d8241ae849f6f3297577f028f957883a77d03a40d6495a22f60f73",
+    "designs/all-in-accounting/schemas/tax_offset.schema.json": "fcb7acfd66add86b177798a20cf2bf814d9fc49e5b2e3b3ca18581d2ddb63740",
+    "designs/all-in-accounting/schemas/tax_refund.schema.json": "d89cd9b638a6562016fd49353239a97315994cd3704ad7946b5c7d93617c61b5",
+    "designs/all-in-accounting/schemas/tax_settlement.schema.json": "476a281c205bc400d97c24878759da227e9f1b4fd9d33f43d8a52edcc8ac29af",
+    "designs/all-in-accounting/schemas/treasury.schema.json": "a84f88e3c5cdd1fe54eea3c53d83ebf135ff3774a2f1bf50a7f1bf39dc62dcba",
+    "dev-tools/accounting/extension-probe.js": "dc8725751340dd08eaf3e437e68cb600058af7a396113731bc2093601a9a7993",
+    "dev-tools/accounting/fixture-example.js": "496b50ec7d58e44b3393020edaffcbe0ad7fcd9f43bd790594108101f278d32a",
+    "dev-tools/accounting/probe.js": "57ba53f4f550c818405349887b926d1a0eec2c5ee69312e335905f0f36525e7b",
+    "dev-tools/accounting/source-oracle.js": "77ff6dc7832ec69823cc43bac5c4edf44c55cd951a2577c7a3f671fcb091d851",
+    "dev-tools/checks/compiler-probe.js": "814a10480b2f3582669fb18de38cd56cbdd80f4187f25928174320f79b4732b1",
+    "dev-tools/checks/reader-index-probe.js": "8fd80b922305aaf96155195a56e4448914b7dcbf50912a1b34ceeb4d53082bbf",
+    "dev-tools/client-schemas.js": "bd6f28241027a40f15faefa6f09d40cd10f8ccec59f1bb4e5e5dfd42e556975d",
+    "dev-tools/compiler/analyze.js": "3372d8e7533a6977f07f18a4e9101e59966eecca22da31a51115919f054aa0c2",
+    "dev-tools/compiler/cli.js": "4600ef6bf406dfe53da1c1b15eb5345ec2e3de5aae3df1e50bb08b18a5b18a35",
+    "dev-tools/compiler/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "dev-tools/compiler/fields.js": "54e7ebcfa692e92cb32f485d64e892be08b903abef8f861956bb285fdacf5892",
+    "dev-tools/compiler/generators/access.js": "13c4822cde8b967e01a016db3e91d6b871854fb0a5f0489c0362491096d21abb",
+    "dev-tools/compiler/generators/audit.js": "b2e6837c1a44e03c62cc8908e3019c8f3c05addb25b36b7c96fb89bc3cdfa943",
+    "dev-tools/compiler/generators/effects.js": "2c1640a5718acb709b752eb4808872f1f62f5a26d430525657adb95ddd8b6bd3",
+    "dev-tools/compiler/generators/indexes.js": "c1c53813857e704cb009ed59d4f8f5c874b852462a9492b7b83d8d9b26e97cdd",
+    "dev-tools/compiler/generators/reactivity.js": "5553d40b637c4cebbf84367bd2c6c7eae93d84d769b61cb3b404083bd419e11e",
+    "dev-tools/compiler/generators/references.js": "e7094fc77605da1893d313ba0350a1f654571fb55f10af6e62219087385face2",
+    "dev-tools/compiler/generators/security.js": "348b5ea30458790dd7b78d435647b461f509cd63b6171018f0752d242679fd6a",
+    "dev-tools/compiler/generators/temporal.js": "1cc64f6e7de17a26c15087d373a71479e6e15499a3406476123b3a834a068f30",
+    "dev-tools/compiler/generators/tree.js": "82717a0b3fbd03d4fdbcc8ed929941256bb0eee7be8a77f0dc1a182ebbb492b0",
+    "dev-tools/compiler/index.js": "fe9026df7106d91aaf287e1e0c729dda6a3a2c4494680831414ca956d6ccbc8b",
+    "dev-tools/compiler/materials.js": "d4b9d15fde9253509b5977d22fc054a5b4f4bc72c1bb729a152b28f97f91d9f6",
+    "dev-tools/compiler/pipeline.js": "6c0208a5b8b91387b088a730ea95446d4fd93841b8ca98782a24a1324398df06",
+    "dev-tools/compiler/principals.js": "1eda08f01faab4d44b689b29939f58b02e27d9a94089810f049bb2014f062447",
+    "dev-tools/compiler/project.js": "a29a3431ab3a678507dda9584defbd6be9e1d63719a623f498965d995857cbac",
+    "dev-tools/compiler/readers.js": "f32737dc5f4162c1af63b8ff911572af58396f57e40628a8b0f6968b30a61c0e",
+    "dev-tools/compiler/schema.js": "f25949cf087605e4d3146e1d5eb6187f753a99b1214714e5292837dd5b326f5e",
+    "dev-tools/compiler/security-policy.js": "8c3086e0ef152b7d73e749cf915bdd082917e846b08828e94cb3a23befdc6176",
+    "dev-tools/compiler/surql.js": "6004ce3d170998a78038ac2faccea58f17b5eb75722f768a0d71d0ae2b7fe9de",
+    "dev-tools/compiler/table-handlers.js": "3be595f8f555f95cc0b551b4f5957022ed0a01be7c9513d8944e56c83375d820",
+    "dev-tools/compiler/temporal.surql": "024d0ca88e446ea1c0746a0f4b0c74cac3bf47f3d61fa8fd95ab84a74919ff38",
+    "dev-tools/compiler/tree-contract.js": "8903176a6476a6004d8ae3b3ee922566582ba2cd53c1e7bb7ca2602e79021db6",
+    "dev-tools/populate.js": "d3340a62c007977fe48f550ccd36981af451e5c225baa91c598f5da3b476a3a9",
+    "dev-tools/temporal-tree/accounts-oracle.js": "c58aa168f632cdd98c7f5be5b8bed282e7b30c536278327667a626af169804cf",
+    "dev-tools/temporal-tree/boundary-probe.js": "4a006f8f3444268c22e66ee38de78391304df51f4d71882e76a00b34311754b5",
+    "dev-tools/temporal-tree/causal-outputs-probe.js": "55a7b563652c630371629359e41558d402a5ed28af0a4601ab7967f681ac52dd",
+    "dev-tools/temporal-tree/contract-probe.js": "9f6608a70cdb9c86d759328edbf36524ba2c095113b53e2cf32cd51f8b0a77ed",
+    "dev-tools/temporal-tree/derived-order-probe.js": "aa0c1a9746f570dd59f93087d27f936008d277f9a46a509e2c962d7a855b2200",
+    "dev-tools/temporal-tree/harness.js": "c120d4b05d16c7daa91022699dfd31892080b06faaf795bb7da8e8ace526038d",
+    "dev-tools/temporal-tree/oracle.js": "fb2d47a74397300b3826fa3ede1a6b30f66fdad5149f465abbaffe9e633be7cf",
+    "dev-tools/temporal-tree/ordered-probe.js": "10b452d0de7767d55c78f443b24bf31c36ea1127390e2ba39b992116217b739e",
+    "dev-tools/temporal-tree/ordinal-probe.js": "82799aa92979bf6149425f2ef3e72b812f90f29e93cda9a4ad277135437c469e",
+    "dev-tools/temporal-tree/positions-probe.js": "ec8b38a03d54a451b3e03064ed9eb2646b6d565de6a0cd6ebbafc01a6d3c21aa",
+    "dev-tools/temporal-tree/probe.js": "bf05d2e7f62b0fb090d0b8c3c84517b881d52baa17404888a3763e8b179d5926",
+    "dev-tools/temporal-tree/reactivity-probe.js": "dcc69b1257b16368fb3ae30d1a346f3a35c96c5b7ddf9cec44620c725eba9b6f",
+    "dev-tools/temporal-tree/required-outputs-probe.js": "c1971ff72826e096945dc52321d72af3f55becbe16bd1626df46e5274e7d212b",
+    "dev-tools/temporal-tree/typed-probe.js": "6f03917af3e7846148bbffa3cf235c74036317e2b5fdc18bbceb1afe9229476b",
+    "dev-tools/tests/client-schemas.test.js": "978e4ad14bf289e2c2cd7d51def2a3aff9ddafd87af52efedbb32b0e65a9b4dc",
+    "framework/access.surql": "fa169b0c120e525c73c6d1ba35d821bce9f6e7dbdee8207b8b4aa193d8ad1802",
+    "framework/audit.surql": "bf504134213c7c39e8c67b5f259bc7800ee32ad24dc0102b0a3cb1ea54400ceb",
+    "framework/auth.surql": "21e1953aa298d9f59894ad5b949dee39bb85cd79ae15e9602b0b2c13f34aa732",
+    "framework/authentication-indexes.surql": "649651cbd14e4d4e82703b5ee57c9de878614fb0aaf22410d18952676f8fb24c",
+    "framework/authentication.surql": "a3e297187b85587b62beed6947488e6b0765f107166799f7561313ac4147d695",
+    "framework/passkeys.surql": "50cb80b5ef32b9fe51e0a35c55f609245cdc2fc4adb5c36c68cc2ed0fefa2184",
+    "framework/reconciliation.surql": "c2a8699547d2a6dc064b18e1ffbc159593612b0402f6c0e4e0845e05403174df",
+    "framework/webhooks.surql": "5b62935678e0623c22c4e74e691b271e07be5b1acae32d23303d48eb5b088726",
+    "package-lock.json": "f961d2aae90745be1fedbcc5e70684662dc31b9c226a993caf08fc882a8b33e6",
+    "package.json": "42eb6e15cf15938d07260c07ed518c4933ad3f2ed725bc20194eabd9ca3434b6"
+  },
+  "sourceManifestSha256": "d85281f14d54860109d7c8d40feaa093cdfdb2a632d9696b3a30c846f7d2d58c",
+  "generatedSha256": {
+    "build/all-in-accounting/client/schemas/account_claim.schema.json": "b81d8e4a790c833f1845859c471d7af68c74e69c603b16ed62124843966f5ccb",
+    "build/all-in-accounting/client/schemas/account_entry.schema.json": "abe1d19325599e471ff9cbae658ea32ede5cd52ddba74f261bb1b3aa9ab1d0ec",
+    "build/all-in-accounting/client/schemas/adjustment_tax.schema.json": "2e9099cad4b9046146dd592e2017d2777083881c29c7929f75b2203f751e4459",
+    "build/all-in-accounting/client/schemas/claim_settlement.schema.json": "30ee0e880379e3ed344c0950abdfb2a8b463a737705c169b19d5a58d52c43054",
+    "build/all-in-accounting/client/schemas/currency.schema.json": "15ce2d79b0acfc562551f95a539c006fb953354b5a5200ec419c012000067564",
+    "build/all-in-accounting/client/schemas/direct_tax_account.schema.json": "962951e5df73bfe2d2cd9083750197e8ea3c907cb8f5525338f51259aef89771",
+    "build/all-in-accounting/client/schemas/exchange_pair.schema.json": "69a3d1bc3cc08f120e3b5c170c992cf0f66ab1292e64adbbb200e1e6daa8926a",
+    "build/all-in-accounting/client/schemas/indirect_tax_account.schema.json": "d874cc3634cf864407797cd748b27016c5e8dc0813a5a2f3d44fe0b109467f3c",
+    "build/all-in-accounting/client/schemas/invoice_settlement.schema.json": "aaea90dc59bed3675e28f31e8013959b829ebc491715dcaa1c5aa58ae8123542",
+    "build/all-in-accounting/client/schemas/issue_adjustment.schema.json": "7e42fcba46428f2cb9b095742d08249f71b5aa8b793aac24edd9e9e7d863f972",
+    "build/all-in-accounting/client/schemas/issue_net_tax.schema.json": "c05f000aad7ee8e02bb5856cd6b339a9a12a08809267c8192ee039936337ae5e",
+    "build/all-in-accounting/client/schemas/issue_return.schema.json": "b5cc794b8c6d6b87e5c67248b362a7f6c36db6ad6005576bd1fc44ad93d8f919",
+    "build/all-in-accounting/client/schemas/issue_tax.schema.json": "9e3b006893daa336a4d9fbe537b34de5233e4ecc25e01e6dc3219363ebceba82",
+    "build/all-in-accounting/client/schemas/item.schema.json": "5b66c986b49e8661bfc0002cb40e883eceb8fb8bb40db6f8c26bb3f0af91cb0b",
+    "build/all-in-accounting/client/schemas/measure_unit.schema.json": "e27e24043824cff373c9fdeb0296ce6019b48733cec5ecc42cd5397037062f66",
+    "build/all-in-accounting/client/schemas/misc_currency_account.schema.json": "ac0a13a5ed9376603788a59408c4f7ce2c358fdfadc6edd4c14ce962c5f08adb",
+    "build/all-in-accounting/client/schemas/misc_stock_account.schema.json": "b8034fd996ec87c1e0d64e91d88be99c886269ba86e11e3f2c2b87032332eef7",
+    "build/all-in-accounting/client/schemas/operating_unit.schema.json": "6d172df8d8ff2465ace3ecfab14fb2bd99d63df7290395b7f4f8c5065132133b",
+    "build/all-in-accounting/client/schemas/organization.schema.json": "abc7ded07db9ef1dcc7f1812829c628b250519567b9377345807f76bd5561b67",
+    "build/all-in-accounting/client/schemas/payment_adjustment.schema.json": "d2ad6f1868a8c88f2d86dcab25dbef3ea4903a00fd1e33ded7c10432cc1dd940",
+    "build/all-in-accounting/client/schemas/payment_refund.schema.json": "3e963bb5c5bf0333e8618588ad914c6481757385718c454f2d3d291411b92bee",
+    "build/all-in-accounting/client/schemas/payment_withholding.schema.json": "87a49bc419621ee1c73cd96071ad424c461feadb3347de7d92c2a7a676074b5d",
+    "build/all-in-accounting/client/schemas/production.schema.json": "3a7a44c188cf612aa8095a76dbf14b29e2b0a6de042b5d2ce72cc65efa48bc07",
+    "build/all-in-accounting/client/schemas/production_capacity.schema.json": "3f21a5afc4d041f1f7b8b30d01afaea69ae29f9882a610af5640c3965c43c24e",
+    "build/all-in-accounting/client/schemas/production_cost.schema.json": "eefd8b6201cd957a1904d54c7c3618986ec5fdfa83eecf1379a91e715dff1ea0",
+    "build/all-in-accounting/client/schemas/production_input.schema.json": "18ee25f2d0a25ce8038529630dd7789af9f1a3a68f62704f44b023d04f98096d",
+    "build/all-in-accounting/client/schemas/production_output.schema.json": "6175b4b2a71e87ea5a807f8aa313599a22b4fa244ec1c65816571c520cd60edd",
+    "build/all-in-accounting/client/schemas/purchase_adjustment_note.schema.json": "794c3f904a2794ea43559cd7de17f53254052c43cd654d216631406be39d9bb9",
+    "build/all-in-accounting/client/schemas/purchase_invoice.schema.json": "20eb3ce6855b0b7176a6ec2bbb4c644fc220b97092c1ef800fd3cc6e3f2aee10",
+    "build/all-in-accounting/client/schemas/purchase_issue.schema.json": "c5fdd6e063bddd37296d0cf5a053917a02eab92636740cad8453aa38a9036716",
+    "build/all-in-accounting/client/schemas/resource_exchange.schema.json": "6102c2199709206655a984ab5172b8291c1c5367f43e9995282c32b1b6ac46c6",
+    "build/all-in-accounting/client/schemas/sales_adjustment_note.schema.json": "2e1ca11c3eb46ade93dcdae772af8b1d7f3acf5efaec142104e59f77fbe2ee92",
+    "build/all-in-accounting/client/schemas/sales_invoice.schema.json": "37aa8ac8e6742853c019771deef777699dd9816e268dae3ef9cbb1f94881d540",
+    "build/all-in-accounting/client/schemas/sales_issue.schema.json": "565e418a2bbe60c6b7363eaacb51c3386eb89cd36ba3b6313a37a6c843fe6b2a",
+    "build/all-in-accounting/client/schemas/service.schema.json": "7f47de43ca54442e89c69ffa424cc16197c2d7e8100649e5818990e35e08e94f",
+    "build/all-in-accounting/client/schemas/stock_account.schema.json": "1b0359f56e832aeb0d7835f3db38b81a15b95c78123b4c42a431196c027732cc",
+    "build/all-in-accounting/client/schemas/stock_entry.schema.json": "bdbcf7f749404456563f11415eca090777f453fe071be6005f7165db3cadbbba",
+    "build/all-in-accounting/client/schemas/tax_adjustment.schema.json": "fac0fccfceefff07d2832525cb4c91f42a2226d45a304d78923b7f93c648db5a",
+    "build/all-in-accounting/client/schemas/tax_deposit.schema.json": "d81926afb4d8241ae849f6f3297577f028f957883a77d03a40d6495a22f60f73",
+    "build/all-in-accounting/client/schemas/tax_offset.schema.json": "fcb7acfd66add86b177798a20cf2bf814d9fc49e5b2e3b3ca18581d2ddb63740",
+    "build/all-in-accounting/client/schemas/tax_refund.schema.json": "d89cd9b638a6562016fd49353239a97315994cd3704ad7946b5c7d93617c61b5",
+    "build/all-in-accounting/client/schemas/tax_settlement.schema.json": "476a281c205bc400d97c24878759da227e9f1b4fd9d33f43d8a52edcc8ac29af",
+    "build/all-in-accounting/client/schemas/treasury.schema.json": "a84f88e3c5cdd1fe54eea3c53d83ebf135ff3774a2f1bf50a7f1bf39dc62dcba",
+    "build/all-in-accounting/migrate-one-shot-backfill.surql": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804",
+    "build/all-in-accounting/migrate-one-shot-finalize.surql": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2",
+    "build/all-in-accounting/runtime-contracts.json": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110",
+    "build/all-in-accounting/schema.surql": "2a70cf28e3d6c85799b9ce9f0d4c139233b2201d3d51c747a61218b6bc09d2a8"
+  },
+  "otherGeneratedSchemaSha256": {
+    "build/test/schema.surql": "ddbd6a6808a82c60e7ca5191d36121a6d625e051c2312b96d62c853551b9d47c",
+    "build/all-in-one/schema.surql": "c9f4a3dcad646898878baf76e0f992142ed4ee7f17b1bda597d9700003f7bdbc",
+    "build/index-analytics/schema.surql": "98ce4c2fe98d360f02873cfa3c3acf39a3fa1886ab54c08e6ebec9b2b3dbf530"
+  },
+  "limitations": [
+    "Disposable SurrealKV fixtures, not deployed data or a migration from an older populated accounting API.",
+    "Identical-schema reapplication and explicit child-first cleanup passed in both accounting suites.",
+    "Wall-clock timings include schema application, reapplication, snapshots, concurrent work and execution scheduling; they do not establish throughput or capacity.",
+    "The full gateway/provider/backend verify suite was not repeated; focused compiler, ordered-tree and reader/index gates were rerun.",
+    "No automatic statutory tax rates, credit eligibility, write-offs, inventory costing, realized FX gain/loss, accrual subsystem or bank matching.",
+    "MetaSol code was not changed; its continuation documents point to the current backend contract.",
+    "Verified working-tree source is recorded before its separate local commit; no push or deployment."
+  ]
+}

@@ -39,11 +39,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::issue_validate($row: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_members($row: object) {
-    RETURN array::concat(fn::accounting::commercial_members($row, $row.amount, 0dec), [
+    RETURN array::concat(array::concat(fn::accounting::commercial_members($row, $row.amount, 0dec), [
         fn::accounting::balance_member($row, 'z_stock', $row.stock_account, $row.effective_at,
             fn::accounting::effects(IF $row.is_sale THEN -$row.quantity ELSE $row.quantity END, 0dec, 0dec), false),
         fn::tree::member($row.id, 'z_base', $row.id, 'z_basis', $row.effective_at, { base: $row.amount, quantity: $row.quantity }, {}, {}, false),
-        fn::tree::member($row.id, 'z_net_self', $row.id, 'z_net', $row.effective_at, { amount: $row.amount }, {}, {}, false)]);
+        fn::tree::member($row.id, 'z_net_self', $row.id, 'z_net', $row.effective_at, { amount: $row.amount }, {}, {}, false)]), fn::accounting::trade_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE sales_issue SCHEMAFULL COMMENT '@rebase-members fn::accounting::issue_members @rebase-validate fn::accounting::issue_validate';

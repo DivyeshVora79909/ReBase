@@ -1,7 +1,7 @@
 -- Native decimal algebra. Each account declares its own unit and guards.
 
 DEFINE FUNCTION OVERWRITE fn::accounting::round($amount: decimal, $precision: int) {
-    RETURN <decimal>math::fixed($amount, $precision);
+    RETURN IF $precision = 0 THEN <decimal>math::fixed($amount / 10dec, 1) * 10dec ELSE <decimal>math::fixed($amount, $precision) END;
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::effects($real: decimal, $receivable: decimal, $payable: decimal) {
@@ -35,7 +35,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::invoice_member($row: object, $amount: 
 DEFINE FUNCTION OVERWRITE fn::accounting::commercial_members($row: object, $amount: decimal, $paid: decimal) {
     RETURN [fn::accounting::balance_member($row, 'z_organization', $row.organization, $row.effective_at,
         fn::accounting::claim($row.is_sale, $amount - $paid), false),
-        fn::accounting::invoice_member($row, $amount, $paid)];
+        fn::accounting::invoice_member($row, $amount, $paid),
+        fn::accounting::adjustment_note_member($row, $amount, $paid)];
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::prefix($owner: record, $root: string, $measure: string, $at: datetime) {

@@ -437,7 +437,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::valid_component($value: any, $kind: string) 
 DEFINE FUNCTION OVERWRITE fn::tree::valid_key($key: any, $key_type: string, $full: bool) {
     IF !type::is_array($key) { RETURN false; };
     LET $parts = string::split($key_type, ',');
-    IF array::len($parts) < 1 { RETURN false; };
+    IF array::len($parts) < 1 OR array::len($parts) > 16 { RETURN false; };
     IF !$parts.all(|$part| $part IN ['datetime', 'int', 'decimal', 'string', 'record', 'bool', 'uuid']) { RETURN false; };
     LET $types = array::concat($parts, ['string', 'string']);
     LET $size = array::len($key);

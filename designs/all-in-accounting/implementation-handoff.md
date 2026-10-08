@@ -1,5 +1,20 @@
 # Accounting redesign handoff — 2026-10-07
 
+The October 7 handoff below is historical. Continue current domain work with the
+[October 8 contract](extension-contract.md), [plan](expansion-2026-10-08.md) and
+[extension verification](extension-verification.md). The baseline accounting
+commit is `88c5ae7`; the scalar-reader/custom-identity-index work is committed as
+`a8ecfca`. The current packet raises the domain contract to 43 public schemas and
+sets the compiler/runtime business-key limit to 16.
+
+October 8 local acceptance passed: core accounting 63 checkpoints/35 full
+rollbacks; extensions 50/24; 27 developer-tool tests; 43 byte-identical public
+schemas; and focused compiler, ordered-tree and reader/index gates. The [fresh
+verification record](extension-verification.md) links the complete evidence and
+limits. The verified working-tree source is being prepared for a separate local
+commit; its hash is not yet available. No push, deployment or MetaSol code change
+is included.
+
 The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
 updates the shared framework and reruns accounting regression. The original
 accounting redesign evidence below remains tied to commit `88c5ae7` and its

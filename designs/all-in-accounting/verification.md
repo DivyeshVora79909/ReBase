@@ -1,5 +1,7 @@
 # Accounting verification — 2026-10-07
 
+This is historical acceptance. See [October 8 extension verification](extension-verification.md) for current sources.
+
 The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
 updates the shared framework and reruns accounting regression. The original
 accounting redesign evidence below remains tied to commit `88c5ae7` and its

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "account_claim.schema.json",
+  "title": "account_claim",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "account": {
+      "type": "string",
+      "pattern": "^(?:organization|direct_tax_account|indirect_tax_account):.+$"
+    },
+    "claim_kind": {
+      "type": "string",
+      "enum": [
+        "receivable",
+        "payable"
+      ]
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owned_by",
+    "account",
+    "claim_kind",
+    "amount",
+    "effective_at"
+  ]
+}

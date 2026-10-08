@@ -1,6 +1,7 @@
 -- Explicit real exchanges. Rates are destination resource units per source unit.
 
 DEFINE FUNCTION OVERWRITE fn::accounting::exchange_validate($row: object) {
+    fn::accounting::fee_validate($row);
     IF $row.from_account = $row.to_account { THROW 'EXCHANGE_IDENTICAL_ACCOUNTS'; };
     fn::accounting::rate_validate($row.from_resource, $row.to_resource, $row.exchange_rate);
     IF record::tb($row.from_resource) = 'currency' { fn::accounting::precision_validate($row.from_amount, $row.from_currency); };
@@ -9,9 +10,9 @@ DEFINE FUNCTION OVERWRITE fn::accounting::exchange_validate($row: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::exchange_members($row: object) {
-    RETURN [fn::accounting::balance_member($row, 'z_from', $row.from_account, $row.effective_at, fn::accounting::effects(-$row.from_amount, 0dec, 0dec), false),
+    RETURN array::concat(array::concat([fn::accounting::balance_member($row, 'z_from', $row.from_account, $row.effective_at, fn::accounting::effects(-$row.from_amount, 0dec, 0dec), false),
         fn::accounting::balance_member($row, 'z_to', $row.to_account, $row.effective_at, fn::accounting::effects($row.to_amount, 0dec, 0dec), false),
-        IF $row.production_output = NONE THEN NONE ELSE fn::tree::member($row.id, 'z_output', $row.production_output, 'z_capacity', $row.effective_at, { quantity: -$row.from_amount }, {}, {}, false) END];
+        IF $row.production_output = NONE THEN NONE ELSE fn::tree::member($row.id, 'z_output', $row.production_output, 'z_capacity', $row.effective_at, { quantity: -$row.from_amount }, {}, {}, false) END], fn::accounting::fee_members($row)), fn::accounting::exchange_observation($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE resource_exchange SCHEMAFULL COMMENT '@rebase-members fn::accounting::exchange_members @rebase-validate fn::accounting::exchange_validate';

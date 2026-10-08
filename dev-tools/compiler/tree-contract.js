@@ -3,6 +3,7 @@ const { extractClauseExpression, findTopLevelKeyword } = require('./surql');
 
 // Compile-time contracts only. No persisted registry or runtime comparator code.
 const KEY_TYPES = Object.freeze(['datetime', 'int', 'decimal', 'string', 'record', 'bool', 'uuid']);
+const MAX_KEY_PARTS = 16;
 const KNOWN_MARKERS = new Set(['root', 'node', 'key', 'owner', 'duplicates', 'no-reader']);
 
 function keyStorageType(keyType) {
@@ -50,8 +51,8 @@ function resolveTreeContract(schema) {
       if (!keys.length) throw new Error(`${name}: requires explicit @rebase-tree-key ${KEY_TYPES.join(', ')}`);
       const keyType = keys[0];
       const keyParts = keyType.split(',');
-      if (keyParts.some(part => !KEY_TYPES.includes(part))) {
-        throw new Error(`${name}: unsupported tree key '${keyType}'; expected comma-separated components from ${KEY_TYPES.join(', ')}`);
+      if (keyParts.length > MAX_KEY_PARTS || keyParts.some(part => !KEY_TYPES.includes(part))) {
+        throw new Error(`${name}: unsupported tree key '${keyType}'; expected 1..${MAX_KEY_PARTS} comma-separated components from ${KEY_TYPES.join(', ')}`);
       }
       if (field.treeNoReader && !field.treeNode) throw new Error(`${name}: @rebase-tree-no-reader belongs on a node field`);
       const duplicates = markers.includes('duplicates');
@@ -94,4 +95,4 @@ function resolveTreeContract(schema) {
   return { roots, nodes };
 }
 
-module.exports = { KEY_TYPES, keyStorageType, resolveTreeContract };
+module.exports = { KEY_TYPES, MAX_KEY_PARTS, keyStorageType, resolveTreeContract };

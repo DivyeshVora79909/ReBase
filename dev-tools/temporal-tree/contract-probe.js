@@ -35,6 +35,7 @@ function main() {
     ['mixed numeric type', s => s.replace(root, root.replace('int', 'number')), /comma-separated components/],
     ['empty composite component', s => s.replace(root, root.replace('int', 'record,,string')), /comma-separated components/],
     ['reader opt-out on root', s => s.replace(root, root + ' @rebase-tree-no-reader'), /belongs on a node/],
+    ['seventeen components', s => s.replaceAll('@rebase-tree-key int', '@rebase-tree-key ' + Array(17).fill('string').join(',')), /1\.\.16/],
     ['incompatible keys', s => s.replace(root, root.replace('int', 'datetime')), /incompatible/],
     ['unknown table', s => s.replace('owner board.', 'owner missing.'), /unknown tree owner/],
     ['unknown slot', s => s.replace('owner board.rb_rank', 'owner board.rb_missing'), /unknown tree owner/],

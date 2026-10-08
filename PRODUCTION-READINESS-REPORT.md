@@ -9,13 +9,15 @@ for this shared-framework change. Earlier results below retain their original
 source snapshots and do not establish deployment or populated-schema migration.
 
 
-## Accounting redesign — 2026-10-07
+## Accounting extension — 2026-10-08
 
-The active [accounting profile](designs/all-in-accounting/README.md) has direct
-currency-bearing accounts, invoice-date solvency, temporal taxes/corrections,
-and explicit production/capacity records. The recipe profile was removed at the
-user's request. Current acceptance is recorded in the
-[accounting verification](designs/all-in-accounting/verification.md).
+The active [accounting profile](designs/all-in-accounting/README.md) adds validated
+adjustment-note groups, tax cash/credit offsets, explicit non-invoice claims,
+inline charges and unit-safe opt-in analytics on the existing tree engine.
+[The extension contract](designs/all-in-accounting/extension-contract.md) defines
+those capabilities. [Current acceptance](designs/all-in-accounting/extension-verification.md)
+is scoped to the local compiled source and its disposable database checks.
+The compiler/runtime now enforce 1–16 business-key components.
 
 The [October 5 normalization evidence](designs/rebase-system/evidence/2026-10-05-accounting-normalized-acceptance.json)
 and older H1–H8 results below describe their original source snapshots. They do
