@@ -417,6 +417,43 @@ DEFINE FUNCTION OVERWRITE fn::tree::page($owner: object, $limit: any, $after: an
         next: IF array::len($page.items) > $limit THEN array::last($items).key ELSE NONE END };
 } PERMISSIONS NONE;
 
+-- An authored impact selects a half-open range on a logical reader root. Count
+-- the range with prefix summaries, seek once, then follow only its next links.
+-- This uses current node summaries, including changes not yet published.
+DEFINE FUNCTION OVERWRITE fn::tree::affected($owner: object, $lower: option<array>, $upper: option<array>) {
+    LET $kind = fn::rebase::root_key_type($owner);
+    IF ($lower != NONE AND !fn::tree::valid_key($lower, $kind, false))
+        OR ($upper != NONE AND !fn::tree::valid_key($upper, $kind, false)) { THROW 'REBASE_IMPACT_KEY'; };
+    IF $lower != NONE AND $upper != NONE AND $lower > $upper { THROW 'REBASE_IMPACT_BOUNDS'; };
+    LET $head = fn::tree::get($owner);
+    IF $head = NONE { THROW 'REBASE_IMPACT_ROOT'; };
+    LET $start = IF $lower = NONE THEN 0 ELSE fn::tree::before($owner, $lower).count END;
+    LET $end = IF $upper = NONE THEN fn::tree::get($head.root).summary.count ?? 0
+        ELSE fn::tree::before($owner, $upper).count END;
+    LET $size = $end - $start;
+    IF $size <= 0 { RETURN []; };
+    LET $first = fn::tree::select($owner, $start + 1, false);
+    RETURN array::range(0, $size).fold({ cursor: $first, items: [] }, |$state, $_| {
+        LET $node = fn::tree::get($state.cursor);
+        IF $node = NONE OR $node.owner != $owner { THROW 'REBASE_IMPACT_TOPOLOGY'; };
+        RETURN { cursor: $node.next,
+            items: array::append($state.items, { link: $state.cursor, key: $node.key }) };
+    }).items;
+} PERMISSIONS NONE;
+
+DEFINE FUNCTION OVERWRITE fn::rebase::impact_records($before: option<object>, $after: option<object>) {
+    LET $source = $after ?? $before;
+    LET $ranges = fn::rebase::impacts($before, $after);
+    LET $items = array::flatten($ranges.map(|$range| {
+        IF (SELECT VALUE tenant FROM ONLY $range.owner.rid) != $source.tenant { THROW 'REBASE_IMPACT_TENANT'; };
+        RETURN fn::tree::affected($range.owner, $range.lower, $range.upper);
+    }));
+    -- Overlapping ranges and multiple reader slots may name the same record.
+    LET $records = array::distinct(array::sort($items.map(|$item| [$item.key, $item.link.rid])).map(|$item| $item[1]));
+    IF $source.id IN $records { THROW 'REBASE_IMPACT_CYCLE'; };
+    RETURN $records;
+} PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::tree::business_key($key: array) {
     RETURN array::slice($key, 0, array::len($key) - 2);
 } PERMISSIONS FULL;
@@ -697,6 +734,12 @@ DEFINE FUNCTION OVERWRITE fn::tree::drain($owner: object) {
 -- Generated derive/members/dependents/validate adapters below contain only
 -- schema expressions. No persisted queue, registry, or per-membership rows.
 DEFINE FUNCTION OVERWRITE fn::rebase::refresh($rid: record, $before: option<object>, $sweep: bool) {
+    RETURN fn::rebase::refresh_path($rid, $before, $sweep, []);
+} PERMISSIONS NONE;
+
+DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option<object>, $sweep: bool, $path: array) {
+    IF $rid IN $path { THROW 'REBASE_IMPACT_CYCLE'; };
+    LET $path = array::append($path, $rid);
     LET $current = SELECT * FROM ONLY $rid;
     IF $current != NONE {
         LET $patch = fn::rebase::derive($current);
@@ -719,7 +762,9 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh($rid: record, $before: option<obje
         ELSE { owners: [], records: [] } END;
     LET $children = fn::rebase::dependents($before, $after);
     LET $ordered = SELECT id, a_effective_at FROM $children ORDER BY a_effective_at, id;
-    LET $down = $ordered.map(|$child| fn::rebase::refresh($child.id, (SELECT * FROM ONLY $child.id), false));
+    LET $impacted = fn::rebase::impact_records($before, $after);
+    LET $candidates = array::distinct(array::concat($ordered.id, $impacted));
+    LET $down = $candidates.map(|$child| fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path));
     LET $work = fn::rebase::work(array::concat([{ owners: $own.owners, records: [$rid] }, $required], $down));
     -- A prerequisite that is also a root can be removed after its last child.
     -- Its former owner work remains in the transaction but has nothing to drain.
@@ -732,7 +777,8 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh($rid: record, $before: option<obje
 -- parent edit never validates against still-stale descendant contributions.
 DEFINE FUNCTION OVERWRITE fn::rebase::finish($work: object) {
     LET $published = $work.owners.filter(|$o| (SELECT VALUE id FROM ONLY $o.rid) != NONE).map(|$o| fn::tree::publish($o));
-    LET $children = array::distinct(array::flatten($published.map(|$p| fn::rebase::dependents($p.before, $p.after))));
+    LET $children = array::distinct(array::flatten($published.map(|$p| array::concat(
+        fn::rebase::dependents($p.before, $p.after), fn::rebase::impact_records($p.before, $p.after)))));
     LET $down = fn::rebase::work($children.map(|$rid| fn::rebase::refresh($rid, (SELECT * FROM ONLY $rid), true)));
     IF array::len($down.owners) > 0 OR array::len($down.records) > 0 { fn::rebase::finish($down); };
     FOR $rid IN array::distinct(array::concat($work.records, $work.owners.map(|$o| $o.rid))) {

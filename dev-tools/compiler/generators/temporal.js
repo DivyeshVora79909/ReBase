@@ -258,6 +258,11 @@ RETURN [];
     sql += `IF record::tb($rid) = '${target}' { RETURN array::distinct(array::flatten([${sources.join(',\n')}])); };\n`;
   }
   sql += 'RETURN []; } PERMISSIONS NONE;\n';
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::impacts($before: option<object>, $after: option<object>) {\nLET $rid = $after.id ?? $before.id;\n';
+  for (const table of tables) {
+    if (table.impact) sql += `IF record::tb($rid) = '${table.name}' { RETURN ${table.impact}($before, $after); };\n`;
+  }
+  sql += 'RETURN []; } PERMISSIONS NONE;\n';
   return sql;
 }
 
@@ -266,9 +271,9 @@ function events(schema, routes, systemTables) {
   let sql = '';
   for (const table of schema.tables.values()) {
     if (systemTables.has(table.name) && !targets.has(table.name) && !table.treeMembers
-        && !marked(table, 'treeRoot').length && !table.validate) continue;
+        && !marked(table, 'treeRoot').length && !table.validate && !table.impact) continue;
     if (!table.treeMembers && !table.validate && !table.requiredOutputs && !table.managedOutput
-        && !marked(table, 'reactive').length && !targets.has(table.name) && !marked(table, 'treeRoot').length) continue;
+        && !marked(table, 'reactive').length && !targets.has(table.name) && !marked(table, 'treeRoot').length && !table.impact) continue;
     const nativeOutputs = routes.filter((r) => r.target === table.name).flatMap((r) => [...r.fields]).filter((name) => {
       const field = table.fields.get(name.split('.')[0]);
       return !field?.reactive && !field?.treeRoot && !field?.treeNode;
@@ -310,7 +315,7 @@ function resolveTemporalModel(schema, systemTables) {
     }
     derivedHelpers.set(tableName, names);
   }
-  const enabled = [...schema.tables.values()].some((t) => t.treeMembers || t.validate || t.requiredOutputs || t.managedOutput
+  const enabled = [...schema.tables.values()].some((t) => t.treeMembers || t.validate || t.impact || t.requiredOutputs || t.managedOutput
     || marked(t, 'treeRoot').length || marked(t, 'reactive').length);
   const routes = dependencies(schema);
   return { trees, derivedOrder, derivedHelpers, routes, enabled, systemTables, managedOutputs: required.outputs };

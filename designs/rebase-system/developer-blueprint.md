@@ -216,6 +216,11 @@ compiler resolves local dependency order; alphabetical field names are not an
 execution contract. An ordinary reference or index membership alone is not a
 causal calculation edge. Materialize cross-record dependencies one hop at a time.
 
+For a formula that reads a dated function, declare its inverse selection with
+`@rebase-impact fn::...` on the changing source. The [function reactivity
+contract](function-reactivity.md) defines half-open ranges on explicit reader
+trees, including the bounded predecessor-rate example and its executable proof.
+
 For split/aggregate/use-again calculations, read a published upstream root or a
 strictly prior temporal prefix. The accounting tax implementation is the worked
 example: base 100 plus two 9 taxes yields 118; a later 10% net tax reads that

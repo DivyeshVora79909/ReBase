@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-13",
+  "starting_commit": "0a40d94",
+  "database": "SurrealDB 3.3.0, disposable SurrealKV",
+  "impact_probe": {
+    "checkpoints": 13,
+    "rollback_snapshots": 6,
+    "exact_candidate_sets": true,
+    "overlapping_ranges_deduplicated": true,
+    "unchanged_outputs_stop_direct_cascades": true,
+    "rate_move_and_reparent": true,
+    "reader_move_and_reparent": true,
+    "initial_fallback_and_delete": true,
+    "tenant_and_cycle_rejection": true,
+    "populated_reapplication": true,
+    "cleanup": true
+  },
+  "regressions": {
+    "probe:temporal-tree -- --quick": "passed, including 36 randomized mutations",
+    "probe:derived-order": "passed",
+    "probe:compiler": "passed",
+    "test:dev-tools": "27 passed"
+  },
+  "scope": "Authored impact ranges and compiler field-clause parsing. Accounting redesign is a subsequent slice; this does not certify it or production throughput."
+}

@@ -32,6 +32,7 @@ function parseSchema(schemaSource, viewsSource) {
       }
       table.treeMembers = extractFunctionMarker(table.comment, 'members', table.name);
       table.validate = extractFunctionMarker(table.comment, 'validate', table.name);
+      table.impact = extractFunctionMarker(table.comment, 'impact', table.name);
       table.requiredOutputs = extractFunctionMarker(table.comment, 'required-outputs', table.name);
       table.managedOutput = /@rebase-managed-output\b/i.test(table.comment);
       table.operation = extractOperation(table.comment, table.name);
@@ -72,8 +73,11 @@ function parseSchema(schemaSource, viewsSource) {
       });
       continue;
     }
-    const computed = findTopLevelKeyword(statement, 'COMPUTED') >= 0;
-    const derived = computed || findTopLevelKeyword(statement, 'VALUE') >= 0;
+    // Field/table identifiers can themselves be clause words (for example a
+    // plain field named value). Only inspect clauses after the declaration.
+    const clauseStart = fieldMatch.index + fieldMatch[0].length;
+    const computed = findTopLevelKeyword(statement, 'COMPUTED', clauseStart) >= 0;
+    const derived = computed || findTopLevelKeyword(statement, 'VALUE', clauseStart) >= 0;
     tables.get(tableName).fields.set(fieldName, {
       name: fieldName,
       definition: statement,

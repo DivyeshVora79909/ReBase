@@ -7,7 +7,8 @@ const SYSTEM_FIELDS = new Set([
 const VALUE_END = ['ASSERT', 'REFERENCE', 'READONLY', 'PERMISSIONS', 'COMMENT'];
 
 function valueExpression(field) {
-  return extractClauseExpression(field.definition, 'VALUE', VALUE_END);
+  const clauses = field.definition.replace(/^\s*(?:--[^\n]*\n\s*)*DEFINE\s+FIELD\s+(?:OVERWRITE\s+|IF\s+NOT\s+EXISTS\s+)?\S+\s+ON\s+(?:TABLE\s+)?\S+\s+/i, '');
+  return extractClauseExpression(clauses, 'VALUE', VALUE_END);
 }
 
 function businessFields(table) {
