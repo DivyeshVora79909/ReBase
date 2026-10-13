@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "currency.schema.json",
   "title": "currency",
   "type": "object",
   "additionalProperties": false,
@@ -10,17 +9,19 @@
       "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
     },
     "code": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "name": {
       "type": "string"
     },
     "precision": {
-      "type": "integer"
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18
     }
   },
   "required": [
-    "owned_by",
     "code",
     "name"
   ]

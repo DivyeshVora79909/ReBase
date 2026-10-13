@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "operating_unit.schema.json",
   "title": "operating_unit",
   "type": "object",
   "additionalProperties": false,
@@ -12,13 +11,17 @@
     "name": {
       "type": "string"
     },
+    "subsidiary": {
+      "type": "string",
+      "pattern": "^(?:subsidiary):.+$"
+    },
     "capacity": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     }
   },
   "required": [
-    "owned_by",
-    "name"
+    "name",
+    "subsidiary"
   ]
 }

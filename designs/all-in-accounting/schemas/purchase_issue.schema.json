@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "purchase_issue.schema.json",
   "title": "purchase_issue",
   "type": "object",
   "additionalProperties": false,
@@ -17,15 +16,18 @@
       "type": "string",
       "pattern": "^(?:stock_account|misc_stock_account):.+$"
     },
+    "counterparty_stock": {
+      "type": "string",
+      "pattern": "^(?:organization_resource_account):.+$"
+    },
     "quantity": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     },
     "price": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
@@ -33,25 +35,16 @@
       "type": "string",
       "format": "date-time"
     },
-    "include_analytics": {
-      "type": "boolean"
-    },
-    "fx_pair": {
-      "type": "string",
-      "pattern": "^(?:exchange_pair):.+$"
-    },
-    "price_pair": {
-      "type": "string",
-      "pattern": "^(?:exchange_pair):.+$"
+    "description": {
+      "type": "string"
     }
   },
   "required": [
-    "owned_by",
     "invoice",
     "stock_account",
+    "counterparty_stock",
     "quantity",
     "price",
-    "exchange_rate",
     "effective_at"
   ]
 }

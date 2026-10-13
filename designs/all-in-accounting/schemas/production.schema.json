@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "production.schema.json",
   "title": "production",
   "type": "object",
   "additionalProperties": false,
@@ -12,6 +11,10 @@
     "name": {
       "type": "string"
     },
+    "subsidiary": {
+      "type": "string",
+      "pattern": "^(?:subsidiary):.+$"
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -22,8 +25,8 @@
     }
   },
   "required": [
-    "owned_by",
     "name",
+    "subsidiary",
     "starts_at",
     "ends_at"
   ]

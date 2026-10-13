@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "resource_exchange.schema.json",
   "title": "resource_exchange",
   "type": "object",
   "additionalProperties": false,
@@ -17,42 +16,41 @@
       "type": "string",
       "pattern": "^(?:treasury|misc_currency_account|stock_account|misc_stock_account):.+$"
     },
+    "exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
     "production_output": {
       "type": "string",
       "pattern": "^(?:production_output):.+$"
     },
     "from_amount": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     },
     "effective_at": {
       "type": "string",
       "format": "date-time"
     },
-    "note": {
+    "description": {
       "type": "string"
     },
     "fee_account": {
       "type": "string",
       "pattern": "^(?:misc_currency_account):.+$"
     },
+    "fee_tax_account": {
+      "type": "string",
+      "pattern": "^(?:indirect_tax_account):.+$"
+    },
     "fee_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
     "fee_lower_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_upper_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_exchange_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
@@ -64,32 +62,30 @@
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
+    "fee_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
     "fee_tax_upper_bound": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
-    "fee_tax_exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_tax_account": {
-      "type": "string",
-      "pattern": "^(?:indirect_tax_account):.+$"
-    },
     "fee_tax_creditable": {
       "type": "boolean"
     },
-    "exchange_pair": {
+    "fee_exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
+    "fee_tax_exchange_pair": {
       "type": "string",
       "pattern": "^(?:exchange_pair):.+$"
     }
   },
   "required": [
-    "owned_by",
     "from_account",
     "to_account",
     "from_amount",
-    "exchange_rate",
     "effective_at"
   ]
 }

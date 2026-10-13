@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "issue_adjustment_tax",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "source_tax": {
+      "type": "string",
+      "pattern": "^(?:issue_tax):.+$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "adjustment": {
+      "type": "string",
+      "pattern": "^(?:issue_adjustment):.+$"
+    },
+    "entered_account_delta": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "source_tax",
+    "effective_at",
+    "adjustment"
+  ]
+}

@@ -1,218 +1,169 @@
 'use strict';
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const { loadMaterials } = require('../compiler/materials');
-const { generateBundle } = require('../compiler/pipeline');
-const { start, client, recordClient, applySchema } = require('../temporal-tree/harness');
-const { verify, exact } = require('./source-oracle');
+const { Surreal, RecordId } = require('surrealdb');
+const { recordClient } = require('../temporal-tree/harness');
+const { snapshot } = require('./source-oracle');
+const { at, create } = require('./acceptance');
+const { prepareFixture } = require('./fixture-example');
 
-const at = day => `d'2027-01-${String(day).padStart(2, '0')}'`;
-const create = (id, fields) => `CREATE ${id} SET owned_by=rebase_tenant:default,${fields};`;
-async function main() {
-  const compiled = generateBundle(loadMaterials({ groups: [
-    { name: 'framework', roots: [path.resolve(__dirname, '../../framework')] },
-    { name: 'project', roots: [path.resolve(__dirname, '../../designs/all-in-accounting')] },
-  ] }));
-  const server = await start(), q = client(server.url);
-  const snapshot = () => q(`RETURN {${[...compiled.schema.tables.keys()].map(t => `${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
-  let checkpoints = 0, rollbacks = 0, last='schema application';
-  const mutate = async (sql, actor = q) => { last=sql; await actor(sql); checkpoints++; verify(await snapshot()); };
-  const reject = async (sql, pattern, actor = q) => {
-    last=sql; const before = await snapshot(); await assert.rejects(actor(sql), pattern);
-    assert.deepEqual(await snapshot(), before); verify(before); rollbacks++;
-  };
-  const value = async (expression, expected) => exact(await q(`RETURN ${expression};`), expected, expression);
+async function extensions(h, writer) {
+  const { q, mutate, reject, value, pass } = h;
+  await mutate(create('sales_invoice:ext', `account=organization_currency_account:customer,invoice_date=${at(10)}`) +
+    create('sales_issue:ext', `invoice=sales_invoice:ext,stock_account=stock_account:widget,counterparty_stock=organization_resource_account:customer,quantity=2dec,price=100dec,effective_at=${at(5)}`) +
+    create('sales_adjustment_note:ext_refund', 'account=organization_currency_account:customer'));
+  const fee = 'fee_account=misc_currency_account:fees,fee_rate=1dec,fee_tax_rate=18dec,fee_tax_creditable=true,fee_tax_account=indirect_tax_account:vat';
+  await mutate(create('invoice_settlement:ext_fee', `invoice=sales_invoice:ext,treasury=treasury:cash,amount=100dec,effective_at=${at(9)},${fee}`), writer);
+  await value('invoice_settlement:ext_fee.fee_amount', 1);
+  await value('invoice_settlement:ext_fee.fee_tax_amount', '0.18');
+  await value('invoice_settlement:ext_fee.fee_credit_amount', '0.18');
+  await value('invoice_settlement:ext_fee.z_cash.value.measures.real.sum', '98.82');
+  await reject('UPDATE invoice_settlement:ext_fee SET fee_account=NONE;', /FEE_ACCOUNT_REQUIRED/);
+  await reject('UPDATE invoice_settlement:ext_fee SET fee_tax_account=NONE;', /FEE_TAX_ACCOUNT_REQUIRED/);
+  await reject('UPDATE invoice_settlement:ext_fee SET fee_lower_bound=2dec,fee_upper_bound=1dec;', /FEE_BOUNDS/);
+  await mutate('UPDATE invoice_settlement:ext_fee SET fee_tax_creditable=false,fee_tax_account=NONE;');
+  await value('invoice_settlement:ext_fee.fee_account_amount', '1.18');
+  await mutate('UPDATE invoice_settlement:ext_fee SET fee_tax_creditable=true,fee_tax_account=indirect_tax_account:vat;');
+  await mutate(create('payment_adjustment:ext_refund', `source=invoice_settlement:ext_fee,amount_delta=-10dec,adjustment_note=sales_adjustment_note:ext_refund,effective_at=${at(11)},fee_account=misc_currency_account:fees,fee_lower_bound=1dec`));
+  await value('payment_adjustment:ext_refund.fee_amount', 1);
+  await mutate(create('payment_withholding:ext', `source=invoice_settlement:ext_fee,tax_account=direct_tax_account:withheld,amount=10dec,effective_at=${at(11)}`));
+  await value('direct_tax_account:withheld.z_history.summary.measures.receivable.sum', 10);
+  await reject(`UPDATE payment_withholding:ext SET effective_at=${at(8)};`, /WITHHOLDING_BEFORE_PAYMENT/);
+  pass('inline bounded fees, creditable/noncreditable fee tax, independent refund fees and withholding');
+
+  await mutate(create('indirect_tax_account:ext_pool', `name='Pool',subsidiary=subsidiary:one,currency=currency:inr,effective_at=${at(1)}`) +
+    create('indirect_tax_account:ext_usd', `name='Pool USD',subsidiary=subsidiary:one,currency=currency:usd,valuation_pair=exchange_pair:usd_inr,effective_at=${at(1)}`) +
+    create('account_entry:ext_pool', `account=indirect_tax_account:ext_pool,receivable=100dec,payable=100dec,effective_at=${at(2)}`) +
+    create('account_entry:ext_usd', `account=indirect_tax_account:ext_usd,receivable=20dec,payable=100dec,effective_at=${at(2)}`));
+  await mutate(create('tax_settlement:ext', `tax_account=indirect_tax_account:ext_pool,treasury=treasury:cash,amount=30dec,effective_at=${at(15)}`) +
+    create('tax_deposit:ext', `tax_account=indirect_tax_account:ext_pool,treasury=treasury:cash,amount=20dec,effective_at=${at(16)}`) +
+    create('tax_refund:ext', `tax_account=indirect_tax_account:ext_pool,treasury=treasury:cash,amount=10dec,effective_at=${at(17)}`) +
+    create('tax_offset:ext', `credit_account=indirect_tax_account:ext_pool,liability_account=indirect_tax_account:ext_pool,amount=40dec,effective_at=${at(18)}`));
+  await value('indirect_tax_account:ext_pool.z_history.summary.measures.receivable.sum', 190);
+  await value('indirect_tax_account:ext_pool.z_history.summary.measures.payable.sum', 150);
+  await value('indirect_tax_account:ext_pool.z_history.summary.measures.credit_available.sum', 70);
+  await value('indirect_tax_account:ext_pool.z_history.summary.measures.liability_available.sum', 30);
+  await reject('UPDATE tax_refund:ext SET amount=200dec;', /TAX_CLAIM_CAPACITY/);
+  await reject('UPDATE account_entry:ext_pool SET receivable=0dec;', /TAX_CLAIM_CAPACITY/);
+  await mutate(create('tax_settlement:ext_fee', `tax_account=indirect_tax_account:ext_pool,treasury=treasury:cash,amount=10dec,effective_at=${at(19)},fee_account=misc_currency_account:fees,fee_rate=10dec,fee_tax_rate=20dec,fee_tax_creditable=true,fee_tax_account=indirect_tax_account:ext_pool`));
+  await value('tax_settlement:ext_fee.z_tax.value.measures.real.sum', '10.2');
+  await mutate(create('tax_settlement:ext_fx', `tax_account=indirect_tax_account:ext_usd,treasury=treasury:cash,exchange_pair=exchange_pair:inr_usd,amount=100dec,effective_at=${at(15)}`) +
+    create('tax_offset:ext_fx', `credit_account=indirect_tax_account:ext_pool,liability_account=indirect_tax_account:ext_usd,exchange_pair=exchange_pair:inr_usd,amount=10dec,effective_at=${at(18)}`) +
+    create('tax_refund:ext_fx', `tax_account=indirect_tax_account:ext_usd,treasury=treasury:cash,exchange_pair=exchange_pair:inr_usd,amount=10dec,effective_at=${at(19)}`));
+  await value('tax_offset:ext_fx.liability_amount', 1);
+  await mutate(create('exchange_rate:ext_cash', `pair=exchange_pair:inr_usd,rate=0.11dec,effective_at=${at(15)}`));
+  await value('tax_settlement:ext_fx.account_amount', 11);
+  await value('tax_offset:ext_fx.liability_amount', '1.1');
+  await mutate('DELETE ONLY exchange_rate:ext_cash;');
+  pass('tax settlement, credit, refund and offset capacities, coincident legs and dated cash conversion');
+
+  await mutate(create('account_claim:ext_rent', `account=organization_currency_account:customer,claim_kind='payable',amount=40dec,effective_at=${at(15)}`) +
+    create('claim_settlement:ext_rent', `source=account_claim:ext_rent,paid_account=treasury:cash,amount=15dec,effective_at=${at(16)}`));
+  await value('account_claim:ext_rent.z_capacity.summary.measures.remaining.sum', 25);
+  await reject('UPDATE account_claim:ext_rent SET amount=10dec;', /CLAIM_SETTLEMENT_CAPACITY/);
+  await reject(`UPDATE claim_settlement:ext_rent SET effective_at=${at(14)};`, /CLAIM_BEFORE_SOURCE/);
+  await mutate(create('account_claim:ext_goods', `account=organization_resource_account:customer,claim_kind='receivable',amount=3dec,effective_at=${at(15)}`) +
+    create('claim_settlement:ext_goods', `source=account_claim:ext_goods,paid_account=stock_account:widget,amount=1.5dec,effective_at=${at(16)}`));
+  await value('claim_settlement:ext_goods.account_amount', '1.5');
+  await reject('UPDATE claim_settlement:ext_goods SET fee_account=misc_currency_account:fees,fee_rate=1dec;', /FEE_CASH_LEG_REQUIRED/);
+  const second = await recordClient(h.url, 'accounting_writer');
+  const contenders = ['a', 'b'].map(id => create(`claim_settlement:ext_race_${id}`,
+    `source=account_claim:ext_rent,paid_account=treasury:cash,amount=20dec,effective_at=${at(17)}`));
+  const outcomes = await Promise.allSettled([writer(contenders[0]), second(contenders[1])]);
+  assert.equal(outcomes.filter(result => result.status === 'fulfilled').length, 1, 'only one competing settlement commits');
+  for (let i = 0; i < outcomes.length; i++) if (outcomes[i].status === 'rejected') {
+    assert.match(String(outcomes[i].reason), /conflict|retry|CLAIM_SETTLEMENT_CAPACITY/i);
+    await reject(contenders[i], /CLAIM_SETTLEMENT_CAPACITY/);
+  }
+  await h.check(); h.result.checkpoints++;
+  pass('monetary and resource claims, source-specific capacity and competing sessions');
+
+  await mutate(create('resource_exchange:ext_damage', `from_account=stock_account:widget,to_account=misc_stock_account:damage,from_amount=2dec,effective_at=${at(18)}`) +
+    create('resource_exchange:ext_subsidiary', `from_account=treasury:cash,to_account=treasury:foreign,exchange_pair=exchange_pair:inr_usd,from_amount=100dec,effective_at=${at(18)}`) +
+    create('resource_exchange:ext_goods_transfer', `from_account=stock_account:foreign,to_account=stock_account:widget,from_amount=1dec,effective_at=${at(19)}`));
+  await value('resource_exchange:ext_subsidiary.to_amount', 10);
+  await value('misc_stock_account:damage.z_history.summary.measures.real.sum', 2);
+  await mutate(create('resource_exchange:ext_fx', `from_account=treasury:usd,to_account=treasury:cash,exchange_pair=exchange_pair:usd_inr,from_amount=100dec,effective_at=${at(18)},fee_account=misc_currency_account:fees_usd,fee_rate=1dec`));
+  await value('resource_exchange:ext_fx.to_amount', 1000);
+  await value('exchange_pair:usd_inr.z_observations.summary.measures.given.sum', 100);
+  await value('exchange_pair:usd_inr.z_observations.summary.measures.received.sum', 1000);
+  await reject('UPDATE resource_exchange:ext_fx SET exchange_pair=exchange_pair:inr_usd;', /EXCHANGE_PAIR_DIMENSIONS/);
+  await reject('UPDATE resource_exchange:ext_damage SET to_account=stock_account:widget;', /EXCHANGE_IDENTICAL_ACCOUNTS/);
+  await mutate(create('exchange_rate:ext_trade', `pair=exchange_pair:usd_inr,rate=11dec,effective_at=${at(18)}`));
+  await value('resource_exchange:ext_fx.to_amount', 1100);
+  await value('exchange_pair:usd_inr.z_observations.summary.measures.received.sum', 1100);
+  await mutate('DELETE ONLY exchange_rate:ext_trade;');
+  pass('resource transfers, explicit cross-subsidiary legs and separate authoritative/observed exchange values');
+
+  await mutate(create('production:ext', `name='Run',subsidiary=subsidiary:one,starts_at=${at(20)},ends_at=${at(21)}`) +
+    create('production_input:ext', 'production=production:ext,stock_account=stock_account:scarce,quantity=3dec') +
+    create('production_input:ext_labor', 'production=production:ext,stock_account=stock_account:labor,quantity=1dec') +
+    create('production_output:ext', 'production=production:ext,stock_account=stock_account:finished,quantity=4dec') +
+    create('production_cost:ext', 'production=production:ext,treasury=treasury:cash,amount=30dec,fee_account=misc_currency_account:fees,fee_rate=5dec,fee_tax_rate=20dec') +
+    create('production_capacity:ext', 'production=production:ext,operating_unit=operating_unit:store,resource=service:labor,quantity=2dec'));
+  await value('production_cost:ext.fee_amount', '1.5');
+  await value('production_cost:ext.fee_tax_amount', '0.3');
+  await value(`fn::tree::read(stock_account:scarce,'z_history','before',[${at(20, '12:00:00')}]).measures.reserved.sum`, 3);
+  await value('stock_account:scarce.z_history.summary.measures.receivable.sum', 0);
+  await value('stock_account:scarce.z_history.summary.measures.real.sum', 2);
+  await mutate(create('stock_entry:ext_same_time', `account=stock_account:scarce,real=100dec,effective_at=${at(20)}`));
+  await reject(create('production_input:ext_same_time', 'production=production:ext,stock_account=stock_account:scarce,quantity=3dec'), /PRODUCTION_GROSS_INPUT/);
+  await reject('DELETE ONLY stock_entry:scarce;', /PRODUCTION_GROSS_INPUT|ACCOUNT_BALANCE_FLOOR/);
+  await mutate(create('production:ext_adjacent', `name='Adjacent',subsidiary=subsidiary:one,starts_at=${at(21)},ends_at=${at(22)}`) +
+    create('production_capacity:ext_adjacent', 'production=production:ext_adjacent,operating_unit=operating_unit:store,resource=service:labor,quantity=2dec') +
+    create('production:ext_overlap', `name='Overlap',subsidiary=subsidiary:one,starts_at=${at(20, '12:00:00')},ends_at=${at(21, '12:00:00')}`));
+  await value('operating_unit:store.z_capacity.summary.measures.used.instant_max', 2);
+  await reject(create('production_capacity:ext_overlap', 'production=production:ext_overlap,operating_unit=operating_unit:store,resource=service:labor,quantity=1dec'), /OPERATING_CAPACITY/);
+  await reject('UPDATE operating_unit:store SET capacity=1dec;', /OPERATING_CAPACITY/);
+  await reject('UPDATE service:labor SET maximum_duration=12h;', /RESOURCE_DURATION/);
+  await reject(`UPDATE service:labor SET available_until=${at(20, '12:00:00')};`, /RESOURCE_AVAILABILITY/);
+  await mutate(create('resource_exchange:ext_output', `from_account=stock_account:finished,to_account=treasury:cash,exchange_pair=exchange_pair:finished_inr,from_amount=2dec,production_output=production_output:ext,effective_at=${at(22)}`));
+  await reject(create('resource_exchange:ext_over_output', `from_account=stock_account:finished,to_account=treasury:cash,exchange_pair=exchange_pair:finished_inr,from_amount=3dec,production_output=production_output:ext,effective_at=${at(22)}`), /PRODUCTION_OUTPUT_CAPACITY|ACCOUNT_BALANCE_FLOOR/);
+  await reject(`UPDATE resource_exchange:ext_output SET effective_at=${at(20)};`, /EXCHANGE_OUTPUT_SOURCE|PRODUCTION_OUTPUT_CAPACITY|ACCOUNT_BALANCE_FLOOR/);
+  await mutate(`UPDATE production:ext SET starts_at=${at(20, '01:00:00')};`);
+  await mutate(`UPDATE production:ext SET starts_at=${at(20)};`);
+  pass('native reservations, gross input protection, output consumption, service windows and adjacent capacity');
+
+  await q("CREATE rebase_tenant:isolated SET name='Isolated tenant';");
+  await mutate(create('currency:hidden', "code='HID',name='Hidden'", 'rebase_tenant:isolated') +
+    create('subsidiary:hidden', `name='Hidden',currency=currency:hidden,effective_at=${at(1)}`, 'rebase_tenant:isolated') +
+    create('misc_currency_account:hidden', `name='Hidden',subsidiary=subsidiary:hidden,currency=currency:hidden,effective_at=${at(1)}`, 'rebase_tenant:isolated'));
+  await reject('UPDATE invoice_settlement:ext_fee SET fee_account=misc_currency_account:hidden;', /tenant|TENANT|EXCHANGE_PAIR_DIMENSIONS/);
+  await reject(create('invoice_settlement:ext_cross_tenant', `invoice=sales_invoice:ext,treasury=treasury:cash,amount=1dec,effective_at=${at(12)}`, 'rebase_tenant:isolated'), /tenant|TENANT/);
+  await reject(create('exchange_pair:hidden', `given_resource=currency:usd,received_resource=currency:hidden,initial_rate=1dec,effective_at=${at(1)}`), /tenant|TENANT/);
+  assert.deepEqual(await writer('SELECT * FROM misc_currency_account:hidden;'), []);
+  await assert.rejects(writer("RETURN fn::tree::read(subsidiary:hidden,'z_history','summary',[]);"), /Tree read not allowed/);
+  const treeBefore = await snapshot(q);
+  await writer('UPDATE invoice_settlement:ext_fee SET z_cash={};');
+  assert.deepEqual(await snapshot(q), treeBefore, 'record access cannot forge maintained tree fields');
+
+  // Execute the published, bound fixture in its own tenant to verify that the
+  // developer example creates real native records, rather than just valid JSON.
+  await q("CREATE rebase_tenant:example SET name='Published example';");
+  const sdk = new Surreal();
   try {
-    await q('DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;');
-    await applySchema(q, compiled.bundle);
-    await mutate([
-      create('currency:inr', "name='Rupee',code='INR',precision=2"),
-      create('currency:usd', "name='Dollar',code='USD',precision=2"),
-      create('measure_unit:each', "name='Each',code='each'"),
-      create('item:goods', "name='Goods',unit=measure_unit:each"),
-      create('operating_unit:shop', "name='Shop'"),
-      ...['customer','supplier','other'].map(id => create(`organization:${id}`, `name='${id}',currency=currency:inr,effective_at=${at(1)}`)),
-      ...['inr','usd'].map(id => create(`treasury:${id}`, `name='${id}',currency=currency:${id},effective_at=${at(1)}`)),
-      create('misc_currency_account:fees', `name='Charges',currency=currency:inr,effective_at=${at(1)}`),
-      ...['vat','credit'].map(id => create(`indirect_tax_account:${id}`, `name='${id}',currency=currency:inr,effective_at=${at(1)}`)),
-      create('stock_account:goods', `name='Goods',currency=currency:inr,resource=item:goods,operating_unit=operating_unit:shop,effective_at=${at(1)}`),
-      create('stock_entry:opening', `account=stock_account:goods,real=100dec,effective_at=${at(1)}`),
-      ...['inr','usd'].map(id => create(`account_entry:${id}`, `account=treasury:${id},real=1000dec,effective_at=${at(1)}`)),
-      create('sales_invoice:sale', `organization=organization:customer,invoice_date=${at(10)}`),
-      create('purchase_invoice:purchase', `organization=organization:supplier,invoice_date=${at(10)}`),
-      create('sales_issue:line', `invoice=sales_invoice:sale,stock_account=stock_account:goods,quantity=10dec,price=10dec,exchange_rate=1dec,effective_at=${at(5)}`),
-      create('purchase_issue:line', `invoice=purchase_invoice:purchase,stock_account=stock_account:goods,quantity=10dec,price=10dec,exchange_rate=1dec,effective_at=${at(5)}`),
-      'CREATE rebase_user:writer SET name="Writer",parents=[rebase_tenant:default]; DEFINE ACCESS extension_writer ON DATABASE TYPE RECORD SIGNIN rebase_user:writer;'
-    ].join('\n'));
-    const writer = await recordClient(server.url, 'extension_writer');
-    await reject(create('sales_adjustment_note:empty', 'organization=organization:customer,draft=false'), /ADJUSTMENT_NOTE_EMPTY/);
-    await mutate(create('sales_adjustment_note:credit', 'organization=organization:customer'), writer);
-    await mutate(create('issue_adjustment:line', `source=sales_issue:line,quantity_delta=-1dec,effective_at=${at(11)},adjustment_note=sales_adjustment_note:credit`), writer);
-    await mutate('UPDATE sales_adjustment_note:credit SET draft=false;');
-    await reject(create('issue_adjustment:mixed', `source=sales_issue:line,quantity_delta=1dec,effective_at=${at(12)},adjustment_note=sales_adjustment_note:credit`), /ADJUSTMENT_NOTE_MIXED_SIGN/);
-    await reject('UPDATE sales_adjustment_note:credit SET organization=organization:other;', /ADJUSTMENT_NOTE_DIMENSIONS/);
-    await reject('DELETE issue_adjustment:line;', /ADJUSTMENT_NOTE_EMPTY/);
-    await mutate(create('issue_tax:capped', `source=sales_issue:line,tax_account=indirect_tax_account:vat,rate=10dec,upper_bound=5dec,exchange_rate=1dec,effective_at=${at(6)}`));
-    await mutate(create('adjustment_tax:capped', `source_tax=issue_tax:capped,adjustment=issue_adjustment:line,effective_at=${at(12)}`));
-    await value('sales_adjustment_note:credit.z_lines.summary.count', 2);
-    await value('sales_adjustment_note:credit.z_lines.summary.measures.amount.sum', -10);
-    await mutate('UPDATE issue_tax:capped SET rate=2dec;');
-    await value('sales_adjustment_note:credit.z_lines.summary.measures.amount.sum', '-10.20');
-    await mutate(create('purchase_adjustment_note:debit', 'organization=organization:supplier'));
-    await reject('UPDATE issue_adjustment:line SET adjustment_note=purchase_adjustment_note:debit;', /ADJUSTMENT_NOTE_DIMENSIONS|ADJUSTMENT_NOTE_EMPTY/);
-    await mutate(create('issue_adjustment:purchase', `source=purchase_issue:line,price_delta=1dec,effective_at=${at(11)},adjustment_note=purchase_adjustment_note:debit`));
-    await mutate('UPDATE purchase_adjustment_note:debit SET draft=false;');
-    console.log('PASS adjustment-note dimensions, signs, finalization, source edits, neutral capped taxes and rollback');
-    await mutate(create('tax_deposit:credit', `tax_account=indirect_tax_account:credit,treasury=treasury:inr,amount=20dec,exchange_rate=1dec,effective_at=${at(7)}`));
-    await mutate(create('tax_offset:use', `credit_account=indirect_tax_account:credit,liability_account=indirect_tax_account:vat,amount=1dec,exchange_rate=1dec,effective_at=${at(8)}`));
-    await mutate(create('tax_settlement:vat', `tax_account=indirect_tax_account:vat,treasury=treasury:inr,amount=0.8dec,exchange_rate=1dec,effective_at=${at(13)}`));
-    await value('indirect_tax_account:vat.z_history.summary.measures.payable.sum',0);
-    await mutate(create('tax_refund:credit', `tax_account=indirect_tax_account:credit,treasury=treasury:inr,amount=5dec,exchange_rate=1dec,effective_at=${at(14)}`));
-    await value('indirect_tax_account:credit.z_history.summary.measures.receivable.sum',14);
-    await reject('UPDATE tax_refund:credit SET amount=20dec;', /TAX_CLAIM_CAPACITY/);
-    await reject('UPDATE tax_settlement:vat SET amount=1dec;', /TAX_CLAIM_CAPACITY/);
-    await reject(`UPDATE tax_deposit:credit SET effective_at=${at(15)};`, /TAX_CLAIM_CAPACITY/);
-    await mutate(create('tax_deposit:same', `tax_account=indirect_tax_account:vat,treasury=treasury:inr,amount=1dec,exchange_rate=1dec,effective_at=${at(15)}`));
-    await mutate(create('account_claim:penalty', `account=indirect_tax_account:vat,claim_kind='payable',amount=5dec,description='Explicit penalty',effective_at=${at(15)}`));
-    await mutate(create('tax_offset:same', `credit_account=indirect_tax_account:vat,liability_account=indirect_tax_account:vat,amount=1dec,exchange_rate=1dec,effective_at=${at(16)}`));
-    await value('indirect_tax_account:vat.z_history.summary.measures.payable.sum',4);
-    await mutate(create('account_claim:rent', `account=organization:supplier,claim_kind='payable',amount=100dec,description='Rent',effective_at=${at(18)}`));
-    await mutate(create('claim_settlement:rent', `source=account_claim:rent,treasury=treasury:usd,amount=1dec,exchange_rate=80dec,effective_at=${at(19)}`),writer);
-    await value('account_claim:rent.z_capacity.summary.measures.remaining.sum',20);
-    await reject('UPDATE claim_settlement:rent SET amount=2dec;', /CLAIM_SETTLEMENT_CAPACITY/);
-    await reject(`UPDATE claim_settlement:rent SET effective_at=${at(17)};`, /CLAIM_SETTLEMENT_CAPACITY/);
-    await reject('UPDATE account_claim:rent SET amount=70dec;', /CLAIM_SETTLEMENT_CAPACITY/);
-    await mutate(create('account_claim:interest', `account=organization:customer,claim_kind='receivable',amount=10dec,description='Explicit interest',effective_at=${at(20)}`));
-    await mutate(create('claim_settlement:interest', `source=account_claim:interest,treasury=treasury:inr,amount=10dec,exchange_rate=1dec,effective_at=${at(21)}`));
-    console.log('PASS tax deposits, settlements, refunds, offsets, independent claims, FX settlement and chronological capacity');
-    await mutate(create('invoice_settlement:charged', `invoice=sales_invoice:sale,treasury=treasury:inr,amount=40dec,exchange_rate=1dec,effective_at=${at(8)},fee_account=misc_currency_account:fees,fee_rate=2dec,fee_upper_bound=0.6dec,fee_tax_rate=18dec,fee_tax_creditable=true,fee_tax_account=indirect_tax_account:credit`),writer);
-    await value('invoice_settlement:charged.fee_amount','0.6');
-    await value('invoice_settlement:charged.fee_tax_amount','0.11');
-    await value('invoice_settlement:charged.invoice_amount',40);
-    await mutate('UPDATE invoice_settlement:charged SET fee_rate=1dec,fee_amount=999dec;');
-    await value('invoice_settlement:charged.fee_amount','0.4');
-    await mutate('UPDATE invoice_settlement:charged SET amount=60dec;');
-    await reject('UPDATE invoice_settlement:charged SET fee_exchange_rate=2dec;',/ACCOUNTING_EXCHANGE_RATE/);
-    await reject('UPDATE invoice_settlement:charged SET fee_tax_account=NONE;',/FEE_TAX_ACCOUNT_REQUIRED/);
-    await reject('UPDATE invoice_settlement:charged SET fee_lower_bound=1dec;',/FEE_BOUNDS/);
-    await mutate(create('payment_refund:charged', `source=invoice_settlement:charged,amount=5dec,effective_at=${at(9)},fee_account=misc_currency_account:fees,fee_lower_bound=0.1dec,fee_tax_rate=18dec`));
-    await value('payment_refund:charged.fee_account_amount','0.12');
-    await mutate(create('payment_adjustment:charged', `source=invoice_settlement:charged,amount_delta=-5dec,effective_at=${at(14)},fee_account=misc_currency_account:fees,fee_lower_bound=0.1dec`));
-    await mutate('UPDATE claim_settlement:rent SET fee_account=misc_currency_account:fees,fee_rate=10dec,fee_exchange_rate=80dec,fee_tax_rate=18dec,fee_tax_creditable=true,fee_tax_account=indirect_tax_account:credit,fee_tax_exchange_rate=80dec;');
-    await value('claim_settlement:rent.fee_account_amount',8);
-    await value('claim_settlement:rent.fee_credit_amount','1.6');
-    await mutate('UPDATE tax_deposit:credit SET fee_account=misc_currency_account:fees,fee_rate=5dec,fee_tax_rate=18dec,fee_tax_creditable=true,fee_tax_account=indirect_tax_account:credit;');
-    await mutate(create('resource_exchange:cash', `from_account=treasury:usd,to_account=treasury:inr,from_amount=2dec,exchange_rate=80dec,effective_at=${at(20)},fee_account=misc_currency_account:fees,fee_rate=1dec,fee_exchange_rate=80dec`));
-    await value('resource_exchange:cash.fee_account_amount','1.6');
-    await mutate(create('production:paid', `name='Paid run',starts_at=${at(22)},ends_at=${at(23)}`)+create('production_cost:paid', 'production=production:paid,treasury=treasury:inr,amount=10dec,fee_account=misc_currency_account:fees,fee_rate=10dec,fee_tax_rate=18dec'));
-    await value("(fn::tree::read(treasury:inr,'z_history','before',["+at(23)+"])).measures.payable.sum",'11.18');
-    await reject('UPDATE production_cost:paid SET fee_lower_bound=2000dec;',/ACCOUNT_BALANCE_FLOOR/);
-    console.log('PASS inline bounded charges, creditable/noncreditable tax, native VALUE protection, aliased legs, FX and production reservations');
-    await value('fn::accounting::round(2.5dec,0)',2);
-    await value('fn::accounting::round(3.5dec,0)',4);
-    await value('fn::accounting::round(-2.5dec,0)',-2);
-    await mutate(create('exchange_pair:price','from_resource=item:goods,to_resource=currency:inr')+create('exchange_pair:fx','from_resource=currency:usd,to_resource=currency:inr'));
-    await reject(create('exchange_pair:duplicate','from_resource=currency:usd,to_resource=currency:inr'),/TREE_DUPLICATE_VALUE/);
-    await reject(create('exchange_pair:self','from_resource=currency:usd,to_resource=currency:usd'),/PAIR_IDENTICAL_DIMENSIONS/);
-    await mutate('UPDATE sales_issue:line SET include_analytics=true,price_pair=exchange_pair:price; UPDATE purchase_issue:line SET include_analytics=true,price_pair=exchange_pair:price;');
-    await value('stock_account:goods.z_trade.summary.measures.sales_quantity.sum',9);
-    await value('stock_account:goods.z_trade.summary.measures.sales_value.sum',90);
-    await value('stock_account:goods.z_trade.summary.measures.purchase_value.sum',110);
-    await value('exchange_pair:price.z_history.summary.measures.observations.sum',2);
-    await value('exchange_pair:price.z_history.summary.measures.corrections.sum',2);
-    await value('exchange_pair:price.z_history.summary.measures.purchase_to.sum',110);
-    await value("fn::accounting::ratio(stock_account:goods.z_trade.summary.measures.purchase_value.sum,stock_account:goods.z_trade.summary.measures.purchase_quantity.sum)",11);
-    assert.equal(await q('RETURN fn::accounting::ratio(1dec,0dec);'),null);
-    await value("(fn::tree::read(currency:inr,'z_trade_by_unit','range',[[operating_unit:shop,"+at(1)+"],[operating_unit:shop,"+at(30)+"]])).measures.sales_value.sum",90);
-    await mutate('UPDATE claim_settlement:rent SET fx_pair=exchange_pair:fx,include_analytics=true; UPDATE resource_exchange:cash SET exchange_pair=exchange_pair:fx;');
-    await value('exchange_pair:fx.z_history.summary.measures.from_amount.sum',3);
-    await value('exchange_pair:fx.z_history.summary.measures.to_amount.sum',240);
-    await value('currency:usd.z_payments.summary.measures.net_cash.sum','-1.12');
-    await mutate('UPDATE invoice_settlement:charged SET include_analytics=true; UPDATE payment_refund:charged SET include_analytics=true; UPDATE payment_adjustment:charged SET include_analytics=true; UPDATE production_cost:paid SET include_analytics=true;');
-    await value('currency:inr.z_payments.summary.measures.gross_in.sum',60);
-    await value('currency:inr.z_payments.summary.measures.gross_out.sum',20);
-    await value('currency:inr.z_payments.summary.measures.net_cash.sum','37.89');
-    await reject('UPDATE resource_exchange:cash SET exchange_pair=exchange_pair:price;',/PAIR_DIMENSIONS/);
-    await reject('UPDATE sales_issue:line SET fx_pair=exchange_pair:fx;',/PAIR_DIMENSIONS/);
-    await mutate('UPDATE purchase_issue:line SET include_analytics=false;');
-    await value('stock_account:goods.z_trade.summary.measures.purchase_value.sum',0);
-    await value('exchange_pair:price.z_history.summary.measures.purchase_to.sum',110);
-    await mutate('UPDATE purchase_issue:line SET include_analytics=true;');
-    console.log('PASS directed pair uniqueness, correction-aware ratios, separate sales/purchases, explicit enrollment and currency/unit ranges');
-    await mutate(create('operating_unit:damaged', "name='Damaged goods'")+
-      create('misc_stock_account:damages',`name='Damages',currency=currency:inr,resource=item:goods,operating_unit=operating_unit:damaged,effective_at=${at(1)}`)+
-      create('stock_account:usd',`name='USD goods',currency=currency:usd,resource=item:goods,operating_unit=operating_unit:shop,effective_at=${at(1)}`));
-    await mutate(create('resource_exchange:damages', `from_account=stock_account:goods,to_account=misc_stock_account:damages,from_amount=2dec,exchange_rate=1dec,effective_at=${at(20)}`));
-    await value('misc_stock_account:damages.z_history.summary.measures.real.sum',2);
-    await reject('UPDATE resource_exchange:damages SET exchange_rate=2dec;',/ACCOUNTING_EXCHANGE_RATE/);
-    await reject('UPDATE resource_exchange:damages SET fee_account=misc_currency_account:fees,fee_rate=1dec;',/FEE_CASH_LEG_REQUIRED/);
-    await mutate(create('purchase_issue:fx',`invoice=purchase_invoice:purchase,stock_account=stock_account:usd,quantity=2dec,price=1dec,exchange_rate=80dec,effective_at=${at(7)},include_analytics=true,price_pair=exchange_pair:price,fx_pair=exchange_pair:fx`));
-    await mutate(create('issue_adjustment:fx',`source=purchase_issue:fx,exchange_rate_delta=-10dec,effective_at=${at(17)}`));
-    await value('stock_account:usd.z_trade.summary.measures.purchase_value.sum',2);
-    await value('exchange_pair:fx.z_history.summary.measures.purchase_from.sum',2);
-    await value('exchange_pair:fx.z_history.summary.measures.purchase_to.sum',140);
-    await value('exchange_pair:fx.z_history.summary.measures.purchase_rate.min',80);
-    await mutate('UPDATE purchase_issue:fx SET price=2dec;');
-    await value('exchange_pair:fx.z_history.summary.measures.purchase_from.sum',4);
-    await value('exchange_pair:fx.z_history.summary.measures.purchase_to.sum',280);
-    await value('currency:inr.z_trade.summary.measures.purchase_value.sum',390);
-    await value('item:goods.z_trade.summary.measures.purchase_quantity.sum',12);
-    console.log('PASS existing transfers cover damage locations; FX corrections change value without inventing quantity or observed quotes');
-    await mutate('UPDATE purchase_issue:line SET stock_account=misc_stock_account:damages;');
-    await value("(fn::tree::read(currency:inr,'z_trade_by_unit','range',[[operating_unit:shop,"+at(1)+"],[operating_unit:shop,"+at(30)+"]])).measures.purchase_value.sum",280);
-    await value("(fn::tree::read(currency:inr,'z_trade_by_unit','range',[[operating_unit:damaged,"+at(1)+"],[operating_unit:damaged,"+at(30)+"]])).measures.purchase_value.sum",110);
-    await mutate('UPDATE purchase_issue:line SET stock_account=stock_account:goods;');
-    await mutate(create('organization:usd',`name='USD supplier',currency=currency:usd,effective_at=${at(1)}`)+
-      create('purchase_invoice:usd',`organization=organization:usd,invoice_date=${at(10)}`)+
-      create('exchange_pair:usd_price','from_resource=item:goods,to_resource=currency:usd')+
-      create('purchase_issue:usd',`invoice=purchase_invoice:usd,stock_account=stock_account:usd,quantity=1dec,price=1dec,exchange_rate=1dec,effective_at=${at(7)},include_analytics=true,price_pair=exchange_pair:usd_price`));
-    await value('currency:usd.z_trade.summary.measures.purchase_value.sum',1);
-    await value('currency:inr.z_trade.summary.measures.purchase_value.sum',390);
-    await value('item:goods.z_trade.summary.measures.purchase_quantity.sum',13);
-    await mutate(create('indirect_tax_account:usd',`name='USD credit',currency=currency:usd,effective_at=${at(1)}`)+
-      create('tax_deposit:usd',`tax_account=indirect_tax_account:usd,treasury=treasury:usd,amount=20dec,exchange_rate=1dec,effective_at=${at(17)}`)+
-      create('tax_offset:fx',`credit_account=indirect_tax_account:usd,liability_account=indirect_tax_account:vat,amount=0.01dec,exchange_rate=80dec,effective_at=${at(18)}`));
-    await value('indirect_tax_account:vat.z_history.summary.measures.payable.sum','3.2');
-    await mutate(create('tax_refund:usd',`tax_account=indirect_tax_account:usd,treasury=treasury:inr,amount=8dec,exchange_rate=0.0125dec,effective_at=${at(19)}`));
-    await value('indirect_tax_account:usd.z_history.summary.measures.receivable.sum','19.89');
-    console.log('PASS analytics reparenting, independent currency totals, and converted tax offsets/refunds');
-
-
-    await q("CREATE rebase_tenant:other SET name='Other';");
-    await mutate(create('currency:hidden', "name='Hidden',code='OTH'").replace('rebase_tenant:default','rebase_tenant:other')+
-      create('misc_currency_account:hidden',`name='Hidden charges',currency=currency:hidden,effective_at=${at(1)}`).replace('rebase_tenant:default','rebase_tenant:other'));
-    await reject('UPDATE invoice_settlement:charged SET fee_account=misc_currency_account:hidden;',/tenant|TENANT/);
-    await reject(create('exchange_pair:hidden','from_resource=currency:usd,to_resource=currency:hidden'),/tenant|TENANT/);
-    assert.deepEqual(await writer('SELECT * FROM misc_currency_account:hidden;'),[]);
-    const second=await recordClient(server.url,'extension_writer');
-    const competing=['a','b'].map(id=>create(`claim_settlement:race_${id}`,`source=account_claim:rent,treasury=treasury:inr,amount=15dec,exchange_rate=1dec,effective_at=${at(24)}`));
-    const results=await Promise.allSettled([writer(competing[0]),second(competing[1])]);
-    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
-    for (let i=0;i<results.length;i++) if (results[i].status==='rejected') {
-      assert.match(String(results[i].reason),/conflict|retry|CLAIM_SETTLEMENT_CAPACITY/i);
-      await reject(competing[i],/CLAIM_SETTLEMENT_CAPACITY/);
+    await sdk.connect(h.url + '/rpc');
+    await sdk.signin({ username: 'root', password: 'root' });
+    await sdk.use({ namespace: 'temporal_probe', database: 'fixture' });
+    for (const row of prepareFixture()) {
+      row.content.owned_by = new RecordId('rebase_tenant', 'example');
+      await sdk.query('CREATE ONLY $id CONTENT $content;', { id: row.id, content: row.content });
     }
-    checkpoints++;verify(await snapshot());
-    console.log('PASS authenticated extension writes, tenant isolation and competing claim settlements');
-    last='populated identical-schema reapplication';
-    const populated=await snapshot();
-    await applySchema(q,compiled.bundle);
-    assert.deepEqual(await snapshot(),populated);verify(populated);
-    console.log('PASS exact populated extension schema reapplication');
-    await mutate('UPDATE sales_adjustment_note:credit SET draft=true; UPDATE purchase_adjustment_note:debit SET draft=true;');
-    const data=await snapshot(),order=['resource_exchange','production_cost','production','tax_refund','tax_settlement','tax_offset',
-      'claim_settlement','account_claim','tax_deposit','payment_refund','payment_adjustment','invoice_settlement',
-      'adjustment_tax','tax_adjustment','issue_adjustment','issue_return','issue_net_tax','issue_tax','sales_issue','purchase_issue',
-      'sales_adjustment_note','purchase_adjustment_note','exchange_pair','stock_entry','account_entry'];
-    for (const type of order) for (const row of data[type].sort((a,b)=>String(b.effective_at??'').localeCompare(String(a.effective_at??'')))) await q(`DELETE ONLY ${row.id};`);
-    const empty=await snapshot();verify(empty);checkpoints++;
-    for (const type of order) assert.deepEqual(empty[type],[]);
-    for (const rows of Object.values(empty)) for (const row of rows) for (const [field,root] of Object.entries(row)) {
-      if (['z_history','z_trade','z_trade_by_unit','z_payments','z_exchange_pairs'].includes(field)) assert.equal(root.summary.count,0,`${row.id}.${field} empty`);
-    }
-    console.log('PASS explicit child-first cleanup of extension records and all financial/analytics histories');
-    console.log(`PASS accounting extension slice: ${checkpoints} checkpoints, ${rollbacks} complete rollback snapshots`);
-  } catch (error) { console.error("Last extension operation:",last); throw error; } finally { await server.close(); }
+  } finally { await sdk.close(); }
+  await h.check(); h.result.checkpoints++;
+  await value('sales_invoice:demo_sale.z_history.summary.measures.balance.sum', 10);
+  assert.equal(await q('RETURN sales_issue:demo_issue.invoice.account.organization.name;'), 'Customer');
+  assert.deepEqual(await q('RETURN sales_invoice:demo_sale<~(sales_issue FIELD invoice);'), ['sales_issue:demo_issue']);
+  assert.equal((await q("RETURN fn::tree::read(organization:demo_customer,'z_accounts','find',[currency:demo_usd]);")).rid,
+    'organization_currency_account:demo_currency');
+  await value(`fn::tree::read(sales_invoice:demo_sale,'z_history','range',[[${at(1)}],[${at(11)}]]).measures.balance.sum`, 20);
+  const page = await q("RETURN fn::tree::read(sales_invoice:demo_sale,'z_history','page',[2,NONE,false]);");
+  assert.equal(page.items.length, 2); assert(page.next);
+  const rest = await q("LET $first=fn::tree::read(sales_invoice:demo_sale,'z_history','page',[2,NONE,false]); RETURN fn::tree::read(sales_invoice:demo_sale,'z_history','page',[2,$first.next,false]);");
+  assert.deepEqual(rest.items.map(item => item.link.rid), ['issue_adjustment:demo_credit']);
+  await value('stock_account:demo_stock.z_history.summary.measures.sales_reporting_value.sum / stock_account:demo_stock.z_history.summary.measures.sales_quantity.sum', 90);
+  pass('tenant isolation, protected tree fields, native-SDK fixture and graph/tree developer queries');
 }
-if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
-module.exports = { main };
+
+if (require.main === module) require('./probe').main({ onlyExtensions: true })
+  .catch(error => { console.error(error.stack || error); process.exitCode = 1; });
+module.exports = { extensions };

@@ -5,6 +5,11 @@ tenants, scalar readers, adjustment notes, payment charges and typed analytics.
 The separate MetaSol repository contains the implementation at `89799ec`. Earlier October 2/3
 frontend evidence describes the removed API and does not validate this version.
 
+The October 13 [subsidiary accounting API](../all-in-accounting/developer-guide.md)
+replaces that backend contract. This frontend and the guides below still describe
+`cada5e2`; their forms, queries and demo require adaptation before use with the new
+schema. The backend redesign does not include frontend implementation changes.
+
 The intended result is a small JavaScript/Solid engineering foundation demonstrated
 by accounting. Business pages author their own forms and queries. Shared code owns
 session lifetime, native values, confirmed writes, reusable UI and scoped notices.

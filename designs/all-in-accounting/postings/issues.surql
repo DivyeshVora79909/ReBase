@@ -1,91 +1,163 @@
--- Invoices validate a dated commercial history and never post to accounts.
-
-DEFINE FUNCTION OVERWRITE fn::accounting::invoice_validate($row: object) {
-    LET $s = $row.z_history.summary;
-    IF $s.count = 0 { RETURN NONE; };
-    IF $s.tags.organization = NONE OR !$s.tags.organization.uniform OR $s.tags.organization.value != $row.organization
-        OR $s.tags.currency = NONE OR !$s.tags.currency.uniform OR $s.tags.currency.value != $row.currency { THROW 'INVOICE_DIMENSIONS'; };
-    LET $forbidden = IF record::tb($row.id) = 'sales_invoice' THEN $s.measures.payable ELSE $s.measures.receivable END;
-    IF ($forbidden.min ?? 0dec) != 0dec OR ($forbidden.max ?? 0dec) != 0dec { THROW 'INVOICE_CLAIM_FAMILY'; };
-    IF ($s.measures.amount.instant_min ?? 0dec) < 0dec OR ($s.measures.paid.instant_min ?? 0dec) < 0dec { THROW 'INVOICE_NEGATIVE_TOTAL'; };
-    LET $boundary = $row.invoice_date + 1ns;
-    LET $closing = fn::tree::before({ rid: $row.id, slot: 'z_history' }, [$boundary]).measures.balance.sum ?? 0dec;
-    IF $closing < 0dec { THROW 'INVOICE_OVERSETTLED_AT_DATE'; };
-    IF $s.last[0] >= $boundary {
-        LET $later = fn::tree::range({ rid: $row.id, slot: 'z_history' }, [$boundary], [$s.last[0] + 1ns]);
-        IF $closing + ($later.measures.balance.instant_min ?? 0dec) < 0dec { THROW 'INVOICE_OVERSETTLED_AFTER_DATE'; };
-    };
-} PERMISSIONS FULL;
-
-DEFINE TABLE OVERWRITE sales_invoice SCHEMAFULL COMMENT '@rebase-validate fn::accounting::invoice_validate';
-DEFINE FIELD OVERWRITE organization ON sales_invoice TYPE record<organization> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE invoice_date ON sales_invoice TYPE datetime COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE number ON sales_invoice TYPE option<string> COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE currency ON sales_invoice TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.organization.currency COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_history ON sales_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-
-DEFINE TABLE OVERWRITE purchase_invoice SCHEMAFULL COMMENT '@rebase-validate fn::accounting::invoice_validate';
-DEFINE FIELD OVERWRITE organization ON purchase_invoice TYPE record<organization> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE invoice_date ON purchase_invoice TYPE datetime COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE number ON purchase_invoice TYPE option<string> COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE currency ON purchase_invoice TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.organization.currency COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_history ON purchase_invoice TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-
+-- Quantity/value pairs are additive; average price is a read-time division.
+DEFINE FUNCTION OVERWRITE fn::accounting::trade($row: object, $quantity: decimal, $amount: decimal, $organization: bool) {
+    LET $a=SELECT * FROM ONLY $row.currency_account;
+    LET $currency=IF $organization THEN $a.organization_currency ELSE $a.reporting_currency END;
+    LET $pair=IF $organization THEN $a.organization_pair ELSE $a.valuation_pair END;
+    LET $value=fn::accounting::round($amount*fn::accounting::rate_at($pair,$a.resource,$currency,$row.effective_at),$currency.precision);
+    RETURN {sales_quantity:IF $row.is_sale THEN $quantity ELSE 0dec END,purchase_quantity:IF $row.is_sale THEN 0dec ELSE $quantity END,
+        sales_reporting_value:IF $row.is_sale THEN $value ELSE 0dec END,purchase_reporting_value:IF $row.is_sale THEN 0dec ELSE $value END};
+} PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_validate($row: object) {
-    fn::accounting::phase($row.effective_at, $row.invoice_date, false);
-    fn::accounting::rate_validate($row.stock_currency, $row.currency, $row.exchange_rate);
-    IF ($row.z_basis.summary.measures.quantity.instant_min ?? 0dec) < 0dec { THROW 'ISSUE_QUANTITY_CAPACITY'; };
-    IF ($row.z_basis.summary.measures.base.instant_min ?? 0dec) < 0dec { THROW 'ISSUE_VALUE_CAPACITY'; };
+    IF $row.effective_at>$row.invoice_date { THROW 'ORIGINAL_ON_OR_BEFORE_INVOICE'; };
+    fn::accounting::same_subsidiary($row.stock_account,$row.currency_account);
+    IF $row.counterparty_stock.organization!=$row.organization OR $row.counterparty_stock.resource!=$row.stock_account.resource { THROW 'ISSUE_RESOURCE_ACCOUNT'; };
+    IF ($row.z_state.summary.measures.quantity.instant_min??0dec)<0dec OR ($row.z_state.summary.measures.price.instant_min??0dec)<0dec OR ($row.z_state.summary.measures.base.instant_min??0dec)<0dec { THROW 'ISSUE_CAPACITY'; };
 } PERMISSIONS FULL;
-
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_members($row: object) {
-    RETURN array::concat(array::concat(fn::accounting::commercial_members($row, $row.amount, 0dec), [
-        fn::accounting::balance_member($row, 'z_stock', $row.stock_account, $row.effective_at,
-            fn::accounting::effects(IF $row.is_sale THEN -$row.quantity ELSE $row.quantity END, 0dec, 0dec), false),
-        fn::tree::member($row.id, 'z_base', $row.id, 'z_basis', $row.effective_at, { base: $row.amount, quantity: $row.quantity }, {}, {}, false),
-        fn::tree::member($row.id, 'z_net_self', $row.id, 'z_net', $row.effective_at, { amount: $row.amount }, {}, {}, false)]), fn::accounting::trade_members($row));
+    LET $q=IF $row.is_sale THEN -$row.quantity ELSE $row.quantity END;
+    RETURN array::concat(fn::accounting::commercial($row,$row.amount,0dec),
+        fn::accounting::post($row,'z_stock',$row.stock_account,$row.effective_at,object::extend(fn::accounting::effects($q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,false))),
+        fn::accounting::post($row,'z_goods',$row.counterparty_stock,$row.effective_at,object::extend(fn::accounting::effects(-$q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,true))),[
+        fn::tree::member($row.id,'z_self',$row.id,'z_state',$row.effective_at,{quantity:$row.quantity,price:$row.price,base:$row.amount},{},{},false),
+        fn::tree::member($row.id,'z_net_self',$row.id,'z_net',$row.effective_at,{amount:$row.amount},{},{},false)]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE sales_issue SCHEMAFULL COMMENT '@rebase-members fn::accounting::issue_members @rebase-validate fn::accounting::issue_validate';
+
 DEFINE FIELD OVERWRITE invoice ON sales_issue TYPE record<sales_invoice> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
+
 DEFINE FIELD OVERWRITE stock_account ON sales_issue TYPE record<stock_account | misc_stock_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE quantity ON sales_issue TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE price ON sales_issue TYPE decimal ASSERT $value >= 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE exchange_rate ON sales_issue TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE counterparty_stock ON sales_issue TYPE record<organization_resource_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE quantity ON sales_issue TYPE decimal ASSERT $value>0dec COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE price ON sales_issue TYPE decimal ASSERT $value>=0dec COMMENT '@rebase-audit';
+
 DEFINE FIELD OVERWRITE effective_at ON sales_issue TYPE datetime COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE description ON sales_issue TYPE option<string> COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE currency_account ON sales_issue TYPE record<organization_currency_account> REFERENCE ON DELETE REJECT VALUE $this.invoice.account COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE organization ON sales_issue TYPE record<organization> REFERENCE ON DELETE REJECT VALUE $this.invoice.organization COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE subsidiary ON sales_issue TYPE record<subsidiary> REFERENCE ON DELETE REJECT VALUE $this.invoice.subsidiary COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE currency ON sales_issue TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.invoice.currency COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE invoice_date ON sales_issue TYPE datetime VALUE $this.invoice.invoice_date COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE stock_currency ON sales_issue TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.stock_account.currency COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE is_sale ON sales_issue TYPE bool VALUE true COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE is_sale ON sales_issue TYPE bool VALUE $this.invoice.is_sale COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE precision ON sales_issue TYPE int VALUE $this.currency.precision COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE amount ON sales_issue TYPE decimal VALUE fn::accounting::round($this.quantity * $this.price * $this.exchange_rate, $this.precision) COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_basis ON sales_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_net ON sales_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_counterparty_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_org_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
 DEFINE FIELD OVERWRITE z_invoice ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
+
+DEFINE FIELD OVERWRITE amount ON sales_issue TYPE decimal VALUE fn::accounting::round($this.quantity*$this.price,$this.precision) COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE z_state ON sales_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
+
+DEFINE FIELD OVERWRITE z_net ON sales_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
+
+DEFINE FIELD OVERWRITE z_adjustments ON sales_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+
 DEFINE FIELD OVERWRITE z_stock ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
-DEFINE FIELD OVERWRITE z_base ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_basis';
+
+DEFINE FIELD OVERWRITE z_stock_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_stock_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_goods ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_goods_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_org_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_self ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_state';
+
 DEFINE FIELD OVERWRITE z_net_self ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net';
 
 DEFINE TABLE OVERWRITE purchase_issue SCHEMAFULL COMMENT '@rebase-members fn::accounting::issue_members @rebase-validate fn::accounting::issue_validate';
+
 DEFINE FIELD OVERWRITE invoice ON purchase_issue TYPE record<purchase_invoice> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
+
 DEFINE FIELD OVERWRITE stock_account ON purchase_issue TYPE record<stock_account | misc_stock_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE quantity ON purchase_issue TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE price ON purchase_issue TYPE decimal ASSERT $value >= 0dec COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE exchange_rate ON purchase_issue TYPE decimal ASSERT $value > 0dec COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE counterparty_stock ON purchase_issue TYPE record<organization_resource_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE quantity ON purchase_issue TYPE decimal ASSERT $value>0dec COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE price ON purchase_issue TYPE decimal ASSERT $value>=0dec COMMENT '@rebase-audit';
+
 DEFINE FIELD OVERWRITE effective_at ON purchase_issue TYPE datetime COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE description ON purchase_issue TYPE option<string> COMMENT '@rebase-audit';
+
+DEFINE FIELD OVERWRITE currency_account ON purchase_issue TYPE record<organization_currency_account> REFERENCE ON DELETE REJECT VALUE $this.invoice.account COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE organization ON purchase_issue TYPE record<organization> REFERENCE ON DELETE REJECT VALUE $this.invoice.organization COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE subsidiary ON purchase_issue TYPE record<subsidiary> REFERENCE ON DELETE REJECT VALUE $this.invoice.subsidiary COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE currency ON purchase_issue TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.invoice.currency COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE invoice_date ON purchase_issue TYPE datetime VALUE $this.invoice.invoice_date COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE stock_currency ON purchase_issue TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.stock_account.currency COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE is_sale ON purchase_issue TYPE bool VALUE false COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE is_sale ON purchase_issue TYPE bool VALUE $this.invoice.is_sale COMMENT '@rebase-derived';
+
 DEFINE FIELD OVERWRITE precision ON purchase_issue TYPE int VALUE $this.currency.precision COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE amount ON purchase_issue TYPE decimal VALUE fn::accounting::round($this.quantity * $this.price * $this.exchange_rate, $this.precision) COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z_basis ON purchase_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_net ON purchase_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
-DEFINE FIELD OVERWRITE z_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_counterparty_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_counterparty_org_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
 DEFINE FIELD OVERWRITE z_invoice ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
+
+DEFINE FIELD OVERWRITE amount ON purchase_issue TYPE decimal VALUE fn::accounting::round($this.quantity*$this.price,$this.precision) COMMENT '@rebase-derived';
+
+DEFINE FIELD OVERWRITE z_state ON purchase_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
+
+DEFINE FIELD OVERWRITE z_net ON purchase_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
+
+DEFINE FIELD OVERWRITE z_adjustments ON purchase_issue TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime';
+
 DEFINE FIELD OVERWRITE z_stock ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
-DEFINE FIELD OVERWRITE z_base ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner purchase_issue.z_basis';
+
+DEFINE FIELD OVERWRITE z_stock_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_stock_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_goods ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_goods_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
+
+DEFINE FIELD OVERWRITE z_goods_org_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
+
+DEFINE FIELD OVERWRITE z_self ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner purchase_issue.z_state';
+
 DEFINE FIELD OVERWRITE z_net_self ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner purchase_issue.z_net';

@@ -1,5 +1,8 @@
 # Frontend verification — October 8, 2026
 
+This is historical frontend evidence for the `cada5e2` backend API. It does not
+certify compatibility with the October 13 [subsidiary redesign](../all-in-accounting/developer-guide.md).
+
 The current frontend targets ReBase `cada5e2`, including direct accounting,
 explicit tenants, scalar readers, adjustment notes, inline charges and typed
 analytics. MetaSol started at `ada483e` with an unfinished tenant migration.

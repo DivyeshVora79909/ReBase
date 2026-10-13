@@ -1,75 +1,78 @@
-# Accounting verification — 2026-10-07
+# Accounting verification — October 13
 
-This is historical acceptance. See [October 8 extension verification](extension-verification.md) for current sources.
+Fresh consolidated acceptance passed on SurrealDB 3.3.0 / Node 22.23.2 with
+disposable SurrealKV: **101 source-oracle checkpoints and 51 rejected-write
+rollback snapshots**. Core and extension cases ran together in one database,
+followed by exact populated-schema reapplication and child-first cleanup.
 
-The subsequent [reader/index change](../rebase-system/reader-index-verification.md)
-updates the shared framework and reruns accounting regression. The original
-accounting redesign evidence below remains tied to commit `88c5ae7` and its
-recorded hashes; it does not imply the shared framework stayed unchanged later.
-
-
-Local acceptance passed against the final October 7 sources. The
-[acceptance record](../rebase-system/evidence/2026-10-07-accounting-redesign-acceptance.json)
-contains commands, results, source and generated-artifact SHA-256 hashes, and
-the comparison with the saved shared-engine baseline.
-
-## Commands and results
-
-| Command | Result |
-|---|---|
-| `npm run build:all-in-accounting` | Passed: 51 tables, 17 materials, 0 views; ten domain source files and 34 public create schemas |
-| `npm run verify:accounting` | Passed in 397.33 seconds: current generated output, native schema validation, 63 mutation checkpoints and 35 complete rejection snapshots |
-| `npm run test:dev-tools` | Passed: 27 tests, 0 failures, 4.05 seconds; includes the 15 client-schema tests |
-| `npm run check` and `npm run check:all-in-one` | Passed: generated output current |
-| `npm run probe:compiler` and `npm run probe:architecture` | Passed: compiler contracts, determinism, validation, authorization and synchronous rollback boundaries |
-| `node --check` on the three accounting JavaScript files | Passed |
-| `git diff --check` | Passed |
-
-The [accounting transcript](../rebase-system/evidence/2026-10-07-accounting-redesign-verify-output.txt),
-[developer-tool transcript](../rebase-system/evidence/2026-10-07-accounting-redesign-tests-output.txt),
-and [architecture transcript](../rebase-system/evidence/2026-10-07-accounting-redesign-architecture-output.txt)
-retain the actual output. The final accounting run includes the invoice dimension
-and claim-family guards. Runtime: Node `v22.23.2`, SurrealDB `3.3.0`, disposable
-SurrealKV storage. The example prepares eleven native SDK records without
-opening a database connection.
+The [developer guide](developer-guide.md) defines the accepted API. The
+[machine-readable evidence](../rebase-system/evidence/2026-10-13-subsidiary-accounting.json)
+records cases, timings, the schema fingerprint and all 71 frozen authoring/probe
+source fingerprints. The
+[acceptance output](../rebase-system/evidence/2026-10-13-subsidiary-accounting-output.txt)
+records the completed run. Earlier October 7/8 evidence retains its historical
+source and API scope.
 
 ## What passed
 
-- Direct accounts, shared stock-account uniqueness, required invoice ancestry,
-  covered advances and invoice-date rollback.
-- Strictly earlier net-tax readers, equal-time parallel taxes, backdated
-  recalculation, bounded marginal tax rules, and old/new ancestor repair.
-- Return/refund versus adjustment dates, physical stock reversals, signed
-  quantity/price/FX changes and linked adjustment-tax reactivity.
-- Purchase direction, withholding, currency conversion, exact rounding and an
-  explicit split-return remainder.
-- Future production, gross simultaneous inputs, treasury reservations, service
-  windows, output capacity, parent rescheduling and adjacent half-open capacity.
-- Independent competing sessions, authenticated source writes, cross-tenant
-  rejection and exact native SDK decimal binding. A supplied computed issue
-  amount of 999 is replaced by the correct VALUE result of 1.
-- Exact domain/audit equality after identical schema reapplication to populated
-  data, followed by explicit child-first deletion and empty account histories.
+- Sparse subsidiary/native positions, multiple treasuries, units and mirrored
+  counterparty contributions without invoice or note reposting.
+- Covered advances and chronological linear invoice capacities; product-difference
+  quantity/price adjustments and nonnegative directional receivable/payable entries.
+- All five strict tax-adjustment tables, direct rule propagation, dated bases,
+  marginal capped rules and prevention of duplicated tax effects.
+- Dated-rate insertion, edits, moves, reparenting, deletion, fallback and reader
+  date/reference changes; native stock quantities stay intact during valuation edits.
+- Independent rational source replay and declared AVL/link/summary verification
+  after mutations, plus rejected-write comparisons of accounting and audit snapshots.
+- Inline fees and fee taxes, withholding, tax cash/offset capacities, monetary and
+  resource claims, competing settlements, transfers and separate exchange observations.
+- Native production reservations, strictly prior gross-input funding, output
+  capacity, resource windows, adjacent intervals and rejected overlapping capacity.
+- Tenant isolation, protected computed/tree fields, native SDK decimals, the
+  executed 17-record fixture and its forward/inverse graph and tree queries.
+- Identical populated reapplication preserves the accounting and audit snapshot.
+  Sequential child-first deletion leaves financial, reader and observation roots
+  empty and structurally valid; descriptor/account indexes remain valid.
 
-Every mutation checkpoint replays authored inputs with independent rational
-arithmetic and reconstructs tree membership, topology, chronology and summaries.
-Derived financial fields use exact comparisons; the existing structural oracle
-retains its numerical tolerances for tree summaries. Rejection snapshots compare
-all 34 domain tables and `audit_mutation` before and after the failed operation.
-The 34 public exports are byte-identical to their authored JSON schemas, and
-all remaining package-script targets and changed documentation links resolve.
+All **27 developer-tool tests** passed; see the
+[test output](../rebase-system/evidence/2026-10-13-subsidiary-accounting-dev-tests.txt).
+Compiler and architecture probes passed. All 48 client-schema exports match their
+sources, and all 374 exposed business fields are authored inputs. The CLI and
+acceptance probe use the same 8,634,177-byte schema. Supporting checks are in the
+[check log](../rebase-system/evidence/2026-10-13-subsidiary-accounting-supporting-checks.txt).
 
-## Scope
+The function-impact primitive is separately committed at `6ffac15` and its
+focused probe passed again during this acceptance. Its
+[original evidence](../rebase-system/evidence/2026-10-13-function-impact.json)
+covers 13 checkpoints and six rollback snapshots, exact bounded candidates,
+overlap deduplication, unchanged-output suppression, moves, deletion/fallback,
+cycle/tenant rejection, reapplication and cleanup.
 
-All 67 saved compiler/framework/gateway/config files match the pre-change hashes;
-those shared implementation directories have no Git diff. The focused engine
-checks above passed during this task; the full repository `npm run verify` suite
-was not repeated. Historical October 5 and H1–H8 results retain their original
-source snapshots and do not certify this redesigned API.
+## Observed acceptance cost
 
-This is local functional acceptance. The timing includes schema setup,
-independent snapshots, reapplication and cleanup; it is not a throughput or
-physical-storage capacity measurement. A populated conversion from the old
-schema, deployment, live providers and the separate MetaSol frontend migration
-are outside this acceptance. Tax children, bills of materials, yield and legal
-tax policies remain explicitly authored business choices.
+| Phase | Elapsed |
+| --- | ---: |
+| Fresh schema application | 308.846 s |
+| Fixture setup | 7.799 s |
+| Core and extension scenarios | 1,414.216 s |
+| Populated schema reapplication | 570.685 s |
+| Sequential cleanup and final checks | 306.772 s |
+
+The complete run took approximately 43.5 minutes on this host. These are one-run
+correctness-suite timings, including source scans, structural checks and repeated
+DDL. They do not measure ordinary transaction latency or production capacity.
+
+## Reproduce and continue
+
+```bash
+npm run build:all-in-accounting
+npm run verify:accounting
+npm run test:dev-tools
+npm run probe:impact-tree
+```
+
+This acceptance covers fresh application and identical reapplication of the new
+profile. A populated old-API migration and adaptation of the separate MetaSol
+frontend remain separate tasks. Reporting values use each event's dated rate;
+current-rate valuation of remaining balances requires an explicit calculation.

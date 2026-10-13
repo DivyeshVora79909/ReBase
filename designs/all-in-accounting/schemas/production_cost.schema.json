@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "production_cost.schema.json",
   "title": "production_cost",
   "type": "object",
   "additionalProperties": false,
@@ -13,31 +12,33 @@
       "type": "string",
       "pattern": "^(?:production):.+$"
     },
+    "description": {
+      "type": "string"
+    },
     "treasury": {
       "type": "string",
       "pattern": "^(?:treasury|misc_currency_account):.+$"
     },
     "amount": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     },
     "fee_account": {
       "type": "string",
       "pattern": "^(?:misc_currency_account):.+$"
+    },
+    "fee_tax_account": {
+      "type": "string",
+      "pattern": "^(?:indirect_tax_account):.+$"
     },
     "fee_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
     "fee_lower_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_upper_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_exchange_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
@@ -49,27 +50,27 @@
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
+    "fee_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
     "fee_tax_upper_bound": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
-    "fee_tax_exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_tax_account": {
-      "type": "string",
-      "pattern": "^(?:indirect_tax_account):.+$"
-    },
     "fee_tax_creditable": {
       "type": "boolean"
     },
-    "include_analytics": {
-      "type": "boolean"
+    "fee_exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
+    "fee_tax_exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
     }
   },
   "required": [
-    "owned_by",
     "production",
     "treasury",
     "amount"

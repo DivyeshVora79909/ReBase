@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "account_entry.schema.json",
   "title": "account_entry",
   "type": "object",
   "additionalProperties": false,
@@ -11,13 +10,13 @@
     },
     "account": {
       "type": "string",
-      "pattern": "^(?:organization|treasury|direct_tax_account|indirect_tax_account|misc_currency_account):.+$"
+      "pattern": "^(?:treasury|misc_currency_account|direct_tax_account|indirect_tax_account|organization_currency_account):.+$"
     },
     "effective_at": {
       "type": "string",
       "format": "date-time"
     },
-    "note": {
+    "description": {
       "type": "string"
     },
     "real": {
@@ -26,16 +25,59 @@
     },
     "receivable": {
       "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
     "payable": {
       "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     }
   },
   "required": [
-    "owned_by",
     "account",
     "effective_at"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "real"
+      ],
+      "properties": {
+        "real": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+          "not": {
+            "pattern": "^-?0+(?:\\.0+)?$"
+          }
+        }
+      }
+    },
+    {
+      "required": [
+        "receivable"
+      ],
+      "properties": {
+        "receivable": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+          "not": {
+            "pattern": "^-?0+(?:\\.0+)?$"
+          }
+        }
+      }
+    },
+    {
+      "required": [
+        "payable"
+      ],
+      "properties": {
+        "payable": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+          "not": {
+            "pattern": "^-?0+(?:\\.0+)?$"
+          }
+        }
+      }
+    }
   ]
 }

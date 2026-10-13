@@ -1,0 +1,37 @@
+October 13, 2026 accounting continuation: supporting checks
+Starting commit: 6ffac153c07a6b4699ed4afc78f65ba3b1edcf7b
+Accounting acceptance and timings are recorded separately after cleanup.
+
+Environment
+v22.23.2
+SurrealDB 3.3.0 for linux on x86_64
+
+Compiler
+npm notice run rebase-surreal-compiler@0.2.0 probe:compiler
+npm notice run node dev-tools/checks/compiler-probe.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed
+
+Architecture
+npm notice run rebase-surreal-compiler@0.2.0 probe:architecture
+npm notice run node dev-tools/checks/architecture-probe.js
+architecture: UUIDv7 record ID behavior passed
+architecture: synchronous snapshot and rollback boundary passed
+architecture: reference authorization and event permission boundary passed
+architecture: fixed principal compiler contract passed
+architecture: PASS
+
+Function impacts
+npm notice run rebase-surreal-compiler@0.2.0 probe:impact-tree
+npm notice run node dev-tools/temporal-tree/impact-probe.js
+{"status":"PASS","storage":"surrealkv","checkpoints":13,"rejections":6,"boundedReaders":true,"unchangedOutputStopsCascade":true,"reapplication":true,"cleanup":true}
+
+Developer example and documentation
+17 records validated with native SDK bindings.
+136 local Markdown links checked across 22 changed documents; no broken targets or heading anchors.
+374 public business input fields belong to authored schema inputs; all 48 client exports match their sources.
+Acceptance and CLI schema bytes match: 8634177 bytes, SHA-256 b35f00a476d8f2b5f633e3430a4e5ea5c2ed050276c364d939aa54abb1ea0b77.
+All 71 frozen authoring/probe source files were unchanged through scenario acceptance.
+Developer-guide SurrealQL block passed surreal validate.
+git diff HEAD --check passed.
+Nested MetaSol repository was clean and was not modified.

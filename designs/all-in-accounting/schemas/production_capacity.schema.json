@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "production_capacity.schema.json",
   "title": "production_capacity",
   "type": "object",
   "additionalProperties": false,
@@ -13,24 +12,29 @@
       "type": "string",
       "pattern": "^(?:production):.+$"
     },
+    "description": {
+      "type": "string"
+    },
     "operating_unit": {
       "type": "string",
       "pattern": "^(?:operating_unit):.+$"
     },
-    "service": {
+    "resource": {
       "type": "string",
       "pattern": "^(?:service):.+$"
     },
     "quantity": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     }
   },
   "required": [
-    "owned_by",
     "production",
     "operating_unit",
-    "service",
+    "resource",
     "quantity"
   ]
 }

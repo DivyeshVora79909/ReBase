@@ -1,16 +1,26 @@
-# Direct accounting normalization
+# Native positions and reporting projections
 
-The active contract is the [October 7 blueprint](blueprint.md). The
-[execution record](redesign-2026-10-07.md) supersedes October 5's entity/claim
-wrappers, optional issue parents, quote-selected pricing and predecessor taxes.
+`organization_currency_account` identifies one organization/currency position;
+`organization_resource_account` identifies one organization/item-or-service
+position. These are sparse rows. Owned stock is identified by operating unit and
+resource within a subsidiary; pricing currency is not part of that identity.
+Treasury record identity distinguishes multiple cash locations in one currency.
 
-Each business fact is one explicit native row. An invoice validates; an issue
-both contributes and validates. Typed account roots carry independent real,
-receivable and payable measures, with resource and currency units kept separate.
-Taxes have one issue parent; adjustment taxes have the two required semantic
-parents. Production uses ordinary rows with two dated positions, not arrays or
-source-owned output recipes. Descriptor indexes do not duplicate ledger totals.
+A source leg declares a native history membership and its required reporting
+memberships. The account's `valuation_pair` converts into subsidiary currency;
+organization accounts also use `organization_pair`. Reporting happens at the
+source's effective time. Parent account or invoice totals do not post a duplicate
+financial leg. Coincident legs from one source into one root/time coalesce.
 
-The old recipe directory and commands have been deleted as requested. Historical
-acceptance remains tied to its recorded Git/source snapshot. No compatibility
-layer or populated database migration is included in this source redesign.
+The organization uses the counterparty perspective. The subsidiary mirrors its
+claims and keeps owned, counterparty, tax and miscellaneous real measures distinct.
+No root sums mixed raw currencies or unrelated resource quantities.
+
+Exchange pairs are directed and tenant-scoped. Dated authoritative rates and
+observed trade values are independent trees. Initial fallback and bounded rate
+impacts are detailed in the [developer guide](developer-guide.md). Reporting is
+event-time valuation, not automatic mark-to-market of the remaining position.
+
+The shared compiler, access closure, derived-field ordering and ordered-tree
+runtime remain under `dev-tools/compiler/` and `framework/`. Domain formulas
+and memberships remain ordinary authored source in this profile.

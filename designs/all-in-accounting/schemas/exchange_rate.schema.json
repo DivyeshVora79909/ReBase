@@ -1,7 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "issue_return.schema.json",
-  "title": "issue_return",
+  "title": "exchange_rate",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -9,30 +8,28 @@
       "type": "string",
       "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
     },
-    "source": {
+    "pair": {
       "type": "string",
-      "pattern": "^(?:sales_issue|purchase_issue):.+$"
+      "pattern": "^(?:exchange_pair):.+$"
     },
     "effective_at": {
       "type": "string",
       "format": "date-time"
     },
-    "note": {
+    "rate": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
+    },
+    "description": {
       "type": "string"
-    },
-    "quantity": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "entered_amount": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     }
   },
   "required": [
-    "owned_by",
-    "source",
+    "pair",
     "effective_at",
-    "quantity"
+    "rate"
   ]
 }

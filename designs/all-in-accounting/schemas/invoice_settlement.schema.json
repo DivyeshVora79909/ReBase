@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "invoice_settlement.schema.json",
   "title": "invoice_settlement",
   "type": "object",
   "additionalProperties": false,
@@ -17,35 +16,37 @@
       "type": "string",
       "pattern": "^(?:treasury|misc_currency_account):.+$"
     },
-    "amount": {
+    "exchange_pair": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^(?:exchange_pair):.+$"
     },
     "effective_at": {
       "type": "string",
       "format": "date-time"
     },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
+    },
     "fee_account": {
       "type": "string",
       "pattern": "^(?:misc_currency_account):.+$"
+    },
+    "fee_tax_account": {
+      "type": "string",
+      "pattern": "^(?:indirect_tax_account):.+$"
     },
     "fee_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
     "fee_lower_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_upper_bound": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_exchange_rate": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
@@ -57,35 +58,30 @@
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
+    "fee_upper_bound": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+    },
     "fee_tax_upper_bound": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     },
-    "fee_tax_exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "fee_tax_account": {
-      "type": "string",
-      "pattern": "^(?:indirect_tax_account):.+$"
-    },
     "fee_tax_creditable": {
       "type": "boolean"
     },
-    "include_analytics": {
-      "type": "boolean"
+    "fee_exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
     },
-    "fx_pair": {
+    "fee_tax_exchange_pair": {
       "type": "string",
       "pattern": "^(?:exchange_pair):.+$"
     }
   },
   "required": [
-    "owned_by",
     "invoice",
     "treasury",
-    "amount",
-    "exchange_rate",
-    "effective_at"
+    "effective_at",
+    "amount"
   ]
 }

@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "production_output.schema.json",
   "title": "production_output",
   "type": "object",
   "additionalProperties": false,
@@ -13,17 +12,22 @@
       "type": "string",
       "pattern": "^(?:production):.+$"
     },
+    "description": {
+      "type": "string"
+    },
     "stock_account": {
       "type": "string",
       "pattern": "^(?:stock_account|misc_stock_account):.+$"
     },
     "quantity": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     }
   },
   "required": [
-    "owned_by",
     "production",
     "stock_account",
     "quantity"

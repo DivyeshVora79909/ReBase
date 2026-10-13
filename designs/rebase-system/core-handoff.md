@@ -9,13 +9,12 @@ The accounting baseline was committed as `88c5ae7`. Older evidence below remains
 tied to its original source; reader-array descriptions are superseded.
 
 
-The [October 7 accounting redesign](../all-in-accounting/implementation-handoff.md)
-uses the existing compiler/tree engine with direct currency-bearing accounts,
-invoice-date validation, temporal tax corrections and ordinary production rows.
+The [October 13 accounting redesign](../all-in-accounting/implementation-handoff.md)
+uses the existing compiler/tree engine with subsidiaries, sparse native accounts,
+dated reporting, linear invoice capacities and unified issue/payment/tax adjustments.
 Its [verification](../all-in-accounting/verification.md) owns current accounting
-acceptance. The user requested deletion of the recipe profile; its sources and
-commands are no longer an active continuation route. Historical evidence below
-retains its original meaning and source fingerprint.
+acceptance. Historical recipes are not an active continuation route. Historical
+evidence below retains its original meaning and source fingerprint.
 
 ## Tenant/tree acceptance — 2026-10-05
 

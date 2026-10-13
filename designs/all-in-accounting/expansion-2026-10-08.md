@@ -1,5 +1,7 @@
 # Accounting extension plan — October 8
 
+> Historical plan. The active API and acceptance contract are [October 13](redesign-2026-10-13.md).
+
 Baseline: `a8ecfca` commits the completed scalar-reader/custom-index framework
 change after checking its 192 source and 56 artifact fingerprints. The earlier
 accounting redesign is `88c5ae7`. This packet follows the supplied October 7

@@ -1,8 +1,8 @@
 # Developer blueprint: records, permissions and calculation trees
 
-This is the authoring contract, updated October 8. It accompanies the executable
+This is the authoring contract, updated October 13. It accompanies the executable
 [analytics design](../index-analytics/README.md),
-[accounting design](../all-in-accounting/blueprint.md),
+[accounting developer guide](../all-in-accounting/developer-guide.md),
 [tree API](ordered-tree-contract.md) and
 [tenant/authentication contract](tenant-authentication.md).
 Use [current verification](reader-index-verification.md) to distinguish exercised
@@ -21,7 +21,8 @@ behavior from an application feature you still need to build.
 
 A deployed design has one configured namespace/database and explicitly
 provisioned tenant records. A tenant is an authorization boundary. An accounting
-organization is an economic account. They are different records with different
+subsidiary is a business division; an organization is its counterparty, with
+explicit native currency/resource positions. These records have different
 responsibilities. UUIDv7 IDs are a default identity format, never authorization.
 
 Use native tables, scalar fields, typed references and ordinary functions. The
@@ -246,27 +247,30 @@ own costs. Functional tests do not establish universal throughput or capacity.
 
 ## A compact accounting extension pattern
 
-The [accounting extension contract](../all-in-accounting/extension-contract.md)
-is a worked example of choosing dimensions and source participation. Independent
-claims, adjustment documents and directed exchange contexts are new facts.
+The [accounting developer guide](../all-in-accounting/developer-guide.md)
+is a worked example of choosing sparse dimensions and source participation.
+Subsidiaries collect explicitly converted reporting contributions; organizations
+also retain separate native currency/resource accounts. Independent claims,
+adjustment documents and directed exchange contexts are explicit facts.
 A deterministic payment charge is fields and memberships on its payment, using
 one shared rule and no automatic child. An adjustment document only validates;
 it does not repeat its children's financial effects.
 
-Keep aggregate units explicit. A resource root can sum its own quantities. A
-currency root can sum money. Use `[operating_unit, effective_at]` under a currency
-root for unit turnover; do not sum unlike currencies under a unit. Keep sales,
-purchases, gross cash, charges and taxes separate. Store additive numerator and
-denominator components, then divide the selected summary. A zero denominator
-means no average. Rate corrections are signed value changes, not new observations.
+Keep aggregate units explicit. A native resource account sums its own quantities;
+a native currency account sums that currency. Organization and subsidiary reports
+convert each event using the rate at its date. Descriptor records have no automatic
+financial roots. Declare any additional composite query index explicitly. Keep
+sales, purchases, gross cash, charges and taxes separate. Store additive numerator
+and denominator components, then divide the selected summary. A zero denominator
+means no average. Authoritative dated rates and observed trades use separate roots.
 
 Read immutable dimensions directly when safe; materialize mutable referenced
 values one hop at a time. A source's several slots at the same temporal root and
 timestamp are combined by the coordinator; do not combine them again in a second
 business row. Guard optional inputs before constructing a membership requiring
 a concrete record. Final root validation still runs after the affected closure.
-Use drafts where a document's nonempty constraint would otherwise make its first
-row impossible under the statement-by-statement mutation boundary.
+Invoice and note roots validate linear capacities and dimensions. Empty documents
+are valid; the accounting profile has no draft/finalization requirement.
 
 ## Before adding a new domain
 

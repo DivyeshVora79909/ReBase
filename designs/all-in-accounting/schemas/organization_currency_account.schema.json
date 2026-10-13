@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "organization_currency_account",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "organization": {
+      "type": "string",
+      "pattern": "^(?:organization):.+$"
+    },
+    "organization_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^(?:currency):.+$"
+    },
+    "valuation_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
+    "minimum_real": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "minimum_available": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "net_floor": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "net_ceiling": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "name",
+    "effective_at",
+    "organization",
+    "currency"
+  ]
+}

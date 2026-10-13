@@ -1,15 +1,9 @@
 # Accounting execution plan
 
-The [October 8 extension plan](expansion-2026-10-08.md) is the current packet.
-The [October 7 execution record](redesign-2026-10-07.md) records its baseline.
-The [blueprint](blueprint.md) defines the implementation contract and the
-[verification record](verification.md) distinguishes fresh results from history.
+The active plan and acceptance checklist are in
+[redesign-2026-10-13.md](redesign-2026-10-13.md). The accounting redesign is the
+main task; function-driven temporal R&D supports it.
 
-The source slices are account roots/invoice dates, temporal taxes/corrections,
-settlement/exchange, and production/capacity. They share the existing tree engine
-and are validated together by `npm run verify:accounting`.
-
-Acceptance requires source-derived arithmetic, structural reconstruction, exact
-native decimal cases, complete rollback, record-user writes, competing sessions,
-unchanged populated schema reapplication and complete explicit cleanup. Keep
-schema inputs, worked examples and handoff evidence in the same change.
+The implementation contract is [developer-guide.md](developer-guide.md). Inspect
+current source, Git diff and [verification evidence](verification.md) before
+continuing. Earlier dated plans certify their historical snapshots only.

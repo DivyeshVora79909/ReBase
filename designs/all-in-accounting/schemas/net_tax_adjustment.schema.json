@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "net_tax_adjustment",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "owned_by": {
+      "type": "string",
+      "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
+    },
+    "source_tax": {
+      "type": "string",
+      "pattern": "^(?:issue_net_tax):.+$"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "adjustment_note": {
+      "type": "string",
+      "pattern": "^(?:sales_adjustment_note|purchase_adjustment_note):.+$"
+    },
+    "amount_delta": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
+    },
+    "entered_account_delta": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  },
+  "required": [
+    "source_tax",
+    "effective_at",
+    "adjustment_note",
+    "amount_delta"
+  ]
+}

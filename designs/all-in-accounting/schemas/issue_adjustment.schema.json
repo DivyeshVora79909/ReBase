@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "issue_adjustment.schema.json",
   "title": "issue_adjustment",
   "type": "object",
   "additionalProperties": false,
@@ -17,8 +16,12 @@
       "type": "string",
       "format": "date-time"
     },
-    "note": {
+    "description": {
       "type": "string"
+    },
+    "adjustment_note": {
+      "type": "string",
+      "pattern": "^(?:sales_adjustment_note|purchase_adjustment_note):.+$"
     },
     "quantity_delta": {
       "type": "string",
@@ -27,19 +30,41 @@
     "price_delta": {
       "type": "string",
       "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate_delta": {
-      "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "adjustment_note": {
-      "type": "string",
-      "pattern": "^(?:sales_adjustment_note|purchase_adjustment_note):.+$"
     }
   },
   "required": [
-    "owned_by",
     "source",
-    "effective_at"
+    "effective_at",
+    "adjustment_note"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "quantity_delta"
+      ],
+      "properties": {
+        "quantity_delta": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+          "not": {
+            "pattern": "^-?0+(?:\\.0+)?$"
+          }
+        }
+      }
+    },
+    {
+      "required": [
+        "price_delta"
+      ],
+      "properties": {
+        "price_delta": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+          "not": {
+            "pattern": "^-?0+(?:\\.0+)?$"
+          }
+        }
+      }
+    }
   ]
 }

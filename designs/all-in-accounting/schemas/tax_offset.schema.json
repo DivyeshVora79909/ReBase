@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "tax_offset.schema.json",
   "title": "tax_offset",
   "type": "object",
   "additionalProperties": false,
@@ -17,13 +16,16 @@
       "type": "string",
       "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
     },
+    "exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
     "amount": {
       "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+      "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+      "not": {
+        "pattern": "^-?0+(?:\\.0+)?$"
+      }
     },
     "effective_at": {
       "type": "string",
@@ -34,11 +36,9 @@
     }
   },
   "required": [
-    "owned_by",
     "credit_account",
     "liability_account",
     "amount",
-    "exchange_rate",
     "effective_at"
   ]
 }

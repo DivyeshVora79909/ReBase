@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "purchase_invoice.schema.json",
   "title": "purchase_invoice",
   "type": "object",
   "additionalProperties": false,
@@ -9,21 +8,23 @@
       "type": "string",
       "pattern": "^(?:rebase_user|rebase_group|rebase_tenant):.+$"
     },
-    "organization": {
+    "account": {
       "type": "string",
-      "pattern": "^(?:organization):.+$"
+      "pattern": "^(?:organization_currency_account):.+$"
+    },
+    "number": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
     },
     "invoice_date": {
       "type": "string",
       "format": "date-time"
-    },
-    "number": {
-      "type": "string"
     }
   },
   "required": [
-    "owned_by",
-    "organization",
+    "account",
     "invoice_date"
   ]
 }

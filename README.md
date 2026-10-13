@@ -21,14 +21,15 @@ Use SurrealDB **3.3.0** as pinned by `.surreal-version`. One configured
 namespace/database identifies a design; explicitly provisioned `rebase_tenant`
 records isolate users and data inside it.
 
-**Accounting model (extended 2026-10-08):** the active
-[all-in-accounting profile](./designs/all-in-accounting/README.md) has typed
-accounts, dated invoices/taxes, production, adjustment-note groups, tax cash
-and credit offsets, independent claims, inline payment charges and optional
-trade/payment/exchange analytics. The
-[extension contract](./designs/all-in-accounting/extension-contract.md) states the
-units and participation rules; [current verification](./designs/all-in-accounting/extension-verification.md)
-records acceptance. Start framework authoring with the
+**Accounting model (redesigned 2026-10-13):** the active
+[all-in-accounting profile](./designs/all-in-accounting/README.md) has subsidiary
+roots, sparse native organization accounts, event-time reporting, directional
+claims and unified issue/payment/tax adjustments. It retains explicit fees,
+tax cash, claims, transfers and production. The
+[developer guide](./designs/all-in-accounting/developer-guide.md) states the units,
+constraints and graph/tree queries; [current verification](./designs/all-in-accounting/verification.md)
+records acceptance. [Function reactivity](./designs/rebase-system/function-reactivity.md)
+explains dated invalidation. Start framework authoring with the
 [developer blueprint](./designs/rebase-system/developer-blueprint.md).
 The removed recipe profile and older evidence retain their historical meaning.
 
@@ -42,9 +43,10 @@ The [core handoff](./designs/rebase-system/core-handoff.md) and
 [accounting handoff](./designs/all-in-accounting/implementation-handoff.md)
 track validation and domain boundaries. The [configuration reference](./designs/rebase-system/core-configuration.md)
 owns process settings. Historical evidence remains tied to its original sources.
-The [MetaSol accounting prototype](./designs/frontend/README.md) targets the current
-tenant/accounting contract. Its [verification](./designs/frontend/verification.md)
-records the disposable demo, native/browser walkthroughs and remaining coverage.
+The [MetaSol accounting prototype](./designs/frontend/README.md) targets the earlier
+`cada5e2` accounting API and requires adaptation to the subsidiary redesign.
+Its [verification](./designs/frontend/verification.md) records the earlier
+disposable demo, native/browser walkthroughs and remaining coverage.
 Local checks use disposable databases and mock providers; production delivery
 and representative capacity need their own evidence.
 

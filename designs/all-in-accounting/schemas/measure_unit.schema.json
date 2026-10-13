@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "measure_unit.schema.json",
   "title": "measure_unit",
   "type": "object",
   "additionalProperties": false,
@@ -17,7 +16,6 @@
     }
   },
   "required": [
-    "owned_by",
     "code",
     "name"
   ]

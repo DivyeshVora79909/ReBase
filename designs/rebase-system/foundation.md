@@ -169,7 +169,7 @@ whole maximum = max(0, sum, existing internal maxima)
 
 Absent internal boundaries stay absent, not zero. This prevents a rotation
 from making an artificial deficit between a same-time release and acquisition.
-The [accounting contract](../all-in-accounting/blueprint.md#invoice-date-and-temporal-integrity)
+The [accounting contract](../all-in-accounting/developer-guide.md#commercial-graph-and-constraints)
 uses this algebra for invoice and capacity validation. Keep record-prefix
 extrema for strict causal formulas; use complete-key extrema for net financial
 and half-open capacity guards. The policy is explicit in the domain validator.

@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "organization.schema.json",
   "title": "organization",
   "type": "object",
   "additionalProperties": false,
@@ -12,6 +11,10 @@
     "name": {
       "type": "string"
     },
+    "subsidiary": {
+      "type": "string",
+      "pattern": "^(?:subsidiary):.+$"
+    },
     "currency": {
       "type": "string",
       "pattern": "^(?:currency):.+$"
@@ -19,22 +22,6 @@
     "effective_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "minimum_real": {
-      "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "minimum_receivable": {
-      "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "minimum_payable": {
-      "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "minimum_available": {
-      "type": "string",
-      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
     },
     "net_floor": {
       "type": "string",
@@ -46,8 +33,8 @@
     }
   },
   "required": [
-    "owned_by",
     "name",
+    "subsidiary",
     "currency",
     "effective_at"
   ]

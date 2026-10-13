@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "issue_tax.schema.json",
   "title": "issue_tax",
   "type": "object",
   "additionalProperties": false,
@@ -17,11 +16,15 @@
       "type": "string",
       "pattern": "^(?:direct_tax_account|indirect_tax_account):.+$"
     },
+    "exchange_pair": {
+      "type": "string",
+      "pattern": "^(?:exchange_pair):.+$"
+    },
     "effective_at": {
       "type": "string",
       "format": "date-time"
     },
-    "label": {
+    "description": {
       "type": "string"
     },
     "rate": {
@@ -35,18 +38,12 @@
     "upper_bound": {
       "type": "string",
       "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
-    },
-    "exchange_rate": {
-      "type": "string",
-      "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
     }
   },
   "required": [
-    "owned_by",
     "source",
     "tax_account",
     "effective_at",
-    "rate",
-    "exchange_rate"
+    "rate"
   ]
 }
