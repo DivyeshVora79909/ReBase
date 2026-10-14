@@ -1,0 +1,321 @@
+{
+  "status": "lead_investigation_and_execution_handoff; product_repair_pending",
+  "sourceCommit": "17f956bfcad7f7f9731bb08a4abba11d1b995cc8",
+  "productSourcesChanged": false,
+  "originalWriterReproductionsRerun": false,
+  "externalLabAvailable": false,
+  "reportAttachmentSha256": "f4755490374059e3a2992ace42d6861fc664d9366f4fb9576dc5141cdfb20fdf",
+  "contextAttachments": [
+    {
+      "attachment": "c2f6302d-89e7-4bb1-9e0e-793f7650f2eb",
+      "exists": true,
+      "sha256": "2df3e072d2252355e13f424325dfa283276987ed1ad6c83a8e5da2faadd71c00",
+      "characters": 195502,
+      "references": []
+    },
+    {
+      "attachment": "8971e2ca-d1d7-4fa9-8ccd-cfb7a375bb5d",
+      "exists": true,
+      "sha256": "aa6723dc8e99705fdf58252dde3d6b643913f992823ee626b7ec8cb44abd1e9c",
+      "characters": 135366,
+      "references": [
+        "12f27f7c-c738-4fed-89ad-7ac366b10d6f"
+      ]
+    },
+    {
+      "attachment": "12f27f7c-c738-4fed-89ad-7ac366b10d6f",
+      "exists": true,
+      "sha256": "bbbed2b0a1779939bec0b8620d048fcb96e3a18d9a599ecd44f1236426a147fb",
+      "characters": 1439687,
+      "references": [
+        "643fdc31-bdf7-47a1-a22d-56a48b333d51",
+        "8c75e01b-87d7-46cd-9d6d-82fe21b1d15d",
+        "b698bfba-be83-4ace-b2f9-414e96c60b89",
+        "b7109afa-bf90-4215-ba2d-34a7542b96f9"
+      ]
+    },
+    {
+      "attachment": "643fdc31-bdf7-47a1-a22d-56a48b333d51",
+      "exists": true,
+      "sha256": "5276090a80e1e88ca5434237e819837dd7e016cd054b771a20a7a87b75fe51b0",
+      "characters": 171525,
+      "references": [
+        "5928ecdb-5c0b-4b1c-b66a-babc4f251a69"
+      ]
+    },
+    {
+      "attachment": "8c75e01b-87d7-46cd-9d6d-82fe21b1d15d",
+      "exists": true,
+      "sha256": "21d29bbfa71913d7d28b639b78425db64cc2173d0b42cad1dfd562d79dbd9c73",
+      "characters": 1055659,
+      "references": [
+        "643fdc31-bdf7-47a1-a22d-56a48b333d51",
+        "b698bfba-be83-4ace-b2f9-414e96c60b89"
+      ]
+    },
+    {
+      "attachment": "b698bfba-be83-4ace-b2f9-414e96c60b89",
+      "exists": true,
+      "sha256": "5276090a80e1e88ca5434237e819837dd7e016cd054b771a20a7a87b75fe51b0",
+      "characters": 171525,
+      "references": [
+        "5928ecdb-5c0b-4b1c-b66a-babc4f251a69"
+      ]
+    },
+    {
+      "attachment": "b7109afa-bf90-4215-ba2d-34a7542b96f9",
+      "exists": true,
+      "sha256": "16701d8ef0127fbd7a94016c7a667722fbec200af99dee1bb94b33e280e6aa95",
+      "characters": 69341,
+      "references": [
+        "8c75e01b-87d7-46cd-9d6d-82fe21b1d15d"
+      ]
+    },
+    {
+      "attachment": "5928ecdb-5c0b-4b1c-b66a-babc4f251a69",
+      "exists": true,
+      "sha256": "d0137490c6bc871c32580bb6f86655e71fd3b5130826d3b2005e456640e98452",
+      "characters": 54119,
+      "references": []
+    }
+  ],
+  "localSourceSha256": {
+    "dev-tools/compiler/reads.surql": "e9a61bc3f86dbe96d89a90dab5fad148ad746ee3dac3b0d4dd703c2064331cec",
+    "dev-tools/compiler/temporal.surql": "d9e19bba0f28ce70b2d03cb38e553380ae3132b709af8a01e44330a85dc67f1e",
+    "dev-tools/compiler/observed-reads.js": "c5941a30ee2b0b6fd11631243ff45c9f63da4874ae7c929dde6da4cbf26c4cfd",
+    "dev-tools/compiler/derived-order.js": "8f38ed56b1f646fb15f61127cd5caaef6d0145bcf3852d5ececd96ca4edc2471",
+    "dev-tools/compiler/generators/tree.js": "a72435b14bf7662910b04af8f76e074a917a0ed89d6ad91f29912cc0a3e7dbc7",
+    "dev-tools/compiler/generators/temporal.js": "d0635e665802866c7d90964597fdeca613e63e0a4320a51d2067537d5c579bee",
+    "framework/reads.surql": "e97b062420a86b8484fce408077c48c46b1827fd043c4fbe5db08f130a251e10",
+    "dev-tools/temporal-tree/read-oracle.js": "20f9126d78da2ef33039fd104327a5aedf925a93cd46bd7ab7c1ffdf7a40aa3e",
+    "dev-tools/temporal-tree/observed-probe.js": "d1113b41773561a479f724edafeed260ba88a8f7caf31345f0fc0fa61ab472bb",
+    "dev-tools/temporal-tree/oracle.js": "fb2d47a74397300b3826fa3ede1a6b30f66fdad5149f465abbaffe9e633be7cf",
+    "dev-tools/accounting/source-oracle.js": "824b38132cdfb56524e114389ee0299dea0dbbe973ab44001d0f188ea72b3c33"
+  },
+  "reportedEvidence": {
+    "generic": {
+      "operations": 564,
+      "expectedRejections": 18,
+      "queryChecks": 30,
+      "sourceCommit": "17f956bfcad7f7f9731bb08a4abba11d1b995cc8"
+    },
+    "accounting": {
+      "operations": 54,
+      "unexpectedRejections": [
+        {
+          "operation": 11,
+          "sql": "CREATE exchange_rate:stress_20261014_10 SET owned_by=rebase_tenant:default,pair=exchange_pair:eur_inr,rate=13dec,effective_at=d'2027-01-02T00:00:00Z';",
+          "error": "Error while processing event rebase_refresh: An error occurred: REBASE_READ_INDEX",
+          "rawRollbackComparisonErrorPresent": true,
+          "recordedDigestMatchesPrevious": true
+        },
+        {
+          "operation": 29,
+          "sql": "CREATE exchange_rate:stress_7_10 SET owned_by=rebase_tenant:default,pair=exchange_pair:eur_inr,rate=13dec,effective_at=d'2027-01-02T00:00:00Z';",
+          "error": "Error while processing event rebase_refresh: An error occurred: REBASE_READ_INDEX",
+          "rawRollbackComparisonErrorPresent": true,
+          "recordedDigestMatchesPrevious": true
+        },
+        {
+          "operation": 47,
+          "sql": "CREATE exchange_rate:stress_1031_10 SET owned_by=rebase_tenant:default,pair=exchange_pair:eur_inr,rate=13dec,effective_at=d'2027-01-02T00:00:00Z';",
+          "error": "Error while processing event rebase_refresh: An error occurred: REBASE_READ_INDEX",
+          "rawRollbackComparisonErrorPresent": true,
+          "recordedDigestMatchesPrevious": true
+        }
+      ],
+      "arithmeticFailures": [],
+      "allSnapshotsRetainBaselineSuccessorFailure": true
+    },
+    "freshFX": {
+      "status": "defect_reproduced",
+      "originalSetupRun": "/workspace/accounting-lab/runs/2026-10-14T16-18-44-727Z",
+      "initialErrors": [
+        {
+          "kind": "next_link",
+          "where": "rebase_read:[rebase_read_group:[exchange_pair:eur_inr, 'z_rates', 'latest', 'measures:rate'], [d'2027-01-06T00:00:00.000000001Z'], 'purchase_issue:f', 'refresh', '912302578d7cc49eefca93ab56e3d53e73a1e33f50a108235459187b52521db2']/z_position",
+          "expected": {
+            "rid": "rebase_read:[rebase_read_group:[exchange_pair:eur_inr, 'z_rates', 'latest', 'measures:rate'], [d'2027-01-09T00:00:00.000000001Z'], 'invoice_settlement:f_purchase', 'refresh', 'f9d2730782391bce14e9253fcf36e5d8aba33501b4f6e8e5201ffc0be539c810']",
+            "slot": "z_position"
+          }
+        }
+      ],
+      "operations": [
+        {
+          "sql": "UPDATE exchange_pair:eur_inr SET initial_rate=13dec;",
+          "error": null,
+          "oracleError": null,
+          "integrityErrorKinds": [
+            "next_link"
+          ],
+          "amounts": {
+            "net": "147.0",
+            "payment_reporting": "117.0",
+            "purchase_reporting": "520",
+            "rate": "13"
+          }
+        },
+        {
+          "sql": "UPDATE exchange_pair:eur_inr SET initial_rate=12dec;",
+          "error": null,
+          "oracleError": null,
+          "integrityErrorKinds": [
+            "next_link"
+          ],
+          "amounts": {
+            "net": "178.0",
+            "payment_reporting": "108.0",
+            "purchase_reporting": "480",
+            "rate": "12"
+          }
+        },
+        {
+          "sql": "CREATE exchange_rate:targeted_early SET owned_by=rebase_tenant:default,pair=exchange_pair:eur_inr,rate=13dec,effective_at=d'2027-01-02T00:00:00Z';",
+          "error": "Error while processing event rebase_refresh: An error occurred: REBASE_READ_INDEX",
+          "oracleError": null,
+          "integrityErrorKinds": [
+            "next_link"
+          ],
+          "amounts": {
+            "net": "178.0",
+            "payment_reporting": "108.0",
+            "purchase_reporting": "480",
+            "rate": "12"
+          }
+        },
+        {
+          "sql": "CREATE exchange_rate:targeted_later SET owned_by=rebase_tenant:default,pair=exchange_pair:eur_inr,rate=13dec,effective_at=d'2027-01-07T00:00:00Z';",
+          "error": null,
+          "oracleError": null,
+          "integrityErrorKinds": [
+            "next_link"
+          ],
+          "amounts": {
+            "net": "187.0",
+            "payment_reporting": "117.0",
+            "purchase_reporting": "480",
+            "rate": "12"
+          }
+        },
+        {
+          "sql": "DELETE ONLY exchange_rate:targeted_later;",
+          "error": null,
+          "oracleError": null,
+          "integrityErrorKinds": [
+            "next_link"
+          ],
+          "amounts": {
+            "net": "178.0",
+            "payment_reporting": "108.0",
+            "purchase_reporting": "480",
+            "rate": "12"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "status": "defect_reproduced",
+      "sql": "CREATE issue_adjustment_net_tax:stress_purchase SET owned_by=rebase_tenant:default, source_tax=issue_net_tax:stress_purchase,adjustment=issue_adjustment:stress_purchase,effective_at=d'2027-01-12T00:00:02Z';",
+      "error": "Error while processing event rebase_refresh: An error occurred: AVL_MISSING_SLOT:rebase_read:[rebase_read_group:[exchange_pair:usd_inr, 'z_rates', 'latest', 'measures:rate'], [d'2027-01-12T00:00:02.000000001Z'], 'issue_adjustment_net_tax:stress_purchase', 'refresh', '557cf57c8420de71356c7a05f976ba7e20fe7b65c30ca496320583aca00c7c07']/z_position\nCannot COMMIT: the transaction was aborted due to a prior error",
+      "reportedAttempts": [
+        {
+          "attempt": 1,
+          "rollbackVerified": true,
+          "sameError": true
+        },
+        {
+          "attempt": 2,
+          "rollbackVerified": true,
+          "sameError": true
+        },
+        {
+          "attempt": 3,
+          "rollbackVerified": true,
+          "sameError": true
+        }
+      ],
+      "reportedSourceOracleError": null,
+      "reportedIntegrityErrors": [],
+      "reportedRollbackVerified": true
+    },
+    "finalCoverage": {
+      "records": 1009,
+      "roots": 343,
+      "nodes": 807,
+      "references": 895
+    },
+    "tables": 69,
+    "publicTables": {
+      "total": 48,
+      "populated": 48,
+      "empty": []
+    },
+    "finalErrors": [],
+    "finalSourceOracleError": null,
+    "limitations": [
+      "The report logs are supplied evidence, not independently rerun writer reproductions.",
+      "No raw before/after snapshots or full original fixture are included.",
+      "Cached-summary corruption is described in prose but not established by embedded mutation snapshots.",
+      "Recorded rollback digests match; the original identity-based recheck cannot be independently verified here."
+    ]
+  },
+  "freshLeadOracleDiagnostic": {
+    "command": "node designs/rebase-system/evidence/2026-10-14-integrity-oracle-diagnostic.cjs",
+    "purpose": "Diagnose oracle coverage, not database writer correctness",
+    "readOracleSha256": "20f9126d78da2ef33039fd104327a5aedf925a93cd46bd7ab7c1ffdf7a40aa3e",
+    "results": [
+      {
+        "label": "valid control",
+        "accepted": true
+      },
+      {
+        "label": "missing successor",
+        "accepted": true
+      },
+      {
+        "label": "wrong leaf count",
+        "accepted": true
+      },
+      {
+        "label": "wrong root first key",
+        "accepted": true
+      },
+      {
+        "label": "stale cursor",
+        "accepted": true
+      },
+      {
+        "label": "read with nonexistent group",
+        "accepted": true
+      },
+      {
+        "label": "all registrations absent",
+        "accepted": true
+      }
+    ]
+  },
+  "freshNativeControls": {
+    "server": "surrealdb-3.3.0",
+    "storage": "surrealkv",
+    "scope": "Disposable schema-less microprobe; not full generated-schema/event behavior",
+    "existingObjectPatchAdd": "Replaced object, did not append stored key arrays",
+    "objectExtendWithNone": "Replaced next with null in JSON transport",
+    "insertIgnoreExisting": "Returned [] and preserved existing node/marker",
+    "serverClosed": true,
+    "configuredProbeEngineVerified": "surrealkv"
+  },
+  "handoff": "designs/rebase-system/integrity-repair-handoff-2026-10-14.md",
+  "recordedAtUtc": "2026-10-14T18:05:05.663096+00:00",
+  "freshStaticSchedulingCheck": {
+    "source": "DEFINE FUNCTION fn::lead_probe::total($row: object) { RETURN $row.z_rate * 2dec; }; DEFINE TABLE helper_order SCHEMAFULL; DEFINE FIELD input ON helper_order TYPE decimal; DEFINE FIELD z_rate ON helper_order TYPE decimal VALUE $this.input COMMENT '@rebase-derived'; DEFINE FIELD a_total ON helper_order TYPE decimal VALUE fn::lead_probe::total($this) COMMENT '@rebase-derived';",
+    "actualOrder": [
+      "a_total",
+      "z_rate"
+    ],
+    "requiredOrder": [
+      "z_rate",
+      "a_total"
+    ],
+    "fullGeneratedCreateExecuted": false
+  }
+}

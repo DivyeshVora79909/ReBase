@@ -1,5 +1,10 @@
 # Automatic dependencies from ordered reads
 
+Continuation: follow the [integrity repair handoff](integrity-repair-handoff-2026-10-14.md).
+Later reported writer failures and freshly demonstrated private-oracle blind
+spots require repair and stronger verification. The completed checklist and
+accepted result below record the original bounded implementation run.
+
 The October 14 request supersedes developer-authored impact functions. The
 developer writes the calculation once; supported reads establish and maintain
 their dependencies during its execution. Breaking schema/compiler changes are

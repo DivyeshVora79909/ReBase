@@ -1,5 +1,10 @@
 # Accounting continuation boundary — October 14
 
+The active task is now the [integrity repair handoff](../rebase-system/integrity-repair-handoff-2026-10-14.md).
+Later stress evidence challenges dependency-index integrity, and the lead review
+demonstrated gaps in the private oracle. The acceptance results below describe
+the earlier bounded run; the repair and strengthened acceptance remain pending.
+
 Read the [developer guide](developer-guide.md), [automatic-read contract](../rebase-system/function-reactivity.md)
 and [verification record](verification.md), then inspect Git status/diff. Earlier
 agent summaries are navigation; source, mathematics and executed evidence decide
