@@ -29,7 +29,7 @@ tax cash, claims, transfers and production. The
 [developer guide](./designs/all-in-accounting/developer-guide.md) states the units,
 constraints and graph/tree queries; [current verification](./designs/all-in-accounting/verification.md)
 records acceptance. [Function reactivity](./designs/rebase-system/function-reactivity.md)
-explains dated invalidation. Start framework authoring with the
+explains automatic dependencies from ordered reads, without authored impact rules. Start framework authoring with the
 [developer blueprint](./designs/rebase-system/developer-blueprint.md).
 The removed recipe profile and older evidence retain their historical meaning.
 

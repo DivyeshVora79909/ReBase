@@ -17,6 +17,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::fee_validate($row: object) {
         fn::accounting::same_subsidiary($row.fee_treasury,$row.fee_tax_account);
     } ELSE IF $row.fee_tax_account!=NONE OR $row.fee_tax_exchange_pair!=NONE { THROW 'FEE_TAX_ACCOUNT_UNUSED'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::fee_members($row: object) {
     fn::accounting::fee_validate($row);
     IF $row.fee_account=NONE { RETURN []; };
@@ -28,9 +29,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::fee_members($row: object) {
         object::extend(fn::accounting::effects(0dec,0dec,0dec),{reserved:$cost})) END;
     RETURN array::concat(fn::accounting::post($row,'z_fee_cash',$row.fee_treasury,$row.fee_at,
         object::extend(fn::accounting::effects(-$cost,0dec,0dec),{reserved:IF $reserved THEN -$cost ELSE 0dec END,fees:$cost})),
-        fn::accounting::post($row,'z_fee_account',$row.fee_account,$row.fee_at,fn::accounting::effects($row.fee_account_amount,0dec,0dec)),$tax,$reservation,[
-        fn::tree::member($row.id,'z_fee_fx',$row.fee_exchange_pair,'z_readers',$row.fee_at,{},{},{},false),
-        fn::tree::member($row.id,'z_fee_tax_fx',$row.fee_tax_exchange_pair,'z_readers',$row.fee_at,{},{},{},false)]);
+        fn::accounting::post($row,'z_fee_account',$row.fee_account,$row.fee_at,fn::accounting::effects($row.fee_account_amount,0dec,0dec)),$tax,$reservation,[]);
 } PERMISSIONS NONE;
 
 DEFINE FIELD OVERWRITE fee_account ON invoice_settlement TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
@@ -89,23 +88,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON invoice_settlement TYPE option<object> COMM
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON payment_adjustment TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -163,23 +152,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON payment_adjustment TYPE option<object> COMM
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON claim_settlement TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -237,23 +216,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON claim_settlement TYPE option<object> COMMEN
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON tax_settlement TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -311,23 +280,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON tax_settlement TYPE option<object> COMMENT 
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON tax_refund TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -385,23 +344,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON tax_refund TYPE option<object> COMMENT '@re
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON tax_deposit TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -459,23 +408,13 @@ DEFINE FIELD OVERWRITE z_fee_cash ON tax_deposit TYPE option<object> COMMENT '@r
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON production_cost TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -533,29 +472,17 @@ DEFINE FIELD OVERWRITE z_fee_cash ON production_cost TYPE option<object> COMMENT
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_fee_tax ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_start ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_start_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_start_sub_rate ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE fee_account ON resource_exchange TYPE option<record<misc_currency_account>> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
@@ -613,20 +540,10 @@ DEFINE FIELD OVERWRITE z_fee_cash ON resource_exchange TYPE option<object> COMME
 
 DEFINE FIELD OVERWRITE z_fee_cash_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_cash_sub_rate ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_account ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_account_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_fee_account_sub_rate ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_fee_tax ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_fee_tax_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_fee_tax_sub_rate ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_fx ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fee_tax_fx ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

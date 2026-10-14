@@ -162,6 +162,15 @@ async function extensions(h, writer) {
   assert.deepEqual(rest.items.map(item => item.link.rid), ['issue_adjustment:demo_credit']);
   await value('stock_account:demo_stock.z_history.summary.measures.sales_reporting_value.sum / stock_account:demo_stock.z_history.summary.measures.sales_quantity.sum', 90);
   pass('tenant isolation, protected tree fields, native-SDK fixture and graph/tree developer queries');
+  const beforeRate = await snapshot(q);
+  await mutate('UPDATE exchange_pair:widget_inr SET initial_rate=initial_rate+1dec;');
+  const afterRate = await snapshot(q);
+  for (const table of ['stock_account', 'organization_resource_account', 'misc_stock_account']) {
+    assert.deepEqual(afterRate[table].map(row => [row.id, row.z_history.summary]),
+      beforeRate[table].map(row => [row.id, row.z_history.summary]), 'valuation edits preserve every native stock summary');
+  }
+  await mutate('UPDATE exchange_pair:widget_inr SET initial_rate=initial_rate-1dec;');
+  pass('late valuation edit refreshes populated reporting projections while preserving native stock');
 }
 
 if (require.main === module) require('./probe').main({ onlyExtensions: true })

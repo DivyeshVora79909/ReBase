@@ -10,14 +10,14 @@ DEFINE FUNCTION OVERWRITE fn::accounting::tax_adjustment_validate($row: object) 
         IF $row.basis_before+$row.basis_delta<0dec { THROW 'ADJUSTMENT_TAX_BASIS_CAPACITY'; };
     };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::tax_adjustment_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,$row.amount_delta,0dec),
         fn::accounting::post($row,'z_tax',$row.tax_account,$row.effective_at,fn::accounting::tax_effects($row.is_sale,$row.account_delta)),[
         fn::tree::member($row.id,'z_source',$row.source_tax,'z_capacity',$row.effective_at,{amount:$row.amount_delta,account_amount:$row.account_delta},{},{},false),
         fn::tree::member($row.id,'z_issue_net',$row.issue,'z_net',$row.effective_at,{amount:$row.amount_delta},{},{},false),
-        IF $row.adjustment=NONE THEN NONE ELSE fn::tree::member($row.id,'z_order',$row.source_tax,'z_adjustments',$row.effective_at,{basis:$row.basis_delta},{},{},true) END,
-        IF $row.adjustment=NONE THEN NONE ELSE fn::tree::member($row.id,'z_adjustment',$row.adjustment,'z_taxes',$row.effective_at,{amount:$row.amount_delta},{},{},$row.is_net) END,
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)]);
+        IF $row.adjustment=NONE THEN NONE ELSE fn::tree::member($row.id,'z_order',$row.source_tax,'z_adjustments',$row.effective_at,{basis:$row.basis_delta},{},{},false) END,
+        IF $row.adjustment=NONE THEN NONE ELSE fn::tree::member($row.id,'z_adjustment',$row.adjustment,'z_taxes',$row.effective_at,{amount:$row.amount_delta},{},{},false) END]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE tax_adjustment SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_adjustment_members @rebase-validate fn::accounting::tax_adjustment_validate';
@@ -48,11 +48,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON tax_adjustment TYPE option<object> COMM
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -90,13 +86,9 @@ DEFINE FIELD OVERWRITE z_tax ON tax_adjustment TYPE option<object> COMMENT '@reb
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_tax.z_capacity';
 
 DEFINE FIELD OVERWRITE z_issue_net ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE net_tax_adjustment SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_adjustment_members @rebase-validate fn::accounting::tax_adjustment_validate';
 
@@ -126,11 +118,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON net_tax_adjustment TYPE option<object> 
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -166,13 +154,9 @@ DEFINE FIELD OVERWRITE z_tax ON net_tax_adjustment TYPE option<object> COMMENT '
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_net_tax.z_capacity';
 
 DEFINE FIELD OVERWRITE z_issue_net ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
-
-DEFINE FIELD OVERWRITE z_fx ON net_tax_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE issue_adjustment_tax SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_adjustment_members @rebase-validate fn::accounting::tax_adjustment_validate';
 
@@ -204,11 +188,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON issue_adjustment_tax TYPE option<object
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -270,13 +250,9 @@ DEFINE FIELD OVERWRITE z_tax ON issue_adjustment_tax TYPE option<object> COMMENT
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_tax.z_capacity';
 
 DEFINE FIELD OVERWRITE z_issue_net ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
-
-DEFINE FIELD OVERWRITE z_fx ON issue_adjustment_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE issue_adjustment_net_tax SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_adjustment_members @rebase-validate fn::accounting::tax_adjustment_validate';
 
@@ -308,11 +284,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON issue_adjustment_net_tax TYPE option<ob
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -374,13 +346,9 @@ DEFINE FIELD OVERWRITE z_tax ON issue_adjustment_net_tax TYPE option<object> COM
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_net_tax.z_capacity';
 
 DEFINE FIELD OVERWRITE z_issue_net ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
-
-DEFINE FIELD OVERWRITE z_fx ON issue_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE tax_adjustment_net_tax SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_adjustment_members @rebase-validate fn::accounting::tax_adjustment_validate';
 
@@ -412,11 +380,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON tax_adjustment_net_tax TYPE option<obje
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -478,10 +442,6 @@ DEFINE FIELD OVERWRITE z_tax ON tax_adjustment_net_tax TYPE option<object> COMME
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_net_tax.z_capacity';
 
 DEFINE FIELD OVERWRITE z_issue_net ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_adjustment_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

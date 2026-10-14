@@ -70,7 +70,7 @@ function resolveModel(materials, options = {}) {
   let temporalModel;
   try {
     analysis = analyzeSchema(schema, frameworkTables);
-    temporalModel = resolveTemporalModel(schema, analysis.systemTables);
+    temporalModel = resolveTemporalModel(schema, analysis.systemTables, projectSchema + '\n' + frameworkSource);
   } catch (error) {
     throw withSourceLocation(error, schema);
   }

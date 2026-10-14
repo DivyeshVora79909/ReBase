@@ -1,0 +1,19 @@
+CHECK fresh accounting schema application (disposable SurrealKV)
+PASS sparse native dimensions, multiple treasuries, unit guards and decimal rounding
+PASS mirrored perspectives, direct source postings, covered advances and strictly prior net-tax bases
+PASS product-difference adjustments, chronological cascades, all five strict tax adjustments and directional note validation
+PASS capped marginal rules, pre-invoice unified adjustments and prevention of repeated dated tax effects
+PASS purchase perspective, multiple organization currencies and old/new parent repairs
+PASS dated rate insertion, edit, move, reparent, deletion, fallback and reader date/reference changes
+PASS bounded source-oracle mutation replay, native SDK decimals and protected derived amounts
+PASS inline bounded fees, creditable/noncreditable fee tax, independent refund fees and withholding
+PASS tax settlement, credit, refund and offset capacities, coincident legs and dated cash conversion
+PASS monetary and resource claims, source-specific capacity and competing sessions
+PASS resource transfers, explicit cross-subsidiary legs and separate authoritative/observed exchange values
+PASS native reservations, gross input protection, output consumption, service windows and adjacent capacity
+PASS tenant isolation, protected tree fields, native-SDK fixture and graph/tree developer queries
+PASS late valuation edit refreshes populated reporting projections while preserving native stock
+CHECK populated identical-schema reapplication
+PASS exact populated schema reapplication
+PASS child-first single-record cleanup, empty financial/observation roots and released subscriptions
+PASS accounting: 103 source-oracle checkpoints, 51 complete rollback snapshots

@@ -33,7 +33,7 @@ function acceptance(q, compiled) {
     const before = await snapshot(q);
     await assert.rejects(actor(sql), pattern);
     assert.deepEqual(await snapshot(q), before,
-      'rejected write restores every source, derived field, slot, root and audit row');
+      'rejected write restores every source, derived field, slot, root, subscription, fence and audit row');
     result.rollbacks++;
   };
   const value = async (expression, expected) => exact(await q(`RETURN ${expression};`), expected, expression);
@@ -114,11 +114,14 @@ async function cleanup(h) {
   h.result.checkpoints++;
   for (const table of order) assert.deepEqual(empty[table], [], `${table} cleaned up`);
   for (const table of tables) for (const row of empty[table]) {
-    for (const slot of ['z_history', 'z_capacity', 'z_rates', 'z_readers', 'z_observations', 'z_gross']) {
+    for (const slot of ['z_history', 'z_capacity', 'z_rates', 'z_observations', 'z_gross']) {
       if (row[slot]) assert.equal(row[slot].summary.count, 0, `${row.id}.${slot} is empty`);
     }
   }
-  h.pass('child-first single-record cleanup and empty financial, reader and observation roots');
+  assert.deepEqual(empty.rebase_read, [], 'all calculation and validation reads released');
+  assert.deepEqual(empty.rebase_read_frame, [], 'no orphan evaluation generations');
+  assert.deepEqual(empty.rebase_read_group, [], 'all reverse groups and interval trees released');
+  h.pass('child-first single-record cleanup, empty financial/observation roots and released subscriptions');
 }
 
 module.exports = { acceptance, at, compile, create, cleanup, setup };

@@ -1,0 +1,192 @@
+npm notice run rebase-surreal-compiler@0.2.0 test:dev-tools
+npm notice run node --test dev-tools/tests/*.test.js
+TAP version 13
+# Subtest: accounting exports and validates exactly its public create schemas
+ok 1 - accounting exports and validates exactly its public create schemas
+  ---
+  duration_ms: 1858.815681
+  type: 'test'
+  ...
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 2 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 301.08587
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 3 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 2517.038747
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 4 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 3.33863
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 5 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 7.777793
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 6 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 2.979682
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 7 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 532.128858
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 8 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 64.76054
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 9 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 65.027753
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 10 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 13.231052
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 11 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 3.568962
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates native SDK values and explicit temporal sources
+ok 12 - accounting fixture validates native SDK values and explicit temporal sources
+  ---
+  duration_ms: 195.965191
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 13 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 85.328964
+  type: 'test'
+  ...
+# Subtest: public accounting schemas expose inputs and preserve native record identities
+ok 14 - public accounting schemas expose inputs and preserve native record identities
+  ---
+  duration_ms: 95.253226
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 15 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.638616
+  type: 'test'
+  ...
+# Subtest: capture follows helper call graphs and leaves quoted text and comments untouched
+ok 16 - capture follows helper call graphs and leaves quoted text and comments untouched
+  ---
+  duration_ms: 10.944533
+  type: 'test'
+  ...
+# Subtest: an ordered calculation cannot hide an untracked lookup in a helper
+ok 17 - an ordered calculation cannot hide an untracked lookup in a helper
+  ---
+  duration_ms: 5.658929
+  type: 'test'
+  ...
+# Subtest: interval tuple keys are private metadata, rather than untyped application ordering
+ok 18 - interval tuple keys are private metadata, rather than untyped application ordering
+  ---
+  duration_ms: 9.288185
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 19 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 308.598943
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 20 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 4.933095
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 21 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 6.63688
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 22 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 77.914057
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 23 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 6.825673
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 24 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 16.311439
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 25 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 8.473098
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 26 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 9.787368
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 27 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 6.29372
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 28 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 16.567648
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 29 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 9.515239
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 30 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 10.326665
+  type: 'test'
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6447.798763

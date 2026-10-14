@@ -25,7 +25,7 @@ The useful standard for a new CRM, HRM or inventory feature is:
 3. Express each linear constraint as a measure on each contribution.
 4. State whether a calculation reads a direct field, a prefix, a predecessor,
    a bounded interval, or an entire aggregate.
-5. Declare the corresponding dependencies, memberships and impact ranges.
+5. Declare posting memberships; use tracked reads for mutable calculation dependencies.
 6. Prove arithmetic, insert/edit/delete behavior, date/reference moves and
    rejected-write rollback with a source replay that does not call the formula.
 
@@ -53,7 +53,7 @@ counterparty within a subsidiary, also with a reporting currency.
 | `misc_currency_account`, `misc_stock_account` | Explicit miscellaneous positions | Native `z_history`; stock also has `z_gross` |
 | `direct_tax_account`, `indirect_tax_account` | Subsidiary + currency + distinct record identity | Native `z_history` |
 | `operating_unit` | One subsidiary, optional capacity | `z_capacity`, unique owned `z_stock_keys` |
-| `exchange_pair` | Directed given resource → received resource, unique within tenant | `z_rates`, `z_readers`, `z_observations` |
+| `exchange_pair` | Directed given resource → received resource, unique within tenant | `z_rates`, `z_observations` |
 
 Create only the native positions used by the application. An organization can
 have INR, USD and a particular item without creating every possible combination
@@ -124,12 +124,13 @@ the pair is effective. Currency outputs use native decimal ties-to-even rounding
 Each leg is rounded in its destination currency before coincident contributions
 combine. Resource quantities preserve their native decimal quantity.
 
-Every selected calculation date has a normal node in the pair's `z_readers`.
-An authored `@rebase-impact` function returns `[changed_date, next_rate_date)`.
-The coordinator refreshes those candidates, compares results and repairs changed
-contributions. Moving or reparenting a rate selects the union of old and new
-ranges. Deletion refreshes the gap left behind. An initial-rate edit stops at the
-first dated rate. A reader's date/reference edit repairs its registration too.
+The calculation itself registers its dependencies. `rate_at` uses a tracked
+`latest` read of `z_rates`, plus tracked `effective_at` and conditional
+`initial_rate` field reads. The compiler captures those calls through ordinary
+helper functions, including posting providers. Applications need no FX reader
+slots or source impact functions. A rate edit, insertion, move or deletion
+selects the affected ordered read positions; unchanged consumed rates skip
+recalculation. Changing a reader's date, parent or branch repairs its subscriptions.
 
 This is event-time valuation. For example, opening stock of 200 at 10 contributes
 2,000. A later sale of 10 while the valuation rate is 12 contributes −120, leaving
@@ -143,11 +144,13 @@ contributes its given/received amounts to `z_observations`; those observations
 never feed `rate_at`. Issue prices are explicit invoice-currency amounts per
 resource unit, separate from the resource's reporting valuation.
 
-For cumulative prefixes the safe dependency is an affected suffix. A later
-contribution does not cancel an earlier one. Use the existing dependent prefix
-membership protocol for that case. See the shared
-[function-reactivity contract](../rebase-system/function-reactivity.md) for impact
-function signatures, typed bounds, ordering, cycles and measured candidate work.
+Cumulative calculations use `fn::accounting::prefix`, which calls
+`fn::tree::read_value` for the specific measure. Earlier contributions can affect
+all later readers, even when the selected last record is unchanged. Adjustments
+and taxes therefore use automatic prefix subscriptions. Production guards use
+separate final-validation prefix/range reads. See the shared
+[automatic reactivity contract](../rebase-system/function-reactivity.md) for the
+API, boundary semantics, selected record/key, ordering and measured costs.
 
 ## Commercial graph and constraints
 

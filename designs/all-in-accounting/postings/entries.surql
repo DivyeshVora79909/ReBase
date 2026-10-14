@@ -4,6 +4,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::entry_validate($row: object) {
     fn::accounting::precision_validate($row.receivable,$row.account.resource);
     fn::accounting::precision_validate($row.payable,$row.account.resource);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::entry_members($row: object) {
     RETURN fn::accounting::post($row,'z_account',$row.account,$row.effective_at,
         object::extend(fn::accounting::effects($row.real,$row.receivable,$row.payable),
@@ -28,11 +29,7 @@ DEFINE FIELD OVERWRITE z_account ON account_entry TYPE option<object> COMMENT '@
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_account_sub_rate ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_account_organization ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_account_org_rate ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE stock_entry SCHEMAFULL COMMENT '@rebase-members fn::accounting::entry_members @rebase-validate fn::accounting::entry_validate';
 
@@ -52,8 +49,4 @@ DEFINE FIELD OVERWRITE z_account ON stock_entry TYPE option<object> COMMENT '@re
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_account_sub_rate ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_account_organization ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_account_org_rate ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

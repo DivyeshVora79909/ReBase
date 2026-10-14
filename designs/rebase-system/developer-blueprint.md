@@ -217,17 +217,19 @@ compiler resolves local dependency order; alphabetical field names are not an
 execution contract. An ordinary reference or index membership alone is not a
 causal calculation edge. Materialize cross-record dependencies one hop at a time.
 
-For a formula that reads a dated function, declare its inverse selection with
-`@rebase-impact fn::...` on the changing source. The [function reactivity
-contract](function-reactivity.md) defines half-open ranges on explicit reader
-trees, including the bounded predecessor-rate example and its executable proof.
+For mutable reads hidden in ordinary helper functions, use
+`fn::tree::read_value` or `fn::record::read_value`. The compiler captures the
+executed query and maintains its reverse subscription automatically. Applications
+do not define an impact function or reader tree. The [automatic reactivity
+contract](function-reactivity.md) explains predecessor, prefix and range reads,
+branch cleanup, transactional validation and the executable proof.
 
 For split/aggregate/use-again calculations, read a published upstream root or a
 strictly prior temporal prefix. The accounting tax implementation is the worked
 example: base 100 plus two 9 taxes yields 118; a later 10% net tax reads that
 earlier amount. A backdated contribution refreshes the affected later readers.
-Within the same tree, use `fn::tree::member(..., spans, true)` for a temporal
-reader and the documented prefix protocol. Do not read a final aggregate that
+Within the same tree, use a tracked strictly prior prefix; posting memberships
+do not need a reader flag. Do not read a final aggregate that
 contains the record's own result. Equal-time compounding and complete-timestamp
 validation are distinct rules.
 

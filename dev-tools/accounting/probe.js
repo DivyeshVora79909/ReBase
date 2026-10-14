@@ -242,7 +242,11 @@ async function main({ extensions = false, onlyExtensions = false, evidence } = {
     if (evidence) fs.writeFileSync(evidence, JSON.stringify(report, null, 2) + '\n');
     console.log(`PASS accounting: ${report.checkpoints} source-oracle checkpoints, ${report.rollbacks} complete rollback snapshots`);
     return report;
-  } catch (error) { console.error('Last accounting operation:', h.result.last); throw error; }
+  } catch (error) {
+    console.error('Last accounting operation:', h.result.last);
+    if (process.env.REBASE_ACCOUNTING_DEBUG) fs.writeFileSync(process.env.REBASE_ACCOUNTING_DEBUG, JSON.stringify(await snapshot(q), null, 2));
+    throw error;
+  }
   finally { await server.close(); }
 }
 

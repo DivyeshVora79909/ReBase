@@ -27,7 +27,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::value($key: array, $measures: object, $tags:
 DEFINE FUNCTION OVERWRITE fn::tree::combine($a: object, $b: object) {
     IF $a.count = 0 { RETURN $b; };
     IF $b.count = 0 { RETURN $a; };
-    RETURN {
+    RETURN object::extend({
         count: $a.count + $b.count, dependents: $a.dependents + $b.dependents,
         first: $a.first, last: $b.last,
         measures: object::from_entries(array::union(object::keys($a.measures), object::keys($b.measures)).map(|$key| {
@@ -81,7 +81,9 @@ DEFINE FUNCTION OVERWRITE fn::tree::combine($a: object, $b: object) {
                 max: array::sort([$l.max, $r.max].filter(|$x| $x != NONE)).last()
             }];
         }))
-    };
+    }, IF $a.end_key = NONE AND $b.end_key = NONE THEN {} ELSE {
+        end_key: array::last(array::sort([$a.end_key, $b.end_key].filter(|$key| $key != NONE)))
+    } END);
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::tree::get($link: option<object>) {
@@ -417,43 +419,6 @@ DEFINE FUNCTION OVERWRITE fn::tree::page($owner: object, $limit: any, $after: an
         next: IF array::len($page.items) > $limit THEN array::last($items).key ELSE NONE END };
 } PERMISSIONS NONE;
 
--- An authored impact selects a half-open range on a logical reader root. Count
--- the range with prefix summaries, seek once, then follow only its next links.
--- This uses current node summaries, including changes not yet published.
-DEFINE FUNCTION OVERWRITE fn::tree::affected($owner: object, $lower: option<array>, $upper: option<array>) {
-    LET $kind = fn::rebase::root_key_type($owner);
-    IF ($lower != NONE AND !fn::tree::valid_key($lower, $kind, false))
-        OR ($upper != NONE AND !fn::tree::valid_key($upper, $kind, false)) { THROW 'REBASE_IMPACT_KEY'; };
-    IF $lower != NONE AND $upper != NONE AND $lower > $upper { THROW 'REBASE_IMPACT_BOUNDS'; };
-    LET $head = fn::tree::get($owner);
-    IF $head = NONE { THROW 'REBASE_IMPACT_ROOT'; };
-    LET $start = IF $lower = NONE THEN 0 ELSE fn::tree::before($owner, $lower).count END;
-    LET $end = IF $upper = NONE THEN fn::tree::get($head.root).summary.count ?? 0
-        ELSE fn::tree::before($owner, $upper).count END;
-    LET $size = $end - $start;
-    IF $size <= 0 { RETURN []; };
-    LET $first = fn::tree::select($owner, $start + 1, false);
-    RETURN array::range(0, $size).fold({ cursor: $first, items: [] }, |$state, $_| {
-        LET $node = fn::tree::get($state.cursor);
-        IF $node = NONE OR $node.owner != $owner { THROW 'REBASE_IMPACT_TOPOLOGY'; };
-        RETURN { cursor: $node.next,
-            items: array::append($state.items, { link: $state.cursor, key: $node.key }) };
-    }).items;
-} PERMISSIONS NONE;
-
-DEFINE FUNCTION OVERWRITE fn::rebase::impact_records($before: option<object>, $after: option<object>) {
-    LET $source = $after ?? $before;
-    LET $ranges = fn::rebase::impacts($before, $after);
-    LET $items = array::flatten($ranges.map(|$range| {
-        IF (SELECT VALUE tenant FROM ONLY $range.owner.rid) != $source.tenant { THROW 'REBASE_IMPACT_TENANT'; };
-        RETURN fn::tree::affected($range.owner, $range.lower, $range.upper);
-    }));
-    -- Overlapping ranges and multiple reader slots may name the same record.
-    LET $records = array::distinct(array::sort($items.map(|$item| [$item.key, $item.link.rid])).map(|$item| $item[1]));
-    IF $source.id IN $records { THROW 'REBASE_IMPACT_CYCLE'; };
-    RETURN $records;
-} PERMISSIONS NONE;
-
 DEFINE FUNCTION OVERWRITE fn::tree::business_key($key: array) {
     RETURN array::slice($key, 0, array::len($key) - 2);
 } PERMISSIONS FULL;
@@ -466,6 +431,9 @@ DEFINE FUNCTION OVERWRITE fn::tree::valid_component($value: any, $kind: string) 
         ELSE IF $kind = 'record' THEN type::is_record($value)
         ELSE IF $kind = 'bool' THEN type::is_bool($value)
         ELSE IF $kind = 'uuid' THEN type::is_uuid($value)
+        ELSE IF $kind = 'tuple' THEN type::is_array($value)
+            AND $value.all(|$part| type::is_datetime($part) OR type::is_int($part) OR type::is_decimal($part)
+                OR type::is_string($part) OR type::is_record($part) OR type::is_bool($part) OR type::is_uuid($part))
         ELSE false END;
 } PERMISSIONS FULL;
 
@@ -475,7 +443,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::valid_key($key: any, $key_type: string, $ful
     IF !type::is_array($key) { RETURN false; };
     LET $parts = string::split($key_type, ',');
     IF array::len($parts) < 1 OR array::len($parts) > 16 { RETURN false; };
-    IF !$parts.all(|$part| $part IN ['datetime', 'int', 'decimal', 'string', 'record', 'bool', 'uuid']) { RETURN false; };
+    IF !$parts.all(|$part| $part IN ['datetime', 'int', 'decimal', 'string', 'record', 'bool', 'uuid', 'tuple']) { RETURN false; };
     LET $types = array::concat($parts, ['string', 'string']);
     LET $size = array::len($key);
     IF $size < 1 OR $size > array::len($types) OR ($full AND $size != array::len($types)) { RETURN false; };
@@ -637,7 +605,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::sync($rid: record, $before: option<object>, 
             fn::tree::insert($member.owner, $member.link, $member.key, $member.value);
         };
     };
-    RETURN { owners: $owners, records: [] };
+    RETURN { owners: $owners, records: [], removed: $removed, added: $added };
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::rebase::work($items: array) {
@@ -731,22 +699,58 @@ DEFINE FUNCTION OVERWRITE fn::tree::drain($owner: object) {
     RETURN fn::rebase::work($work);
 } PERMISSIONS NONE;
 
--- Generated derive/members/dependents/validate adapters below contain only
--- schema expressions. No persisted queue, registry, or per-membership rows.
+-- The source transaction captures logical reads as its formulas execute.
 DEFINE FUNCTION OVERWRITE fn::rebase::refresh($rid: record, $before: option<object>, $sweep: bool) {
     RETURN fn::rebase::refresh_path($rid, $before, $sweep, []);
 } PERMISSIONS NONE;
 
+-- Remove former positions before evaluating a moved contribution. Otherwise a
+-- prefix at its new date could read its own old position. Affected predecessors
+-- settle against the removal before the moving record computes its new value.
+DEFINE FUNCTION OVERWRITE fn::rebase::prepare_move($rid: record, $before: option<object>, $current: option<object>, $path: array) {
+    IF $before = NONE OR $current = NONE { RETURN { moved: false, owners: [], records: [] }; };
+    LET $old = fn::rebase::slots($rid).filter(|$slot| $before[$slot] != NONE).map(|$slot| {
+        LET $node = $before[$slot];
+        RETURN { link: { rid: $rid, slot: $slot }, owner: $node.owner, key: $node.key, value: $node.value };
+    });
+    IF array::len($old) = 0 { RETURN { moved: false, owners: [], records: [] }; };
+    LET $self_reads = SELECT * FROM rebase_read WHERE reader = $rid AND phase = 'refresh';
+    IF !$self_reads.any(|$read| $old.any(|$member| $member.owner.rid = $read.source_root AND $member.owner.slot = $read.source_slot)) {
+        RETURN { moved: false, owners: [], records: [] };
+    };
+    LET $planned = fn::tree::coalesce(fn::rebase::members($current));
+    LET $retained = $old.filter(|$member| $planned.any(|$new| $new.link = $member.link AND $new.owner = $member.owner AND $new.key = $member.key));
+    IF array::len($retained) = array::len($old) { RETURN { moved: false, owners: [], records: [] }; };
+    fn::reads::forget($rid);
+    LET $sync = fn::tree::sync($rid, $before, $retained, fn::rebase::slots($rid));
+    LET $reads = fn::reads::changed($before, $before, $sync).filter(|$read| $read.reader != $rid);
+    LET $ordered = array::sort($reads.filter(|$read| $read.phase = 'refresh').map(|$read| [$read.position, <string>$read.reader, $read.reader]));
+    LET $children = array::distinct($ordered.map(|$item| $item[2]));
+    LET $down = $children.map(|$child| {
+        IF fn::reads::pending($reads.filter(|$read| $read.reader = $child).id, 'refresh') {
+            RETURN fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path);
+        };
+        RETURN { owners: [], records: [] };
+    });
+    RETURN object::extend(fn::rebase::work(array::concat([{ owners: $sync.owners,
+        records: $reads.filter(|$read| $read.phase = 'validate').reader }], $down)), { moved: true });
+} PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option<object>, $sweep: bool, $path: array) {
-    IF $rid IN $path { THROW 'REBASE_IMPACT_CYCLE'; };
+    IF $rid IN $path { THROW 'REBASE_READ_CYCLE'; };
     LET $path = array::append($path, $rid);
     LET $current = SELECT * FROM ONLY $rid;
+    LET $prepared = fn::rebase::prepare_move($rid, $before, $current, $path);
+    LET $current = SELECT * FROM ONLY $rid;
+    LET $slot_before = IF $prepared.moved THEN $current ELSE $before END;
+    LET $scope = fn::reads::begin($rid, 'refresh');
+    IF $current = NONE { fn::reads::forget($rid); };
     IF $current != NONE {
-        LET $patch = fn::rebase::derive($current);
+        LET $patch = fn::rebase::derive($current, $scope);
         IF object::len($patch) > 0 AND object::entries($patch).any(|$p| $current[$p[0]] != $p[1]) {
-            UPDATE $rid PATCH object::entries($patch).map(|$p| {
+            UPDATE $rid PATCH object::entries($patch).filter(|$p| $current[$p[0]] != $p[1]).map(|$p| {
                 RETURN IF $p[1] = NONE THEN { op: 'remove', path: '/' + $p[0] }
-                    ELSE { op: 'add', path: '/' + $p[0], value: $p[1] } END;
+                    ELSE { op: IF $current[$p[0]] = NONE THEN 'add' ELSE 'replace' END, path: '/' + $p[0], value: $p[1] } END;
             }).filter(|$p| $p.op != 'remove' OR $current[string::slice($p.path, 1)] != NONE) RETURN NONE;
         };
     };
@@ -756,16 +760,26 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
         LET $reachable = array::flatten($sources.{..+collect}.rebase_dependency_sources);
         IF $rid IN $sources OR $rid IN $reachable { THROW 'REBASE_DEPENDENCY_CYCLE'; };
     };
-    LET $own = fn::tree::sync($rid, $before, fn::rebase::members($after), fn::rebase::slots($rid));
+    LET $own = fn::tree::sync($rid, $slot_before, fn::rebase::captured_members($after, $scope), fn::rebase::slots($rid));
     LET $required = IF fn::rebase::has_required_outputs($rid) THEN
-        fn::rebase::sync_required_outputs($rid, fn::rebase::required_outputs($after))
+        fn::rebase::sync_required_outputs($rid, fn::rebase::captured_outputs($after, $scope))
         ELSE { owners: [], records: [] } END;
+    IF $after != NONE { fn::reads::end($scope); };
+    LET $reads = fn::reads::changed($before, $after, $own);
     LET $children = fn::rebase::dependents($before, $after);
-    LET $ordered = SELECT id, a_effective_at FROM $children ORDER BY a_effective_at, id;
-    LET $impacted = fn::rebase::impact_records($before, $after);
-    LET $candidates = array::distinct(array::concat($ordered.id, $impacted));
-    LET $down = $candidates.map(|$child| fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path));
-    LET $work = fn::rebase::work(array::concat([{ owners: $own.owners, records: [$rid] }, $required], $down));
+    LET $positions = array::sort($reads.filter(|$read| $read.phase = 'refresh').map(|$read| [$read.position, <string>$read.reader, $read.reader]));
+    LET $ordered = SELECT id, a_effective_at ?? effective_at AS at FROM $children ORDER BY at, id;
+    LET $candidates = array::distinct(array::concat($positions.map(|$item| $item[2]), $ordered.id));
+    LET $down = $candidates.map(|$child| {
+        LET $bindings = $reads.filter(|$r| $r.reader = $child).id;
+        IF $child IN $children OR fn::reads::pending($bindings, 'refresh') {
+            RETURN fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path);
+        };
+        RETURN { owners: [], records: [] };
+    });
+    LET $work = fn::rebase::work(array::concat([{ owners: $own.owners,
+        records: array::concat([$rid], $reads.filter(|$r| $r.phase = 'validate').reader) }, $prepared, $required], $down));
+    IF $after = NONE { DELETE type::record('rebase_read_lock', [$rid]) RETURN NONE; };
     -- A prerequisite that is also a root can be removed after its last child.
     -- Its former owner work remains in the transaction but has nothing to drain.
     LET $temporal = IF $sweep THEN $work.owners.filter(|$owner| (SELECT VALUE id FROM ONLY $owner.rid) != NONE)
@@ -777,11 +791,17 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
 -- parent edit never validates against still-stale descendant contributions.
 DEFINE FUNCTION OVERWRITE fn::rebase::finish($work: object) {
     LET $published = $work.owners.filter(|$o| (SELECT VALUE id FROM ONLY $o.rid) != NONE).map(|$o| fn::tree::publish($o));
-    LET $children = array::distinct(array::flatten($published.map(|$p| array::concat(
-        fn::rebase::dependents($p.before, $p.after), fn::rebase::impact_records($p.before, $p.after)))));
-    LET $down = fn::rebase::work($children.map(|$rid| fn::rebase::refresh($rid, (SELECT * FROM ONLY $rid), true)));
+    LET $reads = $published.map(|$p| fn::reads::changed($p.before, $p.after, { owners: [], removed: [], added: [], publication: true })).flatten();
+    LET $direct = array::distinct($published.map(|$p| fn::rebase::dependents($p.before, $p.after)).flatten());
+    LET $children = array::distinct(array::concat($direct, $reads.filter(|$read| $read.phase = 'refresh').reader));
+    LET $down = fn::rebase::work($children.map(|$rid| {
+        IF $rid IN $direct OR fn::reads::pending($reads.filter(|$read| $read.reader = $rid).id, 'refresh') {
+            RETURN fn::rebase::refresh($rid, (SELECT * FROM ONLY $rid), true);
+        };
+        RETURN { owners: [], records: [] };
+    }));
     IF array::len($down.owners) > 0 OR array::len($down.records) > 0 { fn::rebase::finish($down); };
-    FOR $rid IN array::distinct(array::concat($work.records, $work.owners.map(|$o| $o.rid))) {
+    FOR $rid IN array::distinct(array::concat($work.records, $work.owners.map(|$o| $o.rid), $reads.filter(|$read| $read.phase = 'validate').reader)) {
         LET $row = SELECT * FROM ONLY $rid;
         IF $row != NONE { fn::rebase::validate($row); };
     };

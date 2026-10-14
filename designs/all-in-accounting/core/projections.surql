@@ -11,6 +11,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::scale($effects: object, $rate: decimal
         payment_value:fn::accounting::round(($effects.payment_value??0dec)*$rate,$currency.precision),
         fees:fn::accounting::round(($effects.fees??0dec)*$rate,$currency.precision)});
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::post($row: object, $slot: string, $account: record, $at: datetime, $effects: object) {
     LET $a=SELECT * FROM ONLY $account;
     LET $native=object::extend($effects,{net:($effects.receivable??0dec)-($effects.payable??0dec),available:($effects.real??0dec)-($effects.reserved??0dec)});
@@ -27,12 +28,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::post($row: object, $slot: string, $acc
         object::extend(fn::accounting::effects(0dec,0dec,0dec),{misc_real:$v.real})
     } ELSE {object::extend(fn::accounting::effects($v.real,0dec,0dec),{owned_real:$v.real,fees:$v.fees})};
     LET $org=IF $a.organization=NONE THEN [] ELSE [
-        fn::tree::member($row.id,$slot+'_organization',$a.organization,'z_history',$at,
-            fn::accounting::scale($native,fn::accounting::rate_at($a.organization_pair,$a.resource,$a.organization_currency,$at),$a.organization_currency),
-            {currency:$a.organization_currency,subsidiary:$a.subsidiary},{},false),
-        fn::tree::member($row.id,$slot+'_org_rate',$a.organization_pair,'z_readers',$at,{},{},{},false)] END;
+        fn::tree::member($row.id,$slot+'_organization',$a.organization,'z_history',$at,fn::accounting::scale($native,fn::accounting::rate_at($a.organization_pair,$a.resource,$a.organization_currency,$at),$a.organization_currency),{currency:$a.organization_currency,subsidiary:$a.subsidiary},{},false)] END;
     RETURN array::concat([
         fn::tree::member($row.id,$slot,$account,'z_history',$at,$native,{resource:$a.resource,subsidiary:$a.subsidiary},{},false),
-        fn::tree::member($row.id,$slot+'_subsidiary',$a.subsidiary,'z_history',$at,$report,{currency:$a.reporting_currency},{},false),
-        fn::tree::member($row.id,$slot+'_sub_rate',$a.valuation_pair,'z_readers',$at,{},{},{},false)],$org);
+        fn::tree::member($row.id,$slot+'_subsidiary',$a.subsidiary,'z_history',$at,$report,{currency:$a.reporting_currency},{},false)],$org);
 } PERMISSIONS NONE;

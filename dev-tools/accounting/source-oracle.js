@@ -47,7 +47,7 @@ const claim=v=>d(v).cmp(0)>=0?eff(0,v,0):eff(0,0,d(v).neg());
 const compare=(a,b)=>{for(let i=0;i<Math.min(a.length,b.length);i++){const date=typeof a[i]==='string'&&/^\d{4}-\d\d-\d\dT/.test(a[i]);const x=date?instant(a[i]):a[i],y=date?instant(b[i]):b[i];if(x<y)return -1;if(x>y)return 1;}return a.length-b.length;};
 const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
-const snapshot=q=>q(`RETURN {${[...tables,'audit_mutation'].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
+const snapshot=q=>q(`RETURN {${[...tables,'audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
 
 function verify(data,slots={}) {
   const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(rows.map(r=>[r.id,r]));
@@ -87,10 +87,10 @@ function verify(data,slots={}) {
     else report={...eff(v.real),owned_real:v.real,fees:v.fees};
     add(row,slot,id,'z_history',at,native,{resource:a.resource,subsidiary:a.subsidiary},dependent);
     add(row,slot+'_subsidiary',a.subsidiary,'z_history',at,report,{currency:a.reporting});
-    add(row,slot+'_sub_rate',a.row.valuation_pair,'z_readers',at);
+
     if(a.org){
       add(row,slot+'_organization',a.org.id,'z_history',at,scale(native,rate(a.row.organization_pair,a.resource,a.org.currency,at),a.org.currency),{currency:a.org.currency,subsidiary:a.subsidiary});
-      add(row,slot+'_org_rate',a.row.organization_pair,'z_readers',at);
+
     }
   };
   const context=id=>{const invoice=get(id),a=account(invoice.account);return {invoice:id,currency_account:a.row.id,organization:a.org.id,subsidiary:a.subsidiary,currency:a.resource,invoice_date:invoice.invoice_date,is_sale:tb(id)==='sales_invoice',precision:get(a.resource).precision};};
@@ -135,7 +135,7 @@ function verify(data,slots={}) {
     commercial(row,c,amount);const moved=qd.mul(c.is_sale?-1:1);
     post(row,'z_stock',source.stock_account,row.effective_at,{...eff(moved),...trade(c,row.effective_at,qd,amount,false)});
     post(row,'z_goods',source.counterparty_stock,row.effective_at,{...eff(moved.neg()),...trade(c,row.effective_at,qd,amount,true)});
-    add(row,'z_state',source.id,'z_state',row.effective_at,{quantity:qd,price:pd,base:amount},{},true);add(row,'z_order',source.id,'z_adjustments',row.effective_at);add(row,'z_net',source.id,'z_net',row.effective_at,{amount});
+    add(row,'z_state',source.id,'z_state',row.effective_at,{quantity:qd,price:pd,base:amount},{},false);add(row,'z_order',source.id,'z_adjustments',row.effective_at);add(row,'z_net',source.id,'z_net',row.effective_at,{amount});
     states.push({issue:source.id,at:row.effective_at,quantity:qd,price:pd,base:amount});net.push({issue:source.id,at:row.effective_at,amount});values.set(row.id,{row,c,amount,issue:source.id});
   }
   for(const row of [...originalTaxes,...changedTaxes].flatMap(all).sort((a,b)=>compare([a.effective_at,a.id],[b.effective_at,b.id]))){
@@ -159,29 +159,28 @@ function verify(data,slots={}) {
     check(row,{exchange_rate:fx,[original?'account_amount':'account_delta']:accountAmount});
     commercial(row,c,amount,0,parent?parent.row.adjustment_note:row.adjustment_note);post(row,'z_tax',taxAccount,row.effective_at,taxEff(c.is_sale,accountAmount));
     if(original){
-      if(!isNet)add(row,'z_basis',issue,'z_state',next(row.effective_at),{}, {},true);
-      add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount},{},isNet);
+      add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount},{},false);
       add(row,'z_self',row.id,'z_capacity',row.effective_at,{amount,account_amount:accountAmount});
     }else{
       add(row,'z_source',row.source_tax,'z_capacity',row.effective_at,{amount,account_amount:accountAmount});add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount});
-      if(parent){add(row,'z_order',row.source_tax,'z_adjustments',row.effective_at,{basis:delta},{},true);add(row,'z_adjustment',row.adjustment,'z_taxes',row.effective_at,{amount},{},isNet);taxAdjustments.push({tax:row.source_tax,parent:row.adjustment,at:row.effective_at,delta,amount});}
+      if(parent){add(row,'z_order',row.source_tax,'z_adjustments',row.effective_at,{basis:delta},{},false);add(row,'z_adjustment',row.adjustment,'z_taxes',row.effective_at,{amount},{},false);taxAdjustments.push({tax:row.source_tax,parent:row.adjustment,at:row.effective_at,delta,amount});}
     }
-    add(row,'z_fx',pair,'z_readers',row.effective_at);net.push({issue,at:row.effective_at,amount});values.set(row.id,{row,c,amount,accountAmount,basis,issue});
+    net.push({issue,at:row.effective_at,amount});values.set(row.id,{row,c,amount,accountAmount,basis,issue});
   }
   for(const row of all('invoice_settlement')){
     const c=context(row.invoice),cash=d(row.amount),native=account(row.treasury).resource,fx=rate(row.exchange_pair,native,c.currency,row.effective_at),amount=quant(cash.mul(fx),c.currency);
     check(row,{exchange_rate:fx,invoice_amount:amount});commercial(row,c,0,amount);post(row,'z_cash',row.treasury,row.effective_at,eff(cash.mul(c.is_sale?1:-1)));
-    add(row,'z_self',row.id,'z_capacity',row.effective_at,{cash,invoice_amount:amount});add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);values.set(row.id,{row,c,amount,cash});
+    add(row,'z_self',row.id,'z_capacity',row.effective_at,{cash,invoice_amount:amount});values.set(row.id,{row,c,amount,cash});
   }
   for(const row of all('payment_adjustment')){
     const source=values.get(row.source),c=source.c,cash=d(row.amount_delta),a=account(source.row.treasury),fx=rate(source.row.exchange_pair,a.resource,c.currency,row.effective_at);
     const amount=row.entered_invoice_delta==null?quant(cash.mul(fx),c.currency):d(row.entered_invoice_delta);
     check(row,{exchange_rate:fx,invoice_delta:amount,treasury:source.row.treasury,exchange_pair:source.row.exchange_pair});commercial(row,c,0,amount);
-    post(row,'z_cash',source.row.treasury,row.effective_at,eff(cash.mul(c.is_sale?1:-1)));add(row,'z_source',row.source,'z_capacity',row.effective_at,{cash,invoice_amount:amount});add(row,'z_fx',source.row.exchange_pair,'z_readers',row.effective_at);values.set(row.id,{row,c,amount,cash});
+    post(row,'z_cash',source.row.treasury,row.effective_at,eff(cash.mul(c.is_sale?1:-1)));add(row,'z_source',row.source,'z_capacity',row.effective_at,{cash,invoice_amount:amount});values.set(row.id,{row,c,amount,cash});
   }
   for(const row of all('payment_withholding')){
     const source=values.get(row.source),c=source.c,a=account(row.tax_account),fx=rate(row.exchange_pair,c.currency,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
-    check(row,{exchange_rate:fx,account_amount:amount});commercial(row,c,0,row.amount);post(row,'z_tax',row.tax_account,row.effective_at,taxEff(!c.is_sale,amount));add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);
+    check(row,{exchange_rate:fx,account_amount:amount});commercial(row,c,0,row.amount);post(row,'z_tax',row.tax_account,row.effective_at,taxEff(!c.is_sale,amount));
   }
   for(const row of all('account_claim')){
     const r=row.claim_kind==='receivable',amount=d(row.amount);
@@ -193,17 +192,17 @@ function verify(data,slots={}) {
     check(row,{exchange_rate:fx,account_amount:amount,account:source.account,resource:a.resource,paid_resource:paid.resource});
     post(row,'z_paid',row.paid_account,row.effective_at,eff(d(row.amount).mul(receive?1:-1)));
     post(row,'z_account',source.account,row.effective_at,{...claim(amount.mul(r?-1:1)),real:amount.mul(receive?-1:1),credit_available:r?amount.neg():0,liability_available:r?0:amount.neg()});
-    add(row,'z_source',row.source,'z_capacity',row.effective_at,{remaining:amount.neg()});add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);
+    add(row,'z_source',row.source,'z_capacity',row.effective_at,{remaining:amount.neg()});
   }
   for(const kind of ['tax_settlement','tax_refund','tax_deposit'])for(const row of all(kind)){
     const a=account(row.tax_account),cash=account(row.treasury),fx=rate(row.exchange_pair,cash.resource,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
     const refund=kind==='tax_refund',deposit=kind==='tax_deposit',signed=amount.mul(refund?-1:1);
     check(row,{exchange_rate:fx,account_amount:amount});post(row,'z_cash',row.treasury,row.effective_at,eff(d(row.amount).mul(refund?1:-1)));
-    post(row,'z_tax',row.tax_account,row.effective_at,{...claim(signed),real:signed,credit_available:deposit?amount:refund?amount.neg():0,liability_available:!refund&&!deposit?amount.neg():0});add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);
+    post(row,'z_tax',row.tax_account,row.effective_at,{...claim(signed),real:signed,credit_available:deposit?amount:refund?amount.neg():0,liability_available:!refund&&!deposit?amount.neg():0});
   }
   for(const row of all('tax_offset')){
     const a=account(row.credit_account),b=account(row.liability_account),fx=rate(row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),b.resource);
-    check(row,{exchange_rate:fx,liability_amount:amount});post(row,'z_credit',row.credit_account,row.effective_at,{...claim(d(row.amount).neg()),credit_available:d(row.amount).neg()});post(row,'z_liability',row.liability_account,row.effective_at,{...claim(amount),liability_available:amount.neg()});add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);
+    check(row,{exchange_rate:fx,liability_amount:amount});post(row,'z_credit',row.credit_account,row.effective_at,{...claim(d(row.amount).neg()),credit_available:d(row.amount).neg()});post(row,'z_liability',row.liability_account,row.effective_at,{...claim(amount),liability_available:amount.neg()});
   }
   for(const kind of ['production_input','production_output','production_cost','production_capacity'])for(const row of all(kind)){
     const p=get(row.production);check(row,{starts_at:p.starts_at,ends_at:p.ends_at});
@@ -214,14 +213,14 @@ function verify(data,slots={}) {
     if(type==='output'){
       post(row,'z_start',acc,p.starts_at,{...eff(),expected:quantity});post(row,'z_end',acc,p.ends_at,{...eff(quantity),expected:quantity.neg()});add(row,'z_self',row.id,'z_capacity',p.ends_at,{quantity});
     }else{
-      post(row,'z_start',acc,p.starts_at,{...eff(),reserved:quantity},type==='input');post(row,'z_end',acc,p.ends_at,{...eff(quantity.neg()),reserved:quantity.neg()});
+      post(row,'z_start',acc,p.starts_at,{...eff(),reserved:quantity});post(row,'z_end',acc,p.ends_at,{...eff(quantity.neg()),reserved:quantity.neg()});
       if(type==='input')add(row,'z_gross',acc,'z_gross',p.starts_at,{quantity});
     }
   }
   for(const row of all('resource_exchange')){
     const a=account(row.from_account),b=account(row.to_account),fx=rate(row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.from_amount).mul(fx),b.resource);
     check(row,{exchange_rate:fx,to_amount:amount,from_resource:a.resource,to_resource:b.resource});post(row,'z_from',row.from_account,row.effective_at,eff(d(row.from_amount).neg()));post(row,'z_to',row.to_account,row.effective_at,eff(amount));
-    add(row,'z_output',row.production_output,'z_capacity',row.effective_at,{quantity:d(row.from_amount).neg()});add(row,'z_fx',row.exchange_pair,'z_readers',row.effective_at);add(row,'z_observation',row.exchange_pair,'z_observations',row.effective_at,{given:row.from_amount,received:amount});values.set(row.id,{row,amount});
+    add(row,'z_output',row.production_output,'z_capacity',row.effective_at,{quantity:d(row.from_amount).neg()});add(row,'z_observation',row.exchange_pair,'z_observations',row.effective_at,{given:row.from_amount,received:amount});values.set(row.id,{row,amount});
   }
   for(const kind of feeTables)for(const row of all(kind)){
     let cash,at=row.effective_at,basis;
@@ -243,7 +242,7 @@ function verify(data,slots={}) {
     post(row,'z_fee_cash',cash,at,{...eff(total.neg()),reserved:kind==='production_cost'?total.neg():0,fees:total});post(row,'z_fee_account',row.fee_account,at,eff(expense));
     if(row.fee_tax_creditable)post(row,'z_fee_tax',row.fee_tax_account,at,{...eff(credit,credit),credit_available:credit});
     if(kind==='production_cost')post(row,'z_fee_start',cash,get(row.production).starts_at,{...eff(),reserved:total});
-    add(row,'z_fee_fx',row.fee_exchange_pair,'z_readers',at);add(row,'z_fee_tax_fx',row.fee_tax_exchange_pair,'z_readers',at);
+
   }
   // Schema declaration order chooses coincident-slot representatives. Arithmetic
   // and expected memberships above use only source facts; this is identity metadata.
@@ -257,6 +256,7 @@ function verify(data,slots={}) {
     old.dependent ||=e.dependent;
   }
   tree.verify(rows,rows,[...grouped.values()],compare);
+  require('../temporal-tree/read-oracle').verifyReads(data,rows,[...grouped.values()],compare);
   return data;
 }
 

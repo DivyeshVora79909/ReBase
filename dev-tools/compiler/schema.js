@@ -32,7 +32,6 @@ function parseSchema(schemaSource, viewsSource) {
       }
       table.treeMembers = extractFunctionMarker(table.comment, 'members', table.name);
       table.validate = extractFunctionMarker(table.comment, 'validate', table.name);
-      table.impact = extractFunctionMarker(table.comment, 'impact', table.name);
       table.requiredOutputs = extractFunctionMarker(table.comment, 'required-outputs', table.name);
       table.managedOutput = /@rebase-managed-output\b/i.test(table.comment);
       table.operation = extractOperation(table.comment, table.name);
@@ -276,6 +275,7 @@ function parseAuditPolicy(comment = "") {
 function validateRetiredMarkers(comment, subject) {
   const source = String(comment || "");
   const retired = [
+    [/@rebase-impact\b/i, 'fn::tree::read_value or fn::record::read_value inside the calculation; dependencies are captured automatically'],
     [/@rebase-principal\b/i, "fixed rebase_user/rebase_group table names"],
     [/@rebase-internal\b/i, "native PERMISSIONS NONE"],
     [/@rebase-authentication-private\b/i, "native field permissions"],

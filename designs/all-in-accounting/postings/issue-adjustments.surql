@@ -4,12 +4,13 @@ DEFINE FUNCTION OVERWRITE fn::accounting::issue_adjustment_validate($row: object
     IF math::abs($row.quantity_delta)>$row.source_quantity OR math::abs($row.price_delta)>$row.source_price OR math::abs($row.amount_delta)>$row.source_amount { THROW 'ISSUE_CHANGE_MAGNITUDE'; };
     IF $row.quantity_before+$row.quantity_delta<0dec OR $row.price_before+$row.price_delta<0dec { THROW 'ISSUE_CAPACITY'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_adjustment_members($row: object) {
     LET $q=IF $row.is_sale THEN -$row.quantity_delta ELSE $row.quantity_delta END;
     RETURN array::concat(fn::accounting::commercial($row,$row.amount_delta,0dec),
         fn::accounting::post($row,'z_stock',$row.stock_account,$row.effective_at,object::extend(fn::accounting::effects($q,0dec,0dec),fn::accounting::trade($row,$row.quantity_delta,$row.amount_delta,false))),
         fn::accounting::post($row,'z_goods',$row.counterparty_stock,$row.effective_at,object::extend(fn::accounting::effects(-$q,0dec,0dec),fn::accounting::trade($row,$row.quantity_delta,$row.amount_delta,true))),[
-        fn::tree::member($row.id,'z_state',$row.source,'z_state',$row.effective_at,{quantity:$row.quantity_delta,price:$row.price_delta,base:$row.amount_delta},{},{},true),
+        fn::tree::member($row.id,'z_state',$row.source,'z_state',$row.effective_at,{quantity:$row.quantity_delta,price:$row.price_delta,base:$row.amount_delta},{},{},false),
         fn::tree::member($row.id,'z_order',$row.source,'z_adjustments',$row.effective_at,{},{},{},false),
         fn::tree::member($row.id,'z_net',$row.source,'z_net',$row.effective_at,{amount:$row.amount_delta},{},{},false)]);
 } PERMISSIONS NONE;
@@ -42,11 +43,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON issue_adjustment TYPE option<object> CO
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -82,17 +79,11 @@ DEFINE FIELD OVERWRITE z_stock ON issue_adjustment TYPE option<object> COMMENT '
 
 DEFINE FIELD OVERWRITE z_stock_subsidiary ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_stock_sub_rate ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
 
 DEFINE FIELD OVERWRITE z_goods_subsidiary ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_goods_sub_rate ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods_organization ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_goods_org_rate ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_state ON issue_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_state @rebase-tree-owner purchase_issue.z_state';
 

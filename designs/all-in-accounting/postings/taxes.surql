@@ -2,10 +2,12 @@ DEFINE FUNCTION OVERWRITE fn::accounting::tax_rule($basis: decimal, $rate: decim
     LET $raw=$basis*$rate/100dec;
     RETURN fn::accounting::round(math::max([$lower,IF $upper=NONE THEN $raw ELSE math::min([$raw,$upper]) END]),$precision);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::tax_effects($sale: bool, $amount: decimal) {
     RETURN object::extend(fn::accounting::claim(IF $sale THEN -$amount ELSE $amount END),
         {credit_available:IF $sale THEN 0dec ELSE $amount END,liability_available:IF $sale THEN $amount ELSE 0dec END});
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::tax_validate($row: object) {
     fn::accounting::same_subsidiary($row.currency_account,$row.tax_account);
     IF $row.effective_at<$row.source_at OR $row.effective_at>$row.invoice_date { THROW 'TAX_TIME'; };
@@ -15,13 +17,12 @@ DEFINE FUNCTION OVERWRITE fn::accounting::tax_validate($row: object) {
     IF $row.upper_bound!=NONE { fn::accounting::precision_validate($row.upper_bound,$row.currency); };
     IF ($row.z_capacity.summary.measures.amount.instant_min??0dec)<0dec OR ($row.z_capacity.summary.measures.account_amount.instant_min??0dec)<0dec { THROW 'TAX_REVERSAL_CAPACITY'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::tax_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,$row.amount,0dec),
         fn::accounting::post($row,'z_tax',$row.tax_account,$row.effective_at,fn::accounting::tax_effects($row.is_sale,$row.account_amount)),[
-        IF $row.is_net THEN NONE ELSE fn::tree::member($row.id,'z_basis',$row.source,'z_state',$row.effective_at+1ns,{},{},{},true) END,
-        fn::tree::member($row.id,'z_issue_net',$row.source,'z_net',$row.effective_at,{amount:$row.amount},{},{},$row.is_net),
-        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{amount:$row.amount,account_amount:$row.account_amount},{},{},false),
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)]);
+        fn::tree::member($row.id,'z_issue_net',$row.source,'z_net',$row.effective_at,{amount:$row.amount},{},{},false),
+        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{amount:$row.amount,account_amount:$row.account_amount},{},{},false)]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE issue_tax SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_members @rebase-validate fn::accounting::tax_validate';
@@ -62,11 +63,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON issue_tax TYPE option<object> COMMENT '
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -94,15 +91,9 @@ DEFINE FIELD OVERWRITE z_tax ON issue_tax TYPE option<object> COMMENT '@rebase-t
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_basis ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_state @rebase-tree-owner purchase_issue.z_state';
-
 DEFINE FIELD OVERWRITE z_issue_net ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
 
 DEFINE FIELD OVERWRITE z_self ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_tax.z_capacity';
-
-DEFINE FIELD OVERWRITE z_fx ON issue_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE issue_net_tax SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_members @rebase-validate fn::accounting::tax_validate';
 
@@ -142,11 +133,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON issue_net_tax TYPE option<object> COMME
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -174,10 +161,6 @@ DEFINE FIELD OVERWRITE z_tax ON issue_net_tax TYPE option<object> COMMENT '@reba
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_issue_net ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_net @rebase-tree-owner purchase_issue.z_net';
 
 DEFINE FIELD OVERWRITE z_self ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner issue_net_tax.z_capacity';
-
-DEFINE FIELD OVERWRITE z_fx ON issue_net_tax TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

@@ -1,0 +1,36 @@
+temporal-output.txt
+PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable causal slots
+PASS compiled multi-tree chronology, range/rank/percentile oracle, inherited references, capped-prefix invalidation, final guards and timestamps
+PASS 240 randomized compiled mutations against independent source oracle
+PASS repeated root deletion, empty trees and singleton-owner lifecycle without reverse references
+PASS record/system queries, anonymous and private-helper denial, forged metadata/shadows, authenticated live-rule create/update and hidden-prefix rollback
+PASS concurrent owner fencing (32 conflict retries)
+PASS ascending AVL bound, nanosecond ordering, stable ties/date edits and populated schema reapplication
+
+
+typed-output.txt
+PASS explicit tree contracts and 35 invalid declaration diagnostics
+Compiled typed trees: SurrealDB 3.3.0 for linux on x86_64, Node v22.23.2, surrealkv
+PASS compiled dual ordering, nanosecond ties, safe int extremes, absence, rekeys, independent owners, scale versions and rollback
+PASS malformed inputs before int coercion, public read bounds, exact structural pairs and pre-coalescing validation
+PASS 56 deterministic mixed-order mutations reconstructed from authoritative source fields (seed 250925)
+PASS competing dual-tree writes: one commit, five complete rollbacks (4 conflict retries)
+PASS root/slot ACL, conditional fields, deliberate aggregate publication, forged writes and both select policies
+PASS 113 mutation checkpoints, 1101 ordered reads, 105 rejection snapshots; populated reapplication and empty-tree cleanup
+
+
+ordered-output.txt
+PASS explicit tree contracts and 35 invalid declaration diagnostics
+PASS ordered trees: 22 mutations, 683 typed reads/pages, 10 rollback cases, exact decimals, composite, nominal, bool, UUID and record keys, cross-table uniqueness and independent-session concurrent serialization
+
+
+derived-output.txt
+PASS topological CREATE shadows, opaque dependency refresh, local updates, native ASSERT rollback, reordered declarations and populated reapplication
+
+
+causal-output.txt
+PASS two input roots publish before one basis refresh and the diamond joins both branches
+PASS final downstream floor failure restores the complete input and output graph
+PASS future date and amount edits rekey every downstream branch and final output
+PASS a required output cannot feed a root consumed by its own derived basis
+PASS deleting basis and source rows clears the causal graph and every owned membership

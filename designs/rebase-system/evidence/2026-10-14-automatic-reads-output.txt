@@ -1,0 +1,7 @@
+Observed reads: schema applied
+Observed reads: predecessor and nested helper capture
+Observed reads: prefix/range/exact/successor and moves
+Observed reads: adjustment prefix chains and atomic validators
+Observed reads: interval pruning 24 visits for 68 ranges
+Observed reads: tenant isolation, record permissions and concurrent registration
+{"status":"PASS","storage":"surrealkv","checkpoints":50,"rejections":7,"reapplication":true,"cleanup":true}

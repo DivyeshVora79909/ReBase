@@ -158,7 +158,8 @@ async function main() {
     assert.match(audit, /profile: \{ email: \$before\.profile\.email \}/);
     assert.doesNotMatch(audit, /profile\.secret|private_note/);
     assert.doesNotMatch(audit, /__rebase_derived_\d+/, 'field-only audit never selects generated helper fields');
-    const extractDerive = bundle => bundle.match(/DEFINE FUNCTION OVERWRITE fn::rebase::derive\(\$row: object\) \{([\s\S]*?)\} PERMISSIONS NONE;/)?.[1];
+    const extractDerive = bundle => bundle.match(/DEFINE FUNCTION OVERWRITE fn::rebase::derive\(\$row: object, \$scope: object\) \{([\s\S]*?)\} PERMISSIONS NONE;/)?.[1];
+    assert(extractDerive(compiled.bundle), 'inspect the generated evaluator, rather than comparing absent matches');
     assert.equal(extractDerive(compiled.bundle), extractDerive(reordered.bundle), 'field declaration order preserves derived evaluator semantics');
     assert.deepEqual(compiled.temporalModel.derivedOrder.get('natural_fact').map(field => field.name),
       ['m_double', 'z_factor', 'a_total'], 'the resolved model stores one topological field order');

@@ -6,11 +6,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::exchange_validate($row: object) {
     IF $row.production_output!=NONE AND ($row.output_account!=$row.from_account OR $row.effective_at<$row.output_at) { THROW 'EXCHANGE_OUTPUT_SOURCE'; };
     fn::accounting::fee_validate($row);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::exchange_members($row: object) {
     RETURN array::concat(fn::accounting::post($row,'z_from',$row.from_account,$row.effective_at,fn::accounting::effects(-$row.from_amount,0dec,0dec)),
         fn::accounting::post($row,'z_to',$row.to_account,$row.effective_at,fn::accounting::effects($row.to_amount,0dec,0dec)),[
         fn::tree::member($row.id,'z_output',$row.production_output,'z_capacity',$row.effective_at,{quantity:-$row.from_amount},{},{},false),
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false),
         fn::tree::member($row.id,'z_observation',$row.exchange_pair,'z_observations',$row.effective_at,{given:$row.from_amount,received:$row.to_amount},{},{},false)],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
@@ -46,16 +46,10 @@ DEFINE FIELD OVERWRITE z_from ON resource_exchange TYPE option<object> COMMENT '
 
 DEFINE FIELD OVERWRITE z_from_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_from_sub_rate ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_to ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
 DEFINE FIELD OVERWRITE z_to_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_to_sub_rate ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_output ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner production_output.z_capacity';
-
-DEFINE FIELD OVERWRITE z_fx ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_observation ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_observations @rebase-tree-no-reader';

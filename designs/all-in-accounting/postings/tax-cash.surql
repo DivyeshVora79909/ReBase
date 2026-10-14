@@ -4,6 +4,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::tax_cash_validate($row: object) {
     IF $row.account_amount<=0dec { THROW 'TAX_CASH_ZERO_AMOUNT'; };
     fn::accounting::fee_validate($row);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::tax_cash_members($row: object) {
     LET $refund=record::tb($row.id)='tax_refund';
     LET $deposit=record::tb($row.id)='tax_deposit';
@@ -12,30 +13,31 @@ DEFINE FUNCTION OVERWRITE fn::accounting::tax_cash_members($row: object) {
         fn::accounting::post($row,'z_tax',$row.tax_account,$row.effective_at,
             object::extend(fn::accounting::claim($signed),{real:$signed,
                 credit_available:IF $deposit THEN $row.account_amount ELSE IF $refund THEN -$row.account_amount ELSE 0dec END,
-                liability_available:IF !$deposit AND !$refund THEN -$row.account_amount ELSE 0dec END})),[
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)],fn::accounting::fee_members($row));
+                liability_available:IF !$deposit AND !$refund THEN -$row.account_amount ELSE 0dec END})),[],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::offset_validate($row: object) {
     fn::accounting::same_subsidiary($row.credit_account,$row.liability_account);
     fn::accounting::precision_validate($row.amount,$row.credit_currency);
     IF $row.liability_amount<=0dec { THROW 'TAX_OFFSET_ZERO_AMOUNT'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::offset_members($row: object) {
     RETURN array::concat(fn::accounting::post($row,'z_credit',$row.credit_account,$row.effective_at,
         object::extend(fn::accounting::claim(-$row.amount),{credit_available:-$row.amount})),
         fn::accounting::post($row,'z_liability',$row.liability_account,$row.effective_at,
-        object::extend(fn::accounting::claim($row.liability_amount),{liability_available:-$row.liability_amount})),[
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)]);
+        object::extend(fn::accounting::claim($row.liability_amount),{liability_available:-$row.liability_amount})),[]);
 } PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::withholding_validate($row: object) {
     fn::accounting::same_subsidiary($row.currency_account,$row.tax_account);
     IF $row.effective_at<$row.source_at { THROW 'WITHHOLDING_BEFORE_PAYMENT'; };
     fn::accounting::precision_validate($row.amount,$row.currency);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::withholding_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,0dec,$row.amount),
-        fn::accounting::post($row,'z_tax',$row.tax_account,$row.effective_at,fn::accounting::tax_effects(!$row.is_sale,$row.account_amount)),[
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)]);
+        fn::accounting::post($row,'z_tax',$row.tax_account,$row.effective_at,fn::accounting::tax_effects(!$row.is_sale,$row.account_amount)),[]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE tax_settlement SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_cash_members @rebase-validate fn::accounting::tax_cash_validate';
@@ -66,15 +68,9 @@ DEFINE FIELD OVERWRITE z_tax ON tax_settlement TYPE option<object> COMMENT '@reb
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_cash ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_cash_sub_rate ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE tax_deposit SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_cash_members @rebase-validate fn::accounting::tax_cash_validate';
 
@@ -104,15 +100,9 @@ DEFINE FIELD OVERWRITE z_tax ON tax_deposit TYPE option<object> COMMENT '@rebase
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_cash ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_cash_sub_rate ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_deposit TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE tax_refund SCHEMAFULL COMMENT '@rebase-members fn::accounting::tax_cash_members @rebase-validate fn::accounting::tax_cash_validate';
 
@@ -142,15 +132,9 @@ DEFINE FIELD OVERWRITE z_tax ON tax_refund TYPE option<object> COMMENT '@rebase-
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_cash ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_cash_sub_rate ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_refund TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE tax_offset SCHEMAFULL COMMENT '@rebase-members fn::accounting::offset_members @rebase-validate fn::accounting::offset_validate';
 
@@ -180,15 +164,9 @@ DEFINE FIELD OVERWRITE z_credit ON tax_offset TYPE option<object> COMMENT '@reba
 
 DEFINE FIELD OVERWRITE z_credit_subsidiary ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_credit_sub_rate ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_liability ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner direct_tax_account.z_history @rebase-tree-owner indirect_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_liability_subsidiary ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_liability_sub_rate ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fx ON tax_offset TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE payment_withholding SCHEMAFULL COMMENT '@rebase-members fn::accounting::withholding_members @rebase-validate fn::accounting::withholding_validate';
 
@@ -224,11 +202,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON payment_withholding TYPE option<object>
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -245,7 +219,3 @@ DEFINE FIELD OVERWRITE account_amount ON payment_withholding TYPE decimal VALUE 
 DEFINE FIELD OVERWRITE z_tax ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner direct_tax_account.z_history';
 
 DEFINE FIELD OVERWRITE z_tax_subsidiary ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
-
-DEFINE FIELD OVERWRITE z_tax_sub_rate ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
-DEFINE FIELD OVERWRITE z_fx ON payment_withholding TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

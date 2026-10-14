@@ -118,7 +118,9 @@ async function verifyReads(q, groups) {
 async function main() {
   require('./contract-probe').main();
   const source = fs.readFileSync(path.join(__dirname, 'ordered-fixture.surql'), 'utf8');
-  const compiled = generateTemporal(parseSchema(source, ''), { selectPolicy: 'readers' }, new Set()).sql;
+  const support = fs.readFileSync(path.resolve(__dirname, '../../framework/reads.surql'), 'utf8');
+  const compiled = generateTemporal(parseSchema(source + '\n' + support, ''), { selectPolicy: 'readers' },
+    new Set(['rebase_read', 'rebase_read_frame', 'rebase_read_group', 'rebase_read_lock'])).sql;
   const server = await start({ engine: 'surrealkv' }), q = client(server.url);
   let reader;
   let mutations = 0, rejected = 0, reads = 0;
@@ -134,7 +136,7 @@ async function main() {
     identifier=${literal(identifier)}, price=${price}dec, at=d'${at(1)}'${second}${extra};`);
   try {
     await q('DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture; USE DB fixture;');
-    await applySchema(q, source + '\n' + compiled);
+    await applySchema(q, source + '\n' + support + '\n' + compiled);
     await q(`CREATE rebase_user:tree_reader SET name='Tree reader', parents=[rebase_tenant:default];
       DEFINE ACCESS ordered_tree_reader ON DATABASE TYPE RECORD SIGNIN rebase_user:tree_reader;`);
     reader = await recordClient(server.url, 'ordered_tree_reader');

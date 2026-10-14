@@ -4,12 +4,13 @@ DEFINE FUNCTION OVERWRITE fn::accounting::settlement_validate($row: object) {
     IF ($row.z_capacity.summary.measures.cash.instant_min??0dec)<0dec OR ($row.z_capacity.summary.measures.invoice_amount.instant_min??0dec)<0dec { THROW 'PAYMENT_REVERSAL_CAPACITY'; };
     fn::accounting::fee_validate($row);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::settlement_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,0dec,$row.invoice_amount),
         fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount ELSE -$row.amount END,0dec,0dec)),[
-        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{cash:$row.amount,invoice_amount:$row.invoice_amount},{},{},false),
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)],fn::accounting::fee_members($row));
+        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{cash:$row.amount,invoice_amount:$row.invoice_amount},{},{},false)],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_validate($row: object) {
     IF $row.effective_at<=$row.source_at { THROW 'ADJUSTMENT_AFTER_SOURCE'; };
     fn::accounting::precision_validate($row.amount_delta,$row.treasury_currency);
@@ -18,11 +19,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_validate($row: obje
     IF ($row.amount_delta<0dec AND $row.invoice_delta>0dec) OR ($row.amount_delta>0dec AND $row.invoice_delta<0dec) { THROW 'PAYMENT_CHANGE_DIRECTION'; };
     fn::accounting::fee_validate($row);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,0dec,$row.invoice_delta),
         fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount_delta ELSE -$row.amount_delta END,0dec,0dec)),[
-        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{cash:$row.amount_delta,invoice_amount:$row.invoice_delta},{},{},false),
-        fn::tree::member($row.id,'z_fx',$row.exchange_pair,'z_readers',$row.effective_at,{},{},{},false)],fn::accounting::fee_members($row));
+        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{cash:$row.amount_delta,invoice_amount:$row.invoice_delta},{},{},false)],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE invoice_settlement SCHEMAFULL COMMENT '@rebase-members fn::accounting::settlement_members @rebase-validate fn::accounting::settlement_validate';
@@ -57,11 +58,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON invoice_settlement TYPE option<object> 
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -77,11 +74,7 @@ DEFINE FIELD OVERWRITE z_cash ON invoice_settlement TYPE option<object> COMMENT 
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_cash_sub_rate ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_self ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner invoice_settlement.z_capacity';
-
-DEFINE FIELD OVERWRITE z_fx ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE TABLE OVERWRITE payment_adjustment SCHEMAFULL COMMENT '@rebase-members fn::accounting::payment_adjustment_members @rebase-validate fn::accounting::payment_adjustment_validate';
 
@@ -115,11 +108,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON payment_adjustment TYPE option<object> 
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -147,8 +136,4 @@ DEFINE FIELD OVERWRITE z_cash ON payment_adjustment TYPE option<object> COMMENT 
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_cash_sub_rate ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_source ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner invoice_settlement.z_capacity';
-
-DEFINE FIELD OVERWRITE z_fx ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';

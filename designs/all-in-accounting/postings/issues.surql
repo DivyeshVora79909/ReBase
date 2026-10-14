@@ -7,12 +7,14 @@ DEFINE FUNCTION OVERWRITE fn::accounting::trade($row: object, $quantity: decimal
     RETURN {sales_quantity:IF $row.is_sale THEN $quantity ELSE 0dec END,purchase_quantity:IF $row.is_sale THEN 0dec ELSE $quantity END,
         sales_reporting_value:IF $row.is_sale THEN $value ELSE 0dec END,purchase_reporting_value:IF $row.is_sale THEN 0dec ELSE $value END};
 } PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_validate($row: object) {
     IF $row.effective_at>$row.invoice_date { THROW 'ORIGINAL_ON_OR_BEFORE_INVOICE'; };
     fn::accounting::same_subsidiary($row.stock_account,$row.currency_account);
     IF $row.counterparty_stock.organization!=$row.organization OR $row.counterparty_stock.resource!=$row.stock_account.resource { THROW 'ISSUE_RESOURCE_ACCOUNT'; };
     IF ($row.z_state.summary.measures.quantity.instant_min??0dec)<0dec OR ($row.z_state.summary.measures.price.instant_min??0dec)<0dec OR ($row.z_state.summary.measures.base.instant_min??0dec)<0dec { THROW 'ISSUE_CAPACITY'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_members($row: object) {
     LET $q=IF $row.is_sale THEN -$row.quantity ELSE $row.quantity END;
     RETURN array::concat(fn::accounting::commercial($row,$row.amount,0dec),
@@ -56,11 +58,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON sales_issue TYPE option<object> COMMENT
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -76,17 +74,11 @@ DEFINE FIELD OVERWRITE z_stock ON sales_issue TYPE option<object> COMMENT '@reba
 
 DEFINE FIELD OVERWRITE z_stock_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_stock_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
 
 DEFINE FIELD OVERWRITE z_goods_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_goods_sub_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_goods_org_rate ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_self ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_issue.z_state';
 
@@ -126,11 +118,7 @@ DEFINE FIELD OVERWRITE z_counterparty ON purchase_issue TYPE option<object> COMM
 
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_counterparty_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_counterparty_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_counterparty_org_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_invoice ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner sales_invoice.z_history @rebase-tree-owner purchase_invoice.z_history';
 
@@ -146,17 +134,11 @@ DEFINE FIELD OVERWRITE z_stock ON purchase_issue TYPE option<object> COMMENT '@r
 
 DEFINE FIELD OVERWRITE z_stock_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_stock_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
 
 DEFINE FIELD OVERWRITE z_goods_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
-DEFINE FIELD OVERWRITE z_goods_sub_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
-
 DEFINE FIELD OVERWRITE z_goods_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
-
-DEFINE FIELD OVERWRITE z_goods_org_rate ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner exchange_pair.z_readers @rebase-tree-no-reader';
 
 DEFINE FIELD OVERWRITE z_self ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner purchase_issue.z_state';
 

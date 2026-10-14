@@ -40,7 +40,7 @@ DEFINE FIELD OVERWRITE a_effective_at ON charge TYPE datetime;
 DEFINE FIELD OVERWRITE z10_rate ON charge TYPE decimal VALUE $this.a_rule.a_rate COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_cap ON charge TYPE decimal VALUE $this.a_rule.a_cap COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z20_basis ON charge TYPE decimal VALUE
-    fn::tree::read($this.a_owner, 'z_book', 'before', [$this.a_effective_at, <string>$this.id, 'z_leg']).measures.amount.sum ?? 0dec
+    fn::tree::read_value($this.a_owner, 'z_book', 'before', [$this.a_effective_at, <string>$this.id, 'z_leg'], 'measures.amount.sum', 0dec)
     COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z30_amount ON charge TYPE decimal VALUE math::min([$this.z11_cap, $this.z10_rate * $this.z20_basis]) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z_leg ON charge TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';

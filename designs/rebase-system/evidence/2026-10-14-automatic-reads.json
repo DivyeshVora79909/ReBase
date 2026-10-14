@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "storage": "SurrealKV",
+  "checkpoints": 50,
+  "rollbacks": 7,
+  "intervalRegistrations": 68,
+  "intervalNodeVisits": 24,
+  "sameTimestampAndNanoseconds": true,
+  "concurrentRegistration": true,
+  "reapplication": true,
+  "cleanup": true,
+  "sourceSha256": {
+    "dev-tools/compiler/observed-reads.js": "c5941a30ee2b0b6fd11631243ff45c9f63da4874ae7c929dde6da4cbf26c4cfd",
+    "dev-tools/compiler/reads.surql": "e9a61bc3f86dbe96d89a90dab5fad148ad746ee3dac3b0d4dd703c2064331cec",
+    "dev-tools/compiler/temporal.surql": "d9e19bba0f28ce70b2d03cb38e553380ae3132b709af8a01e44330a85dc67f1e",
+    "dev-tools/compiler/generators/temporal.js": "d0635e665802866c7d90964597fdeca613e63e0a4320a51d2067537d5c579bee",
+    "dev-tools/compiler/generators/tree.js": "a72435b14bf7662910b04af8f76e074a917a0ed89d6ad91f29912cc0a3e7dbc7",
+    "dev-tools/compiler/tree-contract.js": "c956f3046256d4d255a1519ea5b64b60d7abb2e37013557266c5dddb76ebe4e6",
+    "framework/reads.surql": "e97b062420a86b8484fce408077c48c46b1827fd043c4fbe5db08f130a251e10",
+    "dev-tools/temporal-tree/observed-fixture.surql": "2ee6fad6ad81d9ee32759e217fc98a5c84d0f282e6efcd4ba082b4fe799c9644",
+    "dev-tools/temporal-tree/observed-probe.js": "d1113b41773561a479f724edafeed260ba88a8f7caf31345f0fc0fa61ab472bb",
+    "dev-tools/temporal-tree/read-oracle.js": "20f9126d78da2ef33039fd104327a5aedf925a93cd46bd7ab7c1ffdf7a40aa3e"
+  }
+}

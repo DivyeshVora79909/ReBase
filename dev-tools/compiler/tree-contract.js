@@ -7,7 +7,7 @@ const MAX_KEY_PARTS = 16;
 const KNOWN_MARKERS = new Set(['root', 'node', 'key', 'owner', 'duplicates', 'no-reader']);
 
 function keyStorageType(keyType) {
-  return `[${[...keyType.split(','), 'string', 'string'].join(', ')}]`;
+  return `[${[...keyType.split(',').map(part => part === 'tuple' ? 'array' : part), 'string', 'string'].join(', ')}]`;
 }
 
 function argumentsFor(comment, marker, name) {
@@ -51,7 +51,8 @@ function resolveTreeContract(schema) {
       if (!keys.length) throw new Error(`${name}: requires explicit @rebase-tree-key ${KEY_TYPES.join(', ')}`);
       const keyType = keys[0];
       const keyParts = keyType.split(',');
-      if (keyParts.length > MAX_KEY_PARTS || keyParts.some(part => !KEY_TYPES.includes(part))) {
+      const internalTuple = keyType === 'tuple' && ['rebase_read', 'rebase_read_group'].includes(table.name);
+      if (!internalTuple && (keyParts.length > MAX_KEY_PARTS || keyParts.some(part => !KEY_TYPES.includes(part)))) {
         throw new Error(`${name}: unsupported tree key '${keyType}'; expected 1..${MAX_KEY_PARTS} comma-separated components from ${KEY_TYPES.join(', ')}`);
       }
       if (field.treeNoReader && !field.treeNode) throw new Error(`${name}: @rebase-tree-no-reader belongs on a node field`);

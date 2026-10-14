@@ -14,6 +14,7 @@ DEFINE FIELD OVERWRITE ${field}.count ON ${table} TYPE int ASSERT $value >= 0;
 DEFINE FIELD OVERWRITE ${field}.dependents ON ${table} TYPE int ASSERT $value >= 0 AND $value <= $this.${field}.count;
 DEFINE FIELD OVERWRITE ${field}.first ON ${table} TYPE option<${keyType}>;
 DEFINE FIELD OVERWRITE ${field}.last ON ${table} TYPE option<${keyType}>;
+${['rebase_read', 'rebase_read_group'].includes(table) ? `DEFINE FIELD OVERWRITE ${field}.end_key ON ${table} TYPE option<array>;` : ''}
 DEFINE FIELD OVERWRITE ${field}.measures ON ${table} TYPE object FLEXIBLE;
 DEFINE FIELD OVERWRITE ${field}.measures.* ON ${table} TYPE { sum: decimal, min_prefix: decimal, max_prefix: decimal, min: decimal, max: decimal, boundary_min: option<decimal>, boundary_max: option<decimal>, instant_min: decimal, instant_max: decimal };
 DEFINE FIELD OVERWRITE ${field}.tags ON ${table} TYPE object FLEXIBLE;
@@ -294,6 +295,12 @@ function queryFunction(trees, options) {
         IF array::len($argument) != 0 { THROW 'TREE_READ_ARGUMENT'; };
         ${readHeadStatement('$link', 'summary_head')}
         RETURN $summary_head.summary ?? fn::tree::empty();
+    };
+    IF $operation = 'value' {
+        IF array::len($argument) != 1 { THROW 'TREE_READ_ARGUMENT'; };
+        ${readNodeStatement('$argument[0]', '$link', 'value_node')}
+        IF $argument[0] != NONE AND !fn::rebase::tree_link_select_allowed($argument[0], $link) { THROW 'Tree read not allowed'; };
+        RETURN $value_node.value;
     };
     ${operations.before}
     ${operations.range}

@@ -3,25 +3,32 @@ DEFINE FUNCTION OVERWRITE fn::accounting::round($amount: decimal, $precision: in
     RETURN IF $precision = 0 THEN <decimal>math::fixed($amount / 10dec, 1) * 10dec
         ELSE <decimal>math::fixed($amount, $precision) END;
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::quantize($amount: decimal, $resource: record) {
     RETURN IF record::tb($resource) = 'currency' THEN fn::accounting::round($amount, $resource.precision) ELSE $amount END;
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::precision_validate($amount: decimal, $resource: record) {
     IF fn::accounting::quantize($amount, $resource) != $amount { THROW 'ACCOUNTING_AMOUNT_PRECISION'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::effects($real: decimal, $receivable: decimal, $payable: decimal) {
     IF $receivable < 0dec OR $payable < 0dec { THROW 'ACCOUNTING_NEGATIVE_DIRECTION'; };
     RETURN {real:$real,receivable:$receivable,payable:$payable,net:$receivable-$payable,available:$real};
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::claim($signed: decimal) {
     RETURN fn::accounting::effects(0dec,math::max([$signed,0dec]),math::max([-$signed,0dec]));
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::prefix($owner: record, $slot: string, $measure: string, $at: datetime) {
-    RETURN fn::tree::read($owner,$slot,'before',[$at]).measures[$measure].sum ?? 0dec;
+    RETURN fn::tree::read_value($owner,$slot,'before',[$at],'measures.'+$measure+'.sum',0dec);
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::same_subsidiary($left: record, $right: record) {
     IF $left.subsidiary != $right.subsidiary { THROW 'ACCOUNTING_SUBSIDIARY'; };
 } PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::accounting::resource_validate($row: object) {
     IF $row.available_from != NONE AND $row.available_until != NONE AND $row.available_until <= $row.available_from { THROW 'RESOURCE_TIME_WINDOW'; };
     IF $row.minimum_duration != NONE AND $row.maximum_duration != NONE AND $row.minimum_duration > $row.maximum_duration { THROW 'RESOURCE_DURATION_ORDER'; };
