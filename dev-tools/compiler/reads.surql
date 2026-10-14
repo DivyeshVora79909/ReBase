@@ -80,7 +80,8 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
     LET $fingerprint = crypto::sha256(<string>[$kind, $arguments, $path, $fallback]);
     LET $id = type::record('rebase_read', [$group, $position, <string>$scope.reader, $scope.phase, $fingerprint]);
     LET $inserted = INSERT IGNORE INTO rebase_read {
-        id: $id, tenant: $tenant, reader: $scope.reader, phase: $scope.phase, version: $scope.version,
+        id: $id, tenant: $tenant, reader: $scope.reader, reader_identity: <string>$scope.reader,
+        phase: $scope.phase, version: $scope.version,
         source_root: $source, source_slot: $slot, kind: $kind, channel: $channel,
         arguments: $arguments, path: $path, fallback: { value: $fallback }, observed: { value: $value }, group: $group, position: $position
     } RETURN AFTER;
@@ -100,6 +101,7 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
             fn::tree::publish($owner);
             fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
         };
+        UPDATE $group SET tree_changed = true RETURN NONE;
     };
     RETURN $value;
 } PERMISSIONS NONE;
@@ -152,7 +154,26 @@ DEFINE FUNCTION OVERWRITE fn::reads::remove($read: object) {
     DELETE $read.id RETURN NONE;
     LET $group = $read.group;
     LET $remaining = SELECT VALUE id FROM rebase_read:[$group, NONE]..[$group, ..] LIMIT 1;
-    IF array::len($remaining) = 0 { DELETE $group RETURN NONE; };
+    IF array::len($remaining) = 0 {
+        DELETE $group RETURN NONE;
+    } ELSE {
+        UPDATE $group SET tree_changed = true RETURN NONE;
+    };
+} PERMISSIONS NONE;
+
+-- Rebuild only groups whose read membership changed in this source transaction.
+-- This is a final cascade barrier: every reader has finished before summaries
+-- are pulled bottom-up from the live topology.
+DEFINE FUNCTION OVERWRITE fn::reads::settle_group($group: record) {
+    LET $row = SELECT * FROM ONLY $group;
+    IF $row = NONE { RETURN NONE; };
+    LET $owner = { rid: $group, slot: IF $row.kind = 'range' THEN 'z_intervals' ELSE 'z_positions' END };
+    LET $nodes = SELECT VALUE id FROM rebase_read WHERE group = $group;
+    LET $head = fn::tree::get($owner);
+    fn::tree::rebuild_subtree($owner, $head.root, array::len($nodes) + 3);
+    fn::tree::publish($owner);
+    fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
+    UPDATE $group SET tree_changed = false RETURN NONE;
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::reads::end($scope: object) {
@@ -165,7 +186,7 @@ DEFINE FUNCTION OVERWRITE fn::reads::end($scope: object) {
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::reads::forget($reader: record) {
-    FOR $read IN (SELECT * FROM rebase_read WHERE reader = $reader) { fn::reads::remove($read); };
+    FOR $read IN (SELECT * FROM rebase_read WHERE reader_identity = <string>$reader) { fn::reads::remove($read); };
     DELETE type::record('rebase_read_frame', [$reader, 'refresh']) RETURN NONE;
     DELETE type::record('rebase_read_frame', [$reader, 'validate']) RETURN NONE;
 } PERMISSIONS NONE;
@@ -177,20 +198,32 @@ DEFINE FUNCTION OVERWRITE fn::reads::current($read: object) {
 
 -- Reverse queries use the same typed comparison as source trees. Native record
 -- ID encodings do not consistently preserve datetime/nanosecond value order.
+DEFINE FUNCTION OVERWRITE fn::reads::points_from($link: option<object>, $owner: object,
+    $lower: option<array>, $upper: option<array>, $budget: int) {
+    IF $link = NONE { RETURN []; };
+    IF $budget <= 0 { THROW 'REBASE_READ_INDEX_BUDGET'; };
+    LET $node = fn::tree::get($link);
+    IF $node.owner != $owner { THROW 'REBASE_READ_INDEX'; };
+    IF $lower != NONE AND $node.key < $lower {
+        RETURN fn::reads::points_from($node.right, $owner, $lower, $upper, $budget - 1);
+    };
+    IF $upper != NONE AND $node.key >= $upper {
+        RETURN fn::reads::points_from($node.left, $owner, $lower, $upper, $budget - 1);
+    };
+    RETURN array::concat(
+        fn::reads::points_from($node.left, $owner, $lower, $upper, $budget - 1),
+        [(SELECT * FROM ONLY $link.rid)],
+        fn::reads::points_from($node.right, $owner, $lower, $upper, $budget - 1)
+    );
+} PERMISSIONS NONE;
+
 DEFINE FUNCTION OVERWRITE fn::reads::points($group: record, $lower: option<array>, $upper: option<array>) {
     LET $owner = { rid: $group, slot: 'z_positions' };
     LET $head = fn::tree::get($owner);
-    LET $start = IF $lower = NONE THEN 0 ELSE fn::tree::before($owner, [$lower]).count END;
-    LET $end = IF $upper = NONE THEN fn::tree::get($head.root).summary.count ?? 0
-        ELSE fn::tree::before($owner, [$upper, '~']).count END;
-    LET $size = $end - $start;
-    IF $size <= 0 { RETURN []; };
-    LET $first = fn::tree::select($owner, $start + 1, false);
-    RETURN array::range(0, $size).fold({ cursor: $first, rows: [] }, |$state, $_| {
-        LET $node = fn::tree::get($state.cursor);
-        IF $node = NONE OR $node.owner != $owner { THROW 'REBASE_READ_INDEX'; };
-        RETURN { cursor: $node.next, rows: array::append($state.rows, (SELECT * FROM ONLY $state.cursor.rid)) };
-    }).rows;
+    IF $head.root = NONE { RETURN []; };
+    LET $lower_key = IF $lower = NONE THEN NONE ELSE [$lower] END;
+    LET $upper_key = IF $upper = NONE THEN NONE ELSE [$upper, '~'] END;
+    RETURN fn::reads::points_from($head.root, $owner, $lower_key, $upper_key, $head.height + 1);
 } PERMISSIONS NONE;
 
 -- An interval AVL has fixed logical bounds, independent of source rotations.

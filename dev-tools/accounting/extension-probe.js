@@ -2,7 +2,6 @@
 const assert = require('node:assert/strict');
 const { Surreal, RecordId } = require('surrealdb');
 const { recordClient } = require('../temporal-tree/harness');
-const { snapshot } = require('./source-oracle');
 const { at, create } = require('./acceptance');
 const { prepareFixture } = require('./fixture-example');
 
@@ -132,9 +131,9 @@ async function extensions(h, writer) {
   await reject(create('exchange_pair:hidden', `given_resource=currency:usd,received_resource=currency:hidden,initial_rate=1dec,effective_at=${at(1)}`), /tenant|TENANT/);
   assert.deepEqual(await writer('SELECT * FROM misc_currency_account:hidden;'), []);
   await assert.rejects(writer("RETURN fn::tree::read(subsidiary:hidden,'z_history','summary',[]);"), /Tree read not allowed/);
-  const treeBefore = await snapshot(q);
+  const treeBefore = await h.snapshot();
   await writer('UPDATE invoice_settlement:ext_fee SET z_cash={};');
-  assert.deepEqual(await snapshot(q), treeBefore, 'record access cannot forge maintained tree fields');
+  assert.deepEqual(await h.snapshot(), treeBefore, 'record access cannot forge maintained tree fields');
 
   // Execute the published, bound fixture in its own tenant to verify that the
   // developer example creates real native records, rather than just valid JSON.
@@ -162,9 +161,9 @@ async function extensions(h, writer) {
   assert.deepEqual(rest.items.map(item => item.link.rid), ['issue_adjustment:demo_credit']);
   await value('stock_account:demo_stock.z_history.summary.measures.sales_reporting_value.sum / stock_account:demo_stock.z_history.summary.measures.sales_quantity.sum', 90);
   pass('tenant isolation, protected tree fields, native-SDK fixture and graph/tree developer queries');
-  const beforeRate = await snapshot(q);
+  const beforeRate = await h.snapshot();
   await mutate('UPDATE exchange_pair:widget_inr SET initial_rate=initial_rate+1dec;');
-  const afterRate = await snapshot(q);
+  const afterRate = await h.snapshot();
   for (const table of ['stock_account', 'organization_resource_account', 'misc_stock_account']) {
     assert.deepEqual(afterRate[table].map(row => [row.id, row.z_history.summary]),
       beforeRate[table].map(row => [row.id, row.z_history.summary]), 'valuation edits preserve every native stock summary');

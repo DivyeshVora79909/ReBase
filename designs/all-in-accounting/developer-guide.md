@@ -132,6 +132,22 @@ slots or source impact functions. A rate edit, insertion, move or deletion
 selects the affected ordered read positions; unchanged consumed rates skip
 recalculation. Changing a reader's date, parent or branch repairs its subscriptions.
 
+`npm run probe:accounting-integrity-fx` executes a complete three-currency case:
+the subsidiary reports INR, its customer reports EUR while transacting in USD,
+and its supplier reports USD while transacting in EUR. The probe creates both
+sale and purchase histories before inserting a later USD/INR quote, then inserts,
+moves and deletes earlier quotes after subscribers already exist. It checks each
+write's native position, event-time reporting amount and private read trees. The
+customer and supplier's directed conversion pairs remain independent; the USD
+cash receipt and payment cancel natively even when their invoice amounts differ.
+
+The same history creates a converted purchase issue, base tax, tax-on-tax,
+quantity adjustment and both explicit tax children. The net-tax child reads the
+adjusted base and is valued at its own date; its native delta is `-1.10 EUR`
+while the USD reporting leg uses the selected USD/INR quote. The source model
+checks each statement, including the original sales issue that exposed a stale
+index summary and the purchase child that formerly rejected a valid write.
+
 This is event-time valuation. For example, opening stock of 200 at 10 contributes
 2,000. A later sale of 10 while the valuation rate is 12 contributes −120, leaving
 1,880 in that reporting history and 190 in the native quantity history. It does
@@ -403,6 +419,9 @@ deletion can remove intrusive neighbors before their links are repaired.
 ```bash
 npm run build:all-in-accounting
 npm run verify:accounting
+npm run probe:accounting-integrity-fx
+npm run probe:typed-tree-seeded
+npm run probe:observed-reads
 npm run test:dev-tools
 node dev-tools/accounting/fixture-example.js
 ```

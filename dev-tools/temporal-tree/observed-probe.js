@@ -6,7 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { loadMaterials } = require('../compiler/materials');
 const { generateBundle } = require('../compiler/pipeline');
-const { start, client, applySchema, compareIntKey, recordClient } = require('./harness');
+const { start, client, applySchema, compareIntKey, recordClient, instant } = require('./harness');
+const { verifyReads } = require('./read-oracle');
 
 const create = (id, fields) => `CREATE ${id} SET owned_by=rebase_tenant:default, ${fields};`;
 const snapshot = q => q(`RETURN {
@@ -17,7 +18,8 @@ const snapshot = q => q(`RETURN {
  frames: (SELECT * FROM rebase_read_frame ORDER BY id), locks: (SELECT * FROM rebase_read_lock ORDER BY id),
  calls: (SELECT * FROM read_probe_calls ORDER BY id), stats: (SELECT * FROM read_probe_stats ORDER BY id),
  feedback: (SELECT * FROM read_feedback ORDER BY id), publications: (SELECT * FROM read_publication ORDER BY id),
- dates: (SELECT * FROM read_dates ORDER BY id), quotes: (SELECT * FROM read_quote ORDER BY id), dated: (SELECT * FROM read_dated ORDER BY id)
+ dates: (SELECT * FROM read_dates ORDER BY id), quotes: (SELECT * FROM read_quote ORDER BY id), dated: (SELECT * FROM read_dated ORDER BY id),
+ tenants: (SELECT * FROM rebase_tenant ORDER BY id), users: (SELECT * FROM rebase_user ORDER BY id)
 };`);
 
 function instrument(sql) {
@@ -48,7 +50,72 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object,$source: record,$sl
 } PERMISSIONS NONE;`;
 }
 
+function plusNanosecond(value) {
+  const nanoseconds = instant(value) + 1n;
+  const seconds = nanoseconds / 1000000000n;
+  const fraction = String(nanoseconds % 1000000000n).padStart(9, '0').replace(/0+$/, '');
+  const date = new Date(Number(seconds * 1000n)).toISOString().replace(/\.\d{3}Z$/, '');
+  return `${date}${fraction ? `.${fraction}` : ''}Z`;
+}
+
+function compareObservedKey(left, right) {
+  for (let index = 0; index < Math.min(left.length, right.length); index++) {
+    const a = left[index], b = right[index];
+    const dateA = typeof a === 'string' && /^\d{4}-\d\d-\d\dT/.test(a);
+    const dateB = typeof b === 'string' && /^\d{4}-\d\d-\d\dT/.test(b);
+    const compared = Array.isArray(a) && Array.isArray(b) ? compareObservedKey(a, b)
+      : dateA && dateB ? (instant(a) < instant(b) ? -1 : instant(a) > instant(b) ? 1 : 0) : a < b ? -1 : a > b ? 1 : 0;
+    if (compared) return compared;
+  }
+  return left.length - right.length;
+}
+
+function expectedReads(data) {
+  const expected = [];
+  const add = (reader, phase, source_root, source_slot, kind, arguments_, path, fallback) =>
+    expected.push({ reader, phase, source_root, source_slot, kind, arguments: arguments_, path, fallback });
+  const pointsFor = id => data.points.filter(point => point.curve === id).sort((a, b) =>
+    compareIntKey([a.at], [b.at]) || a.id.localeCompare(b.id));
+  for (const reader of data.readers) {
+    if (reader.disabled) continue;
+    const args = ['latest', 'next'].includes(reader.operation) ? [[reader.at]]
+      : reader.operation === 'range' ? [[reader.at], [reader.until]]
+        : reader.operation === 'summary' ? [] : [reader.at];
+    const fallback = ['latest', 'next', 'exact'].includes(reader.operation) ? undefined : '0';
+    add(reader.id, 'refresh', reader.curve, 'z_points', reader.operation, args, 'measures.value.sum', fallback);
+    if (['latest', 'next', 'exact'].includes(reader.operation)) {
+      const points = pointsFor(reader.curve);
+      const selected = reader.operation === 'latest' ? points.filter(point => point.at < reader.at).at(-1)
+        : reader.operation === 'next' ? points.find(point => point.at >= reader.at)
+          : points.find(point => point.at === reader.at);
+      if (!selected) add(reader.id, 'refresh', reader.curve, '', 'record', [], 'initial', '0');
+    }
+    if (reader.guard != null) add(reader.id, 'validate', reader.curve, 'z_points', 'before', [reader.at], 'measures.value.sum', '0');
+  }
+  for (const publication of data.publications) {
+    add(publication.id, 'refresh', publication.curve, '', 'record', [], 'published', '0');
+    add(publication.id, 'refresh', publication.curve, 'z_points', 'summary', [], 'measures.value.sum', '0');
+    add(publication.id, 'refresh', publication.curve, 'z_points', 'range', [[0], [8]], 'measures.value.sum', '0');
+    add(publication.id, 'refresh', publication.curve, 'z_points', 'range', [[8], [30]], 'measures.value.sum', '0');
+    add(publication.id, 'refresh', publication.curve, 'z_points', 'latest', [[100]], '', {});
+  }
+  for (const adjustment of data.adjustments) {
+    add(adjustment.id, 'refresh', adjustment.book, '', 'record', [], 'base', '0');
+    add(adjustment.id, 'refresh', adjustment.book, 'z_adjustments', 'before', [adjustment.at], 'measures.quantity.sum', '0');
+  }
+  for (const feedback of data.feedback) {
+    if (feedback.peer != null) add(feedback.id, 'refresh', feedback.peer, '', 'record', [], 'value', '0');
+  }
+  for (const dated of data.dated) {
+    const dateRoot = data.dates.find(date => date.id === dated.curve);
+    add(dated.id, 'refresh', dated.curve, '', 'record', [], 'initial', '0');
+    add(dated.id, 'refresh', dated.curve, 'z_rates', 'latest', [[plusNanosecond(dated.at)]], 'measures.rate.sum', dateRoot.initial);
+  }
+  return expected;
+}
+
 function oracle(s) {
+  const entries = [];
   for(const row of s.dated) {
     const quote=s.quotes.filter(quote=>quote.curve===row.curve&&quote.at<=row.at).sort((a,b)=>a.at.localeCompare(b.at)).at(-1);
     assert.equal(Number(row.rate),Number(quote?.rate??s.dates.find(curve=>curve.id===row.curve).initial),'same timestamp/nanosecond dependency');
@@ -75,6 +142,14 @@ function oracle(s) {
     assert.equal(Number(reader.z_rate), value, `${reader.id}: selected value`);
     assert.equal(Number(reader.amount), value * Number(reader.quantity), `${reader.id}: dependent field order`);
   }
+  for (const point of s.points) entries.push({
+    link: { rid: point.id, slot: 'z_point' }, owner: { rid: point.curve, slot: 'z_points' },
+    key: [point.at, point.id, 'z_point'], measures: { value: Number(point.value), other: Number(point.other) }, tags: {}, spans: {}, dependent: false,
+  });
+  for (const quote of s.quotes) entries.push({
+    link: { rid: quote.id, slot: 'z_rate' }, owner: { rid: quote.curve, slot: 'z_rates' },
+    key: [quote.at, quote.id, 'z_rate'], measures: { rate: Number(quote.rate) }, tags: {}, spans: {}, dependent: false,
+  });
   for (const observer of s.observers) assert.equal(Number(observer.amount), Number(s.readers.find(row => row.id === observer.source).amount)*2);
   for (const book of s.books) {
     let quantity = Number(book.base);
@@ -82,35 +157,20 @@ function oracle(s) {
     for (const row of rows) {
       assert.equal(Number(row.delta), Number(row.target)-quantity, `${row.id}: preceding aggregate`);
       quantity = Number(row.target);
+      entries.push({
+        link: { rid: row.id, slot: 'z_delta' }, owner: { rid: row.book, slot: 'z_adjustments' },
+        key: [row.at, row.id, 'z_delta'], measures: { quantity: Number(row.delta) }, tags: {}, spans: {}, dependent: false,
+      });
     }
     assert.equal(Number(book.z_adjustments.summary.measures.quantity?.sum ?? 0), quantity-Number(book.base));
   }
-  for (const group of s.groups) {
-    const reads = s.reads.filter(row => row.group === group.id);
-    assert(reads.length>0,'no empty subscription group');
-    if (group.kind !== 'range') continue;
-    const intervals = reads.filter(row => row.arguments[0][0] < row.arguments[1][0]);
-    const byId = new Map(intervals.map(row => [row.id,row])), seen = new Set();
-    function visit(link, parent, lower, upper) {
-      if (!link) return {height:0,end:undefined,keys:[]};
-      const row = byId.get(link.rid); assert(row, 'interval node exists'); assert(!seen.has(row.id), 'no interval cycle'); seen.add(row.id);
-      const node = row.z_interval;
-      assert.deepEqual(node.parent, parent); assert.deepEqual(node.owner, {rid:group.id,slot:'z_intervals'});
-      assert.deepEqual(node.key, [row.arguments[0], row.id, 'z_interval']);
-      const compare = (a,b) => compareIntKey(a[0],b[0]) || a[1].localeCompare(b[1]) || a[2].localeCompare(b[2]);
-      if (lower) assert(compare(lower,node.key)<0); if (upper) assert(compare(node.key,upper)<0);
-      const left = visit(node.left,link,lower,node.key), right = visit(node.right,link,node.key,upper);
-      const end = [left.end,row.arguments[1],right.end].filter(Boolean).sort(compareIntKey).at(-1);
-      assert.deepEqual(node.summary.end_key,end, 'interval maximum upper bound');
-      assert(Math.abs(left.height-right.height)<=1); assert.equal(node.height,1+Math.max(left.height,right.height));
-      return {height:node.height,end,keys:[...left.keys,node.key,...right.keys]};
-    }
-    const tree = visit(group.z_intervals.root,{rid:group.id,slot:'z_intervals'});
-    assert.equal(seen.size,intervals.length); assert.equal(group.z_intervals.height,tree.height);
-    assert.deepEqual(group.z_intervals.summary.end_key,tree.end);
-    assert.equal(group.z_intervals.summary.count,intervals.length);
-  }
-  for (const reader of s.readers.filter(row => row.disabled)) assert(!s.reads.some(row => row.reader === reader.id && row.phase==='refresh'), 'inactive branches release reads');
+  const sourceRows = [...s.curves, ...s.points, ...s.readers, ...s.observers, ...s.books, ...s.adjustments,
+    ...s.feedback, ...s.publications, ...s.dates, ...s.quotes, ...s.dated, ...s.tenants, ...s.users];
+  const readData = { rebase_read: s.reads, rebase_read_group: s.groups, rebase_read_frame: s.frames, rebase_read_lock: s.locks };
+  verifyReads(readData, sourceRows, entries, compareObservedKey, {
+    rootSpecs: [{ table: 'read_curve', slot: 'z_points' }, { table: 'read_book', slot: 'z_adjustments' }, { table: 'read_dates', slot: 'z_rates' }],
+    expectedReads: expectedReads(s),
+  });
 }
 
 async function main() {

@@ -301,25 +301,50 @@ async function main() {
       COMMIT TRANSACTION;`, pattern);
     console.log('PASS malformed inputs before int coercion, public read bounds, exact structural pairs and pre-coalescing validation');
 
-    let seed = 250925;
-    const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
-    const stages = ['low', 'zero', 'ten', 'high'], live = [];
-    for (let i = 0; i < 16; i++) {
-      live.push(`stage_fact:fuzz_${i}`);
-      await create(`fuzz_${i}`, stages[Math.floor(random() * stages.length)], Math.floor(random() * 30));
-    }
-    for (let i = 0; i < 40 && live.length; i++) {
-      const index = Math.floor(random() * live.length), rid = live[index];
-      if (random() < 0.2) { await mutate(`DELETE ${rid};`); live.splice(index, 1); }
-      else {
-        const stage = random() < 0.2 ? 'NONE' : `stage_code:${stages[Math.floor(random() * stages.length)]}`;
-        const owner = ['stage_board:alpha', 'stage_board:beta', 'stage_archive:alpha'][Math.floor(random() * 3)];
-        await mutate(`UPDATE ${rid} SET a_stage=${stage}, a_ranking=${owner},
-          a_effective_at=d'${at(Math.floor(random() * 30))}', a_weight=${Math.floor(random() * 11) - 5}dec;`);
+    const stages = ['low', 'zero', 'ten', 'high'];
+    for (const initialSeed of [20261014, 7, 1031]) {
+      let seed = initialSeed;
+      const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+      const live = [], prefix = `seed${initialSeed}`;
+      for (let i = 0; i < 16; i++) {
+        const id = `${prefix}_fuzz_${i}`;
+        live.push(`stage_fact:${id}`);
+        await create(id, stages[Math.floor(random() * stages.length)], Math.floor(random() * 30));
       }
+      for (let i = 0; i < 40 && live.length; i++) {
+        const index = Math.floor(random() * live.length), rid = live[index];
+        if (random() < 0.2) { await mutate(`DELETE ${rid};`); live.splice(index, 1); }
+        else {
+          const stage = random() < 0.2 ? 'NONE' : `stage_code:${stages[Math.floor(random() * stages.length)]}`;
+          const owner = ['stage_board:alpha', 'stage_board:beta', 'stage_archive:alpha'][Math.floor(random() * 3)];
+          await mutate(`UPDATE ${rid} SET a_stage=${stage}, a_ranking=${owner},
+            a_effective_at=d'${at(Math.floor(random() * 30))}', a_weight=${Math.floor(random() * 11) - 5}dec;`);
+        }
+      }
+      const current = await snapshot(q), model = verify(current);
+      reads += await queries(treeReader, model);
+
+      // One invalid write must preserve every table and every private index row.
+      if (live.length) await reject(`UPDATE ${live[0]} SET a_weight='not-a-decimal';`, /a_weight|decimal|coerc/i);
+
+      // Reparent away/back and disable/re-enable a branch, checking the model
+      // after every individual transaction and then removing this seed's rows.
+      if (live.length) {
+        const rid = live[0], row = current.facts.find(fact => fact.id === rid);
+        const otherOwner = row.a_ranking === 'stage_archive:alpha' ? 'stage_board:alpha' : 'stage_archive:alpha';
+        await mutate(`UPDATE ${rid} SET a_ranking=${otherOwner};`);
+        await mutate(`UPDATE ${rid} SET a_ranking=${row.a_ranking};`);
+        const branch = row.a_stage ?? 'stage_code:zero';
+        await mutate(`UPDATE ${rid} SET a_stage=NONE;`);
+        await mutate(`UPDATE ${rid} SET a_stage=${branch};`);
+      }
+      for (const rid of live) await mutate(`DELETE ${rid};`);
+      const after = await snapshot(q);
+      verify(after);
+      assert.equal(after.facts.some(fact => fact.id.startsWith(`stage_fact:${prefix}_`)), false,
+        `seed ${initialSeed} leaves no source rows behind`);
+      console.log(`PASS seeded mixed-order and metamorphic history ${initialSeed}`);
     }
-    reads += await queries(treeReader, verify(await snapshot(q)));
-    console.log('PASS 56 deterministic mixed-order mutations reconstructed from authoritative source fields (seed 250925)');
 
     await mutate('UPDATE stage_board:limited SET a_limit=1;');
     let conflicts = 0;

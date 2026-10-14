@@ -2,6 +2,7 @@
 DEFINE TABLE OVERWRITE rebase_read SCHEMAFULL PERMISSIONS NONE COMMENT '@rebase-members fn::reads::span_members';
 DEFINE FIELD OVERWRITE tenant ON rebase_read TYPE record;
 DEFINE FIELD OVERWRITE reader ON rebase_read TYPE record;
+DEFINE FIELD OVERWRITE reader_identity ON rebase_read TYPE string;
 DEFINE FIELD OVERWRITE phase ON rebase_read TYPE string;
 DEFINE FIELD OVERWRITE version ON rebase_read TYPE int;
 DEFINE FIELD OVERWRITE source_root ON rebase_read TYPE record;
@@ -16,6 +17,7 @@ DEFINE FIELD OVERWRITE group ON rebase_read TYPE record<rebase_read_group>;
 DEFINE FIELD OVERWRITE position ON rebase_read TYPE array;
 DEFINE FIELD OVERWRITE z_position ON rebase_read TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key tuple @rebase-tree-owner rebase_read_group.z_positions @rebase-tree-no-reader';
 DEFINE FIELD OVERWRITE z_interval ON rebase_read TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key tuple @rebase-tree-owner rebase_read_group.z_intervals @rebase-tree-no-reader';
+DEFINE INDEX OVERWRITE reader_identity ON rebase_read FIELDS reader_identity;
 DEFINE INDEX OVERWRITE reader_phase ON rebase_read FIELDS reader, phase;
 
 DEFINE TABLE OVERWRITE rebase_read_group SCHEMAFULL PERMISSIONS NONE;

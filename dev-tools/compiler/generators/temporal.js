@@ -57,8 +57,11 @@ function helperName(index) {
   return `__rebase_derived_${String(index).padStart(4, '0')}`;
 }
 
-function initialDerivedExpression(field, table, helperNames) {
+function initialDerivedExpression(field, table, helperNames, priorFields = []) {
   const expression = valueExpression(field);
+  const rowImage = priorFields.length
+    ? `object::extend($this, { ${priorFields.map(previous => `${previous.name}: $this.${helperNames.get(previous.name)}`).join(', ')} })`
+    : '$this';
   return mapSqlCode(expression, code => code.replace(/\$this\.([A-Za-z_][A-Za-z0-9_]*)\b/g,
     (match, name) => {
       if (helperNames.get(name)) return `$this.${helperNames.get(name)}`;
@@ -72,7 +75,7 @@ function initialDerivedExpression(field, table, helperNames) {
         return `($this.${name} ?? (${defaultValue}))`;
       }
       return match;
-    }));
+    }).replace(/\$this\b(?!\s*\.)/g, rowImage));
 }
 
 function derivedFields(schema, derivedOrder, derivedHelpers) {
@@ -86,7 +89,7 @@ function derivedFields(schema, derivedOrder, derivedHelpers) {
       const type = extractClauseExpression(field.definition, 'TYPE',
         ['DEFAULT', 'VALUE', 'COMPUTED', 'ASSERT', 'REFERENCE', 'READONLY', 'PERMISSIONS', 'COMMENT', 'FLEXIBLE']);
       if (!type) throw new Error(`${table.name}.${field.name}: @rebase-derived requires an explicit TYPE`);
-      const expression = initialDerivedExpression(field, table, helperNames);
+      const expression = initialDerivedExpression(field, table, helperNames, fields.slice(0, index));
       // The numbered private fields give SurrealQL a native, topologically
       // ordered CREATE path. Each formula appears once, with no interpreter.
       const flexible = /\bFLEXIBLE\b/.test(sqlCode(field.definition)) ? ' FLEXIBLE' : '';
@@ -327,7 +330,7 @@ function resolveTemporalModel(schema, systemTables, functionSource = '') {
   }
   const required = requiredOutputContract(schema);
   const trees = resolveTreeContract(schema);
-  const derivedOrder = new Map([...schema.tables.values()].map(table => [table.name, resolveDerivedOrder(table)]));
+  const derivedOrder = new Map([...schema.tables.values()].map(table => [table.name, resolveDerivedOrder(table, functionSource)]));
   const derivedHelpers = new Map();
   for (const [tableName, fields] of derivedOrder) {
     if (!fields.length) continue;

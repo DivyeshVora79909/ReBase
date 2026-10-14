@@ -154,6 +154,9 @@ async function main() {
     assert.match(compiled.bundle, /LET \$r1 = object::extend\(\$r0, \{ m_double:/);
     assert.match(compiled.bundle, /LET \$r2 = object::extend\(\$r1, \{ z_factor:/);
     assert.match(compiled.bundle, /LET \$r3 = object::extend\(\$r2, \{ a_total:/);
+    assert.match(compiled.bundle,
+      /VALUE IF \$before = NONE THEN \(fn::c3::fact_total\(object::extend\(\$this, \{ m_double: \$this\.__rebase_derived_0000, z_factor: \$this\.__rebase_derived_0001 \}\)\)\)/,
+      'native CREATE passes earlier derived shadows through a whole-row helper');
     const audit = compiled.bundle.match(/-- REBASE: audit log\n([\s\S]*?)(?=\n-- REBASE:)/)?.[1] || '';
     assert.match(audit, /profile: \{ email: \$before\.profile\.email \}/);
     assert.doesNotMatch(audit, /profile\.secret|private_note/);
@@ -167,6 +170,10 @@ async function main() {
     const cyclic = source.replace('VALUE $this.a_quantity * 2dec', 'VALUE $this.a_total * 2dec');
     const cyclicDir = path.join(directory, 'cyclic');
     assert.throws(() => compileFixture(cyclicDir, cyclic), /derived field cycle.*a_total.*m_double/i);
+    const opaqueDir = path.join(directory, 'opaque');
+    assert.throws(() => compileFixture(opaqueDir,
+      source.replace('VALUE fn::c3::fact_total($this)', 'VALUE fn::c3::opaque_total($this)')),
+    /cannot infer derived-field dependencies through opaque helper fn::c3::opaque_total/i);
 
     server = await start({ engine: 'surrealkv' });
     const first = client(server.url, 'natural');

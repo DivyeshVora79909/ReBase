@@ -1,71 +1,69 @@
 'use strict';
 
-// Lead investigation: synthetic, independently described oracle inputs.
-// This does not reproduce the database writer failures or certify a repair.
-// Run from any directory. A result of accepted:true for a corrupt input exposes
-// an oracle blind spot. Missing-registration detection needs an expected-read
-// inventory as well; an inspection of surviving metadata cannot supply it.
+// Standalone fault-injection control for the shared private-read checker.
+// The valid fixture contains complete schema-shaped roots, records, frames and
+// independently described reads. Every corruption changes one invariant only.
 const { verifyReads } = require('../../../dev-tools/temporal-tree/read-oracle');
-const { scan } = require('../../../dev-tools/temporal-tree/oracle');
+const { fixture } = require('../../../dev-tools/temporal-tree/read-oracle-fixture');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-function fixture() {
-  const group = 'rebase_read_group:probe', tenant = 'rebase_tenant:default';
-  const slot = 'z_position', owner = { rid: group, slot: 'z_positions' };
-  const rows = [{ id: 'curve:probe', tenant, initial: 3 },
-    { id: 'reader:a', tenant }, { id: 'reader:b', tenant }];
-  const reads = ['a', 'b'].map(name => ({ id: `rebase_read:${name}`, tenant,
-    reader: `reader:${name}`, source_root: 'curve:probe', source_slot: '',
-    kind: 'record', path: 'initial', phase: 'refresh', version: 1,
-    position: [], group, fallback: { value: 0 }, observed: { value: 3 } }));
-  const keys = reads.map(row => [row.position, row.id, slot]);
-  const links = reads.map(row => ({ rid: row.id, slot }));
-  const entry = index => ({ key: keys[index], measures: {}, tags: {}, spans: {}, dependent: false });
-  reads[0][slot] = { owner, parent: owner, right: links[1], next: links[1],
-    key: keys[0], value: scan([entry(0)]), summary: scan([entry(0), entry(1)]), height: 2 };
-  reads[1][slot] = { owner, parent: links[0], prev: links[0], key: keys[1],
-    value: scan([entry(1)]), summary: scan([entry(1)]), height: 1 };
-  const data = { rebase_read: reads, rebase_read_group: [{ id: group, kind: 'record',
-    z_positions: { root: links[0], height: 2, summary: scan([entry(0), entry(1)]), refreshing: false },
-    z_intervals: { summary: { count: 0 } } }],
-    rebase_read_frame: reads.map(row => ({ id: `rebase_read_frame:[${row.reader}, '${row.phase}']`, version: 1 })) };
-  return { data, rows };
-}
-
-const compare = (a, b) => {
-  for (let index = 0; index < Math.min(a.length, b.length); index++) {
-    if (a[index] < b[index]) return -1;
-    if (a[index] > b[index]) return 1;
-  }
-  return a.length - b.length;
+const clone = value => {
+  const copy = fixture();
+  copy.data = structuredClone(value.data);
+  copy.sourceRows = structuredClone(value.sourceRows);
+  copy.entries = structuredClone(value.entries);
+  return copy;
 };
-const mutations = [
-  ['valid control', () => {}],
-  ['missing successor', data => { delete data.rebase_read[0].z_position.next; }],
-  ['wrong leaf count', data => { data.rebase_read[0].z_position.value.count = 77; }],
-  ['wrong root first key', data => {
-    data.rebase_read_group[0].z_positions.summary.first = data.rebase_read[1].z_position.key;
-  }],
-  ['stale cursor', data => { data.rebase_read_group[0].z_positions.cursor = [[], 'wrong', 'z_position']; }],
-  ['read with nonexistent group', data => { data.rebase_read_group = []; }],
-  ['all registrations absent', data => {
-    data.rebase_read = []; data.rebase_read_group = []; data.rebase_read_frame = [];
-  }],
+const read = (value, name) => value.data.rebase_read.find(row => row.reader === `read_reader:${name}`);
+const group = (value, kind) => value.data.rebase_read_group.find(row => row.kind === kind);
+const checks = value => verifyReads(value.data, value.sourceRows, value.entries, value.compare, value.checkOptions);
+
+const valid = fixture();
+checks(valid);
+const pointRoot = group(valid, 'latest').z_positions.root;
+const intervalRoot = group(valid, 'range').z_intervals.root;
+const faults = [
+  ['missing successor', value => { delete read(value, 'c').z_position.next; }],
+  ['wrong leaf count', value => { read(value, 'c').z_position.value.count = 77; }],
+  ['wrong root first key', value => { group(value, 'latest').z_positions.summary.first = ['wrong']; }],
+  ['wrong root count', value => { group(value, 'latest').z_positions.summary.count++; }],
+  ['stale cursor', value => { group(value, 'latest').z_positions.cursor = { rid: 'stale', slot: 'z_position' }; }],
+  ['wrong interval maximum', value => { group(value, 'range').z_intervals.summary.end_key = [999]; }],
+  ['missing node', value => { delete read(value, 'c').z_position; }],
+  ['wrong inactive root', value => { group(value, 'latest').z_intervals.root = { rid: 'read_reader:c', slot: 'z_interval' }; }],
+  ['wrong parent', value => { read(value, 'c').z_position.parent = { rid: 'wrong:parent', slot: 'z_position' }; }],
+  ['cycle', value => { const row = value.data.rebase_read.find(item => item.id === pointRoot.rid); row.z_position.left = { rid: row.id, slot: 'z_position' }; }],
+  ['dangling child', value => { const row = value.data.rebase_read.find(item => item.id === pointRoot.rid); row.z_position.right = { rid: 'missing:read', slot: 'z_position' }; }],
+  ['stale frame', value => { value.data.rebase_read_frame.find(frame => frame.id.includes('read_reader:c')).version++; }],
+  ['missing read group', value => { read(value, 'c').group = 'missing:group'; }],
+  ['all registrations absent', value => { value.data.rebase_read = []; value.data.rebase_read_group = []; value.data.rebase_read_frame = []; }],
+  ['wrong interval node', value => { const row = value.data.rebase_read.find(item => item.id === intervalRoot.rid); row.z_interval.value.end_key = [999]; }],
 ];
 
-function run() {
-  const results = mutations.map(([label, mutate]) => {
-    const { data, rows } = fixture();
-    mutate(data);
-    try { verifyReads(data, rows, [], compare); return { label, accepted: true }; }
-    catch (error) { return { label, accepted: false, error: error.message }; }
-  });
-  const source = path.resolve(__dirname, '../../../dev-tools/temporal-tree/read-oracle.js');
-  return { purpose: 'Diagnose oracle coverage, not database writer correctness',
-    readOracleSha256: crypto.createHash('sha256').update(fs.readFileSync(source)).digest('hex'), results };
-}
+const results = [['valid control', () => checks(clone(valid))], ...faults.map(([label, mutate]) => [label, () => {
+  const value = clone(valid);
+  mutate(value);
+  checks(value);
+}])].map(([label, check]) => {
+  try { check(); return { label, accepted: true }; }
+  catch (error) { return { label, accepted: false, error: error.message.split('\n')[0] }; }
+});
+const permuted = clone(valid);
+permuted.data.rebase_read.reverse();
+permuted.data.rebase_read_group.reverse();
+permuted.data.rebase_read_frame.reverse();
+permuted.sourceRows.reverse();
+permuted.entries.reverse();
+checks(permuted);
+results.push({ label: 'row-order permutation', accepted: true });
 
-if (require.main === module) process.stdout.write(JSON.stringify(run(), null, 2) + '\n');
-module.exports = { fixture, run };
+const report = { purpose: 'Prove the shared private read oracle rejects corrupt state and accepts valid row permutations',
+  readOracleSha256: crypto.createHash('sha256').update(fs.readFileSync(path.resolve(__dirname, '../../../dev-tools/temporal-tree/read-oracle.js'))).digest('hex'),
+  validFixture: { reads: valid.data.rebase_read.length, groups: valid.data.rebase_read_group.length, frames: valid.data.rebase_read_frame.length },
+  results };
+if (results.some(result => result.label === 'valid control' && !result.accepted)
+  || results.some(result => result.label !== 'valid control' && result.label !== 'row-order permutation' && result.accepted)
+  || !results.find(result => result.label === 'row-order permutation')?.accepted) process.exitCode = 1;
+console.log(JSON.stringify(report, null, 2));

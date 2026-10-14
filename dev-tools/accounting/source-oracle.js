@@ -47,10 +47,12 @@ const claim=v=>d(v).cmp(0)>=0?eff(0,v,0):eff(0,0,d(v).neg());
 const compare=(a,b)=>{for(let i=0;i<Math.min(a.length,b.length);i++){const date=typeof a[i]==='string'&&/^\d{4}-\d\d-\d\dT/.test(a[i]);const x=date?instant(a[i]):a[i],y=date?instant(b[i]):b[i];if(x<y)return -1;if(x>y)return 1;}return a.length-b.length;};
 const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
-const snapshot=q=>q(`RETURN {${[...tables,'audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
+const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'])].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
 
-function verify(data,slots={}) {
-  const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(rows.map(r=>[r.id,r]));
+function verify(data,slots={},rootSpecs) {
+  const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock']);
+  const sourceRows = Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
+  const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(sourceRows.map(r=>[r.id,r]));
   const get=id=>{assert(byId.has(id),`missing source ${id}`);return byId.get(id);};
   const all=t=>(data[t]||[]), entries=[], values=new Map(), net=[],states=[],taxAdjustments=[];
   const check=(row,fields)=>{for(const [key,value]of Object.entries(fields))value instanceof D?exact(row[key],value,`${row.id}.${key}`):assert.equal(row[key]??null,value??null,`${row.id}.${key}`);};
@@ -255,8 +257,9 @@ function verify(data,slots={}) {
     for(const [k,v]of Object.entries(e.tags)){if(k in old.tags)assert.deepEqual(old.tags[k],v);old.tags[k]=v;}
     old.dependent ||=e.dependent;
   }
-  tree.verify(rows,rows,[...grouped.values()],compare);
-  require('../temporal-tree/read-oracle').verifyReads(data,rows,[...grouped.values()],compare);
+  const treeRows=Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
+  tree.verify(treeRows,treeRows,[...grouped.values()],compare);
+  require('../temporal-tree/read-oracle').verifyReads(data,sourceRows,[...grouped.values()],compare,{rootSpecs});
   return data;
 }
 

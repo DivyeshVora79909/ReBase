@@ -11,6 +11,13 @@ DEFINE FIELD OVERWRITE a_add ON natural_rule TYPE decimal;
 
 DEFINE TABLE OVERWRITE natural_fact SCHEMAFULL
     COMMENT '@rebase-members fn::c3::fact_members';
+
+DEFINE FUNCTION OVERWRITE fn::c3::fact_total($row: object) {
+    RETURN fn::c3::fact_total_parts($row);
+} PERMISSIONS WHERE $auth != NONE;
+DEFINE FUNCTION OVERWRITE fn::c3::fact_total_parts($row: object) {
+    RETURN $row.m_double + $row.z_factor;
+} PERMISSIONS WHERE $auth != NONE;
 DEFINE FIELD OVERWRITE a_owner ON natural_fact TYPE record<tree_owner>
     REFERENCE ON DELETE REJECT COMMENT '@rebase-readers @rebase-audit';
 DEFINE FIELD OVERWRITE a_rule ON natural_fact TYPE record<natural_rule>
@@ -21,7 +28,7 @@ DEFINE FIELD OVERWRITE a_quantity ON natural_fact TYPE decimal COMMENT '@rebase-
 -- The field names and declaration order are deliberately unrelated to the
 -- formula order: z_factor and m_double both feed a_total.
 DEFINE FIELD OVERWRITE a_total ON natural_fact TYPE decimal
-    VALUE $this.m_double + $this.z_factor
+    VALUE fn::c3::fact_total($this)
     ASSERT $value >= 0dec
     COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE m_double ON natural_fact TYPE decimal

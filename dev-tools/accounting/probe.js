@@ -2,9 +2,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { createHash } = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const { Surreal, Decimal, RecordId } = require('surrealdb');
 const { start, client, recordClient, applySchema } = require('../temporal-tree/harness');
-const { snapshot, exact } = require('./source-oracle');
+const { exact } = require('./source-oracle');
 const { acceptance, at, compile, create, cleanup, setup } = require('./acceptance');
 
 async function core(h, writer) {
@@ -224,27 +225,38 @@ async function main({ extensions = false, onlyExtensions = false, evidence } = {
     timingMs.scenarios = Date.now() - timer;
     console.log('CHECK populated identical-schema reapplication');
     h.result.last = 'populated schema reapplication';
-    const before = await snapshot(q);
+    const before = await h.snapshot();
     timer = Date.now();
     await applySchema(q, compiled.bundle);
-    assert.deepEqual(await snapshot(q), before, 'identical schema application preserves domain and audit');
+    assert.deepEqual(await h.snapshot(), before, 'identical schema application preserves every compiled table and private row');
     await h.check(); h.pass('exact populated schema reapplication');
     timingMs.reapplySchema = Date.now() - timer;
     timer = Date.now();
     await cleanup(h);
     timingMs.cleanup = Date.now() - timer;
+    const fingerprintFiles = ['framework/reads.surql','dev-tools/compiler/reads.surql','dev-tools/compiler/temporal.surql',
+      'dev-tools/compiler/derived-order.js','dev-tools/compiler/generators/temporal.js','dev-tools/compiler/generators/tree.js',
+      'dev-tools/accounting/acceptance.js','dev-tools/accounting/probe.js','dev-tools/accounting/extension-probe.js',
+      'dev-tools/accounting/source-oracle.js','dev-tools/accounting/integrity-fx-probe.js',
+      'dev-tools/temporal-tree/read-oracle.js','dev-tools/temporal-tree/read-oracle.test.js',
+      'dev-tools/temporal-tree/observed-probe.js','dev-tools/temporal-tree/typed-probe.js'];
     const report = { started: started.toISOString(), finished: new Date().toISOString(), storage: 'SurrealKV',
-      schemaSha256: createHash('sha256').update(compiled.bundle).digest('hex'), tables: compiled.schema.tables.size,
-      checkpoints: h.result.checkpoints, rollbacks: h.result.rollbacks, cases: h.result.cases,
-      schemaBytes: Buffer.byteLength(compiled.bundle), timingMs,
-      checksums: Object.fromEntries(['acceptance.js','probe.js','extension-probe.js','source-oracle.js','fixture-example.js']
-        .map(file => [file, createHash('sha256').update(fs.readFileSync(require('node:path').join(__dirname, file))).digest('hex')])) };
+      runtime: { node: process.version, surreal: execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim() },
+      schemaSha256: createHash('sha256').update(compiled.bundle).digest('hex'), schemaBytes: Buffer.byteLength(compiled.bundle),
+      tables: compiled.schema.tables.size, snapshottedTables: [...compiled.schema.tables.keys()],
+      checkpoints: h.result.checkpoints, structuralChecks: h.result.structuralChecks, valueChecks: h.result.valueChecks,
+      rollbacks: h.result.rollbacks, unexpectedFailures: 0, cases: h.result.cases, timingMs,
+      commands: ['npm run build:all-in-accounting', 'npm run check:all-in-accounting',
+        'surreal validate build/all-in-accounting/schema.surql',
+        'node dev-tools/accounting/probe.js --all --evidence designs/rebase-system/evidence/2026-10-14-integrity-accounting.json'],
+      sourceSha256: Object.fromEntries(fingerprintFiles.map(file => [file,
+        createHash('sha256').update(fs.readFileSync(require('node:path').resolve(__dirname, '../..', file))).digest('hex')])) };
     if (evidence) fs.writeFileSync(evidence, JSON.stringify(report, null, 2) + '\n');
     console.log(`PASS accounting: ${report.checkpoints} source-oracle checkpoints, ${report.rollbacks} complete rollback snapshots`);
     return report;
   } catch (error) {
     console.error('Last accounting operation:', h.result.last);
-    if (process.env.REBASE_ACCOUNTING_DEBUG) fs.writeFileSync(process.env.REBASE_ACCOUNTING_DEBUG, JSON.stringify(await snapshot(q), null, 2));
+    if (process.env.REBASE_ACCOUNTING_DEBUG) fs.writeFileSync(process.env.REBASE_ACCOUNTING_DEBUG, JSON.stringify(await h.snapshot(), null, 2));
     throw error;
   }
   finally { await server.close(); }

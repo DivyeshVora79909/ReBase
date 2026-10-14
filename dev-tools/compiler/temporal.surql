@@ -109,9 +109,10 @@ DEFINE FUNCTION OVERWRITE fn::tree::load($link: option<object>, $detached: optio
 -- Mutators return the updated frame (NONE for normal live writes). The caller
 -- threads it through every edit so linked deleted slots never use stale images.
 DEFINE FUNCTION OVERWRITE fn::tree::put($link: object, $value: object, $detached: option<object>) {
+    IF $value = NONE { THROW 'AVL_PUT_VALUE_NONE:' + <string>$link; };
     LET $stored = object::from_entries(object::entries($value).filter(|$entry| $entry[1] != NONE));
     IF $detached != NONE AND $link.rid = $detached.rid {
-        RETURN object::extend($detached, { slots: object::extend($detached.slots,
+        RETURN object::extend($detached, { slots: object::extend($detached.slots ?? {},
             object::from_entries([[$link.slot, $stored]])) });
     };
     LET $old = (SELECT VALUE type::field($link.slot) FROM ONLY $link.rid);
@@ -122,20 +123,40 @@ DEFINE FUNCTION OVERWRITE fn::tree::put($link: object, $value: object, $detached
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::tree::patch($link: object, $patch: object, $detached: option<object>) {
-    RETURN fn::tree::put($link, object::extend(fn::tree::load($link, $detached), $patch), $detached);
+    IF $patch = NONE { THROW 'AVL_PATCH_NONE:' + <string>$link; };
+    IF $link = NONE { THROW 'AVL_PATCH_LINK_NONE:'; };
+    IF $detached != NONE AND $link.rid = $detached.rid {
+        RETURN fn::tree::put($link, object::extend(fn::tree::load($link, $detached), $patch), $detached);
+    };
+    -- Patch only the requested fields. Replacing a complete slot from a cached
+    -- image can restore old links when several rotations touch the same node
+    -- in one source transaction.
+    LET $current = fn::tree::load($link, NONE);
+    LET $operations = object::entries($patch).map(|$entry| {
+        LET $path = '/' + $link.slot + '/' + $entry[0];
+        IF $entry[1] = NONE {
+            RETURN IF $current[$entry[0]] = NONE THEN NONE ELSE { op: 'remove', path: $path } END;
+        };
+        RETURN { op: IF $current[$entry[0]] = NONE THEN 'add' ELSE 'replace' END,
+            path: $path, value: $entry[1] };
+    }).filter(|$operation| $operation != NONE);
+    IF array::len($operations) > 0 {
+        UPDATE $link.rid PATCH $operations RETURN NONE;
+    };
+    RETURN $detached;
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::tree::pull($link: object, $detached: option<object>) {
     LET $node = fn::tree::load($link, $detached);
     LET $left = fn::tree::load($node.left, $detached);
     LET $right = fn::tree::load($node.right, $detached);
-    RETURN fn::tree::put($link, object::extend($node, {
+    RETURN fn::tree::patch($link, {
         height: 1 + math::max([$left.height ?? 0, $right.height ?? 0]),
         summary: fn::tree::combine(
             fn::tree::combine($left.summary ?? fn::tree::empty(), $node.value),
             $right.summary ?? fn::tree::empty()
         )
-    }), $detached);
+    }, $detached);
 } PERMISSIONS NONE;
 
 -- Reconnect just one edge. The caller repairs the new child's parent link.
@@ -199,6 +220,19 @@ DEFINE FUNCTION OVERWRITE fn::tree::repair($owner: object, $start: object, $budg
     });
     IF $end.cursor != $owner { THROW 'AVL_REPAIR_BUDGET'; };
     RETURN $end.detached;
+} PERMISSIONS NONE;
+
+-- Recompute a changed node's complete local subtree bottom-up before repairing
+-- its ancestors. Reactive readers can add several members to one private index
+-- in the same cascade, so an ancestor must not consume a stale child summary.
+DEFINE FUNCTION OVERWRITE fn::tree::rebuild_subtree($owner: object, $link: option<object>, $budget: int) {
+    IF $link = NONE { RETURN NONE; };
+    IF $budget <= 0 { THROW 'AVL_REBUILD_BUDGET'; };
+    LET $node = fn::tree::get($link);
+    IF $node.owner != $owner { THROW 'AVL_REBUILD_OWNER'; };
+    fn::tree::rebuild_subtree($owner, $node.left, $budget - 1);
+    fn::tree::rebuild_subtree($owner, $node.right, $budget - 1);
+    fn::tree::pull($link, NONE);
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::tree::insert($owner: object, $link: object, $key: array, $value: object) {
@@ -272,7 +306,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::remove($owner: object, $link: object, $node:
 DEFINE FUNCTION OVERWRITE fn::tree::change($owner: object, $link: object, $value: object) {
     LET $node = fn::tree::get($link);
     IF $node.value = $value { RETURN NONE; };
-    fn::tree::patch($link, { value: $value });
+    fn::tree::patch($link, { value: $value }, NONE);
     fn::tree::repair($owner, $link, (fn::tree::get(fn::tree::get($owner).root).height ?? 0) + 3);
 } PERMISSIONS NONE;
 
@@ -592,7 +626,7 @@ DEFINE FUNCTION OVERWRITE fn::tree::sync($rid: record, $before: option<object>, 
                 RETURN $detached;
             };
             RETURN object::extend($detached, { slots: object::from_entries(
-                object::entries($detached.slots).filter(|$p| $p[0] != $member.link.slot)) });
+                object::entries($detached.slots ?? {}).filter(|$p| $p[0] != $member.link.slot)) });
         };
         RETURN $detached;
     });
@@ -655,7 +689,7 @@ DEFINE FUNCTION OVERWRITE fn::rebase::sync_required_outputs($source: record, $de
     });
     -- Reconcile and refresh one child at a time. Earlier AVL edits may rewrite
     -- a sibling's cached slot, so each next child must capture its live image.
-    LET $writes = $contracts.map(|$output| {
+    LET $writes = $contracts.fold([], |$writes, $output| {
         LET $before = SELECT * FROM ONLY $output.id;
         LET $content = object::extend($output.data, {
             rebase_managed_source: <string>$source, rebase_managed_role: $output.role
@@ -665,13 +699,13 @@ DEFINE FUNCTION OVERWRITE fn::rebase::sync_required_outputs($source: record, $de
         } ELSE {
             UPDATE $output.id MERGE $content RETURN NONE;
         };
-        RETURN fn::rebase::refresh($output.id, $before, false);
+        RETURN array::append($writes, fn::rebase::refresh($output.id, $before, false));
     });
     LET $removed_ids = $existing.filter(|$output| !($output.id IN $ids)).map(|$output| $output.id);
-    LET $removed = $removed_ids.map(|$id| {
+    LET $removed = $removed_ids.fold([], |$removed, $id| {
         LET $before = SELECT * FROM ONLY $id;
         IF $before != NONE { DELETE $id RETURN NONE; };
-        RETURN fn::rebase::refresh($id, $before, false);
+        RETURN array::append($removed, fn::rebase::refresh($id, $before, false));
     });
     RETURN fn::rebase::work(array::concat($writes, $removed));
 } PERMISSIONS NONE;
@@ -690,10 +724,10 @@ DEFINE FUNCTION OVERWRITE fn::tree::drain($owner: object) {
     LET $count = fn::tree::get($head.root).summary.dependents ?? 0;
     LET $candidates = array::range($start, $count).map(|$i| fn::tree::select($owner, $i + 1, true));
     fn::tree::patch($owner, { refreshing: true });
-    LET $work = $candidates.map(|$link| {
+    LET $work = $candidates.fold([], |$work, $link| {
         LET $node = fn::tree::get($link);
         fn::tree::patch($owner, { cursor: $node.key });
-        RETURN fn::rebase::refresh($link.rid, (SELECT * FROM ONLY $link.rid), true);
+        RETURN array::append($work, fn::rebase::refresh($link.rid, (SELECT * FROM ONLY $link.rid), true));
     });
     fn::tree::patch($owner, { refreshing: false, cursor: NONE, dirty: NONE });
     RETURN fn::rebase::work($work);
@@ -726,11 +760,11 @@ DEFINE FUNCTION OVERWRITE fn::rebase::prepare_move($rid: record, $before: option
     LET $reads = fn::reads::changed($before, $before, $sync).filter(|$read| $read.reader != $rid);
     LET $ordered = array::sort($reads.filter(|$read| $read.phase = 'refresh').map(|$read| [$read.position, <string>$read.reader, $read.reader]));
     LET $children = array::distinct($ordered.map(|$item| $item[2]));
-    LET $down = $children.map(|$child| {
+    LET $down = $children.fold([], |$down, $child| {
         IF fn::reads::pending($reads.filter(|$read| $read.reader = $child).id, 'refresh') {
-            RETURN fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path);
+            RETURN array::append($down, fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path));
         };
-        RETURN { owners: [], records: [] };
+        RETURN array::append($down, { owners: [], records: [] });
     });
     RETURN object::extend(fn::rebase::work(array::concat([{ owners: $sync.owners,
         records: $reads.filter(|$read| $read.phase = 'validate').reader }], $down)), { moved: true });
@@ -770,12 +804,12 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
     LET $positions = array::sort($reads.filter(|$read| $read.phase = 'refresh').map(|$read| [$read.position, <string>$read.reader, $read.reader]));
     LET $ordered = SELECT id, a_effective_at ?? effective_at AS at FROM $children ORDER BY at, id;
     LET $candidates = array::distinct(array::concat($positions.map(|$item| $item[2]), $ordered.id));
-    LET $down = $candidates.map(|$child| {
+    LET $down = $candidates.fold([], |$down, $child| {
         LET $bindings = $reads.filter(|$r| $r.reader = $child).id;
         IF $child IN $children OR fn::reads::pending($bindings, 'refresh') {
-            RETURN fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path);
+            RETURN array::append($down, fn::rebase::refresh_path($child, (SELECT * FROM ONLY $child), false, $path));
         };
-        RETURN { owners: [], records: [] };
+        RETURN array::append($down, { owners: [], records: [] });
     });
     LET $work = fn::rebase::work(array::concat([{ owners: $own.owners,
         records: array::concat([$rid], $reads.filter(|$r| $r.phase = 'validate').reader) }, $prepared, $required], $down));
@@ -783,26 +817,29 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
     -- A prerequisite that is also a root can be removed after its last child.
     -- Its former owner work remains in the transaction but has nothing to drain.
     LET $temporal = IF $sweep THEN $work.owners.filter(|$owner| (SELECT VALUE id FROM ONLY $owner.rid) != NONE)
-        .map(|$owner| fn::tree::drain($owner)) ELSE [] END;
+        .fold([], |$drained, $owner| array::append($drained, fn::tree::drain($owner))) ELSE [] END;
     RETURN fn::rebase::work(array::concat([$work], $temporal));
 } PERMISSIONS NONE;
 
 -- Publish all roots as one phase. Guards run after causal recalculation, so a
 -- parent edit never validates against still-stale descendant contributions.
 DEFINE FUNCTION OVERWRITE fn::rebase::finish($work: object) {
-    LET $published = $work.owners.filter(|$o| (SELECT VALUE id FROM ONLY $o.rid) != NONE).map(|$o| fn::tree::publish($o));
+    LET $published = $work.owners.filter(|$o| (SELECT VALUE id FROM ONLY $o.rid) != NONE)
+        .fold([], |$published, $owner| array::append($published, fn::tree::publish($owner)));
     LET $reads = $published.map(|$p| fn::reads::changed($p.before, $p.after, { owners: [], removed: [], added: [], publication: true })).flatten();
     LET $direct = array::distinct($published.map(|$p| fn::rebase::dependents($p.before, $p.after)).flatten());
     LET $children = array::distinct(array::concat($direct, $reads.filter(|$read| $read.phase = 'refresh').reader));
-    LET $down = fn::rebase::work($children.map(|$rid| {
+    LET $down = fn::rebase::work($children.fold([], |$down, $rid| {
         IF $rid IN $direct OR fn::reads::pending($reads.filter(|$read| $read.reader = $rid).id, 'refresh') {
-            RETURN fn::rebase::refresh($rid, (SELECT * FROM ONLY $rid), true);
+            RETURN array::append($down, fn::rebase::refresh($rid, (SELECT * FROM ONLY $rid), true));
         };
-        RETURN { owners: [], records: [] };
+        RETURN array::append($down, { owners: [], records: [] });
     }));
     IF array::len($down.owners) > 0 OR array::len($down.records) > 0 { fn::rebase::finish($down); };
     FOR $rid IN array::distinct(array::concat($work.records, $work.owners.map(|$o| $o.rid), $reads.filter(|$read| $read.phase = 'validate').reader)) {
         LET $row = SELECT * FROM ONLY $rid;
         IF $row != NONE { fn::rebase::validate($row); };
     };
+    LET $changed_read_groups = SELECT VALUE id FROM rebase_read_group WHERE tree_changed = true;
+    FOR $group IN $changed_read_groups { fn::reads::settle_group($group); };
 } PERMISSIONS NONE;

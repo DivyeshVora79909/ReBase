@@ -1,16 +1,20 @@
 # Integrity repair: lead decisions and Luna execution handoff
 
-**Status: diagnosis and implementation plan, not a completed product repair.**
-Starting commit: `17f956bfcad7f7f9731bb08a4abba11d1b995cc8`. The working tree was
-clean before this investigation. This turn adds a handoff and audit evidence;
-it does not change the compiler, database coordinator, or accounting formulas.
+**Status: implementation and fresh accounting acceptance complete; final commit
+and push pending.** The original diagnosis is preserved below; §8 records the
+reproduced causes, repairs, tests and current limits.
+The original lead handoff was prepared against `17f956bfcad7f7f9731bb08a4abba11d1b995cc8`
+with a clean working tree. The execution recorded in §8 began from
+`98a54ada496f1c15712ad1ed3c7d6d8ee820aa28` and changes compiler and test code.
 
 The user explicitly requested a lead-model investigation followed by execution
-with Luna to conserve resources. Continue the implementation autonomously from
-this file. Breaking changes are authorized; the application is not deployed and
-backward compatibility is unnecessary. Use disposable databases. Read current
-Git status before editing, preserve intervening user changes, and do not touch
-the application's `.env`, live database, provider services, or deployment.
+with Luna to conserve resources. These instructions governed the execution
+recorded in §8. Breaking changes are authorized; the application is not deployed
+and backward compatibility is unnecessary. Use disposable databases. Read
+current Git status before editing, preserve intervening user changes, and do
+not touch the application's `.env`, live database, provider services, or
+deployment. The user's later explicit request authorizes pushing the final commit
+to `main`; deployment remains out of scope.
 
 ## 1. What the user actually wants
 
@@ -371,9 +375,10 @@ Never use counts from a prior commit as evidence for later untested changes.
 
 Update the developer read contract, accounting guide, verification and current
 handoff with actual resulting behavior and supported boundaries. Commit coherent,
-validated packets; do not push/deploy. The final report must distinguish fixes,
-freshly executed verification, and remaining limits. Bounded evidence supports a
-release decision; it does not prove the absence of every future bug.
+validated packets and push the final commit to `main` as later authorized by the
+user; do not deploy. The final report must distinguish fixes, freshly executed
+verification, and remaining limits. Bounded evidence supports a release
+decision; it does not prove the absence of every future bug.
 
 ## 6. Files to read and edit
 
@@ -416,3 +421,71 @@ scope and exact diagnostic results.
 > another planning/permission loop. Keep progress and evidence current. Do not
 > declare completion until both regressions commit successfully and the new
 > fault-injection, seeded-history and fresh accounting gates pass.
+
+## 8. Execution findings and implementation record
+
+The subsequent execution started from `98a54ada496f1c15712ad1ed3c7d6d8ee820aa28`;
+`git fetch origin` and `git pull --ff-only origin main` confirmed it was the
+latest upstream revision. `/workspace/accounting-lab` was available, so its
+multi-currency fixture was preserved as a repository-owned standalone regression
+instead of depending on that external directory.
+
+The first accounting failure was reproducible while creating the second sale in
+the shared INR/EUR/USD history. Earlier source rows had updated a read group;
+later sibling refreshes changed another member before the transaction published
+the group. The previous per-reader repair point was too early. The writer now
+patches only changed slot fields, performs sequencing-sensitive child work in
+folds, and settles only groups whose membership changed at the end of the full
+cascade. The settled group is rebuilt bottom-up from its live links; unrelated
+groups are not traversed. Reverse point candidates use bounded in-order child
+traversal with typed lower/upper pruning rather than summary-sized `next` walks.
+
+The purchase-tax child regression also commits with a converted purchase issue,
+base tax, tax-on-tax, an issue adjustment, and both explicit adjustment-tax
+children. Its net-tax child consumes the adjusted basis and its own dated USD/INR
+quote. All source writes are checked independently, including the former failing
+child creation.
+
+The stress run then found a separate cleanup defect: after deleting a subscriber,
+an indexed lookup by its typed record reference could no longer find the read
+row even though a `WITH NOINDEX` scan still found it. The evaluation frame was
+therefore removed while its read registration remained. Private read rows now
+retain an indexed stable string identity in addition to their typed reader
+reference, and deletion uses that identity. The shared oracle checks the identity,
+live fence source and tenant, read/group/frame agreement, every point/interval
+node and summary, inactive roots, threads and the settled `tree_changed` flag.
+
+The accounting snapshot now includes every compiled table plus audit and private
+metadata in full rollback comparisons. The independent accounting evaluator
+continues to use exact rational arithmetic; business-root membership is derived
+from source facts, while the shared private-read oracle checks every currently
+registered subscription. The observed-read fixture separately supplies an exact
+independent expected-read inventory and fault-injection controls.
+
+The typed-tree campaign now runs seeds `20261014`, `7`, and `1031`. It exercises
+mixed typed-key mutations, deliberate rollback, reparent-away/back, branch
+off/on, inserts, deletes, populated schema reapplication, and competing writers.
+See `designs/rebase-system/evidence/2026-10-14-integrity-fx.json` for the FX and
+purchase regression and `designs/rebase-system/evidence/2026-10-14-integrity-accounting.json`
+for fresh full acceptance. `designs/rebase-system/evidence/2026-10-14-integrity-repair.md`
+lists the complete targeted gate results, timings, hashes and limits.
+
+The historical instruction not to push predates the user's later explicit
+request to commit and push these improvements. The current instruction controls;
+all required gates passed in the fresh run, so the remaining action is the
+authorized repository push. No application environment secrets, live database,
+provider service or deployment were touched.
+
+The fresh full accounting acceptance completed on SurrealDB 3.3.0 / Node 24.19.0
+with SurrealKV in 14m36s: 103 source-oracle checkpoints, 105 structural checks,
+90 exact value queries, 51 full rollback snapshots, populated schema
+reapplication and cleanup across all 69 compiled tables. The maintained FX and
+purchase-tax regression passed 44 source writes, 31 checked deletes and 2 full
+rollback snapshots. The typed-tree seeds passed 252 mutation checkpoints, 1,570
+ordered reads and 108 rejection snapshots. Detailed gate outputs and fingerprints
+are in [integrity-repair evidence](evidence/2026-10-14-integrity-repair.md),
+[fresh accounting evidence](evidence/2026-10-14-integrity-accounting.json) and
+[FX evidence](evidence/2026-10-14-integrity-fx.json). The repository-wide
+`npm run verify` was inspected but not run because it includes unrelated live,
+service and payment-provider probes; targeted tree, tenant, authentication,
+compiler, runtime and accounting checks passed.

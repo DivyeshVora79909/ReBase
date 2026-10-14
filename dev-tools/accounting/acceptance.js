@@ -17,10 +17,18 @@ function compile() {
 }
 
 function acceptance(q, compiled) {
+  const compiledTables = [...compiled.schema.tables.keys()];
+  const snapshotAll = query => snapshot(query, compiledTables);
   const slots = Object.fromEntries([...compiled.schema.tables].map(([name, table]) =>
     [name, [...table.fields.values()].filter(field => field.treeNode).map(field => field.name)]));
-  const result = { checkpoints: 0, rollbacks: 0, cases: [], last: 'setup' };
-  const check = async () => verify(await snapshot(q), slots);
+  const rootSpecs = compiled.temporal.trees.roots.map(root => ({ table: root.table, slot: root.slot }));
+  const result = { checkpoints: 0, rollbacks: 0, structuralChecks: 0, valueChecks: 0, cases: [], last: 'setup' };
+  const check = async () => {
+    const data = await snapshotAll(q);
+    verify(data, slots, rootSpecs);
+    result.structuralChecks++;
+    return data;
+  };
   const mutate = async (sql, actor = q) => {
     result.last = sql;
     await actor(sql);
@@ -30,15 +38,19 @@ function acceptance(q, compiled) {
   };
   const reject = async (sql, pattern, actor = q) => {
     result.last = sql;
-    const before = await snapshot(q);
+    const before = await snapshotAll(q);
     await assert.rejects(actor(sql), pattern);
-    assert.deepEqual(await snapshot(q), before,
+    assert.deepEqual(await snapshotAll(q), before,
       'rejected write restores every source, derived field, slot, root, subscription, fence and audit row');
     result.rollbacks++;
   };
-  const value = async (expression, expected) => exact(await q(`RETURN ${expression};`), expected, expression);
+  const value = async (expression, expected) => {
+    const actual = await q(`RETURN ${expression};`);
+    result.valueChecks++;
+    exact(actual, expected, expression);
+  };
   const pass = name => { result.cases.push(name); console.log(`PASS ${name}`); };
-  return { q, slots, result, check, mutate, reject, value, pass };
+  return { q, slots, result, check, snapshot: () => snapshotAll(q), mutate, reject, value, pass };
 }
 
 async function setup(q) {
@@ -90,8 +102,8 @@ async function setup(q) {
   ].join('\n'));
 }
 
-async function cleanup(h) {
-  const data = await snapshot(h.q);
+async function cleanup(h, { verifyEach = false } = {}) {
+  const data = await h.snapshot();
   const order = ['resource_exchange', 'production_capacity', 'production_cost', 'production_input', 'production_output', 'production',
     'tax_refund', 'tax_settlement', 'tax_offset', 'claim_settlement', 'account_claim', 'tax_deposit',
     'payment_withholding', 'payment_adjustment', 'invoice_settlement', 'tax_adjustment_net_tax',
@@ -108,7 +120,8 @@ async function cleanup(h) {
   // client's response-header timeout even when every individual delete is valid.
   for (const sql of deletes) {
     h.result.last = sql;
-    await h.q(sql);
+    if (verifyEach) await h.mutate(sql);
+    else await h.q(sql);
   }
   const empty = await h.check();
   h.result.checkpoints++;

@@ -92,6 +92,13 @@ needed. A returned record ID alone does not replace the ordering subscription.
    validators. Validation subscriptions are separate from calculation subscriptions.
 5. Remove reads from branches and dates that are no longer used.
 
+When a subscriber is deleted, its private reads are removed by a separately
+indexed stable reader identity. The typed `reader` reference remains the
+ownership link; cleanup does not depend on looking up a reference after its
+target record has been deleted. Read groups whose member set changed are
+recomputed once at the end of the full cascade, after sibling and descendant
+refreshes finish. Unchanged groups are not rebuilt.
+
 Calculations and validators execute in the source transaction. Rejected writes
 restore subscriptions, evaluation generations and source fences along with the
 business records, roots and audit rows. Active calculation feedback throws
@@ -107,11 +114,14 @@ private captured summary reads see the current transaction's repaired nodes.
 ## Indexes and cost
 
 Four protected tables hold logical reads, shared groups, evaluation generations
-and source fences. A distinct executed query has one read record and one private index node.
-Point reads use the ordered subscription index; ranges use the interval index. Both registration and source mutation touch the
-same source fence, preventing a concurrently registered reader from committing
-an unseen stale value. A transaction conflict requires the caller to retry the
-whole confirmed failed transaction.
+and source fences. A distinct executed query has one read record and one private
+index node. Each read stores the typed reader reference plus its stable string
+identity, so cleanup remains indexed even after the subscriber record is gone.
+Point reads use the ordered subscription index; ranges use the interval index.
+Both registration and source mutation touch the same source fence, preventing a
+concurrently registered reader from committing an unseen stale value. A
+transaction conflict requires the caller to retry the whole confirmed failed
+transaction.
 
 Point subscriptions use a private AVL ordered by the complete typed query
 position. General ranges use a second AVL ordered by lower bounds and augmented
@@ -130,9 +140,13 @@ preserves all datetime, decimal and composite-key ordering.
 Point discovery targets `O(log N + log R + k)` index/tree work for a source root,
 where `k` is candidate logical reads. Each candidate still pays for its actual
 query, commonly `O(log N)`, and changed subscribers pay for their full formulas
-and postings. Union, ordering, metadata writes and result materialization have
-additional costs. Interval traversal is output-sensitive; a conservative bound
-is `O((k + 1) log R)`, rather than an unproved output-linear claim.
+and postings. A transaction that adds or removes subscriptions also makes one
+postorder pass over each changed group's nodes to settle exact summaries after
+the entire cascade; this is `O(g)` for a changed group of `g` reads. It is not a
+per-write audit of every subscription tree. Union, ordering, metadata writes and
+result materialization have additional costs. Interval traversal is
+output-sensitive; a conservative bound is `O((k + 1) log R)`, rather than an
+unproved output-linear claim.
 
 The developer must use supported reads for mutable dependencies hidden in a
 helper. Arbitrary SELECTs, external calls and dynamic function names are not
@@ -148,5 +162,10 @@ reads, inactive branches, empty results, ties, moves, prefix adjustments,
 interval pruning, publications, tenant/record permissions, rollback, forced
 concurrent registration, reapplication and cleanup. Accounting has a separate
 source arithmetic and [subscription oracle](../../dev-tools/temporal-tree/read-oracle.js).
+Run `npm run probe:accounting-integrity-fx` for the dated multi-currency sales,
+purchase, tax and adjustment regression. It validates every source statement
+and every child-first cleanup delete against independent accounting and tree
+oracles. Run `npm run probe:typed-tree-seeded` for deterministic typed-tree
+histories using seeds `20261014`, `7` and `1031`.
 See its [verification record](../all-in-accounting/verification.md) for acceptance
 of the exact accounting schema.
