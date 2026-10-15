@@ -25,6 +25,12 @@ function read(value, reader) {
   return value.data.rebase_read.find(row => row.reader === reader);
 }
 
+function rootNode(value, kind) {
+  const interval = kind === 'range';
+  const link = group(value, kind)[interval ? 'z_intervals' : 'z_positions'].root;
+  return value.data.rebase_read.find(row => row.id === link.rid)[link.slot];
+}
+
 test('private read checker accepts a complete, independently described point and interval fixture', () => {
   const value = fixture();
   assert.deepEqual(verifyReads(value.data, value.sourceRows, value.entries, value.compare, value.checkOptions),
@@ -34,6 +40,13 @@ test('private read checker accepts a complete, independently described point and
 test('private read checker rejects missing metadata and each demonstrated topology blind spot', () => {
   const cases = [
     ['missing successor', value => { delete read(value, 'read_reader:c').z_position.next; }],
+    ...['latest', 'range'].flatMap(kind => [
+      [`${kind} root missing predecessor`, value => { delete rootNode(value, kind).prev; }],
+      [`${kind} root self successor`, value => {
+        const head = group(value, kind)[kind === 'range' ? 'z_intervals' : 'z_positions'];
+        rootNode(value, kind).next = head.root;
+      }],
+    ]),
     ['wrong leaf summary', value => { read(value, 'read_reader:c').z_position.value.count = 77; }],
     ['wrong root first key', value => { group(value, 'latest').z_positions.summary.first = ['wrong']; }],
     ['wrong root count', value => { group(value, 'latest').z_positions.summary.count++; }],
@@ -88,4 +101,11 @@ test('schema root inventory rejects an otherwise self-consistent read of an unde
   const value = fixture();
   value.checkOptions = { ...value.checkOptions, rootSpecs: [{ table: 'read_curve', slot: 'z_missing' }] };
   assert.throws(() => run(value), /declared business root/);
+});
+
+test('source fences accept nested record IDs and reject a forged enclosing identity', () => {
+  const value = fixture({ sourceId: "read_curve:['probe']" });
+  assert.deepEqual(run(value), { reads: 6, groups: 3, frames: 6 });
+  value.data.rebase_read_lock[0].id += ']';
+  assert.throws(() => run(value), /fence belongs to a live source row/);
 });

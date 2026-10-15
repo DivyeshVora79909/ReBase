@@ -16,9 +16,9 @@ const compareKey = (a, b) => compareValue(a, b);
 const idOf = link => link ? `${link.rid}/${link.slot}` : null;
 const linkFor = (row, slot) => ({ rid: row.id, slot });
 
-function fixture() {
+function fixture({ sourceId = 'read_curve:probe' } = {}) {
   const tenant = 'tenant:probe';
-  const source = { id: 'read_curve:probe', tenant, initial: 3 };
+  const source = { id: sourceId, tenant, initial: 3 };
   const readers = ['a', 'b', 'c', 'd', 'e', 'f'].map(name => ({ id: `read_reader:${name}`, tenant }));
   const sourceRows = [source, ...readers];
   const sourceEntries = [
@@ -34,7 +34,7 @@ function fixture() {
     { reader: 'read_reader:f', phase: 'refresh', source_root: source.id, source_slot: 'z_points', kind: 'range', arguments: [[7], [10]], path: 'measures.value.sum', fallback: 0, observed: 5 },
   ];
   const data = { rebase_read: [], rebase_read_group: [], rebase_read_frame: [], rebase_read_lock: [
-    { id: 'rebase_read_lock:[read_curve:probe]', tenant, revision: 1 },
+    { id: `rebase_read_lock:[${source.id}]`, tenant, revision: 1 },
   ] };
   const rootSpecs = [{ table: 'read_curve', slot: 'z_points' }];
 

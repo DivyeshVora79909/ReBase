@@ -213,7 +213,7 @@ function verifyIndex(group, members, rows, compare, interval) {
     return result;
   }
 
-  const tree = visit(head.root, owner, null, null);
+  const tree = visitOptional(head.root, owner, null, null);
   assert.equal(seen.size, active.length, `${group.id}: every active node is reachable exactly once`);
   assert.equal(head.height, tree.height, `${group.id}: root height`);
   assert.deepEqual(stable(head.summary), stable(combineIndex(tree.entries, compare, interval)), `${group.id}: complete root summary`);
@@ -279,10 +279,11 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
     verifyIndex(group, members, readById, compare, group.kind === 'range');
     verifyIndex(group, members, readById, compare, group.kind !== 'range');
   }
+  // Source identities may themselves contain arrays or escaped delimiters.
+  // Match known identities instead of parsing their serialized contents.
+  const fenceSources = new Map(sourceRows.map(row => [`rebase_read_lock:[${row.id}]`, row]));
   for (const lock of data.rebase_read_lock || []) {
-    assert.match(lock.id, /^rebase_read_lock:\[[^\]]+\]$/, 'source fence has a record-derived identity');
-    const sourceId = lock.id.slice('rebase_read_lock:['.length, -1);
-    const source = byId.get(sourceId);
+    const source = fenceSources.get(lock.id);
     assert(source, `${lock.id}: fence belongs to a live source row`);
     assert(Number.isInteger(lock.revision) && lock.revision > 0, `${lock.id}: positive fence revision`);
     const allowedTenants = [source.tenant, source.id, ...(source.parents || [])].filter(value => value != null);
