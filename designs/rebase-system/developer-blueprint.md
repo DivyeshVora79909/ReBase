@@ -217,6 +217,14 @@ compiler resolves local dependency order; alphabetical field names are not an
 execution contract. An ordinary reference or index membership alone is not a
 causal calculation edge. Materialize cross-record dependencies one hop at a time.
 
+For local field ordering, a whole `$this` row may be passed directly to a
+schema-declared helper, which may access static fields or forward that row to
+another declared helper. Whole-row aliases, wrappers, dynamic field access and
+escaping row values are rejected because their dependencies are not proved.
+Pass explicit field values for those calculations; scalar aliases and expressions
+remain supported. The compiler preserves literal argument positions when
+following helper parameters. See the [compiler repair record](integrity-2026-10-15/compiler.md).
+
 For mutable reads hidden in ordinary helper functions, use
 `fn::tree::read_value` or `fn::record::read_value`. The compiler captures the
 executed query and maintains its reverse subscription automatically. Applications

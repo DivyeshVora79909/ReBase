@@ -18,7 +18,16 @@ function calls(source) {
   for (const match of code.matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)) {
     const open = code.indexOf('(', match.index + match[0].length - 1);
     const close = closeCall(code, open);
-    found.push({ name: match[1], args: splitTopLevel(code.slice(open + 1, close)) });
+    // Keep literals in their argument positions. Masked strings are useful for
+    // locating calls, but splitTopLevel drops empty (masked) arguments.
+    const args = splitTopLevel(source.slice(open + 1, close));
+    let cursor = open + 1;
+    const starts = args.map(argument => {
+      const start = source.indexOf(argument, cursor);
+      cursor = start + argument.length;
+      return start;
+    });
+    found.push({ name: match[1], args, starts });
   }
   return found;
 }
@@ -41,14 +50,7 @@ function localDependencies(expression, byName, declared, subject) {
 
   const inspect = (source, environment, active) => {
     const code = sqlCode(source);
-    for (const match of code.matchAll(/\$([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)/g)) {
-      const variable = `$${match[1]}`;
-      const base = variable === '$this' ? { row: true, path: [] } : environment.get(variable);
-      if (!base?.row) continue;
-      const field = base.path[0] || match[2].split('.')[0];
-      if (byName.has(field)) dependencies.add(field);
-    }
-
+    const directArguments = new Set();
     for (const call of calls(source)) {
       const helper = declared.get(call.name);
       if (!helper) {
@@ -67,19 +69,30 @@ function localDependencies(expression, byName, declared, subject) {
       const names = parameters(helper), child = new Map();
       for (let index = 0; index < Math.min(names.length, call.args.length); index += 1) {
         const actual = origin(call.args[index], environment);
-        if (actual) child.set(names[index], actual);
-        else if (/\$this|\$[A-Za-z_][A-Za-z0-9_]*/.test(call.args[index])
-            && new RegExp(`${names[index]}\\s*(?:\\.|\\[)`).test(sqlCode(helper.body))) {
-          throw new Error(`${subject}: cannot infer local dependencies through argument ${index + 1} of ${call.name}; pass the row or a field reference directly`);
-        }
-      }
-      const rowParameters = new Set(names.filter(name => child.get(name)?.row));
-      for (const parameter of rowParameters) {
-        if (new RegExp(`${parameter.replace('$', '\\$')}\\s*\\[`).test(sqlCode(helper.body))) {
-          throw new Error(`${subject}: dynamic field access through ${call.name}${parameter} is outside derived dependency analysis`);
+        if (actual) {
+          child.set(names[index], actual);
+          if (actual.path.length === 0) {
+            const offset = sqlCode(call.args[index]).search(/\$[A-Za-z_]/);
+            directArguments.add(call.starts[index] + offset);
+          }
         }
       }
       inspect(helper.body, child, [...active, call.name]);
+    }
+
+    // Whole local rows may only be projected statically or forwarded directly
+    // to a declared helper. Reject aliases, wrappers and escaping rows until a
+    // scope-aware analyser can prove their dependencies. Never guess an order.
+    for (const match of code.matchAll(/\$[A-Za-z_][A-Za-z0-9_]*/g)) {
+      const base = match[0] === '$this' ? { row: true, path: [] } : environment.get(match[0]);
+      if (!base?.row || base.path.length > 0) continue;
+      const suffix = code.slice(match.index + match[0].length);
+      const field = /^\.([A-Za-z_][A-Za-z0-9_]*)/.exec(suffix)?.[1];
+      if (field) {
+        if (byName.has(field)) dependencies.add(field);
+      } else if (!directArguments.has(match.index)) {
+        throw new Error(`${subject}: cannot infer derived-field dependencies for ${match[0]} in ${active.at(-1) || 'VALUE'}; use a static field or pass the row directly to a declared helper (whole-row aliases, wrappers and dynamic access are unsupported)`);
+      }
     }
   };
 

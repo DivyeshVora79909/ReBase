@@ -13,9 +13,9 @@ DEFINE TABLE OVERWRITE natural_fact SCHEMAFULL
     COMMENT '@rebase-members fn::c3::fact_members';
 
 DEFINE FUNCTION OVERWRITE fn::c3::fact_total($row: object) {
-    RETURN fn::c3::fact_total_parts($row);
+    RETURN fn::c3::fact_total_parts('total', $row);
 } PERMISSIONS WHERE $auth != NONE;
-DEFINE FUNCTION OVERWRITE fn::c3::fact_total_parts($row: object) {
+DEFINE FUNCTION OVERWRITE fn::c3::fact_total_parts($label: string, $row: object) {
     RETURN $row.m_double + $row.z_factor;
 } PERMISSIONS WHERE $auth != NONE;
 DEFINE FIELD OVERWRITE a_owner ON natural_fact TYPE record<tree_owner>
