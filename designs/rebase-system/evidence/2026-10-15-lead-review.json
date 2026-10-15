@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-15",
+  "status": "PARTIAL_REPAIR_WITH_OPEN_RUNTIME_AND_ORACLE_WORK",
+  "reviewedCommit": "d267dc2",
+  "implementedCommits": [
+    "95d7197",
+    "66e87d0"
+  ],
+  "runtimeSource": "unchanged from d267dc2; failed complete-settlement-removal experiment reverted",
+  "runtime": {
+    "node": "v22.23.2",
+    "surreal": "3.3.0 for linux on x86_64"
+  },
+  "storage": "SurrealKV",
+  "accountingSchemaSha256": "8515e1c503e886640ce0383b2fc3045999b3fc70ea1094b47f6e99a63c44d464",
+  "sourceSha256": {
+    "dev-tools/compiler/derived-order.js": "f52a5f4b99abc90474a996753135b0214b9a8ff8f2b7cd5b491d067b7c17fc90",
+    "dev-tools/compiler/generators/temporal.js": "ce3a3f04c815c8d76ef1dd290ac4ba1e52c02450f786304efc2ee249c059e886",
+    "dev-tools/compiler/reads.surql": "69da0636c05d96a600e872b0fab9310ddaacce703c2ebcd76f6f4e65c1188c91",
+    "dev-tools/compiler/temporal.surql": "791c684c2b91fad3a7afc4a25370591fa61729483c2c670a68947581614f42cf",
+    "dev-tools/compiler/generators/tree.js": "fa822240f3e586f81db068abcfd0e5c2f300a6e2f3f8ce91bfecf1b228e849ae",
+    "framework/reads.surql": "9fb12dcdc813ab818037a558764db0272ec073c3ce5e7d8705bb3ca0f32a2513",
+    "dev-tools/tests/derived-order.test.js": "af2948cd1b5c52459b472cca65c4109fd787223baf65a38abec55e1fa70fbd9b",
+    "dev-tools/temporal-tree/derived-order-fixture.surql": "03ffacb645c2175e9031d97cec90a38b464a89103e473b57a0f863712823c12a",
+    "dev-tools/temporal-tree/derived-order-probe.js": "6359a6c9f2a0093ae89a53a5b397feb2593afc54e1e1dc8c3ab50005e89cd824",
+    "dev-tools/temporal-tree/read-oracle.js": "2a258a6065b4d05172fb9925ce36f2bbf9c709215b06b539ee8baa205e9c3ac3",
+    "dev-tools/temporal-tree/read-oracle-fixture.js": "ed8a225b5953f7e528fa9f7faed27af9fc36c08d40785ccdfbdb39802e99911a",
+    "dev-tools/temporal-tree/read-oracle.test.js": "af12d5eb6182c3e96f0d1817f48057af51d6fd10676266985264568984d99a01",
+    "dev-tools/temporal-tree/read-cost-probe.js": "c4b118d924ef8c7481dae1bccd23add0b0b5643fea8c21ab183e45e452dc2ee0",
+    "dev-tools/accounting/source-oracle.js": "eaa0ff9cc90d7e037d636bd39a61e475626c58819da6b56905ca8f87f9633a19",
+    "dev-tools/accounting/integrity-fx-probe.js": "278b292061992e94a1acf1f0fcc3e4ea554e8cccbe65da1448d5e954441a22d3"
+  },
+  "checks": [
+    {
+      "command": "npm run test:dev-tools",
+      "status": "PASS",
+      "tests": 38
+    },
+    {
+      "command": "npm run probe:derived-order",
+      "status": "PASS",
+      "scope": "native CREATE and UPDATE; literal-before-row nested helpers; declaration order; assertions, permissions, reapplication and audit"
+    },
+    {
+      "command": "npm run probe:compiler",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run probe:architecture",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run build:all-in-accounting && npm run build:all-in-one",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run check:all-in-accounting && npm run check:all-in-one",
+      "status": "PASS"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql && surreal validate build/all-in-one/schema.surql",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run probe:accounting-integrity-fx -- --evidence designs/rebase-system/evidence/2026-10-15-lead-fx.json",
+      "status": "PASS",
+      "checkpoints": 76,
+      "structuralChecks": 77,
+      "valueChecks": 46,
+      "rollbackChecks": 2,
+      "cleanup": true,
+      "evidence": "2026-10-15-lead-fx.json"
+    },
+    {
+      "command": "node dev-tools/temporal-tree/read-cost-probe.js",
+      "status": "EXPECTED_FAIL_OPEN_REPAIR_GATE",
+      "firstViolation": {
+        "readers": 11,
+        "pulls": 16,
+        "allowance": 15
+      },
+      "evidence": "2026-10-15-current-runtime-cost.txt"
+    }
+  ],
+  "experiments": [
+    {
+      "variant": "settle_group only clears flag; other flag writes/scans retained",
+      "status": "PASS_BOUNDED_CONTROL",
+      "checkpoints": 76,
+      "rollbackChecks": 2,
+      "cleanup": true,
+      "script": "2026-10-15-flag-only-control.cjs",
+      "log": "2026-10-15-flag-only-control.txt",
+      "notProofOfCompleteRemoval": true
+    },
+    {
+      "variant": "complete settlement removal",
+      "status": "REJECTED_AND_REVERTED",
+      "patch": "2026-10-15-remove-settlement-experiment.patch",
+      "firstBadWrite": "CREATE sales_issue:f_late",
+      "failedGroup": [
+        "exchange_pair:widget_inr",
+        "",
+        "record",
+        "effective_at"
+      ],
+      "actualSubtreeCount": 1,
+      "expectedSubtreeCount": 2,
+      "writeCommitted": true,
+      "snapshotsRetained": false,
+      "log": "2026-10-15-remove-settlement-failure.txt",
+      "passingControls": {
+        "observedReadsCheckpoints": 50,
+        "observedReadsRejections": 7,
+        "costMaximumReaders": 64
+      },
+      "exactCause": "unresolved"
+    }
+  ],
+  "notRunOnFinalSources": [
+    "full consolidated verify:accounting",
+    "original external /workspace/accounting-lab campaign",
+    "repository-wide verify",
+    "new seeded logical-read history campaign"
+  ],
+  "openPackets": [
+    "B1 first-divergence diagnosis",
+    "A1 independent accounting expectedReads",
+    "A2 exact decimal tree aggregates",
+    "B2 bounded incremental maintenance",
+    "D checker controls, histories, closure and final acceptance"
+  ],
+  "scope": "local commits, disposable databases; no application database, environment secrets, remote publication or deployment changed",
+  "postVerificationChanges": [
+    "Removed an extra final blank line from read-cost-probe.js; JavaScript syntax rechecked. No executable statements changed after its measured run."
+  ],
+  "experimentArtifactSha256": {
+    "2026-10-15-remove-settlement-experiment.patch": "6851b7dcace75953c65d545894914648c163975d97dd5b8ca146eb6ee5546ca6",
+    "2026-10-15-flag-only-control.cjs": "565d1ca9e04a05b8b2403767953ff8a82b279d82bba2a5fc6ef439e13c2eab93"
+  }
+}

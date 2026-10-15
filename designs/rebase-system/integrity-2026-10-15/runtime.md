@@ -8,8 +8,8 @@ to remove it. Compiler and oracle fixes are separate.
 
 The reviewed `d267dc2` added useful field-level patches, sequential mutation folds,
 stable reader-identity cleanup, bounded candidate traversal, and tests. It also
-added a final whole-group postorder repair. That repair was called a correctness
-barrier without demonstrating that the other repairs still required it.
+added a final whole-group postorder repair. Its correctness rationale and cost
+needed independent verification.
 
 A native review counter measured 1, 4, 8 and 16 rebuilt nodes when adding the
 corresponding subscriber to one shared group. Native EXPLAIN showed TableScan for
@@ -82,6 +82,16 @@ Reduce the case from the three-currency setup, two sales invoices and two issues
 Remove unrelated dimensions/postings only while retaining the failure. A simple
 one-query-per-reader control passed; the two-distinct-reads-in-an-array control
 also passed. Preserve those as controls, not replacements for the failing case.
+
+Prioritize one concrete hypothesis: the issue's stock and counterparty-resource
+legs both value through `exchange_pair:widget_inr`, so one evaluation reaches
+identical pair queries from several posting paths. The passing two-read control
+used different fallbacks and therefore different registration IDs. Compare
+identical versus distinct query signatures in the same scope, nested post calls
+and concurrent expression operands. Trace INSERT IGNORE results, frame versions,
+existing-read metadata UPDATEs and live node slots. This is a targeted experiment,
+not an established cause; do not assume metadata-only UPDATE preserves slots
+without checking its actual native before/after state.
 
 Inspect completed remember/insert, sync, repair, rotation, pull, publication and
 caller boundaries. Record live children and their summaries, summary written,
@@ -185,4 +195,3 @@ conflicts. Audit expression arguments, arrays, objects and map callbacks; changi
 one map to fold does not prove every caller serial. Preserve atomic read capture
 and reject unsupported mutating formula helpers. This is a conditional fallback,
 not an instruction to build a new subsystem now.
-

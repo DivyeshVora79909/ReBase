@@ -1,8 +1,10 @@
 # Integrity repair: lead decisions and Luna execution handoff
 
-**Status: implementation and fresh accounting acceptance complete; final commit
-and push pending.** The original diagnosis is preserved below; §8 records the
-reproduced causes, repairs, tests and current limits.
+**Historical execution record; additional blockers remain open.** Start with the
+[October 15 lead handoff](integrity-2026-10-15/README.md). Commit `d267dc2` passed
+the bounded checks recorded here, but the later review found compiler and oracle
+gaps and unresolved incremental-index maintenance. The original diagnosis and
+§8 execution report below are preserved as history, not current completion status.
 The original lead handoff was prepared against `17f956bfcad7f7f9731bb08a4abba11d1b995cc8`
 with a clean working tree. The execution recorded in §8 began from
 `98a54ada496f1c15712ad1ed3c7d6d8ee820aa28` and changes compiler and test code.

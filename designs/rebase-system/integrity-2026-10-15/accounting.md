@@ -172,4 +172,3 @@ their children.
 This review found no evidence requiring different equations. Breaking-change
 permission permits simpler internals; do not change expected arithmetic to
 accommodate an engine defect.
-

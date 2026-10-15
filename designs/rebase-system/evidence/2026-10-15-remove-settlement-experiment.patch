@@ -3,7 +3,7 @@ index ffad7c0..50ce750 100644
 --- a/dev-tools/compiler/generators/tree.js
 +++ b/dev-tools/compiler/generators/tree.js
 @@ -203,9 +203,6 @@ function readOperations(trees) {
- 
+
  function treeFields(trees) {
    let sql = '';
 -  if (trees.roots.some(root => root.table === 'rebase_read_group')) {
@@ -32,7 +32,7 @@ index b4f5c11..491da64 100644
 -        UPDATE $group SET tree_changed = true RETURN NONE;
      };
  } PERMISSIONS NONE;
- 
+
 --- Rebuild only groups whose read membership changed in this source transaction.
 --- This is a final cascade barrier: every reader has finished before summaries
 --- are pulled bottom-up from the live topology.
@@ -58,7 +58,7 @@ index e432a91..8578263 100644
 @@ -222,19 +222,6 @@ DEFINE FUNCTION OVERWRITE fn::tree::repair($owner: object, $start: object, $budg
      RETURN $end.detached;
  } PERMISSIONS NONE;
- 
+
 --- Recompute a changed node's complete local subtree bottom-up before repairing
 --- its ancestors. Reactive readers can add several members to one private index
 --- in the same cascade, so an ancestor must not consume a stale child summary.
@@ -94,14 +94,14 @@ index d36084e..1592c32 100644
 +        kind: description.kind, channel, z_positions: emptyHead(), z_intervals: emptyHead() });
      }
    }
- 
+
 diff --git a/dev-tools/temporal-tree/read-oracle.js b/dev-tools/temporal-tree/read-oracle.js
 index 46cf64d..a486047 100644
 --- a/dev-tools/temporal-tree/read-oracle.js
 +++ b/dev-tools/temporal-tree/read-oracle.js
 @@ -273,7 +273,7 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
    }
- 
+
    for (const group of groups) {
 -    assert.equal(group.tree_changed, false, `${group.id}: no deferred tree settlement after commit`);
 +    assert(group.tree_changed == null, `${group.id}: no legacy deferred tree settlement flag`);

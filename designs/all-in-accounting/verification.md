@@ -1,6 +1,15 @@
-# Accounting verification — October 14
+# Accounting verification
 
-## Fresh integrity repair acceptance
+## Current integrity repair status — October 15
+
+The [lead handoff](../rebase-system/integrity-2026-10-15/README.md) supersedes any
+engine-completion inference from the historical results below. The current FX
+fixture passes 76 checkpoints and two rollback checks with the stronger root-link
+oracle. Incremental index maintenance, independent accounting read coverage and
+exact tree aggregate checks remain open. Full consolidated acceptance was not
+rerun in this lead packet.
+
+## Historical integrity repair acceptance — October 14
 
 The repaired compiler and accounting model passed a fresh full acceptance on
 SurrealDB **3.3.0 / Node 24.19.0** with SurrealKV: **103 source-oracle
