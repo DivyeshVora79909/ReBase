@@ -232,6 +232,13 @@ do not define an impact function or reader tree. The [automatic reactivity
 contract](function-reactivity.md) explains predecessor, prefix and range reads,
 branch cleanup, transactional validation and the executable proof.
 
+Reactive expressions and their helpers must be read-only. This applies to
+derived fields, memberships, required-output recipes and validators. The compiler
+rejects mutation statements, transaction/schema operations, HTTP/API calls,
+scripting, dynamic helper calls and undeclared custom helpers in those paths.
+Ordinary application write functions remain available outside reactive formulas;
+the coordinator performs the resulting updates and managed-output writes.
+
 For split/aggregate/use-again calculations, read a published upstream root or a
 strictly prior temporal prefix. The accounting tax implementation is the worked
 example: base 100 plus two 9 taxes yields 118; a later 10% net tax reads that

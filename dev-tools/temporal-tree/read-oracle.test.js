@@ -2,8 +2,16 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { verifyReads } = require('./read-oracle');
 const { fixture } = require('./read-oracle-fixture');
+const { loadMaterials } = require('../compiler/materials');
+const { generateBundle } = require('../compiler/pipeline');
+const { start, client, applySchema, compareKey } = require('./harness');
+const observed = require('./observed-probe');
+const { snapshot: accountingSnapshot } = require('../accounting/source-oracle');
 
 function copyFixture() {
   const value = fixture();
@@ -43,7 +51,8 @@ function rewriteString(value, from, to) {
   if (typeof value === 'string') return value.replaceAll(from, to);
   if (Array.isArray(value)) return value.map(item => rewriteString(item, from, to));
   if (value && typeof value === 'object')
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewriteString(item, from, to)]));
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
+      key === 'canonical_id' ? item : rewriteString(item, from, to)]));
   return value;
 }
 
@@ -109,13 +118,93 @@ test('read group and fingerprint identities cannot be relocated with self-consis
   const oldGroup = group(relocated, 'latest').id;
   const wrongGroup = oldGroup.replace('read_curve:probe', 'read_curve:other');
   relocated.data = rewriteString(relocated.data, oldGroup, wrongGroup);
-  assert.throws(() => run(relocated), /canonical read-group identities/);
+  assert.throws(() => run(relocated), /canonical group identity rebuilt/);
 
   const fingerprint = copyFixture();
   const oldRead = read(fingerprint, 'read_reader:c').id;
   const wrongRead = oldRead.replace('fingerprint:c:refresh', 'fingerprint:wrong:refresh');
   fingerprint.data = rewriteString(fingerprint.data, oldRead, wrongRead);
-  assert.throws(() => run(fingerprint), /logical-read identities/);
+  assert.throws(() => run(fingerprint), /canonical read identity rebuilt/);
+});
+
+test('read identity witnesses are required on every verification call', () => {
+  const value = copyFixture();
+  delete group(value, 'latest').canonical_id;
+  assert.throws(() => run(value), /canonical group identity rebuilt/);
+  const readValue = copyFixture();
+  delete read(readValue, 'read_reader:c').canonical_id;
+  assert.throws(() => run(readValue), /canonical read identity rebuilt/);
+});
+
+test('native identity snapshots cover nested IDs and nanosecond keys through the observed caller', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-read-identity-'));
+  let server;
+  try {
+    const source = fs.readFileSync(path.join(__dirname, 'observed-fixture.surql'), 'utf8');
+    fs.writeFileSync(path.join(directory, 'fixture.surql'), source);
+    const compiled = generateBundle(loadMaterials({ groups: [
+      { name: 'framework', roots: [path.resolve(__dirname, '../../framework')] },
+      { name: 'project', roots: [directory] },
+    ] }));
+    server = await start({ engine: 'memory' });
+    const q = client(server.url);
+    await q('DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture; USE DB fixture;');
+    await applySchema(q, observed.instrument(compiled.bundle));
+    await q("CREATE read_dates:['probe'] SET owned_by=rebase_tenant:default, initial=1.250dec; " +
+      "CREATE read_quote:only SET owned_by=rebase_tenant:default, curve=read_dates:['probe'], " +
+      "at=d'2027-01-06T00:00:00Z', rate=3.750dec; " +
+      "CREATE read_dated:only SET owned_by=rebase_tenant:default, curve=read_dates:['probe'], " +
+      "at=d'2027-01-06T00:00:00Z';");
+    const state = await observed.snapshot(q);
+    assert.match(state.groups.find(row => row.kind === 'latest').id, /read_dates:\['probe'\]/);
+    assert.match(state.reads.find(row => row.kind === 'latest').id, /2027-01-06T00:00:00\.000000001Z/);
+    const accountingState = await accountingSnapshot(q, []);
+    assert(accountingState.rebase_read.every(row => row.canonical_id === row.id));
+    assert(accountingState.rebase_read_group.every(row => row.canonical_id === row.id));
+    const sourceRows = [...state.dates, ...state.quotes, ...state.dated, ...state.tenants, ...state.users];
+    const entries = state.quotes.map(row => ({ link: { rid: row.id, slot: 'z_rate' }, owner: { rid: row.curve, slot: 'z_rates' },
+      key: [row.at, row.id, 'z_rate'], measures: { rate: Number(row.rate) }, tags: {}, spans: {}, dependent: false })),
+      checkOptions = { rootSpecs: [{ table: 'read_dates', slot: 'z_rates' }], expectedReads: observed.expectedReads(state) };
+    const verifyAccountingSnapshot = data => verifyReads({
+      rebase_read: data.rebase_read,
+      rebase_read_group: data.rebase_read_group,
+      rebase_read_frame: data.rebase_read_frame,
+      rebase_read_lock: data.rebase_read_lock,
+      rebase_read_stage: data.rebase_read_stage,
+    }, sourceRows, entries, compareKey, checkOptions);
+    verifyAccountingSnapshot(accountingState);
+    observed.oracle(state);
+
+    // The database-computed witnesses remain fixed while persisted identities
+    // and all of their references are relocated self-consistently.
+    const rewriteExceptWitness = (value, from, to) => {
+      if (typeof value === 'string') return value.replaceAll(from, to);
+      if (Array.isArray(value)) return value.map(item => rewriteExceptWitness(item, from, to));
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) =>
+        [key, key === 'canonical_id' ? item : rewriteExceptWitness(item, from, to)]));
+      return value;
+    };
+    const latestGroup = state.groups.find(row => row.kind === 'latest');
+    const relocatedGroup = latestGroup.id.replace("read_dates:['probe']", "read_dates:['other']");
+    assert.notEqual(relocatedGroup, latestGroup.id);
+    assert.throws(() => observed.oracle(rewriteExceptWitness(state, latestGroup.id, relocatedGroup)),
+      /canonical group identity rebuilt/);
+    assert.throws(() => verifyAccountingSnapshot(rewriteExceptWitness(accountingState, latestGroup.id, relocatedGroup)),
+      /canonical group identity rebuilt/);
+
+    const latestRead = state.reads.find(row => row.kind === 'latest');
+    const fingerprint = latestRead.id.match(/([0-9a-f]{64})(?='\])/i)?.[1];
+    assert(fingerprint, 'native read identity exposes its fingerprint component');
+    const relocatedRead = latestRead.id.replace(fingerprint, '0'.repeat(64));
+    assert.notEqual(relocatedRead, latestRead.id);
+    assert.throws(() => observed.oracle(rewriteExceptWitness(state, latestRead.id, relocatedRead)),
+      /canonical read identity rebuilt/);
+    assert.throws(() => verifyAccountingSnapshot(rewriteExceptWitness(accountingState, latestRead.id, relocatedRead)),
+      /canonical read identity rebuilt/);
+  } finally {
+    if (server) await server.close();
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('singleton point and interval subscription trees pass controls and reject corrupted roots', () => {

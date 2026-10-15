@@ -1,6 +1,6 @@
 'use strict';
 
-const { splitStatements, sqlCode } = require('./surql');
+const { splitStatements, sqlCode, mapSqlCode } = require('./surql');
 
 const INTRINSICS = new Map([
   ['fn::tree::read_value', 'fn::reads::tree'],
@@ -9,6 +9,45 @@ const INTRINSICS = new Map([
   ['fn::tree::range', 'fn::reads::range'],
 ]);
 const PRIVATE_TABLES = new Set(['rebase_read', 'rebase_read_frame', 'rebase_read_group', 'rebase_read_lock', 'rebase_read_stage']);
+// These constructors are emitted later, rather than supplied by the project.
+// All other custom helpers must have a body available for inspection.
+const GENERATED_PURE_HELPERS = new Set(['fn::tree::member', 'fn::tree::ordered_member', 'fn::tree::int_member',
+  'fn::tree::empty', 'fn::tree::value', 'fn::tree::combine', 'fn::tree::coalesce']);
+const WRITE_STATEMENTS = new Set(['CREATE', 'INSERT', 'UPDATE', 'UPSERT', 'DELETE', 'RELATE',
+  'DEFINE', 'ALTER', 'REMOVE', 'REBUILD', 'ACCESS', 'BEGIN', 'COMMIT', 'CANCEL',
+  'USE', 'OPTION', 'LIVE', 'KILL', 'SLEEP']);
+const TRANSACTION_STATEMENTS = new Set(['BEGIN', 'COMMIT', 'CANCEL']);
+
+function reactiveEffect(source) {
+  // Token boundaries distinguish statements/subqueries from $row.update,
+  // { update: ... }, table:UPDATE and qualified function names. Reuse the SQL
+  // masking of strings, quoted identifiers and comments. Retain a literal token so
+  // a quoted mutation target cannot disappear during the boundary check.
+  const hidden = value => '0' + ' '.repeat(value.length - 1);
+  const code = mapSqlCode(source, value => value, value => /^(?:--|\/\*)/.test(value)
+    ? ' '.repeat(value.length) : hidden(value)).replace(/⟨[^⟩]*⟩/g, hidden);
+  for (const match of code.matchAll(/\bfn::/g)) {
+    if (!/^fn::[A-Za-z_][\w:]*\s*\(/.test(code.slice(match.index))) return 'opaque custom helper reference';
+  }
+  const tokens = [...code.matchAll(/\$?[A-Za-z_][\w]*(?:::[A-Za-z_][\w]*)*|[^\s]/g)];
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index], word = token[0], upper = word.toUpperCase();
+    const previous = tokens[index - 1]?.[0], next = tokens[index + 1]?.[0];
+    if (next === '(' && (/^(?:http|api)::/i.test(word) || upper === 'FUNCTION' || word.startsWith('$'))) {
+      return `opaque or effectful call ${word}`;
+    }
+    if (!WRITE_STATEMENTS.has(upper) || next === ':' || previous === '.') continue;
+    if (previous === ':' && tokens[index - 1].index + 1 === token.index) continue;
+    const transactionEnd = TRANSACTION_STATEMENTS.has(upper) && (!next || next === ';');
+    if ((!transactionEnd && !/^(?:\$?[A-Za-z_0-9]|[[(])/.test(next || '')) || /^(?:AS|FROM|END)$/i.test(next)) continue;
+    // SQL statements can appear in nested expression positions as well as at
+    // the start of a block. SELECT projection/target names are not statements.
+    if (!previous || /^[;({\[,:=|?}]$/.test(previous) || /^(?:RETURN|THEN|ELSE|IF)$/i.test(previous)) {
+      return `${upper} statement`;
+    }
+  }
+  return null;
+}
 
 function closeDelimiter(code, start, opening, closing) {
   let depth = 0;
@@ -73,7 +112,9 @@ function resolveObservedReads(source) {
   }).join('\n');
   const validate = (source, subject) => {
     const seen = new Set();
-    const visit = body => {
+    const visit = (body, caller) => {
+      const effect = reactiveEffect(body);
+      if (effect) throw new Error(`${subject}: reactive expressions must be read-only; ${effect}${caller ? ` in ${caller}` : ''}`);
       for (const match of sqlCode(body).matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)) {
         const name = match[1];
         if (INTRINSICS.has(name)) continue;
@@ -82,7 +123,10 @@ function resolveObservedReads(source) {
         }
         if (seen.has(name)) continue;
         seen.add(name);
-        if (declared.has(name)) visit(declared.get(name).body);
+        if (declared.has(name)) visit(declared.get(name).body, name);
+        else if (!GENERATED_PURE_HELPERS.has(name)) {
+          throw new Error(`${subject}: reactive expressions must be read-only; cannot inspect undeclared helper ${name}${caller ? ` called by ${caller}` : ''}`);
+        }
       }
     };
     visit(source);

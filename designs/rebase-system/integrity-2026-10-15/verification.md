@@ -1,8 +1,9 @@
 # Packet D: trustworthy histories and final acceptance
 
-Status: D0–D4 passed for the named bounded gates on the staged-capture
-implementation. The [October 15 acceptance manifest](../evidence/2026-10-15-staged-capture-acceptance.json)
-records the verified commands, exact source hashes, compiled accounting bundle,
+Status: the named bounded checks for D0 and D2–D4 passed on the staged-capture
+implementation. The seeded D1 campaign is partial; several originally requested
+combinations remain deferred below. The [October 15 acceptance manifest](../evidence/2026-10-15-staged-capture-acceptance.json)
+records the acceptance commands, exact source hashes, compiled accounting bundle,
 engine versions and scope. These results do not prove every possible history or
 multi-node deployment.
 
@@ -20,11 +21,19 @@ runtime registrations.
 
 The observed-read state machine passed seeds `20261014`, `7`, and `1031`, with 216
 checkpoints, 489 candidate reads and 196 derived refreshes. It exercises logical
-read kinds, empty/fallback branches, dates and nanoseconds, reader/source moves,
-branch changes, nested helpers and maps, required outputs, publication and
-metamorphic edits. Each accepted statement checks exact expected reads, frames,
-fences, source references, tree structure and values; rejected statements compare
-the full rollback snapshot.
+read kinds, empty/fallback branches, reader/source moves, branch changes, nested
+helpers and maps, publication and metamorphic edits. Its generated logical point
+keys are integers; although the fixture defines a nanosecond quote, no seeded
+reader consumes it, so this campaign does not exercise dated logical reads.
+Accepted statements check exact expected reads, frames, fences, source references,
+tree structure and values.
+
+The seeded campaign also does not exercise required-output creation/deletion as a
+lifecycle or expected rejected writes with asserted rollback histories. These
+dated-reader, output-lifecycle and rejection-history combinations from the
+original D1 scope remain deferred. Separate deterministic fixtures cover portions
+of date, rejection and output behavior; they do not combine those cases in the
+seeded history.
 
 The deterministic observed-read fixture passed 50 checkpoints and eight
 rejections, including a useful cycle rejection, an acyclic diamond, concurrent
@@ -52,7 +61,8 @@ contend.
 
 ## D4: final integration results
 
-Fresh disposable SurrealKV databases on SurrealDB 3.3.0 and Node v24.19.0 passed:
+The committed acceptance manifest records the following results from disposable
+SurrealKV databases on SurrealDB 3.3.0 and Node v24.19.0:
 
 - Both `all-in-accounting` and `all-in-one` builds, freshness checks and native
   schema validation; compiler, architecture and derived-order probes.
@@ -75,6 +85,24 @@ Fresh disposable SurrealKV databases on SurrealDB 3.3.0 and Node v24.19.0 passed
 The exact command list and compiled/source fingerprints are in the linked
 manifest. The failed first divergence and its minimized snapshots are retained
 separately under `designs/rebase-system/evidence/2026-10-15-capture-order-*`.
+
+Independent review verification on `3ee5205` used SurrealDB 3.3.0,
+Node v22.23.2 and disposable SurrealKV. It reran the 48 developer-tool tests, the
+seven-checkpoint capture regression, the 216-checkpoint seeded history and the
+bounded read-cost probe. It did not rerun full consolidated accounting, the entire
+repository verification command or the external accounting-lab campaign. The
+manifest source fingerprints matched that revision, which confirmed artifact
+identity but did not mean every manifest command was rerun in that review.
+
+The subsequent review fixes reject mutating reactive helpers and make native
+canonical identity checks mandatory in accounting, observed-history and cost
+snapshots. The [follow-up evidence](../evidence/2026-10-16-review-fixes.json)
+records the final source hashes and checks for those changes; the earlier
+acceptance manifest remains an unchanged historical record. Synthetic corruption
+tests retain the database-computed canonical IDs while changing persisted IDs
+and references. They exercise the observed oracle and the accounting snapshot
+path into the shared verifier; the accounting capture regression checks the
+complete source oracle on a valid history.
 
 The final implementation keeps calculation, subscription flushes, source fences,
 derived updates, validation and cleanup in the originating transaction. A failed

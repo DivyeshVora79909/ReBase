@@ -47,7 +47,11 @@ const claim=v=>d(v).cmp(0)>=0?eff(0,v,0):eff(0,0,d(v).neg());
 const compare=(a,b)=>{for(let i=0;i<Math.min(a.length,b.length);i++){const date=typeof a[i]==='string'&&/^\d{4}-\d\d-\d\dT/.test(a[i]);const x=date?instant(a[i]):a[i],y=date?instant(b[i]):b[i];if(x<y)return -1;if(x>y)return 1;}return a.length-b.length;};
 const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
-const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'])].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
+const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'])].map(t=>{
+  if(t==='rebase_read_group')return `${t}:(SELECT *, type::record('rebase_read_group',[source_root,source_slot,kind,channel]) AS canonical_id FROM ${t} WITH NOINDEX ORDER BY id)`;
+  if(t==='rebase_read')return `${t}:(SELECT *, type::record('rebase_read',[type::record('rebase_read_group',[source_root,source_slot,kind,channel]),position,<string>reader,phase,crypto::sha256(<string>[kind,arguments,path,fallback.value])]) AS canonical_id FROM ${t} WITH NOINDEX ORDER BY id)`;
+  return `${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`;
+}).join(',')}};`);
 
 function evaluateSource(data,slots={}) {
   const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage']);

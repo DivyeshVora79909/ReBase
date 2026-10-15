@@ -240,7 +240,13 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
 
   const membersByGroup = new Map();
   const versionByFrame = new Map();
+  for (const group of groups) {
+    assert.equal(group.canonical_id, group.id,
+      `${group.id}: canonical group identity rebuilt from typed source fields`);
+  }
   for (const read of reads) {
+    assert.equal(read.canonical_id, read.id,
+      `${read.id}: canonical read identity rebuilt from typed logical fields`);
     assertReadShape(read);
     const reader = byId.get(read.reader), source = byId.get(read.source_root);
     assert(reader && source, `${read.id}: live subscriber and source`);
@@ -323,16 +329,6 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
     const actual = new Map(reads.map(item => [JSON.stringify(normalize(readDescription(item))), normalize(readDescription(item))]));
     assert.equal(actual.size, reads.length, 'no duplicate logical read descriptions');
     assert.deepEqual([...actual.keys()].sort(), [...expected.keys()].sort(), 'exact logical read coverage, including absent registrations');
-  }
-  if (options.expectedGroupIds) {
-    const expected = [...options.expectedGroupIds].sort();
-    assert.equal(new Set(expected).size, expected.length, 'expected read-group identities are unique');
-    assert.deepEqual([...groupById.keys()].sort(), expected, 'canonical read-group identities match independent inventory');
-  }
-  if (options.expectedReadIds) {
-    const expected = [...options.expectedReadIds].sort();
-    assert.equal(new Set(expected).size, expected.length, 'expected logical-read identities are unique');
-    assert.deepEqual([...readById.keys()].sort(), expected, 'logical-read identities match independent inventory');
   }
   return { reads: reads.length, groups: groups.length, frames: frames.length };
 }

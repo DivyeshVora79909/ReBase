@@ -30,8 +30,8 @@ const snapshot = q => q(`RETURN {
   readers:(SELECT * FROM cost_reader ORDER BY id),
   range_readers:(SELECT * FROM cost_range_reader ORDER BY id),
   tenants:(SELECT * FROM rebase_tenant ORDER BY id),
-  rebase_read:(SELECT * FROM rebase_read ORDER BY id),
-  rebase_read_group:(SELECT * FROM rebase_read_group ORDER BY id),
+  rebase_read:(SELECT *, type::record('rebase_read',[type::record('rebase_read_group',[source_root,source_slot,kind,channel]),position,<string>reader,phase,crypto::sha256(<string>[kind,arguments,path,fallback.value])]) AS canonical_id FROM rebase_read ORDER BY id),
+  rebase_read_group:(SELECT *, type::record('rebase_read_group',[source_root,source_slot,kind,channel]) AS canonical_id FROM rebase_read_group ORDER BY id),
   rebase_read_frame:(SELECT * FROM rebase_read_frame ORDER BY id),
   rebase_read_lock:(SELECT * FROM rebase_read_lock ORDER BY id),
   rebase_read_stage:(SELECT * FROM rebase_read_stage ORDER BY id),
@@ -152,6 +152,18 @@ DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object, $scope: object) {
       const bound = 3 * Math.ceil(Math.log2(size + 1)) + 3;
       const getBound = 16 * Math.ceil(Math.log2(size + 1)) + 16;
       const counts = (await snapshot(q)).cost_stats[0];
+      const expectedWork = {
+        insert: { candidates:0, candidateCalls:0, refreshes:1 },
+        'range insert': { candidates:0, candidateCalls:0, refreshes:1 },
+        'second-group range insert': { candidates:0, candidateCalls:0, refreshes:1 },
+        delete: { candidates:0, candidateCalls:0, refreshes:0 },
+        'range branch delete': { candidates:0, candidateCalls:0, refreshes:1 },
+        'range branch insert': { candidates:0, candidateCalls:0, refreshes:1 },
+      }[operation];
+      assert(expectedWork, `unexpected mutation label: ${operation}`);
+      assert.equal(counts.candidates, expectedWork.candidates, `${operation}: unexpected candidate results`);
+      assert.equal(counts.candidate_calls, expectedWork.candidateCalls, `${operation}: unexpected candidate lookups`);
+      assert.equal(counts.refreshes, expectedWork.refreshes, `${operation}: unexpected derived refreshes`);
       assert(counts.pulls <= bound, `${operation} with ${size} readers: ${counts.pulls} pulls exceeds logarithmic allowance ${bound}`);
       assert(counts.gets <= getBound, `${operation} with ${size} readers: ${counts.gets} node gets exceeds logarithmic allowance ${getBound}`);
       return { operation, size, pulls:counts.pulls, nodeGets:counts.gets, intervalVisits:counts.visits,

@@ -3,6 +3,14 @@
 Status: the bounded repair described here is implemented and verified. Further
 language expansion is deferred. Starting review revision: `d267dc2`.
 
+The follow-up review also reproduced a source-writing formula helper that
+committed source value 2 and derived value 1. This predated `3ee5205`. Reactive
+expressions and reachable helpers now reject writes and opaque/effectful calls
+at compilation in all four reactive phases. Quoted targets remain visible to
+the check, while strings, comments and keyword-shaped field names are allowed.
+Pure declared helpers and generated coordinator writes remain supported. See
+the [follow-up verification](../evidence/2026-10-16-review-fixes.json).
+
 ## Failure and correction
 
 The previous analyser followed directly bound helper parameters, but did not
@@ -57,7 +65,7 @@ shadow substitution and runtime substitution together with dependency analysis.
 
 ## Evidence
 
-Fresh on October 15, SurrealDB 3.3.0 / Node 22.23.2:
+Initial packet evidence (`95d7197`), SurrealDB 3.3.0 / Node 22.23.2:
 
 - `node --test dev-tools/tests/derived-order.test.js`: direct and nested helper
   ordering, literal argument positions, comments, scalar aliases, hidden cycle,

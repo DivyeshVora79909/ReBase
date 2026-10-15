@@ -1,0 +1,400 @@
+$ npm run test:dev-tools
+npm notice run rebase-surreal-compiler@0.2.0 test:dev-tools
+npm notice run node --test dev-tools/tests/*.test.js dev-tools/temporal-tree/read-oracle.test.js
+TAP version 13
+# Subtest: private read checker accepts a complete, independently described point and interval fixture
+ok 1 - private read checker accepts a complete, independently described point and interval fixture
+  ---
+  duration_ms: 19.33048
+  type: 'test'
+  ...
+# Subtest: private read checker rejects missing metadata and each demonstrated topology blind spot
+ok 2 - private read checker rejects missing metadata and each demonstrated topology blind spot
+  ---
+  duration_ms: 105.771631
+  type: 'test'
+  ...
+# Subtest: read group and fingerprint identities cannot be relocated with self-consistent links
+ok 3 - read group and fingerprint identities cannot be relocated with self-consistent links
+  ---
+  duration_ms: 7.007088
+  type: 'test'
+  ...
+# Subtest: read identity witnesses are required on every verification call
+ok 4 - read identity witnesses are required on every verification call
+  ---
+  duration_ms: 2.884298
+  type: 'test'
+  ...
+# Subtest: native identity snapshots cover nested IDs and nanosecond keys through the observed caller
+ok 5 - native identity snapshots cover nested IDs and nanosecond keys through the observed caller
+  ---
+  duration_ms: 2713.162406
+  type: 'test'
+  ...
+# Subtest: singleton point and interval subscription trees pass controls and reject corrupted roots
+ok 6 - singleton point and interval subscription trees pass controls and reject corrupted roots
+  ---
+  duration_ms: 3.196237
+  type: 'test'
+  ...
+# Subtest: private read checks do not depend on database row enumeration order
+ok 7 - private read checks do not depend on database row enumeration order
+  ---
+  duration_ms: 2.249423
+  type: 'test'
+  ...
+# Subtest: schema root inventory rejects an otherwise self-consistent read of an undeclared source slot
+ok 8 - schema root inventory rejects an otherwise self-consistent read of an undeclared source slot
+  ---
+  duration_ms: 0.874175
+  type: 'test'
+  ...
+# Subtest: source fences accept nested record IDs and reject a forged enclosing identity
+ok 9 - source fences accept nested record IDs and reject a forged enclosing identity
+  ---
+  duration_ms: 2.900522
+  type: 'test'
+  ...
+# Subtest: independent inventory detects a missing reader, group, conditional fallback, and validate-only call
+ok 10 - independent inventory detects a missing reader, group, conditional fallback, and validate-only call
+  ---
+  duration_ms: 14.526137
+  type: 'test'
+  ...
+# Subtest: an empty read inventory is a valid explicit zero-read control
+ok 11 - an empty read inventory is a valid explicit zero-read control
+  ---
+  duration_ms: 0.562797
+  type: 'test'
+  ...
+# Subtest: accounting read inventory follows source quotes and keeps reader identities stable
+ok 12 - accounting read inventory follows source quotes and keeps reader identities stable
+  ---
+  duration_ms: 43.271195
+  type: 'test'
+  ...
+# Subtest: same-resource rates are a legitimate empty accounting read inventory
+ok 13 - same-resource rates are a legitimate empty accounting read inventory
+  ---
+  duration_ms: 3.560909
+  type: 'test'
+  ...
+# Subtest: accounting exports and validates exactly its public create schemas
+ok 14 - accounting exports and validates exactly its public create schemas
+  ---
+  duration_ms: 2343.383023
+  type: 'test'
+  ...
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 15 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 225.317692
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 16 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 3458.882602
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 17 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 2.751985
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 18 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 6.183271
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 19 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 2.40222
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 20 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 892.61801
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 21 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 118.901236
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 22 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 112.664857
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 23 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 9.45099
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 24 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 2.991388
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates native SDK values and explicit temporal sources
+ok 25 - accounting fixture validates native SDK values and explicit temporal sources
+  ---
+  duration_ms: 152.048363
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 26 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 64.498371
+  type: 'test'
+  ...
+# Subtest: public accounting schemas expose inputs and preserve native record identities
+ok 27 - public accounting schemas expose inputs and preserve native record identities
+  ---
+  duration_ms: 65.742844
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 28 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.374766
+  type: 'test'
+  ...
+# Subtest: helper dependency order preserves literal argument positions and nested forwarding
+ok 29 - helper dependency order preserves literal argument positions and nested forwarding
+  ---
+  duration_ms: 36.022178
+  type: 'test'
+  ...
+# Subtest: unproved whole-row flows fail compilation instead of silently using an old derived value
+ok 30 - unproved whole-row flows fail compilation instead of silently using an old derived value
+  ---
+  duration_ms: 4.5518
+  type: 'test'
+  ...
+# Subtest: explicit scalar dependencies can use aliases, expressions and quoted text
+ok 31 - explicit scalar dependencies can use aliases, expressions and quoted text
+  ---
+  duration_ms: 1.677289
+  type: 'test'
+  ...
+# Subtest: exact source fold separates key prefixes from complete-timestamp extrema
+ok 32 - exact source fold separates key prefixes from complete-timestamp extrema
+  ---
+  duration_ms: 7.407176
+  type: 'test'
+  ...
+# Subtest: exact tree checker accepts source-linear leaves, internal nodes, and root
+ok 33 - exact tree checker accepts source-linear leaves, internal nodes, and root
+  ---
+  duration_ms: 12.142031
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+ok 34 - one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+  ---
+  duration_ms: 27.555823
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+ok 35 - one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+  ---
+  duration_ms: 102.761129
+  type: 'test'
+  ...
+# Subtest: capture follows helper call graphs and leaves quoted text and comments untouched
+ok 36 - capture follows helper call graphs and leaves quoted text and comments untouched
+  ---
+  duration_ms: 12.206359
+  type: 'test'
+  ...
+# Subtest: an ordered calculation cannot hide an untracked lookup in a helper
+ok 37 - an ordered calculation cannot hide an untracked lookup in a helper
+  ---
+  duration_ms: 5.859521
+  type: 'test'
+  ...
+# Subtest: interval tuple keys are private metadata, rather than untyped application ordering
+ok 38 - interval tuple keys are private metadata, rather than untyped application ordering
+  ---
+  duration_ms: 12.916708
+  type: 'test'
+  ...
+# Subtest: reactive expressions reject direct and nested writes with their helper identified
+ok 39 - reactive expressions reject direct and nested writes with their helper identified
+  ---
+  duration_ms: 7.929285
+  type: 'test'
+  ...
+# Subtest: reactive helpers reject schema, transaction, runtime and opaque effects
+ok 40 - reactive helpers reject schema, transaction, runtime and opaque effects
+  ---
+  duration_ms: 2.649579
+  type: 'test'
+  ...
+# Subtest: read-only controls preserve keywords in fields, records, strings and comments
+ok 41 - read-only controls preserve keywords in fields, records, strings and comments
+  ---
+  duration_ms: 1.855865
+  type: 'test'
+  ...
+# Subtest: bundle compilation rejects the stale-value reproduction before generating capture code
+ok 42 - bundle compilation rejects the stale-value reproduction before generating capture code
+  ---
+  duration_ms: 126.84512
+  type: 'test'
+  ...
+# Subtest: bundle compilation enforces read-only helpers in every reactive phase
+ok 43 - bundle compilation enforces read-only helpers in every reactive phase
+  ---
+  duration_ms: 504.175984
+  type: 'test'
+  ...
+# Subtest: bundle compilation accepts pure reactive phases and retains coordinator writes
+ok 44 - bundle compilation accepts pure reactive phases and retains coordinator writes
+  ---
+  duration_ms: 212.87824
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 45 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 361.877447
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 46 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 4.604882
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 47 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 5.850737
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 48 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 64.968869
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 49 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 5.599929
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 50 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 16.010149
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 51 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 7.248324
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 52 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 8.565166
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 53 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 6.691031
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 54 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 7.536437
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 55 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 6.451174
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 56 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 7.159702
+  type: 'test'
+  ...
+1..56
+# tests 56
+# suites 0
+# pass 56
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8175.971275
+
+$ npm run check:all-in-accounting
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 70 tables and 0 views.
+Material files: 25
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+
+$ npm run check:all-in-one
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 64 tables and 0 views.
+Material files: 16
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-one
+Schema: build/all-in-one/schema.surql
+One-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql
+
+$ surreal validate build/all-in-accounting/schema.surql
+build/all-in-accounting/schema.surql: OK
+
+$ surreal validate build/all-in-one/schema.surql
+build/all-in-one/schema.surql: OK
+
+$ npm run probe:accounting-capture-regression
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-capture-regression
+npm notice run node dev-tools/accounting/capture-repro-probe.js
+PASS minimized purchase/tax/settlement adjustment capture regression and exact subscription integrity
+PASS child-first single-record cleanup, empty financial/observation roots and released subscriptions
+PASS minimized capture regression: 7 structural/source checkpoints, cleanup and zero staged reads
+
+$ npm run probe:observed-reads-seeded
+npm notice run rebase-surreal-compiler@0.2.0 probe:observed-reads-seeded
+npm notice run node dev-tools/temporal-tree/observed-history-probe.js
+seed 20261014: source-sorted history verified
+seed 7: source-sorted history verified
+seed 1031: source-sorted history verified
+{"status":"PASS","seeds":[20261014,7,1031],"checkpoints":216,"candidateReads":489,"derivedRefreshes":196,"sourceSha256":"d8bd714dcbdb2933e70e2bc8312d0ae04ddf17149874df79d779758a98be463c","compiledBundleSha256":"8565ca585d29df428ef041ca9a85ccf039f617acad006861ae0433ff033e8763","instrumentedBundleSha256":"58224c9f29e8e97be1cb4658c56319ca2cd2752fb9be1f62db3adcde4332ec3e","revision":"3ee5205eed137c4c81381e3bf698b4bae22be06d","engine":"surrealkv","node":"v22.23.2","cleanup":true}
+
+$ node dev-tools/temporal-tree/read-cost-probe.js
+[{"operation":"insert","size":1,"pulls":0,"nodeGets":1,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":6,"getBound":32},{"operation":"insert","size":4,"pulls":2,"nodeGets":20,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":12,"getBound":64},{"operation":"insert","size":8,"pulls":3,"nodeGets":29,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":15,"getBound":80},{"operation":"insert","size":16,"pulls":4,"nodeGets":38,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":18,"getBound":96},{"operation":"insert","size":32,"pulls":5,"nodeGets":47,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":21,"getBound":112},{"operation":"insert","size":64,"pulls":6,"nodeGets":56,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":24,"getBound":128},{"operation":"delete","size":64,"pulls":5,"nodeGets":60,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":0,"bound":24,"getBound":128},{"operation":"delete","size":33,"pulls":5,"nodeGets":46,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":0,"bound":21,"getBound":112},{"operation":"range insert","size":1,"pulls":0,"nodeGets":1,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":6,"getBound":32},{"operation":"range insert","size":4,"pulls":2,"nodeGets":20,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":12,"getBound":64},{"operation":"range insert","size":8,"pulls":3,"nodeGets":29,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":15,"getBound":80},{"operation":"range insert","size":16,"pulls":4,"nodeGets":38,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":18,"getBound":96},{"operation":"range insert","size":32,"pulls":5,"nodeGets":47,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":21,"getBound":112},{"operation":"range insert","size":48,"pulls":7,"nodeGets":67,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":21,"getBound":112},{"operation":"second-group range insert","size":1,"pulls":0,"nodeGets":1,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":6,"getBound":32},{"operation":"second-group range insert","size":4,"pulls":2,"nodeGets":20,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":12,"getBound":64},{"operation":"second-group range insert","size":8,"pulls":3,"nodeGets":29,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":15,"getBound":80},{"operation":"second-group range insert","size":16,"pulls":4,"nodeGets":38,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":18,"getBound":96},{"operation":"range branch delete","size":48,"pulls":5,"nodeGets":44,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":21,"getBound":112},{"operation":"range branch insert","size":48,"pulls":5,"nodeGets":49,"intervalVisits":0,"candidateResults":0,"candidateCalls":0,"candidateGroups":[],"derivedRefreshes":1,"bound":21,"getBound":112},{"operation":"skewed one-range fan-out","size":48,"pulls":0,"nodeGets":22,"intervalVisits":22,"candidateResults":2,"candidateCalls":2,"candidateGroups":["rebase_read_group:[cost_source:one, 'z_points', 'range', 'measures:value']"],"derivedRefreshes":1,"bound":34,"intervalBound":48},{"operation":"skewed sixteen-reader fan-out","size":48,"pulls":0,"nodeGets":38,"intervalVisits":38,"candidateResults":32,"candidateCalls":2,"candidateGroups":["rebase_read_group:[cost_source:one, 'z_points', 'range', 'measures:value']"],"derivedRefreshes":16,"intervalBound":48},{"operation":"native source-group selection EXPLAIN","plan":"Project [ctx: Db]\n    RecordIdScan [ctx: Db] [record_id: rebase_read_group:[cost_source:one, 'z_points', NONE]..[cost_source:one, 'z_points', ..]]\n"},{"operation":"native capture-scope selection EXPLAIN","plan":"SelectProject [ctx: Db] [projections: *]\n    IndexScan [ctx: Db] [index: scope, access: = 'unused-scope', direction: Forward]\n"}]
+PASS bounded point/range subscription repair, branch churn, skewed fan-out, multiple groups and exact read inventory

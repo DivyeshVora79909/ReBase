@@ -40,15 +40,6 @@ function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFal
   const selectedDescriptions = includeReaders
     ? descriptions.filter(read => includeReaders.includes(read.reader.slice(read.reader.indexOf(':') + 1)))
     : descriptions;
-  const expectedGroupIds = [...new Set(selectedDescriptions.map(read =>
-    `rebase_read_group:[${read.source_root}, '${read.source_slot}', '${read.kind}', '${read.kind === 'record' ? read.path.split('.')[0] : 'measures:value'}']`))];
-  const expectedReadIds = selectedDescriptions.map(read => {
-    const group = `rebase_read_group:[${read.source_root}, '${read.source_slot}', '${read.kind}', '${read.kind === 'record' ? read.path.split('.')[0] : 'measures:value'}']`;
-    const position = ['latest', 'next', 'range'].includes(read.kind) ? read.arguments[0]
-      : ['before', 'exact'].includes(read.kind) ? read.arguments : [];
-    const fingerprint = `fingerprint:${read.reader.slice(read.reader.indexOf(':') + 1)}:${read.phase}`;
-    return `rebase_read:[${group}, ${JSON.stringify(position)}, '${read.reader}', '${read.phase}', '${fingerprint}']`;
-  });
   const data = { rebase_read: [], rebase_read_group: [], rebase_read_frame: [], rebase_read_lock: [
     { id: `rebase_read_lock:[${source.id}]`, tenant, revision: 1 },
   ] };
@@ -63,7 +54,7 @@ function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFal
       : ['before', 'exact'].includes(description.kind) ? description.arguments : [];
     const id = `rebase_read:[${group}, ${JSON.stringify(position)}, '${description.reader}', '${description.phase}', '${fingerprint(description)}']`;
     const read = {
-      id, tenant, reader: description.reader, reader_identity: description.reader, phase: description.phase, version: 1,
+      id, canonical_id: id, tenant, reader: description.reader, reader_identity: description.reader, phase: description.phase, version: 1,
       source_root: description.source_root, source_slot: description.source_slot,
       kind: description.kind, channel, arguments: description.arguments, path: description.path,
       fallback: { value: description.fallback }, observed: { value: description.observed },
@@ -80,7 +71,7 @@ function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFal
     const frameId = `rebase_read_frame:[${description.reader}, '${description.phase}']`;
     if (!data.rebase_read_frame.some(frame => frame.id === frameId)) data.rebase_read_frame.push({ id: frameId, version: 1 });
     if (!data.rebase_read_group.some(row => row.id === group)) {
-      data.rebase_read_group.push({ id: group, tenant, source_root: description.source_root, source_slot: description.source_slot,
+      data.rebase_read_group.push({ id: group, canonical_id: group, tenant, source_root: description.source_root, source_slot: description.source_slot,
         kind: description.kind, channel, z_positions: emptyHead(), z_intervals: emptyHead() });
     }
   }
@@ -123,7 +114,7 @@ function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFal
 
   const entries = [...sourceEntries];
   const expectedReads = selectedDescriptions;
-  const checkOptions = { rootSpecs, expectedReads, expectedGroupIds, expectedReadIds };
+  const checkOptions = { rootSpecs, expectedReads };
   return { data, sourceRows, entries, compare: compareKey, expectedReads, checkOptions, descriptions:selectedDescriptions };
 }
 

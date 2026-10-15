@@ -1,0 +1,180 @@
+{
+  "status": "PASS_FOR_REVIEW_FIXES",
+  "verifiedOn": "2026-10-16",
+  "timezone": "Asia/Kolkata",
+  "baseRevision": "3ee5205eed137c4c81381e3bf698b4bae22be06d",
+  "testedSourceState": "working tree based on baseRevision; source hashes identify final code and supporting documentation",
+  "fixes": [
+    "Reject mutation and opaque/effectful calls in reactive expressions and reachable declared helpers across all four phases.",
+    "Require native canonical identity comparisons in every read/group oracle check and populate them in all real snapshot callers.",
+    "Assert candidate and refresh counts in the bounded cost gate; correct historical and seeded-coverage claims."
+  ],
+  "runtime": {
+    "node": "v22.23.2",
+    "surrealdb": "3.3.0 for linux on x86_64",
+    "storage": "SurrealKV for history/capture/cost probes; memory for the small native identity unit control"
+  },
+  "compiledBundles": {
+    "all-in-accounting": {
+      "sha256": "b09ad20249304500f06c285fce5b5e819600f00bf47dfdc046228ab18ea05381",
+      "bytes": 5125989
+    },
+    "all-in-one": {
+      "sha256": "a5ce2025723c26f842a9db97cfb01a4c187839ff836d7d5f4f9eb8208ba53d19",
+      "bytes": 2579430
+    }
+  },
+  "generatedSchemasByteIdenticalToBase": true,
+  "checks": [
+    {
+      "command": "npm run test:dev-tools",
+      "status": "PASS",
+      "tests": 56
+    },
+    {
+      "command": "npm run check:all-in-accounting",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run check:all-in-one",
+      "status": "PASS"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql",
+      "status": "PASS"
+    },
+    {
+      "command": "surreal validate build/all-in-one/schema.surql",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run probe:accounting-capture-regression",
+      "status": "PASS",
+      "checkpoints": 7,
+      "cleanup": true,
+      "stagedReads": 0
+    },
+    {
+      "command": "npm run probe:observed-reads-seeded",
+      "status": "PASS",
+      "seeds": [
+        20261014,
+        7,
+        1031
+      ],
+      "checkpoints": 216,
+      "candidateReads": 489,
+      "derivedRefreshes": 196,
+      "cleanup": true
+    },
+    {
+      "command": "node dev-tools/temporal-tree/read-cost-probe.js",
+      "status": "PASS",
+      "facts": [
+        {
+          "operation": "insert",
+          "size": 64,
+          "pulls": 6,
+          "nodeGets": 56,
+          "intervalVisits": 0,
+          "candidateResults": 0,
+          "candidateCalls": 0,
+          "candidateGroups": [],
+          "derivedRefreshes": 1,
+          "bound": 24,
+          "getBound": 128
+        },
+        {
+          "operation": "range insert",
+          "size": 48,
+          "pulls": 7,
+          "nodeGets": 67,
+          "intervalVisits": 0,
+          "candidateResults": 0,
+          "candidateCalls": 0,
+          "candidateGroups": [],
+          "derivedRefreshes": 1,
+          "bound": 21,
+          "getBound": 112
+        },
+        {
+          "operation": "skewed one-range fan-out",
+          "size": 48,
+          "pulls": 0,
+          "nodeGets": 22,
+          "intervalVisits": 22,
+          "candidateResults": 2,
+          "candidateCalls": 2,
+          "candidateGroups": [
+            "rebase_read_group:[cost_source:one, 'z_points', 'range', 'measures:value']"
+          ],
+          "derivedRefreshes": 1,
+          "bound": 34,
+          "intervalBound": 48
+        },
+        {
+          "operation": "skewed sixteen-reader fan-out",
+          "size": 48,
+          "pulls": 0,
+          "nodeGets": 38,
+          "intervalVisits": 38,
+          "candidateResults": 32,
+          "candidateCalls": 2,
+          "candidateGroups": [
+            "rebase_read_group:[cost_source:one, 'z_points', 'range', 'measures:value']"
+          ],
+          "derivedRefreshes": 16,
+          "intervalBound": 48
+        },
+        {
+          "operation": "native source-group selection EXPLAIN",
+          "plan": "Project [ctx: Db]\n    RecordIdScan [ctx: Db] [record_id: rebase_read_group:[cost_source:one, 'z_points', NONE]..[cost_source:one, 'z_points', ..]]\n"
+        },
+        {
+          "operation": "native capture-scope selection EXPLAIN",
+          "plan": "SelectProject [ctx: Db] [projections: *]\n    IndexScan [ctx: Db] [index: scope, access: = 'unused-scope', direction: Forward]\n"
+        }
+      ]
+    }
+  ],
+  "review": {
+    "compiler": "Lead checked statement boundaries; quoted mutation target bypass fixed before final tests. Original stale-value reproducer now fails during compilation.",
+    "oracle": "Separate Sol review found no further blocker. Native negative controls exercise observed.oracle and the accounting snapshot path into the shared verifier; the capture regression covers source-oracle.verify on a valid accounting history."
+  },
+  "sourceSha256": {
+    "designs/rebase-system/developer-blueprint.md": "2403883ea2fdb75f910a29ec6c43a46001ed34296587bbbc01c6aedafc17bf9f",
+    "designs/rebase-system/integrity-2026-10-15/README.md": "22f9f00eb1c0002d996b8f06c60d6039ff0f5c9b51444034f31370ecade5e4ef",
+    "designs/rebase-system/integrity-2026-10-15/compiler.md": "2531fc22557299b2903c27a7cb6e1c834942b2c99d9b5c13efd1b4f71713c45d",
+    "designs/rebase-system/integrity-2026-10-15/runtime.md": "c0514bcf1cf55b15c955f05ff9ba8ad5bbf687e807d9205612fae6135041446e",
+    "designs/rebase-system/integrity-2026-10-15/verification.md": "5cf1b208619536883b948cfcaf7476dc358693710edc6ad9c3fe4fdc70361513",
+    "dev-tools/accounting/acceptance.js": "6f68c93b5a5ec44fb9191e002712fbdc7312ff0e08acd48de3d5774fa9725f2d",
+    "dev-tools/accounting/capture-repro-probe.js": "2db65dcf8da946e18b5acdb6e7c86ea6a9d8b3d910d76241ce45a4ec5881e65a",
+    "dev-tools/accounting/source-oracle.js": "604893a6baf1da6062c2d4d4c59d8ec88903cab98bc821191bb852d98483d9fa",
+    "dev-tools/compiler/observed-reads.js": "fdbcc24b7b21d5d6b2c702cc496eaad238d288919379bdfc71c6a06d038da281",
+    "dev-tools/compiler/surql.js": "6004ce3d170998a78038ac2faccea58f17b5eb75722f768a0d71d0ae2b7fe9de",
+    "dev-tools/temporal-tree/exact-oracle.js": "1ec535f3c8bae2c986733a6b6fef4916f5d9cdd2ec6499b86faac4540fd5c687",
+    "dev-tools/temporal-tree/harness.js": "c120d4b05d16c7daa91022699dfd31892080b06faaf795bb7da8e8ace526038d",
+    "dev-tools/temporal-tree/observed-fixture.surql": "d8bd714dcbdb2933e70e2bc8312d0ae04ddf17149874df79d779758a98be463c",
+    "dev-tools/temporal-tree/observed-history-probe.js": "432e9708b62aad620e6cd5035ef63a36f46f32d4dbd338d44635e7f794ff2ba9",
+    "dev-tools/temporal-tree/observed-probe.js": "201264df816e625cc56dc3323d47a39019e81104f17490d62288f8550ee7b8ce",
+    "dev-tools/temporal-tree/oracle.js": "fb2d47a74397300b3826fa3ede1a6b30f66fdad5149f465abbaffe9e633be7cf",
+    "dev-tools/temporal-tree/read-cost-probe.js": "d33260b78efbbf756154bb404b2edc4fa0dcc5b505e873e6b3170d6680d1c625",
+    "dev-tools/temporal-tree/read-oracle-fixture.js": "5edc241cf09755ce1557800edfdba561a97d050703f1162134a1e5e11c19a622",
+    "dev-tools/temporal-tree/read-oracle.js": "d2aac70c1b254a6f152634619d00bbfabe2b3c7ccd8484d216ca958015918cb0",
+    "dev-tools/temporal-tree/read-oracle.test.js": "fa4c049119d3d3678c2fdca0fb8bd4f5232b3814661c45d37c0020f640610744",
+    "dev-tools/tests/accounting-read-inventory.test.js": "a01f591c62f97bf9237609c88acc31a621003989c00559ed3bf57808180f9b89",
+    "dev-tools/tests/exact-tree-oracle.test.js": "e329ae8fb0e437d08e1c65a3cfb68e844d2a9d87d43585becec861ca2e49d08e",
+    "dev-tools/tests/observed-reads.test.js": "2c8398948f30dfcc92d257a5b51135aba36b0fc946e3989d88db6c212681259a"
+  },
+  "rawLog": {
+    "file": "2026-10-16-review-fixes.txt",
+    "sha256": "05ae2b589dce854eef06a43a1ff9087840d995cc2d8574ec0ab0da3deae66037"
+  },
+  "notRun": [
+    "full consolidated verify:accounting",
+    "entire repository verify",
+    "external accounting-lab campaign"
+  ],
+  "remainingScope": "Seeded dated-reader, required-output lifecycle and expected-rejection combinations remain deferred and are no longer claimed as covered. No claim of exhaustive correctness or production throughput.",
+  "postVerificationChanges": "Documentation only; executable source files were unchanged after the final focused checks."
+}

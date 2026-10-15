@@ -68,22 +68,30 @@ evaluation, source fences, registration changes and output writes, so failures
 roll back together. Oracle checks require no stage rows after any completed
 statement.
 
-The full accounting suite, multi-currency FX history, minimized purchase
-reproduction, seeded state histories and bounded subscription-cost test pass with
-this change. This differential isolates the unsafe behavior to subscription
-mutations overlapping captured formula evaluation; the old native scheduler's
-exact internal ordering was not directly instrumented. It does not change the
-accounting model or read identities.
+The committed acceptance records passing results for the full accounting suite,
+multi-currency FX history, minimized purchase reproduction, seeded state histories
+and bounded subscription-cost test after this change. The staged/unstaged
+differential supports overlapping subscription mutations during captured formula
+evaluation as the repair boundary. It does not prove the underlying engine cause
+or identify the old native scheduler's exact instruction ordering. The accounting
+model and read identities did not change.
 
-## Attempted removal, reverted
+## Failed settlement-removal candidate (historical)
 
-The failed candidate removed these from `dev-tools/compiler`; all are restored:
+The failed candidate removed these from `dev-tools/compiler`:
 
 - `reads.surql:fn::reads::settle_group` and both writes of `tree_changed`.
 - `temporal.surql:fn::tree::rebuild_subtree` and the global settlement loop.
 - The generated `rebase_read_group.tree_changed` field.
 
-Kept:
+That candidate left a stale subtree and was reverted at `7d722e4`. The subsequent
+incremental repair removed the listed functions and `tree_changed` field again;
+they are absent from the current compiler. The staged-capture path buffers logical read
+descriptors and flushes them sequentially at explicit evaluation boundaries, as
+described above. Its passing reproductions support that repair boundary without
+tracing the engine's exact cause.
+
+Invariants retained by the current implementation:
 
 - Field-specific slot patches. A stale whole-slot write can overwrite a newer
   child, neighbour or parent link; do not reintroduce read/merge/replace patches.
@@ -107,14 +115,16 @@ and compiled bundle hash. The minimized failing state and the passing native
 regression are `2026-10-15-capture-order-first-divergence.json` and
 `dev-tools/accounting/capture-repro-probe.js`.
 
-The first failure in that minimized history left a dirty key on the widget/INR
-latest-rate subscriber tree after the adjustment committed. The full accounting
-history also exposed a broken parent link in the USD/INR initial-rate tree. The
-source formulas and independent read descriptions were unchanged by the repair.
+The first recorded divergence in that minimized history left a dirty key on the
+widget/INR latest-rate subscriber tree after the adjustment committed. The full
+accounting history also exposed a broken parent link in the USD/INR initial-rate
+tree. The source formulas and independent read descriptions were unchanged by
+the repair.
 Buffering formula reads and reconciling them sequentially at the explicit
-evaluation boundaries makes both histories pass. This isolates the unsafe
-registration-mutation overlap as the actionable cause; the exact internal engine
-instruction schedule was not directly traced.
+evaluation boundaries makes both histories pass. The differential supports
+registration mutations overlapping captured formula evaluation as the repair
+boundary; it does not prove the underlying engine cause or identify the exact
+instruction schedule.
 
 ## B2: common repair and bounded cost (complete)
 
@@ -158,7 +168,7 @@ returned. Latest reads depend on selection plus the empty gap up to the reader.
 Moves notify both old and new owners/positions. A reader moving along its own
 history must not consume its old contribution. Keep `prepare_move` and its tests.
 
-## Required complexity contract (not yet met by production)
+## Structural complexity targets and bounded gate (passed)
 
 Let S be members of a source tree, R subscribers in one logical group, k candidate
 reads, m executed distinct reads for one calculation, and w summary width.
@@ -180,15 +190,18 @@ maintenance, instead of the former O(N²) rebuild work. Full cascade cost still
 depends on the number of real dependencies, shared-fence contention, expression
 cost, array copying, sorting and descendant writes. This is not a throughput claim.
 
-`node dev-tools/temporal-tree/read-cost-probe.js` creates a group up to 64 readers, verifies its
-complete structure and independent logical call set, counts actual summary pulls
-for insert/delete, and confirms an update retaining queries needs zero topology
-pulls. This repair gate intentionally fails while whole-group settlement remains;
-keep it out of the normal green suite until B2 is accepted. The failed runtime
-candidate passed with 0,2,3,4,5,6 pulls at sizes 1,4,8,16,32,64 and still corrupted
-the accounting index. A passing cost test alone is insufficient. Extend to
-point/range branches and unrelated groups in the history packet. These are
-bounded structural counts, not throughput measurements or asymptotic proof.
+`node dev-tools/temporal-tree/read-cost-probe.js` verifies the complete structure
+and independent logical call set while inserting and deleting point readers,
+inserting range readers in two groups, toggling a range branch, and checking
+skewed fan-out. Its bounded insertion checks assert zero candidate lookups and
+one derived refresh for each new reader; row deletion expects no candidate
+lookups or refresh, while either active-branch toggle expects one refresh and no
+candidate lookups. It counts actual summary pulls and node gets and confirms an
+update retaining queries needs zero topology pulls. These are bounded structural
+checks, not a proof of every asymptotic target or a throughput measurement. The
+failed runtime candidate also passed a pull-count check at sizes 1,4,8,16,32,64
+while still corrupting the accounting index, so a passing cost gate alone is
+insufficient.
 
 Do not replace typed AVL queries with native composite scans merely because the
 fields look indexable. Earlier native record-ID ranges missed nanosecond boundaries.
