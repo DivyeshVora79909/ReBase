@@ -82,7 +82,7 @@ function evaluateSource(data,slots={}) {
   const add=(row,slot,owner,root,at,measures={},tags={},dependent=false,business)=>{
     if(!owner)return;
     entries.push({link:{rid:row.id,slot},owner:{rid:owner,slot:root},key:[...(business||[at]),row.id,slot],
-      measures:Object.fromEntries(Object.entries(measures).map(([k,v])=>[k,d(v).number()])),tags,dependent});
+      measures:Object.fromEntries(Object.entries(measures).map(([k,v])=>[k,d(v)])),tags,dependent});
   };
   const scale=(e,k,currency)=>{
     const convert=n=>d(e[n]).mul(k).round(get(currency).precision),r=convert('real'),reserved=convert('reserved');
@@ -288,12 +288,14 @@ function evaluateSource(data,slots={}) {
   for(const e of entries){
     const key=JSON.stringify([e.link.rid,e.owner,e.key.slice(0,-2)]),old=grouped.get(key);
     if(!old){grouped.set(key,{...e,measures:{...e.measures},tags:{...e.tags}});continue;}
-    for(const [k,v]of Object.entries(e.measures))old.measures[k]=d(old.measures[k]).add(v).number();
+    for(const [k,v]of Object.entries(e.measures))old.measures[k]=d(old.measures[k]).add(v);
     for(const [k,v]of Object.entries(e.tags)){if(k in old.tags)assert.deepEqual(old.tags[k],v);old.tags[k]=v;}
     old.dependent ||=e.dependent;
   }
   const groupedEntries=[...grouped.values()];
-  return { data, sourceRows, groupedEntries,
+  const numericEntries=groupedEntries.map(entry=>({...entry,
+    measures:Object.fromEntries(Object.entries(entry.measures).map(([key,value])=>[key,d(value).number()])) }));
+  return { data, sourceRows, groupedEntries, numericEntries,
     expectedReads:[...readInventory.values()] };
 }
 
@@ -304,9 +306,12 @@ function expectedReadInventory(data,slots={}) {
 function verify(data,slots={},rootSpecs) {
   const model=evaluateSource(data,slots);
   const treeRows=Object.entries(data).filter(([table])=>!['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'].includes(table)).flatMap(([,rows])=>rows||[]);
-  tree.verify(treeRows,treeRows,model.groupedEntries,compare);
+  tree.verify(treeRows,treeRows,model.numericEntries,compare);
+  const exactTree=require('../temporal-tree/exact-oracle');
+  exactTree.verify(treeRows,treeRows,model.groupedEntries,compare,D);
   require('../temporal-tree/read-oracle').verifyReads(data,model.sourceRows,model.groupedEntries,compare,
-    {rootSpecs,expectedReads:model.expectedReads});
+    {rootSpecs,expectedReads:model.expectedReads,decimal:D,
+      exactSummary:entries=>exactTree.linearSummary(entries,D,compare)});
   return data;
 }
 

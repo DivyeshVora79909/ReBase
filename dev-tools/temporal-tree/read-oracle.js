@@ -95,7 +95,7 @@ function assertReadShape(read) {
   assert.equal(read.channel, expectedChannel(read), `${read.id}: dependency channel matches projection`);
 }
 
-function expectedQuery(read, rows, entries, compare) {
+function expectedQuery(read, rows, entries, compare, summarize = scan) {
   const source = rows.get(read.source_root);
   assert(source, `${read.id}: live source record`);
   if (read.kind === 'record') return project(source, read.path);
@@ -113,13 +113,13 @@ function expectedQuery(read, rows, entries, compare) {
   }
   let value;
   if (['latest', 'next', 'exact'].includes(read.kind)) {
-    value = selected ? { ...scan([selected]), record: selected.link.rid, key: selected.key } : undefined;
-  } else if (read.kind === 'before') value = scan(sequence.filter(entry => compare(entry.key, read.arguments) < 0));
-  else if (read.kind === 'range') value = scan(sequence.filter(entry => compare(entry.key, read.arguments[0]) >= 0
+    value = selected ? { ...summarize([selected]), record: selected.link.rid, key: selected.key } : undefined;
+  } else if (read.kind === 'before') value = summarize(sequence.filter(entry => compare(entry.key, read.arguments) < 0));
+  else if (read.kind === 'range') value = summarize(sequence.filter(entry => compare(entry.key, read.arguments[0]) >= 0
     && compare(entry.key, read.arguments[1]) < 0));
   else {
     assert.equal(read.kind, 'summary');
-    value = scan(sequence);
+    value = summarize(sequence);
   }
   return project(value, read.path);
 }
@@ -266,8 +266,13 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
     if (!membersByGroup.has(read.group)) membersByGroup.set(read.group, []);
     membersByGroup.get(read.group).push(read);
 
-    const calculated = expectedQuery(read, byId, entries, compare);
-    equal(read.observed?.value, calculated ?? read.fallback?.value, `${read.reader}: cached ${read.kind}/${read.path}`);
+    const calculated = expectedQuery(read, byId, entries, compare, options.exactSummary || scan);
+    const observed = read.observed?.value, wanted = calculated ?? read.fallback?.value;
+    if (options.decimal && wanted instanceof options.decimal) {
+      assert(observed !== undefined && observed !== null, `${read.reader}: cached ${read.kind}/${read.path} exists`);
+      assert.equal(new options.decimal(observed).cmp(wanted), 0,
+        `${read.reader}: cached ${read.kind}/${read.path} ${observed} != ${wanted.number()}`);
+    } else equal(observed, wanted, `${read.reader}: cached ${read.kind}/${read.path}`);
     if (read.z_position != null && read.kind === 'range') assert.fail(`${read.id}: range read indexed in point tree`);
     if (read.z_interval != null && read.kind !== 'range') assert.fail(`${read.id}: non-range read indexed in interval tree`);
   }
