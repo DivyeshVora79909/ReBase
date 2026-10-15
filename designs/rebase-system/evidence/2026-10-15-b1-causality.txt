@@ -1,0 +1,58 @@
+B1: stale subscription tree first divergence
+============================================
+
+Baseline source revision: 7d722e497500a58687c271662c4115d0f76b610d
+Engine: SurrealDB 3.3.0, SurrealKV
+Node: v24.19.0
+Settlement-removal experiment patch SHA-256:
+  6851b7dcace75953c65d545894914648c163975d97dd5b8ca146eb6ee5546ca6
+Compiled no-settlement bundle SHA-256:
+  fb44c30fbfc128c675671b02e33b09ee31b9e6ed6e0ae62e17e855b517d28baa
+
+Reproduce the full failure in a disposable worktree at the baseline revision by
+applying 2026-10-15-remove-settlement-experiment.patch and running:
+
+  PATH=/workspace/.rebase-tools/bin:$PATH \
+  REBASE_TREE_SURREAL_BIN=/workspace/.rebase-tools/bin/surreal \
+  node dev-tools/accounting/integrity-fx-probe.js
+
+The first bad statement is the second sales issue (`sales_issue:f_late`). It
+commits, then the private read-tree checker rejects the resulting state. In
+`rebase_read_group:[exchange_pair:widget_inr, '', 'record', 'effective_at']`,
+three readers exist before the statement and four after it. The new
+`sales_issue:f_late` node has the expected parent, predecessor and successor,
+but the existing `sales_issue:f` ancestor still publishes a subtree count of 1
+and the group root still publishes count 3 with `stock_entry:widget` as its last
+key. The independent expected tree has count 4 and ends at `sales_issue:f_late`.
+This is a committed structural defect, not a transaction rollback.
+
+The reduced native reproduction is `dev-tools/accounting/b1-repro-probe.js`.
+It keeps three currencies, one stock resource, two invoices, two stock entries,
+and two sales issues. With settlement removed and the duplicate-read UPDATE
+unconditional, the second issue fails in the `usd_inr` `initial_rate` group:
+the new node is present and threaded, but is unreachable from the published
+root. The minimized before/after native snapshots are preserved alongside the
+full FX snapshots.
+
+The controlled differential changed one behavior in `fn::reads::remember`:
+when `INSERT IGNORE` finds an existing read, skip its `UPDATE` only if both the
+stored frame version and observed value already equal the just-evaluated values.
+With settlement still removed, this guard passes the minimized case and the
+full FX history; unconditional same-version/same-value updates fail the
+minimized case. A changed value or frame version still updates the row. This
+isolates the no-op existing-read UPDATE as the actionable trigger in these
+reproductions. It does not claim a measured SurrealDB internal event count or
+prove all scheduling cases; B2 and D gates must still pass.
+
+Evidence files:
+
+- `2026-10-15-b1-full-first-divergence.json` contains the complete before/after
+  source snapshots and SQL for the failing full FX statement.
+- `2026-10-15-b1-minimized-snapshots.json` contains the reduced case snapshots
+  and checker error.
+- `2026-10-15-remove-settlement-experiment.patch` is the exact runtime
+  candidate used to disable settlement. It is diagnostic evidence, not a fix.
+
+The snapshots were captured before server shutdown. Disposable machine-local
+database and worktree paths were removed from the committed copies; source
+rows, private metadata, SQL, assertions and tree topology are retained.
