@@ -1,0 +1,4 @@
+AssertionError [ERR_ASSERTION]: insert with 11 readers: 16 pulls exceeds logarithmic allowance 15
+    at mutate (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-cost-probe.js:75:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-cost-probe.js:80:27)

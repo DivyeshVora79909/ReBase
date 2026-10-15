@@ -1,0 +1,5 @@
+ORDERS {"review_control":["z_rate","a_total"],"review_alias":["a_total","z_rate"],"review_wrapped":["a_total","z_rate"]}
+ENGINE surrealkv VERSION surrealdb-3.3.0
+{"table":"review_control","committed":true,"before":{"input":"2","z_rate":"2","a_total":"4"},"after":{"input":"3","z_rate":"3","a_total":"6"},"expectedAfterTotal":"6"}
+{"table":"review_alias","committed":true,"before":{"input":"2","z_rate":"2","a_total":"4"},"after":{"input":"3","z_rate":"3","a_total":"4"},"expectedAfterTotal":"6"}
+{"table":"review_wrapped","committed":true,"before":{"input":"2","z_rate":"2","a_total":"4"},"after":{"input":"3","z_rate":"3","a_total":"4"},"expectedAfterTotal":"6"}

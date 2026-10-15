@@ -1,0 +1,110 @@
+diff --git a/dev-tools/compiler/generators/tree.js b/dev-tools/compiler/generators/tree.js
+index ffad7c0..50ce750 100644
+--- a/dev-tools/compiler/generators/tree.js
++++ b/dev-tools/compiler/generators/tree.js
+@@ -203,9 +203,6 @@ function readOperations(trees) {
+ 
+ function treeFields(trees) {
+   let sql = '';
+-  if (trees.roots.some(root => root.table === 'rebase_read_group')) {
+-    sql += 'DEFINE FIELD OVERWRITE tree_changed ON rebase_read_group TYPE bool DEFAULT false PERMISSIONS NONE;\n';
+-  }
+   for (const root of trees.roots) {
+     const { table, slot: name, field } = root, keyType = keyStorageType(root.keyType);
+     sql += `DEFINE FIELD OVERWRITE ${name} ON ${table} TYPE object DEFAULT ${rootDefault}
+diff --git a/dev-tools/compiler/reads.surql b/dev-tools/compiler/reads.surql
+index b4f5c11..491da64 100644
+--- a/dev-tools/compiler/reads.surql
++++ b/dev-tools/compiler/reads.surql
+@@ -101,7 +101,6 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
+             fn::tree::publish($owner);
+             fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
+         };
+-        UPDATE $group SET tree_changed = true RETURN NONE;
+     };
+     RETURN $value;
+ } PERMISSIONS NONE;
+@@ -156,26 +155,9 @@ DEFINE FUNCTION OVERWRITE fn::reads::remove($read: object) {
+     LET $remaining = SELECT VALUE id FROM rebase_read:[$group, NONE]..[$group, ..] LIMIT 1;
+     IF array::len($remaining) = 0 {
+         DELETE $group RETURN NONE;
+-    } ELSE {
+-        UPDATE $group SET tree_changed = true RETURN NONE;
+     };
+ } PERMISSIONS NONE;
+ 
+--- Rebuild only groups whose read membership changed in this source transaction.
+--- This is a final cascade barrier: every reader has finished before summaries
+--- are pulled bottom-up from the live topology.
+-DEFINE FUNCTION OVERWRITE fn::reads::settle_group($group: record) {
+-    LET $row = SELECT * FROM ONLY $group;
+-    IF $row = NONE { RETURN NONE; };
+-    LET $owner = { rid: $group, slot: IF $row.kind = 'range' THEN 'z_intervals' ELSE 'z_positions' END };
+-    LET $nodes = SELECT VALUE id FROM rebase_read WHERE group = $group;
+-    LET $head = fn::tree::get($owner);
+-    fn::tree::rebuild_subtree($owner, $head.root, array::len($nodes) + 3);
+-    fn::tree::publish($owner);
+-    fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
+-    UPDATE $group SET tree_changed = false RETURN NONE;
+-} PERMISSIONS NONE;
+-
+ DEFINE FUNCTION OVERWRITE fn::reads::end($scope: object) {
+     IF !$scope.active { RETURN NONE; };
+     LET $stale = SELECT * FROM rebase_read WHERE reader = $scope.reader AND phase = $scope.phase AND version != $scope.version;
+diff --git a/dev-tools/compiler/temporal.surql b/dev-tools/compiler/temporal.surql
+index e432a91..8578263 100644
+--- a/dev-tools/compiler/temporal.surql
++++ b/dev-tools/compiler/temporal.surql
+@@ -222,19 +222,6 @@ DEFINE FUNCTION OVERWRITE fn::tree::repair($owner: object, $start: object, $budg
+     RETURN $end.detached;
+ } PERMISSIONS NONE;
+ 
+--- Recompute a changed node's complete local subtree bottom-up before repairing
+--- its ancestors. Reactive readers can add several members to one private index
+--- in the same cascade, so an ancestor must not consume a stale child summary.
+-DEFINE FUNCTION OVERWRITE fn::tree::rebuild_subtree($owner: object, $link: option<object>, $budget: int) {
+-    IF $link = NONE { RETURN NONE; };
+-    IF $budget <= 0 { THROW 'AVL_REBUILD_BUDGET'; };
+-    LET $node = fn::tree::get($link);
+-    IF $node.owner != $owner { THROW 'AVL_REBUILD_OWNER'; };
+-    fn::tree::rebuild_subtree($owner, $node.left, $budget - 1);
+-    fn::tree::rebuild_subtree($owner, $node.right, $budget - 1);
+-    fn::tree::pull($link, NONE);
+-} PERMISSIONS NONE;
+-
+ DEFINE FUNCTION OVERWRITE fn::tree::insert($owner: object, $link: object, $key: array, $value: object) {
+     LET $head = fn::tree::get($owner);
+     LET $unique = fn::rebase::root_unique($owner);
+@@ -840,6 +827,4 @@ DEFINE FUNCTION OVERWRITE fn::rebase::finish($work: object) {
+         LET $row = SELECT * FROM ONLY $rid;
+         IF $row != NONE { fn::rebase::validate($row); };
+     };
+-    LET $changed_read_groups = SELECT VALUE id FROM rebase_read_group WHERE tree_changed = true;
+-    FOR $group IN $changed_read_groups { fn::reads::settle_group($group); };
+ } PERMISSIONS NONE;
+diff --git a/dev-tools/temporal-tree/read-oracle-fixture.js b/dev-tools/temporal-tree/read-oracle-fixture.js
+index d36084e..1592c32 100644
+--- a/dev-tools/temporal-tree/read-oracle-fixture.js
++++ b/dev-tools/temporal-tree/read-oracle-fixture.js
+@@ -65,7 +65,7 @@ function fixture({ sourceId = 'read_curve:probe' } = {}) {
+     if (!data.rebase_read_frame.some(frame => frame.id === frameId)) data.rebase_read_frame.push({ id: frameId, version: 1 });
+     if (!data.rebase_read_group.some(row => row.id === group)) {
+       data.rebase_read_group.push({ id: group, tenant, source_root: description.source_root, source_slot: description.source_slot,
+-        kind: description.kind, channel, tree_changed: false, z_positions: emptyHead(), z_intervals: emptyHead() });
++        kind: description.kind, channel, z_positions: emptyHead(), z_intervals: emptyHead() });
+     }
+   }
+ 
+diff --git a/dev-tools/temporal-tree/read-oracle.js b/dev-tools/temporal-tree/read-oracle.js
+index 46cf64d..a486047 100644
+--- a/dev-tools/temporal-tree/read-oracle.js
++++ b/dev-tools/temporal-tree/read-oracle.js
+@@ -273,7 +273,7 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
+   }
+ 
+   for (const group of groups) {
+-    assert.equal(group.tree_changed, false, `${group.id}: no deferred tree settlement after commit`);
++    assert(group.tree_changed == null, `${group.id}: no legacy deferred tree settlement flag`);
+     const members = membersByGroup.get(group.id) || [];
+     assert(members.length > 0, `${group.id}: no orphan empty read group`);
+     verifyIndex(group, members, readById, compare, group.kind === 'range');

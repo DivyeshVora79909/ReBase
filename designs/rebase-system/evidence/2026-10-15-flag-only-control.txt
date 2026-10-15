@@ -1,0 +1,53 @@
+CHECK independent INR subsidiary with EUR and USD organizations
+CHECK dimension 1/18
+CHECK dimension 2/18
+CHECK dimension 3/18
+CHECK dimension 4/18
+CHECK dimension 5/18
+CHECK dimension 6/18
+CHECK dimension 7/18
+CHECK dimension 8/18
+CHECK dimension 9/18
+CHECK dimension 10/18
+CHECK dimension 11/18
+CHECK dimension 12/18
+CHECK dimension 13/18
+CHECK dimension 14/18
+CHECK dimension 15/18
+CHECK dimension 16/18
+CHECK dimension 17/18
+CHECK dimension 18/18
+PASS sparse native currencies and separate organization/subsidiary reporting positions
+CHECK sale/purchase source 1/6
+CHECK sale/purchase source 2/6
+CHECK sale/purchase source 3/6
+CHECK sale/purchase source 4/6
+CHECK sale/purchase source 5/6
+CHECK sale/purchase source 6/6
+PASS original multi-currency sale/purchase trigger and independently replayed trees
+CHECK add a later USD/INR quote
+CHECK settle a USD customer invoice and EUR supplier invoice
+CHECK settle the supplier using a directed USD/EUR rate
+PASS native cash cancellation with distinct invoice-currency settlement amounts
+CHECK change USD/EUR without changing its separately authored inverse
+CHECK insert an earlier USD/INR quote after readers already exist
+CHECK move USD/INR quote beyond existing readers
+CHECK delete the earlier quote and restore initial-rate fallback
+CHECK create an adjustment note
+CHECK post a dated issue adjustment
+CHECK move the adjustment before the later USD/INR quote
+CHECK insert a widget valuation quote while preserving native units
+PASS dated adjustment reactivity and event-time stock valuation with stable native quantity
+CHECK create converted purchase invoice
+CHECK create purchase issue source
+CHECK create original purchase tax
+CHECK create purchase tax-on-tax source
+CHECK create purchase adjustment note
+CHECK adjust the purchase issue
+CHECK create linked base-tax adjustment
+CHECK create linked net-tax adjustment after both prior quote and issue readers exist
+PASS converted purchase issue, tax-on-tax, adjustment children and valid latest-rate registration
+CHECK add a quote later than every transaction
+PASS future quote non-interference and full rollback for duplicate sparse identities/timestamps
+PASS child-first single-record cleanup, empty financial/observation roots and released subscriptions
+PASS accounting integrity FX: 76 per-write structural/source checkpoints, 2 exact rollback snapshots, 275778ms

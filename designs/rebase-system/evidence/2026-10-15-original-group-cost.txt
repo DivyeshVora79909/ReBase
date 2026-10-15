@@ -1,0 +1,6 @@
+{"readers":1,"rebuildNodeVisits":1}
+{"readers":4,"rebuildNodeVisits":4}
+{"readers":8,"rebuildNodeVisits":8}
+{"readers":16,"rebuildNodeVisits":16}
+GROUP_LOOKUP_PLAN {"attributes":{"expr":"id"},"children":[{"attributes":{"direction":"Forward","pre_decode_filter":"yes","predicate":"group = rebase_read_group:[review_source:a, '', 'record', 'amount']","table":"rebase_read"},"context":"Db","operator":"TableScan"}],"context":"Db","expressions":[{"role":"expr","sql":"id"}],"operator":"ProjectValue"}
+CHANGED_GROUP_PLAN {"attributes":{"expr":"id"},"children":[{"attributes":{"direction":"Forward","pre_decode_filter":"deferred (runtime field state)","predicate":"tree_changed = true","table":"rebase_read_group"},"context":"Db","operator":"TableScan"}],"context":"Db","expressions":[{"role":"expr","sql":"id"}],"operator":"ProjectValue"}

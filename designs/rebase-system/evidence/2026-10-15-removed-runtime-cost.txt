@@ -1,0 +1,4 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:read-cost
+npm notice run node dev-tools/temporal-tree/read-cost-probe.js
+[{"operation":"insert","size":1,"pulls":0,"bound":6},{"operation":"insert","size":4,"pulls":2,"bound":12},{"operation":"insert","size":8,"pulls":3,"bound":15},{"operation":"insert","size":16,"pulls":4,"bound":18},{"operation":"insert","size":32,"pulls":5,"bound":21},{"operation":"insert","size":64,"pulls":6,"bound":24},{"operation":"delete","size":64,"pulls":5,"bound":24},{"operation":"delete","size":33,"pulls":5,"bound":21}]
+PASS bounded subscription insert/delete repair, retained-read stability and complete private trees

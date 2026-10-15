@@ -1,0 +1,60 @@
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-integrity-fx
+npm notice run node dev-tools/accounting/integrity-fx-probe.js
+CHECK independent INR subsidiary with EUR and USD organizations
+CHECK dimension 1/18
+CHECK dimension 2/18
+CHECK dimension 3/18
+CHECK dimension 4/18
+CHECK dimension 5/18
+CHECK dimension 6/18
+CHECK dimension 7/18
+CHECK dimension 8/18
+CHECK dimension 9/18
+CHECK dimension 10/18
+CHECK dimension 11/18
+CHECK dimension 12/18
+CHECK dimension 13/18
+CHECK dimension 14/18
+CHECK dimension 15/18
+CHECK dimension 16/18
+CHECK dimension 17/18
+CHECK dimension 18/18
+PASS sparse native currencies and separate organization/subsidiary reporting positions
+CHECK sale/purchase source 1/6
+CHECK sale/purchase source 2/6
+CHECK sale/purchase source 3/6
+CHECK sale/purchase source 4/6
+CHECK sale/purchase source 5/6
+Last integrity FX operation: CREATE sales_issue:f_late SET owned_by=rebase_tenant:default, invoice=sales_invoice:f_late,stock_account=stock_account:f,counterparty_stock=organization_resource_account:f_eu,quantity=2dec,price=10dec,effective_at=d'2027-01-10T00:00:00Z';
+accounting integrity FX: FAIL: AssertionError [ERR_ASSERTION]: rebase_read:[rebase_read_group:[exchange_pair:widget_inr, '', 'record', 'effective_at'], [], 'sales_issue:f', 'refresh', '0dc59f69eb237766f079d28b1497f54d5793a92cdfd552698869c15885226bab']/z_position: complete subtree summary
++ actual - expected
+... Skipped lines
+
+  {
++   count: 1,
+-   count: 2,
+    dependents: 0,
+    first: [
+      [],
+      "rebase_read:[rebase_read_group:[exchange_pair:widget_inr, '', 'record', 'effective_at'], [], 'sales_issue:f', 'refresh', '0dc59f69eb237766f079d28b1497f54d5793a92cdfd552698869c15885226bab']",
+      'z_position'
+...
+      [],
++     "rebase_read:[rebase_read_group:[exchange_pair:widget_inr, '', 'record', 'effective_at'], [], 'sales_issue:f', 'refresh', '0dc59f69eb237766f079d28b1497f54d5793a92cdfd552698869c15885226bab']",
+-     "rebase_read:[rebase_read_group:[exchange_pair:widget_inr, '', 'record', 'effective_at'], [], 'sales_issue:f_late', 'refresh', '0dc59f69eb237766f079d28b1497f54d5793a92cdfd552698869c15885226bab']",
+      'z_position'
+    ],
+    measures: {},
+    spans: {},
+    tags: {}
+
+    at visit (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:197:12)
+    at visitOptional (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:205:20)
+    at visit (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:190:23)
+    at visitOptional (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:205:20)
+    at verifyIndex (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:216:16)
+    at Object.verifyReads (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/read-oracle.js:279:5)
+    at verify (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/accounting/source-oracle.js:262:43)
+    at check (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/accounting/acceptance.js:28:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.mutate (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/accounting/acceptance.js:35:18)
