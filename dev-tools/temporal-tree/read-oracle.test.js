@@ -39,6 +39,14 @@ function pruneEmptyReadOwners(value) {
   value.data.rebase_read_frame = value.data.rebase_read_frame.filter(item => frames.has(item.id));
 }
 
+function rewriteString(value, from, to) {
+  if (typeof value === 'string') return value.replaceAll(from, to);
+  if (Array.isArray(value)) return value.map(item => rewriteString(item, from, to));
+  if (value && typeof value === 'object')
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewriteString(item, from, to)]));
+  return value;
+}
+
 test('private read checker accepts a complete, independently described point and interval fixture', () => {
   const value = fixture();
   assert.deepEqual(verifyReads(value.data, value.sourceRows, value.entries, value.compare, value.checkOptions),
@@ -78,6 +86,8 @@ test('private read checker rejects missing metadata and each demonstrated topolo
     ['orphan read lock source', value => { value.data.rebase_read_lock[0].id = 'rebase_read_lock:[read_curve:missing]'; }],
     ['wrong read fence tenant', value => { value.data.rebase_read_lock[0].tenant = 'tenant:other'; }],
     ['invalid read fence revision', value => { value.data.rebase_read_lock[0].revision = 0; }],
+    ['missing required read fence', value => { value.data.rebase_read_lock = []; }],
+    ['duplicate read fence identity', value => { value.data.rebase_read_lock.push(structuredClone(value.data.rebase_read_lock[0])); }],
     ['wrong read tenant', value => { read(value, 'read_reader:c').tenant = 'tenant:other'; }],
     ['wrong stable reader identity', value => { read(value, 'read_reader:c').reader_identity = 'read_reader:other'; }],
     ['wrong group channel', value => { group(value, 'latest').channel = 'order'; }],
@@ -91,6 +101,33 @@ test('private read checker rejects missing metadata and each demonstrated topolo
     const value = copyFixture();
     corrupt(value);
     assert.throws(() => run(value), undefined, name);
+  }
+});
+
+test('read group and fingerprint identities cannot be relocated with self-consistent links', () => {
+  const relocated = copyFixture();
+  const oldGroup = group(relocated, 'latest').id;
+  const wrongGroup = oldGroup.replace('read_curve:probe', 'read_curve:other');
+  relocated.data = rewriteString(relocated.data, oldGroup, wrongGroup);
+  assert.throws(() => run(relocated), /canonical read-group identities/);
+
+  const fingerprint = copyFixture();
+  const oldRead = read(fingerprint, 'read_reader:c').id;
+  const wrongRead = oldRead.replace('fingerprint:c:refresh', 'fingerprint:wrong:refresh');
+  fingerprint.data = rewriteString(fingerprint.data, oldRead, wrongRead);
+  assert.throws(() => run(fingerprint), /logical-read identities/);
+});
+
+test('singleton point and interval subscription trees pass controls and reject corrupted roots', () => {
+  for (const [name, reader, kind, head] of [
+    ['point', 'c', 'latest', 'z_positions'],
+    ['interval', 'e', 'range', 'z_intervals'],
+  ]) {
+    const value = fixture({ includeReaders: [reader] });
+    assert.deepEqual(run(value), { reads: 1, groups: 1, frames: 1 }, `${name}: valid singleton control`);
+    const owner = group(value, kind)[head];
+    owner.summary.count++;
+    assert.throws(() => run(value), /root summary|complete root summary/, `${name}: corrupted singleton root`);
   }
 });
 

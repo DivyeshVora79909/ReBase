@@ -286,12 +286,22 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
   // Source identities may themselves contain arrays or escaped delimiters.
   // Match known identities instead of parsing their serialized contents.
   const fenceSources = new Map(sourceRows.map(row => [`rebase_read_lock:[${row.id}]`, row]));
+  const fenceIds = new Set();
+  const fenceById = new Map();
   for (const lock of data.rebase_read_lock || []) {
+    assert(!fenceIds.has(lock.id), `${lock.id}: duplicate source fence identity`);
+    fenceIds.add(lock.id);
     const source = fenceSources.get(lock.id);
     assert(source, `${lock.id}: fence belongs to a live source row`);
     assert(Number.isInteger(lock.revision) && lock.revision > 0, `${lock.id}: positive fence revision`);
     const allowedTenants = [source.tenant, source.id, ...(source.parents || [])].filter(value => value != null);
     assert(allowedTenants.includes(lock.tenant), `${lock.id}: fence tenant matches its source`);
+    fenceById.set(lock.id, lock);
+  }
+  const capturedSources = new Set((options.expectedReads || reads.map(readDescription)).map(read => read.source_root));
+  for (const sourceId of capturedSources) {
+    const lockId = `rebase_read_lock:[${sourceId}]`;
+    assert(fenceById.has(lockId), `${lockId}: every captured source has a fence`);
   }
   for (const read of reads) assert(groupById.has(read.group), `${read.id}: no orphan read`);
   const expectedFrames = new Set(reads.map(read => `rebase_read_frame:[${read.reader}, '${read.phase}']`));
@@ -312,6 +322,16 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
     const actual = new Map(reads.map(item => [JSON.stringify(normalize(readDescription(item))), normalize(readDescription(item))]));
     assert.equal(actual.size, reads.length, 'no duplicate logical read descriptions');
     assert.deepEqual([...actual.keys()].sort(), [...expected.keys()].sort(), 'exact logical read coverage, including absent registrations');
+  }
+  if (options.expectedGroupIds) {
+    const expected = [...options.expectedGroupIds].sort();
+    assert.equal(new Set(expected).size, expected.length, 'expected read-group identities are unique');
+    assert.deepEqual([...groupById.keys()].sort(), expected, 'canonical read-group identities match independent inventory');
+  }
+  if (options.expectedReadIds) {
+    const expected = [...options.expectedReadIds].sort();
+    assert.equal(new Set(expected).size, expected.length, 'expected logical-read identities are unique');
+    assert.deepEqual([...readById.keys()].sort(), expected, 'logical-read identities match independent inventory');
   }
   return { reads: reads.length, groups: groups.length, frames: frames.length };
 }

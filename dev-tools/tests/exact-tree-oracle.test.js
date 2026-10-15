@@ -127,3 +127,28 @@ test('one 18-place unit of decimal corruption fails at leaf, internal summary, a
     assert.throws(() => check(value), /\.value|\.summary|\.published/, name);
   }
 });
+
+test('one 18-place unit of corruption in each prefix and complete-time extremum fails at every level', () => {
+  const extrema = ['min_prefix', 'max_prefix', 'instant_min', 'instant_max', 'boundary_min', 'boundary_max'];
+  const targets = [
+    ['leaf value', value => {
+      const row = value.members.find(member => member[slot]?.left == null && member[slot]?.right == null
+        && member[slot]?.value.measures.amount);
+      return row[slot].value.measures.amount;
+    }],
+    ['internal subtree', value => {
+      const root = value.members.find(member => member.id === value.owner[ownerSlot].root.rid)[slot];
+      return value.members.find(member => member.id === root.left.rid)[slot].summary.measures.amount;
+    }],
+    ['published root', value => value.owner[ownerSlot].summary.measures.amount],
+  ];
+  for (const [level, select] of targets) for (const field of extrema) {
+    if (level === 'leaf value' && field.startsWith('boundary_')) continue;
+    const value = fixture();
+    check(value);
+    const metric = select(value);
+    assert(metric[field] != null, `${level}.${field}: fixture has an exact extremum`);
+    metric[field] = bumpSmallestDecimal(metric[field]);
+    assert.throws(() => check(value), new RegExp(`\\.${field}`), `${level}.${field}`);
+  }
+});
