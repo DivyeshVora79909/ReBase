@@ -278,7 +278,6 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
   }
 
   for (const group of groups) {
-    assert.equal(group.tree_changed, false, `${group.id}: no deferred tree settlement after commit`);
     const members = membersByGroup.get(group.id) || [];
     assert(members.length > 0, `${group.id}: no orphan empty read group`);
     verifyIndex(group, members, readById, compare, group.kind === 'range');

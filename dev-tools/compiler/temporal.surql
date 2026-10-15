@@ -222,19 +222,6 @@ DEFINE FUNCTION OVERWRITE fn::tree::repair($owner: object, $start: object, $budg
     RETURN $end.detached;
 } PERMISSIONS NONE;
 
--- Recompute a changed node's complete local subtree bottom-up before repairing
--- its ancestors. Reactive readers can add several members to one private index
--- in the same cascade, so an ancestor must not consume a stale child summary.
-DEFINE FUNCTION OVERWRITE fn::tree::rebuild_subtree($owner: object, $link: option<object>, $budget: int) {
-    IF $link = NONE { RETURN NONE; };
-    IF $budget <= 0 { THROW 'AVL_REBUILD_BUDGET'; };
-    LET $node = fn::tree::get($link);
-    IF $node.owner != $owner { THROW 'AVL_REBUILD_OWNER'; };
-    fn::tree::rebuild_subtree($owner, $node.left, $budget - 1);
-    fn::tree::rebuild_subtree($owner, $node.right, $budget - 1);
-    fn::tree::pull($link, NONE);
-} PERMISSIONS NONE;
-
 DEFINE FUNCTION OVERWRITE fn::tree::insert($owner: object, $link: object, $key: array, $value: object) {
     LET $head = fn::tree::get($owner);
     LET $unique = fn::rebase::root_unique($owner);
@@ -840,6 +827,4 @@ DEFINE FUNCTION OVERWRITE fn::rebase::finish($work: object) {
         LET $row = SELECT * FROM ONLY $rid;
         IF $row != NONE { fn::rebase::validate($row); };
     };
-    LET $changed_read_groups = SELECT VALUE id FROM rebase_read_group WHERE tree_changed = true;
-    FOR $group IN $changed_read_groups { fn::reads::settle_group($group); };
 } PERMISSIONS NONE;

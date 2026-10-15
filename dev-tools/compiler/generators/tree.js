@@ -203,9 +203,6 @@ function readOperations(trees) {
 
 function treeFields(trees) {
   let sql = '';
-  if (trees.roots.some(root => root.table === 'rebase_read_group')) {
-    sql += 'DEFINE FIELD OVERWRITE tree_changed ON rebase_read_group TYPE bool DEFAULT false PERMISSIONS NONE;\n';
-  }
   for (const root of trees.roots) {
     const { table, slot: name, field } = root, keyType = keyStorageType(root.keyType);
     sql += `DEFINE FIELD OVERWRITE ${name} ON ${table} TYPE object DEFAULT ${rootDefault}

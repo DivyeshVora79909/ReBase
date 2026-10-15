@@ -63,7 +63,6 @@ test('private read checker rejects missing metadata and each demonstrated topolo
     ['wrong interval leaf bound', value => { read(value, 'read_reader:e').z_interval.value.end_key = [999]; }],
     ['stale cursor', value => { group(value, 'latest').z_positions.cursor = { rid: 'stale', slot: 'z_position' }; }],
     ['unfinished refresh', value => { group(value, 'latest').z_positions.refreshing = true; }],
-    ['unsettled tree change', value => { group(value, 'latest').tree_changed = true; }],
     ['orphan group', value => { group(value, 'latest').z_positions.dirty = [7]; }],
     ['missing point node', value => { delete read(value, 'read_reader:c').z_position; }],
     ['wrong inactive root', value => { group(value, 'latest').z_intervals.root = { rid: 'read_reader:c', slot: 'z_interval' }; }],

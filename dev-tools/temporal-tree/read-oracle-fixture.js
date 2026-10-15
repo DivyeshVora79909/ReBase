@@ -72,7 +72,7 @@ function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFal
     if (!data.rebase_read_frame.some(frame => frame.id === frameId)) data.rebase_read_frame.push({ id: frameId, version: 1 });
     if (!data.rebase_read_group.some(row => row.id === group)) {
       data.rebase_read_group.push({ id: group, tenant, source_root: description.source_root, source_slot: description.source_slot,
-        kind: description.kind, channel, tree_changed: false, z_positions: emptyHead(), z_intervals: emptyHead() });
+        kind: description.kind, channel, z_positions: emptyHead(), z_intervals: emptyHead() });
     }
   }
 

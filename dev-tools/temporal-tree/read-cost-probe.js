@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Repair gate: intentionally fails while whole-group settlement remains in the
-// runtime. Keep it out of the normal green suite until packet B is complete.
+// B2 structural cost gate for incremental subscription updates.
 // A passing cost result alone does not establish accounting correctness.
 
 const assert = require('node:assert/strict');

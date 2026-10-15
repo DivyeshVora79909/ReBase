@@ -92,7 +92,10 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
     };
     UPSERT type::record('rebase_read_frame', [$scope.reader, $scope.phase]) SET version = $scope.version RETURN NONE;
     IF array::len($inserted) = 0 {
-        UPDATE $id SET version = $scope.version, observed = { value: $value } RETURN NONE;
+        LET $current = SELECT * FROM ONLY $id;
+        IF $current.version != $scope.version OR $current.observed.value != $value {
+            UPDATE $id SET version = $scope.version, observed = { value: $value } RETURN NONE;
+        };
     };
     IF array::len($inserted) > 0 {
         LET $row = SELECT * FROM ONLY $id;
@@ -101,7 +104,6 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
             fn::tree::publish($owner);
             fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
         };
-        UPDATE $group SET tree_changed = true RETURN NONE;
     };
     RETURN $value;
 } PERMISSIONS NONE;
@@ -156,24 +158,7 @@ DEFINE FUNCTION OVERWRITE fn::reads::remove($read: object) {
     LET $remaining = SELECT VALUE id FROM rebase_read:[$group, NONE]..[$group, ..] LIMIT 1;
     IF array::len($remaining) = 0 {
         DELETE $group RETURN NONE;
-    } ELSE {
-        UPDATE $group SET tree_changed = true RETURN NONE;
     };
-} PERMISSIONS NONE;
-
--- Rebuild only groups whose read membership changed in this source transaction.
--- This is a final cascade barrier: every reader has finished before summaries
--- are pulled bottom-up from the live topology.
-DEFINE FUNCTION OVERWRITE fn::reads::settle_group($group: record) {
-    LET $row = SELECT * FROM ONLY $group;
-    IF $row = NONE { RETURN NONE; };
-    LET $owner = { rid: $group, slot: IF $row.kind = 'range' THEN 'z_intervals' ELSE 'z_positions' END };
-    LET $nodes = SELECT VALUE id FROM rebase_read WHERE group = $group;
-    LET $head = fn::tree::get($owner);
-    fn::tree::rebuild_subtree($owner, $head.root, array::len($nodes) + 3);
-    fn::tree::publish($owner);
-    fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
-    UPDATE $group SET tree_changed = false RETURN NONE;
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::reads::end($scope: object) {
