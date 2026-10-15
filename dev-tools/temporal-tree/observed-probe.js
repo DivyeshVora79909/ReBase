@@ -13,11 +13,14 @@ const create = (id, fields) => `CREATE ${id} SET owned_by=rebase_tenant:default,
 const snapshot = q => q(`RETURN {
  curves: (SELECT * FROM read_curve ORDER BY id), points: (SELECT * FROM read_point ORDER BY id),
  readers: (SELECT * FROM read_reader ORDER BY id), observers: (SELECT * FROM read_observer ORDER BY id),
+ diamonds: (SELECT * FROM read_diamond ORDER BY id), loop_sources: (SELECT * FROM read_loop_source ORDER BY id),
+ loop_consumers: (SELECT * FROM read_loop_consumer ORDER BY id), loop_postings: (SELECT * FROM read_loop_posting ORDER BY id),
  books: (SELECT * FROM read_book ORDER BY id), adjustments: (SELECT * FROM read_adjustment ORDER BY id),
  reads: (SELECT * FROM rebase_read ORDER BY id), groups: (SELECT * FROM rebase_read_group ORDER BY id),
  frames: (SELECT * FROM rebase_read_frame ORDER BY id), locks: (SELECT * FROM rebase_read_lock ORDER BY id),
  calls: (SELECT * FROM read_probe_calls ORDER BY id), stats: (SELECT * FROM read_probe_stats ORDER BY id),
  feedback: (SELECT * FROM read_feedback ORDER BY id), publications: (SELECT * FROM read_publication ORDER BY id),
+ audits: (SELECT * FROM audit_mutation ORDER BY id),
  dates: (SELECT * FROM read_dates ORDER BY id), quotes: (SELECT * FROM read_quote ORDER BY id), dated: (SELECT * FROM read_dated ORDER BY id),
  tenants: (SELECT * FROM rebase_tenant ORDER BY id), users: (SELECT * FROM rebase_user ORDER BY id)
 };`);
@@ -33,6 +36,7 @@ DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object, $scope: object) {
  IF record::tb($row.id) IN ['read_reader', 'read_observer', 'read_adjustment'] {
   UPSERT type::record('read_probe_calls', <string>$row.id) SET calls = (calls ?? 0) + 1 RETURN NONE;
  };
+ IF $row.id=read_reader:race_edit_reader { SLEEP 400ms; };
  RETURN fn::read_probe::derive($row, $scope);
 } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::reads::stab($link: option<object>, $key: array) {
@@ -45,7 +49,7 @@ DEFINE FUNCTION OVERWRITE fn::reads::candidates($group: object, $key: array) {
  RETURN $reads;
 } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object,$source: record,$slot: string,$kind: string,$arguments: array,$path: string,$fallback: any,$value: any) {
- IF $scope.reader=read_reader:race AND $kind='latest' { SLEEP 400ms; };
+ IF $scope.reader IN [read_reader:race,read_reader:race_insert,read_reader:race_move] AND $kind='latest' { SLEEP 400ms; };
  RETURN fn::read_probe::remember($scope,$source,$slot,$kind,$arguments,$path,$fallback,$value);
 } PERMISSIONS NONE;`;
 }
@@ -76,25 +80,40 @@ function expectedReads(data) {
     expected.push({ reader, phase, source_root, source_slot, kind, arguments: arguments_, path, fallback });
   const pointsFor = id => data.points.filter(point => point.curve === id).sort((a, b) =>
     compareIntKey([a.at], [b.at]) || a.id.localeCompare(b.id));
+  const queryKey = reader => [reader.at];
+  const pointKey = point => [point.at, point.id, 'z_point'];
+  const selected = (reader, points) => {
+    const key = queryKey(reader);
+    if (reader.operation === 'latest') return points.filter(point => {
+      const compared = compareObservedKey(pointKey(point), key);
+      return compared < 0 || (reader.inclusive && compared === 0);
+    }).at(-1);
+    if (reader.operation === 'next') return points.find(point => {
+      const compared = compareObservedKey(pointKey(point), key);
+      return compared > 0 || (reader.inclusive && compared === 0);
+    });
+    return undefined;
+  };
   for (const reader of data.readers) {
     if (reader.disabled) continue;
-    const args = ['latest', 'next'].includes(reader.operation) ? [[reader.at]]
+    const args = ['latest', 'next'].includes(reader.operation)
+      ? (reader.inclusive ? [queryKey(reader), true] : [queryKey(reader)])
       : reader.operation === 'range' ? [[reader.at], [reader.until]]
         : reader.operation === 'summary' ? [] : [reader.at];
     const fallback = ['latest', 'next', 'exact'].includes(reader.operation) ? undefined : '0';
     add(reader.id, 'refresh', reader.curve, 'z_points', reader.operation, args, 'measures.value.sum', fallback);
     if (['latest', 'next', 'exact'].includes(reader.operation)) {
       const points = pointsFor(reader.curve);
-      const selected = reader.operation === 'latest' ? points.filter(point => point.at < reader.at).at(-1)
-        : reader.operation === 'next' ? points.find(point => point.at >= reader.at)
+      const selectedPoint = reader.operation === 'latest' || reader.operation === 'next' ? selected(reader, points)
           : points.find(point => point.at === reader.at);
-      if (!selected) add(reader.id, 'refresh', reader.curve, '', 'record', [], 'initial', '0');
+      if (!selectedPoint) add(reader.id, 'refresh', reader.curve, '', 'record', [], 'initial', '0');
     }
     if (reader.guard != null) add(reader.id, 'validate', reader.curve, 'z_points', 'before', [reader.at], 'measures.value.sum', '0');
   }
   for (const publication of data.publications) {
     add(publication.id, 'refresh', publication.curve, '', 'record', [], 'published', '0');
     add(publication.id, 'refresh', publication.curve, 'z_points', 'summary', [], 'measures.value.sum', '0');
+    add(publication.id, 'refresh', publication.curve, 'z_points', 'summary', [], 'measures.other.sum', '0');
     add(publication.id, 'refresh', publication.curve, 'z_points', 'range', [[0], [8]], 'measures.value.sum', '0');
     add(publication.id, 'refresh', publication.curve, 'z_points', 'range', [[8], [30]], 'measures.value.sum', '0');
     add(publication.id, 'refresh', publication.curve, 'z_points', 'latest', [[100]], '', {});
@@ -106,6 +125,8 @@ function expectedReads(data) {
   for (const feedback of data.feedback) {
     if (feedback.peer != null) add(feedback.id, 'refresh', feedback.peer, '', 'record', [], 'value', '0');
   }
+  for (const consumer of data.loop_consumers)
+    add(consumer.id, 'refresh', consumer.source, 'z_values', 'summary', [], 'measures.value.sum', '0');
   for (const dated of data.dated) {
     const dateRoot = data.dates.find(date => date.id === dated.curve);
     add(dated.id, 'refresh', dated.curve, '', 'record', [], 'initial', '0');
@@ -124,6 +145,8 @@ function oracle(s) {
     const amount=s.points.filter(point=>point.curve===row.curve).reduce((sum,point)=>sum+Number(point.value),0);
     assert.equal(Number(row.published),amount,'computed publication dependency');
     assert.equal(Number(row.current),amount,'record root-summary read becomes a logical tree subscription');
+    assert.deepEqual(row.mapped.map(Number),[s.points.filter(point=>point.curve===row.curve)
+      .reduce((sum,point)=>sum+Number(point.other),0)],'map callback read captures the independent other-measure summary');
     const selected=s.points.filter(point=>point.curve===row.curve && point.at<100).sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id)).at(-1);
     assert.deepEqual(row.selection.key,selected?[selected.at,selected.id,'z_point']:undefined,'selected logical key persists without appending');
     assert.equal(row.selection.record,selected?.id,'selected record persists in a flexible derived object');
@@ -132,16 +155,39 @@ function oracle(s) {
   for (const reader of s.readers) {
     const curve = s.curves.find(row => row.id === reader.curve);
     const points = s.points.filter(row => row.curve === curve.id).sort((a,b) => a.at-b.at || a.id.localeCompare(b.id));
+    const key = [reader.at];
+    const pointKey = point => [point.at, point.id, 'z_point'];
+    const select = direction => {
+      if (direction === 'latest') return points.filter(point => {
+        const compared = compareObservedKey(pointKey(point), key);
+        return compared < 0 || (reader.inclusive && compared === 0);
+      }).at(-1);
+      return points.find(point => {
+        const compared = compareObservedKey(pointKey(point), key);
+        return compared > 0 || (reader.inclusive && compared === 0);
+      });
+    };
     let value;
     if (reader.disabled) value = 0;
-    else if (reader.operation === 'latest') value = Number(points.filter(row => row.at < reader.at).at(-1)?.value ?? curve.initial);
-    else if (reader.operation === 'next') value = Number(points.find(row => row.at >= reader.at)?.value ?? curve.initial);
+    else if (reader.operation === 'latest') value = Number(select('latest')?.value ?? curve.initial);
+    else if (reader.operation === 'next') value = Number(select('next')?.value ?? curve.initial);
     else if (reader.operation === 'exact') value = Number(points.find(row => row.at === reader.at)?.value ?? curve.initial);
     else value = points.filter(row => reader.operation === 'summary' || reader.operation === 'before' && row.at < reader.at ||
       reader.operation === 'range' && row.at >= reader.at && row.at < reader.until).reduce((sum,row) => sum + Number(row.value),0);
     assert.equal(Number(reader.z_rate), value, `${reader.id}: selected value`);
     assert.equal(Number(reader.amount), value * Number(reader.quantity), `${reader.id}: dependent field order`);
   }
+  for (const diamond of s.diamonds) assert.equal(Number(diamond.total),
+    Number(s.readers.find(row => row.id === diamond.left).amount) + Number(s.readers.find(row => row.id === diamond.right).amount),
+    `${diamond.id}: acyclic diamond publishes after both branches`);
+  for (const consumer of s.loop_consumers) {
+    const total = s.loop_postings.filter(row => row.source === consumer.source).reduce((sum, row) => sum + Number(row.amount), 0);
+    assert.equal(Number(consumer.amount), 1 + total, `${consumer.id}: source-published consumer value`);
+  }
+  for (const posting of s.loop_postings) entries.push({
+    link: { rid: posting.id, slot: 'z_loop' }, owner: { rid: posting.source, slot: 'z_values' },
+    key: [posting.at, posting.id, 'z_loop'], measures: { value: Number(posting.amount) }, tags: {}, spans: {}, dependent: false,
+  });
   for (const point of s.points) entries.push({
     link: { rid: point.id, slot: 'z_point' }, owner: { rid: point.curve, slot: 'z_points' },
     key: [point.at, point.id, 'z_point'], measures: { value: Number(point.value), other: Number(point.other) }, tags: {}, spans: {}, dependent: false,
@@ -164,11 +210,13 @@ function oracle(s) {
     }
     assert.equal(Number(book.z_adjustments.summary.measures.quantity?.sum ?? 0), quantity-Number(book.base));
   }
-  const sourceRows = [...s.curves, ...s.points, ...s.readers, ...s.observers, ...s.books, ...s.adjustments,
-    ...s.feedback, ...s.publications, ...s.dates, ...s.quotes, ...s.dated, ...s.tenants, ...s.users];
+  const sourceRows = [...s.curves, ...s.points, ...s.readers, ...s.observers, ...s.diamonds, ...s.books, ...s.adjustments,
+    ...s.feedback, ...s.publications, ...s.loop_sources, ...s.loop_consumers, ...s.loop_postings,
+    ...s.dates, ...s.quotes, ...s.dated, ...s.tenants, ...s.users];
   const readData = { rebase_read: s.reads, rebase_read_group: s.groups, rebase_read_frame: s.frames, rebase_read_lock: s.locks };
   verifyReads(readData, sourceRows, entries, compareObservedKey, {
-    rootSpecs: [{ table: 'read_curve', slot: 'z_points' }, { table: 'read_book', slot: 'z_adjustments' }, { table: 'read_dates', slot: 'z_rates' }],
+    rootSpecs: [{ table: 'read_curve', slot: 'z_points' }, { table: 'read_book', slot: 'z_adjustments' },
+      { table: 'read_dates', slot: 'z_rates' }, { table: 'read_loop_source', slot: 'z_values' }],
     expectedReads: expectedReads(s),
   });
 }
@@ -204,6 +252,7 @@ async function main() {
     await q(create('read_point:first','curve=read_curve:a,at=5,value=3dec')+create('read_point:last','curve=read_curve:a,at=10,value=5dec'));
     await q(create('read_publication:a','curve=read_curve:a'));
     for(const at of [2,5,6,9,10,12]) await q(create(`read_reader:r${at}`,`curve=read_curve:a,at=${at},operation='latest',quantity=2dec`)+create(`read_observer:o${at}`,`source=read_reader:r${at}`));
+    await q(create('read_diamond:pair','left=read_reader:r6,right=read_reader:r9'));
     oracle(await snapshot(q)); console.log('Observed reads: predecessor and nested helper capture');
     await run('UPDATE read_point:first SET value=4dec;', ['r6','r9','r10']);
     await run("UPDATE read_point:first SET label='irrelevant';",[]);
@@ -280,6 +329,21 @@ async function main() {
     assert.deepEqual(await actor('SELECT * FROM rebase_read;'),[]);
     await actor("CREATE rebase_read:forged SET reader=read_reader:r2;");
     assert.deepEqual(await snapshot(q),beforePublic,'record user cannot forge metadata');
+    let reapplications=0;
+    const runConcurrent = async statements => {
+      const first=q(statements[0]);
+      await new Promise(resolve=>setTimeout(resolve,80));
+      const second=q(statements[1]);
+      const outcomes=await Promise.allSettled([first,second]);
+      for(const outcome of outcomes.filter(item=>item.status==='rejected'))
+        assert.match(outcome.reason.message,/transaction|conflict|retry/i,'only a native transaction conflict may abort a competing edit');
+      oracle(await snapshot(q));
+      for(let index=0;index<outcomes.length;index++) if(outcomes[index].status==='rejected') {
+        await q(statements[index]); reapplications++;
+      }
+      oracle(await snapshot(q));
+      return outcomes;
+    };
     // Force registration to pause AFTER its read, before committing its source
     // fence; the concurrent source mutation must conflict or see the new read.
     const raced=q(create('read_reader:race',"curve=read_curve:empty,at=2,operation='latest'"));
@@ -291,10 +355,44 @@ async function main() {
     oracle(await snapshot(q));
     await q('DELETE read_reader:race;');
     await run('UPDATE read_point:empty SET value=5dec;');
-    console.log('Observed reads: tenant isolation, record permissions and concurrent registration');
+    // Register a fallback-backed read while a predecessor is inserted. The
+    // surviving transactions must agree on the source row and its read.
+    await q(create('read_curve:race_insert_source','initial=3dec'));
+    await runConcurrent([
+      "UPSERT read_reader:race_insert SET owned_by=rebase_tenant:default,curve=read_curve:race_insert_source,at=2,operation='latest';",
+      'UPSERT read_point:race_insert_source SET owned_by=rebase_tenant:default,curve=read_curve:race_insert_source,at=1,value=9dec;',
+    ]);
+    // Move a reader and the source member it can select to a new owner while
+    // capture crosses both source fences.
+    await q(create('read_curve:race_move_a','initial=2dec')+create('read_curve:race_move_b','initial=8dec')+
+      create('read_point:race_move_point','curve=read_curve:race_move_a,at=5,value=10dec')+
+      create('read_reader:race_move',"curve=read_curve:race_move_a,at=6,operation='latest'"));
+    await runConcurrent([
+      'UPDATE ONLY read_reader:race_move SET curve=read_curve:race_move_b;',
+      'UPDATE ONLY read_point:race_move_point SET curve=read_curve:race_move_b;',
+    ]);
+    // Competing edits to one consumed source value overlap a slow derived
+    // refresh. A confirmed conflict is replayed as a whole statement.
+    await q(create('read_curve:race_edits','initial=0dec')+
+      create('read_point:race_edit_point','curve=read_curve:race_edits,at=1,value=1dec')+
+      create('read_reader:race_edit_reader',"curve=read_curve:race_edits,at=2,operation='latest'"));
+    await runConcurrent([
+      'UPDATE ONLY read_point:race_edit_point SET value=11dec;',
+      'UPDATE ONLY read_point:race_edit_point SET value=13dec;',
+    ]);
+    await q('UPDATE ONLY read_point:race_edit_point SET value=13dec;');
+    const raceEnd=await snapshot(q); oracle(raceEnd);
+    assert.equal(Number(raceEnd.readers.find(row=>row.id==='read_reader:race_edit_reader').amount),13,
+      'the final competing edit and its dependent reader publish together');
+    console.log(`Observed reads: tenant isolation, permissions, fallback insertion, owner movement, competing edits and ${reapplications} whole-statement conflict reapplications`);
     await q(create('read_feedback:a','peer=NONE')+create('read_feedback:b','peer=read_feedback:a'));
     await reject('UPDATE read_feedback:a SET peer=read_feedback:a;',/REBASE_READ_CYCLE/);
     await reject('UPDATE read_feedback:a SET peer=read_feedback:b;',/REBASE_READ_CYCLE/);
+    await q("CREATE read_loop_source:source SET owned_by=rebase_tenant:default;");
+    await q(create('read_loop_consumer:consumer','source=read_loop_source:source'));
+    oracle(await snapshot(q));
+    await reject(create('read_loop_posting:post',
+      'source=read_loop_source:source,consumer=read_loop_consumer:consumer,at=1'),/REBASE_READ_CYCLE|REBASE_DEPENDENCY_CYCLE/);
     await q(create('read_dates:a','initial=10dec')+create('read_dates:b','initial=20dec'));
     await run(create('read_dated:same',"curve=read_dates:a,at=d'2027-01-06T00:00:00Z'"));
     await run(create('read_quote:first',"curve=read_dates:b,at=d'2027-01-06T00:00:00Z',rate=11dec"));
@@ -303,11 +401,12 @@ async function main() {
     await run('DELETE read_quote:first;');
     await applySchema(q,sql); oracle(await snapshot(q));
     await run('UPDATE read_adjustment:b SET target=13dec;');
-    for (const table of ['read_dated','read_quote','read_dates','read_feedback','read_publication','read_observer','read_reader','read_adjustment','read_point','read_book','read_curve']) {
+    for (const table of ['read_dated','read_quote','read_dates','read_feedback','read_loop_posting','read_loop_consumer',
+      'read_loop_source','read_diamond','read_publication','read_observer','read_reader','read_adjustment','read_point','read_book','read_curve']) {
       for (const id of await q(`SELECT VALUE id FROM ${table} ORDER BY id;`)) await q(`DELETE ${id};`);
     }
     const end = await snapshot(q); assert.equal(end.reads.length,0); assert.equal(end.groups.length,0); assert.equal(end.frames.length,0);
-    assert(end.locks.every(row => !/\[read_(?:curve|point|book|adjustment|reader|observer):/.test(row.id)), 'no fences on deleted application sources');
+    assert(end.locks.every(row => !/\[read_(?:curve|point|book|adjustment|reader|observer|loop_source|loop_consumer|loop_posting):/.test(row.id)), 'no fences on deleted application sources');
     console.log(JSON.stringify({status:'PASS',storage:server.engine,checkpoints,rejections,reapplication:true,cleanup:true}));
   } catch(error) {
     console.error('Failed:',last); console.error('Fixture:',directory);
@@ -318,4 +417,5 @@ async function main() {
     throw error;
   } finally { await server.close(); }
 }
-main().catch(error=>{console.error(error);process.exitCode=1;});
+if (require.main === module) main().catch(error=>{console.error(error);process.exitCode=1;});
+module.exports = { snapshot, instrument, expectedReads, oracle, plusNanosecond };

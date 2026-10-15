@@ -17,7 +17,8 @@ DEFINE FIELD OVERWRITE z_point ON read_point TYPE option<object> COMMENT '@rebas
 
 DEFINE FUNCTION OVERWRITE fn::read_probe::lookup($row: object) {
     IF $row.disabled { RETURN 0dec; };
-    LET $args = IF $row.operation IN ['latest', 'next'] THEN [[$row.at]]
+    LET $args = IF $row.operation IN ['latest', 'next'] AND $row.inclusive THEN [[$row.at], true]
+        ELSE IF $row.operation IN ['latest', 'next'] THEN [[$row.at]]
         ELSE IF $row.operation = 'range' THEN [[$row.at], [$row.until]]
         ELSE IF $row.operation = 'summary' THEN [] ELSE [$row.at] END;
     LET $value = fn::tree::read_value($row.curve, 'z_points', $row.operation, $args, 'measures.value.sum',
@@ -38,6 +39,7 @@ DEFINE FIELD OVERWRITE curve ON read_reader TYPE record<read_curve> REFERENCE ON
 DEFINE FIELD OVERWRITE at ON read_reader TYPE int;
 DEFINE FIELD OVERWRITE until ON read_reader TYPE int DEFAULT 100;
 DEFINE FIELD OVERWRITE operation ON read_reader TYPE string ASSERT $value IN ['latest', 'next', 'before', 'range', 'exact', 'summary'];
+DEFINE FIELD OVERWRITE inclusive ON read_reader TYPE bool DEFAULT false;
 DEFINE FIELD OVERWRITE disabled ON read_reader TYPE bool DEFAULT false;
 DEFINE FIELD OVERWRITE quantity ON read_reader TYPE decimal DEFAULT 1dec;
 DEFINE FIELD OVERWRITE limit ON read_reader TYPE option<decimal>;
@@ -52,6 +54,11 @@ DEFINE TABLE OVERWRITE read_observer SCHEMAFULL;
 DEFINE FIELD OVERWRITE source ON read_observer TYPE record<read_reader> REFERENCE ON DELETE REJECT;
 DEFINE FIELD OVERWRITE amount ON read_observer TYPE decimal VALUE $this.source.amount * 2dec COMMENT '@rebase-derived';
 
+DEFINE TABLE OVERWRITE read_diamond SCHEMAFULL;
+DEFINE FIELD OVERWRITE left ON read_diamond TYPE record<read_reader> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE right ON read_diamond TYPE record<read_reader> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE total ON read_diamond TYPE decimal VALUE $this.left.amount + $this.right.amount COMMENT '@rebase-derived';
+
 DEFINE TABLE OVERWRITE read_publication SCHEMAFULL;
 DEFINE FIELD OVERWRITE curve ON read_publication TYPE record<read_curve> REFERENCE ON DELETE REJECT;
 DEFINE FIELD OVERWRITE published ON read_publication TYPE decimal VALUE fn::record::read_value($this.curve,'published',0dec) COMMENT '@rebase-derived';
@@ -61,6 +68,8 @@ DEFINE FIELD OVERWRITE ranges ON read_publication TYPE array VALUE [
     fn::tree::read_value($this.curve,'z_points','range',[[8],[30]],'measures.value.sum',0dec),
     fn::tree::read_value($this.curve,'z_points','range',[[0],[8]],'measures.value.sum',0dec)
 ] COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE mapped ON read_publication TYPE array VALUE [$this.curve].map(|$curve|
+    fn::tree::read_value($curve,'z_points','summary',[],'measures.other.sum',0dec)) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE selection ON read_publication TYPE object FLEXIBLE VALUE
     fn::tree::read_value($this.curve,'z_points','latest',[[100]],'',{}) COMMENT '@rebase-derived';
 
@@ -101,3 +110,19 @@ DEFINE FIELD OVERWRITE at ON read_dated TYPE datetime;
 DEFINE FIELD OVERWRITE rate ON read_dated TYPE decimal VALUE
     fn::tree::read_value($this.curve,'z_rates','latest',[[$this.at+1ns]],'measures.rate.sum',
         fn::record::read_value($this.curve,'initial',0dec)) COMMENT '@rebase-derived';
+
+DEFINE TABLE OVERWRITE read_loop_source SCHEMAFULL;
+DEFINE FIELD OVERWRITE z_values ON read_loop_source TYPE object COMMENT '@rebase-tree-root @rebase-tree-key int @rebase-tree-duplicates';
+DEFINE TABLE OVERWRITE read_loop_consumer SCHEMAFULL;
+DEFINE FIELD OVERWRITE source ON read_loop_consumer TYPE record<read_loop_source> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE amount ON read_loop_consumer TYPE decimal VALUE 1dec +
+    fn::record::read_value($this.source,'z_values.summary.measures.value.sum',0dec) COMMENT '@rebase-derived';
+DEFINE FUNCTION OVERWRITE fn::read_probe::loop_post($row: object) {
+    RETURN [fn::tree::ordered_member($row.id,'z_loop',$row.source,'z_values',[$row.at],{value:$row.amount},{})];
+} PERMISSIONS NONE;
+DEFINE TABLE OVERWRITE read_loop_posting SCHEMAFULL COMMENT '@rebase-members fn::read_probe::loop_post';
+DEFINE FIELD OVERWRITE source ON read_loop_posting TYPE record<read_loop_source> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE consumer ON read_loop_posting TYPE record<read_loop_consumer> REFERENCE ON DELETE REJECT;
+DEFINE FIELD OVERWRITE at ON read_loop_posting TYPE int;
+DEFINE FIELD OVERWRITE amount ON read_loop_posting TYPE decimal VALUE 1dec + $this.consumer.amount COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE z_loop ON read_loop_posting TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key int @rebase-tree-owner read_loop_source.z_values';
