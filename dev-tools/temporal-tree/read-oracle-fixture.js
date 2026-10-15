@@ -16,10 +16,10 @@ const compareKey = (a, b) => compareValue(a, b);
 const idOf = link => link ? `${link.rid}/${link.slot}` : null;
 const linkFor = (row, slot) => ({ rid: row.id, slot });
 
-function fixture({ sourceId = 'read_curve:probe' } = {}) {
+function fixture({ sourceId = 'read_curve:probe', includeReaders, conditionalFallback = false } = {}) {
   const tenant = 'tenant:probe';
-  const source = { id: sourceId, tenant, initial: 3 };
-  const readers = ['a', 'b', 'c', 'd', 'e', 'f'].map(name => ({ id: `read_reader:${name}`, tenant }));
+  const source = { id: sourceId, tenant, initial: 3, seed: { initial: 3 } };
+  const readers = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(name => ({ id: `read_reader:${name}`, tenant }));
   const sourceRows = [source, ...readers];
   const sourceEntries = [
     { link: { rid: 'read_point:four', slot: 'z_point' }, owner: { rid: source.id, slot: 'z_points' }, key: [4, 'read_point:four', 'z_point'], measures: { value: 3 }, tags: {}, spans: {}, dependent: false },
@@ -33,6 +33,13 @@ function fixture({ sourceId = 'read_curve:probe' } = {}) {
     { reader: 'read_reader:e', phase: 'refresh', source_root: source.id, source_slot: 'z_points', kind: 'range', arguments: [[0], [7]], path: 'measures.value.sum', fallback: 0, observed: 3 },
     { reader: 'read_reader:f', phase: 'refresh', source_root: source.id, source_slot: 'z_points', kind: 'range', arguments: [[7], [10]], path: 'measures.value.sum', fallback: 0, observed: 5 },
   ];
+  if (conditionalFallback) descriptions.push(
+    { reader: 'read_reader:g', phase: 'refresh', source_root: source.id, source_slot: 'z_points', kind: 'latest', arguments: [[0]], path: 'measures.value.sum', fallback: 0, observed: 0 },
+    { reader: 'read_reader:g', phase: 'refresh', source_root: source.id, source_slot: '', kind: 'record', arguments: [], path: 'seed.initial', fallback: '0', observed: 3 },
+  );
+  const selectedDescriptions = includeReaders
+    ? descriptions.filter(read => includeReaders.includes(read.reader.slice(read.reader.indexOf(':') + 1)))
+    : descriptions;
   const data = { rebase_read: [], rebase_read_group: [], rebase_read_frame: [], rebase_read_lock: [
     { id: `rebase_read_lock:[${source.id}]`, tenant, revision: 1 },
   ] };
@@ -40,7 +47,7 @@ function fixture({ sourceId = 'read_curve:probe' } = {}) {
 
   const groupId = read => `rebase_read_group:[${read.source_root}, '${read.source_slot}', '${read.kind}', '${read.kind === 'record' ? read.path.split('.')[0] : 'measures:value'}']`;
   const fingerprint = read => `fingerprint:${read.reader.slice(read.reader.indexOf(':') + 1)}:${read.phase}`;
-  for (const description of descriptions) {
+  for (const description of selectedDescriptions) {
     const channel = description.kind === 'record' ? description.path.split('.')[0] : 'measures:value';
     const group = groupId(description);
     const position = ['latest', 'next', 'range'].includes(description.kind) ? description.arguments[0]
@@ -106,9 +113,9 @@ function fixture({ sourceId = 'read_curve:probe' } = {}) {
   }
 
   const entries = [...sourceEntries];
-  const expectedReads = descriptions;
+  const expectedReads = selectedDescriptions;
   const checkOptions = { rootSpecs, expectedReads };
-  return { data, sourceRows, entries, compare: compareKey, expectedReads, checkOptions, descriptions };
+  return { data, sourceRows, entries, compare: compareKey, expectedReads, checkOptions, descriptions:selectedDescriptions };
 }
 
 function emptyHead() {

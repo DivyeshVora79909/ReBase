@@ -162,6 +162,8 @@ async function main() {
     await h.reject(create('exchange_rate:f_duplicate', `pair=exchange_pair:usd_inr,rate=12dec,effective_at=${at(11)}`), /TREE_DUPLICATE_VALUE|unique|duplicate/i);
     h.pass('future quote non-interference and full rollback for duplicate sparse identities/timestamps');
 
+    const evidenceIndex = process.argv.indexOf('--evidence');
+    const evidence = evidenceIndex < 0 ? undefined : process.argv[evidenceIndex + 1];
     const report = { storage: 'SurrealKV', schemaBytes: Buffer.byteLength(compiled.bundle), checkpoints: h.result.checkpoints,
       runtime: { node: process.version, surreal: execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim() },
       schemaSha256: createHash('sha256').update(compiled.bundle).digest('hex'), snapshottedTables: [...compiled.schema.tables.keys()],
@@ -169,9 +171,8 @@ async function main() {
       structuralChecks: h.result.structuralChecks, valueChecks: h.result.valueChecks,
       rollbacks: h.result.rollbacks, unexpectedFailures: 0, cases: h.result.cases,
       timingMs: { fixtureAndMutations: Date.now() - started }, started: startedAt.toISOString(), finished: new Date().toISOString(),
-      commands: ['npm run build:all-in-accounting', 'npm run check:all-in-accounting',
-        'surreal validate build/all-in-accounting/schema.surql',
-        'npm run probe:accounting-integrity-fx -- --evidence designs/rebase-system/evidence/2026-10-14-integrity-fx.json'],
+      invocation: { executable: process.execPath, script: process.argv[1], args: process.argv.slice(2) },
+      evidenceOutput: evidence ? path.resolve(evidence) : null,
       sourceSha256: Object.fromEntries(['framework/reads.surql','dev-tools/compiler/reads.surql',
         'dev-tools/compiler/temporal.surql','dev-tools/compiler/generators/tree.js',
         'dev-tools/accounting/acceptance.js','dev-tools/accounting/source-oracle.js',
@@ -190,7 +191,6 @@ async function main() {
     report.status = 'PASS';
     report.finished = new Date().toISOString();
     report.elapsedMs = Date.now() - started;
-    const evidence = process.argv.includes('--evidence') ? process.argv[process.argv.indexOf('--evidence') + 1] : undefined;
     if (evidence) {
       fs.mkdirSync(path.dirname(path.resolve(evidence)), { recursive: true });
       fs.writeFileSync(evidence, JSON.stringify(report, null, 2) + '\n');

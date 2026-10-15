@@ -49,18 +49,28 @@ const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
 const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'])].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
 
-function verify(data,slots={},rootSpecs) {
+function evaluateSource(data,slots={}) {
   const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock']);
   const sourceRows = Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
   const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(sourceRows.map(r=>[r.id,r]));
   const get=id=>{assert(byId.has(id),`missing source ${id}`);return byId.get(id);};
-  const all=t=>(data[t]||[]), entries=[], values=new Map(), net=[],states=[],taxAdjustments=[];
+  const all=t=>(data[t]||[]), entries=[], values=new Map(), net=[],states=[],taxAdjustments=[],readInventory=new Map();
   const check=(row,fields)=>{for(const [key,value]of Object.entries(fields))value instanceof D?exact(row[key],value,`${row.id}.${key}`):assert.equal(row[key]??null,value??null,`${row.id}.${key}`);};
   const quant=(amount,resource)=>tb(resource)==='currency'?d(amount).round(get(resource).precision):d(amount);
-  const rate=(pair,from,to,at)=>{
+  const capture=(reader,source_root,source_slot,kind,arguments_,path,fallback,phase='refresh')=>{
+    const description={reader,phase,source_root,source_slot,kind,arguments:arguments_,path,fallback};
+    const identity=JSON.stringify([reader,description.phase,source_root,source_slot,kind,arguments_,path,
+      fallback===undefined?['none']:['value',fallback]]);
+    readInventory.set(identity,description);
+  };
+  const prefix=(reader,owner,slot,measure,at)=>capture(reader,owner,slot,'before',[at],`measures.${measure}.sum`,'0');
+  const rate=(reader,pair,from,to,at)=>{
     if(from===to){assert(!pair,'same-unit conversion has no pair');return d(1);}
     const p=get(pair);assert.equal(p.given_resource,from);assert.equal(p.received_resource,to);assert(through(p.effective_at,at));
+    capture(reader,pair,'','record',[],'effective_at',undefined);
+    capture(reader,pair,'z_rates','latest',[[next(at)]],'measures.rate.sum',undefined);
     const previous=all('exchange_rate').filter(r=>r.pair===pair&&through(r.effective_at,at)).sort((a,b)=>compare([a.effective_at],[b.effective_at])).at(-1);
+    if(!previous)capture(reader,pair,'','record',[],'initial_rate',undefined);
     return d(previous?previous.rate:p.initial_rate);
   };
   const account=id=>{
@@ -81,7 +91,7 @@ function verify(data,slots={},rootSpecs) {
   };
   const post=(row,slot,id,at,e,dependent=false)=>{
     const a=account(id),native={...e,net:sub(e.receivable,e.payable),available:sub(e.real,e.reserved)};
-    const v=scale(native,rate(a.row.valuation_pair,a.resource,a.reporting,at),a.reporting);
+    const v=scale(native,rate(row.id,a.row.valuation_pair,a.resource,a.reporting,at),a.reporting);
     let report;
     if(a.org) report={...eff(0,v.payable,v.receivable),counterparty_real:v.real.neg(),counterparty_receivable:v.payable,counterparty_payable:v.receivable,sales_value:v.sales_value,purchase_value:v.purchase_value,payment_value:v.payment_value};
     else if(['direct_tax_account','indirect_tax_account'].includes(tb(id)))report={...eff(0,v.receivable,v.payable),tax_real:v.real,tax_receivable:v.receivable,tax_payable:v.payable};
@@ -91,7 +101,7 @@ function verify(data,slots={},rootSpecs) {
     add(row,slot+'_subsidiary',a.subsidiary,'z_history',at,report,{currency:a.reporting});
 
     if(a.org){
-      add(row,slot+'_organization',a.org.id,'z_history',at,scale(native,rate(a.row.organization_pair,a.resource,a.org.currency,at),a.org.currency),{currency:a.org.currency,subsidiary:a.subsidiary});
+      add(row,slot+'_organization',a.org.id,'z_history',at,scale(native,rate(row.id,a.row.organization_pair,a.resource,a.org.currency,at),a.org.currency),{currency:a.org.currency,subsidiary:a.subsidiary});
 
     }
   };
@@ -105,9 +115,9 @@ function verify(data,slots={},rootSpecs) {
     if(note){check(row,{adjustment_note:note});add(row,'z_note',note,'z_lines',row.effective_at,{amount,paid,positive:value.cmp(0)>0?1:0,negative:value.cmp(0)<0?1:0},{account:c.currency_account,is_sale:c.is_sale});}
   };
   const taxEff=(sale,amount)=>({...claim(d(amount).mul(sale?-1:1)),credit_available:sale?0:amount,liability_available:sale?amount:0});
-  const trade=(c,at,quantity,amount,org)=>{
+  const trade=(row,c,at,quantity,amount,org)=>{
     const a=account(c.currency_account),currency=org?a.org.currency:a.reporting,pair=org?a.row.organization_pair:a.row.valuation_pair;
-    const value=quant(d(amount).mul(rate(pair,a.resource,currency,at)),currency);
+    const value=quant(d(amount).mul(rate(row.id,pair,a.resource,currency,at)),currency);
     return {sales_quantity:c.is_sale?quantity:0,purchase_quantity:c.is_sale?0:quantity,
       sales_reporting_value:c.is_sale?value:0,purchase_reporting_value:c.is_sale?0:value};
   };
@@ -123,20 +133,22 @@ function verify(data,slots={},rootSpecs) {
   for(const row of [...all('sales_issue'),...all('purchase_issue')]){
     const c=context(row.invoice),amount=d(row.quantity).mul(row.price).round(c.precision),q=d(row.quantity).mul(c.is_sale?-1:1);
     check(row,{amount});commercial(row,c,amount);
-    post(row,'z_stock',row.stock_account,row.effective_at,{...eff(q),...trade(c,row.effective_at,row.quantity,amount,false)});
-    post(row,'z_goods',row.counterparty_stock,row.effective_at,{...eff(q.neg()),...trade(c,row.effective_at,row.quantity,amount,true)});
+    post(row,'z_stock',row.stock_account,row.effective_at,{...eff(q),...trade(row,c,row.effective_at,row.quantity,amount,false)});
+    post(row,'z_goods',row.counterparty_stock,row.effective_at,{...eff(q.neg()),...trade(row,c,row.effective_at,row.quantity,amount,true)});
     const state={quantity:d(row.quantity),price:d(row.price),base:amount};
     add(row,'z_self',row.id,'z_state',row.effective_at,state);add(row,'z_net_self',row.id,'z_net',row.effective_at,{amount});
     states.push({issue:row.id,at:row.effective_at,...state});net.push({issue:row.id,at:row.effective_at,amount});values.set(row.id,{row,c,amount});
   }
   for(const row of all('issue_adjustment').sort((a,b)=>compare([a.effective_at,a.id],[b.effective_at,b.id]))){
+    prefix(row.id,row.source,'z_state','quantity',row.effective_at);
+    prefix(row.id,row.source,'z_state','price',row.effective_at);
     const src=values.get(row.source),source=src.row,c=src.c,prior=states.filter(e=>e.issue===row.source&&before(e.at,row.effective_at));
     const quantity=sum(prior.map(e=>e.quantity)),price=sum(prior.map(e=>e.price)),qd=d(row.quantity_delta),pd=d(row.price_delta);
     const amount=quantity.add(qd).mul(price.add(pd)).round(c.precision).add(quantity.mul(price).round(c.precision).neg());
     check(row,{quantity_before:quantity,price_before:price,amount_delta:amount,source_at:source.effective_at,stock_account:source.stock_account,counterparty_stock:source.counterparty_stock});
     commercial(row,c,amount);const moved=qd.mul(c.is_sale?-1:1);
-    post(row,'z_stock',source.stock_account,row.effective_at,{...eff(moved),...trade(c,row.effective_at,qd,amount,false)});
-    post(row,'z_goods',source.counterparty_stock,row.effective_at,{...eff(moved.neg()),...trade(c,row.effective_at,qd,amount,true)});
+    post(row,'z_stock',source.stock_account,row.effective_at,{...eff(moved),...trade(row,c,row.effective_at,qd,amount,false)});
+    post(row,'z_goods',source.counterparty_stock,row.effective_at,{...eff(moved.neg()),...trade(row,c,row.effective_at,qd,amount,true)});
     add(row,'z_state',source.id,'z_state',row.effective_at,{quantity:qd,price:pd,base:amount},{},false);add(row,'z_order',source.id,'z_adjustments',row.effective_at);add(row,'z_net',source.id,'z_net',row.effective_at,{amount});
     states.push({issue:source.id,at:row.effective_at,quantity:qd,price:pd,base:amount});net.push({issue:source.id,at:row.effective_at,amount});values.set(row.id,{row,c,amount,issue:source.id});
   }
@@ -145,10 +157,17 @@ function verify(data,slots={},rootSpecs) {
     assert(src,`${row.id} original is earlier`);const c=src.c,issue=original?row.source:src.issue;
     let amount,basis,beforeBasis,delta,sourceTax,parent;
     const isNet=original?kind==='issue_net_tax':kind.endsWith('_net_tax');
-    if(original){basis=isNet?sum(net.filter(e=>e.issue===issue&&before(e.at,row.effective_at)).map(e=>e.amount)):sum(states.filter(e=>e.issue===issue&&through(e.at,row.effective_at)).map(e=>e.base));amount=rule(basis,row,c.precision);check(row,{basis,amount});}
+    if(original){
+      prefix(row.id,row.source,isNet?'z_net':'z_state',isNet?'amount':'base',isNet?row.effective_at:next(row.effective_at));
+      basis=isNet?sum(net.filter(e=>e.issue===issue&&before(e.at,row.effective_at)).map(e=>e.amount)):sum(states.filter(e=>e.issue===issue&&through(e.at,row.effective_at)).map(e=>e.base));amount=rule(basis,row,c.precision);check(row,{basis,amount});}
     else {
       sourceTax=src.row;
       if(row.adjustment){parent=values.get(row.adjustment);assert(parent,`${row.id} parent already replayed`);delta=parent.amount;
+        if(kind==='issue_adjustment_tax')prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at);
+        if(kind==='issue_adjustment_net_tax'||kind==='tax_adjustment_net_tax'){
+          prefix(row.id,row.adjustment,'z_taxes','amount',row.effective_at);
+          prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at);
+        }
         if(isNet)delta=delta.add(sum(taxAdjustments.filter(e=>e.parent===row.adjustment&&before(e.at,row.effective_at)).map(e=>e.amount)));
         beforeBasis=src.basis.add(sum(taxAdjustments.filter(e=>e.tax===row.source_tax&&before(e.at,row.effective_at)).map(e=>e.delta)));
         amount=rule(beforeBasis.add(delta),sourceTax,c.precision).add(rule(beforeBasis,sourceTax,c.precision).neg());
@@ -157,7 +176,7 @@ function verify(data,slots={},rootSpecs) {
       check(row,{amount_delta:amount});
     }
     const taxAccount=original?row.tax_account:sourceTax.tax_account,acct=account(taxAccount),pair=original?row.exchange_pair:sourceTax.exchange_pair;
-    const fx=rate(pair,c.currency,acct.resource,row.effective_at),accountAmount=!original&&row.entered_account_delta!=null?d(row.entered_account_delta):quant(amount.mul(fx),acct.resource);
+    const fx=rate(row.id,pair,c.currency,acct.resource,row.effective_at),accountAmount=!original&&row.entered_account_delta!=null?d(row.entered_account_delta):quant(amount.mul(fx),acct.resource);
     check(row,{exchange_rate:fx,[original?'account_amount':'account_delta']:accountAmount});
     commercial(row,c,amount,0,parent?parent.row.adjustment_note:row.adjustment_note);post(row,'z_tax',taxAccount,row.effective_at,taxEff(c.is_sale,accountAmount));
     if(original){
@@ -170,18 +189,18 @@ function verify(data,slots={},rootSpecs) {
     net.push({issue,at:row.effective_at,amount});values.set(row.id,{row,c,amount,accountAmount,basis,issue});
   }
   for(const row of all('invoice_settlement')){
-    const c=context(row.invoice),cash=d(row.amount),native=account(row.treasury).resource,fx=rate(row.exchange_pair,native,c.currency,row.effective_at),amount=quant(cash.mul(fx),c.currency);
+    const c=context(row.invoice),cash=d(row.amount),native=account(row.treasury).resource,fx=rate(row.id,row.exchange_pair,native,c.currency,row.effective_at),amount=quant(cash.mul(fx),c.currency);
     check(row,{exchange_rate:fx,invoice_amount:amount});commercial(row,c,0,amount);post(row,'z_cash',row.treasury,row.effective_at,eff(cash.mul(c.is_sale?1:-1)));
     add(row,'z_self',row.id,'z_capacity',row.effective_at,{cash,invoice_amount:amount});values.set(row.id,{row,c,amount,cash});
   }
   for(const row of all('payment_adjustment')){
-    const source=values.get(row.source),c=source.c,cash=d(row.amount_delta),a=account(source.row.treasury),fx=rate(source.row.exchange_pair,a.resource,c.currency,row.effective_at);
+    const source=values.get(row.source),c=source.c,cash=d(row.amount_delta),a=account(source.row.treasury),fx=rate(row.id,source.row.exchange_pair,a.resource,c.currency,row.effective_at);
     const amount=row.entered_invoice_delta==null?quant(cash.mul(fx),c.currency):d(row.entered_invoice_delta);
     check(row,{exchange_rate:fx,invoice_delta:amount,treasury:source.row.treasury,exchange_pair:source.row.exchange_pair});commercial(row,c,0,amount);
     post(row,'z_cash',source.row.treasury,row.effective_at,eff(cash.mul(c.is_sale?1:-1)));add(row,'z_source',row.source,'z_capacity',row.effective_at,{cash,invoice_amount:amount});values.set(row.id,{row,c,amount,cash});
   }
   for(const row of all('payment_withholding')){
-    const source=values.get(row.source),c=source.c,a=account(row.tax_account),fx=rate(row.exchange_pair,c.currency,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
+    const source=values.get(row.source),c=source.c,a=account(row.tax_account),fx=rate(row.id,row.exchange_pair,c.currency,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
     check(row,{exchange_rate:fx,account_amount:amount});commercial(row,c,0,row.amount);post(row,'z_tax',row.tax_account,row.effective_at,taxEff(!c.is_sale,amount));
   }
   for(const row of all('account_claim')){
@@ -190,20 +209,20 @@ function verify(data,slots={},rootSpecs) {
   }
   for(const row of all('claim_settlement')){
     const source=get(row.source),a=account(source.account),paid=account(row.paid_account),r=source.claim_kind==='receivable',receive=a.org?!r:r;
-    const fx=rate(row.exchange_pair,paid.resource,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
+    const fx=rate(row.id,row.exchange_pair,paid.resource,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
     check(row,{exchange_rate:fx,account_amount:amount,account:source.account,resource:a.resource,paid_resource:paid.resource});
     post(row,'z_paid',row.paid_account,row.effective_at,eff(d(row.amount).mul(receive?1:-1)));
     post(row,'z_account',source.account,row.effective_at,{...claim(amount.mul(r?-1:1)),real:amount.mul(receive?-1:1),credit_available:r?amount.neg():0,liability_available:r?0:amount.neg()});
     add(row,'z_source',row.source,'z_capacity',row.effective_at,{remaining:amount.neg()});
   }
   for(const kind of ['tax_settlement','tax_refund','tax_deposit'])for(const row of all(kind)){
-    const a=account(row.tax_account),cash=account(row.treasury),fx=rate(row.exchange_pair,cash.resource,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
+    const a=account(row.tax_account),cash=account(row.treasury),fx=rate(row.id,row.exchange_pair,cash.resource,a.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),a.resource);
     const refund=kind==='tax_refund',deposit=kind==='tax_deposit',signed=amount.mul(refund?-1:1);
     check(row,{exchange_rate:fx,account_amount:amount});post(row,'z_cash',row.treasury,row.effective_at,eff(d(row.amount).mul(refund?1:-1)));
     post(row,'z_tax',row.tax_account,row.effective_at,{...claim(signed),real:signed,credit_available:deposit?amount:refund?amount.neg():0,liability_available:!refund&&!deposit?amount.neg():0});
   }
   for(const row of all('tax_offset')){
-    const a=account(row.credit_account),b=account(row.liability_account),fx=rate(row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),b.resource);
+    const a=account(row.credit_account),b=account(row.liability_account),fx=rate(row.id,row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.amount).mul(fx),b.resource);
     check(row,{exchange_rate:fx,liability_amount:amount});post(row,'z_credit',row.credit_account,row.effective_at,{...claim(d(row.amount).neg()),credit_available:d(row.amount).neg()});post(row,'z_liability',row.liability_account,row.effective_at,{...claim(amount),liability_available:amount.neg()});
   }
   for(const kind of ['production_input','production_output','production_cost','production_capacity'])for(const row of all(kind)){
@@ -220,7 +239,7 @@ function verify(data,slots={},rootSpecs) {
     }
   }
   for(const row of all('resource_exchange')){
-    const a=account(row.from_account),b=account(row.to_account),fx=rate(row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.from_amount).mul(fx),b.resource);
+    const a=account(row.from_account),b=account(row.to_account),fx=rate(row.id,row.exchange_pair,a.resource,b.resource,row.effective_at),amount=quant(d(row.from_amount).mul(fx),b.resource);
     check(row,{exchange_rate:fx,to_amount:amount,from_resource:a.resource,to_resource:b.resource});post(row,'z_from',row.from_account,row.effective_at,eff(d(row.from_amount).neg()));post(row,'z_to',row.to_account,row.effective_at,eff(amount));
     add(row,'z_output',row.production_output,'z_capacity',row.effective_at,{quantity:d(row.from_amount).neg()});add(row,'z_observation',row.exchange_pair,'z_observations',row.effective_at,{given:row.from_amount,received:amount});values.set(row.id,{row,amount});
   }
@@ -237,14 +256,30 @@ function verify(data,slots={},rootSpecs) {
     const currency=account(cash).resource,precision=get(currency).precision;
     const amount=rule(basis,{rate:row.fee_rate,lower_bound:row.fee_lower_bound,upper_bound:row.fee_upper_bound},precision);
     const tax=rule(amount,{rate:row.fee_tax_rate,lower_bound:row.fee_tax_lower_bound,upper_bound:row.fee_tax_upper_bound},precision),total=amount.add(tax);
-    const fx=rate(row.fee_exchange_pair,currency,account(row.fee_account).resource,at);
+    const fx=rate(row.id,row.fee_exchange_pair,currency,account(row.fee_account).resource,at);
     const expense=quant(amount.add(row.fee_tax_creditable?0:tax).mul(fx),account(row.fee_account).resource);
-    const credit=row.fee_tax_creditable?quant(tax.mul(rate(row.fee_tax_exchange_pair,currency,account(row.fee_tax_account).resource,at)),account(row.fee_tax_account).resource):d(0);
+    const credit=row.fee_tax_creditable?quant(tax.mul(rate(row.id,row.fee_tax_exchange_pair,currency,account(row.fee_tax_account).resource,at)),account(row.fee_tax_account).resource):d(0);
     check(row,{fee_amount:amount,fee_tax_amount:tax,fee_account_amount:expense,fee_credit_amount:credit});
     post(row,'z_fee_cash',cash,at,{...eff(total.neg()),reserved:kind==='production_cost'?total.neg():0,fees:total});post(row,'z_fee_account',row.fee_account,at,eff(expense));
     if(row.fee_tax_creditable)post(row,'z_fee_tax',row.fee_tax_account,at,{...eff(credit,credit),credit_available:credit});
     if(kind==='production_cost')post(row,'z_fee_start',cash,get(row.production).starts_at,{...eff(),reserved:total});
 
+  }
+  // Validators execute independently from member refreshes. Derive their
+  // explicit read calls from the source-backed posting entries and parent rows.
+  for(const row of [...all('sales_invoice'),...all('purchase_invoice')]){
+    const contributions=entries.filter(entry=>entry.owner.rid===row.id&&entry.owner.slot==='z_history');
+    if(!contributions.length)continue;
+    const boundary=next(row.invoice_date);
+    capture(row.id,row.id,'z_history','before',[boundary],'measures.balance.sum','0','validate');
+    const last=contributions.map(entry=>entry.key[0]).sort((a,b)=>compare([a],[b])).at(-1);
+    if(instant(last)>=instant(boundary))
+      capture(row.id,row.id,'z_history','range',[[boundary],[next(last)]],'measures.balance.instant_min','0','validate');
+  }
+  for(const row of all('production_input')){
+    const stock=get(row.stock_account),production=get(row.production),start=production.starts_at;
+    capture(row.id,stock.id,'z_history','before',[start],'measures.available.sum','0','validate');
+    capture(row.id,stock.id,'z_gross','range',[[start],[next(start)]],'measures.quantity.sum','0','validate');
   }
   // Schema declaration order chooses coincident-slot representatives. Arithmetic
   // and expected memberships above use only source facts; this is identity metadata.
@@ -257,10 +292,22 @@ function verify(data,slots={},rootSpecs) {
     for(const [k,v]of Object.entries(e.tags)){if(k in old.tags)assert.deepEqual(old.tags[k],v);old.tags[k]=v;}
     old.dependent ||=e.dependent;
   }
-  const treeRows=Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
-  tree.verify(treeRows,treeRows,[...grouped.values()],compare);
-  require('../temporal-tree/read-oracle').verifyReads(data,sourceRows,[...grouped.values()],compare,{rootSpecs});
+  const groupedEntries=[...grouped.values()];
+  return { data, sourceRows, groupedEntries,
+    expectedReads:[...readInventory.values()] };
+}
+
+function expectedReadInventory(data,slots={}) {
+  return evaluateSource(data,slots).expectedReads;
+}
+
+function verify(data,slots={},rootSpecs) {
+  const model=evaluateSource(data,slots);
+  const treeRows=Object.entries(data).filter(([table])=>!['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'].includes(table)).flatMap(([,rows])=>rows||[]);
+  tree.verify(treeRows,treeRows,model.groupedEntries,compare);
+  require('../temporal-tree/read-oracle').verifyReads(data,model.sourceRows,model.groupedEntries,compare,
+    {rootSpecs,expectedReads:model.expectedReads});
   return data;
 }
 
-module.exports={tables,snapshot,verify,D,exact,compare};
+module.exports={tables,snapshot,verify,expectedReadInventory,D,exact,compare};

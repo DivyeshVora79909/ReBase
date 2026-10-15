@@ -31,6 +31,14 @@ function rootNode(value, kind) {
   return value.data.rebase_read.find(row => row.id === link.rid)[link.slot];
 }
 
+function pruneEmptyReadOwners(value) {
+  const reads = value.data.rebase_read;
+  const groups = new Set(reads.map(item => item.group));
+  const frames = new Set(reads.map(item => `rebase_read_frame:[${item.reader}, '${item.phase}']`));
+  value.data.rebase_read_group = value.data.rebase_read_group.filter(item => groups.has(item.id));
+  value.data.rebase_read_frame = value.data.rebase_read_frame.filter(item => frames.has(item.id));
+}
+
 test('private read checker accepts a complete, independently described point and interval fixture', () => {
   const value = fixture();
   assert.deepEqual(verifyReads(value.data, value.sourceRows, value.entries, value.compare, value.checkOptions),
@@ -108,4 +116,39 @@ test('source fences accept nested record IDs and reject a forged enclosing ident
   assert.deepEqual(run(value), { reads: 6, groups: 3, frames: 6 });
   value.data.rebase_read_lock[0].id += ']';
   assert.throws(() => run(value), /fence belongs to a live source row/);
+});
+
+test('independent inventory detects a missing reader, group, conditional fallback, and validate-only call', () => {
+  const cases = [
+    ['one reader and its frame', fixture({ includeReaders: ['a', 'c'] }), value => {
+      value.data.rebase_read = value.data.rebase_read.filter(item => item.reader !== 'read_reader:a');
+      value.data.rebase_read_frame = value.data.rebase_read_frame.filter(item => !item.id.includes('read_reader:a'));
+      pruneEmptyReadOwners(value);
+    }],
+    ['one complete group', fixture(), value => {
+      const removed = new Set(value.data.rebase_read.filter(item => item.kind === 'range').map(item => item.id));
+      value.data.rebase_read = value.data.rebase_read.filter(item => !removed.has(item.id));
+      pruneEmptyReadOwners(value);
+    }],
+    ['conditional initial-value fallback call', fixture({ conditionalFallback: true }), value => {
+      value.data.rebase_read = value.data.rebase_read.filter(item => !(item.reader === 'read_reader:g'
+        && item.kind === 'record' && item.path === 'seed.initial'));
+      pruneEmptyReadOwners(value);
+    }],
+    ['validate-only call', fixture({ includeReaders: ['d'] }), value => {
+      value.data.rebase_read = value.data.rebase_read.filter(item => item.phase !== 'validate');
+      pruneEmptyReadOwners(value);
+    }],
+  ];
+  for (const [name, value, corrupt] of cases) {
+    assert.deepEqual(run(value), { reads: value.expectedReads.length, groups: value.data.rebase_read_group.length,
+      frames: value.data.rebase_read_frame.length }, `${name}: valid control`);
+    corrupt(value);
+    assert.throws(() => run(value), /exact logical read coverage/, name);
+  }
+});
+
+test('an empty read inventory is a valid explicit zero-read control', () => {
+  const value = fixture({ includeReaders: [] });
+  assert.deepEqual(run(value), { reads: 0, groups: 0, frames: 0 });
 });
