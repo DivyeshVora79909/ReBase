@@ -56,6 +56,7 @@
     "probe:reader-index": "node dev-tools/checks/reader-index-probe.js",
     "probe:accounting-extensions": "node dev-tools/accounting/extension-probe.js",
     "probe:accounting-integrity-fx": "node dev-tools/accounting/integrity-fx-probe.js",
+    "probe:accounting-capture-regression": "node dev-tools/accounting/capture-repro-probe.js",
     "probe:observed-reads": "node dev-tools/temporal-tree/observed-probe.js",
     "probe:observed-reads-seeded": "node dev-tools/temporal-tree/observed-history-probe.js"
   },
