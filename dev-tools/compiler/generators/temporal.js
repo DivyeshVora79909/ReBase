@@ -211,7 +211,7 @@ RETURN [];
   for (const table of tables) {
     if (table.validate) sql += `IF record::tb($row.id) = '${table.name}' { ${observed.rewrite(`${table.validate}($row)`, '$scope')}; };\n`;
   }
-  sql += 'fn::reads::end($scope); } PERMISSIONS NONE;\n';
+  sql += 'fn::reads::flush($scope); fn::reads::end($scope); } PERMISSIONS NONE;\n';
   const recipes = tables.filter(table => table.requiredOutputs);
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::has_required_outputs($rid: record) {\n';
   sql += `RETURN record::tb($rid) IN ${recipes.length ? list(recipes.map(table => table.name)) : '[]'};\n} PERMISSIONS NONE;\n`;

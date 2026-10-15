@@ -227,6 +227,7 @@ function verifyReads(data, sourceRows, entries, compare, options = {}) {
   const reads = data.rebase_read || [];
   const groups = data.rebase_read_group || [];
   const frames = data.rebase_read_frame || [];
+  assert.deepEqual(data.rebase_read_stage || [], [], 'no staged logical reads after a completed transaction');
   const byId = new Map(sourceRows.map(row => [row.id, row]));
   assert.equal(byId.size, sourceRows.length, 'source rows have unique record identities');
   const readById = new Map(reads.map(read => [read.id, read]));

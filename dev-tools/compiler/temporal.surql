@@ -768,6 +768,7 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
     IF $current = NONE { fn::reads::forget($rid); };
     IF $current != NONE {
         LET $patch = fn::rebase::derive($current, $scope);
+        fn::reads::flush($scope);
         IF object::len($patch) > 0 AND object::entries($patch).any(|$p| $current[$p[0]] != $p[1]) {
             UPDATE $rid PATCH object::entries($patch).filter(|$p| $current[$p[0]] != $p[1]).map(|$p| {
                 RETURN IF $p[1] = NONE THEN { op: 'remove', path: '/' + $p[0] }
@@ -781,9 +782,13 @@ DEFINE FUNCTION OVERWRITE fn::rebase::refresh_path($rid: record, $before: option
         LET $reachable = array::flatten($sources.{..+collect}.rebase_dependency_sources);
         IF $rid IN $sources OR $rid IN $reachable { THROW 'REBASE_DEPENDENCY_CYCLE'; };
     };
-    LET $own = fn::tree::sync($rid, $slot_before, fn::rebase::captured_members($after, $scope), fn::rebase::slots($rid));
+    LET $members = fn::rebase::captured_members($after, $scope);
+    fn::reads::flush($scope);
+    LET $own = fn::tree::sync($rid, $slot_before, $members, fn::rebase::slots($rid));
+    LET $outputs = IF fn::rebase::has_required_outputs($rid) THEN fn::rebase::captured_outputs($after, $scope) ELSE [] END;
+    fn::reads::flush($scope);
     LET $required = IF fn::rebase::has_required_outputs($rid) THEN
-        fn::rebase::sync_required_outputs($rid, fn::rebase::captured_outputs($after, $scope))
+        fn::rebase::sync_required_outputs($rid, $outputs)
         ELSE { owners: [], records: [] } END;
     IF $after != NONE { fn::reads::end($scope); };
     LET $reads = fn::reads::changed($before, $after, $own);

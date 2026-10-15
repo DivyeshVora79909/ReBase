@@ -1,100 +1,71 @@
-# Integrity repair: lead entry point, October 15
+# Integrity repair handoff — October 15, 2026
 
-Start here, then read only the packet being executed. This supersedes the October
-14 completion claim. **The engine is not fully accepted.**
+The named D0–D4 integrity gates pass on the staged-capture implementation. This
+is bounded native-engine acceptance, not a claim that every possible history is
+bug-free. The final command list, runtime, source fingerprints and compiled
+accounting bundle hash are in the [acceptance manifest](../evidence/2026-10-15-staged-capture-acceptance.json).
 
-| Packet | Status | Commit / instructions |
+| Packet | Result | Main implementation |
 | --- | --- | --- |
-| C: local field ordering | Bounded fix complete; unsupported row flows reject compilation | 95d7197, [compiler.md](compiler.md) |
-| A: oracle/accounting | Root threads and nested source IDs fixed; expected accounting reads and exact aggregates OPEN | 66e87d0, [accounting.md](accounting.md) |
-| B: incremental index repair | OPEN; unsafe simplification reverted; failure preserved | 33ad46f, [runtime.md](runtime.md) |
-| D: broader verification | OPEN | [verification.md](verification.md) |
+| C: local field ordering | Complete | `95d7197` |
+| A: independent accounting inventory and exact tree math | Complete | `66846dd`, `704eb66` |
+| B: incremental read-tree repair | Complete for the bounded gates | `6b7d3c1`, `f705eac`, plus the staged-capture repair described in [runtime.md](runtime.md) |
+| D: corruption controls, observed histories and acceptance | Complete for the named gates | `631c92c`, `fccd847`, final acceptance manifest |
 
-The compiler preserves literal argument positions and rejects whole-row aliases
-and wrappers it cannot analyse. Direct declared helpers and explicit scalar
-arguments retain automatic ordering. The oracle now checks root neighbours and
-accepts nested source record IDs. Accounting equations were not changed.
+The prior full-group repair candidate was rejected after it committed a stale
+subscriber subtree. The retained B2 implementation repairs memberships
+incrementally; the 64-reader and 48-range structural cost checks now pass.
 
-Production retains the d267dc2 tree/read runtime. Complete settlement removal
-passed smaller/general probes but committed a stale subtree at the second sales
-issue in the FX fixture. It was reverted. The experimental patch is not a fix.
+A later full accounting run exposed a second committed defect while creating a
+purchase issue adjustment after its issue, original tax and advance settlement.
+The full history had a broken `usd_inr` read-tree parent link. A purchase-only
+reduction retained a dirty marker on a `widget_inr` latest-rate group. The full
+before/after snapshots and compiled-bundle identity are preserved in the
+[full divergence](../evidence/2026-10-15-capture-order-full-first-divergence.json)
+and [minimized divergence](../evidence/2026-10-15-capture-order-first-divergence.json).
 
-Fresh current-runtime FX acceptance passed **76 checkpoints, two full rollback
-checks and cleanup**. The new cost diagnostic intentionally fails at **11 readers:
-16 summary pulls exceed its allowance of 15**. Both correctness and complexity
-must pass; neither result cancels the other.
+The runtime now buffers logical read descriptors during formula evaluation, then
+flushes one registration at a time at explicit refresh and validation
+boundaries. Refresh reads flush before derived source updates, member repair and
+managed-output publication. The independent expected-read inventory remains
+unchanged. A dedicated [native regression](../../../dev-tools/accounting/capture-repro-probe.js)
+and the full accounting run pass this history; no staging rows survive a
+completed statement or cleanup. The differential isolates the unsafe behavior
+to registration mutations interleaving with captured formula evaluation, though
+the exact internal SurrealDB scheduling sequence was not directly instrumented.
 
-## Aim and scope
+## Verification results
 
-The user wants a declarative engine: write formulas, typed reference relationships,
-memberships and constraints once, then automatically maintain supported logical
-dependencies in the source transaction. Latest reads watch a value and the gap
-where a new predecessor can appear. Prefix reads depend on earlier aggregates.
-Branches, dates, owners, empty results, fallbacks, deletes and rotations must work.
+- Full accounting acceptance: 103 source-oracle checkpoints, 51 full rollback
+  snapshots, populated-schema reapplication and child-first cleanup.
+- Multi-currency integrity history: 76 per-write checkpoints, two exact rollback
+  snapshots and cleanup; includes dated FX, account currencies, adjustments,
+  taxes and tax-on-tax.
+- Minimized purchase capture regression: seven structural/source checkpoints,
+  exact amounts and empty staging after cleanup.
+- Observed-read suite: 50 checkpoints, eight rejections, concurrent registration
+  and source-write conflict reapplication.
+- Seeded observed histories: seeds `20261014`, `7`, and `1031`; 216 checkpoints,
+  489 candidate reads and 196 derived refreshes.
+- Bounded cost gate: 64-reader insert needed six summary pulls; 48-range insert
+  needed seven; 16 matching ranges visited 38 interval nodes and refreshed 16
+  readers. Both group and capture-scope selections avoided table scans.
+- Typed trees: 252 mutation checkpoints, 1,570 ordered reads and 108 rollback
+  snapshots. Boundary algebra: 4,665 timestamp/delta sequences and 777
+  missing-measure sequences. Required-output and causal-output cycle/rollback
+  checks passed.
+- Both accounting and all-in-one builds, freshness checks, SurrealQL validation,
+  compiler and architecture checks passed. The developer suite passed 48 tests.
 
-Preserve sparse accounting dimensions, native quantities, dated FX, nonnegative
-opposing receivable/payable entries, combined adjustments and chronological taxes.
-Invoices validate participating facts without reposting children or enforcing
-compliance workflows.
+## Scope and limits
 
-Breaking changes are permitted; the project is undeployed. Prefer one correct
-common implementation with a documented supported language. Do not restore
-authored impact rules, add accounting-specific repair hooks or move synchronous
-closure into gateway background jobs. Frontend, new business modules, rootless
-trees and storage-engine replacement are outside this repair.
+The checks use fresh disposable SurrealKV databases on one local SurrealDB 3.3.0
+server with Node v24.19.0. They do not measure production throughput, prove
+multi-node behavior, test a live application database, or prove absence of all
+bugs. Prefix edits may refresh a real suffix, candidate comparisons still query
+source values, and shared source fences can contend.
 
-## Assessment of the lower-model changes
-
-d267dc2 added 1,690 lines and removed 262. Additions: 208 compiler/runtime,
-944 tests/tooling, 538 docs/evidence. Line count alone does not establish fragility.
-Preserve useful fixes and fixtures. Concrete problems were:
-
-- Helper analysis accepted expressions that silently committed old derived values.
-- Whole-group settlement made ordinary subscription growth cost O(N²) structural
-  work and used two full-table scans.
-- The private oracle skipped root neighbour links.
-- Accounting validated surviving reads, without proving required reads existed.
-- Exact derived-amount arithmetic still fed Number-based, tolerant tree checks.
-- Seeded typed-tree coverage was not a seeded logical-dependency state campaign.
-
-Some completion claims exceeded their evidence. Inspect code, Git and negative
-controls; neither trust reports blindly nor revert the entire commit indiscriminately.
-
-## Next-model execution order
-
-1. Read runtime.md and reproduce B1 in a disposable worktree. Preserve the first
-   failing native state and isolate causality before choosing a redesign.
-2. Implement A1's independent accounting call inventory and A2's exact tree values
-   as separate commits. They can be developed independently of B1.
-3. Implement the smallest common B2 correction justified by that evidence. Both
-   the accounting history and red cost gate must pass. Staged capture is a
-   conditional alternative, not an instruction to build a new subsystem.
-4. Complete D's checker controls, logical histories, closure/concurrency tests and
-   final integration. Record actual source and compiled-bundle hashes.
-5. Update status honestly. A healthy final snapshot cannot erase an earlier failure.
-
-The lead completed the bounded compiler/oracle fixes. Remaining runtime diagnosis
-and independent model work exceed the requested short-fix scope. Keep commits per
-packet; use small reproducers while editing, then one final slow acceptance.
-If several focused experiments cannot isolate a cause, hand back the first
-divergence and a narrow question instead of adding a speculative repair layer.
-
-## Evidence and continuity
-
-- [Current FX result](../evidence/2026-10-15-lead-fx.json)
-- [Lead verification manifest](../evidence/2026-10-15-lead-review.json)
-- [Failed complete removal](../evidence/2026-10-15-remove-settlement-failure.txt)
-- [Experimental patch](../evidence/2026-10-15-remove-settlement-experiment.patch)
-- [Flag-retaining control](../evidence/2026-10-15-flag-only-control.txt)
-- [Current cost failure](../evidence/2026-10-15-current-runtime-cost.txt)
-- [Original helper error](../evidence/2026-10-15-original-helper-failure.txt)
-- [Historical user context and original stress-report interpretation](../integrity-repair-handoff-2026-10-14.md)
-
-The external /workspace/accounting-lab campaign is unavailable here. Maintained
-fixtures and committed experiments are local executable evidence; do not claim
-the external campaign was rerun. Full consolidated accounting was not rerun in
-this lead turn. A fresh FX pass does not replace A or D.
-
-Commits are local. No application database, .env, remote service or deployment was
-changed. Check Git status and preserve intervening work. Do not infer remote
-publication authorization from an older agent's handoff prose.
+Preserve sparse currency/resource dimensions, native stock quantities,
+event-time FX, opposing receivable/payable entries, combined adjustment math and
+chronological tax order. Invoices validate participating postings without
+reposting their children. No accounting equations changed in this repair.

@@ -42,7 +42,8 @@ DEFINE FUNCTION OVERWRITE fn::reads::begin($reader: record, $phase: string) {
     LET $frame = type::record('rebase_read_frame', [$reader, $phase]);
     LET $version = ((SELECT VALUE version FROM ONLY $frame) ?? 0) + 1;
     -- A frame is persisted only if this evaluation actually executes a read.
-    RETURN { reader: $reader, tenant: (SELECT VALUE tenant FROM ONLY $reader), phase: $phase, version: $version, active: true };
+    RETURN { reader: $reader, tenant: (SELECT VALUE tenant FROM ONLY $reader), phase: $phase, version: $version,
+        token: <string>rand::uuid(), active: true };
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::reads::fence($source: record, $tenant: record) {
@@ -79,33 +80,51 @@ DEFINE FUNCTION OVERWRITE fn::reads::remember($scope: object, $source: record, $
         ELSE IF $kind IN ['before', 'exact'] THEN $arguments ELSE [] END;
     LET $fingerprint = crypto::sha256(<string>[$kind, $arguments, $path, $fallback]);
     LET $id = type::record('rebase_read', [$group, $position, <string>$scope.reader, $scope.phase, $fingerprint]);
-    LET $inserted = INSERT IGNORE INTO rebase_read {
-        id: $id, tenant: $tenant, reader: $scope.reader, reader_identity: <string>$scope.reader,
-        phase: $scope.phase, version: $scope.version,
-        source_root: $source, source_slot: $slot, kind: $kind, channel: $channel,
-        arguments: $arguments, path: $path, fallback: { value: $fallback }, observed: { value: $value }, group: $group, position: $position
-    } RETURN AFTER;
-    IF array::len($inserted) > 0 {
-        fn::reads::fence($source, $tenant);
-        UPSERT $group SET tenant = $tenant, source_root = $source, source_slot = $slot,
-            kind = $kind, channel = $channel RETURN NONE;
+    LET $stage = type::record('rebase_read_stage', [$scope.token, $id]);
+    UPSERT $stage CONTENT {
+        scope: $scope.token, reader: $scope.reader, phase: $scope.phase, version: $scope.version, read_id: $id,
+        tenant: $tenant, source_root: $source, source_slot: $slot, kind: $kind, channel: $channel,
+        arguments: $arguments, path: $path, fallback: { value: $fallback }, observed: { value: $value },
+        group: $group, position: $position
+    } RETURN NONE;
+    RETURN $value;
+} PERMISSIONS NONE;
+
+-- Formula expressions can evaluate several captured reads as operands. Buffer
+-- their logical identities, then repair one subscription at a time after the
+-- complete expression has returned and before its source/output is published.
+DEFINE FUNCTION OVERWRITE fn::reads::flush($scope: object) {
+    IF !$scope.active { RETURN NONE; };
+    LET $staged = SELECT * FROM rebase_read_stage WHERE scope = $scope.token ORDER BY read_id;
+    IF array::len($staged) = 0 { RETURN NONE; };
+    FOR $stage IN $staged {
+        LET $id = $stage.read_id;
+        LET $inserted = INSERT IGNORE INTO rebase_read {
+            id: $id, tenant: $stage.tenant, reader: $stage.reader, reader_identity: <string>$stage.reader,
+            phase: $stage.phase, version: $stage.version, source_root: $stage.source_root,
+            source_slot: $stage.source_slot, kind: $stage.kind, channel: $stage.channel,
+            arguments: $stage.arguments, path: $stage.path, fallback: $stage.fallback,
+            observed: $stage.observed, group: $stage.group, position: $stage.position
+        } RETURN AFTER;
+        IF array::len($inserted) > 0 {
+            fn::reads::fence($stage.source_root, $stage.tenant);
+            UPSERT $stage.group SET tenant = $stage.tenant, source_root = $stage.source_root,
+                source_slot = $stage.source_slot, kind = $stage.kind, channel = $stage.channel RETURN NONE;
+            LET $row = SELECT * FROM ONLY $id;
+            LET $work = fn::tree::sync($id, NONE, fn::reads::span_members($row), ['z_position', 'z_interval']);
+            FOR $owner IN $work.owners {
+                fn::tree::publish($owner);
+                fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
+            };
+        } ELSE {
+            LET $current = SELECT * FROM ONLY $id;
+            IF $current.version != $stage.version OR $current.observed.value != $stage.observed.value {
+                UPDATE $id SET version = $stage.version, observed = $stage.observed RETURN NONE;
+            };
+        };
+        DELETE $stage.id RETURN NONE;
     };
     UPSERT type::record('rebase_read_frame', [$scope.reader, $scope.phase]) SET version = $scope.version RETURN NONE;
-    IF array::len($inserted) = 0 {
-        LET $current = SELECT * FROM ONLY $id;
-        IF $current.version != $scope.version OR $current.observed.value != $value {
-            UPDATE $id SET version = $scope.version, observed = { value: $value } RETURN NONE;
-        };
-    };
-    IF array::len($inserted) > 0 {
-        LET $row = SELECT * FROM ONLY $id;
-        LET $work = fn::tree::sync($id, NONE, fn::reads::span_members($row), ['z_position', 'z_interval']);
-        FOR $owner IN $work.owners {
-            fn::tree::publish($owner);
-            fn::tree::patch($owner, { dirty: NONE, cursor: NONE, refreshing: false });
-        };
-    };
-    RETURN $value;
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::reads::tree($scope: object, $owner: record, $slot: string, $operation: string,
@@ -163,6 +182,9 @@ DEFINE FUNCTION OVERWRITE fn::reads::remove($read: object) {
 
 DEFINE FUNCTION OVERWRITE fn::reads::end($scope: object) {
     IF !$scope.active { RETURN NONE; };
+    IF array::len(SELECT VALUE id FROM rebase_read_stage WHERE scope = $scope.token LIMIT 1) > 0 {
+        THROW 'REBASE_READ_UNFLUSHED';
+    };
     LET $stale = SELECT * FROM rebase_read WHERE reader = $scope.reader AND phase = $scope.phase AND version != $scope.version;
     FOR $read IN $stale { fn::reads::remove($read); };
     IF array::len((SELECT VALUE id FROM rebase_read WHERE reader = $scope.reader AND phase = $scope.phase LIMIT 1)) = 0 {

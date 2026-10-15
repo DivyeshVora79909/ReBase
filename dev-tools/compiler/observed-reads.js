@@ -8,7 +8,7 @@ const INTRINSICS = new Map([
   ['fn::tree::before', 'fn::reads::before'],
   ['fn::tree::range', 'fn::reads::range'],
 ]);
-const PRIVATE_TABLES = new Set(['rebase_read', 'rebase_read_frame', 'rebase_read_group', 'rebase_read_lock']);
+const PRIVATE_TABLES = new Set(['rebase_read', 'rebase_read_frame', 'rebase_read_group', 'rebase_read_lock', 'rebase_read_stage']);
 
 function closeDelimiter(code, start, opening, closing) {
   let depth = 0;

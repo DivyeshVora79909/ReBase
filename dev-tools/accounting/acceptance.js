@@ -1,6 +1,9 @@
 'use strict';
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { loadMaterials } = require('../compiler/materials');
 const { generateBundle } = require('../compiler/pipeline');
 const { snapshot, verify, exact, tables } = require('./source-oracle');
@@ -31,8 +34,28 @@ function acceptance(q, compiled) {
   };
   const mutate = async (sql, actor = q) => {
     result.last = sql;
+    const evidencePath = process.env.REBASE_ACCOUNTING_EVIDENCE;
+    const before = evidencePath ? await snapshotAll(q) : null;
     await actor(sql);
-    const data = await check();
+    let data;
+    try { data = await check(); }
+    catch (error) {
+      if (evidencePath) {
+        const after = await snapshotAll(q).catch(snapshotError => ({ snapshotError: snapshotError.message }));
+        const revision = execFileSync('git', ['rev-parse', 'HEAD'], {
+          cwd: path.resolve(__dirname, '../..'), encoding: 'utf8',
+        }).trim();
+        const runtime = execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], {
+          encoding: 'utf8',
+        }).trim();
+        fs.writeFileSync(path.resolve(evidencePath), JSON.stringify({
+          status: 'committed-structural-divergence', revision, node: process.version, runtime,
+          engine: 'surrealkv', compiledBundleSha256: crypto.createHash('sha256').update(compiled.bundle).digest('hex'),
+          statement: sql, before, after, error: error.stack || error.message,
+        }, null, 2) + '\n');
+      }
+      throw error;
+    }
     result.checkpoints++;
     return data;
   };
@@ -134,6 +157,7 @@ async function cleanup(h, { verifyEach = false } = {}) {
   assert.deepEqual(empty.rebase_read, [], 'all calculation and validation reads released');
   assert.deepEqual(empty.rebase_read_frame, [], 'no orphan evaluation generations');
   assert.deepEqual(empty.rebase_read_group, [], 'all reverse groups and interval trees released');
+  assert.deepEqual(empty.rebase_read_stage, [], 'all buffered captures were reconciled before cleanup');
   h.pass('child-first single-record cleanup, empty financial/observation roots and released subscriptions');
 }
 

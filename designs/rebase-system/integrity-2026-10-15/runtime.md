@@ -1,8 +1,10 @@
-# Packet B: repair incremental subscription maintenance
+# Packet B: incremental subscription maintenance and capture ordering
 
-Status: OPEN. Complete rebuild removal FAILED and was reverted. Production still
-has whole-group settlement. The smaller passing controls below are insufficient
-to remove it. Compiler and oracle fixes are separate.
+Status: the B1/B2 native reproductions and the named D4 runtime/cost gates pass.
+The failed full-group-repair candidate below is historical and was never
+accepted. Production uses incremental membership repair plus the staged capture
+boundary described in “Capture-order regression and repair.” The current bounded
+acceptance results are in the [October 15 manifest](../evidence/2026-10-15-staged-capture-acceptance.json).
 
 ## Decision and evidence
 
@@ -40,8 +42,38 @@ The arithmetic model did not fail first; the structural checker failed after a
 committed native transaction. This was not a rolled-back rejection.
 
 The failing patch and raw log are in `../evidence/2026-10-15-remove-settlement-*`.
-Before/after database snapshots were not retained; obtain them in B1. The exact
-first corrupting instruction in the older external campaign is also still unknown.
+Full/minimized before/after snapshots for that candidate are in
+`../evidence/2026-10-15-b1-full-first-divergence.json` and
+`../evidence/2026-10-15-b1-minimized-snapshots.json`. The exact low-level
+interleaving in the older external campaign was not directly traced.
+
+## Capture-order regression and repair
+
+The later full accounting run on revision `fccd847` found a different committed
+divergence when creating `issue_adjustment:purchase` after its purchase issue,
+original tax and advance settlement. The full acceptance state had a broken
+parent link in the USD/INR `initial_rate` read tree. A purchase-only reduction
+retained a dirty marker in the widget/INR latest-rate group. The complete SQL,
+runtime identity and snapshots are preserved in
+`../evidence/2026-10-15-capture-order-full-first-divergence.json` and
+`../evidence/2026-10-15-capture-order-first-divergence.json`.
+
+`fn::reads::remember` now stages a scope-keyed logical descriptor while a formula
+evaluates. `fn::reads::flush` selects one scope through an index and reconciles
+its reads in stable record-identity order. The refresh coordinator flushes
+derived-field reads before updating the source, member reads before syncing its
+trees, and required-output reads before publishing those outputs. Validation
+reads flush before stale-generation cleanup. The transaction still owns formula
+evaluation, source fences, registration changes and output writes, so failures
+roll back together. Oracle checks require no stage rows after any completed
+statement.
+
+The full accounting suite, multi-currency FX history, minimized purchase
+reproduction, seeded state histories and bounded subscription-cost test pass with
+this change. This differential isolates the unsafe behavior to subscription
+mutations overlapping captured formula evaluation; the old native scheduler's
+exact internal ordering was not directly instrumented. It does not change the
+accounting model or read identities.
 
 ## Attempted removal, reverted
 
@@ -65,51 +97,41 @@ Kept:
 
 Use fresh disposable fixtures. No user database was changed by these experiments.
 
-## B1: reproduce and isolate
+## B1: native reproductions and diagnosis (complete)
 
-Apply `../evidence/2026-10-15-remove-settlement-experiment.patch` in a disposable
-worktree at this handoff revision, then run `node dev-tools/accounting/integrity-fx-probe.js`.
-The patch is an experiment, not a fix. It includes the checker adjustment for the
-absent flag. Supply dependencies in that worktree without changing application
-configuration. Do not apply the experimental patch to the user's working branch.
+The original settlement-removal candidate and its failure are preserved in the
+evidence listed above. Its arithmetic passed while a committed subscriber tree
+summary was stale. The later current-runtime adjustment history was separately
+captured before shutdown with its exact SQL, snapshots, SurrealDB/Node versions
+and compiled bundle hash. The minimized failing state and the passing native
+regression are `2026-10-15-capture-order-first-divergence.json` and
+`dev-tools/accounting/capture-repro-probe.js`.
 
-Before rerunning, instrument the disposable harness to retain source SQL, the
-actual compiled-bundle hash, engine version and full snapshots before/after each
-source statement around the second sale. Save the failed committed state before
-shutdown. A later repaired state cannot explain the first divergence.
+The first failure in that minimized history left a dirty key on the widget/INR
+latest-rate subscriber tree after the adjustment committed. The full accounting
+history also exposed a broken parent link in the USD/INR initial-rate tree. The
+source formulas and independent read descriptions were unchanged by the repair.
+Buffering formula reads and reconciling them sequentially at the explicit
+evaluation boundaries makes both histories pass. This isolates the unsafe
+registration-mutation overlap as the actionable cause; the exact internal engine
+instruction schedule was not directly traced.
 
-Reduce the case from the three-currency setup, two sales invoices and two issues.
-Remove unrelated dimensions/postings only while retaining the failure. A simple
-one-query-per-reader control passed; the two-distinct-reads-in-an-array control
-also passed. Preserve those as controls, not replacements for the failing case.
+## B2: common repair and bounded cost (complete)
 
-Prioritize one concrete hypothesis: the issue's stock and counterparty-resource
-legs both value through `exchange_pair:widget_inr`, so one evaluation reaches
-identical pair queries from several posting paths. The passing two-read control
-used different fallbacks and therefore different registration IDs. Compare
-identical versus distinct query signatures in the same scope, nested post calls
-and concurrent expression operands. Trace INSERT IGNORE results, frame versions,
-existing-read metadata UPDATEs and live node slots. This is a targeted experiment,
-not an established cause; do not assume metadata-only UPDATE preserves slots
-without checking its actual native before/after state.
+The private subscription tree stays incremental: inserts/removes repair affected
+AVL ancestors, retained reads make no topology writes, and no whole-group
+settlement pass remains. `rebase_read_stage` stores only transient logical read
+descriptors, keyed by evaluation scope and read identity. Indexed scope selection
+and sequential flush preserve source fences, generation cleanup, expected read
+identity, rollback and publication order. Any failed source statement rolls its
+staging rows back with the rest of the transaction.
 
-Inspect completed remember/insert, sync, repair, rotation, pull, publication and
-caller boundaries. Record live children and their summaries, summary written,
-caller and phase. Find the first stale read/write. Audit argument, array, object
-and map evaluation as well as explicit folds. Compare retaining just mark writes,
-just the final scan, or just flag clearing only as controlled causal experiments.
-Repeat the minimized failure to distinguish logic from scheduling sensitivity.
-
-B1 exits with a small native reproduction and a specific causal explanation. If
-that is unavailable, report an unresolved cause rather than a finished fix.
-
-## B2: implement the common repair
-
-Use the smallest correction identified by B1. Remove the rebuild and all its
-bookkeeping only when the minimized case, accounting, generic reads and cost
-gates pass together. An indexed dirty flag followed by a whole affected-group
-scan still costs O(R); hiding a rebuild in publication is also unacceptable.
-Commit B1 reproduction/evidence first and B2 implementation/tests separately.
+The 64-reader insertion control needs six summary pulls; 48 range subscribers
+need seven pulls. Retaining a query performs no topology repair. One and sixteen
+matching ranges visit 22 and 38 interval nodes respectively, with one and sixteen
+derived refreshes. Native EXPLAIN confirms source-group record-ID selection and
+capture-scope index selection without a table scan. These are bounded structural
+checks, not throughput measurements or asymptotic proof.
 
 ## Data structure and invariants
 

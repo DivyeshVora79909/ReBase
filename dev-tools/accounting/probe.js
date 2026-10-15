@@ -235,20 +235,24 @@ async function main({ extensions = false, onlyExtensions = false, evidence } = {
     await cleanup(h);
     timingMs.cleanup = Date.now() - timer;
     const fingerprintFiles = ['framework/reads.surql','dev-tools/compiler/reads.surql','dev-tools/compiler/temporal.surql',
+      'dev-tools/compiler/observed-reads.js',
       'dev-tools/compiler/derived-order.js','dev-tools/compiler/generators/temporal.js','dev-tools/compiler/generators/tree.js',
       'dev-tools/accounting/acceptance.js','dev-tools/accounting/probe.js','dev-tools/accounting/extension-probe.js',
+      'dev-tools/accounting/capture-repro-probe.js',
       'dev-tools/accounting/source-oracle.js','dev-tools/accounting/integrity-fx-probe.js',
       'dev-tools/temporal-tree/read-oracle.js','dev-tools/temporal-tree/read-oracle.test.js',
+      'dev-tools/temporal-tree/read-cost-probe.js',
       'dev-tools/temporal-tree/observed-probe.js','dev-tools/temporal-tree/typed-probe.js'];
+    const invocation = process.env.npm_lifecycle_event
+      ? `npm run ${process.env.npm_lifecycle_event}`
+      : `node dev-tools/accounting/probe.js ${process.argv.slice(2).join(' ')}`.trim();
     const report = { started: started.toISOString(), finished: new Date().toISOString(), storage: 'SurrealKV',
       runtime: { node: process.version, surreal: execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim() },
       schemaSha256: createHash('sha256').update(compiled.bundle).digest('hex'), schemaBytes: Buffer.byteLength(compiled.bundle),
       tables: compiled.schema.tables.size, snapshottedTables: [...compiled.schema.tables.keys()],
       checkpoints: h.result.checkpoints, structuralChecks: h.result.structuralChecks, valueChecks: h.result.valueChecks,
       rollbacks: h.result.rollbacks, unexpectedFailures: 0, cases: h.result.cases, timingMs,
-      commands: ['npm run build:all-in-accounting', 'npm run check:all-in-accounting',
-        'surreal validate build/all-in-accounting/schema.surql',
-        'node dev-tools/accounting/probe.js --all --evidence designs/rebase-system/evidence/2026-10-14-integrity-accounting.json'],
+      commands: [invocation],
       sourceSha256: Object.fromEntries(fingerprintFiles.map(file => [file,
         createHash('sha256').update(fs.readFileSync(require('node:path').resolve(__dirname, '../..', file))).digest('hex')])) };
     if (evidence) fs.writeFileSync(evidence, JSON.stringify(report, null, 2) + '\n');

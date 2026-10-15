@@ -2,12 +2,14 @@
 
 ## Current integrity repair status — October 15
 
-The [lead handoff](../rebase-system/integrity-2026-10-15/README.md) supersedes any
-engine-completion inference from the historical results below. The current FX
-fixture passes 76 checkpoints and two rollback checks with the stronger root-link
-oracle. Incremental index maintenance, independent accounting read coverage and
-exact tree aggregate checks remain open. Full consolidated acceptance was not
-rerun in this lead packet.
+The [lead handoff](../rebase-system/integrity-2026-10-15/README.md) and
+[acceptance manifest](../rebase-system/evidence/2026-10-15-staged-capture-acceptance.json)
+record the final staged-capture implementation and named D4 results. The full
+accounting gate passed 103 source-oracle checkpoints and 51 complete rollback
+snapshots, with populated-schema reapplication and child-first cleanup. The FX
+history passed 76 checkpoints and two rollback snapshots. The minimized
+purchase/tax/settlement adjustment regression passes with exact read/tree checks.
+These native bounded checks do not prove every possible history or deployment.
 
 ## Historical integrity repair acceptance — October 14
 
@@ -102,8 +104,11 @@ DDL. They do not measure ordinary transaction latency or production capacity.
 npm run build:all-in-accounting
 npm run verify:accounting
 npm run probe:accounting-integrity-fx
+npm run probe:accounting-capture-regression
 npm run probe:typed-tree-seeded
 npm run probe:observed-reads
+npm run probe:observed-reads-seeded
+node dev-tools/temporal-tree/read-cost-probe.js
 npm run test:dev-tools
 ```
 

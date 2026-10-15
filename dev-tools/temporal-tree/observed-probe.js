@@ -18,6 +18,7 @@ const snapshot = q => q(`RETURN {
  books: (SELECT * FROM read_book ORDER BY id), adjustments: (SELECT * FROM read_adjustment ORDER BY id),
  reads: (SELECT * FROM rebase_read ORDER BY id), groups: (SELECT * FROM rebase_read_group ORDER BY id),
  frames: (SELECT * FROM rebase_read_frame ORDER BY id), locks: (SELECT * FROM rebase_read_lock ORDER BY id),
+ staged: (SELECT * FROM rebase_read_stage ORDER BY id),
  calls: (SELECT * FROM read_probe_calls ORDER BY id), stats: (SELECT * FROM read_probe_stats ORDER BY id),
  feedback: (SELECT * FROM read_feedback ORDER BY id), publications: (SELECT * FROM read_publication ORDER BY id),
  audits: (SELECT * FROM audit_mutation ORDER BY id),
@@ -213,7 +214,7 @@ function oracle(s) {
   const sourceRows = [...s.curves, ...s.points, ...s.readers, ...s.observers, ...s.diamonds, ...s.books, ...s.adjustments,
     ...s.feedback, ...s.publications, ...s.loop_sources, ...s.loop_consumers, ...s.loop_postings,
     ...s.dates, ...s.quotes, ...s.dated, ...s.tenants, ...s.users];
-  const readData = { rebase_read: s.reads, rebase_read_group: s.groups, rebase_read_frame: s.frames, rebase_read_lock: s.locks };
+  const readData = { rebase_read: s.reads, rebase_read_group: s.groups, rebase_read_frame: s.frames, rebase_read_lock: s.locks, rebase_read_stage: s.staged };
   verifyReads(readData, sourceRows, entries, compareObservedKey, {
     rootSpecs: [{ table: 'read_curve', slot: 'z_points' }, { table: 'read_book', slot: 'z_adjustments' },
       { table: 'read_dates', slot: 'z_rates' }, { table: 'read_loop_source', slot: 'z_values' }],
@@ -328,6 +329,9 @@ async function main() {
     await assert.rejects(actor("RETURN fn::reads::begin(read_reader:r2,'refresh');"),/permission|not allowed/i);
     assert.deepEqual(await actor('SELECT * FROM rebase_read;'),[]);
     await actor("CREATE rebase_read:forged SET reader=read_reader:r2;");
+    assert.deepEqual(await actor('SELECT * FROM rebase_read_stage;'),[]);
+    await actor("CREATE rebase_read_stage:forged SET scope='forged';");
+    assert.deepEqual(await actor('SELECT * FROM rebase_read_stage;'),[]);
     assert.deepEqual(await snapshot(q),beforePublic,'record user cannot forge metadata');
     let reapplications=0;
     const runConcurrent = async statements => {

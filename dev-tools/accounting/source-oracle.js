@@ -47,10 +47,10 @@ const claim=v=>d(v).cmp(0)>=0?eff(0,v,0):eff(0,0,d(v).neg());
 const compare=(a,b)=>{for(let i=0;i<Math.min(a.length,b.length);i++){const date=typeof a[i]==='string'&&/^\d{4}-\d\d-\d\dT/.test(a[i]);const x=date?instant(a[i]):a[i],y=date?instant(b[i]):b[i];if(x<y)return -1;if(x>y)return 1;}return a.length-b.length;};
 const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
-const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'])].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
+const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'])].map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
 
 function evaluateSource(data,slots={}) {
-  const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock']);
+  const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage']);
   const sourceRows = Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
   const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(sourceRows.map(r=>[r.id,r]));
   const get=id=>{assert(byId.has(id),`missing source ${id}`);return byId.get(id);};
@@ -305,7 +305,7 @@ function expectedReadInventory(data,slots={}) {
 
 function verify(data,slots={},rootSpecs) {
   const model=evaluateSource(data,slots);
-  const treeRows=Object.entries(data).filter(([table])=>!['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock'].includes(table)).flatMap(([,rows])=>rows||[]);
+  const treeRows=Object.entries(data).filter(([table])=>!['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'].includes(table)).flatMap(([,rows])=>rows||[]);
   tree.verify(treeRows,treeRows,model.numericEntries,compare);
   const exactTree=require('../temporal-tree/exact-oracle');
   exactTree.verify(treeRows,treeRows,model.groupedEntries,compare,D);

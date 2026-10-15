@@ -1,141 +1,83 @@
 # Packet D: trustworthy histories and final acceptance
 
-Status: OPEN. Run after B1 has preserved its failure; use this work to challenge B2,
-not to justify a runtime repair from a few passing examples.
+Status: D0–D4 passed for the named bounded gates on the staged-capture
+implementation. The [October 15 acceptance manifest](../evidence/2026-10-15-staged-capture-acceptance.json)
+records the verified commands, exact source hashes, compiled accounting bundle,
+engine versions and scope. These results do not prove every possible history or
+multi-node deployment.
 
-## D0: audit checker failure detection
+## D0: checker failure detection
 
-The strengthened oracle now checks root neighbours and accepts nested record IDs.
-Accounting expected-read inventory and exact decimal trees belong to A1/A2.
-Before widening random histories, add valid controls and targeted corruptions for:
-
-- Removing an entire subscriber/group/frame inventory without changing any values.
-- Removing a required source fence while retaining its reads. Existing fence
-  validation checks surviving fence rows; it does not yet require every captured
-  source's fence to exist. Also check duplicate fence identities in synthetic input.
-- Relocating a group to a wrong record identity while updating all links and
-  retaining matching source/group fields. Reverse lookup relies on canonical ID
-  prefixes; checking those fields alone may miss a self-consistent wrong address.
-  Treat this as an audit target, not an already reproduced production failure.
-- Wrong read fingerprint/identity, generation, active/inactive node slots, and
-  root/leaf/neighbour defects for singleton and multi-node point/range trees.
-- Tiny decimal corruption in leaf/subtree/root sum and both kinds of extrema.
-
-Do not write another ad-hoc record-ID parser. Use native/SDK identity construction
-or known identity maps with a declared serialization boundary. Never build the
-expected dependency inventory from surviving metadata. Show that the untouched
-control passes before claiming a corrupt variant is rejected for the right reason.
+The source-independent checker detects removed whole read inventories, readers,
+groups, frames, conditional fallback calls and validation-only calls. Valid
+zero-read controls pass. Corruption controls cover source-fence identities,
+nested record IDs, group/read identities, generations, roots, leaves, neighbours,
+point and interval trees, and exact decimal summaries/extrema. Accounting read
+expectations come from the independent rational source model, not surviving
+runtime registrations.
 
 ## D1: seeded logical-read histories
 
-The existing seeded typed-tree campaign is useful but is **not** randomized testing
-of the dependency registration/coordinator state machine. Extend the maintained
-observed-read fixture/model; do not invent a generic testing DSL or duplicate the
-production AVL algorithm as the expected model.
+The observed-read state machine passed seeds `20261014`, `7`, and `1031`, with 216
+checkpoints, 489 candidate reads and 196 derived refreshes. It exercises logical
+read kinds, empty/fallback branches, dates and nanoseconds, reader/source moves,
+branch changes, nested helpers and maps, required outputs, publication and
+metamorphic edits. Each accepted statement checks exact expected reads, frames,
+fences, source references, tree structure and values; rejected statements compare
+the full rollback snapshot.
 
-Use deterministic seeds (including 20261014, 7 and 1031), bounded operation counts,
-and an independent sorted-source evaluator. Exercise:
+The deterministic observed-read fixture passed 50 checkpoints and eight
+rejections, including a useful cycle rejection, an acyclic diamond, concurrent
+first registration/source insertion, empty fallback, owner movement, competing
+edits, whole-statement conflict reapplication and cleanup.
 
-- latest, next, before, exact, range, summary, and direct record reads;
-- empty sources, insert-before-first, ties, full and partial bounds, inclusive
-  flags, same-date nanoseconds, deletion and fallback restoration;
-- source and reader date/owner movement, old/new source notifications, branch
-  off/on, range resize, repeated identical reads, different projections/fallbacks;
-- helper reads inside arrays, objects, nested calls, operands and maps, several
-  siblings sharing a group, required output creation/deletion and publication;
-- predecessor value unchanged, queried output unchanged, and changes to an
-  unrelated measure. Count candidate and actual derived refresh work separately.
+## D2: closure and concurrency
 
-After each successful statement check business values, every node/root/thread,
-exact expected logical reads, frames/fences, source references and exact sums.
-After an expected rejection compare all relevant tables, including private
-metadata and audit rows, canonically sorted by record identity. A committed
-structural failure and a native rejection are distinct outcomes.
+The native closure probe passed source-to-publication feedback rejection with
+atomic rollback, a valid acyclic diamond, downstream rekeying and cleanup. The
+observed-read probe passed the registration/source-write race and competing
+whole-statement reapplications. These single-server fixtures do not imply
+distributed or multi-node coverage.
 
-For a failing seed, save the **first** bad state, operation index, source SQL and
-inputs, schema/bundle/source hashes, engine and Node versions. Minimize the
-history before increasing iterations. Later writes healing an earlier defect
-must not turn a failed campaign green.
+## D3: bounded incremental cost
 
-Metamorphic histories: insert/delete an unused quote; move away/back; disable/
-enable a reader; reparent away/back; reorder independent insertions. Compare
-semantic source/derived states and independently reconstructed metadata; topology
-shape and monotonically increasing versions need not be byte-identical.
+The point/range cost probe passed at 64 point subscribers and 48 interval
+subscribers. Insertion used six and seven summary pulls, respectively; retained
+queries did no topology repair. One matching range visited 22 interval nodes and
+refreshed one reader; sixteen matching ranges visited 38 nodes and refreshed 16
+readers. Source-group and staged-scope EXPLAIN plans used record-ID/index scans
+without table scans. These are structural samples, not throughput or asymptotic
+proof. Prefix edits may still affect a real suffix, and shared source fences can
+contend.
 
-## D2: closure and concurrency boundaries
+## D4: final integration results
 
-Current direct self/two-record feedback tests do not prove every publication
-cycle is detected. Build a changing loop through source posting -> published
-root -> derived consumer -> source posting. Inspect whether finish's recursive
-refresh resets active causal context. This is an open audit, not a confirmed
-runtime failure. Require a useful bounded cycle rejection and full rollback;
-a generic recursion/depth failure is not the intended public contract.
+Fresh disposable SurrealKV databases on SurrealDB 3.3.0 and Node v24.19.0 passed:
 
-Include an acyclic diamond and legitimate strict-prefix calculations on a
-reader's own history. A global ever-visited set would wrongly reject valid
-revisits; distinguish active causal feedback from rescheduling and value changes.
+- Both `all-in-accounting` and `all-in-one` builds, freshness checks and native
+  schema validation; compiler, architecture and derived-order probes.
+- 48 developer-tool tests, 252 typed-tree mutation checkpoints, 1,570 ordered
+  reads, 108 rollback snapshots and five conflict retries.
+- Boundary algebra: 4,665 timestamp/delta sequences with 57,909 folds, plus 777
+  missing-measure sequences with 3,477 folds.
+- Required-output creation/deletion and rollback, causal feedback detection and
+  rollback, observed-read histories, and the bounded point/range cost gate.
+- The minimized purchase/tax/advance-settlement/adjustment regression: seven
+  source/tree/read checkpoints and no staged rows after cleanup.
+- The independent multi-currency accounting FX history: 76 per-write
+  checkpoints, two exact rollback snapshots and cleanup.
+- Full accounting acceptance: 103 source-oracle checkpoints, 51 complete
+  rollback snapshots, exact populated-schema reapplication and child-first
+  cleanup. The complete gate includes fee/tax/refund, claims, transfers,
+  production reservations and cross-currency histories.
+- `git diff --check`.
 
-Retain the existing concurrent first-registration/source-write race. Add empty
-fallback registration, source insertion, owner move, and two competing edits.
-Use controlled native scheduling only in fixtures; keep production free of sleeps.
-A transaction conflict may retry the entire confirmed failed transaction. Check
-the final state against the independent model and ensure no stale registration
-commits. Do not claim distributed/multi-node coverage from one disposable server.
+The exact command list and compiled/source fingerprints are in the linked
+manifest. The failed first divergence and its minimized snapshots are retained
+separately under `designs/rebase-system/evidence/2026-10-15-capture-order-*`.
 
-## D3: bounded performance gates
-
-The intentionally red `read-cost-probe.js` must pass after B2. Extend it with
-range subscriptions, branch churn, multiple groups and skewed fan-out. Count node
-visits, summary pulls, and refreshes; inspect EXPLAIN for native selections.
-One subscriber added to a large group must not rewrite all siblings or scan all
-groups. Retaining a query should not alter topology.
-
-State real limits: changing a prefix input may affect the whole suffix; candidate
-comparison costs source queries; interval reporting has a conservative bound;
-shared source fences create contention. Wall time of correctness fixtures is not
-application throughput, and one fixed sample is not asymptotic proof.
-
-## D4: final integration, once sources settle
-
-Use fresh disposable SurrealKV databases. Rebuild artifacts before freshness
-checks; ignored build files may be from a rejected experiment.
-
-```bash
-npm run test:dev-tools
-npm run build:all-in-accounting
-npm run build:all-in-one
-npm run check:all-in-accounting
-npm run check:all-in-one
-surreal validate build/all-in-accounting/schema.surql
-surreal validate build/all-in-one/schema.surql
-npm run probe:compiler
-npm run probe:architecture
-npm run probe:derived-order
-npm run probe:observed-reads
-node dev-tools/temporal-tree/read-cost-probe.js
-npm run probe:typed-tree-seeded
-npm run probe:boundary-tree
-npm run probe:required-outputs
-npm run probe:causal-outputs
-npm run probe:accounting-integrity-fx
-npm run verify:accounting
-git diff --check
-```
-
-Include the minimized B1 reproduction and D1's new seeded command as well.
-Run permission/authentication gates affected by actual edits. Live provider,
-frontend or unrelated network probes are not evidence for this engine repair.
-Do not rerun the entire slow acceptance after every small edit. If a check fails,
-fix the implicated packet, then repeat affected tests; record omissions plainly.
-
-Publish one compact result with commands/status/counts, seed set, exact current
-source hashes, actual compiled-bundle hash, versions, rollback scope, reapplication
-and cleanup. Confirm every required table/root/read group/frame ends correctly.
-Do not recycle October 14 counts or label an intentionally red gate as a pass.
-The current FX harness embeds an October 14 evidence path in its command label;
-replace that reporting constant with the actual invocation/output path. Do not
-mistake a generated command label for proof that a command ran.
-
-Commit D1-D3 tests separately from the final acceptance record. Update the entry
-handoff's status only after the named gates pass on the final implementation.
-Passing all these bounded gates still does not prove the absence of every bug.
+The final implementation keeps calculation, subscription flushes, source fences,
+derived updates, validation and cleanup in the originating transaction. A failed
+statement rolls all staged and registered reads, tree edits, outputs and audit
+rows back together. The completion claim is limited to these named fixtures and
+bounded checks.

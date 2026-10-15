@@ -1,0 +1,160 @@
+{
+  "status": "PASS",
+  "verifiedOn": "2026-10-15",
+  "baseRevision": "fccd847ac363c640947279cb02915780371bada8",
+  "testedSourceState": "working tree based on baseRevision; source hashes below identify the tested runtime and harness files",
+  "runtime": {
+    "surrealdb": "3.3.0",
+    "node": "v24.19.0",
+    "storage": "SurrealKV",
+    "environment": "fresh disposable local databases"
+  },
+  "compiledAccountingBundle": {
+    "sha256": "b09ad20249304500f06c285fce5b5e819600f00bf47dfdc046228ab18ea05381",
+    "bytes": 5125989,
+    "schemaTables": 70
+  },
+  "builtAllInOne": {
+    "schemaTables": 64,
+    "schemaSha256": "a5ce2025723c26f842a9db97cfb01a4c187839ff836d7d5f4f9eb8208ba53d19"
+  },
+  "commands": [
+    {
+      "command": "npm run test:dev-tools",
+      "status": "PASS",
+      "result": "48 tests"
+    },
+    {
+      "command": "npm run build:all-in-accounting && npm run build:all-in-one",
+      "status": "PASS",
+      "result": "70 and 64 tables"
+    },
+    {
+      "command": "npm run check:all-in-accounting && npm run check:all-in-one",
+      "status": "PASS"
+    },
+    {
+      "command": "surreal validate build/all-in-accounting/schema.surql && surreal validate build/all-in-one/schema.surql",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run probe:compiler && npm run probe:architecture && npm run probe:derived-order",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run probe:observed-reads",
+      "status": "PASS",
+      "result": "50 checkpoints, 8 rejections, 3 whole-statement conflict reapplications, tenant/permission checks, cleanup"
+    },
+    {
+      "command": "npm run probe:observed-reads-seeded",
+      "status": "PASS",
+      "seeds": [
+        20261014,
+        7,
+        1031
+      ],
+      "checkpoints": 216,
+      "candidateReads": 489,
+      "derivedRefreshes": 196
+    },
+    {
+      "command": "node dev-tools/temporal-tree/read-cost-probe.js",
+      "status": "PASS",
+      "facts": {
+        "pointReaders": 64,
+        "pointInsertSummaryPulls": 6,
+        "rangeReaders": 48,
+        "rangeInsertSummaryPulls": 7,
+        "oneRangeIntervalVisits": 22,
+        "oneRangeRefreshes": 1,
+        "sixteenRangeIntervalVisits": 38,
+        "sixteenRangeRefreshes": 16,
+        "scopeLookup": "indexed without TableScan",
+        "sourceGroupLookup": "RecordIdScan without TableScan"
+      }
+    },
+    {
+      "command": "npm run probe:typed-tree-seeded",
+      "status": "PASS",
+      "checkpoints": 252,
+      "orderedReads": 1570,
+      "rejectionSnapshots": 108,
+      "conflictRetries": 5
+    },
+    {
+      "command": "npm run probe:boundary-tree",
+      "status": "PASS",
+      "timestampDeltaSequences": 4665,
+      "timestampDeltaFolds": 57909,
+      "missingMeasureSequences": 777,
+      "missingMeasureFolds": 3477
+    },
+    {
+      "command": "npm run probe:required-outputs && npm run probe:causal-outputs",
+      "status": "PASS",
+      "result": "creation/deletion, cycle rejection, rollback and cleanup"
+    },
+    {
+      "command": "npm run probe:accounting-capture-regression",
+      "status": "PASS",
+      "checkpoints": 7,
+      "result": "purchase/tax/advance-settlement/adjustment values exact; no staged rows after cleanup"
+    },
+    {
+      "command": "npm run probe:accounting-integrity-fx",
+      "status": "PASS",
+      "checkpoints": 76,
+      "exactRollbackSnapshots": 2,
+      "result": "child-first cleanup"
+    },
+    {
+      "command": "npm run verify:accounting",
+      "status": "PASS",
+      "checkpoints": 103,
+      "completeRollbackSnapshots": 51,
+      "result": "populated schema reapplication and child-first cleanup"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "transactionScope": "Expected rejections compare complete source, derived, tree, read, frame, fence, stage and audit snapshots. Cleanup leaves all financial roots, logical reads, groups, frames and staged captures empty.",
+  "failureEvidence": {
+    "causeNotes": "2026-10-15-capture-order-causality.txt",
+    "minimizedFirstDivergence": {
+      "file": "2026-10-15-capture-order-first-divergence.json",
+      "sha256": "c3c675b319a80ab179ef29d3ee28285fea632c6205dfa83aeb49bf6140df592e"
+    },
+    "fullFirstDivergence": {
+      "file": "2026-10-15-capture-order-full-first-divergence.json",
+      "sha256": "5388aea14d83bd6bce0044c7b351976f5793efd86267ece88a6bfeecf626e5a3"
+    }
+  },
+  "sourceSha256": {
+    "framework/reads.surql": "7022315860405c79a450a48f056c52bd047e078eed2fc4efb1c256d026a5b773",
+    "dev-tools/compiler/reads.surql": "2ad12b4640043c15d3c80bbf0789ed2911e4c8cf8edaf652596b51911a0ec360",
+    "dev-tools/compiler/temporal.surql": "d71e9aba321f272119faddb57ebbbcb4bfbabb5e0bba1ce815910582d6d8d838",
+    "dev-tools/compiler/generators/temporal.js": "5e7016265704fdb071868722a561e5c57ba1a7e2f323500f9be0f6f09b8e9fd3",
+    "dev-tools/compiler/observed-reads.js": "7da64d858d4150c5abcae07a653e1ac069d6772cd7383e64b530bc7228addc25",
+    "dev-tools/accounting/source-oracle.js": "b5fe897dee0cb1352c2e1f25c58254c649620182dfadc05aa5a88867657fd9ba",
+    "dev-tools/accounting/acceptance.js": "6f68c93b5a5ec44fb9191e002712fbdc7312ff0e08acd48de3d5774fa9725f2d",
+    "dev-tools/accounting/probe.js": "6f4a912b2917ad9f2ada15d47833d1f7e7c6c071df5444eaca5e7b33ecc8f5d2",
+    "dev-tools/accounting/capture-repro-probe.js": "2db65dcf8da946e18b5acdb6e7c86ea6a9d8b3d910d76241ce45a4ec5881e65a",
+    "dev-tools/accounting/integrity-fx-probe.js": "a98c434971f446662f78e8e9a905d9d4aa2e7b9bcd7b08a463dd499f961d6e0f",
+    "dev-tools/temporal-tree/read-oracle.js": "a1db4bd378130df923ca0a2705ee2e8b786c7aa46497c1cbc0c30ad96077f79f",
+    "dev-tools/temporal-tree/read-oracle.test.js": "6e943037804bd3042628fe01becbf554911b2997271d876cd75985f074e3fbe2",
+    "dev-tools/temporal-tree/read-cost-probe.js": "3e7ec89d1582aab36806152a7a5406f5ff71943b567500cc9e2c5c7c9a1c3504",
+    "dev-tools/temporal-tree/observed-probe.js": "bd6fe911d4aac577efa1607d95188d682924293f9cc6a3e5263ecb11f84e9e93",
+    "dev-tools/temporal-tree/observed-history-probe.js": "432e9708b62aad620e6cd5035ef63a36f46f32d4dbd338d44635e7f794ff2ba9",
+    "package.json": "4631e61727b746ea25be886962c0cafe6f1f82f6957950795ee35bc4507dbe7a",
+    "designs/all-in-accounting/verification.md": "6a2cabe3ef8ba21a64aa40a05ab39a3bff1c7c4f986422765825c0b465393133",
+    "designs/rebase-system/integrity-2026-10-15/README.md": "7e8b3140854330681cbae4c6de6a7baba55df6db72cf29fc3d5c1d1395f562b4",
+    "designs/rebase-system/integrity-2026-10-15/runtime.md": "ac58bb1f8905c0b880cac02624aeec80420fd295fc7fd4fd2524f53c8ae3e65d",
+    "designs/rebase-system/integrity-2026-10-15/verification.md": "bfde59af09b9f99f128aa55ba4c022c5f09012773337ea46ca52074c37a806be",
+    "designs/rebase-system/evidence/2026-10-15-capture-order-causality.txt": "01b06fbc00efbedd93d389dcd9d31bd42502faea3fbfa54d851412360681ba68"
+  },
+  "boundedLimit": "These local correctness and structural-cost fixtures do not establish production throughput, multi-node behavior, or absence of every untested defect.",
+  "outputPath": "designs/rebase-system/evidence/2026-10-15-staged-capture-acceptance.json"
+}

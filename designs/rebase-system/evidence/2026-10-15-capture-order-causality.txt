@@ -1,0 +1,48 @@
+Capture registration ordering: first divergence and differential
+===============================================================
+
+Failing revision: fccd847ac363c640947279cb02915780371bada8
+Engine: SurrealDB 3.3.0, SurrealKV
+Node: v24.19.0
+Compiled bundle SHA-256: dc49d7a5ff2f7c3c9897f3d94bd6e97fd35126414e5e6bdf7750047aab0a3b59
+
+The first bad source statement was a committed purchase issue adjustment:
+
+  CREATE issue_adjustment:purchase SET owned_by=rebase_tenant:default,
+    source=purchase_issue:purchase,quantity_delta=-1dec,
+    adjustment_note=purchase_adjustment_note:purchase,
+    effective_at=d'2027-01-11T00:00:00Z';
+
+The full accounting history reported a broken parent link in the
+`exchange_pair:usd_inr` `initial_rate` subscriber tree. A purchase-only reduction
+retained the purchase invoice, issue, original tax, advance settlement and this
+adjustment. Its first oracle error was a dirty key left on
+`exchange_pair:widget_inr`'s latest-rate subscriber tree. The new adjustment
+reader was linked and the root count was correct, but the dirty marker remained
+after the source statement committed. Both results were committed structural
+divergences, not rejected writes. Full before/after snapshots, source SQL, engine,
+runtime and compiled-bundle identity are preserved in the adjacent JSON files.
+
+The repair changes the capture boundary, not accounting formulas or logical read
+identity. While a captured formula evaluates, `fn::reads::remember` writes only
+an ephemeral, scope-keyed descriptor. At explicit boundaries, the runtime reads
+those descriptors in stable identity order and registers them one at a time,
+including source fences, frame versions and AVL repairs. Refresh formulas flush
+before updating their derived source and before synchronizing its members or
+managed outputs; validators flush before cleanup. The oracle requires the staging
+table to be empty after every completed statement.
+
+The differential native run passed the same purchase history, the independent
+accounting read inventory, exact arithmetic and complete tree/read checks. The
+full accounting acceptance then passed the adjustment in its original context.
+The evidence isolates the unsafe behavior to registration mutations interleaving
+with captured formula evaluation; it does not claim a direct trace of SurrealDB's
+internal scheduler. The deterministic flush removes that overlap and preserves
+the expected logical reads.
+
+Passing regression command:
+
+  npm run probe:accounting-capture-regression
+
+The broader `npm run verify:accounting` result is recorded in the October 15
+acceptance manifest.

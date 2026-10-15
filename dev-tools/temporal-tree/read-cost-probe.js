@@ -34,6 +34,7 @@ const snapshot = q => q(`RETURN {
   rebase_read_group:(SELECT * FROM rebase_read_group ORDER BY id),
   rebase_read_frame:(SELECT * FROM rebase_read_frame ORDER BY id),
   rebase_read_lock:(SELECT * FROM rebase_read_lock ORDER BY id),
+  rebase_read_stage:(SELECT * FROM rebase_read_stage ORDER BY id),
   cost_stats:(SELECT * FROM cost_stats ORDER BY id)
 };`);
 
@@ -236,6 +237,12 @@ DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object, $scope: object) {
     assert.match(planText, /RecordIdScan/i, `bounded group selection should use its record-id interval: ${planText}`);
     assert.doesNotMatch(planText, /TableScan/i, `bounded group lookup must not TableScan: ${planText}`);
     measurements.push({ operation:'native source-group selection EXPLAIN', plan });
+
+    const stagePlan = await q(`EXPLAIN SELECT * FROM rebase_read_stage WHERE scope = 'unused-scope';`);
+    const stagePlanText = JSON.stringify(stagePlan);
+    assert.match(stagePlanText, /Index|RecordIdScan/i, `capture flush should select one indexed scope: ${stagePlanText}`);
+    assert.doesNotMatch(stagePlanText, /TableScan/i, `capture flush must not scan every staged scope: ${stagePlanText}`);
+    measurements.push({ operation:'native capture-scope selection EXPLAIN', plan:stagePlan });
 
     console.log(JSON.stringify(measurements));
     console.log('PASS bounded point/range subscription repair, branch churn, skewed fan-out, multiple groups and exact read inventory');
