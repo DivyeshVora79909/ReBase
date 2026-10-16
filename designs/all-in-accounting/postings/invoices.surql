@@ -28,9 +28,9 @@ DEFINE FUNCTION OVERWRITE fn::accounting::commercial($row: object, $amount: deci
     RETURN array::concat(fn::accounting::post($row,'z_counterparty',$row.currency_account,$row.effective_at,
         object::extend(fn::accounting::claim(-$sign*$value),{real:-$sign*$paid,
             sales_value:IF $base AND $row.is_sale THEN $amount ELSE 0dec END,
-            purchase_value:IF $base AND !$row.is_sale THEN $amount ELSE 0dec END,payment_value:$paid})),[
-        fn::tree::member($row.id,'z_invoice',$row.invoice,'z_history',$row.effective_at,object::extend($claim,{amount:$amount,paid:$paid,balance:$value}),{account:$row.currency_account,currency:$row.currency},{},false),
-        fn::tree::member($row.id,'z_note',$row.adjustment_note,'z_lines',$row.effective_at,{amount:$amount,paid:$paid,positive:IF $value>0dec THEN 1dec ELSE 0dec END,negative:IF $value<0dec THEN 1dec ELSE 0dec END},{account:$row.currency_account,is_sale:$row.is_sale},{},false)]);
+            purchase_value:IF $base AND !$row.is_sale THEN $amount ELSE 0dec END,payment_value:$paid}), $row.q_counterparty_reporting, $row.q_counterparty_organization),[
+        fn::tree::member($row.id,'z_invoice',$row.invoice,'z_history',$row.effective_at,object::extend($claim,{amount:$amount,paid:$paid,balance:$value}),{account:$row.currency_account,currency:$row.currency},{}),
+        fn::tree::member($row.id,'z_note',$row.adjustment_note,'z_lines',$row.effective_at,{amount:$amount,paid:$paid,positive:IF $value>0dec THEN 1dec ELSE 0dec END,negative:IF $value<0dec THEN 1dec ELSE 0dec END},{account:$row.currency_account,is_sale:$row.is_sale},{})]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE sales_invoice SCHEMAFULL COMMENT '@rebase-validate fn::accounting::invoice_validate';

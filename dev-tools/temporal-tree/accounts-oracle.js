@@ -57,7 +57,7 @@ const clean = (o) =>
 
 // Reconstruct only from authoritative inputs. This scan deliberately knows no AVL
 // algorithm and never trusts stored contexts, ancestor references, or memberships.
-function inspect(rows) {
+function inspect(rows, dependencyModel) {
   const byId = new Map(rows.map((r) => [r.id, r])),
     get = (id) => byId.get(id);
   const entries = [],
@@ -307,7 +307,6 @@ function inspect(rows) {
       measures,
       tags = {},
       spans = {},
-      dependent = false,
       at = row.a_effective_at,
     ) {
       if (!owner) return;
@@ -318,7 +317,6 @@ function inspect(rows) {
         measures,
         tags: clean(tags),
         spans,
-        dependent,
       });
     }
     const t = type(row);
@@ -375,8 +373,6 @@ function inspect(rows) {
           from_currency: c.parent_from_currency,
           to_currency: c.parent_to_currency,
         },
-        {},
-        ['money_charge', 'asset_allocation'].includes(t),
       );
       add(
         'z_invoice',
@@ -465,8 +461,6 @@ function inspect(rows) {
         'z_history',
         { quantity: c.quantity, amount: c.amount },
         { subject: c.subject, currency: c.currency },
-        {},
-        t === 'delivery_charge',
       );
       const line = [
         'delivery',
@@ -488,7 +482,6 @@ function inspect(rows) {
         { receivable: c.amount, billed_out: c.amount },
         { currency: c.currency },
         {},
-        false,
         at,
       );
       add(
@@ -498,7 +491,6 @@ function inspect(rows) {
         { payable: c.amount, billed_in: c.amount },
         { currency: c.currency },
         {},
-        false,
         at,
       );
       add(
@@ -508,7 +500,6 @@ function inspect(rows) {
         { [c.tax_kind]: c.amount },
         { currency: c.currency },
         {},
-        false,
         at,
       );
       add(
@@ -518,7 +509,6 @@ function inspect(rows) {
         { [c.tax_kind]: c.amount },
         { currency: c.currency },
         {},
-        false,
         at,
       );
       add(
@@ -585,7 +575,6 @@ function inspect(rows) {
         if (k in existing.spans) assert.equal(existing.spans[k], v);
         existing.spans[k] = v;
       }
-      existing.dependent ||= e.dependent;
     }
     return [...grouped.values()];
   }
@@ -627,6 +616,13 @@ function inspect(rows) {
       histories.get(key).push(entry);
     }
   }
-  return verify(rows, rows, entries);
+  const dependency = require('./dependency-oracle');
+  const expected = rows.filter(row=>['money_charge','asset_allocation','delivery_charge'].includes(type(row))).map(row=>({
+    reader:row.id,field:'q_basis',source:row.a_original,source_slot:'z_history',kind:'range',phase:'refresh',
+    arguments:[null,[row.a_effective_at,row.id,type(row)==='delivery_charge'?'z_original':'z_parent']],
+    path:'measures.'+(type(row)==='money_charge'?'basis':type(row)==='asset_allocation'?'to_amount':'amount')+'.sum',fallback:0,
+  }));
+  const indexes=dependency.verifyDependencies(rows,entries,expected,dependencyModel,{equalResult:equal});
+  return verify(rows, rows, [...entries,...indexes], dependency.compare);
 }
 module.exports = { facts, tables, snapshot, inspect };

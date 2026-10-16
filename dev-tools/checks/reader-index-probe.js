@@ -53,7 +53,7 @@ function verify(data) {
   const rows = Object.values(data).flat(), entries = [];
   const add = (row, slot, owner, root, key, measures = {}) => entries.push({
     link: { rid: row.id, slot }, owner: { rid: owner, slot: root },
-    key: [...key, row.id, slot], measures, tags: {}, dependent: false,
+    key: [...key, row.id, slot], measures, tags: {},
   });
   for (const [table, kind, field] of [['rebase_user', 'username', 'username'],
     ['authentication_email', 'email', 'address'], ['authentication_phone', 'phone', 'number'],

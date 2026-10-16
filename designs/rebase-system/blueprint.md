@@ -1,5 +1,9 @@
 # Domain composition blueprint
 
+Historical domain proposal. The current model and implementation boundary are
+in the [developer blueprint](developer-blueprint.md) and
+[October 16 engine plan](declarative-engine-plan.md).
+
 Status: proposed domain design. Updated routing, 2026-09-28: accounting,
 logistics, resource exchange and basic assembly use the current
 [accounting blueprint](../all-in-accounting/blueprint.md) and

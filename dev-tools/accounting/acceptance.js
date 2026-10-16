@@ -28,7 +28,7 @@ function acceptance(q, compiled) {
   const result = { checkpoints: 0, rollbacks: 0, structuralChecks: 0, valueChecks: 0, cases: [], last: 'setup' };
   const check = async () => {
     const data = await snapshotAll(q);
-    verify(data, slots, rootSpecs);
+    verify(data, slots, rootSpecs, compiled.temporalModel.dependencyModel);
     result.structuralChecks++;
     return data;
   };
@@ -64,7 +64,7 @@ function acceptance(q, compiled) {
     const before = await snapshotAll(q);
     await assert.rejects(actor(sql), pattern);
     assert.deepEqual(await snapshotAll(q), before,
-      'rejected write restores every source, derived field, slot, root, subscription, fence and audit row');
+      'rejected write restores every source, derived field, slot, root, dependency slot, fence and audit row');
     result.rollbacks++;
   };
   const value = async (expression, expected) => {
@@ -154,11 +154,12 @@ async function cleanup(h, { verifyEach = false } = {}) {
       if (row[slot]) assert.equal(row[slot].summary.count, 0, `${row.id}.${slot} is empty`);
     }
   }
-  assert.deepEqual(empty.rebase_read, [], 'all calculation and validation reads released');
-  assert.deepEqual(empty.rebase_read_frame, [], 'no orphan evaluation generations');
-  assert.deepEqual(empty.rebase_read_group, [], 'all reverse groups and interval trees released');
-  assert.deepEqual(empty.rebase_read_stage, [], 'all buffered captures were reconciled before cleanup');
-  h.pass('child-first single-record cleanup, empty financial/observation roots and released subscriptions');
+  for (const rows of Object.values(empty)) for (const row of rows) {
+    for (const [slot, value] of Object.entries(row)) if (slot.startsWith('__rebase_dependents_')) {
+      assert.equal(value.summary.count, 0, `${row.id}.${slot}: dependency index emptied`);
+    }
+  }
+  h.pass('child-first single-record cleanup, empty financial and dependency roots');
 }
 
 module.exports = { acceptance, at, compile, create, cleanup, setup };

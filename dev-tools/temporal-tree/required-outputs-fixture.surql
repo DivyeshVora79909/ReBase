@@ -63,7 +63,7 @@ DEFINE FIELD OVERWRITE target ON required_use TYPE record<a_recipe_compound> REF
 
 DEFINE FUNCTION OVERWRITE fn::recipe::seed_members($row: object) {
     RETURN [fn::tree::member($row.id, 'rb_position', $row.a_owner, 'rb_position',
-        $row.a_at, { amount: $row.a_amount }, {}, {}, false)];
+        $row.a_at, { amount: $row.a_amount }, {}, {})];
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::recipe::outputs($row: object) {
@@ -83,10 +83,10 @@ DEFINE FUNCTION OVERWRITE fn::recipe::outputs($row: object) {
 
 DEFINE FUNCTION OVERWRITE fn::recipe::leg_members($row: object) {
     RETURN [fn::tree::member($row.id, 'rb_position', $row.a_owner, 'rb_position',
-        $row.a_at, { amount: $row.a_amount }, {}, {}, false),
+        $row.a_at, { amount: $row.a_amount }, {}, {}),
         IF record::tb($row.id) = 'a_recipe_compound' THEN
             fn::tree::member($row.id, 'rb_prerequisite', $row.a_prerequisite, 'rb_children',
-                $row.a_at, { amount: $row.a_amount }, {}, {}, false)
+                $row.a_at, { amount: $row.a_amount }, {}, {})
         ELSE NONE END];
 } PERMISSIONS NONE;
 

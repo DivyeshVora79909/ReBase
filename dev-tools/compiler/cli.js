@@ -22,6 +22,7 @@ function parseArgs(argv) {
     else if (option === "--framework") args.frameworkDir = next();
     else if (option === "--output") args.outputDir = next();
     else if (option === "--check") args.check = true;
+    else if (option === '--explain') args.explain = next();
     else if (option === "--print-raw") args.printRaw = true;
     else if (option === "--no-root-permissions") args.rootPermissions = false;
     else if (option === "--help" || option === "-h") args.help = true;
@@ -41,6 +42,7 @@ Material inputs:
   --print-raw                 Print the combined source material before compiling
   --no-root-permissions       Skip generated root permission bootstrap
   --check                     Verify generated artifacts without writing them
+  --explain <table[.field]>    Explain calculations and indexes without writing files (* for all)
   --help                      Show this help`;
 }
 
@@ -73,6 +75,10 @@ if (require.main === module) {
   try {
     const result = main();
     if (!result) process.exit(0);
+    if (result.explanation) {
+      console.log(JSON.stringify(result.explanation, null, 2));
+      process.exit(0);
+    }
     const relativeOutput = path.relative(process.cwd(), result.outputDir) || ".";
     console.log(`ReBase compiled ${result.schema.tables.size} tables and ${result.schema.views.length} views.`);
     console.log(`Material files: ${result.materialFileCount}`);

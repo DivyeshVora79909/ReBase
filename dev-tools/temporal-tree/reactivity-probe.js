@@ -7,6 +7,8 @@ const path = require('node:path');
 const { start, client, recordClient, compareKey, applySchema } = require('./harness');
 const { compileFromArgs } = require('../compiler/cli');
 const oracle = require('./oracle');
+const dependencyOracle = require('./dependency-oracle');
+let dependencyModel;
 
 async function setup() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebase-v2-compile-'));
@@ -14,6 +16,7 @@ async function setup() {
   fs.mkdirSync(projectDir);
   fs.copyFileSync(path.join(__dirname, 'compiler-fixture.surql'), path.join(projectDir, 'schema.surql'));
   const result = compileFromArgs({ projectDir, frameworkDir: 'framework', outputDir: path.join(dir, 'build') });
+  dependencyModel = result.temporalModel.dependencyModel;
   const server = await start({ allowGuests: true });
   const query = client(server.url);
   let reader;
@@ -40,9 +43,9 @@ function verify(data) {
   const entries = [], totals = new Map();
   const inherited = new Map(data.inherited.map((r) => [r.id, r]));
   const rows = [...data.facts, ...data.charges, ...data.inherited, ...data.chained, ...data.unlinked].sort((a, b) => compareKey([a.a_effective_at, a.id], [b.a_effective_at, b.id]));
-  const add = (row, slot, owner, measures, tags = {}, spans = {}, dependent = false) => {
+  const add = (row, slot, owner, measures, tags = {}, spans = {}) => {
     if (!owner) return;
-    entries.push({ link: { rid: row.id, slot }, owner: { rid: owner, slot: 'z_book' }, key: [row.a_effective_at, row.id, slot], measures, tags, spans, dependent });
+    entries.push({ link: { rid: row.id, slot }, owner: { rid: owner, slot: 'z_book' }, key: [row.a_effective_at, row.id, slot], measures, tags, spans });
     totals.set(owner, (totals.get(owner) || 0) + (measures.amount || 0));
   };
   for (const row of rows) {
@@ -69,12 +72,16 @@ function verify(data) {
       const amount = Math.min(Number(rule.a_cap), basis * Number(rule.a_rate));
       oracle.equal(row.z20_basis, basis, `basis ${row.id}`);
       oracle.equal(row.z30_amount, amount, `amount ${row.id}`);
-      add(row, 'z_leg', row.a_owner, { amount }, { currency: 'USD' }, { charge: row.a_effective_at }, true);
+      add(row, 'z_leg', row.a_owner, { amount }, { currency: 'USD' }, { charge: row.a_effective_at });
       add(row, 'z_mirror', row.a_mirror, { amount: -amount });
     }
   }
   for (const row of data.reports) oracle.equal(row.z_total, totals.get(row.a_owner) || 0, 'published consumer');
-  return oracle.verify(data.owners, rows, entries);
+  const expected = data.charges.map(row => ({reader:row.id,field:'q_basis',source:row.a_owner,source_slot:'z_book',
+    kind:'range',phase:'refresh',arguments:[null,[row.a_effective_at,row.id,'z_leg']],path:'measures.amount.sum',fallback:0}));
+  const indexes = dependencyOracle.verifyDependencies([...data.owners,...rows],entries,expected,dependencyModel);
+  const groups = oracle.verify(data.owners, rows, [...entries,...indexes], dependencyOracle.compare);
+  return new Map([...groups].filter(([,group])=>group.owner.slot==='z_book'));
 }
 
 async function rejected(q, sql, pattern) {
@@ -170,7 +177,7 @@ async function permissions(env) {
   await user(`UPDATE charge:authenticated SET a_effective_at=d'${date(51)}', z20_basis=99999dec, z30_amount=99999dec;`);
   verify(await snapshot(q));
   const beforeHidden = await snapshot(q);
-  await assert.rejects(user(`CREATE charge:hidden SET owned_by=rebase_user:reader, a_owner=tree_owner:hidden, a_rule=rule:a, a_effective_at=d'${date(50)}';`), /permission|not allowed/i);
+  await assert.rejects(user(`CREATE charge:hidden SET owned_by=rebase_user:reader, a_owner=tree_owner:hidden, a_rule=rule:a, a_effective_at=d'${date(50)}';`), /permission|not allowed|REBASE_DEPENDENCY_SOURCE/i);
   assert.deepEqual(await snapshot(q), beforeHidden, 'an unreadable prefix cannot become a derived field');
   console.log('PASS record/system queries, anonymous and private-helper denial, forged metadata/shadows, authenticated live-rule create/update and hidden-prefix rollback');
 }
@@ -199,19 +206,18 @@ async function concurrency(q) {
 async function main() {
   const env = await setup(); const q = env.query;
   try {
-    const member = (slot, amount, currency = 'USD', day = 0, dependent = false) =>
-      `fn::tree::member(fact:coalesce,'${slot}',tree_owner:a,'z_book',d'${date(day)}',{amount:${amount}dec},{currency:'${currency}'},{},${dependent})`;
-    const net = await q(`RETURN fn::tree::coalesce([${member('z_leg',-100,'USD',0,true)},${member('z_mirror',100)}])[0].value;`);
-    assert.equal(net.count, 1); assert.equal(net.dependents, 1);
+    const member = (slot, amount, currency = 'USD', day = 0) =>
+      `fn::tree::member(fact:coalesce,'${slot}',tree_owner:a,'z_book',d'${date(day)}',{amount:${amount}dec},{currency:'${currency}'},{})`;
+    const net = await q(`RETURN fn::tree::coalesce([${member('z_leg',-100)},${member('z_mirror',100)}])[0].value;`);
+    assert.equal(net.count, 1);
     oracle.equal(net.measures.amount,
       { sum: 0, min_prefix: 0, max_prefix: 0, min: 0, max: 0, instant_min: 0, instant_max: 0 });
     await assert.rejects(q(`RETURN fn::tree::coalesce([${member('z_leg',1)},${member('z_mirror',1,'EUR')}]);`), /TREE_COALESCE_DIMENSION/);
     const positions = await q(`RETURN fn::tree::coalesce([${member('z_mirror',1,'USD',1)},${member('z_leg',1)}]);`);
     assert.deepEqual(positions.map(position => position.link.slot), ['z_leg', 'z_mirror']);
     assert.equal(positions.length, 2, 'distinct instants remain separate positions in the same owner');
-    await assert.rejects(q(`RETURN fn::tree::coalesce([${member('z_leg',1)},${member('z_mirror',1,'USD',0,true)}]);`), /TREE_COALESCE_CAUSAL_SLOT/);
     await assert.rejects(q(`RETURN fn::tree::coalesce([${member('z_leg',1)},${member('z_leg',1)}]);`), /TREE_DUPLICATE_MEMBERSHIP/);
-    console.log('PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable causal slots');
+    console.log('PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable slot identities');
     await q('CREATE tree_owner:a SET owned_by=rebase_tenant:default, a_nonnegative=true; CREATE tree_owner:b SET owned_by=rebase_tenant:default; CREATE tree_owner:c SET owned_by=rebase_tenant:default; CREATE rule:a SET owned_by=rebase_tenant:default; CREATE rule:cap SET owned_by=rebase_tenant:default, a_rate=0.5dec, a_cap=5dec;');
     await q(`CREATE fact:a SET owned_by=rebase_tenant:default, a_owner=tree_owner:a, a_mirror=tree_owner:b, a_amount=100dec, a_effective_at=d'${date(0)}';`);
     await q('CREATE report:a SET owned_by=rebase_tenant:default, a_owner=tree_owner:a;');

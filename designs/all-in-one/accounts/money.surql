@@ -53,30 +53,30 @@ DEFINE FUNCTION OVERWRITE fn::money::members($row: object) {
     LET $type = record::tb($row.id);
     RETURN [
         fn::tree::member($row.id, 'z_from', $c.from, 'z_book', $row.a_effective_at,
-            { asset: -$c.from_amount, outflow: $c.from_amount }, { currency: $c.from_currency }, {}, false),
+            { asset: -$c.from_amount, outflow: $c.from_amount }, { currency: $c.from_currency }, {}),
         fn::tree::member($row.id, 'z_to', $c.to, 'z_book', $row.a_effective_at,
-            { asset: $c.to_amount, inflow: $c.to_amount }, { currency: $c.to_currency }, {}, false),
+            { asset: $c.to_amount, inflow: $c.to_amount }, { currency: $c.to_currency }, {}),
         fn::tree::member($row.id, 'z_from_party', IF $c.from_party = $c.from THEN NONE ELSE $c.from_party END, 'z_book', $row.a_effective_at,
-            { asset: -$c.from_amount, outflow: $c.from_amount }, { currency: $c.from_currency }, {}, false),
+            { asset: -$c.from_amount, outflow: $c.from_amount }, { currency: $c.from_currency }, {}),
         fn::tree::member($row.id, 'z_to_party', IF $c.to_party = $c.to THEN NONE ELSE $c.to_party END, 'z_book', $row.a_effective_at,
-            { asset: $c.to_amount, inflow: $c.to_amount }, { currency: $c.to_currency }, {}, false),
+            { asset: $c.to_amount, inflow: $c.to_amount }, { currency: $c.to_currency }, {}),
         fn::tree::member($row.id, 'z_original', $c.origin, 'z_history', $row.a_effective_at,
-            { from_amount: $c.from_amount, to_amount: $c.to_amount, basis: $c.from_amount }, { from_currency: $c.from_currency, to_currency: $c.to_currency }, {}, false),
+            { from_amount: $c.from_amount, to_amount: $c.to_amount, basis: $c.from_amount }, { from_currency: $c.from_currency, to_currency: $c.to_currency }, {}),
         fn::tree::member($row.id, 'z_parent', $c.parent, 'z_history', $row.a_effective_at,
             IF $c.parent_kind = 'allocation' THEN { to_amount: -$c.from_amount } ELSE { basis: $c.from_amount } END,
-            { from_currency: $c.parent_from_currency, to_currency: $c.parent_to_currency }, {}, $type IN ['money_charge','asset_allocation']),
+            { from_currency: $c.parent_from_currency, to_currency: $c.parent_to_currency }, {}),
         fn::tree::member($row.id, 'z_invoice', $c.invoice, 'z_book', $row.a_effective_at,
-            { amount: -$c.invoice_amount, settled: $c.invoice_amount }, { currency: $c.invoice_currency, issuer: $c.issuer, recipient: $c.recipient }, { settlement: $row.a_effective_at }, false),
+            { amount: -$c.invoice_amount, settled: $c.invoice_amount }, { currency: $c.invoice_currency, issuer: $c.issuer, recipient: $c.recipient }, { settlement: $row.a_effective_at }),
         fn::tree::member($row.id, 'z_issuer', $c.issuer, 'z_book', $row.a_effective_at,
-            { receivable: -$c.invoice_amount, settled_in: $c.invoice_amount }, { currency: $c.invoice_currency }, {}, false),
+            { receivable: -$c.invoice_amount, settled_in: $c.invoice_amount }, { currency: $c.invoice_currency }, {}),
         fn::tree::member($row.id, 'z_recipient', $c.recipient, 'z_book', $row.a_effective_at,
-            { payable: -$c.invoice_amount, settled_out: $c.invoice_amount }, { currency: $c.invoice_currency }, {}, false),
+            { payable: -$c.invoice_amount, settled_out: $c.invoice_amount }, { currency: $c.invoice_currency }, {}),
         fn::tree::member($row.id, 'z_claim', $c.claim, 'z_book', $row.a_effective_at,
-            object::from_entries([[$c.claim_kind, $c.claim_amount]]), { currency: $c.from_currency }, {}, false),
+            object::from_entries([[$c.claim_kind, $c.claim_amount]]), { currency: $c.from_currency }, {}),
         fn::tree::member($row.id, 'z_claim_party', $c.claim_party, 'z_book', $row.a_effective_at,
-            object::from_entries([[$c.claim_kind, $c.claim_amount]]), { currency: $c.from_currency }, {}, false),
+            object::from_entries([[$c.claim_kind, $c.claim_amount]]), { currency: $c.from_currency }, {}),
         fn::tree::member($row.id, 'z_exchange', $c.exchange, 'z_usage', $row.a_effective_at,
-            { source: $c.from_amount, target: $c.to_amount }, { from_currency: $c.from_currency, to_currency: $c.to_currency }, {}, false),
+            { source: $c.from_amount, target: $c.to_amount }, { from_currency: $c.from_currency, to_currency: $c.to_currency }, {}),
         fn::calc::note($row, $c.from_amount, $c.from_currency, $c.invoice)
     ];
 } PERMISSIONS NONE;
@@ -225,7 +225,10 @@ DEFINE FIELD OVERWRITE a_description ON money_charge TYPE string DEFAULT '' COMM
 DEFINE FIELD OVERWRITE a_original ON money_charge TYPE record<payment | settlement> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_to ON money_charge TYPE record<money_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_rule ON money_charge TYPE record<calculation_rule> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z10_basis ON money_charge TYPE decimal VALUE fn::tree::read_value($this.a_original, 'z_history', 'before', [$this.a_effective_at,<string>$this.id,'z_parent'], 'measures.basis.sum', 0dec) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_basis ON money_charge TYPE option<object> FLEXIBLE
+VALUE {source:$this.a_original,arguments:[NONE,[$this.a_effective_at,<string>$this.id,'z_parent']],path:'measures.basis.sum',fallback:0dec}
+COMMENT '@rebase-dependency range @rebase-dependency-source payment.z_history @rebase-dependency-source settlement.z_history';
+DEFINE FIELD OVERWRITE z10_basis ON money_charge TYPE decimal VALUE fn::dependency::value($this.q_basis) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_amount ON money_charge TYPE decimal VALUE fn::calc::rule($this.z10_basis, $this.a_rule.a_rate, $this.a_rule.a_fixed, $this.a_rule.a_cap, $this.a_original.z20_ctx.from_currency.a_precision) COMMENT '@rebase-derived @rebase-depends a_original.z20_ctx';
 DEFINE FIELD OVERWRITE z_history ON money_charge TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z20_ctx ON money_charge TYPE { from: record<money_account>, to: record<money_account>, from_currency: record<currency>, to_currency: record<currency>, from_party: option<record<money_account>>, to_party: option<record<money_account>>, origin: record<payment | settlement | tax_remittance | tax_recovery | money_charge | money_parent_charge | asset_allocation | asset_parent_allocation>, origin_at: datetime, from_amount: decimal, to_amount: decimal, exchange: option<record<currency_exchange>>, exchange_at: option<datetime>, invoice: option<record<invoice>>, invoice_at: option<datetime>, invoice_currency: option<record<currency>>, issuer: option<record<money_account>>, recipient: option<record<money_account>>, invoice_leg: int, invoice_amount: decimal, claim: option<record<money_account>>, claim_party: option<record<money_account>>, claim_kind: string, claim_amount: decimal, parent: option<record<payment | settlement>>, parent_at: option<datetime>, parent_kind: string, parent_from_currency: option<record<currency>>, parent_to_currency: option<record<currency>> } VALUE fn::money::derived($this.id, $this.a_original.z20_ctx, $this.a_to, $this.z11_amount, $this.a_effective_at, 'charge') COMMENT '@rebase-derived';
@@ -259,7 +262,10 @@ DEFINE FIELD OVERWRITE a_description ON asset_allocation TYPE string DEFAULT '' 
 DEFINE FIELD OVERWRITE a_original ON asset_allocation TYPE record<payment | settlement> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_to ON asset_allocation TYPE record<money_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_rule ON asset_allocation TYPE record<calculation_rule> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z10_basis ON asset_allocation TYPE decimal VALUE fn::tree::read_value($this.a_original, 'z_history', 'before', [$this.a_effective_at,<string>$this.id,'z_parent'], 'measures.to_amount.sum', 0dec) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_basis ON asset_allocation TYPE option<object> FLEXIBLE
+VALUE {source:$this.a_original,arguments:[NONE,[$this.a_effective_at,<string>$this.id,'z_parent']],path:'measures.to_amount.sum',fallback:0dec}
+COMMENT '@rebase-dependency range @rebase-dependency-source payment.z_history @rebase-dependency-source settlement.z_history';
+DEFINE FIELD OVERWRITE z10_basis ON asset_allocation TYPE decimal VALUE fn::dependency::value($this.q_basis) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_amount ON asset_allocation TYPE decimal VALUE fn::calc::rule($this.z10_basis, $this.a_rule.a_rate, $this.a_rule.a_fixed, $this.a_rule.a_cap, $this.a_original.z20_ctx.to_currency.a_precision) COMMENT '@rebase-derived @rebase-depends a_original.z20_ctx';
 DEFINE FIELD OVERWRITE z_history ON asset_allocation TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z20_ctx ON asset_allocation TYPE { from: record<money_account>, to: record<money_account>, from_currency: record<currency>, to_currency: record<currency>, from_party: option<record<money_account>>, to_party: option<record<money_account>>, origin: record<payment | settlement | tax_remittance | tax_recovery | money_charge | money_parent_charge | asset_allocation | asset_parent_allocation>, origin_at: datetime, from_amount: decimal, to_amount: decimal, exchange: option<record<currency_exchange>>, exchange_at: option<datetime>, invoice: option<record<invoice>>, invoice_at: option<datetime>, invoice_currency: option<record<currency>>, issuer: option<record<money_account>>, recipient: option<record<money_account>>, invoice_leg: int, invoice_amount: decimal, claim: option<record<money_account>>, claim_party: option<record<money_account>>, claim_kind: string, claim_amount: decimal, parent: option<record<payment | settlement>>, parent_at: option<datetime>, parent_kind: string, parent_from_currency: option<record<currency>>, parent_to_currency: option<record<currency>> } VALUE fn::money::derived($this.id, $this.a_original.z20_ctx, $this.a_to, $this.z11_amount, $this.a_effective_at, 'allocation') COMMENT '@rebase-derived';

@@ -2,7 +2,7 @@ const { extractClauseExpression, findTopLevelKeyword, sqlCode } = require('./sur
 
 const SYSTEM_FIELDS = new Set([
   'id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'system_ping',
-  'tenant', 'read_by', 'rebase_reader_sources', 'rebase_dependency_sources', 'rebase_derived_ready',
+  'tenant', 'read_by', 'rebase_reader_sources', 'rebase_dependency_sources', 'rebase_derived_ready', 'rebase_dependency_revision',
 ]);
 const VALUE_END = ['ASSERT', 'REFERENCE', 'READONLY', 'PERMISSIONS', 'COMMENT'];
 
@@ -25,6 +25,7 @@ function changedFields(fields, before = '$before', after = '$after') {
 }
 
 function fieldSelectPolicy(field) {
+  if (field.privateDependency) return 'NONE';
   const policy = extractClauseExpression(field.definition, 'PERMISSIONS', ['COMMENT']);
   if (!policy || /^FULL$/i.test(policy)) return 'WHERE true';
   if (/^NONE$/i.test(policy)) return 'NONE';

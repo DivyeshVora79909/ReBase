@@ -46,7 +46,7 @@ async function main() {
     const check = async label => {
       const data = await snapshot(q, [...compiled.schema.tables.keys()]);
       verify(data, slots, rootSpecs);
-      console.log(`PASS ${label}: ${data.rebase_read.length} read registrations`);
+      console.log(`PASS ${label}: source and fixed dependency invariants`);
       return data;
     };
     await check('minimal setup');

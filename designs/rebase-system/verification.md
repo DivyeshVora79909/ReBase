@@ -1,5 +1,24 @@
 # Redesign verification and algorithm decision
 
+## Declarative calculation engine — 2026-10-16
+
+The [current verification record](declarative-engine-verification.md) covers
+the fixed-query engine replacement, independent dependency/tree oracles,
+developer inspection tools and current acceptance boundaries. Full accounting
+passed **103 source checkpoints and 54 rollback snapshots**, with populated
+identical-schema reapplication and child-first cleanup. Its
+[evidence](evidence/2026-10-16-declarative-accounting.json) pins the current
+65-table schema; the [execution plan](declarative-engine-plan.md) records
+the completed implementation. All broad-regression components passed across
+the documented initial run and its successful continuation, with 54 developer
+tests passing. The [manifest](evidence/2026-10-16-declarative-engine.json) and
+[retained output](evidence/2026-10-16-declarative-engine-output.txt) preserve the
+numeric-demo verifier correction and exact accounting revision boundary.
+
+Earlier sections retain evidence for their original snapshots. In particular,
+the removed dynamic capture engine and older frontend continuation notes do not
+define the current authoring contract.
+
 ## Tenant/tree continuation — 2026-10-05
 
 The [execution handoff](tenant-tree-handoff.md#continuation--2026-10-05) and

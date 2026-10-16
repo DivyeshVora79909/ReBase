@@ -3,8 +3,9 @@
 | Source | Responsibility |
 | --- | --- |
 | `core/schema.surql` | Descriptor tables, decimal algebra and native-unit helpers |
+| `core/identities.surql` | Private tenant-rooted business uniqueness indexes |
 | `core/accounts.surql` | Subsidiaries, organizations, sparse positions and linear root bounds |
-| `core/exchange-rates.surql` | Directed pairs, dated rates, predecessor lookup and authored impacts |
+| `core/exchange-rates.surql` | Directed pairs, dated rates and pure query constructors |
 | `core/projections.surql` | Explicit native and reporting contributions with unit/perspective conversion |
 | `postings/invoices.surql` | Invoice and note roots, commercial directions and linear capacity |
 | `postings/issues.surql` | Original resource/value facts and additive trade measures |
@@ -20,7 +21,8 @@
 | `postings/zz-fees.surql` | Inline bounded fee/tax inputs, derived values and memberships |
 | `schemas/` | Forty-eight public create-input contracts |
 | `../../dev-tools/accounting/acceptance.js` | Disposable fixture, source-oracle checkpoints and rollback snapshots |
-| `../../dev-tools/accounting/source-oracle.js` | Independent rational source replay and full tree-structure verification |
+| `../../dev-tools/accounting/source-oracle.js` | Independent rational source replay, named query inventory and full tree verification |
+| `../../dev-tools/temporal-tree/dependency-oracle.js` | Descriptor, result, fixed-slot and reverse-root checks from expected source queries |
 | `../../dev-tools/accounting/probe.js` | Accounting model, dated rates and lifecycle acceptance |
 | `../../dev-tools/accounting/extension-probe.js` | Financial, production, permissions and developer-example acceptance |
 | `../../dev-tools/accounting/fixture-example.js` | Seventeen public inputs with native SDK binding |

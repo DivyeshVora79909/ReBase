@@ -34,28 +34,28 @@ DEFINE FUNCTION OVERWRITE fn::delivery::members($row: object) {
     LET $recognized = IF $c.invoice_at != NONE AND $c.invoice_at > $row.a_effective_at THEN $c.invoice_at ELSE $row.a_effective_at END;
     RETURN [
         fn::tree::member($row.id, 'z_from', IF $stock THEN $c.from ELSE NONE END, 'z_book', $row.a_effective_at,
-            { quantity: -$c.quantity }, { subject: $c.subject }, {}, false),
+            { quantity: -$c.quantity }, { subject: $c.subject }, {}),
         fn::tree::member($row.id, 'z_to', IF $stock THEN $c.to ELSE NONE END, 'z_book', $row.a_effective_at,
-            { quantity: $c.quantity }, { subject: $c.subject }, {}, false),
+            { quantity: $c.quantity }, { subject: $c.subject }, {}),
         fn::tree::member($row.id, 'z_from_unit', IF $stock THEN $c.from_unit ELSE NONE END, 'z_activity', $row.a_effective_at,
-            IF $c.quantity > 0dec THEN { outbound: 1dec } ELSE { inbound: 1dec } END, {}, {}, false),
+            IF $c.quantity > 0dec THEN { outbound: 1dec } ELSE { inbound: 1dec } END, {}, {}),
         fn::tree::member($row.id, 'z_to_unit', IF $stock THEN $c.to_unit ELSE NONE END, 'z_activity', $row.a_effective_at,
-            IF $c.quantity > 0dec THEN { inbound: 1dec } ELSE { outbound: 1dec } END, {}, {}, false),
+            IF $c.quantity > 0dec THEN { inbound: 1dec } ELSE { outbound: 1dec } END, {}, {}),
         fn::tree::member($row.id, 'z_original', $c.origin, 'z_history', $row.a_effective_at,
-            { quantity: $c.quantity, amount: $c.amount }, { subject: $c.subject, currency: $c.currency }, {}, $type = 'delivery_charge'),
+            { quantity: $c.quantity, amount: $c.amount }, { subject: $c.subject, currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_invoice', $c.invoice, 'z_book', $row.a_effective_at,
             { amount: $c.amount, billed: $c.amount }, { currency: $c.currency, issuer: $c.issuer, recipient: $c.recipient },
-            IF $line THEN { line: $row.a_effective_at } ELSE { amendment: $row.a_effective_at } END, false),
+            IF $line THEN { line: $row.a_effective_at } ELSE { amendment: $row.a_effective_at } END),
         fn::tree::member($row.id, 'z_issuer', $c.issuer, 'z_book', $recognized,
-            { receivable: $c.amount, billed_out: $c.amount }, { currency: $c.currency }, {}, false),
+            { receivable: $c.amount, billed_out: $c.amount }, { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_recipient', $c.recipient, 'z_book', $recognized,
-            { payable: $c.amount, billed_in: $c.amount }, { currency: $c.currency }, {}, false),
+            { payable: $c.amount, billed_in: $c.amount }, { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_tax', $c.tax_account, 'z_book', $recognized,
-            object::from_entries([[$c.tax_kind, $c.amount]]), { currency: $c.currency }, {}, false),
+            object::from_entries([[$c.tax_kind, $c.amount]]), { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_tax_party', $c.tax_party, 'z_book', $recognized,
-            object::from_entries([[$c.tax_kind, $c.amount]]), { currency: $c.currency }, {}, false),
+            object::from_entries([[$c.tax_kind, $c.amount]]), { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_capacity', $c.capacity, 'z_history', $row.a_effective_at,
-            { amount: $c.capacity_amount }, { currency: $c.currency }, {}, false),
+            { amount: $c.capacity_amount }, { currency: $c.currency }, {}),
         fn::calc::note($row, $c.amount, $c.currency, $c.invoice)
     ];
 } PERMISSIONS NONE;
@@ -127,7 +127,10 @@ DEFINE FIELD OVERWRITE a_description ON delivery_charge TYPE string DEFAULT '' C
 DEFINE FIELD OVERWRITE a_original ON delivery_charge TYPE record<delivery> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_rule ON delivery_charge TYPE record<calculation_rule> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 DEFINE FIELD OVERWRITE a_tax_account ON delivery_charge TYPE record<money_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
-DEFINE FIELD OVERWRITE z10_basis ON delivery_charge TYPE decimal VALUE fn::tree::read_value($this.a_original, 'z_history', 'before', [$this.a_effective_at,<string>$this.id,'z_original'], 'measures.amount.sum', 0dec) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_basis ON delivery_charge TYPE option<object> FLEXIBLE
+VALUE {source:$this.a_original,arguments:[NONE,[$this.a_effective_at,<string>$this.id,'z_original']],path:'measures.amount.sum',fallback:0dec}
+COMMENT '@rebase-dependency range @rebase-dependency-source delivery.z_history';
+DEFINE FIELD OVERWRITE z10_basis ON delivery_charge TYPE decimal VALUE fn::dependency::value($this.q_basis) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_amount ON delivery_charge TYPE decimal VALUE fn::calc::rule($this.z10_basis, $this.a_rule.a_rate, $this.a_rule.a_fixed, $this.a_rule.a_cap, $this.a_original.z20_ctx.currency.a_precision) COMMENT '@rebase-derived @rebase-depends a_original.z20_ctx';
 DEFINE FIELD OVERWRITE z_history ON delivery_charge TYPE object COMMENT '@rebase-tree-root @rebase-tree-duplicates @rebase-tree-key datetime';
 DEFINE FIELD OVERWRITE z20_ctx ON delivery_charge TYPE { from: record<stock_account>, to: record<stock_account>, subject: record<item | service>, from_unit: option<record<operating_unit>>, to_unit: option<record<operating_unit>>, quantity: decimal, amount: decimal, currency: record<currency>, origin: record<delivery>, origin_at: datetime, invoice: option<record<invoice>>, invoice_at: option<datetime>, issuer: option<record<money_account>>, recipient: option<record<money_account>>, tax_account: option<record<money_account>>, tax_party: option<record<money_account>>, tax_kind: string, capacity: option<record<delivery_charge | delivery_parent_charge>>, capacity_at: option<datetime>, capacity_amount: decimal } VALUE fn::delivery::charge($this.a_original.z20_ctx, $this.z11_amount, $this.id, $this.a_effective_at, $this.a_tax_account) COMMENT '@rebase-derived';

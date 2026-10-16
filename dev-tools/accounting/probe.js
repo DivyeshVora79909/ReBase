@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { Surreal, Decimal, RecordId } = require('surrealdb');
@@ -21,6 +22,15 @@ async function core(h, writer) {
   const adjustment = (id, source, day, changes, noteId = 'credit') => create(`issue_adjustment:${id}`,
     `source=sales_issue:${source},adjustment_note=sales_adjustment_note:${noteId},effective_at=${at(day)},${changes}`);
 
+  for (const slot of ['z_accounting_codes', 'z_exchange_pairs', 'z_adjustment_taxes']) {
+    await assert.rejects(writer(`RETURN fn::tree::read(rebase_tenant:default,'${slot}','summary',[]);`), /Tree read not allowed/);
+  }
+  for (const source of ['currency:inr', 'measure_unit:each', 'exchange_pair:usd_inr']) {
+    assert.equal(await writer(`RETURN ${source}.z_identity;`), null, 'uniqueness links are private');
+  }
+  await reject(create('currency:duplicate', "code='INR',name='Duplicate'"), /TREE_DUPLICATE_VALUE/);
+  await reject(create('measure_unit:duplicate', "code='each',name='Duplicate'"), /TREE_DUPLICATE_VALUE/);
+  await reject(create('exchange_pair:duplicate', `given_resource=currency:usd,received_resource=currency:inr,initial_rate=10dec,effective_at=${at(1)}`), /TREE_DUPLICATE_VALUE/);
   await reject(create('organization_currency_account:duplicate', `name='Duplicate',organization=organization:customer,currency=currency:inr,effective_at=${at(1)}`), /TREE_DUPLICATE_VALUE/);
   await reject(create('stock_account:duplicate', `name='Duplicate',subsidiary=subsidiary:one,resource=item:widget,operating_unit=operating_unit:store,valuation_pair=exchange_pair:widget_inr,effective_at=${at(1)}`), /TREE_DUPLICATE_VALUE/);
   await reject(create('account_entry:owned_claim', `account=treasury:cash,receivable=1dec,effective_at=${at(2)}`), /OWNED_ACCOUNT_REAL_ONLY/);
@@ -33,7 +43,7 @@ async function core(h, writer) {
     await value(`fn::accounting::round(${input}dec,0)`, expected);
   }
   await reject('UPDATE treasury:cash SET minimum_real=10001dec;', /ACCOUNT_BALANCE_FLOOR/);
-  pass('sparse native dimensions, multiple treasuries, unit guards and decimal rounding');
+  pass('sparse native dimensions, private uniqueness indexes, multiple treasuries, unit guards and decimal rounding');
 
   await mutate(['sale', 'empty', 'caps', 'early', 'move', 'target', 'fx'].map(id => invoice(id, id === 'fx' ? 'customer_usd' : 'customer')).join('\n') +
     invoice('purchase', 'supplier', 'purchase') + note('credit') + note('debit') + note('empty') + note('other', 'other') + note('purchase', 'supplier', 'purchase'));
@@ -205,7 +215,18 @@ async function core(h, writer) {
 }
 
 async function main({ extensions = false, onlyExtensions = false, evidence } = {}) {
+  const fingerprintFiles = ['dev-tools/compiler/dependencies.surql','dev-tools/compiler/queries.surql','dev-tools/compiler/temporal.surql',
+    'dev-tools/compiler/dependencies.js',
+    'dev-tools/compiler/derived-order.js','dev-tools/compiler/generators/temporal.js','dev-tools/compiler/generators/tree.js',
+    'dev-tools/accounting/acceptance.js','dev-tools/accounting/probe.js','dev-tools/accounting/extension-probe.js',
+    'dev-tools/accounting/adjustment-rekey-probe.js',
+    'dev-tools/accounting/source-oracle.js','dev-tools/accounting/integrity-fx-probe.js',
+    'dev-tools/temporal-tree/dependency-oracle.js','dev-tools/temporal-tree/oracle.js','dev-tools/temporal-tree/exact-oracle.js'];
+  const fingerprint = () => Object.fromEntries(fingerprintFiles.map(file => [file,
+    createHash('sha256').update(fs.readFileSync(path.resolve(__dirname, '../..', file))).digest('hex')]));
+  const sourceSha256 = fingerprint();
   const compiled = compile(), server = await start({ engine: 'surrealkv' }), q = client(server.url);
+  const schemaSha256 = createHash('sha256').update(compiled.bundle).digest('hex');
   const h = acceptance(q, compiled); h.url = server.url;
   const started = new Date();
   const timingMs = {};
@@ -234,27 +255,21 @@ async function main({ extensions = false, onlyExtensions = false, evidence } = {
     timer = Date.now();
     await cleanup(h);
     timingMs.cleanup = Date.now() - timer;
-    const fingerprintFiles = ['framework/reads.surql','dev-tools/compiler/reads.surql','dev-tools/compiler/temporal.surql',
-      'dev-tools/compiler/observed-reads.js',
-      'dev-tools/compiler/derived-order.js','dev-tools/compiler/generators/temporal.js','dev-tools/compiler/generators/tree.js',
-      'dev-tools/accounting/acceptance.js','dev-tools/accounting/probe.js','dev-tools/accounting/extension-probe.js',
-      'dev-tools/accounting/capture-repro-probe.js',
-      'dev-tools/accounting/source-oracle.js','dev-tools/accounting/integrity-fx-probe.js',
-      'dev-tools/temporal-tree/read-oracle.js','dev-tools/temporal-tree/read-oracle.test.js',
-      'dev-tools/temporal-tree/read-cost-probe.js',
-      'dev-tools/temporal-tree/observed-probe.js','dev-tools/temporal-tree/typed-probe.js'];
+    assert.deepEqual(fingerprint(), sourceSha256, 'acceptance sources must remain unchanged during the run');
+    assert.equal(createHash('sha256').update(compile().bundle).digest('hex'), schemaSha256,
+      'the accepted schema must still match current source');
     const invocation = process.env.npm_lifecycle_event
       ? `npm run ${process.env.npm_lifecycle_event}`
       : `node dev-tools/accounting/probe.js ${process.argv.slice(2).join(' ')}`.trim();
     const report = { started: started.toISOString(), finished: new Date().toISOString(), storage: 'SurrealKV',
       runtime: { node: process.version, surreal: execFileSync(process.env.REBASE_TREE_SURREAL_BIN || 'surreal', ['version'], { encoding: 'utf8' }).trim() },
-      schemaSha256: createHash('sha256').update(compiled.bundle).digest('hex'), schemaBytes: Buffer.byteLength(compiled.bundle),
+      schemaSha256, schemaBytes: Buffer.byteLength(compiled.bundle), sourceStableDuringRun: true,
+      dependencyDeclarations: compiled.temporalModel.dependencyModel.declarations.length,
       tables: compiled.schema.tables.size, snapshottedTables: [...compiled.schema.tables.keys()],
       checkpoints: h.result.checkpoints, structuralChecks: h.result.structuralChecks, valueChecks: h.result.valueChecks,
       rollbacks: h.result.rollbacks, unexpectedFailures: 0, cases: h.result.cases, timingMs,
       commands: [invocation],
-      sourceSha256: Object.fromEntries(fingerprintFiles.map(file => [file,
-        createHash('sha256').update(fs.readFileSync(require('node:path').resolve(__dirname, '../..', file))).digest('hex')])) };
+      sourceSha256 };
     if (evidence) fs.writeFileSync(evidence, JSON.stringify(report, null, 2) + '\n');
     console.log(`PASS accounting: ${report.checkpoints} source-oracle checkpoints, ${report.rollbacks} complete rollback snapshots`);
     return report;

@@ -113,7 +113,7 @@ DEFINE FUNCTION OVERWRITE fn::positions::members($row: object) {
         IF $row['a_time_' + $suffix] = NONE THEN NONE ELSE
             fn::tree::member($row.id, 'rb_time_' + $suffix, $time_owner, 'rb_time',
                 $row['a_time_' + $suffix], { weight: $row['a_weight_' + $suffix] },
-                { unit: $row['a_tag_' + $suffix] }, { basis: $row['a_span_' + $suffix] }, false) END,
+                { unit: $row['a_tag_' + $suffix] }, { basis: $row['a_span_' + $suffix] }) END,
         IF $row['a_order_' + $suffix] = NONE THEN NONE ELSE
             fn::tree::int_member($row.id, 'rb_order_' + $suffix, $order_owner, 'rb_order',
                 $row['a_order_' + $suffix], { weight: $row['a_weight_' + $suffix] },

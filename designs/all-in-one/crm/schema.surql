@@ -6,9 +6,9 @@ DEFINE FUNCTION OVERWRITE fn::crm::members($row: object) {
     LET $c = $row.z20_ctx;
     RETURN [
         fn::tree::member($row.id, 'z_case', $c.origin, 'z_history', $row.a_effective_at,
-            { open: $c.open, effort_minutes: $c.effort }, {}, {}, false),
+            { open: $c.open, effort_minutes: $c.effort }, {}, {}),
         fn::tree::member($row.id, 'z_party', $c.party, 'z_cases', $row.a_effective_at,
-            { open_cases: $c.open, effort_minutes: $c.effort }, {}, {}, false)
+            { open_cases: $c.open, effort_minutes: $c.effort }, {}, {})
     ];
 } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::crm::validate($row: object) {

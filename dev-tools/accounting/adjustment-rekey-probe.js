@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-// Minimal accounting history that exposed a committed dirty read-group marker
-// during an issue adjustment after purchase, tax, and settlement readers exist.
+// Minimal purchase, tax and settlement history preserving the adjustment
+// regression that originally exposed inconsistent dependency maintenance.
 const assert = require('node:assert/strict');
 const { start, client, applySchema } = require('../temporal-tree/harness');
 const { acceptance, at, compile, create, cleanup, setup } = require('./acceptance');
@@ -34,13 +34,13 @@ async function main() {
     await h.value('issue_adjustment:purchase.amount_delta', -2);
     await h.value('purchase_invoice:purchase.z_history.summary.measures.payable.sum', '8.8');
     await h.check();
-    h.pass('minimized purchase/tax/settlement adjustment capture regression and exact subscription integrity');
+    h.pass('minimized purchase/tax/settlement adjustment regression and exact dependency integrity');
 
     await cleanup(h);
     assert.equal(h.result.rollbacks, 0);
-    console.log(`PASS minimized capture regression: ${h.result.checkpoints} structural/source checkpoints, cleanup and zero staged reads`);
+    console.log(`PASS minimized adjustment regression: ${h.result.checkpoints} structural/source checkpoints and complete cleanup`);
   } catch (error) {
-    console.error('Last capture-regression operation:', h.result.last);
+    console.error('Last adjustment-regression operation:', h.result.last);
     throw error;
   } finally {
     await server.close();
@@ -48,7 +48,7 @@ async function main() {
 }
 
 if (require.main === module) main().catch(error => {
-  console.error(`accounting capture regression: FAIL: ${error.stack || error.message}`);
+  console.error(`accounting adjustment regression: FAIL: ${error.stack || error.message}`);
   process.exitCode = 1;
 });
 

@@ -85,7 +85,7 @@ async function runFixture(server, q, bundle, database) {
   await q('UPDATE natural_rule:base SET a_add=4dec;');
   data = await snapshot(q);
   fact = data.facts[0];
-  assert.equal(Number(fact.z_factor), 6, 'opaque function dependency refreshed');
+  assert.equal(Number(fact.z_factor), 6, 'declared helper dependency refreshed');
   assert.equal(Number(fact.a_total), 10);
   assert.equal(Number(data.owner.z_history.summary.measures.amount.sum), 10);
 
@@ -137,7 +137,7 @@ async function runFixture(server, q, bundle, database) {
   assert.equal(Number(readerFact.m_double), 4);
   assert.equal(Number(readerFact.a_total), 10, 'record user CREATE uses the static topological path');
   assert.equal(readerFact.__rebase_derived_0000, undefined, 'private staging values stay hidden');
-  await assert.rejects(reader('RETURN fn::rebase::derive((SELECT * FROM ONLY natural_fact:reader_row));'), /permission|not allowed/i);
+  await assert.rejects(reader('RETURN fn::rebase::derive((SELECT * FROM ONLY natural_fact:reader_row),false);'), /permission|not allowed/i);
 }
 
 async function main() {
@@ -161,7 +161,7 @@ async function main() {
     assert.match(audit, /profile: \{ email: \$before\.profile\.email \}/);
     assert.doesNotMatch(audit, /profile\.secret|private_note/);
     assert.doesNotMatch(audit, /__rebase_derived_\d+/, 'field-only audit never selects generated helper fields');
-    const extractDerive = bundle => bundle.match(/DEFINE FUNCTION OVERWRITE fn::rebase::derive\(\$row: object, \$scope: object\) \{([\s\S]*?)\} PERMISSIONS NONE;/)?.[1];
+    const extractDerive = bundle => bundle.match(/DEFINE FUNCTION OVERWRITE fn::rebase::derive\(\$row: object, \$inputs_only: bool\) \{([\s\S]*?)\} PERMISSIONS NONE;/)?.[1];
     assert(extractDerive(compiled.bundle), 'inspect the generated evaluator, rather than comparing absent matches');
     assert.equal(extractDerive(compiled.bundle), extractDerive(reordered.bundle), 'field declaration order preserves derived evaluator semantics');
     assert.deepEqual(compiled.temporalModel.derivedOrder.get('natural_fact').map(field => field.name),
@@ -173,7 +173,7 @@ async function main() {
     const opaqueDir = path.join(directory, 'opaque');
     assert.throws(() => compileFixture(opaqueDir,
       source.replace('VALUE fn::c3::fact_total($this)', 'VALUE fn::c3::opaque_total($this)')),
-    /cannot infer derived-field dependencies through opaque helper fn::c3::opaque_total/i);
+    /read-only; cannot inspect undeclared helper fn::c3::opaque_total/i);
 
     server = await start({ engine: 'surrealkv' });
     const first = client(server.url, 'natural');

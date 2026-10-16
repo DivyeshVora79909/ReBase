@@ -122,7 +122,7 @@ DEFINE FIELD OVERWRITE rb_feedback ON feedback_leg TYPE option<object>
 
 DEFINE FUNCTION OVERWRITE fn::c2d::member($row: object, $slot: string) {
     RETURN fn::tree::member($row.id, $slot, $row.a_owner, 'z_history',
-        $row.a_at, { amount: $row.a_amount }, {}, {}, false);
+        $row.a_at, { amount: $row.a_amount }, {}, {});
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::c2d::seed_members($row: object) {

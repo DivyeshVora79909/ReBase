@@ -61,7 +61,7 @@ function verify(data) {
   const entries = [];
   const add = (row, slot, owner, root, value, measures, tags = {}, spans = {}) => entries.push({
     link: { rid: row.id, slot }, owner: { rid: owner, slot: root },
-    key: [value, row.id, slot], measures, tags, spans, dependent: false,
+    key: [value, row.id, slot], measures, tags, spans,
   });
   for (const row of data.facts) {
     // Expected keys come from input references and immutable scale rows, never
@@ -96,7 +96,7 @@ async function queries(q, groups) {
     // The ACL cases below separately require these roots to reject traversal.
     if (owner.rid.startsWith('private_board:') || owner.rid === 'stage_board:hidden') continue;
     const read = (operation, argument) => `fn::tree::read(${owner.rid}, '${owner.slot}', '${operation}', ${argument})`;
-    requests.push(read('summary', '[]')); expected.push(oracle.scan(entries));
+    requests.push(read('summary', '[]')); expected.push(oracle.scan(entries, compare));
     for (const k of new Set([0, 1, Math.ceil(entries.length / 2), entries.length, entries.length + 1])) {
       requests.push(read('select', `[${k}]`)); expected.push(entries[k - 1]?.link || null);
     }
@@ -109,13 +109,13 @@ async function queries(q, groups) {
     keys.push(...entries.flatMap(entry => [entry.key.slice(0, 2), entry.key]));
     for (const key of keys) {
       const before = entries.filter(entry => compare(entry.key, key) < 0);
-      requests.push(read('before', keySql(key))); expected.push(oracle.scan(before));
+      requests.push(read('before', keySql(key))); expected.push(oracle.scan(before, compare));
       requests.push(read('rank', keySql(key))); expected.push(before.length + 1);
     }
     const bounds = time ? [[at(0)], [at(5)], [at(50)]] : [[-9007199254740991], [0], [9007199254740991]];
     for (const [low, high] of [[bounds[0], bounds[2]], [bounds[1], bounds[2]], [bounds[2], bounds[0]], [bounds[1], bounds[1]]]) {
       requests.push(read('range', `[${keySql(low)}, ${keySql(high)}]`));
-      expected.push(oracle.scan(entries.filter(entry => compare(entry.key, low) >= 0 && compare(entry.key, high) < 0)));
+      expected.push(oracle.scan(entries.filter(entry => compare(entry.key, low) >= 0 && compare(entry.key, high) < 0), compare));
     }
   }
   // Keep request bodies bounded, including the deterministic fuzz populations.
@@ -271,7 +271,7 @@ async function main() {
       ['unknown', '[]', /TREE_UNKNOWN_OPERATION/],
     ]) await reject(`RETURN fn::tree::read(stage_board:alpha,'rb_rank','${operation}',${argument});`, error, treeReader);
     await reject("RETURN fn::tree::read(stage_board:alpha,'rb_priority','summary',[]);", /Tree read not allowed/, treeReader);
-    await reject("RETURN fn::tree::select({rid:stage_board:alpha,slot:'rb_rank'},1.5dec,false);", /TREE_READ_ARGUMENT/);
+    await reject("RETURN fn::tree::select({rid:stage_board:alpha,slot:'rb_rank'},1.5dec);", /TREE_READ_ARGUMENT/);
     await reject("RETURN fn::tree::before({rid:stage_board:alpha,slot:'rb_rank'},[1.5dec]);", /TREE_READ_KEY/);
     await reject("RETURN fn::tree::range({rid:stage_board:alpha,slot:'rb_rank'},[0],[1dec]);", /TREE_READ_KEY/);
 
@@ -284,15 +284,14 @@ async function main() {
     await reject("UPDATE stage_archive:alpha SET rb_priority.root={rid:stage_fact:anchor,slot:'rb_archive'};", /rb_priority|assert/i);
     await reject("UPDATE stage_archive:alpha SET rb_priority.root={rid:archive_fact:one,slot:'rb_rank'};", /rb_priority|assert/i);
 
-    const member = ({ slot = 'rb_rank', root = 'rb_rank', owner = 'stage_board:alpha', key = "[10,'stage_fact:anchor','rb_rank']", dependent = false } = {}) =>
-      `{link:{rid:stage_fact:anchor,slot:'${slot}'},owner:{rid:${owner},slot:'${root}'},key:${key},value:fn::tree::value(${key},{weight:1dec},{},{},${dependent})}`;
+    const member = ({ slot = 'rb_rank', root = 'rb_rank', owner = 'stage_board:alpha', key = "[10,'stage_fact:anchor','rb_rank']" } = {}) =>
+      `{link:{rid:stage_fact:anchor,slot:'${slot}'},owner:{rid:${owner},slot:'${root}'},key:${key},value:fn::tree::value(${key},{weight:1dec},{},{})}`;
     for (const [members, pattern] of [
       [`[${member({ key: "[1.5dec,'stage_fact:anchor','rb_rank']" })}]`, /TREE_MEMBERSHIP_KEY/],
       [`[${member({ key: `[d'${at(0)}','stage_fact:anchor','rb_rank']` })}]`, /TREE_MEMBERSHIP_KEY/],
       [`[${member({ key: "[10,'stage_fact:wrong','rb_rank']" })}]`, /TREE_MEMBERSHIP_KEY/],
       [`[${member({ owner: 'stage_archive:alpha' })}]`, /TREE_INVALID_MEMBERSHIP/],
       [`[${member({ slot: 'unknown' })}]`, /TREE_INVALID_MEMBERSHIP/],
-      [`[${member({ dependent: true })}]`, /TREE_INT_DEPENDENCY/],
       [`[${member()},${member()}]`, /TREE_DUPLICATE_MEMBERSHIP/],
       [`[${member()},${member({ slot: 'rb_history', key: "[10,'stage_fact:anchor','rb_history']" })}]`, /TREE_INVALID_MEMBERSHIP/],
     ]) await reject(`BEGIN TRANSACTION;

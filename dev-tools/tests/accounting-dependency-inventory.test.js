@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { expectedReadInventory } = require('../accounting/source-oracle');
+const { expectedDependencyInventory, D } = require('../accounting/source-oracle');
 
 function openingEntry({ datedQuote = false, identity = false } = {}) {
   const date = '2027-01-02T00:00:00.000000000Z';
@@ -23,24 +23,18 @@ function openingEntry({ datedQuote = false, identity = false } = {}) {
   };
 }
 
-test('accounting read inventory follows source quotes and keeps reader identities stable', () => {
-  const fallback = expectedReadInventory(openingEntry());
+test('accounting dependencies keep fixed roles across dated quote and fallback changes', () => {
+  const fallback = expectedDependencyInventory(openingEntry());
   assert.deepEqual(fallback, [
-    { reader: 'account_entry:opening', phase: 'refresh', source_root: 'exchange_pair:usd_inr',
-      source_slot: '', kind: 'record', arguments: [], path: 'effective_at', fallback: undefined },
-    { reader: 'account_entry:opening', phase: 'refresh', source_root: 'exchange_pair:usd_inr',
+    { reader: 'account_entry:opening', field: 'q_account_reporting', phase: 'refresh', source: 'exchange_pair:usd_inr',
       source_slot: 'z_rates', kind: 'latest', arguments: [['2027-01-02T00:00:00.000000001Z']],
-      path: 'measures.rate.sum', fallback: undefined },
-    { reader: 'account_entry:opening', phase: 'refresh', source_root: 'exchange_pair:usd_inr',
-      source_slot: '', kind: 'record', arguments: [], path: 'initial_rate', fallback: undefined },
+      path: 'measures.rate.sum', fallback: new D(10) },
   ]);
-
-  const dated = expectedReadInventory(openingEntry({ datedQuote: true }));
-  assert.deepEqual(dated.map(read => read.path), ['effective_at', 'measures.rate.sum']);
-  assert(!dated.some(read => read.path === 'initial_rate'), 'a dated quote removes the source-fact fallback read');
+  assert.deepEqual(expectedDependencyInventory(openingEntry({ datedQuote: true })), fallback,
+    'a new selected quote does not change the declared query or remove its fallback');
 });
 
-test('same-resource rates are a legitimate empty accounting read inventory', () => {
-  assert.deepEqual(expectedReadInventory(openingEntry({ identity: true })), []);
-  assert.deepEqual(expectedReadInventory({}), []);
+test('same-resource conversion has no ordered dependency', () => {
+  assert.deepEqual(expectedDependencyInventory(openingEntry({ identity: true })), []);
+  assert.deepEqual(expectedDependencyInventory({}), []);
 });

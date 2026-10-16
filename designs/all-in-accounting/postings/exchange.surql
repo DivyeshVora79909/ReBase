@@ -8,10 +8,10 @@ DEFINE FUNCTION OVERWRITE fn::accounting::exchange_validate($row: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::exchange_members($row: object) {
-    RETURN array::concat(fn::accounting::post($row,'z_from',$row.from_account,$row.effective_at,fn::accounting::effects(-$row.from_amount,0dec,0dec)),
-        fn::accounting::post($row,'z_to',$row.to_account,$row.effective_at,fn::accounting::effects($row.to_amount,0dec,0dec)),[
-        fn::tree::member($row.id,'z_output',$row.production_output,'z_capacity',$row.effective_at,{quantity:-$row.from_amount},{},{},false),
-        fn::tree::member($row.id,'z_observation',$row.exchange_pair,'z_observations',$row.effective_at,{given:$row.from_amount,received:$row.to_amount},{},{},false)],fn::accounting::fee_members($row));
+    RETURN array::concat(fn::accounting::post($row,'z_from',$row.from_account,$row.effective_at,fn::accounting::effects(-$row.from_amount,0dec,0dec), $row.q_from_reporting, $row.q_from_organization),
+        fn::accounting::post($row,'z_to',$row.to_account,$row.effective_at,fn::accounting::effects($row.to_amount,0dec,0dec), $row.q_to_reporting, $row.q_to_organization),[
+        fn::tree::member($row.id,'z_output',$row.production_output,'z_capacity',$row.effective_at,{quantity:-$row.from_amount},{},{}),
+        fn::tree::member($row.id,'z_observation',$row.exchange_pair,'z_observations',$row.effective_at,{given:$row.from_amount,received:$row.to_amount},{},{})],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE resource_exchange SCHEMAFULL COMMENT '@rebase-members fn::accounting::exchange_members @rebase-validate fn::accounting::exchange_validate';
@@ -34,7 +34,11 @@ DEFINE FIELD OVERWRITE from_resource ON resource_exchange TYPE record<currency |
 
 DEFINE FIELD OVERWRITE to_resource ON resource_exchange TYPE record<currency | item | service> REFERENCE ON DELETE REJECT VALUE $this.to_account.resource COMMENT '@rebase-derived';
 
-DEFINE FIELD OVERWRITE exchange_rate ON resource_exchange TYPE decimal VALUE fn::accounting::rate_at($this.exchange_pair,$this.from_resource,$this.to_resource,$this.effective_at) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_exchange_rate ON resource_exchange TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.exchange_pair,$this.from_resource,$this.to_resource,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE exchange_rate ON resource_exchange TYPE decimal VALUE (fn::dependency::value($this.q_exchange_rate)??1dec) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE to_amount ON resource_exchange TYPE decimal VALUE fn::accounting::quantize($this.from_amount*$this.exchange_rate,$this.to_resource) COMMENT '@rebase-derived';
 
@@ -44,9 +48,17 @@ DEFINE FIELD OVERWRITE output_at ON resource_exchange TYPE option<datetime> VALU
 
 DEFINE FIELD OVERWRITE z_from ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
+DEFINE FIELD OVERWRITE q_from_reporting ON resource_exchange TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.from_account.valuation_pair,$this.from_account.resource,$this.from_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_from_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_to ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
+
+DEFINE FIELD OVERWRITE q_to_reporting ON resource_exchange TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.to_account.valuation_pair,$this.to_account.resource,$this.to_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_to_subsidiary ON resource_exchange TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

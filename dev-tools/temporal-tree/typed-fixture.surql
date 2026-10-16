@@ -69,7 +69,7 @@ DEFINE FUNCTION OVERWRITE fn::typed::members($row: object) {
     RETURN [
         IF $row.a_effective_at = NONE THEN NONE ELSE
             fn::tree::member($row.id, 'rb_history', $row.a_history, 'rb_history', $row.a_effective_at,
-                { weight: $row.a_weight }, $scope, { occurred: $row.a_effective_at }, false) END,
+                { weight: $row.a_weight }, $scope, { occurred: $row.a_effective_at }) END,
         IF $row.a_ranking = NONE THEN NONE ELSE fn::tree::int_member($row.id, 'rb_rank', $row.a_ranking,
             IF record::tb($row.a_ranking) = 'stage_archive' THEN 'rb_priority' ELSE 'rb_rank' END,
             $row.z20_code, { weight: $row.a_weight }, object::extend($scope, { scale: $row.z10_scale })) END

@@ -23,7 +23,7 @@ const entriesFor = () => {
   ].map(([at, id, measures, tags]) => ({
     link: { rid: `exact_member:${id}`, slot }, owner: ownerLink, key: [at, `exact_member:${id}`, slot],
     measures: Object.fromEntries(Object.entries(measures).map(([key, value]) => [key, new D(value)])),
-    tags, spans: {}, dependent: false,
+    tags, spans: {},
   }));
   return raw.sort((a, b) => compare(a.key, b.key));
 };

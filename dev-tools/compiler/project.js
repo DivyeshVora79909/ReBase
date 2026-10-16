@@ -4,6 +4,7 @@ const { resolveConfiguration, validateConfiguration } = require("../../config/en
 const { loadMaterials } = require("./materials");
 const { validateTableHandlers, validateWebhookHandlers } = require("./table-handlers");
 const { writeClientSchemas } = require("../client-schemas");
+const { explainDependency } = require('./dependency-plan');
 const {
   assertDisjointPaths,
   generateBundle,
@@ -55,6 +56,8 @@ function buildProject(rawArgs, root = process.cwd()) {
     runtimeSecret: configuration.runtime.secret,
   };
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
+  if (rawArgs.explain) return { ...result, outputDir,
+    explanation: explainDependency(result.dependencyPlan, rawArgs.explain) };
   const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
   const webhookHandlers = validateWebhookHandlers(projectDir);
   result.contracts.webhooks = webhookHandlers.contract();
@@ -74,6 +77,7 @@ function buildProject(rawArgs, root = process.cwd()) {
     outputDir,
     bundle: result.bundle,
     contracts: result.contracts,
+    dependencyPlan: result.dependencyPlan,
     lifecycleMigration: result.lifecycleMigration,
     copies,
   }, { check: rawArgs.check });

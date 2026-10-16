@@ -1,3 +1,11 @@
+-- Account dimensions and valuation pairs are immutable. A non-organization
+-- account has no organization reporting query, even in a typed account union.
+DEFINE FUNCTION OVERWRITE fn::accounting::organization_query($account: record, $at: datetime) {
+    LET $a = SELECT * FROM ONLY $account;
+    IF $a.organization = NONE { RETURN NONE; };
+    RETURN fn::accounting::rate_query($a.organization_pair,$a.resource,$a.organization_currency,$at);
+} PERMISSIONS FULL;
+
 -- Every leg declares its native slot and desired reporting slots in the schema.
 DEFINE FUNCTION OVERWRITE fn::accounting::scale($effects: object, $rate: decimal, $currency: record) {
     LET $r=fn::accounting::round(($effects.real??0dec)*$rate,$currency.precision);
@@ -12,10 +20,10 @@ DEFINE FUNCTION OVERWRITE fn::accounting::scale($effects: object, $rate: decimal
         fees:fn::accounting::round(($effects.fees??0dec)*$rate,$currency.precision)});
 } PERMISSIONS FULL;
 
-DEFINE FUNCTION OVERWRITE fn::accounting::post($row: object, $slot: string, $account: record, $at: datetime, $effects: object) {
+DEFINE FUNCTION OVERWRITE fn::accounting::post($row: object, $slot: string, $account: record, $at: datetime, $effects: object, $reporting_query: option<object>, $organization_query: option<object>) {
     LET $a=SELECT * FROM ONLY $account;
     LET $native=object::extend($effects,{net:($effects.receivable??0dec)-($effects.payable??0dec),available:($effects.real??0dec)-($effects.reserved??0dec)});
-    LET $rate=fn::accounting::rate_at($a.valuation_pair,$a.resource,$a.reporting_currency,$at);
+    LET $rate=(fn::dependency::value($reporting_query)??1dec);
     LET $v=fn::accounting::scale($native,$rate,$a.reporting_currency);
     LET $kind=record::tb($account);
     LET $report=IF $a.organization!=NONE {
@@ -28,8 +36,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::post($row: object, $slot: string, $acc
         object::extend(fn::accounting::effects(0dec,0dec,0dec),{misc_real:$v.real})
     } ELSE {object::extend(fn::accounting::effects($v.real,0dec,0dec),{owned_real:$v.real,fees:$v.fees})};
     LET $org=IF $a.organization=NONE THEN [] ELSE [
-        fn::tree::member($row.id,$slot+'_organization',$a.organization,'z_history',$at,fn::accounting::scale($native,fn::accounting::rate_at($a.organization_pair,$a.resource,$a.organization_currency,$at),$a.organization_currency),{currency:$a.organization_currency,subsidiary:$a.subsidiary},{},false)] END;
+        fn::tree::member($row.id,$slot+'_organization',$a.organization,'z_history',$at,fn::accounting::scale($native,(fn::dependency::value($organization_query)??1dec),$a.organization_currency),{currency:$a.organization_currency,subsidiary:$a.subsidiary},{})] END;
     RETURN array::concat([
-        fn::tree::member($row.id,$slot,$account,'z_history',$at,$native,{resource:$a.resource,subsidiary:$a.subsidiary},{},false),
-        fn::tree::member($row.id,$slot+'_subsidiary',$a.subsidiary,'z_history',$at,$report,{currency:$a.reporting_currency},{},false)],$org);
+        fn::tree::member($row.id,$slot,$account,'z_history',$at,$native,{resource:$a.resource,subsidiary:$a.subsidiary},{}),
+        fn::tree::member($row.id,$slot+'_subsidiary',$a.subsidiary,'z_history',$at,$report,{currency:$a.reporting_currency},{})],$org);
 } PERMISSIONS NONE;

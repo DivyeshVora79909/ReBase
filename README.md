@@ -3,20 +3,15 @@
 ReBase compiles SurrealDB authorization, validation, audit, reactive calculations, and table-keyed external effects. Clients use SurrealDB directly; the native Node HTTP runtime performs work requiring privileged provider access.
 
 **Developer tools:** start with the [JavaScript workbench guide](./dev-tools/README.md).
-The [developer-tools handoff](./designs/rebase-system/developer-experience-handoff.md)
-records review evidence and execution instructions; the
-[plan](./designs/rebase-system/developer-experience-plan.md) preserves the design
-decisions. The separately redesigned frontend has its own
-[documentation](./designs/frontend/README.md) and
-[verification record](./designs/frontend/verification.md).
+The [developer blueprint](./designs/rebase-system/developer-blueprint.md) and
+[declarative engine plan](./designs/rebase-system/declarative-engine-plan.md)
+explain the current model and execution gates. Earlier dated handoffs and
+evidence describe their original revisions.
 
-**Current development contract:** read the [tenant and tree redesign](./designs/rebase-system/tenant-tree-redesign.md),
+**Current development contract:** read the [declared-query contract](./designs/rebase-system/function-reactivity.md),
+[tenant and tree design](./designs/rebase-system/tenant-tree-redesign.md),
 [ordered-tree contract](./designs/rebase-system/ordered-tree-contract.md), and
 [single-design runtime](./designs/rebase-system/single-design-runtime.md).
-**Backend T0–T6 is ready for lead review (2026-10-05):** the
-[execution handoff](./designs/rebase-system/tenant-tree-handoff.md) and
-[verification evidence](./designs/rebase-system/evidence/2026-10-05-tenant-tree-verification.json)
-record passing builds, full backend/accounting suites, positions and mocked refunds.
 Use SurrealDB **3.3.0** as pinned by `.surreal-version`. One configured
 namespace/database identifies a design; explicitly provisioned `rebase_tenant`
 records isolate users and data inside it.
@@ -29,7 +24,7 @@ tax cash, claims, transfers and production. The
 [developer guide](./designs/all-in-accounting/developer-guide.md) states the units,
 constraints and graph/tree queries; [current verification](./designs/all-in-accounting/verification.md)
 records acceptance. [Function reactivity](./designs/rebase-system/function-reactivity.md)
-explains automatic dependencies from ordered reads, without authored impact rules. Start framework authoring with the
+explains schema-declared queries, pure helpers and synchronous propagation. Start framework authoring with the
 [developer blueprint](./designs/rebase-system/developer-blueprint.md).
 The removed recipe profile and older evidence retain their historical meaning.
 
@@ -79,6 +74,9 @@ npm run build:all-in-accounting
 npm run check:all-in-accounting
 npm run verify:accounting
 npm run verify
+npm run probe:dependencies
+npm run probe:intervals
+npm run probe:dependency-cost
 npm run probe:temporal-tree
 npm run probe:accounts
 npm run probe:suite
@@ -105,7 +103,9 @@ settings cannot be overridden with command-line flags; select them in the
 profile. A connected workbench serves the one design selected by that profile.
 Provider API credentials remain typed fields in SurrealDB configuration records.
 
-The compiler emits `build/<project>/schema.surql`, a private `runtime-contracts.json`, and validated `table-handlers/` modules. It does not emit tenant operation catalogs, generic job schemas, or compatibility artifacts.
+The compiler emits `build/<project>/schema.surql`, private `runtime-contracts.json`
+and `dependency-plan.json` files, and validated `table-handlers/` modules. Inspect
+current calculation inputs with `node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta`.
 
 Runtime event generation uses the same profile's default namespace/database and
 runtime binding. Keep build and deploy on the same profile:

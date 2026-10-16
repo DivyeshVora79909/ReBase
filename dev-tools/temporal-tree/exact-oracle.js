@@ -13,11 +13,16 @@ const stable = value => {
 // Independent linear fold over source-expected entries. It deliberately does
 // not use tree shape or combine the production summaries.
 function linearSummary(entries, Decimal, compare) {
-  const result = { count: 0, dependents: 0, measures: {}, tags: {}, spans: {} };
+  const result = { count: 0, measures: {}, tags: {}, spans: {} };
   const timestamps = [];
   for (const entry of entries) {
+    if (entry.interval) {
+      const upper = entry.interval.upper;
+      if (!result.interval) result.interval = upper == null ? {} : { upper };
+      else if (upper == null) result.interval = {};
+      else if (result.interval.upper != null && compare(upper, result.interval.upper) > 0) result.interval.upper = upper;
+    }
     result.count++;
-    result.dependents += entry.dependent ? 1 : 0;
     result.first ??= entry.key;
     result.last = entry.key;
     const primary = entry.key[0];
@@ -73,11 +78,11 @@ function linearSummary(entries, Decimal, compare) {
 function equalSummary(actual, expected, label, Decimal) {
   assert(actual && typeof actual === 'object', `${label}: summary object exists`);
   assert.equal(actual.count, expected.count, `${label}.count`);
-  assert.equal(actual.dependents, expected.dependents, `${label}.dependents`);
   assert.deepEqual(actual.first ?? null, expected.first ?? null, `${label}.first`);
   assert.deepEqual(actual.last ?? null, expected.last ?? null, `${label}.last`);
   assert.deepEqual(stable(actual.tags || {}), stable(expected.tags), `${label}.tags`);
   assert.deepEqual(stable(actual.spans || {}), stable(expected.spans), `${label}.spans`);
+  assert.deepEqual(stable(actual.interval), stable(expected.interval), `${label}.interval`);
   const actualMeasures = actual.measures || {};
   assert.deepEqual(Object.keys(actualMeasures).sort(), Object.keys(expected.measures).sort(), `${label}.measures`);
   for (const [name, wanted] of Object.entries(expected.measures)) {

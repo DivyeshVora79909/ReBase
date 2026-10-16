@@ -59,7 +59,7 @@ DEFINE FUNCTION OVERWRITE fn::h3c::leaf_members($row: object) {
         { invoice: $row.declared_invoice, customer: $row.customer,
           economic_entity: $row.economic_entity, currency: $row.currency,
           direction: $row.declared_direction,
-          available_quantity: $row.available_quantity }, {}, false)];
+          available_quantity: $row.available_quantity }, {})];
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE h3c_header SCHEMAFULL COMMENT '@rebase-validate fn::h3c::header_validate';

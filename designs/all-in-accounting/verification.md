@@ -1,6 +1,28 @@
 # Accounting verification
 
-## Current integrity repair status — October 15
+## Current declarative-engine acceptance — October 16
+
+The replacement engine passed full accounting and extension acceptance on
+SurrealDB **3.3.0 / Node 22.23.2**, using a disposable SurrealKV database:
+**103 source-oracle checkpoints, 105 structural checks, 90 exact value queries
+and 54 complete rollback snapshots**. Exact populated-schema reapplication
+and child-first cleanup passed, including empty financial and dependency roots.
+
+The [acceptance evidence](../rebase-system/evidence/2026-10-16-declarative-accounting.json)
+records the **65-table, 11,183,330-byte** schema, its stable source fingerprints,
+cases and phase timings. Its SHA-256 is
+`f97c34d49df04f68930eb9fa67882a2a283a2cb25e98ff27fe44f847c010b275`.
+Accounting now declares 138 fixed query roles and uses private tenant-rooted
+trees for six business uniqueness constraints.
+
+The [FX history](../rebase-system/evidence/2026-10-16-declarative-fx.json)
+passed 76 checkpoints, 2 rollback snapshots and 31 checked cleanup deletions.
+The [engine verification record](../rebase-system/declarative-engine-verification.md)
+owns supporting checks, reproduced defects and the later numeric-demo checker
+adapter boundary. The full financial oracle continues to compare rational
+values exactly. Results below describe historical engines, not current acceptance.
+
+## Historical integrity repair status — October 15
 
 The [lead handoff](../rebase-system/integrity-2026-10-15/README.md) and
 [acceptance manifest](../rebase-system/evidence/2026-10-15-staged-capture-acceptance.json)
@@ -104,16 +126,16 @@ DDL. They do not measure ordinary transaction latency or production capacity.
 npm run build:all-in-accounting
 npm run verify:accounting
 npm run probe:accounting-integrity-fx
-npm run probe:accounting-capture-regression
+npm run probe:accounting-adjustment-rekey
 npm run probe:typed-tree-seeded
-npm run probe:observed-reads
-npm run probe:observed-reads-seeded
-node dev-tools/temporal-tree/read-cost-probe.js
+npm run probe:dependencies
+npm run probe:intervals
+npm run probe:dependency-cost
 npm run test:dev-tools
 ```
 
 The [developer guide](developer-guide.md) and shared
-[automatic-read contract](../rebase-system/function-reactivity.md) define the API.
+[declared-query contract](../rebase-system/function-reactivity.md) define the API.
 A populated old-schema migration, MetaSol adaptation and current-rate valuation
 of remaining stock require separate work. Event-time reporting units and the
 accounting calculation equations retain their existing meaning.

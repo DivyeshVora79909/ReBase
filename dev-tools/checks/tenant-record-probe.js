@@ -21,7 +21,7 @@ DEFINE FIELD effective_at ON entry TYPE datetime;
 DEFINE FIELD position ON entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner entity.history';
 DEFINE FUNCTION fn::tenant_fixture::entry($row: object) {
   RETURN [fn::tree::member($row.id, 'position', $row.entity, 'history', $row.effective_at,
-    { amount: $row.amount }, {}, {}, false)];
+    { amount: $row.amount }, {}, {})];
 } PERMISSIONS NONE;
 DEFINE TABLE secret_entry SCHEMAFULL PERMISSIONS NONE COMMENT '@rebase-members fn::tenant_fixture::secret_entry';
 DEFINE FIELD entity ON secret_entry TYPE record<entity> REFERENCE ON DELETE REJECT;
@@ -30,7 +30,7 @@ DEFINE FIELD effective_at ON secret_entry TYPE datetime;
 DEFINE FIELD position ON secret_entry TYPE option<object> PERMISSIONS FOR select NONE COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner entity.history';
 DEFINE FUNCTION fn::tenant_fixture::secret_entry($row: object) {
   RETURN [fn::tree::member($row.id, 'position', $row.entity, 'history', $row.effective_at,
-    { amount: $row.amount }, {}, {}, false)];
+    { amount: $row.amount }, {}, {})];
 } PERMISSIONS NONE;
 DEFINE TABLE hidden_entry SCHEMAFULL COMMENT '@rebase-members fn::tenant_fixture::hidden_entry';
 DEFINE FIELD entity ON hidden_entry TYPE record<entity> REFERENCE ON DELETE REJECT;
@@ -39,7 +39,7 @@ DEFINE FIELD effective_at ON hidden_entry TYPE datetime;
 DEFINE FIELD position ON hidden_entry TYPE option<object> PERMISSIONS FOR select NONE COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner entity.history';
 DEFINE FUNCTION fn::tenant_fixture::hidden_entry($row: object) {
   RETURN [fn::tree::member($row.id, 'position', $row.entity, 'history', $row.effective_at,
-    { amount: $row.amount }, {}, {}, false)];
+    { amount: $row.amount }, {}, {})];
 } PERMISSIONS NONE;
 DEFINE TABLE public_entity SCHEMAFULL;
 DEFINE FIELD title ON public_entity TYPE string;
@@ -52,7 +52,7 @@ DEFINE FIELD effective_at ON public_entry TYPE datetime;
 DEFINE FIELD position ON public_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner public_entity.history';
 DEFINE FUNCTION fn::tenant_fixture::public_entry($row: object) {
   RETURN [fn::tree::member($row.id, 'position', $row.entity, 'history', $row.effective_at,
-    { amount: $row.amount }, {}, {}, false)];
+    { amount: $row.amount }, {}, {})];
 } PERMISSIONS NONE;
 DEFINE TABLE note SCHEMAFULL;
 DEFINE FIELD other ON note TYPE option<record<note>> REFERENCE ON DELETE IGNORE COMMENT '@rebase-readers';

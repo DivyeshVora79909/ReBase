@@ -138,13 +138,13 @@ function verify(data) {
     link: { rid: row.id, slot: 'rb_position' },
     owner: { rid: row.a_owner, slot: 'rb_position' },
     key: [row.a_at, row.id, 'rb_position'],
-    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {}, dependent: false,
+    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {},
   }));
   entries.push(...data.compounds.map(row => ({
     link: { rid: row.id, slot: 'rb_prerequisite' },
     owner: { rid: row.a_prerequisite, slot: 'rb_children' },
     key: [row.a_at, row.id, 'rb_prerequisite'],
-    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {}, dependent: false,
+    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {},
   })));
   return oracle.verify([...data.owners, ...data.bases], rows, entries, compareKey);
 }

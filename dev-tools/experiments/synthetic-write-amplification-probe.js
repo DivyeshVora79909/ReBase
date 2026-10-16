@@ -73,7 +73,7 @@ function refSql(table, id, slot) {
 }
 
 function summarySql(count, first, last) {
-  return `{count:${count},dependents:0,first:${keySql(first)},last:${keySql(last)},measures:{amount:{sum:0dec,min_prefix:0dec,max_prefix:0dec,min:0dec,max:0dec,instant_min:0dec,instant_max:0dec}},tags:{},spans:{}}`;
+  return `{count:${count},first:${keySql(first)},last:${keySql(last)},measures:{amount:{sum:0dec,min_prefix:0dec,max_prefix:0dec,min:0dec,max:0dec,instant_min:0dec,instant_max:0dec}},tags:{},spans:{}}`;
 }
 
 function valueSql(count, key) {
@@ -200,7 +200,7 @@ function backboneStatements(backbone) {
       { ...backbone.rootSummary.first, slot: rootSlot },
       { ...backbone.rootSummary.last, slot: rootSlot },
     );
-    statements.push(`UPDATE stress_owner:owner_${owner} SET z_book={root:${refSql('stress_fact', idForPath(0), rootSlot)},height:${pathHeight},revision:0,refreshing:false,dirty:NONE,cursor:NONE,summary:${rootSummary}};`);
+    statements.push(`UPDATE stress_owner:owner_${owner} SET z_book={root:${refSql('stress_fact', idForPath(0), rootSlot)},height:${pathHeight},revision:0,summary:${rootSummary}};`);
   }
   return statements;
 }

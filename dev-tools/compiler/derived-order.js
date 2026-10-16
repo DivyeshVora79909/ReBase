@@ -1,7 +1,7 @@
 'use strict';
 
 const { splitTopLevel, sqlCode } = require('./surql');
-const { functions } = require('./observed-reads');
+const { functions } = require('./read-only');
 const { valueExpression } = require('./fields');
 
 function closeCall(code, open) {
@@ -108,7 +108,12 @@ function resolveDerivedOrder(table, functionSource = '') {
   for (const field of reactive) {
     const expression = valueExpression(field);
     if (!expression) throw new Error(`${table.name}.${field.name}: @rebase-derived requires VALUE`);
-    dependencies.set(field.name, localDependencies(expression, byName, declared, `${table.name}.${field.name}`));
+    const inputs = localDependencies(expression, byName, declared, `${table.name}.${field.name}`);
+    if (field.dependency?.phase !== 'validate') {
+      const validation = inputs.find(name => byName.get(name)?.dependency?.phase === 'validate');
+      if (validation) throw new Error(`${table.name}.${field.name}: calculation cannot consume validation-phase query ${validation}`);
+    }
+    dependencies.set(field.name, inputs);
   }
 
   const ordered = [];
@@ -125,7 +130,10 @@ function resolveDerivedOrder(table, functionSource = '') {
     for (const dependency of dependencies.get(name) || []) visit(dependency);
     active.pop();
     visited.add(name);
-    ordered.push(byName.get(name));
+    const field = byName.get(name);
+    field.orderedInputs = Boolean(field.dependency)
+      || (dependencies.get(name) || []).some(input => byName.get(input).orderedInputs);
+    ordered.push(field);
   };
   for (const name of [...byName.keys()].sort((a, b) => a.localeCompare(b))) visit(name);
   return ordered;

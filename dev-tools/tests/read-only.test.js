@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const test=require('node:test');
-const {resolveObservedReads}=require('../compiler/observed-reads');
+const {resolveReadOnly}=require('../compiler/read-only');
 const {parseSchema}=require('../compiler/schema');
 const {resolveTreeContract}=require('../compiler/tree-contract');
 const path=require('node:path');
@@ -15,33 +15,12 @@ function compile(source) {
   }]));
 }
 
-test('capture follows helper call graphs and leaves quoted text and comments untouched',()=>{
-  const source=`DEFINE FUNCTION fn::outer($row: object) {
-    RETURN IF $row.enabled THEN fn::inner(fn::empty(), $row.at) ELSE 0dec END;
-  };
-  DEFINE FUNCTION fn::inner($owner: record, $at: datetime) {
-    -- fn::tree::read_value(fake, 'fake', 'before', [], '', 0dec)
-    LET $example='fn::tree::read_value(fake)';
-    RETURN fn::tree::read_value($owner,'z_points','latest',[[$at]],'measures.rate.sum',NONE);
-  };
-  DEFINE FUNCTION fn::empty() { RETURN curve:a; };`;
-  const model=resolveObservedReads(source);
-  assert.deepEqual([...model.tracked].sort(),['fn::inner','fn::outer']);
-  assert.match(model.generated,/fn::reads::captured::inner\(\$__rebase_observer, fn::empty\(\), \$row.at\)/);
-  assert.match(model.generated,/fn::reads::tree\(\$__rebase_observer, \$owner/);
-  assert.match(model.generated,/-- fn::tree::read_value\(fake/);
-  assert.match(model.generated,/'fn::tree::read_value\(fake\)'/);
-  assert.equal(model.rewrite('fn::outer($this)', '$scope'),'fn::reads::captured::outer($scope, $this)');
-  assert.equal(model.rewrite("'fn::outer($this)'",'$scope'),"'fn::outer($this)'");
-  model.validate('fn::outer($this)','invoice.rate');
-});
-
 test('an ordered calculation cannot hide an untracked lookup in a helper',()=>{
-  const model=resolveObservedReads(`DEFINE FUNCTION fn::hidden($owner: record) {
+  const model=resolveReadOnly(`DEFINE FUNCTION fn::hidden($owner: record) {
     RETURN fn::tree::read($owner,'z_points','seek',[[1],true,false]);
   }; DEFINE FUNCTION fn::outer() { RETURN fn::hidden(curve:a); };`);
-  assert.throws(()=>model.validate('fn::outer()','invoice.rate'),/invoice.rate.*read_value.*fn::tree::read/);
-  assert.throws(()=>parseSchema("DEFINE TABLE quote COMMENT '@rebase-impact fn::inverse';",''),/retired annotation.*read_value/);
+  assert.throws(()=>model.validate('fn::outer()','invoice.rate'),/invoice.rate.*@rebase-dependency.*fn::tree::read/);
+  assert.throws(()=>parseSchema("DEFINE TABLE quote COMMENT '@rebase-impact fn::inverse';",''),/retired annotation.*@rebase-dependency/);
 });
 
 test('interval tuple keys are private metadata, rather than untyped application ordering',()=>{
@@ -64,7 +43,7 @@ test('reactive expressions reject direct and nested writes with their helper ide
     'DELETE /* target */ ⟨source⟩',
   ];
   for (const mutation of mutations) {
-    const model=resolveObservedReads(`
+    const model=resolveReadOnly(`
       DEFINE FUNCTION fn::inner($source: record) { IF true { ${mutation}; }; RETURN 0; };
       DEFINE FUNCTION fn::outer($source: record) { RETURN fn::inner($source); };`);
     const keyword=mutation.split(' ')[0];
@@ -76,7 +55,7 @@ test('reactive expressions reject direct and nested writes with their helper ide
     'RETURN IF true THEN (DELETE source:one) ELSE NONE END;',
     'RETURN [1].map(|$n| { CREATE source SET value=$n; RETURN $n; });',
     'FOR $n IN [1] { UPDATE source:one SET value=$n; }; RETURN 0;',
-  ]) assert.throws(()=>resolveObservedReads('').validate(expression,'reader.value'),/read-only/);
+  ]) assert.throws(()=>resolveReadOnly('').validate(expression,'reader.value'),/read-only/);
 });
 
 test('reactive helpers reject schema, transaction, runtime and opaque effects',()=>{
@@ -89,9 +68,9 @@ test('reactive helpers reject schema, transaction, runtime and opaque effects',(
     "RETURN http::get('https://example.invalid');",
     "RETURN api::invoke('/write');",
     'RETURN function() { return 1; };', 'RETURN $call();',
-    'RETURN fn::missing();', 'RETURN fn::rebase::refresh(source:one,NONE,true);',
+    'RETURN fn::missing();', 'RETURN fn::rebase::refresh(source:one,NONE);',
     'RETURN fn::reads::flush({});', 'RETURN fn::`hidden`();', 'RETURN fn::⟨hidden⟩();',
-  ]) assert.throws(()=>resolveObservedReads('').validate(expression,'reader.value'),/reader.value.*read-only/,expression);
+  ]) assert.throws(()=>resolveReadOnly('').validate(expression,'reader.value'),/reader.value.*read-only/,expression);
 });
 
 test('read-only controls preserve keywords in fields, records, strings and comments',()=>{
@@ -106,17 +85,17 @@ test('read-only controls preserve keywords in fields, records, strings and comme
     IF $row.update < 0 { THROW 'UPDATE rejected'; };
     RETURN IF $row.delete THEN math::abs($row.update) ELSE 0 END;
   };`;
-  const model=resolveObservedReads(source);
+  const model=resolveReadOnly(source);
   model.validate('fn::pure($this)','reader.value');
-  model.validate('fn::tree::member(source:one,"node",NONE,"root",NONE,{},{},{},false)','member');
+  model.validate('fn::tree::member(source:one,"node",NONE,"root",NONE,{},{},{})','member');
   model.validate('fn::tree::ordered_member(source:one,"node",NONE,"root",[],{},{})','member');
   model.validate('fn::tree::combine(fn::tree::empty(), fn::tree::empty())','reader.value');
   // Unreachable ordinary write helpers remain valid application entry points.
-  resolveObservedReads(source+' DEFINE FUNCTION fn::write() { UPDATE source:one SET value=2; };')
+  resolveReadOnly(source+' DEFINE FUNCTION fn::write() { UPDATE source:one SET value=2; };')
     .validate('fn::pure($this)','reader.value');
 });
 
-test('bundle compilation rejects the stale-value reproduction before generating capture code',()=>{
+test('bundle compilation rejects the stale-value reproduction before generating executable code',()=>{
   assert.throws(()=>compile(`
     DEFINE TABLE mutable_source SCHEMAFULL;
     DEFINE FIELD value ON mutable_source TYPE int;
@@ -149,27 +128,26 @@ test('bundle compilation enforces read-only helpers in every reactive phase',()=
   }
 });
 
-test('bundle compilation accepts pure reactive phases and retains coordinator writes',()=>{
+test('bundle compilation keeps pure helpers ordinary and coordinator writes explicit',()=>{
   const result=compile(`
-    DEFINE FUNCTION fn::pure($source: record) {
-      LET $value=fn::record::read_value($source,'value',0);
-      IF $value < 0 { THROW 'NEGATIVE'; };
-      RETURN $value;
-    };
+    DEFINE TABLE source SCHEMAFULL;
+    DEFINE FIELD value ON source TYPE int;
+    DEFINE FUNCTION fn::pure($source: record) { RETURN $source.value; };
     DEFINE FUNCTION fn::members($row: object) { RETURN []; };
     DEFINE FUNCTION fn::outputs($row: object) { RETURN []; };
-    DEFINE FUNCTION fn::validate($row: object) { fn::pure($row.id); RETURN true; };
+    DEFINE FUNCTION fn::validate($row: object) { IF $row.value < 0 { THROW 'NEGATIVE'; }; };
     DEFINE TABLE reader SCHEMAFULL COMMENT '@rebase-members fn::members @rebase-required-outputs fn::outputs @rebase-validate fn::validate';
+    DEFINE FIELD source ON reader TYPE record<source> REFERENCE ON DELETE REJECT;
     DEFINE FIELD z_root ON reader TYPE object COMMENT '@rebase-tree-root @rebase-tree-key int';
     DEFINE FIELD z_node ON reader TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key int @rebase-tree-owner reader.z_root';
-    DEFINE FIELD value ON reader TYPE int VALUE fn::pure($this.id) COMMENT '@rebase-derived';
+    DEFINE FIELD value ON reader TYPE int VALUE fn::pure($this.source) COMMENT '@rebase-derived @rebase-depends source.value';
     DEFINE TABLE managed SCHEMAFULL PERMISSIONS NONE COMMENT '@rebase-managed-output';
     DEFINE FIELD rebase_managed_source ON managed TYPE string COMMENT '@rebase-system';
     DEFINE FIELD rebase_managed_role ON managed TYPE string COMMENT '@rebase-system';
-    DEFINE FUNCTION fn::application_write() { UPDATE reader:one SET value=3; };
+    DEFINE FUNCTION fn::application_write() { UPDATE source:one SET value=3; };
   `);
-  assert.match(result.bundle,/fn::reads::captured::pure/);
-  assert.match(result.bundle,/DEFINE FUNCTION OVERWRITE fn::reads::flush/);
+  assert.doesNotMatch(result.bundle,/fn::reads::|DEFINE TABLE OVERWRITE rebase_read/);
+  assert.match(result.bundle,/DEFINE FUNCTION fn::pure/);
   assert.match(result.bundle,/UPDATE \$link.rid PATCH/);
-  assert.match(result.bundle,/UPDATE reader:one SET value=3/);
+  assert.match(result.bundle,/UPDATE source:one SET value=3/);
 });

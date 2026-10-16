@@ -39,15 +39,15 @@ DEFINE FIELD OVERWRITE z10_leg ON stress_fact TYPE option<object> COMMENT '@reba
 DEFINE FUNCTION OVERWRITE fn::stress::members($row: option<object>) {
     IF $row = NONE { RETURN []; };
     RETURN [
-        fn::tree::member($row.id, 'z01_leg', $row.a_owner_01, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 1) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z02_leg', $row.a_owner_02, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 2) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z03_leg', $row.a_owner_03, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 3) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z04_leg', $row.a_owner_04, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 4) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z05_leg', $row.a_owner_05, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 5) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z06_leg', $row.a_owner_06, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 6) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z07_leg', $row.a_owner_07, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 7) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z08_leg', $row.a_owner_08, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 8) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z09_leg', $row.a_owner_09, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 9) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false),
-        fn::tree::member($row.id, 'z10_leg', $row.a_owner_10, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 10) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}, false)
+        fn::tree::member($row.id, 'z01_leg', $row.a_owner_01, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 1) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z02_leg', $row.a_owner_02, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 2) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z03_leg', $row.a_owner_03, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 3) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z04_leg', $row.a_owner_04, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 4) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z05_leg', $row.a_owner_05, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 5) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z06_leg', $row.a_owner_06, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 6) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z07_leg', $row.a_owner_07, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 7) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z08_leg', $row.a_owner_08, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 8) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z09_leg', $row.a_owner_09, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 9) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {}),
+        fn::tree::member($row.id, 'z10_leg', $row.a_owner_10, 'z_book', $row.a_effective_at, { amount: IF (($row.a_sequence + 10) % 2) = 0 THEN $row.z12_amount ELSE -$row.z12_amount END }, {}, {})
     ];
 } PERMISSIONS NONE;

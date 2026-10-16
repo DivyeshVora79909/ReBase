@@ -7,8 +7,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::settlement_validate($row: object) {
 
 DEFINE FUNCTION OVERWRITE fn::accounting::settlement_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,0dec,$row.invoice_amount),
-        fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount ELSE -$row.amount END,0dec,0dec)),[
-        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{cash:$row.amount,invoice_amount:$row.invoice_amount},{},{},false)],fn::accounting::fee_members($row));
+        fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount ELSE -$row.amount END,0dec,0dec), $row.q_cash_reporting, $row.q_cash_organization),[
+        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{cash:$row.amount,invoice_amount:$row.invoice_amount},{},{})],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_validate($row: object) {
@@ -22,8 +22,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_validate($row: obje
 
 DEFINE FUNCTION OVERWRITE fn::accounting::payment_adjustment_members($row: object) {
     RETURN array::concat(fn::accounting::commercial($row,0dec,$row.invoice_delta),
-        fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount_delta ELSE -$row.amount_delta END,0dec,0dec)),[
-        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{cash:$row.amount_delta,invoice_amount:$row.invoice_delta},{},{},false)],fn::accounting::fee_members($row));
+        fn::accounting::post($row,'z_cash',$row.treasury,$row.effective_at,fn::accounting::effects(IF $row.is_sale THEN $row.amount_delta ELSE -$row.amount_delta END,0dec,0dec), $row.q_cash_reporting, $row.q_cash_organization),[
+        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{cash:$row.amount_delta,invoice_amount:$row.invoice_delta},{},{})],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE invoice_settlement SCHEMAFULL COMMENT '@rebase-members fn::accounting::settlement_members @rebase-validate fn::accounting::settlement_validate';
@@ -56,6 +56,14 @@ DEFINE FIELD OVERWRITE precision ON invoice_settlement TYPE int VALUE $this.curr
 
 DEFINE FIELD OVERWRITE z_counterparty ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
 
+DEFINE FIELD OVERWRITE q_counterparty_reporting ON invoice_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.currency_account.valuation_pair,$this.currency_account.resource,$this.currency_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_counterparty_organization ON invoice_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.currency_account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_counterparty_organization ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
@@ -64,13 +72,21 @@ DEFINE FIELD OVERWRITE z_invoice ON invoice_settlement TYPE option<object> COMME
 
 DEFINE FIELD OVERWRITE treasury_currency ON invoice_settlement TYPE record<currency> REFERENCE ON DELETE REJECT VALUE $this.treasury.currency COMMENT '@rebase-derived';
 
-DEFINE FIELD OVERWRITE exchange_rate ON invoice_settlement TYPE decimal VALUE fn::accounting::rate_at($this.exchange_pair,$this.treasury_currency,$this.currency,$this.effective_at) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_exchange_rate ON invoice_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.exchange_pair,$this.treasury_currency,$this.currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE exchange_rate ON invoice_settlement TYPE decimal VALUE (fn::dependency::value($this.q_exchange_rate)??1dec) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE invoice_amount ON invoice_settlement TYPE decimal VALUE fn::accounting::round($this.amount*$this.exchange_rate,$this.precision) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE z_capacity ON invoice_settlement TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
 
 DEFINE FIELD OVERWRITE z_cash ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE q_cash_reporting ON invoice_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.treasury.valuation_pair,$this.treasury.resource,$this.treasury.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON invoice_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -106,6 +122,14 @@ DEFINE FIELD OVERWRITE precision ON payment_adjustment TYPE int VALUE $this.curr
 
 DEFINE FIELD OVERWRITE z_counterparty ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
 
+DEFINE FIELD OVERWRITE q_counterparty_reporting ON payment_adjustment TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.currency_account.valuation_pair,$this.currency_account.resource,$this.currency_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_counterparty_organization ON payment_adjustment TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.currency_account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_counterparty_organization ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
@@ -128,11 +152,19 @@ DEFINE FIELD OVERWRITE source_invoice_amount ON payment_adjustment TYPE decimal 
 
 DEFINE FIELD OVERWRITE source_at ON payment_adjustment TYPE datetime VALUE $this.source.effective_at COMMENT '@rebase-derived';
 
-DEFINE FIELD OVERWRITE exchange_rate ON payment_adjustment TYPE decimal VALUE fn::accounting::rate_at($this.exchange_pair,$this.treasury_currency,$this.currency,$this.effective_at) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_exchange_rate ON payment_adjustment TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.exchange_pair,$this.treasury_currency,$this.currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE exchange_rate ON payment_adjustment TYPE decimal VALUE (fn::dependency::value($this.q_exchange_rate)??1dec) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE invoice_delta ON payment_adjustment TYPE decimal VALUE $this.entered_invoice_delta??fn::accounting::round($this.amount_delta*$this.exchange_rate,$this.precision) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE z_cash ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE q_cash_reporting ON payment_adjustment TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.treasury.valuation_pair,$this.treasury.resource,$this.treasury.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_cash_subsidiary ON payment_adjustment TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

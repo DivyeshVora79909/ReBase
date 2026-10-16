@@ -68,7 +68,7 @@ function verify(data) {
         if (!entry) {
           const slot = `rb_${kind}_${suffix}`;
           entry = { link: { rid: row.id, slot }, owner: { rid: owner, slot: `rb_${kind}` },
-            key: [value, row.id, slot], measures: { weight: 0 }, tags: {}, spans: {}, dependent: false };
+            key: [value, row.id, slot], measures: { weight: 0 }, tags: {}, spans: {} };
           grouped.set(value, entry);
         }
         entry.measures.weight += Number(row[`a_weight_${suffix}`]);
@@ -100,7 +100,7 @@ async function queries(q, groups) {
   const add = (request, value) => { requests.push(request); expected.push(value); };
   for (const { owner, entries } of groups.values()) {
     const read = (operation, argument) => `fn::tree::read(${owner.rid}, '${owner.slot}', '${operation}', ${argument})`;
-    add(read('summary', '[]'), oracle.scan(entries));
+    add(read('summary', '[]'), oracle.scan(entries, compare));
     for (const k of new Set([0, 1, Math.ceil(entries.length / 2), entries.length, entries.length + 1])) {
       add(read('select', `[${k}]`), entries[k - 1]?.link ?? null);
     }
@@ -110,13 +110,13 @@ async function queries(q, groups) {
     const keys = [...bounds, ...entries.flatMap(entry => [entry.key.slice(0, 2), entry.key])];
     for (const key of keys) {
       const before = entries.filter(entry => compare(entry.key, key) < 0);
-      add(read('before', keySql(key)), oracle.scan(before));
+      add(read('before', keySql(key)), oracle.scan(before, compare));
       add(read('rank', keySql(key)), before.length + 1);
     }
     const pairs = [[bounds[0], bounds[2]], [bounds[1], bounds[2]], [bounds[2], bounds[0]], [bounds[1], bounds[1]]];
     if (entries.length) pairs.push([entries[0].key, entries.at(-1).key]);
     for (const [low, high] of pairs) add(read('range', `[${keySql(low)},${keySql(high)}]`),
-      oracle.scan(entries.filter(entry => compare(entry.key, low) >= 0 && compare(entry.key, high) < 0)));
+      oracle.scan(entries.filter(entry => compare(entry.key, low) >= 0 && compare(entry.key, high) < 0), compare));
   }
   for (let i = 0; i < requests.length; i += 100) {
     const actual = await q(`RETURN [${requests.slice(i, i + 100).join(',\n')}];`);

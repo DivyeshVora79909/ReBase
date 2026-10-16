@@ -2,8 +2,8 @@
 DEFINE FUNCTION OVERWRITE fn::accounting::trade($row: object, $quantity: decimal, $amount: decimal, $organization: bool) {
     LET $a=SELECT * FROM ONLY $row.currency_account;
     LET $currency=IF $organization THEN $a.organization_currency ELSE $a.reporting_currency END;
-    LET $pair=IF $organization THEN $a.organization_pair ELSE $a.valuation_pair END;
-    LET $value=fn::accounting::round($amount*fn::accounting::rate_at($pair,$a.resource,$currency,$row.effective_at),$currency.precision);
+    LET $query=IF $organization THEN $row.q_counterparty_organization ELSE $row.q_counterparty_reporting END;
+    LET $value=fn::accounting::round($amount*(fn::dependency::value($query)??1dec),$currency.precision);
     RETURN {sales_quantity:IF $row.is_sale THEN $quantity ELSE 0dec END,purchase_quantity:IF $row.is_sale THEN 0dec ELSE $quantity END,
         sales_reporting_value:IF $row.is_sale THEN $value ELSE 0dec END,purchase_reporting_value:IF $row.is_sale THEN 0dec ELSE $value END};
 } PERMISSIONS NONE;
@@ -18,10 +18,10 @@ DEFINE FUNCTION OVERWRITE fn::accounting::issue_validate($row: object) {
 DEFINE FUNCTION OVERWRITE fn::accounting::issue_members($row: object) {
     LET $q=IF $row.is_sale THEN -$row.quantity ELSE $row.quantity END;
     RETURN array::concat(fn::accounting::commercial($row,$row.amount,0dec),
-        fn::accounting::post($row,'z_stock',$row.stock_account,$row.effective_at,object::extend(fn::accounting::effects($q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,false))),
-        fn::accounting::post($row,'z_goods',$row.counterparty_stock,$row.effective_at,object::extend(fn::accounting::effects(-$q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,true))),[
-        fn::tree::member($row.id,'z_self',$row.id,'z_state',$row.effective_at,{quantity:$row.quantity,price:$row.price,base:$row.amount},{},{},false),
-        fn::tree::member($row.id,'z_net_self',$row.id,'z_net',$row.effective_at,{amount:$row.amount},{},{},false)]);
+        fn::accounting::post($row,'z_stock',$row.stock_account,$row.effective_at,object::extend(fn::accounting::effects($q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,false)), $row.q_stock_reporting, $row.q_stock_organization),
+        fn::accounting::post($row,'z_goods',$row.counterparty_stock,$row.effective_at,object::extend(fn::accounting::effects(-$q,0dec,0dec),fn::accounting::trade($row,$row.quantity,$row.amount,true)), $row.q_goods_reporting, $row.q_goods_organization),[
+        fn::tree::member($row.id,'z_self',$row.id,'z_state',$row.effective_at,{quantity:$row.quantity,price:$row.price,base:$row.amount},{},{}),
+        fn::tree::member($row.id,'z_net_self',$row.id,'z_net',$row.effective_at,{amount:$row.amount},{},{})]);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE sales_issue SCHEMAFULL COMMENT '@rebase-members fn::accounting::issue_members @rebase-validate fn::accounting::issue_validate';
@@ -56,6 +56,14 @@ DEFINE FIELD OVERWRITE precision ON sales_issue TYPE int VALUE $this.currency.pr
 
 DEFINE FIELD OVERWRITE z_counterparty ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
 
+DEFINE FIELD OVERWRITE q_counterparty_reporting ON sales_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.currency_account.valuation_pair,$this.currency_account.resource,$this.currency_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_counterparty_organization ON sales_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.currency_account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_counterparty_organization ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
@@ -72,9 +80,21 @@ DEFINE FIELD OVERWRITE z_adjustments ON sales_issue TYPE object COMMENT '@rebase
 
 DEFINE FIELD OVERWRITE z_stock ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
+DEFINE FIELD OVERWRITE q_stock_reporting ON sales_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_stock_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_goods ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
+
+DEFINE FIELD OVERWRITE q_goods_reporting ON sales_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.counterparty_stock.valuation_pair,$this.counterparty_stock.resource,$this.counterparty_stock.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_goods_organization ON sales_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.counterparty_stock,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_goods_subsidiary ON sales_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -116,6 +136,14 @@ DEFINE FIELD OVERWRITE precision ON purchase_issue TYPE int VALUE $this.currency
 
 DEFINE FIELD OVERWRITE z_counterparty ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history';
 
+DEFINE FIELD OVERWRITE q_counterparty_reporting ON purchase_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.currency_account.valuation_pair,$this.currency_account.resource,$this.currency_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_counterparty_organization ON purchase_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.currency_account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_counterparty_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_counterparty_organization ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
@@ -132,9 +160,21 @@ DEFINE FIELD OVERWRITE z_adjustments ON purchase_issue TYPE object COMMENT '@reb
 
 DEFINE FIELD OVERWRITE z_stock ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
+DEFINE FIELD OVERWRITE q_stock_reporting ON purchase_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_stock_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_goods ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_resource_account.z_history';
+
+DEFINE FIELD OVERWRITE q_goods_reporting ON purchase_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.counterparty_stock.valuation_pair,$this.counterparty_stock.resource,$this.counterparty_stock.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_goods_organization ON purchase_issue TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.counterparty_stock,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_goods_subsidiary ON purchase_issue TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

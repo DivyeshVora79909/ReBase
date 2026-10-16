@@ -1,5 +1,10 @@
 # Calculation foundation and compiler contract
 
+Historical foundation proposal. For current authoring and execution, use the
+[developer blueprint](developer-blueprint.md),
+[declared-query contract](function-reactivity.md) and
+[October 16 plan](declarative-engine-plan.md).
+
 Status: target design, updated 2026-09-26. Current behavior remains documented
 in the [temporal contract](../../research/rebase/temporal-trees.md); foundation
 packets C1–C4 now implement the typed-tree, compiler, reader, and audit contracts

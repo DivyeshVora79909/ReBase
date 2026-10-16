@@ -44,6 +44,7 @@ options object and these functions into the normal Node REPL context:
 
 - `build(overrides?)` compiles the current project.
 - `check(overrides?)` checks its generated artifacts.
+- `explain(subject?, overrides?)` explains a table or calculated field without writing files.
 - `connect(context?)` opens one configured database connection.
 - `deploy(connection, overrides?)` applies that project's built schema.
 - `populate(overrides?)` uses the existing bounded data population tool.
@@ -103,10 +104,11 @@ contexts.
 ## Public JavaScript API
 
 ```js
-const { build, check, connect, deploy, populate } = require("./dev-tools")
+const { build, check, explain, connect, deploy, populate } = require("./dev-tools")
 
 const accounting = { project: "all-in-accounting" }
 const built = build(accounting)
+explain("issue_adjustment.amount_delta", accounting)
 const admin = await connect({ namespace: "demo", database: "books" })
 await deploy(admin, accounting)
 const [accounts] = await admin.db.query("SELECT id, name, currency FROM treasury LIMIT 20;")
@@ -148,6 +150,21 @@ the same intended context when deploying that build; `deploy` executes its
 SurrealQL through the supplied SDK session. It does not provision a runtime or
 select an application user.
 
+## Dependency inspection
+
+`build/<project>/dependency-plan.json` records evaluation order, local inputs,
+typed reference routes, named ordered queries, generated nodes and owner roots.
+It is a developer artifact alongside the private SQL. Check mode verifies its
+freshness. Inspect current source without a build or database:
+
+```bash
+node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta
+```
+
+Use a table name for its full contract, or `'*'` for all tables. The
+[calculation contract](../designs/rebase-system/function-reactivity.md) explains
+pure formulas, fixed query slots, interval lookup and transaction boundaries.
+
 ## Public JSON Schemas
 
 Author a flat `designs/<project>/schemas/*.schema.json` directory with standard
@@ -156,16 +173,16 @@ source bytes into `build/<project>/client/schemas/`. A missing source directory
 removes an older public schema export on build; check mode reports stale files
 without changing them. Keep output directories separate from source directories.
 
-The direct accounting profile exports thirty editable create-input schemas for
+The direct accounting profile exports forty-eight editable create-input schemas for
 identities, accounts, issues, taxes, payments, corrections, and exchange. They
-exclude protected derived fields and tree storage. The preserved recipe profile
-retains its original five-schema subset. Decimal quantities use
+exclude protected derived fields and tree storage. Older recipe schemas remain
+in Git history. Decimal quantities use
 strings, dates use ISO strings, and record references accept simple
 `table:custom-key`, SDK `table:⟨custom-key⟩`, or canonical `table:u"uuid"` strings;
 bind their native SDK types before writing. Reference existence,
 authorization, uniqueness, and aggregate constraints are enforced by SurrealDB.
-`economic_entity` accepts the existing user or an organization; it is separate
-from authorization ownership in `owned_by`.
+Accounting subsidiaries and organizations are business dimensions; authorization
+ownership remains explicit in `owned_by`.
 
 For a frontend, copy only the generated `client/schemas/` contents into the
 frontend's public assets or import those JSON files with its normal bundler.
@@ -193,7 +210,7 @@ without opening a database:
 node dev-tools/accounting/fixture-example.js
 ```
 
-`prepareFixture()` from that module validates eleven editable objects and returns
+`prepareFixture()` from that module validates seventeen editable objects and returns
 rows with SDK `RecordId`, `Decimal`, and `Date` values ready for bound writes.
 It targets `all-in-accounting`; a field generator cannot infer an accounting
 scenario. Re-running it uses the same explicit record IDs.

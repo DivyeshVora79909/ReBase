@@ -25,7 +25,7 @@ async function main({ writeOnly = process.argv.includes('--write-only') } = {}) 
     );
   }
   async function check() {
-    return inspect(await snapshot(q));
+    return inspect(await snapshot(q), compiled.temporalModel.dependencyModel);
   }
   async function reject(sql, pattern) {
     const before = await snapshot(q);

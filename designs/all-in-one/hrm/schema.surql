@@ -26,11 +26,11 @@ DEFINE FUNCTION OVERWRITE fn::hrm::members($row: object) {
     LET $usage = record::tb($row.id) = 'leave_use';
     RETURN [
         fn::tree::member($row.id, 'z_allowance', $row.a_account, 'z_book', $row.a_effective_at,
-            { quantity: IF $usage THEN -$row.a_quantity ELSE $row.a_quantity END }, { service: $c.service }, {}, false),
+            { quantity: IF $usage THEN -$row.a_quantity ELSE $row.a_quantity END }, { service: $c.service }, {}),
         fn::tree::member($row.id, 'z_employment', $c.employment, 'z_history', $row.a_effective_at,
-            IF $usage THEN { uses: 1dec } ELSE { grants: 1dec } END, {}, {}, false),
+            IF $usage THEN { uses: 1dec } ELSE { grants: 1dec } END, {}, {}),
         fn::tree::member($row.id, 'z_unit', $c.unit, 'z_activity', $row.a_effective_at,
-            { hr_interactions: 1dec }, {}, {}, false)
+            { hr_interactions: 1dec }, {}, {})
     ];
 } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::hrm::fact($row: object) {

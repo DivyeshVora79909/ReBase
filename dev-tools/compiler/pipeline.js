@@ -15,6 +15,7 @@ const {
   generateRuntimeContracts,
 } = require("./generators/effects");
 const { generateTemporal, resolveTemporalModel } = require("./generators/temporal");
+const { dependencyPlan } = require('./dependency-plan');
 const { parseSchema } = require("./schema");
 const { PRINCIPAL_TABLES, detectSelectPolicy, validatePrincipalTables } = require("./principals");
 const { composeProfiles, contextStatement } = require("./materials");
@@ -165,6 +166,7 @@ function emitResolvedModel(model) {
     seedSource,
     lifecycleMigration,
     contracts: generateRuntimeContracts(schema, principals),
+    dependencyPlan: dependencyPlan(schema, model.temporalModel, projectSchema + '\n' + frameworkSource),
   };
 }
 
@@ -234,6 +236,7 @@ function preflightArtifacts(outputDir, copies = []) {
   for (const name of [
     "schema.surql",
     "runtime-contracts.json",
+    "dependency-plan.json",
     "migrate-one-shot-backfill.surql",
     "migrate-one-shot-finalize.surql",
   ]) {
@@ -297,16 +300,21 @@ function checkCopiedTree(sourceDir, outputDir) {
   }
 }
 
-function writeArtifacts({ outputDir, bundle, contracts, lifecycleMigration, copies = [] }, { check = false } = {}) {
+function writeArtifacts({ outputDir, bundle, contracts, dependencyPlan, lifecycleMigration, copies = [] }, { check = false } = {}) {
   const trees = preflightArtifacts(outputDir, copies);
   const schemaPath = path.join(outputDir, "schema.surql");
   const contractPath = path.join(outputDir, "runtime-contracts.json");
+  const dependencyPath = path.join(outputDir, 'dependency-plan.json');
+  const dependencySource = `${JSON.stringify(dependencyPlan || { version: 1, tables: {} }, null, 2)}\n`;
   const backfillPath = path.join(outputDir, "migrate-one-shot-backfill.surql");
   const finalizeMigrationPath = path.join(outputDir, "migrate-one-shot-finalize.surql");
   const contractSource = `${JSON.stringify(contracts || { tables: {} }, null, 2)}\n`;
   const backfillSource = `${lifecycleMigration?.backfill || ""}\n`;
   const finalizeMigrationSource = `${lifecycleMigration?.finalize || ""}\n`;
   if (check) {
+    if (!fs.existsSync(dependencyPath) || fs.readFileSync(dependencyPath, 'utf8') !== dependencySource) {
+      throw new Error(`Generated output is stale: ${dependencyPath}`);
+    }
     if (!fs.existsSync(schemaPath) || fs.readFileSync(schemaPath, "utf8") !== bundle) {
       throw new Error(`Generated output is stale: ${schemaPath}`);
     }
@@ -320,18 +328,19 @@ function writeArtifacts({ outputDir, bundle, contracts, lifecycleMigration, copi
       throw new Error(`Generated output is stale: ${finalizeMigrationPath}`);
     }
     for (const tree of trees) checkCopiedTree(tree.sourceDir, tree.outputDir);
-    return { schemaPath, contractPath, backfillPath, finalizeMigrationPath, copied: [] };
+    return { schemaPath, contractPath, dependencyPath, backfillPath, finalizeMigrationPath, copied: [] };
   }
   fs.mkdirSync(outputDir, { recursive: true });
   writeGeneratedFile(schemaPath, bundle);
   writeGeneratedFile(contractPath, contractSource);
+  writeGeneratedFile(dependencyPath, dependencySource);
   writeGeneratedFile(backfillPath, backfillSource);
   writeGeneratedFile(finalizeMigrationPath, finalizeMigrationSource);
   const copied = trees.flatMap((tree) => {
     fs.rmSync(tree.outputDir, { recursive: true, force: true });
     return copyTree(tree.sourceDir, tree.outputDir).map((file) => path.join(path.basename(tree.outputDir), file));
   });
-  return { schemaPath, contractPath, backfillPath, finalizeMigrationPath, copied };
+  return { schemaPath, contractPath, dependencyPath, backfillPath, finalizeMigrationPath, copied };
 }
 
 module.exports = {

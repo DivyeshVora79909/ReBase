@@ -1,0 +1,874 @@
+ReBase declarative-engine acceptance, October 16, 2026
+
+Original output is preserved below. The initial broad runner exited 1 at a
+numeric-demo comparison; the four remaining commands passed after its checker
+adapter. Accounting/FX completed before that adapter, with unchanged engine SQL.
+The ordinal run ends with a stale diagnostic sentence, corrected in source only.
+Control reproductions are failures of deliberately altered or pre-fix code.
+
+===== builds | PASS =====
+Command: npm run build && npm run build:all-in-one && npm run build:all-in-accounting && npm run build:index-analytics
+Exit code: 0
+npm notice run rebase-surreal-compiler@0.2.0 build
+npm notice run node dev-tools/compiler/cli.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 31 tables and 8 views.
+Material files: 11
+Table handlers: 7
+Webhook handlers: 1
+Output: build/test
+Schema: build/test/schema.surql
+One-shot upgrade batches: build/test/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/test/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 build:all-in-one
+npm notice run node dev-tools/compiler/cli.js --project designs/all-in-one --output build/all-in-one
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 59 tables and 0 views.
+Material files: 15
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-one
+Schema: build/all-in-one/schema.surql
+One-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 build:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 65 tables and 0 views.
+Material files: 25
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 build:index-analytics
+npm notice run node dev-tools/compiler/cli.js --project designs/index-analytics --output build/index-analytics
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 19 tables and 0 views.
+Material files: 10
+Table handlers: 2
+Webhook handlers: 0
+Output: build/index-analytics
+Schema: build/index-analytics/schema.surql
+One-shot upgrade batches: build/index-analytics/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/index-analytics/migrate-one-shot-finalize.surql
+
+===== broad-initial | FAILED_NUMERIC_DEMO_COMPARISON =====
+Command: npm run verify
+Exit code: 1
+npm notice run rebase-surreal-compiler@0.2.0 verify
+npm notice run npm run check && npm run check:all-in-one && npm run check:all-in-accounting && npm run check:index-analytics && surreal validate build/index-analytics/schema.surql && surreal validate build/all-in-accounting/schema.surql && surreal validate build/test/schema.surql && surreal validate build/all-in-one/schema.surql && surreal validate build/test/migrate-one-shot-backfill.surql && surreal validate build/test/migrate-one-shot-finalize.surql && surreal validate build/all-in-one/migrate-one-shot-backfill.surql && surreal validate build/all-in-one/migrate-one-shot-finalize.surql && npm run probe:environment && npm run probe:authentication && npm run probe:tenant-auth && npm run probe:tenant-records && npm run probe:reader-index && npm run probe:passkeys && npm run probe:credentials && npm run probe:compiler && npm run probe:architecture && npm run probe:queues && npm run probe:admission && npm run probe:dead-letters && npm run probe:runtime && npm run probe:live && npm run probe:scheduling && npm run probe:webhook-inbox && npm run probe:adapters && npm run probe:temporal-tree && npm run probe:typed-tree && npm run probe:ordered-tree && npm run probe:boundary-tree && npm run probe:derived-order && npm run probe:dependencies && npm run probe:intervals && npm run probe:required-outputs && npm run probe:causal-outputs && npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools
+npm notice run rebase-surreal-compiler@0.2.0 check
+npm notice run node dev-tools/compiler/cli.js --check
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 31 tables and 8 views.
+Material files: 11
+Table handlers: 7
+Webhook handlers: 1
+Output: build/test
+Schema: build/test/schema.surql
+One-shot upgrade batches: build/test/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/test/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-one
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-one --output build/all-in-one
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 59 tables and 0 views.
+Material files: 15
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-one
+Schema: build/all-in-one/schema.surql
+One-shot upgrade batches: build/all-in-one/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-one/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:all-in-accounting
+npm notice run node dev-tools/compiler/cli.js --check --project designs/all-in-accounting --output build/all-in-accounting
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 65 tables and 0 views.
+Material files: 25
+Table handlers: 2
+Webhook handlers: 0
+Output: build/all-in-accounting
+Schema: build/all-in-accounting/schema.surql
+One-shot upgrade batches: build/all-in-accounting/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/all-in-accounting/migrate-one-shot-finalize.surql
+npm notice run rebase-surreal-compiler@0.2.0 check:index-analytics
+npm notice run node dev-tools/compiler/cli.js --check --project designs/index-analytics --output build/index-analytics
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+ReBase compiled 19 tables and 0 views.
+Material files: 10
+Table handlers: 2
+Webhook handlers: 0
+Output: build/index-analytics
+Schema: build/index-analytics/schema.surql
+One-shot upgrade batches: build/index-analytics/migrate-one-shot-backfill.surql
+One-shot upgrade finalizer: build/index-analytics/migrate-one-shot-finalize.surql
+build/index-analytics/schema.surql: OK
+
+build/all-in-accounting/schema.surql: OK
+
+build/test/schema.surql: OK
+
+build/all-in-one/schema.surql: OK
+
+build/test/migrate-one-shot-backfill.surql: OK
+
+build/test/migrate-one-shot-finalize.surql: OK
+
+build/all-in-one/migrate-one-shot-backfill.surql: OK
+
+build/all-in-one/migrate-one-shot-finalize.surql: OK
+
+npm notice run rebase-surreal-compiler@0.2.0 probe:environment
+npm notice run node dev-tools/checks/environment-probe.js
+environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:authentication
+npm notice run node dev-tools/checks/authentication-probe.js
+authentication: normalization, tenant isolation, generic responses, fixed target/config routing, encrypted atomic queueing, failure mapping, and OAuth allowlist passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:tenant-auth
+npm notice run node dev-tools/checks/tenant-auth-probe.js
+tenant-auth: {"tenantIsolation":true,"scopedIdentityUniqueness":true,"diamondRemoval":true,"existingTokenRevocation":true,"concurrentCycleRejected":true,"protectedClosure":true,"nativeCreatesWithoutNodeSelect":true,"parentRoleEscalationRejected":true,"defaultUuidV7":true,"closurePairs":29,"rejectedInvalidMutations":8,"exactMembershipPlan":{"children":[{"attributes":{"record_id":"rebase_access:[rebase_user:peer, rebase_user:leaf]"},"context":"Db","expressions":[{"role":"record_id","sql":"rebase_access:[rebase_user:peer, rebase_user:leaf]"}],"operator":"RecordIdScan"}],"context":"Db","operator":"Project"}}
+npm notice run rebase-surreal-compiler@0.2.0 probe:tenant-records
+npm notice run node dev-tools/checks/tenant-record-probe.js
+Tenant records passed: native isolation, reference rollback, root-derived readers, ownership refresh, local uniqueness, direct-reader cycles, populated schema reapplication.
+npm notice run rebase-surreal-compiler@0.2.0 probe:reader-index
+npm notice run node dev-tools/checks/reader-index-probe.js
+PASS scalar readers, branch order, dominance moves, ownership refresh, groups and fallback
+PASS custom identifier lookup, normalization, cross-table uniqueness, concurrency, record writes and privacy
+PASS opted-in cross-table analytics, creation/effective times, owner moves, ranges, pages, privacy and 16-part keys
+PASS reader/index acceptance: 53 source checkpoints, 6 complete rollback snapshots; reapplication and cleanup
+npm notice run rebase-surreal-compiler@0.2.0 probe:passkeys
+npm notice run node dev-tools/checks/passkey-probe.js
+passkeys: {"realP256Verification":true,"rpOriginChallengeUserVerification":true,"recentNativeSession":true,"tenantIsolation":true,"canonicalUuidTenantRateLimits":true,"httpBearerBoundary":true,"counterReplayDenied":true,"concurrentExchangeOneWinner":true,"revocation":true,"scope":"Software authenticator and disposable SurrealDB; browser/device UX and live deployment not tested."}
+npm notice run rebase-surreal-compiler@0.2.0 probe:credentials
+npm notice run node dev-tools/checks/credential-probe.js
+credentials: owner, delegation, redaction, platform binding, BYOC, unauthorized operation, and pre-load guards passed (1275ms)
+npm notice run rebase-surreal-compiler@0.2.0 probe:compiler
+npm notice run node dev-tools/checks/compiler-probe.js
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+compiler: lifecycle contracts, context neutrality, determinism, validation failures, and mutable test registry passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:architecture
+npm notice run node dev-tools/checks/architecture-probe.js
+architecture: UUIDv7 record ID behavior passed
+architecture: synchronous snapshot and rollback boundary passed
+architecture: reference authorization and event permission boundary passed
+architecture: fixed principal compiler contract passed
+architecture: PASS
+npm notice run rebase-surreal-compiler@0.2.0 probe:queues
+npm notice run node dev-tools/checks/queue-probe.js
+queues: versioned work identity, positive priority, shared admission defaults, and decisions passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:admission
+npm notice run node dev-tools/checks/admission-capacity-probe.js
+admission: atomic cap, delayed/prioritized entries, duplicate, completion/re-add, and producer-death recovery passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:dead-letters
+npm notice run node dev-tools/checks/dead-letter-retention-probe.js
+dead letters: bounded-age cleanup, batched repeated failures, multiple producers, restart pruning, and durable outcomes passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:runtime
+npm notice run node dev-tools/checks/runtime-probe.js
+runtime: one-shot legacy backfill processes bounded repeat-safe batches, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: one-shot legacy backfill processes bounded repeat-safe batches across a file-backed database restart, preserves next execution time, quarantines active leases, and finalizes after three passes
+runtime: operation tasks, bounded terminal retention, durable attachment cleanup, worker and gateway process recovery, cancellation/reconciliation, one-shot timing, cross-client admission, durable keyset recovery, Redis restart, revision fencing, authentication, effects, webhooks, readiness, and context races passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:live
+npm notice run node dev-tools/checks/live-probe.js
+live: failed initial attachment retried, reconciliation continued, and shutdown cleaned the watcher/timer
+live: committed-only notifications passed
+live: socket reconnect and durable recovery passed
+live: managed subscription resumed
+Live wakeups passed: initial-attach recovery, partial-attachment cleanup, committed-only hints, actual socket loss, durable reconnect recovery, managed resubscription, bounded bursts, and shutdown.
+npm notice run rebase-surreal-compiler@0.2.0 probe:scheduling
+npm notice run node dev-tools/checks/scheduling-probe.js
+scheduling: timer-driven horizon admission, shared query/queue horizon, full-page continuation, and capacity backoff passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:webhook-inbox
+npm notice run node dev-tools/checks/webhook-inbox-probe.js
+webhook inbox: receipt recovery, config-bound route resolution, tamper rejection, unknown providers, and tenant isolation passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:adapters
+npm notice run node dev-tools/checks/adapter-probe.js
+adapters: static registry, flat mappings, normalization, retries, shared bucket, dynamic Twilio credentials, and overrides passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:temporal-tree
+npm notice run node dev-tools/temporal-tree/probe.js
+PASS simultaneous contribution netting, exact dimensions, temporal boundaries and stable slot identities
+PASS compiled multi-tree chronology, range/rank/percentile oracle, inherited references, capped-prefix invalidation, final guards and timestamps
+PASS 240 randomized compiled mutations against independent source oracle
+PASS repeated root deletion, empty trees and singleton-owner lifecycle without reverse references
+PASS record/system queries, anonymous and private-helper denial, forged metadata/shadows, authenticated live-rule create/update and hidden-prefix rollback
+PASS concurrent owner fencing (29 conflict retries)
+PASS ascending AVL bound, nanosecond ordering, stable ties/date edits and populated schema reapplication
+npm notice run rebase-surreal-compiler@0.2.0 probe:typed-tree
+npm notice run node dev-tools/temporal-tree/typed-probe.js
+PASS explicit tree contracts and 35 invalid declaration diagnostics
+Compiled typed trees: SurrealDB 3.3.0 for linux on x86_64, Node v22.23.2, surrealkv
+PASS compiled dual ordering, nanosecond ties, safe int extremes, absence, rekeys, independent owners, scale versions and rollback
+PASS malformed inputs before int coercion, public read bounds, exact structural pairs and pre-coalescing validation
+PASS seeded mixed-order and metamorphic history 20261014
+PASS seeded mixed-order and metamorphic history 7
+PASS seeded mixed-order and metamorphic history 1031
+PASS competing dual-tree writes: one commit, five complete rollbacks (3 conflict retries)
+PASS root/slot ACL, conditional fields, deliberate aggregate publication, forged writes and both select policies
+PASS 252 mutation checkpoints, 1570 ordered reads, 107 rejection snapshots; populated reapplication and empty-tree cleanup
+npm notice run rebase-surreal-compiler@0.2.0 probe:ordered-tree
+npm notice run node dev-tools/temporal-tree/ordered-probe.js
+PASS explicit tree contracts and 35 invalid declaration diagnostics
+PASS ordered trees: 22 mutations, 683 typed reads/pages, 10 rollback cases, exact decimals, composite, nominal, bool, UUID and record keys, cross-table uniqueness and independent-session concurrent serialization
+npm notice run rebase-surreal-compiler@0.2.0 probe:boundary-tree
+npm notice run node dev-tools/temporal-tree/boundary-probe.js
+PASS complete-key algebra: 4665 timestamp/delta sequences, 57909 binary folds, identity and direct reconstructions
+PASS missing-measure boundary algebra: 777 sequences, 3477 binary folds and identities
+PASS compiled adjacent [start,end) intervals, tie-order independence, complete-timestamp range, and rollback
+npm notice run rebase-surreal-compiler@0.2.0 probe:derived-order
+npm notice run node dev-tools/temporal-tree/derived-order-probe.js
+PASS topological CREATE shadows, opaque dependency refresh, local updates, native ASSERT rollback, reordered declarations and populated reapplication
+npm notice run rebase-surreal-compiler@0.2.0 probe:dependencies
+npm notice run node dev-tools/temporal-tree/dependencies-probe.js
+{"status":"PASS","checkpoints":111,"rollbackChecks":3,"conflicts":6,"seed":"0xdec1a","cleanup":true,"declarations":10}
+npm notice run rebase-surreal-compiler@0.2.0 probe:intervals
+npm notice run node dev-tools/temporal-tree/interval-probe.js
+{"status":"PASS","checkpoints":18,"rollbackChecks":1,"cleanup":true}
+npm notice run rebase-surreal-compiler@0.2.0 probe:required-outputs
+npm notice run node dev-tools/temporal-tree/required-outputs-probe.js
+PASS required-output recipes compile without temporal tree roots
+PASS unsupported managed-output reference cycles fail clearly at compile time
+PASS paired required outputs settle together at the complete timestamp
+PASS final guard failure restores the source and complete required-output set
+PASS record-user create, update and delete cannot alter managed outputs
+PASS source edits update stable managed values and remove obsolete roles without duplicates
+PASS source deletion removes outputs, restores owner histories and leaves no managed rows
+npm notice run rebase-surreal-compiler@0.2.0 probe:causal-outputs
+npm notice run node dev-tools/temporal-tree/causal-outputs-probe.js
+PASS two input roots publish before one basis refresh and the diamond joins both branches
+PASS final downstream floor failure restores the complete input and output graph
+PASS future date and amount edits rekey every downstream branch and final output
+PASS a required output cannot feed a root consumed by its own derived basis
+PASS deleting basis and source rows clears the causal graph and every owned membership
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounts
+npm notice run node dev-tools/checks/accounts-probe.js
+PASS entity/currency dimensions, FX quote reactivity, independent refund legs, target-only corrections, shared-owner coalescing and atomic solvency
+PASS direct-tax asset allocation, accountable destination, independent recovery and linked reversal capacity
+PASS inbound/outbound invoices, issue-time claim recognition, stock/service capacity, unit ancestry, correction-note invoice scope and live compound assessments
+AssertionError [ERR_ASSERTION]: delivery_charge:cap/q_basis.result.value
++ actual - expected
+
++ 152.11
+- 152.10999999999999
+       ^
+
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:30:12)
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:38:39)
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:38:39)
+    at Object.verifyDependencies (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:104:7)
+    at inspect (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/accounts-oracle.js:625:28)
+    at check (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/checks/accounts-probe.js:28:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/checks/accounts-probe.js:568:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 152.11,
+  expected: 152.10999999999999,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+===== broad-continuation | PASS =====
+Command: npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools
+Exit code: 0
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounts
+npm notice run node dev-tools/checks/accounts-probe.js
+PASS entity/currency dimensions, FX quote reactivity, independent refund legs, target-only corrections, shared-owner coalescing and atomic solvency
+PASS direct-tax asset allocation, accountable destination, independent recovery and linked reversal capacity
+PASS inbound/outbound invoices, issue-time claim recognition, stock/service capacity, unit ancestry, correction-note invoice scope and live compound assessments
+PASS assets versus receivables/payables, partial settlements, standalone tax claims, remittance/recovery, mutable histories, rollback, range queries and timestamps
+PASS authenticated writes, protected derived metadata and populated schema reapplication
+entity calculation suite: all independent source/AVL checks passed
+npm notice run rebase-surreal-compiler@0.2.0 probe:suite
+npm notice run node dev-tools/checks/suite-probe.js
+PASS CRM dated close/reopen invariants, effort history, edits/deletion and direct organization inheritance
+PASS HRM service allowances, historical capacity, employment bounds, reassignment, corrections, deletion rollback and timestamps
+PASS populated CRM/HRM schema reapplication
+npm notice run rebase-surreal-compiler@0.2.0 probe
+npm notice run node dev-tools/checks/probe.js all
+security: tenant authentication, closure, immediate readers, revocation, domain self-parent guard, and synchronous field audit passed
+security: owner select policy keeps the direct reader index protected and unchanged
+data: schema-driven generation, strict references, batching, reservoirs, and seed replay passed
+probe: PASS
+npm notice run rebase-surreal-compiler@0.2.0 test:dev-tools
+npm notice run node --test dev-tools/tests/*.test.js
+TAP version 13
+# Subtest: accounting dependencies keep fixed roles across dated quote and fallback changes
+ok 1 - accounting dependencies keep fixed roles across dated quote and fallback changes
+  ---
+  duration_ms: 20.370027
+  type: 'test'
+  ...
+# Subtest: same-resource conversion has no ordered dependency
+ok 2 - same-resource conversion has no ordered dependency
+  ---
+  duration_ms: 2.124983
+  type: 'test'
+  ...
+# Subtest: accounting exports and validates exactly its public create schemas
+ok 3 - accounting exports and validates exactly its public create schemas
+  ---
+  duration_ms: 1788.140743
+  type: 'test'
+  ...
+# Subtest: exports only authored schemas as byte-identical client artifacts
+ok 4 - exports only authored schemas as byte-identical client artifacts
+  ---
+  duration_ms: 130.248856
+  type: 'test'
+  ...
+# Subtest: buildProject exports only public schemas into each independent build directory
+ok 5 - buildProject exports only public schemas into each independent build directory
+  ---
+  duration_ms: 3408.43983
+  type: 'test'
+  ...
+# Subtest: refuses overlapping or symlink-aliased source and output trees before clearing them
+ok 6 - refuses overlapping or symlink-aliased source and output trees before clearing them
+  ---
+  duration_ms: 1.615634
+  type: 'test'
+  ...
+# Subtest: buildProject rejects overlapping project or framework outputs without changing either tree
+ok 7 - buildProject rejects overlapping project or framework outputs without changing either tree
+  ---
+  duration_ms: 4.111965
+  type: 'test'
+  ...
+# Subtest: writeArtifacts preflights every copy destination before it writes or prunes
+ok 8 - writeArtifacts preflights every copy destination before it writes or prunes
+  ---
+  duration_ms: 1.609682
+  type: 'test'
+  ...
+# Subtest: rejects generated-file symlinks before changing source or existing output
+ok 9 - rejects generated-file symlinks before changing source or existing output
+  ---
+  duration_ms: 654.966499
+  type: 'test'
+  ...
+# Subtest: replaces hard-linked generated artifacts without changing authoring input
+ok 10 - replaces hard-linked generated artifacts without changing authoring input
+  ---
+  duration_ms: 89.06251
+  type: 'test'
+  ...
+# Subtest: buildProject preflights handler aliases before pruning existing public output
+ok 11 - buildProject preflights handler aliases before pruning existing public output
+  ---
+  duration_ms: 87.780764
+  type: 'test'
+  ...
+# Subtest: rejects unknown source files and unresolved external references without loading them
+ok 12 - rejects unknown source files and unresolved external references without loading them
+  ---
+  duration_ms: 9.343743
+  type: 'test'
+  ...
+# Subtest: check detects stale public schemas even if the source directory is gone
+ok 13 - check detects stale public schemas even if the source directory is gone
+  ---
+  duration_ms: 2.741332
+  type: 'test'
+  ...
+# Subtest: accounting fixture validates native SDK values and explicit temporal sources
+ok 14 - accounting fixture validates native SDK values and explicit temporal sources
+  ---
+  duration_ms: 115.16541
+  type: 'test'
+  ...
+# Subtest: populate transform defaults to identity, supports overrides, then rejects invalid rows
+ok 15 - populate transform defaults to identity, supports overrides, then rejects invalid rows
+  ---
+  duration_ms: 55.46505
+  type: 'test'
+  ...
+# Subtest: public accounting schemas expose inputs and preserve native record identities
+ok 16 - public accounting schemas expose inputs and preserve native record identities
+  ---
+  duration_ms: 56.870461
+  type: 'test'
+  ...
+# Subtest: populate recordId converts the actual database string-cast spellings without changing key identity
+ok 17 - populate recordId converts the actual database string-cast spellings without changing key identity
+  ---
+  duration_ms: 0.301273
+  type: 'test'
+  ...
+# Subtest: dependency declarations produce one named private slot and source-root inventory
+ok 18 - dependency declarations produce one named private slot and source-root inventory
+  ---
+  duration_ms: 142.540921
+  type: 'test'
+  ...
+# Subtest: compiler rejects ambiguous, untyped, audited and misplaced query declarations
+ok 19 - compiler rejects ambiguous, untyped, audited and misplaced query declarations
+  ---
+  duration_ms: 221.180944
+  type: 'test'
+  ...
+# Subtest: calculations cannot consume validation-phase queries directly or through helpers
+ok 20 - calculations cannot consume validation-phase queries directly or through helpers
+  ---
+  duration_ms: 81.172392
+  type: 'test'
+  ...
+# Subtest: validators may read their own root through a helper but must declare external reads
+ok 21 - validators may read their own root through a helper but must declare external reads
+  ---
+  duration_ms: 0.840335
+  type: 'test'
+  ...
+# Subtest: fixed-slot oracle preserves identical queries in distinct named roles
+ok 22 - fixed-slot oracle preserves identical queries in distinct named roles
+  ---
+  duration_ms: 6.120694
+  type: 'test'
+  ...
+# Subtest: oracle rejects missing descriptors, nodes and empty reverse roots independently of tree consistency
+ok 23 - oracle rejects missing descriptors, nodes and empty reverse roots independently of tree consistency
+  ---
+  duration_ms: 5.169282
+  type: 'test'
+  ...
+# Subtest: oracle distinguishes full-key boundaries and uses linear range answers
+ok 24 - oracle distinguishes full-key boundaries and uses linear range answers
+  ---
+  duration_ms: 1.311372
+  type: 'test'
+  ...
+# Subtest: dependency answers use strict numeric equality by default
+ok 25 - dependency answers use strict numeric equality by default
+  ---
+  duration_ms: 3.121761
+  type: 'test'
+  ...
+# Subtest: explicit demo comparison accepts binary roundoff only in query results
+ok 26 - explicit demo comparison accepts binary roundoff only in query results
+  ---
+  duration_ms: 2.743061
+  type: 'test'
+  ...
+# Subtest: default rational dependency answers reject an 18-place discrepancy
+ok 27 - default rational dependency answers reject an 18-place discrepancy
+  ---
+  duration_ms: 7.836418
+  type: 'test'
+  ...
+# Subtest: helper dependency order preserves literal argument positions and nested forwarding
+ok 28 - helper dependency order preserves literal argument positions and nested forwarding
+  ---
+  duration_ms: 21.260013
+  type: 'test'
+  ...
+# Subtest: unproved whole-row flows fail compilation instead of silently using an old derived value
+ok 29 - unproved whole-row flows fail compilation instead of silently using an old derived value
+  ---
+  duration_ms: 2.926238
+  type: 'test'
+  ...
+# Subtest: explicit scalar dependencies can use aliases, expressions and quoted text
+ok 30 - explicit scalar dependencies can use aliases, expressions and quoted text
+  ---
+  duration_ms: 1.623837
+  type: 'test'
+  ...
+# Subtest: exact source fold separates key prefixes from complete-timestamp extrema
+ok 31 - exact source fold separates key prefixes from complete-timestamp extrema
+  ---
+  duration_ms: 7.345416
+  type: 'test'
+  ...
+# Subtest: exact tree checker accepts source-linear leaves, internal nodes, and root
+ok 32 - exact tree checker accepts source-linear leaves, internal nodes, and root
+  ---
+  duration_ms: 11.685334
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+ok 33 - one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+  ---
+  duration_ms: 21.344999
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+ok 34 - one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+  ---
+  duration_ms: 59.120874
+  type: 'test'
+  ...
+# Subtest: an ordered calculation cannot hide an untracked lookup in a helper
+ok 35 - an ordered calculation cannot hide an untracked lookup in a helper
+  ---
+  duration_ms: 9.090905
+  type: 'test'
+  ...
+# Subtest: interval tuple keys are private metadata, rather than untyped application ordering
+ok 36 - interval tuple keys are private metadata, rather than untyped application ordering
+  ---
+  duration_ms: 7.51932
+  type: 'test'
+  ...
+# Subtest: reactive expressions reject direct and nested writes with their helper identified
+ok 37 - reactive expressions reject direct and nested writes with their helper identified
+  ---
+  duration_ms: 6.331638
+  type: 'test'
+  ...
+# Subtest: reactive helpers reject schema, transaction, runtime and opaque effects
+ok 38 - reactive helpers reject schema, transaction, runtime and opaque effects
+  ---
+  duration_ms: 2.355631
+  type: 'test'
+  ...
+# Subtest: read-only controls preserve keywords in fields, records, strings and comments
+ok 39 - read-only controls preserve keywords in fields, records, strings and comments
+  ---
+  duration_ms: 1.921525
+  type: 'test'
+  ...
+# Subtest: bundle compilation rejects the stale-value reproduction before generating executable code
+ok 40 - bundle compilation rejects the stale-value reproduction before generating executable code
+  ---
+  duration_ms: 86.029789
+  type: 'test'
+  ...
+# Subtest: bundle compilation enforces read-only helpers in every reactive phase
+ok 41 - bundle compilation enforces read-only helpers in every reactive phase
+  ---
+  duration_ms: 289.091164
+  type: 'test'
+  ...
+# Subtest: bundle compilation keeps pure helpers ordinary and coordinator writes explicit
+ok 42 - bundle compilation keeps pure helpers ordinary and coordinator writes explicit
+  ---
+  duration_ms: 118.663726
+  type: 'test'
+  ...
+# Subtest: public build API compiles offline into the requested directory
+ok 43 - public build API compiles offline into the requested directory
+  ---
+  duration_ms: 241.625834
+  type: 'test'
+  ...
+# Subtest: connect checks configured contexts before opening a stubbed session
+ok 44 - connect checks configured contexts before opening a stubbed session
+  ---
+  duration_ms: 3.75124
+  type: 'test'
+  ...
+# Subtest: deploy sends the built schema through the supplied SDK client
+ok 45 - deploy sends the built schema through the supplied SDK client
+  ---
+  duration_ms: 5.66842
+  type: 'test'
+  ...
+# Subtest: native workbench evaluates JavaScript and await, then closes sessions
+ok 46 - native workbench evaluates JavaScript and await, then closes sessions
+  ---
+  duration_ms: 37.060755
+  type: 'test'
+  ...
+# Subtest: native workbench uses its live project options and allows explicit overrides
+ok 47 - native workbench uses its live project options and allows explicit overrides
+  ---
+  duration_ms: 3.744808
+  type: 'test'
+  ...
+# Subtest: workbench merges mutable project options, honors reassignment, and restores them after clear
+ok 48 - workbench merges mutable project options, honors reassignment, and restores them after clear
+  ---
+  duration_ms: 11.293866
+  type: 'test'
+  ...
+# Subtest: bare build inspection is compact while full compiler results remain accessible
+ok 49 - bare build inspection is compact while full compiler results remain accessible
+  ---
+  duration_ms: 5.910807
+  type: 'test'
+  ...
+# Subtest: managed SDK connections preserve the raw client and share pending close failures
+ok 50 - managed SDK connections preserve the raw client and share pending close failures
+  ---
+  duration_ms: 5.252337
+  type: 'test'
+  ...
+# Subtest: cleanup retains a manual close failure while another connection is still opening
+ok 51 - cleanup retains a manual close failure while another connection is still opening
+  ---
+  duration_ms: 3.939064
+  type: 'test'
+  ...
+# Subtest: REPL clear restores workbench helpers without losing connection ownership
+ok 52 - REPL clear restores workbench helpers without losing connection ownership
+  ---
+  duration_ms: 4.792909
+  type: 'test'
+  ...
+# Subtest: workbench shutdown waits for late SDK close and rejects later connects
+ok 53 - workbench shutdown waits for late SDK close and rejects later connects
+  ---
+  duration_ms: 3.157818
+  type: 'test'
+  ...
+# Subtest: workbench reports a late-open close failure after all cleanup attempts settle
+ok 54 - workbench reports a late-open close failure after all cleanup attempts settle
+  ---
+  duration_ms: 4.446619
+  type: 'test'
+  ...
+1..54
+# tests 54
+# suites 0
+# pass 54
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6870.319224
+
+===== accounting | PASS =====
+Command: node dev-tools/accounting/probe.js --all --evidence designs/rebase-system/evidence/2026-10-16-declarative-accounting.json
+Exit code: 0
+CHECK fresh accounting schema application (disposable SurrealKV)
+PASS sparse native dimensions, private uniqueness indexes, multiple treasuries, unit guards and decimal rounding
+PASS mirrored perspectives, direct source postings, covered advances and strictly prior net-tax bases
+PASS product-difference adjustments, chronological cascades, all five strict tax adjustments and directional note validation
+PASS capped marginal rules, pre-invoice unified adjustments and prevention of repeated dated tax effects
+PASS purchase perspective, multiple organization currencies and old/new parent repairs
+PASS dated rate insertion, edit, move, reparent, deletion, fallback and reader date/reference changes
+PASS bounded source-oracle mutation replay, native SDK decimals and protected derived amounts
+PASS inline bounded fees, creditable/noncreditable fee tax, independent refund fees and withholding
+PASS tax settlement, credit, refund and offset capacities, coincident legs and dated cash conversion
+PASS monetary and resource claims, source-specific capacity and competing sessions
+PASS resource transfers, explicit cross-subsidiary legs and separate authoritative/observed exchange values
+PASS native reservations, gross input protection, output consumption, service windows and adjacent capacity
+PASS tenant isolation, protected tree fields, native-SDK fixture and graph/tree developer queries
+PASS late valuation edit refreshes populated reporting projections while preserving native stock
+CHECK populated identical-schema reapplication
+PASS exact populated schema reapplication
+PASS child-first single-record cleanup, empty financial and dependency roots
+PASS accounting: 103 source-oracle checkpoints, 54 complete rollback snapshots
+
+===== fx | PASS =====
+Command: node dev-tools/accounting/integrity-fx-probe.js --evidence designs/rebase-system/evidence/2026-10-16-declarative-fx.json
+Exit code: 0
+CHECK independent INR subsidiary with EUR and USD organizations
+CHECK dimension 1/18
+CHECK dimension 2/18
+CHECK dimension 3/18
+CHECK dimension 4/18
+CHECK dimension 5/18
+CHECK dimension 6/18
+CHECK dimension 7/18
+CHECK dimension 8/18
+CHECK dimension 9/18
+CHECK dimension 10/18
+CHECK dimension 11/18
+CHECK dimension 12/18
+CHECK dimension 13/18
+CHECK dimension 14/18
+CHECK dimension 15/18
+CHECK dimension 16/18
+CHECK dimension 17/18
+CHECK dimension 18/18
+PASS sparse native currencies and separate organization/subsidiary reporting positions
+CHECK sale/purchase source 1/6
+CHECK sale/purchase source 2/6
+CHECK sale/purchase source 3/6
+CHECK sale/purchase source 4/6
+CHECK sale/purchase source 5/6
+CHECK sale/purchase source 6/6
+PASS original multi-currency sale/purchase trigger and independently replayed trees
+CHECK add a later USD/INR quote
+CHECK settle a USD customer invoice and EUR supplier invoice
+CHECK settle the supplier using a directed USD/EUR rate
+PASS native cash cancellation with distinct invoice-currency settlement amounts
+CHECK change USD/EUR without changing its separately authored inverse
+CHECK insert an earlier USD/INR quote after readers already exist
+CHECK move USD/INR quote beyond existing readers
+CHECK delete the earlier quote and restore initial-rate fallback
+CHECK create an adjustment note
+CHECK post a dated issue adjustment
+CHECK move the adjustment before the later USD/INR quote
+CHECK insert a widget valuation quote while preserving native units
+PASS dated adjustment reactivity and event-time stock valuation with stable native quantity
+CHECK create converted purchase invoice
+CHECK create purchase issue source
+CHECK create original purchase tax
+CHECK create purchase tax-on-tax source
+CHECK create purchase adjustment note
+CHECK adjust the purchase issue
+CHECK create linked base-tax adjustment
+CHECK create linked net-tax adjustment after both prior quote and issue readers exist
+PASS converted purchase issue, tax-on-tax, adjustment children and valid latest-rate registration
+CHECK add a quote later than every transaction
+PASS future quote non-interference and full rollback for duplicate sparse identities/timestamps
+PASS child-first single-record cleanup, empty financial and dependency roots
+PASS accounting integrity FX: 76 per-write structural/source checkpoints, 2 exact rollback snapshots, 351568ms
+
+===== dependency-cost | PASS =====
+Equivalent reproduction command: npm run probe:dependency-cost
+Exit code: 0
+{"status":"PASS","measurements":[{"readers":32,"reads":121,"evaluations":1},{"readers":128,"reads":155,"evaluations":1}],"sourceCheckpoints":133,"cleanup":true}
+
+===== adjustment-after-adapter | PASS =====
+Command: npm run probe:accounting-adjustment-rekey
+Exit code: 0
+npm notice run rebase-surreal-compiler@0.2.0 probe:accounting-adjustment-rekey
+npm notice run node dev-tools/accounting/adjustment-rekey-probe.js
+PASS minimized purchase/tax/settlement adjustment regression and exact dependency integrity
+PASS child-first single-record cleanup, empty financial and dependency roots
+PASS minimized adjustment regression: 7 structural/source checkpoints and complete cleanup
+
+===== oracle-adapter | PASS =====
+Command: node --test dev-tools/tests/dependency-oracle.test.js dev-tools/tests/exact-tree-oracle.test.js
+Exit code: 0
+TAP version 13
+# Subtest: fixed-slot oracle preserves identical queries in distinct named roles
+ok 1 - fixed-slot oracle preserves identical queries in distinct named roles
+  ---
+  duration_ms: 4.072762
+  type: 'test'
+  ...
+# Subtest: oracle rejects missing descriptors, nodes and empty reverse roots independently of tree consistency
+ok 2 - oracle rejects missing descriptors, nodes and empty reverse roots independently of tree consistency
+  ---
+  duration_ms: 3.561408
+  type: 'test'
+  ...
+# Subtest: oracle distinguishes full-key boundaries and uses linear range answers
+ok 3 - oracle distinguishes full-key boundaries and uses linear range answers
+  ---
+  duration_ms: 0.942452
+  type: 'test'
+  ...
+# Subtest: dependency answers use strict numeric equality by default
+ok 4 - dependency answers use strict numeric equality by default
+  ---
+  duration_ms: 2.977409
+  type: 'test'
+  ...
+# Subtest: explicit demo comparison accepts binary roundoff only in query results
+ok 5 - explicit demo comparison accepts binary roundoff only in query results
+  ---
+  duration_ms: 2.152088
+  type: 'test'
+  ...
+# Subtest: default rational dependency answers reject an 18-place discrepancy
+ok 6 - default rational dependency answers reject an 18-place discrepancy
+  ---
+  duration_ms: 8.961274
+  type: 'test'
+  ...
+# Subtest: exact source fold separates key prefixes from complete-timestamp extrema
+ok 7 - exact source fold separates key prefixes from complete-timestamp extrema
+  ---
+  duration_ms: 4.606741
+  type: 'test'
+  ...
+# Subtest: exact tree checker accepts source-linear leaves, internal nodes, and root
+ok 8 - exact tree checker accepts source-linear leaves, internal nodes, and root
+  ---
+  duration_ms: 8.673015
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+ok 9 - one 18-place unit of decimal corruption fails at leaf, internal summary, and root
+  ---
+  duration_ms: 13.775583
+  type: 'test'
+  ...
+# Subtest: one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+ok 10 - one 18-place unit of corruption in each prefix and complete-time extremum fails at every level
+  ---
+  duration_ms: 65.046151
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 184.269631
+
+===== explain | PASS =====
+ReBase compiler: namespace/database context absent; artifacts are context-neutral; runtime binding absent; effect events are omitted
+{"status":"PASS","queries":138,"target":"issue_adjustment.amount_delta","evaluation":["invoice","currency","precision","q_price_before","price_before","q_quantity_before","quantity_before","amount_delta"],"sourceRoots":[[{"table":"sales_issue","root":"z_state","index":"__rebase_dependents_z_state_range"},{"table":"purchase_issue","root":"z_state","index":"__rebase_dependents_z_state_range"}],[{"table":"sales_issue","root":"z_state","index":"__rebase_dependents_z_state_range"},{"table":"purchase_issue","root":"z_state","index":"__rebase_dependents_z_state_range"}]],"readOnly":true,"stalePlanRejected":true,"schemaSha256":"f97c34d49df04f68930eb9fa67882a2a283a2cb25e98ff27fe44f847c010b275"}
+
+===== extra-validation | PASS =====
+Command: surreal validate build/all-in-accounting/migrate-one-shot-backfill.surql && surreal validate build/all-in-accounting/migrate-one-shot-finalize.surql && surreal validate build/index-analytics/migrate-one-shot-backfill.surql && surreal validate build/index-analytics/migrate-one-shot-finalize.surql
+Exit code: 0
+build/all-in-accounting/migrate-one-shot-backfill.surql: OK
+
+build/all-in-accounting/migrate-one-shot-finalize.surql: OK
+
+build/index-analytics/migrate-one-shot-backfill.surql: OK
+
+build/index-analytics/migrate-one-shot-finalize.surql: OK
+
+
+===== ordinal | PASS_WITH_STALE_DIAGNOSTIC_SENTENCE =====
+Equivalent reproduction command: npm run probe:ordinal-tree
+Exit code: 0
+Ordinal primitive probe: SurrealDB 3.3.0 for linux on x86_64, Node v22.23.2, surrealkv
+PASS integer keys through LL/RR/LR/RL rotations, two-child deletion and empty trees
+PASS numeric order, stable ties, absent ranks, value edits, rekeys and owner isolation
+PASS post-maintenance create/move/owner-guard rollback and invalid key types
+PASS deterministic mutation oracle (seed 250925)
+PASS 111 mutation checkpoints, 412 numeric read assertions, 11 rejection snapshots; complete cleanup
+Scope: handwritten integer-key regression on the shared runtime; compiled contracts and ACL are covered by probe:typed-tree. Integer prefix dependencies remain unsupported.
+
+===== interval-identity-control | EXPECTED_REGRESSION_FAILURE =====
+AssertionError [ERR_ASSERTION]: leaf interval_item:a/z_range: keys
++ actual - expected
+
+  [
+    'count',
+    'first',
+-   'interval',
+    'last',
+    'measures',
+    'spans',
+    'tags'
+  ]
+
+    at equal (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/oracle.js:82:12)
+    at visit (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/oracle.js:125:7)
+    at Object.verify (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/oracle.js:135:18)
+    at verify (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/interval-probe.js:39:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/interval-probe.js:68:73) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [Array],
+  expected: [Array],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+===== projection-channel-before-fix | REPRODUCED_FAILURE_FIXED =====
+AssertionError [ERR_ASSERTION]: interval_reader:summary/q_upper.result.value[0]
+
+10 !== 12
+
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:30:12)
+    at /home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:34:40
+    at Array.forEach (<anonymous>)
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:34:14)
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:38:39)
+    at equalValue (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:38:39)
+    at Object.verifyDependencies (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/dependency-oracle.js:104:7)
+    at verify (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/interval-probe.js:46:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async main (/home/divyeshvora/javascript/node/projects/ReBase/dev-tools/temporal-tree/interval-probe.js:81:35) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 10,
+  expected: 12,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+

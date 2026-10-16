@@ -1,5 +1,7 @@
 # Automatic dependencies from ordered reads
 
+Historical record. The current implementation and continuation gates are in the [October 16 declarative-engine plan](declarative-engine-plan.md).
+
 Continuation: follow the [integrity repair handoff](integrity-repair-handoff-2026-10-14.md).
 Later reported writer failures and freshly demonstrated private-oracle blind
 spots require repair and stronger verification. The completed checklist and

@@ -38,11 +38,11 @@ DEFINE FUNCTION OVERWRITE fn::tax::members($row: object) {
     LET $c = $row.z20_ctx;
     RETURN [
         fn::tree::member($row.id, 'z_claim', $c.account, 'z_book', $row.a_effective_at,
-            object::from_entries([[$c.kind, $c.amount]]), { currency: $c.currency }, {}, false),
+            object::from_entries([[$c.kind, $c.amount]]), { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_party', $c.party, 'z_book', $row.a_effective_at,
-            object::from_entries([[$c.kind, $c.amount]]), { currency: $c.currency }, {}, false),
+            object::from_entries([[$c.kind, $c.amount]]), { currency: $c.currency }, {}),
         fn::tree::member($row.id, 'z_original', $c.origin, 'z_history', $row.a_effective_at,
-            { amount: $c.amount }, { currency: $c.currency }, {}, false),
+            { amount: $c.amount }, { currency: $c.currency }, {}),
         fn::calc::note($row, $c.amount, $c.currency, NONE)
     ];
 } PERMISSIONS NONE;

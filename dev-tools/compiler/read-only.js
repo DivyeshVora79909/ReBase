@@ -1,17 +1,9 @@
 'use strict';
 
-const { splitStatements, sqlCode, mapSqlCode } = require('./surql');
+const { splitStatements, splitTopLevel, sqlCode, mapSqlCode } = require('./surql');
 
-const INTRINSICS = new Map([
-  ['fn::tree::read_value', 'fn::reads::tree'],
-  ['fn::record::read_value', 'fn::reads::record'],
-  ['fn::tree::before', 'fn::reads::before'],
-  ['fn::tree::range', 'fn::reads::range'],
-]);
-const PRIVATE_TABLES = new Set(['rebase_read', 'rebase_read_frame', 'rebase_read_group', 'rebase_read_lock', 'rebase_read_stage']);
-// These constructors are emitted later, rather than supplied by the project.
-// All other custom helpers must have a body available for inspection.
 const GENERATED_PURE_HELPERS = new Set(['fn::tree::member', 'fn::tree::ordered_member', 'fn::tree::int_member',
+  'fn::tree::interval_member', 'fn::dependency::value', 'fn::value::at',
   'fn::tree::empty', 'fn::tree::value', 'fn::tree::combine', 'fn::tree::coalesce']);
 const WRITE_STATEMENTS = new Set(['CREATE', 'INSERT', 'UPDATE', 'UPSERT', 'DELETE', 'RELATE',
   'DEFINE', 'ALTER', 'REMOVE', 'REBUILD', 'ACCESS', 'BEGIN', 'COMMIT', 'CANCEL',
@@ -77,63 +69,52 @@ function functions(source) {
   return result;
 }
 
-function resolveObservedReads(source) {
-  const declared = functions(source), tracked = new Set();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const [name, fn] of declared) {
-      if (name.startsWith('fn::reads::') || INTRINSICS.has(name) || tracked.has(name)) continue;
-      if ([...fn.calls].some(call => INTRINSICS.has(call) || tracked.has(call))) {
-        tracked.add(name); changed = true;
-      }
-    }
-  }
-  const cloneName = name => `fn::reads::captured::${name.slice(4)}`;
-  const rewrite = (source, observer) => {
-    const code = sqlCode(source), edits = [];
-    for (const match of code.matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)) {
-      const name = match[1];
-      const replacement = INTRINSICS.get(name) || (tracked.has(name) && cloneName(name));
-      if (!replacement) continue;
-      const afterOpen = match.index + match[0].length;
-      const empty = /^\s*\)/.test(code.slice(afterOpen));
-      edits.push({ start: match.index, end: afterOpen, value: `${replacement}(${observer}${empty ? '' : ', '}` });
-    }
-    for (const edit of edits.reverse()) source = source.slice(0, edit.start) + edit.value + source.slice(edit.end);
-    return source;
-  };
-  const generated = [...tracked].sort().map(name => {
-    const fn = declared.get(name);
-    if (/\$__rebase_observer\b/.test(sqlCode(fn.params + fn.body))) {
-      throw new Error(`${name}: $__rebase_observer is reserved for automatic read capture`);
-    }
-    return `DEFINE FUNCTION OVERWRITE ${cloneName(name)}($__rebase_observer: object${fn.params.trim() ? ', ' + fn.params : ''}) {\n${rewrite(fn.body, '$__rebase_observer')}\n} PERMISSIONS NONE;`;
-  }).join('\n');
-  const validate = (source, subject) => {
+function resolveReadOnly(source) {
+  const declared = functions(source);
+  const validate = (expression, subject, { allowLocalTreeReads = false, allowLocalRecordReads = false, allowRecordReads = false } = {}) => {
     const seen = new Set();
-    const visit = (body, caller) => {
+    const origin = (argument, bindings) => {
+      const value = sqlCode(argument).trim();
+      if (value === '$this') return 'row';
+      if (value === '$this.id') return 'id';
+      const match = /^(\$\w+)(\.id)?$/.exec(value);
+      if (!match) return null;
+      const base = bindings.get(match[1]);
+      return match[2] ? base === 'row' ? 'id' : null : base;
+    };
+    const visit = (body, caller, bindings = new Map()) => {
       const effect = reactiveEffect(body);
       if (effect) throw new Error(`${subject}: reactive expressions must be read-only; ${effect}${caller ? ` in ${caller}` : ''}`);
-      for (const match of sqlCode(body).matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)) {
+      const code = sqlCode(body);
+      for (const match of code.matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)) {
         const name = match[1];
-        if (INTRINSICS.has(name)) continue;
-        if (/^fn::tree::(?:read|get|load|seek|find|select|page|rank)$/.test(name)) {
-          throw new Error(`${subject}: use fn::tree::read_value for an ordered calculation; ${name} does not capture a logical read`);
+        const start = code.indexOf('(', match.index);
+        const end = closeDelimiter(code, start, '(', ')');
+        const args = splitTopLevel(body.slice(start + 1, end));
+        if (/^fn::tree::(?:read|read_value|before|range|get|load|seek|find|select|page|rank)$/.test(name)) {
+          if (allowLocalTreeReads && ['fn::tree::read', 'fn::tree::read_value'].includes(name)
+              && origin(args[0] || '', bindings) === 'id') continue;
+          throw new Error(`${subject}: declare an @rebase-dependency and consume fn::dependency::value; ${name} is an undeclared ordered read`);
         }
-        if (seen.has(name)) continue;
-        seen.add(name);
-        if (declared.has(name)) visit(declared.get(name).body, name);
+        if (name === 'fn::record::read_value') {
+          if (allowRecordReads || allowLocalRecordReads && origin(args[0] || '', bindings) === 'id') continue;
+          throw new Error(`${subject}: declare a typed reference dependency with @rebase-depends for ${name}`);
+        }
+        const fn = declared.get(name);
+        const params = fn ? [...sqlCode(fn.params).matchAll(/(\$\w+)\s*:/g)].map(match => match[1]) : [];
+        const child = new Map(params.map((param, index) => [param, origin(args[index] || '', bindings)]));
+        const identity = JSON.stringify([name, [...child]]);
+        if (seen.has(identity)) continue;
+        seen.add(identity);
+        if (fn) visit(fn.body, name, child);
         else if (!GENERATED_PURE_HELPERS.has(name)) {
           throw new Error(`${subject}: reactive expressions must be read-only; cannot inspect undeclared helper ${name}${caller ? ` called by ${caller}` : ''}`);
         }
       }
     };
-    visit(source);
+    visit(expression);
   };
-  const uses = source => [...sqlCode(source).matchAll(/\b(fn::[A-Za-z_][\w:]*)\s*\(/g)]
-    .some(match => INTRINSICS.has(match[1]) || tracked.has(match[1]));
-  return { declared, tracked, rewrite, generated, validate, uses };
+  return { declared, validate };
 }
 
-module.exports = { INTRINSICS, PRIVATE_TABLES, functions, resolveObservedReads };
+module.exports = { functions, reactiveEffect, resolveReadOnly };

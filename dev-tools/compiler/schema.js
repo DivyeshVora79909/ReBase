@@ -24,6 +24,9 @@ function parseSchema(schemaSource, viewsSource) {
       table.definitionLocation = location;
       table.comment = [table.comment, extractComment(statement)].filter(Boolean).join(" ");
       validateRetiredMarkers(table.comment, `table ${table.name}`);
+      if (/@rebase-dependency\b|@rebase-depends\b/i.test(table.comment)) {
+        throw new Error(`Table ${table.name}: dependency annotations are field-only; declare a query or a derived field`);
+      }
       if (/@rebase-audit(?![-\w])/i.test(table.comment)) {
         throw new Error(`Table ${table.name}: @rebase-audit is field-only; annotate concrete fields`);
       }
@@ -57,6 +60,9 @@ function parseSchema(schemaSource, viewsSource) {
     const fieldComment = extractComment(statement);
     validateRetiredMarkers(fieldComment, `${tableName}.${fieldName}`);
     if (fieldName.includes('.')) {
+      if (/@rebase-dependency\b/i.test(fieldComment)) {
+        throw new Error(`${tableName}.${fieldName}: dependency annotations require a top-level field`);
+      }
       if (/@rebase-tree-/i.test(fieldComment)) {
         throw new Error(`${tableName}.${fieldName}: tree storage annotations require a top-level named field`);
       }
@@ -89,7 +95,7 @@ function parseSchema(schemaSource, viewsSource) {
       treeRoot: /@rebase-tree-root\b/i.test(fieldComment),
       treeNode: /@rebase-tree-node\b/i.test(fieldComment),
       treeNoReader: /@rebase-tree-no-reader\b/i.test(fieldComment),
-      reactive: /@rebase-derived\b/i.test(fieldComment),
+      reactive: /@rebase-derived\b|@rebase-dependency(?![-\w])/i.test(fieldComment),
       system: /@rebase-system\b/i.test(fieldComment),
       derived,
       computed,
@@ -275,7 +281,7 @@ function parseAuditPolicy(comment = "") {
 function validateRetiredMarkers(comment, subject) {
   const source = String(comment || "");
   const retired = [
-    [/@rebase-impact\b/i, 'fn::tree::read_value or fn::record::read_value inside the calculation; dependencies are captured automatically'],
+    [/@rebase-impact\b/i, 'a named @rebase-dependency query consumed through fn::dependency::value'],
     [/@rebase-principal\b/i, "fixed rebase_user/rebase_group table names"],
     [/@rebase-internal\b/i, "native PERMISSIONS NONE"],
     [/@rebase-authentication-private\b/i, "native field permissions"],

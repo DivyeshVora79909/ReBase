@@ -44,38 +44,41 @@ const sub=(a,b)=>d(a).add(d(b).neg());
 const exact=(a,b,label)=>assert.equal(d(a).cmp(b),0,`${label}: ${a} != ${d(b).number()}`);
 const eff=(real=0,r=0,p=0)=>({real:d(real),receivable:d(r),payable:d(p),net:sub(r,p),available:d(real)});
 const claim=v=>d(v).cmp(0)>=0?eff(0,v,0):eff(0,0,d(v).neg());
-const compare=(a,b)=>{for(let i=0;i<Math.min(a.length,b.length);i++){const date=typeof a[i]==='string'&&/^\d{4}-\d\d-\d\dT/.test(a[i]);const x=date?instant(a[i]):a[i],y=date?instant(b[i]):b[i];if(x<y)return -1;if(x>y)return 1;}return a.length-b.length;};
+const compare=(a,b)=>{
+  if(Array.isArray(a)&&Array.isArray(b)){
+    for(let i=0;i<Math.min(a.length,b.length);i++){const result=compare(a[i],b[i]);if(result)return result;}
+    return a.length-b.length;
+  }
+  const date=v=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT/.test(v);
+  const x=date(a)?instant(a):a,y=date(b)?instant(b):b;
+  return x<y?-1:x>y?1:0;
+};
 const before=(a,b)=>instant(a)<instant(b),through=(a,b)=>instant(a)<=instant(b);
 const next=at=>{const n=instant(at)+1n,s=n/1000000000n,f=String(n%1000000000n).padStart(9,'0').replace(/0+$/,'');return new Date(Number(s*1000n)).toISOString().slice(0,-5)+(f?'.'+f:'')+'Z';};
-const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'])].map(t=>{
-  if(t==='rebase_read_group')return `${t}:(SELECT *, type::record('rebase_read_group',[source_root,source_slot,kind,channel]) AS canonical_id FROM ${t} WITH NOINDEX ORDER BY id)`;
-  if(t==='rebase_read')return `${t}:(SELECT *, type::record('rebase_read',[type::record('rebase_read_group',[source_root,source_slot,kind,channel]),position,<string>reader,phase,crypto::sha256(<string>[kind,arguments,path,fallback.value])]) AS canonical_id FROM ${t} WITH NOINDEX ORDER BY id)`;
-  return `${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`;
-}).join(',')}};`);
+const snapshot=(q,tableNames=tables)=>q(`RETURN {${[...new Set([...tableNames,'rebase_tenant','rebase_user','audit_mutation'])]
+  .map(t=>`${t}:(SELECT * FROM ${t} WITH NOINDEX ORDER BY id)`).join(',')}};`);
 
 function evaluateSource(data,slots={}) {
-  const hidden = new Set(['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage']);
+  const hidden = new Set(['audit_mutation']);
   const sourceRows = Object.entries(data).filter(([table])=>!hidden.has(table)).flatMap(([,rows])=>rows||[]);
   const rows=tables.flatMap(t=>data[t]||[]),byId=new Map(sourceRows.map(r=>[r.id,r]));
   const get=id=>{assert(byId.has(id),`missing source ${id}`);return byId.get(id);};
-  const all=t=>(data[t]||[]), entries=[], values=new Map(), net=[],states=[],taxAdjustments=[],readInventory=new Map();
+  const all=t=>(data[t]||[]), entries=[], values=new Map(), net=[],states=[],taxAdjustments=[],queryInventory=new Map();
   const check=(row,fields)=>{for(const [key,value]of Object.entries(fields))value instanceof D?exact(row[key],value,`${row.id}.${key}`):assert.equal(row[key]??null,value??null,`${row.id}.${key}`);};
   const quant=(amount,resource)=>tb(resource)==='currency'?d(amount).round(get(resource).precision):d(amount);
-  const capture=(reader,source_root,source_slot,kind,arguments_,path,fallback,phase='refresh')=>{
-    const description={reader,phase,source_root,source_slot,kind,arguments:arguments_,path,fallback};
-    const identity=JSON.stringify([reader,description.phase,source_root,source_slot,kind,arguments_,path,
-      fallback===undefined?['none']:['value',fallback]]);
-    readInventory.set(identity,description);
+  const expectQuery=(reader,field,source,source_slot,kind,arguments_,path,fallback,phase='refresh')=>{
+    const description={reader,field,phase,source,source_slot,kind,arguments:arguments_,path,fallback};
+    const identity=JSON.stringify([reader,field]);
+    if(queryInventory.has(identity))assert.deepEqual(queryInventory.get(identity),description,`${reader}.${field}: shared query`);
+    queryInventory.set(identity,description);
   };
-  const prefix=(reader,owner,slot,measure,at)=>capture(reader,owner,slot,'before',[at],`measures.${measure}.sum`,'0');
-  const rate=(reader,pair,from,to,at)=>{
+  const prefix=(reader,owner,slot,measure,at,field='q_basis')=>expectQuery(reader,field,owner,slot,'range',[null,[at]],`measures.${measure}.sum`,d(0));
+  const rate=(reader,pair,from,to,at,field='q_exchange_rate')=>{
     if(from===to){assert(!pair,'same-unit conversion has no pair');return d(1);}
     const p=get(pair);assert.equal(p.given_resource,from);assert.equal(p.received_resource,to);assert(through(p.effective_at,at));
-    capture(reader,pair,'','record',[],'effective_at',undefined);
-    capture(reader,pair,'z_rates','latest',[[next(at)]],'measures.rate.sum',undefined);
-    const previous=all('exchange_rate').filter(r=>r.pair===pair&&through(r.effective_at,at)).sort((a,b)=>compare([a.effective_at],[b.effective_at])).at(-1);
-    if(!previous)capture(reader,pair,'','record',[],'initial_rate',undefined);
-    return d(previous?previous.rate:p.initial_rate);
+    expectQuery(reader,field,pair,'z_rates','latest',[[next(at)]],'measures.rate.sum',d(p.initial_rate));
+    const previous=all('exchange_rate').filter(r=>r.pair===pair&&through(r.effective_at,at)).sort((a,b)=>compare([a.effective_at,a.id],[b.effective_at,b.id])).at(-1);
+    return d(previous?.rate??p.initial_rate);
   };
   const account=id=>{
     const a=get(id),org=tb(id).startsWith('organization_')?get(a.organization):null;
@@ -83,29 +86,29 @@ function evaluateSource(data,slots={}) {
     check(a,{resource,subsidiary,reporting_currency:get(subsidiary).currency});
     return {row:a,resource,org,subsidiary,reporting:get(subsidiary).currency};
   };
-  const add=(row,slot,owner,root,at,measures={},tags={},dependent=false,business)=>{
+  const add=(row,slot,owner,root,at,measures={},tags={},business)=>{
     if(!owner)return;
     entries.push({link:{rid:row.id,slot},owner:{rid:owner,slot:root},key:[...(business||[at]),row.id,slot],
-      measures:Object.fromEntries(Object.entries(measures).map(([k,v])=>[k,d(v)])),tags,dependent});
+      measures:Object.fromEntries(Object.entries(measures).map(([k,v])=>[k,d(v)])),tags});
   };
   const scale=(e,k,currency)=>{
     const convert=n=>d(e[n]).mul(k).round(get(currency).precision),r=convert('real'),reserved=convert('reserved');
     return {...eff(r,convert('receivable'),convert('payable')),reserved,available:sub(r,reserved),expected:convert('expected'),
       sales_value:convert('sales_value'),purchase_value:convert('purchase_value'),payment_value:convert('payment_value'),fees:convert('fees')};
   };
-  const post=(row,slot,id,at,e,dependent=false)=>{
+  const post=(row,slot,id,at,e)=>{
     const a=account(id),native={...e,net:sub(e.receivable,e.payable),available:sub(e.real,e.reserved)};
-    const v=scale(native,rate(row.id,a.row.valuation_pair,a.resource,a.reporting,at),a.reporting);
+    const v=scale(native,rate(row.id,a.row.valuation_pair,a.resource,a.reporting,at,`q_${slot.slice(2)}_reporting`),a.reporting);
     let report;
     if(a.org) report={...eff(0,v.payable,v.receivable),counterparty_real:v.real.neg(),counterparty_receivable:v.payable,counterparty_payable:v.receivable,sales_value:v.sales_value,purchase_value:v.purchase_value,payment_value:v.payment_value};
     else if(['direct_tax_account','indirect_tax_account'].includes(tb(id)))report={...eff(0,v.receivable,v.payable),tax_real:v.real,tax_receivable:v.receivable,tax_payable:v.payable};
     else if(['misc_currency_account','misc_stock_account'].includes(tb(id)))report={...eff(),misc_real:v.real};
     else report={...eff(v.real),owned_real:v.real,fees:v.fees};
-    add(row,slot,id,'z_history',at,native,{resource:a.resource,subsidiary:a.subsidiary},dependent);
+    add(row,slot,id,'z_history',at,native,{resource:a.resource,subsidiary:a.subsidiary});
     add(row,slot+'_subsidiary',a.subsidiary,'z_history',at,report,{currency:a.reporting});
 
     if(a.org){
-      add(row,slot+'_organization',a.org.id,'z_history',at,scale(native,rate(row.id,a.row.organization_pair,a.resource,a.org.currency,at),a.org.currency),{currency:a.org.currency,subsidiary:a.subsidiary});
+      add(row,slot+'_organization',a.org.id,'z_history',at,scale(native,rate(row.id,a.row.organization_pair,a.resource,a.org.currency,at,`q_${slot.slice(2)}_organization`),a.org.currency),{currency:a.org.currency,subsidiary:a.subsidiary});
 
     }
   };
@@ -121,16 +124,20 @@ function evaluateSource(data,slots={}) {
   const taxEff=(sale,amount)=>({...claim(d(amount).mul(sale?-1:1)),credit_available:sale?0:amount,liability_available:sale?amount:0});
   const trade=(row,c,at,quantity,amount,org)=>{
     const a=account(c.currency_account),currency=org?a.org.currency:a.reporting,pair=org?a.row.organization_pair:a.row.valuation_pair;
-    const value=quant(d(amount).mul(rate(row.id,pair,a.resource,currency,at)),currency);
+    const value=quant(d(amount).mul(rate(row.id,pair,a.resource,currency,at,org?'q_counterparty_organization':'q_counterparty_reporting')),currency);
     return {sales_quantity:c.is_sale?quantity:0,purchase_quantity:c.is_sale?0:quantity,
       sales_reporting_value:c.is_sale?value:0,purchase_reporting_value:c.is_sale?0:value};
   };
   const rule=(basis,row,precision)=>{let v=d(basis).mul(row.rate).mul(d(0.01));if(row.upper_bound!=null&&v.cmp(row.upper_bound)>0)v=d(row.upper_bound);if(v.cmp(row.lower_bound)<0)v=d(row.lower_bound);return v.round(precision);};
-  for(const row of all('organization'))add(row,'z_subsidiary',row.subsidiary,'z_organizations',null,{}, {},false,[row.name]);
+  for(const row of [...all('currency'),...all('measure_unit')])add(row,'z_identity',row.tenant,'z_accounting_codes',null,{}, {},[tb(row.id),row.code]);
+  for(const row of all('exchange_pair'))add(row,'z_identity',row.tenant,'z_exchange_pairs',null,{}, {},[row.given_resource,row.received_resource]);
+  for(const row of ['issue_adjustment_tax','issue_adjustment_net_tax','tax_adjustment_net_tax'].flatMap(all))
+    add(row,'z_identity',row.tenant,'z_adjustment_taxes',null,{}, {},[tb(row.id),row.adjustment,row.source_tax]);
+  for(const row of all('organization'))add(row,'z_subsidiary',row.subsidiary,'z_organizations',null,{}, {},[row.name]);
   for(const row of [...money,...stocks].flatMap(all)){
-    const a=account(row.id);add(row,'z_subsidiary',a.subsidiary,'z_accounts',null,{}, {},false,[a.resource]);
-    if(a.org)add(row,'z_organization',a.org.id,'z_accounts',null,{}, {},false,[a.resource]);
-    if(tb(row.id)==='stock_account')add(row,'z_identity',row.operating_unit,'z_stock_keys',null,{}, {},false,[a.resource]);
+    const a=account(row.id);add(row,'z_subsidiary',a.subsidiary,'z_accounts',null,{}, {},[a.resource]);
+    if(a.org)add(row,'z_organization',a.org.id,'z_accounts',null,{}, {},[a.resource]);
+    if(tb(row.id)==='stock_account')add(row,'z_identity',row.operating_unit,'z_stock_keys',null,{}, {},[a.resource]);
   }
   for(const row of all('exchange_rate'))add(row,'z_pair',row.pair,'z_rates',row.effective_at,{rate:row.rate});
   for(const row of [...all('account_entry'),...all('stock_entry')])post(row,'z_account',row.account,row.effective_at,{...eff(row.real,row.receivable,row.payable),credit_available:row.receivable,liability_available:row.payable});
@@ -144,8 +151,8 @@ function evaluateSource(data,slots={}) {
     states.push({issue:row.id,at:row.effective_at,...state});net.push({issue:row.id,at:row.effective_at,amount});values.set(row.id,{row,c,amount});
   }
   for(const row of all('issue_adjustment').sort((a,b)=>compare([a.effective_at,a.id],[b.effective_at,b.id]))){
-    prefix(row.id,row.source,'z_state','quantity',row.effective_at);
-    prefix(row.id,row.source,'z_state','price',row.effective_at);
+    prefix(row.id,row.source,'z_state','quantity',row.effective_at,'q_quantity_before');
+    prefix(row.id,row.source,'z_state','price',row.effective_at,'q_price_before');
     const src=values.get(row.source),source=src.row,c=src.c,prior=states.filter(e=>e.issue===row.source&&before(e.at,row.effective_at));
     const quantity=sum(prior.map(e=>e.quantity)),price=sum(prior.map(e=>e.price)),qd=d(row.quantity_delta),pd=d(row.price_delta);
     const amount=quantity.add(qd).mul(price.add(pd)).round(c.precision).add(quantity.mul(price).round(c.precision).neg());
@@ -153,7 +160,7 @@ function evaluateSource(data,slots={}) {
     commercial(row,c,amount);const moved=qd.mul(c.is_sale?-1:1);
     post(row,'z_stock',source.stock_account,row.effective_at,{...eff(moved),...trade(row,c,row.effective_at,qd,amount,false)});
     post(row,'z_goods',source.counterparty_stock,row.effective_at,{...eff(moved.neg()),...trade(row,c,row.effective_at,qd,amount,true)});
-    add(row,'z_state',source.id,'z_state',row.effective_at,{quantity:qd,price:pd,base:amount},{},false);add(row,'z_order',source.id,'z_adjustments',row.effective_at);add(row,'z_net',source.id,'z_net',row.effective_at,{amount});
+    add(row,'z_state',source.id,'z_state',row.effective_at,{quantity:qd,price:pd,base:amount});add(row,'z_order',source.id,'z_adjustments',row.effective_at);add(row,'z_net',source.id,'z_net',row.effective_at,{amount});
     states.push({issue:source.id,at:row.effective_at,quantity:qd,price:pd,base:amount});net.push({issue:source.id,at:row.effective_at,amount});values.set(row.id,{row,c,amount,issue:source.id});
   }
   for(const row of [...originalTaxes,...changedTaxes].flatMap(all).sort((a,b)=>compare([a.effective_at,a.id],[b.effective_at,b.id]))){
@@ -167,10 +174,10 @@ function evaluateSource(data,slots={}) {
     else {
       sourceTax=src.row;
       if(row.adjustment){parent=values.get(row.adjustment);assert(parent,`${row.id} parent already replayed`);delta=parent.amount;
-        if(kind==='issue_adjustment_tax')prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at);
+        if(kind==='issue_adjustment_tax')prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at,'q_basis_before');
         if(kind==='issue_adjustment_net_tax'||kind==='tax_adjustment_net_tax'){
-          prefix(row.id,row.adjustment,'z_taxes','amount',row.effective_at);
-          prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at);
+          prefix(row.id,row.adjustment,'z_taxes','amount',row.effective_at,'q_basis_delta');
+          prefix(row.id,row.source_tax,'z_adjustments','basis',row.effective_at,'q_basis_before');
         }
         if(isNet)delta=delta.add(sum(taxAdjustments.filter(e=>e.parent===row.adjustment&&before(e.at,row.effective_at)).map(e=>e.amount)));
         beforeBasis=src.basis.add(sum(taxAdjustments.filter(e=>e.tax===row.source_tax&&before(e.at,row.effective_at)).map(e=>e.delta)));
@@ -184,11 +191,11 @@ function evaluateSource(data,slots={}) {
     check(row,{exchange_rate:fx,[original?'account_amount':'account_delta']:accountAmount});
     commercial(row,c,amount,0,parent?parent.row.adjustment_note:row.adjustment_note);post(row,'z_tax',taxAccount,row.effective_at,taxEff(c.is_sale,accountAmount));
     if(original){
-      add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount},{},false);
+      add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount});
       add(row,'z_self',row.id,'z_capacity',row.effective_at,{amount,account_amount:accountAmount});
     }else{
       add(row,'z_source',row.source_tax,'z_capacity',row.effective_at,{amount,account_amount:accountAmount});add(row,'z_issue_net',issue,'z_net',row.effective_at,{amount});
-      if(parent){add(row,'z_order',row.source_tax,'z_adjustments',row.effective_at,{basis:delta},{},false);add(row,'z_adjustment',row.adjustment,'z_taxes',row.effective_at,{amount},{},false);taxAdjustments.push({tax:row.source_tax,parent:row.adjustment,at:row.effective_at,delta,amount});}
+      if(parent){add(row,'z_order',row.source_tax,'z_adjustments',row.effective_at,{basis:delta});add(row,'z_adjustment',row.adjustment,'z_taxes',row.effective_at,{amount});taxAdjustments.push({tax:row.source_tax,parent:row.adjustment,at:row.effective_at,delta,amount});}
     }
     net.push({issue,at:row.effective_at,amount});values.set(row.id,{row,c,amount,accountAmount,basis,issue});
   }
@@ -260,30 +267,21 @@ function evaluateSource(data,slots={}) {
     const currency=account(cash).resource,precision=get(currency).precision;
     const amount=rule(basis,{rate:row.fee_rate,lower_bound:row.fee_lower_bound,upper_bound:row.fee_upper_bound},precision);
     const tax=rule(amount,{rate:row.fee_tax_rate,lower_bound:row.fee_tax_lower_bound,upper_bound:row.fee_tax_upper_bound},precision),total=amount.add(tax);
-    const fx=rate(row.id,row.fee_exchange_pair,currency,account(row.fee_account).resource,at);
+    const fx=rate(row.id,row.fee_exchange_pair,currency,account(row.fee_account).resource,at,'q_fee_exchange_rate');
     const expense=quant(amount.add(row.fee_tax_creditable?0:tax).mul(fx),account(row.fee_account).resource);
-    const credit=row.fee_tax_creditable?quant(tax.mul(rate(row.id,row.fee_tax_exchange_pair,currency,account(row.fee_tax_account).resource,at)),account(row.fee_tax_account).resource):d(0);
+    const credit=row.fee_tax_creditable?quant(tax.mul(rate(row.id,row.fee_tax_exchange_pair,currency,account(row.fee_tax_account).resource,at,'q_fee_tax_exchange_rate')),account(row.fee_tax_account).resource):d(0);
     check(row,{fee_amount:amount,fee_tax_amount:tax,fee_account_amount:expense,fee_credit_amount:credit});
     post(row,'z_fee_cash',cash,at,{...eff(total.neg()),reserved:kind==='production_cost'?total.neg():0,fees:total});post(row,'z_fee_account',row.fee_account,at,eff(expense));
     if(row.fee_tax_creditable)post(row,'z_fee_tax',row.fee_tax_account,at,{...eff(credit,credit),credit_available:credit});
     if(kind==='production_cost')post(row,'z_fee_start',cash,get(row.production).starts_at,{...eff(),reserved:total});
 
   }
-  // Validators execute independently from member refreshes. Derive their
-  // explicit read calls from the source-backed posting entries and parent rows.
-  for(const row of [...all('sales_invoice'),...all('purchase_invoice')]){
-    const contributions=entries.filter(entry=>entry.owner.rid===row.id&&entry.owner.slot==='z_history');
-    if(!contributions.length)continue;
-    const boundary=next(row.invoice_date);
-    capture(row.id,row.id,'z_history','before',[boundary],'measures.balance.sum','0','validate');
-    const last=contributions.map(entry=>entry.key[0]).sort((a,b)=>compare([a],[b])).at(-1);
-    if(instant(last)>=instant(boundary))
-      capture(row.id,row.id,'z_history','range',[[boundary],[next(last)]],'measures.balance.instant_min','0','validate');
-  }
+  // External validation queries are independent roles. Invoice validators read
+  // their own repaired roots and therefore need no reverse dependency slots.
   for(const row of all('production_input')){
-    const stock=get(row.stock_account),production=get(row.production),start=production.starts_at;
-    capture(row.id,stock.id,'z_history','before',[start],'measures.available.sum','0','validate');
-    capture(row.id,stock.id,'z_gross','range',[[start],[next(start)]],'measures.quantity.sum','0','validate');
+    const stock=get(row.stock_account),start=get(row.production).starts_at;
+    expectQuery(row.id,'q_available',stock.id,'z_history','range',[null,[start]],'measures.available.sum',d(0),'validate');
+    expectQuery(row.id,'q_gross',stock.id,'z_gross','range',[[start],[next(start)]],'measures.quantity.sum',d(0),'validate');
   }
   // Schema declaration order chooses coincident-slot representatives. Arithmetic
   // and expected memberships above use only source facts; this is identity metadata.
@@ -294,29 +292,27 @@ function evaluateSource(data,slots={}) {
     if(!old){grouped.set(key,{...e,measures:{...e.measures},tags:{...e.tags}});continue;}
     for(const [k,v]of Object.entries(e.measures))old.measures[k]=d(old.measures[k]).add(v);
     for(const [k,v]of Object.entries(e.tags)){if(k in old.tags)assert.deepEqual(old.tags[k],v);old.tags[k]=v;}
-    old.dependent ||=e.dependent;
   }
   const groupedEntries=[...grouped.values()];
   const numericEntries=groupedEntries.map(entry=>({...entry,
     measures:Object.fromEntries(Object.entries(entry.measures).map(([key,value])=>[key,d(value).number()])) }));
   return { data, sourceRows, groupedEntries, numericEntries,
-    expectedReads:[...readInventory.values()] };
+    expectedDependencies:[...queryInventory.values()] };
 }
 
-function expectedReadInventory(data,slots={}) {
-  return evaluateSource(data,slots).expectedReads;
+function expectedDependencyInventory(data,slots={}) {
+  return evaluateSource(data,slots).expectedDependencies;
 }
 
-function verify(data,slots={},rootSpecs) {
+function verify(data,slots={},rootSpecs,dependencyModel) {
   const model=evaluateSource(data,slots);
-  const treeRows=Object.entries(data).filter(([table])=>!['audit_mutation','rebase_read','rebase_read_frame','rebase_read_group','rebase_read_lock','rebase_read_stage'].includes(table)).flatMap(([,rows])=>rows||[]);
-  tree.verify(treeRows,treeRows,model.numericEntries,compare);
+  const treeRows=Object.entries(data).filter(([table])=>table!=='audit_mutation').flatMap(([,rows])=>rows||[]);
   const exactTree=require('../temporal-tree/exact-oracle');
-  exactTree.verify(treeRows,treeRows,model.groupedEntries,compare,D);
-  require('../temporal-tree/read-oracle').verifyReads(data,model.sourceRows,model.groupedEntries,compare,
-    {rootSpecs,expectedReads:model.expectedReads,decimal:D,
-      exactSummary:entries=>exactTree.linearSummary(entries,D,compare)});
+  const indexEntries=require('../temporal-tree/dependency-oracle').verifyDependencies(treeRows,model.groupedEntries,
+    model.expectedDependencies,dependencyModel,{compare,Decimal:D,summarize:entries=>exactTree.linearSummary(entries,D,compare),rootSpecs});
+  tree.verify(treeRows,treeRows,[...model.numericEntries,...indexEntries],compare);
+  exactTree.verify(treeRows,treeRows,[...model.groupedEntries,...indexEntries],compare,D);
   return data;
 }
 
-module.exports={tables,snapshot,verify,expectedReadInventory,D,exact,compare};
+module.exports={tables,snapshot,verify,expectedDependencyInventory,D,exact,compare};

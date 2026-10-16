@@ -1,5 +1,7 @@
 # Integrity repair: lead decisions and Luna execution handoff
 
+Historical record. The current implementation and continuation gates are in the [October 16 declarative-engine plan](declarative-engine-plan.md).
+
 **Historical execution record; additional blockers remain open.** Start with the
 [October 15 lead handoff](integrity-2026-10-15/README.md). Commit `d267dc2` passed
 the bounded checks recorded here, but the later review found compiler and oracle

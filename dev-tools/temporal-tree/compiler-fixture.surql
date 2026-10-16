@@ -27,9 +27,9 @@ DEFINE FIELD OVERWRITE z_mirror ON fact TYPE option<object> COMMENT '@rebase-tre
 DEFINE FUNCTION OVERWRITE fn::fixture::fact($row: object) {
     RETURN [fn::tree::member($row.id, 'z_leg', $row.a_owner, 'z_book', $row.a_effective_at,
         { amount: $row.a_amount, quantity: $row.a_quantity },
-        { currency: 'USD' }, { fact: $row.a_effective_at }, false),
+        { currency: 'USD' }, { fact: $row.a_effective_at }),
         fn::tree::member($row.id, 'z_mirror', $row.a_mirror,
-            'z_book', $row.a_effective_at, { amount: -$row.a_amount }, {}, {}, false)];
+            'z_book', $row.a_effective_at, { amount: -$row.a_amount }, {}, {})];
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE charge SCHEMAFULL COMMENT '@rebase-members fn::fixture::charge';
@@ -39,17 +39,18 @@ DEFINE FIELD OVERWRITE a_rule ON charge TYPE record<rule> REFERENCE ON DELETE RE
 DEFINE FIELD OVERWRITE a_effective_at ON charge TYPE datetime;
 DEFINE FIELD OVERWRITE z10_rate ON charge TYPE decimal VALUE $this.a_rule.a_rate COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z11_cap ON charge TYPE decimal VALUE $this.a_rule.a_cap COMMENT '@rebase-derived';
-DEFINE FIELD OVERWRITE z20_basis ON charge TYPE decimal VALUE
-    fn::tree::read_value($this.a_owner, 'z_book', 'before', [$this.a_effective_at, <string>$this.id, 'z_leg'], 'measures.amount.sum', 0dec)
-    COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_basis ON charge TYPE option<object> FLEXIBLE
+VALUE {source:$this.a_owner,arguments:[NONE,[$this.a_effective_at,<string>$this.id,'z_leg']],path:'measures.amount.sum',fallback:0dec}
+COMMENT '@rebase-dependency range @rebase-dependency-source tree_owner.z_book';
+DEFINE FIELD OVERWRITE z20_basis ON charge TYPE decimal VALUE fn::dependency::value($this.q_basis) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z30_amount ON charge TYPE decimal VALUE math::min([$this.z11_cap, $this.z10_rate * $this.z20_basis]) COMMENT '@rebase-derived';
 DEFINE FIELD OVERWRITE z_leg ON charge TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';
 DEFINE FIELD OVERWRITE z_mirror ON charge TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';
 DEFINE FUNCTION OVERWRITE fn::fixture::charge($row: object) {
     RETURN [fn::tree::member($row.id, 'z_leg', $row.a_owner, 'z_book', $row.a_effective_at,
-        { amount: $row.z30_amount }, { currency: 'USD' }, { charge: $row.a_effective_at }, true),
+        { amount: $row.z30_amount }, { currency: 'USD' }, { charge: $row.a_effective_at }),
         fn::tree::member($row.id, 'z_mirror', $row.a_mirror, 'z_book', $row.a_effective_at,
-            { amount: -$row.z30_amount }, {}, {}, false)];
+            { amount: -$row.z30_amount }, {}, {})];
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE inherited_fact SCHEMAFULL COMMENT '@rebase-members fn::fixture::inherited @rebase-validate fn::fixture::inherited_guard';
@@ -62,7 +63,7 @@ DEFINE FIELD OVERWRITE z20_amount ON inherited_fact TYPE decimal VALUE $this.a_p
 DEFINE FIELD OVERWRITE z_leg ON inherited_fact TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';
 DEFINE FUNCTION OVERWRITE fn::fixture::inherited($row: object) {
     RETURN [fn::tree::member($row.id, 'z_leg', $row.z10_owner, 'z_book', $row.a_effective_at,
-        { amount: $row.z20_amount }, {}, { inherited: $row.a_effective_at }, false)];
+        { amount: $row.z20_amount }, {}, { inherited: $row.a_effective_at })];
 } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::fixture::inherited_guard($row: object) {
     IF $row.a_effective_at < $row.z11_parent_at { THROW 'FIXTURE_CHILD_BEFORE_PARENT'; };
@@ -82,7 +83,7 @@ DEFINE FIELD OVERWRITE a_effective_at ON unlinked_fact TYPE datetime;
 DEFINE FIELD OVERWRITE z_leg ON unlinked_fact TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner tree_owner.z_book';
 DEFINE FUNCTION OVERWRITE fn::fixture::singleton($row: object) {
     RETURN [fn::tree::member($row.id, 'z_leg', tree_owner:singleton, 'z_book', $row.a_effective_at,
-        { amount: $row.a_amount }, {}, {}, false)];
+        { amount: $row.a_amount }, {}, {})];
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE report SCHEMAFULL;

@@ -1,5 +1,7 @@
 # Integrity repair handoff — October 15, 2026
 
+Historical record. The current implementation and continuation gates are in the [October 16 declarative-engine plan](../declarative-engine-plan.md).
+
 The acceptance at `3ee5205` recorded passes for the named D0 and D2–D4 gates.
 D1's seeded history campaign remains partial: it does not cover dated logical
 readers, required-output lifecycles or expected-rejection histories. Those

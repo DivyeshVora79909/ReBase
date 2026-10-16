@@ -1,11 +1,11 @@
 # Developer blueprint: records, permissions and calculation trees
 
-This is the authoring contract, updated October 13. It accompanies the executable
+This is the authoring contract, updated October 16. It accompanies the executable
 [analytics design](../index-analytics/README.md),
 [accounting developer guide](../all-in-accounting/developer-guide.md),
 [tree API](ordered-tree-contract.md) and
 [tenant/authentication contract](tenant-authentication.md).
-Use [current verification](reader-index-verification.md) to distinguish exercised
+Use [current verification](verification.md) to distinguish exercised
 behavior from an application feature you still need to build.
 
 ## Where code belongs
@@ -225,12 +225,25 @@ Pass explicit field values for those calculations; scalar aliases and expression
 remain supported. The compiler preserves literal argument positions when
 following helper parameters. See the [compiler repair record](integrity-2026-10-15/compiler.md).
 
-For mutable reads hidden in ordinary helper functions, use
-`fn::tree::read_value` or `fn::record::read_value`. The compiler captures the
-executed query and maintains its reverse subscription automatically. Applications
-do not define an impact function or reader tree. The [automatic reactivity
-contract](function-reactivity.md) explains predecessor, prefix and range reads,
-branch cleanup, transactional validation and the executable proof.
+For ordered reads, declare a named `TYPE option<object> FLEXIBLE` field with
+`@rebase-dependency range|latest|next|exact` and its allowed
+`@rebase-dependency-source table.root` targets. A pure VALUE constructs the
+source, arguments, path and fallback. Calculations consume the result with
+`fn::dependency::value($this.q_name)`. The schema bounds the slot count; helpers
+do not register reads dynamically. For mutable scalar reads hidden in helpers,
+put `@rebase-depends reference.field` on the calculated field. The
+[declared-query contract](function-reactivity.md) gives the complete API,
+transaction protocol, validation phase and costs.
+
+Inspect the resulting model without writing files:
+
+```bash
+node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta
+```
+
+Builds also emit `dependency-plan.json`. It lists calculated fields in evaluation
+order, their local inputs, typed reference routes, fixed query slots and roots.
+In the workbench, `explain('issue_adjustment.amount_delta')` uses current source.
 
 Reactive expressions and their helpers must be read-only. This applies to
 derived fields, memberships, required-output recipes and validators. The compiler
@@ -243,14 +256,14 @@ For split/aggregate/use-again calculations, read a published upstream root or a
 strictly prior temporal prefix. The accounting tax implementation is the worked
 example: base 100 plus two 9 taxes yields 118; a later 10% net tax reads that
 earlier amount. A backdated contribution refreshes the affected later readers.
-Within the same tree, use a tracked strictly prior prefix; posting memberships
+Within the same tree, declare a strictly prior range; posting memberships
 do not need a reader flag. Do not read a final aggregate that
 contains the record's own result. Equal-time compounding and complete-timestamp
 validation are distinct rules.
 
 Put source-local constraints and aggregate constraints in explicit
 `@rebase-validate fn::...` functions on their respective tables. The coordinator
-repairs memberships, drains temporal dependents, publishes roots and validates
+repairs memberships, recalculates affected readers, publishes roots and validates
 inside the source transaction. Each source statement settles before the next;
 an explicit multi-statement transaction does not defer all intermediate guards.
 Author changes in a valid order. Delete dependent rows before their referenced

@@ -1,39 +1,43 @@
-# Accounting continuation boundary — October 14
+# Accounting continuation boundary — October 16
 
-The active task is now the [integrity repair handoff](../rebase-system/integrity-repair-handoff-2026-10-14.md).
-Later stress evidence challenges dependency-index integrity, and the lead review
-demonstrated gaps in the private oracle. The acceptance results below describe
-the earlier bounded run; the repair and strengthened acceptance remain pending.
+The [declarative-engine plan](../rebase-system/declarative-engine-plan.md) owns
+current work and acceptance gates. Read the [developer guide](developer-guide.md),
+[declared-query contract](../rebase-system/function-reactivity.md), current Git
+diff and [verification record](verification.md). Earlier capture-engine acceptance
+belongs to its recorded revisions.
 
-Read the [developer guide](developer-guide.md), [automatic-read contract](../rebase-system/function-reactivity.md)
-and [verification record](verification.md), then inspect Git status/diff. Earlier
-agent summaries are navigation; source, mathematics and executed evidence decide
-what is implemented.
+Full current acceptance passed 103 source checkpoints, 105 structural checks,
+90 exact value queries and 54 rollback snapshots, including populated
+reapplication and cleanup. The
+[engine verification record](../rebase-system/declarative-engine-verification.md)
+and [manifest](../rebase-system/evidence/2026-10-16-declarative-engine.json)
+record supporting gates and the separately verified numeric-demo checker change.
+The accounting implementation and generated schema remain identical to the
+[full-run evidence](../rebase-system/evidence/2026-10-16-declarative-accounting.json).
 
-The automatic-read redesign is accepted: 103 accounting checkpoints, 51 complete
-rollback snapshots, exact populated reapplication and child-first cleanup. The
-focused read proof passed 50 checkpoints and 7 rollbacks. All 30 developer-tool
-tests and the recorded compiler/runtime/tree checks passed.
+The accounting model retains subsidiary roots, sparse native dimensions,
+event-time reporting, directional claims, exact product-difference adjustments,
+strict tax rules, optional fees, tax cash, transfers and production. Ordered
+calculations now use named query fields. Posting helpers consume their results;
+source metadata and query bounds determine inverse propagation. Production uses
+final-validation descriptors. Invoices validate their own roots directly.
 
-Calculations use `fn::tree::read_value` and `fn::record::read_value`. The compiler
-captures transitive helper calls for derivation, membership providers, required
-outputs and final validators. Applications no longer define FX reader slots,
-reader roots, impact functions or temporal-reader flags. `@rebase-impact` is
-retired. Reverse positions use private typed AVL indexes; native record-ID date
-ranges failed the same-timestamp nanosecond case and must not be reinstated.
+Business uniqueness is expressed through explicit tenant-rooted custom indexes.
+Native references/backlinks, authorization and runtime effects retain their
+separate roles. No compatibility subscription engine or data migration is kept.
 
-The subsidiary accounting dimensions, native/reporting units, positive directional
-R/P, unified adjustments and tax mathematics remain the domain contract. Fees,
-claims, cash, transfer and production cases remain accepted. Source-oracle
-snapshots include private subscriptions/fences and verify both reverse indexes.
+The source oracle derives financial values, memberships and every active query
+role independently from source facts. It checks descriptor contents, exact
+results, reverse slots, root inventory and full AVL/link/summary state. Cleanup
+removes children one record at a time and verifies empty financial/dependency
+roots. Remaining identity records correctly retain their identity memberships.
 
-Authoring sources are `core/`, `postings/`, 48 public `schemas/` and the shared
-framework/compiler. Build output is generated. Evidence identifies exact sources,
-the schema fingerprint, timings and coverage. `verify:accounting` runs the whole
-profile in a disposable database; `probe:observed-reads` exercises the generic
-read engine separately.
+Run `npm run verify:accounting` for the full disposable accounting gate,
+`npm run probe:dependencies` for generic propagation, and
+`npm run probe:dependency-cost` for bounded structural evidence. Builds emit
+`dependency-plan.json`; `--explain issue_adjustment.amount_delta` reads current
+source without writing files. Generated directories are not authoring inputs.
 
-MetaSol, populated old-schema migration, logistics/assets/POS, rootless trees,
-new storage engines and production-scale benchmarking remain separate tasks.
-A current-rate stock valuation report needs its own calculation; changing the
-clock does not revalue historical postings automatically.
+MetaSol adaptation, deployment, populated migration and representative production
+capacity are separate tasks. Current-rate stock valuation requires its own
+calculation; historical reporting does not change just because time advances.

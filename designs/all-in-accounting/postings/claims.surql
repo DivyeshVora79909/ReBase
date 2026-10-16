@@ -7,8 +7,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::claim_members($row: object) {
     LET $r=$row.claim_kind='receivable';
     RETURN array::concat(fn::accounting::post($row,'z_account',$row.account,$row.effective_at,
         object::extend(fn::accounting::claim(IF $r THEN $row.amount ELSE -$row.amount END),
-            {credit_available:IF $r THEN $row.amount ELSE 0dec END,liability_available:IF $r THEN 0dec ELSE $row.amount END})),[
-        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{remaining:$row.amount},{},{},false)]);
+            {credit_available:IF $r THEN $row.amount ELSE 0dec END,liability_available:IF $r THEN 0dec ELSE $row.amount END}), $row.q_account_reporting, $row.q_account_organization),[
+        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.effective_at,{remaining:$row.amount},{},{})]);
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::claim_settlement_validate($row: object) {
@@ -25,11 +25,11 @@ DEFINE FUNCTION OVERWRITE fn::accounting::claim_settlement_members($row: object)
     LET $receive=IF $counterparty THEN !$claim_r ELSE $claim_r END;
     LET $real=IF $receive THEN $row.amount ELSE -$row.amount END;
     LET $other_real=IF $receive THEN -$row.account_amount ELSE $row.account_amount END;
-    RETURN array::concat(fn::accounting::post($row,'z_paid',$row.paid_account,$row.effective_at,fn::accounting::effects($real,0dec,0dec)),
+    RETURN array::concat(fn::accounting::post($row,'z_paid',$row.paid_account,$row.effective_at,fn::accounting::effects($real,0dec,0dec), $row.q_paid_reporting, $row.q_paid_organization),
         fn::accounting::post($row,'z_account',$row.account,$row.effective_at,
             object::extend(fn::accounting::claim(IF $claim_r THEN -$row.account_amount ELSE $row.account_amount END),
-                {real:$other_real,credit_available:IF $claim_r THEN -$row.account_amount ELSE 0dec END,liability_available:IF $claim_r THEN 0dec ELSE -$row.account_amount END})),[
-        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{remaining:-$row.account_amount},{},{},false)],fn::accounting::fee_members($row));
+                {real:$other_real,credit_available:IF $claim_r THEN -$row.account_amount ELSE 0dec END,liability_available:IF $claim_r THEN 0dec ELSE -$row.account_amount END}), $row.q_account_reporting, $row.q_account_organization),[
+        fn::tree::member($row.id,'z_source',$row.source,'z_capacity',$row.effective_at,{remaining:-$row.account_amount},{},{})],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE account_claim SCHEMAFULL COMMENT '@rebase-members fn::accounting::claim_members @rebase-validate fn::accounting::claim_validate';
@@ -49,6 +49,14 @@ DEFINE FIELD OVERWRITE amount ON account_claim TYPE decimal ASSERT $value>0dec C
 DEFINE FIELD OVERWRITE z_capacity ON account_claim TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
 
 DEFINE FIELD OVERWRITE z_account ON account_claim TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history @rebase-tree-owner organization_resource_account.z_history @rebase-tree-owner direct_tax_account.z_history @rebase-tree-owner indirect_tax_account.z_history';
+
+DEFINE FIELD OVERWRITE q_account_reporting ON account_claim TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.account.valuation_pair,$this.account.resource,$this.account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_account_organization ON account_claim TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON account_claim TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -82,17 +90,33 @@ DEFINE FIELD OVERWRITE source_at ON claim_settlement TYPE datetime VALUE $this.s
 
 DEFINE FIELD OVERWRITE claim_kind ON claim_settlement TYPE string VALUE $this.source.claim_kind COMMENT '@rebase-derived';
 
-DEFINE FIELD OVERWRITE exchange_rate ON claim_settlement TYPE decimal VALUE fn::accounting::rate_at($this.exchange_pair,$this.paid_resource,$this.resource,$this.effective_at) COMMENT '@rebase-derived';
+DEFINE FIELD OVERWRITE q_exchange_rate ON claim_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.exchange_pair,$this.paid_resource,$this.resource,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE exchange_rate ON claim_settlement TYPE decimal VALUE (fn::dependency::value($this.q_exchange_rate)??1dec) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE account_amount ON claim_settlement TYPE decimal VALUE fn::accounting::quantize($this.amount*$this.exchange_rate,$this.resource) COMMENT '@rebase-derived';
 
 DEFINE FIELD OVERWRITE z_account ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization_currency_account.z_history @rebase-tree-owner organization_resource_account.z_history @rebase-tree-owner direct_tax_account.z_history @rebase-tree-owner indirect_tax_account.z_history';
+
+DEFINE FIELD OVERWRITE q_account_reporting ON claim_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.account.valuation_pair,$this.account.resource,$this.account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_account_organization ON claim_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_account_organization ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner organization.z_history';
 
 DEFINE FIELD OVERWRITE z_paid ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
+
+DEFINE FIELD OVERWRITE q_paid_reporting ON claim_settlement TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.paid_account.valuation_pair,$this.paid_account.resource,$this.paid_account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_paid_subsidiary ON claim_settlement TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

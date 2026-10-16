@@ -4,17 +4,17 @@ const { fieldSelectPolicy } = require('../fields');
 
 const quote = value => `'${value.replaceAll("'", "\\'")}'`;
 const list = values => `[${values.map(quote).join(', ')}]`;
-const rootDefault = '{ height: 0, revision: 0, refreshing: false, summary: fn::tree::empty() }';
+const rootDefault = '{ height: 0, revision: 0, summary: fn::tree::empty() }';
 const matches = (link, target) => `(record::tb(${link}.rid) = '${target.table}' AND ${link}.slot = '${target.slot}')`;
 
 function summaryFields(table, field, keyType) {
   return `
 DEFINE FIELD OVERWRITE ${field} ON ${table} TYPE object;
 DEFINE FIELD OVERWRITE ${field}.count ON ${table} TYPE int ASSERT $value >= 0;
-DEFINE FIELD OVERWRITE ${field}.dependents ON ${table} TYPE int ASSERT $value >= 0 AND $value <= $this.${field}.count;
 DEFINE FIELD OVERWRITE ${field}.first ON ${table} TYPE option<${keyType}>;
 DEFINE FIELD OVERWRITE ${field}.last ON ${table} TYPE option<${keyType}>;
-${['rebase_read', 'rebase_read_group'].includes(table) ? `DEFINE FIELD OVERWRITE ${field}.end_key ON ${table} TYPE option<array>;` : ''}
+DEFINE FIELD OVERWRITE ${field}.interval ON ${table} TYPE option<object>;
+DEFINE FIELD OVERWRITE ${field}.interval.upper ON ${table} TYPE option<array>;
 DEFINE FIELD OVERWRITE ${field}.measures ON ${table} TYPE object FLEXIBLE;
 DEFINE FIELD OVERWRITE ${field}.measures.* ON ${table} TYPE { sum: decimal, min_prefix: decimal, max_prefix: decimal, min: decimal, max: decimal, boundary_min: option<decimal>, boundary_max: option<decimal>, instant_min: decimal, instant_max: decimal };
 DEFINE FIELD OVERWRITE ${field}.tags ON ${table} TYPE object FLEXIBLE;
@@ -113,11 +113,13 @@ function readOperations(trees) {
         RETURN IF $operation = 'rank' THEN $before_result.summary.count + 1 ELSE $before_result.summary END;
     };`;
   const range = `IF $operation = 'range' {
-        IF array::len($argument) != 2 OR !fn::tree::valid_key($argument[0], $key_type, false)
-            OR !fn::tree::valid_key($argument[1], $key_type, false) { THROW 'TREE_READ_KEY'; };
+        IF array::len($argument) != 2 OR ($argument[0] != NONE AND !fn::tree::valid_key($argument[0], $key_type, false))
+            OR ($argument[1] != NONE AND !fn::tree::valid_key($argument[1], $key_type, false)) { THROW 'TREE_READ_KEY'; };
         ${readHeadStatement('$link', 'range_head')}
+        IF $argument[0] = NONE AND $argument[1] = NONE { RETURN $range_head.summary ?? fn::tree::empty(); };
         ${readNodeStatement('$range_head.root', '$link', 'range_root_node')}
-        IF $argument[0] >= $argument[1] OR $range_head.root = NONE { RETURN fn::tree::empty(); };
+        IF ($argument[0] != NONE AND $argument[1] != NONE AND $argument[0] >= $argument[1])
+            OR $range_head.root = NONE { RETURN fn::tree::empty(); };
         LET $range_result = array::range(0, 6 * $range_root_node.height + 3).fold(
           { stack: [{ link: $range_head.root }], summary: fn::tree::empty() }, |$state, $_| {
             IF array::len($state.stack) = 0 { RETURN $state; };
@@ -127,13 +129,16 @@ function readOperations(trees) {
               RETURN { stack: $range_rest, summary: fn::tree::combine($state.summary, $range_task.value) };
             };
             ${readNodeStatement('$range_task.link', '$link', 'range_node')}
-            IF $range_node = NONE OR $range_node.summary.last < $argument[0] OR $range_node.summary.first >= $argument[1] {
+            IF $range_node = NONE OR ($argument[0] != NONE AND $range_node.summary.last < $argument[0])
+                OR ($argument[1] != NONE AND $range_node.summary.first >= $argument[1]) {
               RETURN { stack: $range_rest, summary: $state.summary };
             };
-            IF $range_node.summary.first >= $argument[0] AND $range_node.summary.last < $argument[1] {
+            IF ($argument[0] = NONE OR $range_node.summary.first >= $argument[0])
+                AND ($argument[1] = NONE OR $range_node.summary.last < $argument[1]) {
               RETURN { stack: $range_rest, summary: fn::tree::combine($state.summary, $range_node.summary) };
             };
-            LET $range_own = IF $range_node.key >= $argument[0] AND $range_node.key < $argument[1]
+            LET $range_own = IF ($argument[0] = NONE OR $range_node.key >= $argument[0])
+                AND ($argument[1] = NONE OR $range_node.key < $argument[1])
               THEN [{ value: $range_node.value }] ELSE [] END;
             RETURN { stack: array::concat($range_rest, [{ link: $range_node.right }], $range_own, [{ link: $range_node.left }]),
               summary: $state.summary };
@@ -210,9 +215,7 @@ VALUE IF $before = NONE THEN ${rootDefault} ELSE $value END PERMISSIONS FOR sele
     sql += linkFields(table, `${name}.root`, root.nodes);
     sql += `DEFINE FIELD OVERWRITE ${name}.height ON ${table} TYPE int ASSERT $value >= 0;
 DEFINE FIELD OVERWRITE ${name}.revision ON ${table} TYPE int ASSERT $value >= 0;
-DEFINE FIELD OVERWRITE ${name}.refreshing ON ${table} TYPE bool;
-DEFINE FIELD OVERWRITE ${name}.dirty ON ${table} TYPE option<${keyType}>;
-DEFINE FIELD OVERWRITE ${name}.cursor ON ${table} TYPE option<${keyType}>;\n`;
+\n`;
     sql += summaryFields(table, `${name}.summary`, keyType);
   }
   for (const node of trees.nodes) {
@@ -233,6 +236,7 @@ function treeAdapters(trees) {
   const roots = trees.roots.map(root => matches('$link', root)).join(' OR ') || 'false';
   const keyTypes = trees.roots.map(root => `IF ${matches('$link', root)} { RETURN '${root.keyType}'; };`).join('\n');
   const unique = trees.roots.map(root => `IF ${matches('$link', root)} { RETURN ${root.unique}; };`).join('\n');
+  const coalesce = trees.roots.filter(root => !root.coalesce).map(root => matches('$link', root)).join(' OR ') || 'false';
   // Group by source table so membership checks do not test every source slot.
   const byTable = new Map();
   for (const node of trees.nodes) {
@@ -265,6 +269,7 @@ THROW 'TREE_UNKNOWN_ROOT'; } PERMISSIONS FULL;
 DEFINE FUNCTION OVERWRITE fn::rebase::root_unique($link: object) {
 ${unique}
 THROW 'TREE_UNKNOWN_ROOT'; } PERMISSIONS FULL;
+DEFINE FUNCTION OVERWRITE fn::rebase::root_coalesces($link: object) { RETURN !(${coalesce}); } PERMISSIONS NONE;
 DEFINE FUNCTION OVERWRITE fn::rebase::tree_root_select_allowed($root_link: option<object>) {
     IF $root_link = NONE { RETURN false; };
 ${rootReadChecks}
@@ -287,7 +292,24 @@ RETURN false; } PERMISSIONS NONE;\n`;
 function queryFunction(trees, options) {
   if (!trees.roots.length) return '';
   const operations = readOperations(trees);
-  return `DEFINE FUNCTION OVERWRITE fn::tree::read($owner: record, $slot: string, $operation: string, $argument: array) {
+  return `DEFINE FUNCTION OVERWRITE fn::tree::intervals_from($cursor: option<object>, $owner: object, $key: array, $budget: int) {
+    IF !fn::rebase::tree_root_select_allowed($owner) { THROW 'Tree read not allowed'; };
+    IF $cursor = NONE { RETURN []; };
+    IF $budget <= 0 { THROW 'TREE_INTERVAL_BUDGET'; };
+    ${readNodeStatement('$cursor', '$owner', 'interval_node')}
+    IF $interval_node.summary.interval = NONE
+        OR ($interval_node.summary.interval.upper != NONE AND $interval_node.summary.interval.upper <= $key)
+        OR fn::tree::business_key($interval_node.summary.first) > $key { RETURN []; };
+    LET $matches = $interval_node.value.interval != NONE
+        AND fn::tree::business_key($interval_node.key) <= $key
+        AND ($interval_node.value.interval.upper = NONE OR $key < $interval_node.value.interval.upper);
+    IF $matches AND !fn::rebase::tree_link_select_allowed($cursor, $owner) { THROW 'Tree read not allowed'; };
+    RETURN array::concat(
+        fn::tree::intervals_from($interval_node.left, $owner, $key, $budget - 1),
+        IF $matches THEN [$cursor] ELSE [] END,
+        fn::tree::intervals_from($interval_node.right, $owner, $key, $budget - 1));
+} PERMISSIONS FULL;
+DEFINE FUNCTION OVERWRITE fn::tree::read($owner: record, $slot: string, $operation: string, $argument: array) {
     LET $link = { rid: $owner, slot: $slot };
     IF !fn::rebase::tree_root_select_allowed($link) { THROW 'Tree read not allowed'; };
     LET $key_type = fn::rebase::root_key_type($link);
@@ -301,6 +323,11 @@ function queryFunction(trees, options) {
         ${readNodeStatement('$argument[0]', '$link', 'value_node')}
         IF $argument[0] != NONE AND !fn::rebase::tree_link_select_allowed($argument[0], $link) { THROW 'Tree read not allowed'; };
         RETURN $value_node.value;
+    };
+    IF $operation = 'intervals' {
+        IF !fn::tree::valid_key($argument, $key_type, false) { THROW 'TREE_READ_KEY'; };
+        ${readHeadStatement('$link', 'interval_head')}
+        RETURN fn::tree::intervals_from($interval_head.root, $link, $argument, $interval_head.height + 1);
     };
     ${operations.before}
     ${operations.range}

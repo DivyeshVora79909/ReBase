@@ -1,6 +1,47 @@
 # Developer experience restart handoff
 
-Updated 2026-10-03. This records the completed scoped developer-tools redesign
+## Current result — October 16
+
+The declarative-engine replacement is implemented and accepted locally. Changes
+remain uncommitted against `cc7b98d`. The [execution plan](declarative-engine-plan.md)
+records the recovered intent, mathematical model and completed gates. Read the
+[developer blueprint](developer-blueprint.md) and
+[declared-query guide](function-reactivity.md) for the current authoring contract.
+
+The authoring model is strict records, explicit ordered memberships, pure
+calculations, named queries and transactional invariants. Query slots are fixed
+by schema and use the shared AVL implementation. Source revisions fence
+concurrent calculations, including unchanged results. The dynamic capture
+engine has been removed. Accounting uses 138 declarations, private business
+uniqueness indexes and exact arithmetic.
+
+Developers can inspect a calculation without connecting or writing files:
+
+```bash
+node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta
+```
+
+The API/workbench also exposes `explain`; builds emit a checked
+`dependency-plan.json`. Accounting provides 48 public create schemas and a
+17-row SDK fixture. Generated output remains outside authoring inputs.
+
+The [verification record](declarative-engine-verification.md) and
+[manifest](evidence/2026-10-16-declarative-engine.json) retain results and source
+boundaries. Full accounting passed 103 checkpoints and 54 rollback snapshots,
+including populated-schema reapplication and child-first cleanup. All broad
+regression components and 54 developer tests passed across the documented runs.
+The demo numeric-verifier correction is separately tested; main accounting
+comparison remains exact. The generated accounting schema is 11,183,330 bytes,
+so this work does not claim smaller SQL or measured production performance.
+
+There is no remaining implementation or acceptance gate for this replacement.
+Future changes should start with the current diff, affected source contract and
+focused regression. Production capacity, old-schema migration and MetaSol
+adaptation require separate work.
+
+## Historical developer-tools handoff
+
+Historical workbench handoff, updated 2026-10-03. This records the completed scoped developer-tools redesign
 and its verification. The design rationale and historical frontend guidance
 are in [the plan](developer-experience-plan.md).
 

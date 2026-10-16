@@ -48,7 +48,7 @@ DEFINE FUNCTION OVERWRITE fn::c3::rule_add($rule: record<natural_rule>) {
 
 DEFINE FUNCTION OVERWRITE fn::c3::fact_members($row: object) {
     RETURN [fn::tree::member($row.id, 'rb_fact', $row.a_owner, 'z_history',
-        $row.a_at, { amount: $row.a_total }, {}, {}, false)];
+        $row.a_at, { amount: $row.a_total }, {}, {})];
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::c3::validate_owner($row: object) {

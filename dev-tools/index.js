@@ -94,6 +94,10 @@ function check(options = {}) {
   return build({ ...options, check: true });
 }
 
+function explain(subject = '*', options = {}) {
+  return build({ ...options, explain: subject }).explanation;
+}
+
 function selectContext(configuration, requested) {
   const candidate = requested
     ?? configuration.surreal.defaultContext
@@ -172,6 +176,7 @@ module.exports = {
   ROOT,
   build,
   check,
+  explain,
   connect,
   deploy,
   populate,

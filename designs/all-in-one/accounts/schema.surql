@@ -127,7 +127,7 @@ DEFINE FUNCTION OVERWRITE fn::calc::note($row: object, $amount: decimal, $curren
     -- Missing tags do not affect uniformity. Preserve absence explicitly so a
     -- scoped note checks every correction, including corrections without an invoice.
     RETURN fn::tree::member($row.id, 'z_note', $row.a_note, 'z_book', $row.a_effective_at,
-        { amount: $amount }, { currency: $currency, invoice: $invoice ?? false }, {}, false);
+        { amount: $amount }, { currency: $currency, invoice: $invoice ?? false }, {});
 } PERMISSIONS NONE;
 
 -- Trusted native rule family: fixed + rate*basis, optional cap, explicit rounding.

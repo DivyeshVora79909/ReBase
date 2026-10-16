@@ -8,7 +8,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::entry_validate($row: object) {
 DEFINE FUNCTION OVERWRITE fn::accounting::entry_members($row: object) {
     RETURN fn::accounting::post($row,'z_account',$row.account,$row.effective_at,
         object::extend(fn::accounting::effects($row.real,$row.receivable,$row.payable),
-        {credit_available:$row.receivable,liability_available:$row.payable}));
+        {credit_available:$row.receivable,liability_available:$row.payable}), $row.q_account_reporting, $row.q_account_organization);
 } PERMISSIONS NONE;
 
 DEFINE TABLE OVERWRITE account_entry SCHEMAFULL COMMENT '@rebase-members fn::accounting::entry_members @rebase-validate fn::accounting::entry_validate';
@@ -26,6 +26,14 @@ DEFINE FIELD OVERWRITE receivable ON account_entry TYPE decimal DEFAULT 0dec ASS
 DEFINE FIELD OVERWRITE payable ON account_entry TYPE decimal DEFAULT 0dec ASSERT $value>=0dec COMMENT '@rebase-audit';
 
 DEFINE FIELD OVERWRITE z_account ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history @rebase-tree-owner direct_tax_account.z_history @rebase-tree-owner indirect_tax_account.z_history @rebase-tree-owner organization_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE q_account_reporting ON account_entry TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.account.valuation_pair,$this.account.resource,$this.account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_account_organization ON account_entry TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON account_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -46,6 +54,14 @@ DEFINE FIELD OVERWRITE receivable ON stock_entry TYPE decimal DEFAULT 0dec ASSER
 DEFINE FIELD OVERWRITE payable ON stock_entry TYPE decimal DEFAULT 0dec ASSERT $value>=0dec COMMENT '@rebase-audit';
 
 DEFINE FIELD OVERWRITE z_account ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history @rebase-tree-owner organization_resource_account.z_history';
+
+DEFINE FIELD OVERWRITE q_account_reporting ON stock_entry TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.account.valuation_pair,$this.account.resource,$this.account.reporting_currency,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
+DEFINE FIELD OVERWRITE q_account_organization ON stock_entry TYPE option<object> FLEXIBLE
+VALUE fn::accounting::organization_query($this.account,$this.effective_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_account_subsidiary ON stock_entry TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

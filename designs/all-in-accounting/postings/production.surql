@@ -9,23 +9,23 @@ DEFINE FUNCTION OVERWRITE fn::accounting::window_validate($row: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_line($row: object, $at: datetime, $kind: string) {
-    RETURN fn::tree::member($row.id,'z_production',$row.production,'z_lines',$at,{lines:1dec},{kind:$kind},{},false);
+    RETURN fn::tree::member($row.id,'z_production',$row.production,'z_lines',$at,{lines:1dec},{kind:$kind},{});
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_input_validate($row: object) {
     fn::accounting::same_subsidiary($row.production,$row.stock_account);
     fn::accounting::window_validate($row);
-    LET $free=fn::tree::read_value($row.stock_account,'z_history','before',[$row.starts_at],'measures.available.sum',0dec);
-    LET $gross=fn::tree::read_value($row.stock_account,'z_gross','range',[[$row.starts_at],[$row.starts_at+1ns]],'measures.quantity.sum',0dec);
+    LET $free=fn::dependency::value($row.q_available);
+    LET $gross=fn::dependency::value($row.q_gross);
     IF $gross>$free { THROW 'PRODUCTION_GROSS_INPUT'; };
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_input_members($row: object) {
     LET $start=fn::accounting::post($row,'z_start',$row.stock_account,$row.starts_at,
-        object::extend(fn::accounting::effects(0dec,0dec,0dec),{reserved:$row.quantity}));
+        object::extend(fn::accounting::effects(0dec,0dec,0dec),{reserved:$row.quantity}), $row.q_start_reporting, $row.q_start_organization);
     RETURN array::concat($start,
-        fn::accounting::post($row,'z_end',$row.stock_account,$row.ends_at,object::extend(fn::accounting::effects(-$row.quantity,0dec,0dec),{reserved:-$row.quantity})),[
-        fn::tree::member($row.id,'z_gross',$row.stock_account,'z_gross',$row.starts_at,{quantity:$row.quantity},{},{},false),
+        fn::accounting::post($row,'z_end',$row.stock_account,$row.ends_at,object::extend(fn::accounting::effects(-$row.quantity,0dec,0dec),{reserved:-$row.quantity}), $row.q_end_reporting, $row.q_end_organization),[
+        fn::tree::member($row.id,'z_gross',$row.stock_account,'z_gross',$row.starts_at,{quantity:$row.quantity},{},{}),
         fn::accounting::production_line($row,$row.starts_at,'input')]);
 } PERMISSIONS NONE;
 
@@ -35,9 +35,9 @@ DEFINE FUNCTION OVERWRITE fn::accounting::production_output_validate($row: objec
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_output_members($row: object) {
-    RETURN array::concat(fn::accounting::post($row,'z_start',$row.stock_account,$row.starts_at,object::extend(fn::accounting::effects(0dec,0dec,0dec),{expected:$row.quantity})),
-        fn::accounting::post($row,'z_end',$row.stock_account,$row.ends_at,object::extend(fn::accounting::effects($row.quantity,0dec,0dec),{expected:-$row.quantity})),[
-        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.ends_at,{quantity:$row.quantity},{},{},false),
+    RETURN array::concat(fn::accounting::post($row,'z_start',$row.stock_account,$row.starts_at,object::extend(fn::accounting::effects(0dec,0dec,0dec),{expected:$row.quantity}), $row.q_start_reporting, $row.q_start_organization),
+        fn::accounting::post($row,'z_end',$row.stock_account,$row.ends_at,object::extend(fn::accounting::effects($row.quantity,0dec,0dec),{expected:-$row.quantity}), $row.q_end_reporting, $row.q_end_organization),[
+        fn::tree::member($row.id,'z_self',$row.id,'z_capacity',$row.ends_at,{quantity:$row.quantity},{},{}),
         fn::accounting::production_line($row,$row.ends_at,'output')]);
 } PERMISSIONS NONE;
 
@@ -48,8 +48,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::production_cost_validate($row: object)
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_cost_members($row: object) {
-    RETURN array::concat(fn::accounting::post($row,'z_start',$row.treasury,$row.starts_at,object::extend(fn::accounting::effects(0dec,0dec,0dec),{reserved:$row.amount})),
-        fn::accounting::post($row,'z_end',$row.treasury,$row.ends_at,object::extend(fn::accounting::effects(-$row.amount,0dec,0dec),{reserved:-$row.amount})),[
+    RETURN array::concat(fn::accounting::post($row,'z_start',$row.treasury,$row.starts_at,object::extend(fn::accounting::effects(0dec,0dec,0dec),{reserved:$row.amount}), $row.q_start_reporting, $row.q_start_organization),
+        fn::accounting::post($row,'z_end',$row.treasury,$row.ends_at,object::extend(fn::accounting::effects(-$row.amount,0dec,0dec),{reserved:-$row.amount}), $row.q_end_reporting, $row.q_end_organization),[
         fn::accounting::production_line($row,$row.ends_at,'cost')],fn::accounting::fee_members($row));
 } PERMISSIONS NONE;
 
@@ -59,8 +59,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::production_capacity_validate($row: obj
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::production_capacity_members($row: object) {
-    RETURN [fn::tree::member($row.id,'z_start',$row.operating_unit,'z_capacity',$row.starts_at,{used:$row.quantity},{},{},false),
-        fn::tree::member($row.id,'z_end',$row.operating_unit,'z_capacity',$row.ends_at,{used:-$row.quantity},{},{},false),
+    RETURN [fn::tree::member($row.id,'z_start',$row.operating_unit,'z_capacity',$row.starts_at,{used:$row.quantity},{},{}),
+        fn::tree::member($row.id,'z_end',$row.operating_unit,'z_capacity',$row.ends_at,{used:-$row.quantity},{},{}),
         fn::accounting::production_line($row,$row.starts_at,'capacity')];
 } PERMISSIONS NONE;
 
@@ -90,13 +90,29 @@ DEFINE FIELD OVERWRITE z_production ON production_input TYPE option<object> COMM
 
 DEFINE FIELD OVERWRITE stock_account ON production_input TYPE record<stock_account | misc_stock_account> REFERENCE ON DELETE REJECT COMMENT '@rebase-audit';
 
+DEFINE FIELD OVERWRITE q_available ON production_input TYPE option<object> FLEXIBLE
+VALUE fn::accounting::prefix_query($this.stock_account,'available',$this.starts_at)
+COMMENT '@rebase-dependency range @rebase-dependency-validate @rebase-dependency-source stock_account.z_history @rebase-dependency-source misc_stock_account.z_history';
+
+DEFINE FIELD OVERWRITE q_gross ON production_input TYPE option<object> FLEXIBLE
+VALUE {source:$this.stock_account,arguments:[[$this.starts_at],[$this.starts_at+1ns]],path:'measures.quantity.sum',fallback:0dec}
+COMMENT '@rebase-dependency range @rebase-dependency-validate @rebase-dependency-source stock_account.z_gross @rebase-dependency-source misc_stock_account.z_gross';
+
 DEFINE FIELD OVERWRITE quantity ON production_input TYPE decimal ASSERT $value>0dec COMMENT '@rebase-audit';
 
 DEFINE FIELD OVERWRITE z_start ON production_input TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
+DEFINE FIELD OVERWRITE q_start_reporting ON production_input TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.starts_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_start_subsidiary ON production_input TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_end ON production_input TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
+
+DEFINE FIELD OVERWRITE q_end_reporting ON production_input TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.ends_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_end_subsidiary ON production_input TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -130,9 +146,17 @@ DEFINE FIELD OVERWRITE quantity ON production_output TYPE decimal ASSERT $value>
 
 DEFINE FIELD OVERWRITE z_start ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
 
+DEFINE FIELD OVERWRITE q_start_reporting ON production_output TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.starts_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_start_subsidiary ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_end ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner stock_account.z_history @rebase-tree-owner misc_stock_account.z_history';
+
+DEFINE FIELD OVERWRITE q_end_reporting ON production_output TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.stock_account.valuation_pair,$this.stock_account.resource,$this.stock_account.reporting_currency,$this.ends_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_end_subsidiary ON production_output TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
@@ -158,9 +182,17 @@ DEFINE FIELD OVERWRITE amount ON production_cost TYPE decimal ASSERT $value>0dec
 
 DEFINE FIELD OVERWRITE z_start ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
 
+DEFINE FIELD OVERWRITE q_start_reporting ON production_cost TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.treasury.valuation_pair,$this.treasury.resource,$this.treasury.reporting_currency,$this.starts_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
+
 DEFINE FIELD OVERWRITE z_start_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 
 DEFINE FIELD OVERWRITE z_end ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner treasury.z_history @rebase-tree-owner misc_currency_account.z_history';
+
+DEFINE FIELD OVERWRITE q_end_reporting ON production_cost TYPE option<object> FLEXIBLE
+VALUE fn::accounting::rate_query($this.treasury.valuation_pair,$this.treasury.resource,$this.treasury.reporting_currency,$this.ends_at)
+COMMENT '@rebase-dependency latest @rebase-dependency-source exchange_pair.z_rates';
 
 DEFINE FIELD OVERWRITE z_end_subsidiary ON production_cost TYPE option<object> COMMENT '@rebase-tree-node @rebase-tree-key datetime @rebase-tree-owner subsidiary.z_history';
 

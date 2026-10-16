@@ -6,10 +6,8 @@
 DEFINE TABLE ordinal_owner SCHEMAFULL;
 DEFINE FIELD max_count ON ordinal_owner TYPE int DEFAULT 100 ASSERT $value >= 0;
 DEFINE FIELD rb_order ON ordinal_owner TYPE object FLEXIBLE
-    DEFAULT { height: 0, revision: 0, refreshing: false, summary: fn::tree::empty() }
+    DEFAULT { height: 0, revision: 0, summary: fn::tree::empty() }
     PERMISSIONS NONE;
-DEFINE FIELD rb_order.dirty ON ordinal_owner TYPE option<[int, string, string]>;
-DEFINE FIELD rb_order.cursor ON ordinal_owner TYPE option<[int, string, string]>;
 DEFINE FIELD rb_order.summary ON ordinal_owner TYPE object FLEXIBLE;
 DEFINE FIELD rb_order.summary.first ON ordinal_owner TYPE option<[int, string, string]>;
 DEFINE FIELD rb_order.summary.last ON ordinal_owner TYPE option<[int, string, string]>;
@@ -40,6 +38,7 @@ DEFINE FUNCTION fn::rebase::root_key_type($link: object) {
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION fn::rebase::root_unique($link: object) { RETURN false; } PERMISSIONS FULL;
+DEFINE FUNCTION fn::rebase::root_coalesces($link: object) { RETURN true; } PERMISSIONS FULL;
 
 DEFINE FUNCTION fn::rebase::membership_allowed($link: object, $owner: object) {
     RETURN record::tb($link.rid) = 'ordinal_fact' AND $link.slot = 'rb_order'
@@ -58,11 +57,11 @@ DEFINE FUNCTION fn::rebase::members($row: option<object>) {
     RETURN [{
         link: { rid: $row.id, slot: 'rb_order' },
         owner: { rid: $row.owner, slot: 'rb_order' }, key: $key,
-        value: fn::tree::value($key, { weight: $row.weight }, {}, {}, false)
+        value: fn::tree::value($key, { weight: $row.weight }, {}, {})
     }];
 } PERMISSIONS NONE;
 
-DEFINE FUNCTION fn::rebase::derive($row: object) { RETURN {}; } PERMISSIONS NONE;
+DEFINE FUNCTION fn::rebase::derive($row: object, $inputs_only: bool) { RETURN {}; } PERMISSIONS NONE;
 DEFINE FUNCTION fn::rebase::dependents($before: option<object>, $after: option<object>) {
     RETURN [];
 } PERMISSIONS NONE;
@@ -73,13 +72,17 @@ DEFINE FUNCTION fn::rebase::validate($row: object) {
     };
 } PERMISSIONS NONE;
 
--- The normal refresh/sync/drain/publish/validate runtime executes each source
+-- The normal sync/publish/validate runtime executes each source
 -- mutation. Internal link/summary repairs do not retrigger source events.
 DEFINE EVENT ordinal_refresh ON ordinal_fact
 WHEN $event != 'UPDATE' OR $before.owner != $after.owner
     OR $before.order_value != $after.order_value OR $before.weight != $after.weight THEN {
     LET $old = IF $event = 'CREATE' THEN NONE ELSE $before END;
-    fn::rebase::finish(fn::rebase::refresh($after.id ?? $before.id, $old, true));
+    LET $rid = $after.id ?? $before.id;
+    LET $row = SELECT * FROM ONLY $rid;
+    LET $work = fn::tree::sync($rid,$old,fn::rebase::members($row),fn::rebase::slots($rid));
+    FOR $owner IN $work.owners { fn::tree::publish($owner); fn::rebase::validate((SELECT * FROM ONLY $owner.rid)); };
+    IF $row != NONE { fn::rebase::validate($row); };
 };
 
 DEFINE EVENT ordinal_refresh ON ordinal_owner
@@ -88,5 +91,9 @@ WHEN $event != 'UPDATE' OR $before.max_count != $after.max_count THEN {
         THROW 'TREE_OWNER_NOT_EMPTY';
     };
     LET $old = IF $event = 'CREATE' THEN NONE ELSE $before END;
-    fn::rebase::finish(fn::rebase::refresh($after.id ?? $before.id, $old, true));
+    LET $rid = $after.id ?? $before.id;
+    LET $row = SELECT * FROM ONLY $rid;
+    LET $work = fn::tree::sync($rid,$old,fn::rebase::members($row),fn::rebase::slots($rid));
+    FOR $owner IN $work.owners { fn::tree::publish($owner); fn::rebase::validate((SELECT * FROM ONLY $owner.rid)); };
+    IF $row != NONE { fn::rebase::validate($row); };
 };

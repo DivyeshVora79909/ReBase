@@ -71,16 +71,20 @@ business key coalesce into one net contribution. The first schema-declared slot
 represents it. Distinct keys remain distinct positions, including two effective
 dates from one source. Unique roots reject duplicate business keys even when two
 slots belong to the same source. Deleting a source repairs all its cached slots.
+Interval memberships and generated dependency slots retain their individual
+identities even when their lower bounds coincide.
 
 ## Queries
 
 Queries run on the server in one call, using balanced search followed by stored
 `next` or `prev` links. A bare linked list alone would not give logarithmic seek.
 
-Use `fn::tree::read` in authored VALUE/COMPUTED expressions that run under record
-permissions, including the native CREATE phase of `@rebase-derived` fields.
-The private `before`, `range` and storage helpers are for privileged maintenance
-and validation. The public reader also accepts authenticated system sessions:
+Use `fn::tree::read` for interactive queries and COMPUTED publications that run
+under record permissions. Stored calculations declare
+[named queries](function-reactivity.md) and consume `fn::dependency::value`.
+Validators may read their own roots directly; external ordered reads require
+validation-phase queries. The private traversal and storage helpers are for
+coordinator maintenance. The public reader also accepts authenticated system sessions:
 when no record `$auth` exists, native permission on the private root getter
 distinguishes a system connection from a guest. Anonymous calls remain rejected
 even on a server that allows guest queries; there is no caller-supplied bypass.
@@ -108,6 +112,31 @@ does not promise a snapshot across requests. `seek` accepts
 `find` accepts exactly the business components and returns the first tie on a
 duplicate root. Existing `summary`, `before`, `range`, `rank`, `select`, and
 `percentile` operations retain their contracts. Range bounds are `[lower, upper)`.
+Either range endpoint may be `NONE`: `[NONE, upper]` is a prefix and
+`[NONE, NONE]` reads the published complete summary without traversing nodes.
+Equal or reversed finite bounds return the empty summary.
+
+### Interval membership and lookup
+
+`fn::tree::interval_member` takes the same identity, owner, measures and tags as
+`ordered_member`, with explicit lower and upper key arrays:
+
+```surql
+fn::tree::interval_member($row.id, 'z_window', $row.calendar, 'z_windows',
+    [$row.starts_at], [$row.ends_at], { quantity: $row.quantity }, {})
+```
+
+The lower endpoint is inclusive and the upper endpoint exclusive. `NONE` as
+the upper endpoint means positive infinity. A finite upper endpoint must follow
+the lower endpoint under the root's comparator. Subtrees maintain their maximum
+upper endpoint as an associative augmentation. A root can contain intervals with
+the same lower bound without losing their distinct slots.
+
+`fn::tree::read($calendar, 'z_windows', 'intervals', [$instant])` returns matching
+node links in key order, subject to the same root/member permissions as other
+link-returning operations. It prunes subtrees by lower keys and maximum upper
+endpoints. The conservative reporting bound is `O((k + 1) log n)`, capped by
+index size, for `k` matches; an unbounded result still takes proportional work.
 
 The root table and root-slot select policy authorize aggregate operations.
 `summary` reads the cached root aggregate directly and can include private
@@ -165,9 +194,9 @@ extrema, and ordered prefix summaries are maintained along repaired paths.
 Average is a chosen measure's sum divided by the corresponding count; an ordinal
 code is not automatically a meaningful numerical measure.
 
-Complete-timestamp balance/capacity guards and prefix-dependent calculations
-remain specific to a pure `datetime` key. A composite partitioned tree is an
-ordered index; its first component must not be mistaken for global chronology.
+Complete-timestamp balance/capacity guards interpret a pure `datetime` key.
+Prefix calculations can use any declared comparable key. A composite partitioned
+prefix follows lexicographic order; it must not be mistaken for global chronology.
 The existing published-basis and required-output boundaries still prevent
 aggregate feedback and preserve atomic dependent lifecycle.
 

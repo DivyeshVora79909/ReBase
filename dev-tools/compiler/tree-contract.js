@@ -51,7 +51,7 @@ function resolveTreeContract(schema) {
       if (!keys.length) throw new Error(`${name}: requires explicit @rebase-tree-key ${KEY_TYPES.join(', ')}`);
       const keyType = keys[0];
       const keyParts = keyType.split(',');
-      const internalTuple = keyType === 'tuple' && ['rebase_read', 'rebase_read_group'].includes(table.name);
+      const internalTuple = keyType === 'tuple' && field.internal;
       if (!internalTuple && (keyParts.length > MAX_KEY_PARTS || keyParts.some(part => !KEY_TYPES.includes(part)))) {
         throw new Error(`${name}: unsupported tree key '${keyType}'; expected 1..${MAX_KEY_PARTS} comma-separated components from ${KEY_TYPES.join(', ')}`);
       }
@@ -69,9 +69,9 @@ function resolveTreeContract(schema) {
       if (field.treeNode && !owners.length) {
         throw new Error(`${name}: nodes require an explicit @rebase-tree-owner table.root_field`);
       }
-      if (field.treeNode && !table.treeMembers) throw new Error(`${table.name} requires @rebase-members fn::...`);
+      if (field.treeNode && !table.treeMembers && !field.dependencyIndex) throw new Error(`${table.name} requires @rebase-members fn::...`);
       (field.treeRoot ? roots : nodes).push({ name, table: table.name, slot: field.name, field,
-        keyType, keyParts, unique: !duplicates, ownerNames: owners });
+        keyType, keyParts, unique: !duplicates, coalesce: !field.dependencyIndex, ownerNames: owners });
     }
     if (table.treeMembers && !nodes.some(node => node.table === table.name)) throw new Error(`${table.name}: @rebase-members requires at least one tree node field`);
   }

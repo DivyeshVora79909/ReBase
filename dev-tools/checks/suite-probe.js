@@ -38,7 +38,6 @@ function inspect(rows) {
       measures,
       tags,
       spans: {},
-      dependent: false,
     });
   }
   for (const row of rows) {

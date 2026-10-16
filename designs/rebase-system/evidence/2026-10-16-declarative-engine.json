@@ -1,0 +1,519 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "recordedAt": "2026-10-16T14:37:19.688726+00:00",
+  "baseCommit": "cc7b98dea8db57f51150dcc40aecd56eb7dc10e3",
+  "worktree": "uncommitted",
+  "runtime": {
+    "node": "v22.23.2",
+    "surreal": "3.3.0 for linux on x86_64"
+  },
+  "storage": "disposable SurrealKV; individual generic probes may use memory",
+  "scope": "Fixed schema-declared calculation dependencies, shared ordered/interval indexes, accounting migration and developer inspection",
+  "schema": {
+    "tables": 65,
+    "bytes": 11183330,
+    "sha256": "f97c34d49df04f68930eb9fa67882a2a283a2cb25e98ff27fe44f847c010b275",
+    "queryDeclarations": 138,
+    "publicCreateSchemas": 48,
+    "sdkFixtureRows": 17
+  },
+  "accountingEvidence": "2026-10-16-declarative-accounting.json",
+  "fxEvidence": "2026-10-16-declarative-fx.json",
+  "results": {
+    "accounting": {
+      "checkpoints": 103,
+      "structuralChecks": 105,
+      "valueChecks": 90,
+      "rollbacks": 54,
+      "unexpectedFailures": 0,
+      "sourceStableDuringRun": true
+    },
+    "fx": {
+      "checkpoints": 76,
+      "sourceWrites": 44,
+      "cleanupDeletes": 31,
+      "valueChecks": 46,
+      "rollbacks": 2,
+      "unexpectedFailures": 0
+    },
+    "dependencies": {
+      "checkpoints": 111,
+      "rollbacks": 3,
+      "conflicts": 6,
+      "declarations": 10,
+      "cleanup": true,
+      "reapplication": true
+    },
+    "intervals": {
+      "checkpoints": 18,
+      "rollbacks": 1,
+      "cleanup": true
+    },
+    "temporal": {
+      "randomizedMutations": 240,
+      "permissions": true,
+      "concurrency": true,
+      "reapplication": true
+    },
+    "typed": {
+      "mutations": 252,
+      "reads": 1570,
+      "rollbacks": 107,
+      "cleanup": true,
+      "reapplication": true
+    },
+    "ordered": {
+      "mutations": 22,
+      "reads": 683,
+      "rollbacks": 10
+    },
+    "boundaryAlgebra": {
+      "sequences": 4665,
+      "folds": 57909,
+      "missingMeasureSequences": 777,
+      "missingMeasureFolds": 3477
+    },
+    "ordinal": {
+      "mutations": 111,
+      "reads": 412,
+      "rollbacks": 11,
+      "cleanup": true
+    },
+    "dependencyCost": {
+      "status": "PASS",
+      "measurements": [
+        {
+          "readers": 32,
+          "reads": 121,
+          "evaluations": 1
+        },
+        {
+          "readers": 128,
+          "reads": 155,
+          "evaluations": 1
+        }
+      ],
+      "sourceCheckpoints": 133,
+      "cleanup": true
+    },
+    "adjustmentAfterAdapter": {
+      "checkpoints": 7,
+      "cleanup": true,
+      "exactDependencies": true
+    },
+    "developerTests": {
+      "passed": 54,
+      "failed": 0
+    },
+    "oracleAdapterTests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "explain": {
+      "declarations": 138,
+      "cliApiAgreement": true,
+      "noFilesWritten": true,
+      "stalePlanRejected": true
+    },
+    "builds": {
+      "profiles": 4,
+      "freshness": true,
+      "nativeValidations": 12
+    },
+    "javascriptSyntax": {
+      "changedFiles": 45,
+      "passed": true
+    }
+  },
+  "broadGate": {
+    "initialExitCode": 1,
+    "failedAt": "probe:accounts: 152.11 versus 152.10999999999999 in numeric JavaScript oracle",
+    "completedBeforeFailure": "All npm run verify components through probe:causal-outputs",
+    "continuationExitCode": 0,
+    "continuedCommands": [
+      "probe:accounts",
+      "probe:suite",
+      "probe",
+      "test:dev-tools"
+    ],
+    "allComponentsPassedAcrossRuns": true,
+    "singleCompleteRerun": false
+  },
+  "revisionBoundaries": {
+    "afterAccountingAndFx": {
+      "accounting": [
+        {
+          "file": "dev-tools/temporal-tree/dependency-oracle.js",
+          "atAcceptance": "dce8232d915c2c1d90efee41b4cddca7242b0de3affe4fb70f1398473649e66c",
+          "final": "77602eaafc5c5009215cc101260e9e5fe1096cc89ffa10ad410cd10f5ea875ec"
+        }
+      ],
+      "fx": [
+        {
+          "file": "dev-tools/temporal-tree/dependency-oracle.js",
+          "atAcceptance": "dce8232d915c2c1d90efee41b4cddca7242b0de3affe4fb70f1398473649e66c",
+          "final": "77602eaafc5c5009215cc101260e9e5fe1096cc89ffa10ad410cd10f5ea875ec"
+        }
+      ]
+    },
+    "adapter": "Optional equalResult comparison is selected only by all-in-one accounts. Query descriptors remain exact; default rational results remain exact. The final native adjustment probe and focused unit tests use the changed checker.",
+    "ordinal": "Only the stale final diagnostic sentence was corrected after the ordinal run. Integer prefix declarations are covered by typed/dependency probes.",
+    "schemaUnchangedAfterAccounting": true
+  },
+  "commands": [
+    {
+      "id": "builds",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 9,
+      "originalOutputSha256": "ff3f9b59cff067e3ba8f32afb0016b0e6c269ad18ba6783e8e772d6742681574",
+      "command": "npm run build && npm run build:all-in-one && npm run build:all-in-accounting && npm run build:index-analytics",
+      "exitCode": 0
+    },
+    {
+      "id": "broad-initial",
+      "status": "FAILED_NUMERIC_DEMO_COMPARISON",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 57,
+      "originalOutputSha256": "af0520e2b821a1079f0a75b508cda0d09a29c02fda602fde753d41910bc1bd25",
+      "command": "npm run verify",
+      "exitCode": 1
+    },
+    {
+      "id": "broad-continuation",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 270,
+      "originalOutputSha256": "47e47b884850e94316df3bc93cc2bdb1fa96965146dfc4e101f1b417eed4ba17",
+      "command": "npm run probe:accounts && npm run probe:suite && npm run probe && npm run test:dev-tools",
+      "exitCode": 0
+    },
+    {
+      "id": "accounting",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 629,
+      "originalOutputSha256": "1246d06002b58be4a91c015f85fe8ced67604494e0320879627b4c57f8854131",
+      "command": "node dev-tools/accounting/probe.js --all --evidence designs/rebase-system/evidence/2026-10-16-declarative-accounting.json",
+      "exitCode": 0
+    },
+    {
+      "id": "fx",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 652,
+      "originalOutputSha256": "48f94fd947ef98cdd888150631c36bac6d6e64807cfb8149483c10095f111b44",
+      "command": "node dev-tools/accounting/integrity-fx-probe.js --evidence designs/rebase-system/evidence/2026-10-16-declarative-fx.json",
+      "exitCode": 0
+    },
+    {
+      "id": "dependency-cost",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 709,
+      "originalOutputSha256": "8795d61353bc2b9f056cfd4ed51f493892d12589c4c9916331a827d4f65cac12",
+      "exitCode": 0,
+      "reproduceCommand": "npm run probe:dependency-cost",
+      "invocationNote": "Equivalent npm entry point; the retained probe output does not include its original shell invocation."
+    },
+    {
+      "id": "adjustment-after-adapter",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 714,
+      "originalOutputSha256": "0c2e834c06b7f8ec3386856f4de173f91c4dbf2fffe7e06b3defb344370398ae",
+      "command": "npm run probe:accounting-adjustment-rekey",
+      "exitCode": 0
+    },
+    {
+      "id": "oracle-adapter",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 723,
+      "originalOutputSha256": "80021368c4b7f8edd6fe2aaac1a197dcb007b4b4d172665a41eedf663f93a457",
+      "command": "node --test dev-tools/tests/dependency-oracle.test.js dev-tools/tests/exact-tree-oracle.test.js",
+      "exitCode": 0
+    },
+    {
+      "id": "explain",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 797,
+      "originalOutputSha256": "86ae364bfee4e9a38ecb06440bd8ae11b65bab633a6efaa9d6175008d7cdd39d",
+      "description": "Offline CLI/API comparison, absence of inspection writes, transitive input order and stale dependency-plan rejection; retained smoke output."
+    },
+    {
+      "id": "extra-validation",
+      "status": "PASS",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 801,
+      "originalOutputSha256": "cd58a8d2904bc830a3ee179d08064111b981bec790e331911a34ded0988dd50b",
+      "command": "surreal validate build/all-in-accounting/migrate-one-shot-backfill.surql && surreal validate build/all-in-accounting/migrate-one-shot-finalize.surql && surreal validate build/index-analytics/migrate-one-shot-backfill.surql && surreal validate build/index-analytics/migrate-one-shot-finalize.surql",
+      "exitCode": 0
+    },
+    {
+      "id": "ordinal",
+      "status": "PASS_WITH_STALE_DIAGNOSTIC_SENTENCE",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 813,
+      "originalOutputSha256": "dc9ab3e0c316e097bde0694bef8bb7b71669ed93ce6d5f35abf524c3b12d3d98",
+      "exitCode": 0,
+      "reproduceCommand": "npm run probe:ordinal-tree",
+      "invocationNote": "Equivalent npm entry point; the retained probe output does not include its original shell invocation."
+    },
+    {
+      "id": "interval-identity-control",
+      "status": "EXPECTED_REGRESSION_FAILURE",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 824,
+      "originalOutputSha256": "267fa5aa2eb1bbab4f0a4f3dfb990c0398d7a680140e063da6ffc6793c5a7a69",
+      "description": "Interval probe with identity preservation deliberately removed; regression fails because a leaf loses its interval augmentation."
+    },
+    {
+      "id": "projection-channel-before-fix",
+      "status": "REPRODUCED_FAILURE_FIXED",
+      "outputFile": "2026-10-16-declarative-engine-output.txt",
+      "firstLine": 852,
+      "originalOutputSha256": "36e817b263c9ab70b86fcb4c1fa28eef8b21ab0c4dee7e721d0e7b469e4aa40c",
+      "description": "Native interval endpoint propagation before the channel-filter fix; expected 12, maintained query result 10."
+    }
+  ],
+  "outputArchive": {
+    "file": "2026-10-16-declarative-engine-output.txt",
+    "sha256": "eac41f4832633c55febb4b25fd856759c3040d9aa4ef875656a263e5cf37c767"
+  },
+  "generatedArtifacts": {
+    "test": {
+      "schema.surql": {
+        "bytes": 332881,
+        "sha256": "e52bb0fe59bac62e6475bf89d9e53ada62e17d9a7c47a67ec22eccfbd15c32b1"
+      },
+      "dependency-plan.json": {
+        "bytes": 1108,
+        "sha256": "694771eac48e852e596570ea26b9d9a348ad6e8612fa33a649b35f818ca497ba"
+      },
+      "runtime-contracts.json": {
+        "bytes": 7718,
+        "sha256": "5164f49bec65d9bbfc1c3b5a67bcb00d484613a90f33fcf9a827eca222036812"
+      },
+      "migrate-one-shot-backfill.surql": {
+        "bytes": 19399,
+        "sha256": "0c9dfa3d1a6e93638fe095bcaa09ec940068391d32f0dd652002fdf48d16f985"
+      },
+      "migrate-one-shot-finalize.surql": {
+        "bytes": 3284,
+        "sha256": "833f028c63f1be4d587ec0aa44ee98cd9783f854073ca01e9567d2881cdf2d0a"
+      }
+    },
+    "all-in-one": {
+      "schema.surql": {
+        "bytes": 2606836,
+        "sha256": "8919beb8863d8a889f27c3397218f8f5894a336cb91c27ed09485e31d98f5541"
+      },
+      "dependency-plan.json": {
+        "bytes": 48116,
+        "sha256": "5b436c3e061a4460fcf8d43c75bdcbe1ec952379e110e2cea3ffef8caec8384f"
+      },
+      "runtime-contracts.json": {
+        "bytes": 2370,
+        "sha256": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110"
+      },
+      "migrate-one-shot-backfill.surql": {
+        "bytes": 7819,
+        "sha256": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804"
+      },
+      "migrate-one-shot-finalize.surql": {
+        "bytes": 1066,
+        "sha256": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2"
+      }
+    },
+    "all-in-accounting": {
+      "schema.surql": {
+        "bytes": 11183330,
+        "sha256": "f97c34d49df04f68930eb9fa67882a2a283a2cb25e98ff27fe44f847c010b275"
+      },
+      "dependency-plan.json": {
+        "bytes": 346097,
+        "sha256": "0df371a7d8268b375dba0f323b534e8d7d7366af154fe42cd4188939315a0e82"
+      },
+      "runtime-contracts.json": {
+        "bytes": 2370,
+        "sha256": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110"
+      },
+      "migrate-one-shot-backfill.surql": {
+        "bytes": 7819,
+        "sha256": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804"
+      },
+      "migrate-one-shot-finalize.surql": {
+        "bytes": 1066,
+        "sha256": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2"
+      }
+    },
+    "index-analytics": {
+      "schema.surql": {
+        "bytes": 295590,
+        "sha256": "19f1397b16176b349a48952d3b57daf951d2daac1572630844390fbbd4c17afd"
+      },
+      "dependency-plan.json": {
+        "bytes": 2429,
+        "sha256": "9e69ca318252abdb3b9175b494190f68e39f5493f94751a8cb4a88e40cddf9f4"
+      },
+      "runtime-contracts.json": {
+        "bytes": 2370,
+        "sha256": "a34caa9b3c07fe39034b8c24630573827a4e868bfcb72409f68f4610286c1110"
+      },
+      "migrate-one-shot-backfill.surql": {
+        "bytes": 7819,
+        "sha256": "8cc417cfe84d0508f0a7d80b181682e34c23fac028b989c8b8e3061bbe0db804"
+      },
+      "migrate-one-shot-finalize.surql": {
+        "bytes": 1066,
+        "sha256": "49d9b0040ae671f0eaa02f224acc1efd613cee496c4dce314707bc80a7beaef2"
+      }
+    }
+  },
+  "changedSourceSha256": {
+    "designs/all-in-accounting/core/exchange-rates.surql": "709c0d050ecbeaf91212d0edb19163ff9af5ce4705cddc53d9dda632b2ad586f",
+    "designs/all-in-accounting/core/identities.surql": "b4b649473236985a82a1032f7b5648a1a80faeefae0f906dcab1ecfec82b07fa",
+    "designs/all-in-accounting/core/projections.surql": "02cbd8f526bd32a64d1a7e34ad45df28ef8ae10c287c1b4a64637627710d8658",
+    "designs/all-in-accounting/core/schema.surql": "a1443e61096a6e0890bed12493e284629206dab81bce61a8fa09d42aa1f9dbad",
+    "designs/all-in-accounting/postings/claims.surql": "be49acb57535fab9d43318c3748d20240b1caff9ed2e7ad690bcdca9853aabf0",
+    "designs/all-in-accounting/postings/entries.surql": "62476d27968f44e6d75a2fc8e94a08c24cf8b740333515ec26758a5bee4de4de",
+    "designs/all-in-accounting/postings/exchange.surql": "67184f8fc0fb7ec094edcf8f74ab0a6c12ee2cc31cc6f1ec223e6e08839fb1ef",
+    "designs/all-in-accounting/postings/invoices.surql": "8efd760ba15573f286ecde06bafdbf0c132191be2f094b57f80d8c6c1b5498ed",
+    "designs/all-in-accounting/postings/issue-adjustments.surql": "1d1bac7796111e10ad51624d2be31a7fcca5b9e30638ad6b3bc7f207936c8f53",
+    "designs/all-in-accounting/postings/issues.surql": "0f8eafbba8df53f3e4f393bbeafd6f293b4bcb97a1dde7a5e95b845cffb8ba7a",
+    "designs/all-in-accounting/postings/payments.surql": "aa1358c916cffd5be725fffd6b695f3976943c672d67e346d9882c957616a041",
+    "designs/all-in-accounting/postings/production.surql": "ea19c9b79e869707cce5cccda197cdeb55d233fcd4a731742dbfc1191d3392e0",
+    "designs/all-in-accounting/postings/tax-adjustments.surql": "a8d44db9f6b482e88581a7edecffa3fa528c1d258329c169ec23c20dbda39535",
+    "designs/all-in-accounting/postings/tax-cash.surql": "08b072671daa34e572587b07f788b1873944b34c9147e7cf608291b582248a40",
+    "designs/all-in-accounting/postings/taxes.surql": "e0367ee6361a6d7783c77b9ad1ec521cc2053da48e7d264cde3437b31973b43b",
+    "designs/all-in-accounting/postings/zz-fees.surql": "1123461c428b479272ab4fe08d6421dba622702ea513371bda95cfd218d61acd",
+    "designs/all-in-one/accounts/billing.surql": "e93076607b4654f3f1426afa8e261dbc0cb2d0f86bbfaf6b64f526e715805e55",
+    "designs/all-in-one/accounts/logistics.surql": "6cea19fac6146f9b777c307bf08b58ca183bfd92d885c30d0d622a243a155e19",
+    "designs/all-in-one/accounts/money.surql": "09aca85cae295114012059687a98b72b2cda2febaa15d228b5ce5a8c6e02e2a7",
+    "designs/all-in-one/accounts/schema.surql": "9c1f7ba8e67a84c3591b806045a0c020023c44e2d8f16bc707c3926d40e4e020",
+    "designs/all-in-one/crm/schema.surql": "376c83ff1a933e6fe28430b93396bc27f28a57e0f54d8092d1744a88bae5f195",
+    "designs/all-in-one/hrm/schema.surql": "f443991f68b6fdfbf11e5d6992d467590c000a03ba46d6eca5cf11bba7ccff01",
+    "dev-tools/accounting/acceptance.js": "352aa1df3dd4a59e92869fe9847b832092c1a206d01b199fe7bc50dcadef096c",
+    "dev-tools/accounting/adjustment-rekey-probe.js": "8f478b0c1140ef1d3bc9da27712a7be8eaa6eed49fa2ebdd5b0b589d943e9ecb",
+    "dev-tools/accounting/b1-repro-probe.js": "7edcffaddff700214849da47e3570d31ea33cc5ac0929fe7bf981e4606624abd",
+    "dev-tools/accounting/h3c-fixture/fixture.surql": "a982639ecd7f6b305771a881cc5a4c70bbb4f0ca0c847aecc65ee45ae19b68fd",
+    "dev-tools/accounting/integrity-fx-probe.js": "049541337de5a97a491daf669350f3f46e13a2df01d3a8ca902634a873860e9e",
+    "dev-tools/accounting/probe.js": "1994a27d342d5bedce9c822fdb543d3998a4ca8d46e3cab2fc398a511d795941",
+    "dev-tools/accounting/source-oracle.js": "c4b0476c6e873bf4f2be2f2eafb322394eeeba8ae18da1d18fbd19eb940abbf1",
+    "dev-tools/checks/accounts-probe.js": "c9689ee628ec757ed84ccc8b68eb7fd7965949aa86eda887cfb4fae9028d5bc2",
+    "dev-tools/checks/reader-index-probe.js": "a122a61ac7494beecfdc8f07285e1fe7e745208c2c7fed0499f7dffade032a4c",
+    "dev-tools/checks/suite-probe.js": "3ab414d4fabbdba2085e3458d07db323e654300532ba712b65c04312d5f8b070",
+    "dev-tools/checks/tenant-record-probe.js": "22606a075f62071be1ed85154cf17007c2384dce8d990e8e8c83242cfa2dccad",
+    "dev-tools/compiler/cli.js": "1e2b9e3ed61b63da34a38ae35ff111e501ab123a0ab3848eb4ad662144e6cd61",
+    "dev-tools/compiler/dependencies.js": "4feaf8117d3bac7707ee25076ecd9c2bdc564bbe6a3ac45679ff651d09dd2e76",
+    "dev-tools/compiler/dependencies.surql": "23960dadb4bd6556be8fa137bea9a77a7af1f4273349d4d882fcdbaeedd07ce4",
+    "dev-tools/compiler/dependency-plan.js": "49ef47eca2c0db347217c325bcf5729cb369288f10c62218dc87d9bc399688ac",
+    "dev-tools/compiler/derived-order.js": "06f00dc8cee191ad79f14582b5d48db4c49b6903cba2db935585e9825f95714d",
+    "dev-tools/compiler/fields.js": "ff4692e7501cc59e13e5fbc61551ddaa17a4c52a99f41cb716a838784b18b027",
+    "dev-tools/compiler/generators/temporal.js": "8b35dc95aafd03624faa315e7ba69b671ea7cd409748f78581b931d8075f3081",
+    "dev-tools/compiler/generators/tree.js": "e5fa927216bb23e12bf834d18ebfdf38d562efe15665d8f6840d272325593e4a",
+    "dev-tools/compiler/pipeline.js": "88a302725b305b007ba25f1dea65902803e9b5db2e40160cc51e9946e085f16c",
+    "dev-tools/compiler/project.js": "11c1f4134bfecb4bbe058c60893264f39ae73d19e6ec15b6256ea9327b084a48",
+    "dev-tools/compiler/queries.surql": "7aeb5213b8a312900624197f0e4ff41ae33bd314971d0f9241e5720650f097c2",
+    "dev-tools/compiler/read-only.js": "9e753e48839788b8a730b2788e2815ccd09dec369b21d0879f65df23230ce970",
+    "dev-tools/compiler/schema.js": "cead108d4db720fb5394db4f6411ac8cc960c3cbf8a8f77da36f674373cf385f",
+    "dev-tools/compiler/temporal.surql": "9d02356f411ddee2f2de69e5c589a9917d164a1991f05d598f98e99e4ea50808",
+    "dev-tools/compiler/tree-contract.js": "d0a3c76cafcdab25fafd383463197482d207f9c2235776ee737fdde84eec2b33",
+    "dev-tools/experiments/synthetic-write-amplification-probe.js": "cf1bc2bd7ac11c70fcc23388417af83cc7bdfe19f210711322bc489a7c25b637",
+    "dev-tools/experiments/synthetic-write-amplification/schema.surql": "731cf5a30f2b334db45f6873913d865dc3cb61197f1d94fbc4f2c016a7392663",
+    "dev-tools/index.js": "64ad164d043e0f650b5c7d61b266f004e3b2b55b3f55a0f3c6bbce6238bd5a5d",
+    "dev-tools/temporal-tree/accounts-oracle.js": "3d03056e69a3b7d2bcbbbd9d25e6c0812bb3d64ce568af4d512736961ba2ce7e",
+    "dev-tools/temporal-tree/causal-outputs-fixture.surql": "7d0d7d740adf5024e05a854e5fba6592f61dccc524beffa79ff5f50c75b00084",
+    "dev-tools/temporal-tree/causal-outputs-probe.js": "4ff1fb92d974833175ac1c9001bc89e524ceb9ce061ab5314e6f9292868cd2a9",
+    "dev-tools/temporal-tree/compiler-fixture.surql": "c916313f3d3fdaf5a619a44613ab49c34fd8d623b727e49405e74e08a52cb107",
+    "dev-tools/temporal-tree/dependencies-fixture.surql": "e262f8431f948b45ccc22a7b7bba5401d17adb480e8887e07c6a48d50b395385",
+    "dev-tools/temporal-tree/dependencies-probe.js": "33c85697aad8209cc91849496f1f6ad1ab891f7cfaa94ee6b64f08569f6f4617",
+    "dev-tools/temporal-tree/dependency-cost-probe.js": "a22404a6ba0eebee25e9423e1a73b19083ccb13e187dbef2a177c5a0adf7eb4e",
+    "dev-tools/temporal-tree/dependency-oracle.js": "77602eaafc5c5009215cc101260e9e5fe1096cc89ffa10ad410cd10f5ea875ec",
+    "dev-tools/temporal-tree/derived-order-fixture.surql": "75fd2269efa52ccbb4c819185359455e922c71260cfb55fdd4462df86649e709",
+    "dev-tools/temporal-tree/derived-order-probe.js": "82ecd52dc15da89bb7bf433b4531a8aab0102bc361a4a0af7b536891873c28bd",
+    "dev-tools/temporal-tree/exact-oracle.js": "447c3384e3e5de6eb1f4adaa356a07207db0bc4c48aab25a981777ff985ca447",
+    "dev-tools/temporal-tree/interval-fixture.surql": "32973bea13bd77cb302a11b0ac7b38e04695fe8e1e43c1a6c01cc2fa09916180",
+    "dev-tools/temporal-tree/interval-probe.js": "c7d166f7edf6174c9b9da5852dda1a7898c26e66a7a9e7774e9b20cc39e74c42",
+    "dev-tools/temporal-tree/oracle.js": "7faf4870da83230e8c212b2443b50d5a63d775ff47292cffc1774a8b378e0485",
+    "dev-tools/temporal-tree/ordered-probe.js": "250fbbba72869c4162f514d3a13d9149785d0025220790332fe41336d5784f76",
+    "dev-tools/temporal-tree/ordinal-fixture.surql": "0613c08b49bbfa2c8fa5d9998fa40bfdf9c040c6c4fd941c66683b6b5651e2d3",
+    "dev-tools/temporal-tree/ordinal-probe.js": "beb8563cf2863ead5551425f6fc2ba5fc28d18aa2eecedb9328c229df93f22db",
+    "dev-tools/temporal-tree/positions-fixture.surql": "7bf1a86a6187b7006ddfdb702370b84aa6b4269962ebf52ab27e27c9000cfa7a",
+    "dev-tools/temporal-tree/positions-probe.js": "a57ff431514fce7d7d0283fbe6f21182e40a8349665e78e89e542afdc75280bc",
+    "dev-tools/temporal-tree/reactivity-probe.js": "ee716d95c225a85221f339e67b3b22d550606ae850123fa0cd1e92d7a8035dd2",
+    "dev-tools/temporal-tree/required-outputs-fixture.surql": "1d385659af23a88fbe9ebab074541b29f6a0bd24837d9202e25720ffbd91cd44",
+    "dev-tools/temporal-tree/required-outputs-probe.js": "dde508f796a66de4d1ed28711bf54e9de10c3627dbc1d02b4d289a0f62600441",
+    "dev-tools/temporal-tree/typed-fixture.surql": "12cd748d806328d2c0f5fcdd173e088f6c36bcdd003b1b9e3a6359b5ea43de71",
+    "dev-tools/temporal-tree/typed-probe.js": "e113f72fc3686c1aa6d11d404bdce7bb59c5a55ef3ef34a401e1ed855dcd857c",
+    "dev-tools/tests/accounting-dependency-inventory.test.js": "dfd18a9b06673d0412ff4139935744808aa3b21bc241092da49939dac7676a8f",
+    "dev-tools/tests/dependencies.test.js": "dd2d7a835135d5293420565a6b96af7c3f3a25dcfbec19dfea405bb2efb4ae1c",
+    "dev-tools/tests/dependency-oracle.test.js": "2a2dd16b20fc033375983185fa5a348ea8942b59d1d0ea443bee25bae9b8ffdc",
+    "dev-tools/tests/exact-tree-oracle.test.js": "b47eec2355e601cedcf5912d45771499e4b89255dd3640f5e712daf487ec9f3e",
+    "dev-tools/tests/read-only.test.js": "3c9d523e83fedab21a45567bfbb4437aadbd2ca540e75d131e821caaa432f1dc",
+    "dev-tools/workbench.js": "a545ee29e44dff9b754d70553671fbd1a1c5111c8241edee7745ea00563ef7c0",
+    "package.json": "2e33f4399fa48a0589f3cd0dd487eacad57d459500dedc92d1a1ac34f781629d"
+  },
+  "removedSourceFiles": [
+    "dev-tools/accounting/capture-repro-probe.js",
+    "dev-tools/compiler/observed-reads.js",
+    "dev-tools/compiler/reads.surql",
+    "dev-tools/temporal-tree/observed-fixture.surql",
+    "dev-tools/temporal-tree/observed-history-probe.js",
+    "dev-tools/temporal-tree/observed-probe.js",
+    "dev-tools/temporal-tree/read-cost-probe.js",
+    "dev-tools/temporal-tree/read-oracle-fixture.js",
+    "dev-tools/temporal-tree/read-oracle.js",
+    "dev-tools/temporal-tree/read-oracle.test.js",
+    "dev-tools/tests/accounting-read-inventory.test.js",
+    "dev-tools/tests/observed-reads.test.js",
+    "framework/reads.surql"
+  ],
+  "contextReview": {
+    "accessibleFiles": 11,
+    "uniqueContents": 10,
+    "unresolvedHistoricalNames": [
+      "Pasted text(10).txt",
+      "Pasted text(7).txt",
+      "Pasted text(5).txt"
+    ],
+    "route": "../declarative-engine-plan.md"
+  },
+  "limits": [
+    "Bounded native histories do not prove every history or production capacity.",
+    "Generated SQL is 11183330 bytes; no size or latency improvement is established.",
+    "Arbitrary SQL reads do not gain automatic reverse dependencies; feedback is rejected, not solved.",
+    "MetaSol adaptation, old-engine populated migration, external providers and deployment are outside this acceptance."
+  ],
+  "finalAudit": {
+    "localLinks": {
+      "files": 14,
+      "links": 155,
+      "missing": 0
+    },
+    "gitDiffCheck": true,
+    "newFileTrailingWhitespace": true,
+    "generatedCaptureEngineAbsent": true,
+    "acceptedSchemaMatchesBuild": true,
+    "retiredSourceReferencesAbsent": true
+  },
+  "documentSha256": {
+    "README.md": "ee7dde733a3c1b31b2da49f8600f6f6eb84ee4dd4a65dc5b8a1b7c859c524ce3",
+    "dev-tools/README.md": "59f3613e211cdd5850dad93f0f47e29b3469499ae8cb05fa308f344cb502aa2e",
+    "designs/all-in-accounting/README.md": "23ff6b91e77e9b23c1bae43ef56919f3de1dc6f2052103454415e9b56b2e7c43",
+    "designs/all-in-accounting/context-map.md": "bb9e41fd7fc635300b0994975eb62734151ee9c67d655fce2f5f56aeec75a584",
+    "designs/all-in-accounting/developer-guide.md": "8c2109c5d48d20486918eb4e92944d2258e9903613675283ab331aeaec12049f",
+    "designs/all-in-accounting/implementation-handoff.md": "51f3edaddbad8d3a06a114769a5938f08db6f753ece1d53908be30d0f129dfe3",
+    "designs/all-in-accounting/verification.md": "db6acaf2e39a30b25ca6127a9dca1afce08aa4801409570b88202a9f2fe5b13b",
+    "designs/rebase-system/developer-blueprint.md": "9594e918d175c8515a5a9d325aab0b913756c81f2c7e7f36b9add0de9bde31cb",
+    "designs/rebase-system/function-reactivity.md": "940bce55f2f2b19c837134d8e724533897586efdb825f21e909dce1da33151f3",
+    "designs/rebase-system/ordered-tree-contract.md": "5f93f34b041dc5c531d116c996020ba2fdbd5b88f8e0cabf12a551919444c557",
+    "designs/rebase-system/developer-experience-handoff.md": "263a2278f455053d60ff519d207709416e37868950ab39d1325bdb7a9591b295",
+    "designs/rebase-system/declarative-engine-plan.md": "71e6c1966aababf1b80fda62d3b96432b9f8e3177ba482c7bc1438343a0be48a",
+    "designs/rebase-system/declarative-engine-verification.md": "91df0a84c4eb59dcb944993494f0f1382fbe46ce3094b32f0e6da6f996ed878c",
+    "designs/rebase-system/verification.md": "0da1fc892997f999ec71f239505f545e16eab86c8418b982f72e6a46b7b0bd0b"
+  }
+}

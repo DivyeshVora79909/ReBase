@@ -1,11 +1,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { businessFields, changedFields, valueExpression, fieldSelectPolicy } = require('../fields');
-const { resolveDerivedOrder } = require('../derived-order');
+const { resolveDerivedOrder, localDependencies } = require('../derived-order');
 const { resolveTreeContract } = require('../tree-contract');
 const { treeFields, treeAdapters, queryFunction } = require('./tree');
 const { extractClauseExpression, mapSqlCode, sqlCode } = require('../surql');
-const { resolveObservedReads, PRIVATE_TABLES } = require('../observed-reads');
+const { resolveReadOnly } = require('../read-only');
+const { resolveDependencies, dependencyExpression, dependencyAdapters } = require('../dependencies');
 
 const quote = (s) => `'${s.replaceAll("'", "\\'")}'`;
 const list = (xs) => `[${xs.map(quote).join(', ')}]`;
@@ -34,6 +35,9 @@ function dependencies(schema) {
         if (!/\bREFERENCE\b/i.test(source.definition)) throw new Error(`${table.name}.${reference}: reactive references require REFERENCE`);
         for (const target of source.recordType.targets) {
           const remote = schema.tables.get(target)?.fields.get(tail[0]);
+          if (remote?.dependency?.phase === 'validate') {
+            throw new Error(`${table.name}.${field.name}: calculation cannot consume validation-phase query ${target}.${tail[0]}`);
+          }
           if (!remote && !['owned_by', 'read_by', 'tenant'].includes(tail[0])) {
             throw new Error(`${table.name}.${field.name}: unknown dependency ${target}.${tail[0]}`);
           }
@@ -44,8 +48,9 @@ function dependencies(schema) {
             throw new Error(`${table.name}.${field.name}: consume published summaries outside their contributing trees; use a prefix member for temporal rules`);
           }
           const key = `${target}/${table.name}/${reference}`;
-          if (!routes.has(key)) routes.set(key, { target, table: table.name, reference, fields: new Set() });
+          if (!routes.has(key)) routes.set(key, { target, table: table.name, reference, fields: new Set(), consumers: new Set() });
           routes.get(key).fields.add(tail.join('.'));
+          routes.get(key).consumers.add(field.name);
         }
       }
     }
@@ -89,10 +94,10 @@ function derivedFields(schema, derivedOrder, derivedHelpers) {
       const type = extractClauseExpression(field.definition, 'TYPE',
         ['DEFAULT', 'VALUE', 'COMPUTED', 'ASSERT', 'REFERENCE', 'READONLY', 'PERMISSIONS', 'COMMENT', 'FLEXIBLE']);
       if (!type) throw new Error(`${table.name}.${field.name}: @rebase-derived requires an explicit TYPE`);
-      const expression = initialDerivedExpression(field, table, helperNames, fields.slice(0, index));
+      const expression = dependencyExpression(initialDerivedExpression(field, table, helperNames, fields.slice(0, index)), field, false);
       // The numbered private fields give SurrealQL a native, topologically
       // ordered CREATE path. Each formula appears once, with no interpreter.
-      const flexible = /\bFLEXIBLE\b/.test(sqlCode(field.definition)) ? ' FLEXIBLE' : '';
+      const flexible = /\bFLEXIBLE\b/i.test(sqlCode(field.definition)) ? ' FLEXIBLE' : '';
       sql += `DEFINE FIELD OVERWRITE ${name} ON ${table.name} TYPE ${type}${flexible}
 VALUE IF $before = NONE THEN (${expression}) ELSE $value END
 PERMISSIONS FOR select NONE FOR create WHERE true FOR update NONE COMMENT '@rebase-system';\n`;
@@ -170,20 +175,18 @@ function refreshExpression(expression, table, row) {
       : match.replaceAll('$this', row)).replaceAll('$this', row));
 }
 
-function adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs, observed) {
+function adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs, dependencyModel) {
   const tables = [...schema.tables.values()];
   let sql = treeAdapters(trees);
-  const refreshReaders = tables.filter(table => !PRIVATE_TABLES.has(table.name) && (
-    (derivedOrder.get(table.name) || []).some(field => observed.uses(valueExpression(field)))
-    || [table.treeMembers, table.requiredOutputs].some(fn => fn && observed.uses(`${fn}()`))));
-  const validators = tables.filter(table => table.validate && observed.uses(`${table.validate}()`));
-  sql += `DEFINE FUNCTION OVERWRITE fn::rebase::captures($rid: record, $phase: string) {
-    RETURN IF $phase = 'refresh' THEN record::tb($rid) IN ${list(refreshReaders.map(table => table.name))}
-        ELSE record::tb($rid) IN ${list(validators.map(table => table.name))} END;
-} PERMISSIONS NONE;\n`;
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::slots($rid: record) {\n';
   for (const table of tables) {
     const slots = marked(table, 'treeNode').map((f) => f.name);
+    if (slots.length) sql += `IF record::tb($rid) = '${table.name}' { RETURN ${list(slots)}; };\n`;
+  }
+  sql += 'RETURN []; } PERMISSIONS FULL;\n';
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::business_slots($rid: record) {\n';
+  for (const table of tables) {
+    const slots = marked(table, 'treeNode').filter(field => !field.dependencyIndex).map(field => field.name);
     if (slots.length) sql += `IF record::tb($rid) = '${table.name}' { RETURN ${list(slots)}; };\n`;
   }
   // Pure schema metadata is also used by the caller's generated VALUE fields.
@@ -202,27 +205,12 @@ RETURN [];
     if (table.treeMembers) sql += `IF record::tb($row.id) = '${table.name}' { RETURN ${table.treeMembers}($row); };\n`;
   }
   sql += 'RETURN []; } PERMISSIONS NONE;\n';
-  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::captured_members($row: option<object>, $scope: object) {\nIF $row = NONE { RETURN []; };\n';
-  for (const table of tables) {
-    if (table.treeMembers) sql += `IF record::tb($row.id) = '${table.name}' { RETURN ${observed.rewrite(`${table.treeMembers}($row)`, '$scope')}; };\n`;
-  }
-  sql += 'RETURN []; } PERMISSIONS NONE;\n';
-  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::validate($row: object) {\nLET $scope = fn::reads::begin($row.id, \'validate\');\n';
-  for (const table of tables) {
-    if (table.validate) sql += `IF record::tb($row.id) = '${table.name}' { ${observed.rewrite(`${table.validate}($row)`, '$scope')}; };\n`;
-  }
-  sql += 'fn::reads::flush($scope); fn::reads::end($scope); } PERMISSIONS NONE;\n';
   const recipes = tables.filter(table => table.requiredOutputs);
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::has_required_outputs($rid: record) {\n';
   sql += `RETURN record::tb($rid) IN ${recipes.length ? list(recipes.map(table => table.name)) : '[]'};\n} PERMISSIONS NONE;\n`;
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::required_outputs($row: option<object>) {\nIF $row = NONE { RETURN []; };\n';
   for (const table of recipes) {
     sql += `IF record::tb($row.id) = '${table.name}' { RETURN ${table.requiredOutputs}($row); };\n`;
-  }
-  sql += 'RETURN []; } PERMISSIONS NONE;\n';
-  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::captured_outputs($row: option<object>, $scope: object) {\nIF $row = NONE { RETURN []; };\n';
-  for (const table of recipes) {
-    sql += `IF record::tb($row.id) = '${table.name}' { RETURN ${observed.rewrite(`${table.requiredOutputs}($row)`, '$scope')}; };\n`;
   }
   sql += 'RETURN []; } PERMISSIONS NONE;\n';
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::is_managed_output_table($name: string) {\n';
@@ -250,7 +238,7 @@ RETURN [];
     sql += `RETURN array::concat(${reverse.map((_, index) => `$outputs_${index}`).join(', ')});\n`;
   } else sql += 'RETURN [];\n';
   sql += '} PERMISSIONS NONE;\n';
-  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object, $scope: object) {\n';
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::derive($row: object, $inputs_only: bool) {\n';
   for (const table of tables) {
     const fields = derivedOrder.get(table.name) || [];
     if (!fields.length) continue;
@@ -263,13 +251,40 @@ RETURN [];
           throw new Error(`${table.name}.${field.name}: stored shadows cannot consume local tree storage; use a prefix query or a COMPUTED publication field`);
         }
       }
-      const expression = observed.rewrite(refreshExpression(input, table, `$r${i}`), '$scope');
+      const expression = dependencyExpression(refreshExpression(input, table, `$r${i}`), field, true);
       if (/\$(?:value|before|after|input)\b/.test(sqlCode(expression))) throw new Error(`${table.name}.${field.name}: derived VALUE must be a pure expression of $this and declared references`);
-      sql += `LET $r${i + 1} = object::extend($r${i}, { ${field.name}: (${expression}) });\n`;
+      const evaluated = `object::extend($r${i}, { ${field.name}: (${expression}) })`;
+      sql += `LET $r${i + 1} = ${field.orderedInputs ? `IF $inputs_only THEN $r${i} ELSE ${evaluated} END` : evaluated};\n`;
     });
     sql += `RETURN object::extend(object::from_entries(${list(fields.map((f) => f.name))}.map(|$k| [$k, $r${fields.length}[$k]])), { rebase_derived_ready: true });\n};\n`;
   }
   sql += 'RETURN {}; } PERMISSIONS NONE;\n';
+  sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::derive_validation($row: object) {\n';
+  for (const table of tables) {
+    const fields = (derivedOrder.get(table.name) || []).filter(field => field.dependency?.phase === 'validate');
+    if (!fields.length) continue;
+    sql += `IF record::tb($row.id) = '${table.name}' {\nLET $r0 = $row;\n`;
+    fields.forEach((field, index) => {
+      const expression = dependencyExpression(refreshExpression(valueExpression(field), table, `$r${index}`), field, true);
+      sql += `LET $r${index + 1} = object::extend($r${index}, { ${field.name}: (${expression}) });\n`;
+    });
+    sql += `RETURN object::from_entries(${list(fields.map(field => field.name))}.map(|$key| [$key, $r${fields.length}[$key]]));\n};\n`;
+  }
+  sql += 'RETURN {}; } PERMISSIONS NONE;\n';
+  sql += `DEFINE FUNCTION OVERWRITE fn::rebase::validate($row: object) {
+    LET $patch = fn::rebase::derive_validation($row);
+    IF object::len($patch) > 0 {
+      fn::dependency::fence_sources(object::extend($row, $patch));
+      fn::rebase::write_values($row, $patch);
+      fn::dependency::sync($row.id, $row, (SELECT * FROM ONLY $row.id));
+    };
+    LET $row = SELECT * FROM ONLY $row.id;
+`;
+  for (const table of tables) {
+    if (table.validate) sql += `IF record::tb($row.id) = '${table.name}' { ${table.validate}($row); };\n`;
+  }
+  sql += '} PERMISSIONS NONE;\n';
+  sql += dependencyAdapters(schema, dependencyModel, routes);
   sql += 'DEFINE FUNCTION OVERWRITE fn::rebase::dependents($before: option<object>, $after: option<object>) {\nLET $rid = $after.id ?? $before.id;\n';
   const byTarget = new Map();
   for (const route of routes) {
@@ -288,11 +303,9 @@ function events(schema, routes, systemTables) {
   const targets = new Set(routes.map((r) => r.target));
   let sql = '';
   for (const table of schema.tables.values()) {
-    if (PRIVATE_TABLES.has(table.name)) continue;
     if (systemTables.has(table.name) && !targets.has(table.name) && !table.treeMembers
         && !marked(table, 'treeRoot').length && !table.validate) continue;
-    // Dynamic record reads can consume any application record, including a
-    // table with no derived field or tree of its own.
+    // A declared dependency can consume a source with no calculation of its own.
     const nativeOutputs = routes.filter((r) => r.target === table.name).flatMap((r) => [...r.fields]).filter((name) => {
       const field = table.fields.get(name.split('.')[0]);
       return !field?.reactive && !field?.treeRoot && !field?.treeNode;
@@ -305,7 +318,7 @@ function events(schema, routes, systemTables) {
     const deleteGuards = marked(table, 'treeRoot').map((field) =>
       `IF (fn::tree::load($before.${field.name}.root, { rid: $before.id, slots: $before }).summary.count ?? 0)
         != array::len(${ownSlots}.filter(|$slot| $before[$slot].owner = { rid: $before.id, slot: '${field.name}' })) { THROW 'TREE_OWNER_NOT_EMPTY'; };`).join('\n');
-    const finish = 'fn::rebase::finish(fn::rebase::refresh($after.id ?? $before.id, $before_image, true));';
+    const finish = 'fn::rebase::finish(fn::rebase::refresh($after.id ?? $before.id, $before_image));';
     const independentFinish = table.managedOutput
       ? `IF ($after.rebase_managed_source ?? $before.rebase_managed_source) = NONE { ${finish} };`
       : finish;
@@ -320,13 +333,19 @@ WHEN $event != 'UPDATE' OR (${changed}) OR $before.system_ping != $after.system_
 }
 
 function resolveTemporalModel(schema, systemTables, functionSource = '') {
-  const observed = resolveObservedReads(functionSource);
+  const dependencyModel = resolveDependencies(schema);
+  const pure = resolveReadOnly(functionSource);
   for (const table of schema.tables.values()) {
-    if (PRIVATE_TABLES.has(table.name)) continue;
     for (const marker of ['treeMembers', 'requiredOutputs', 'validate']) {
-      if (table[marker]) observed.validate(`${table[marker]}()`, table.name);
+      if (table[marker]) pure.validate(`${table[marker]}($this)`, table.name, { allowLocalTreeReads: marker === 'validate', allowLocalRecordReads: marker === 'validate' });
     }
-    for (const field of marked(table, 'reactive')) observed.validate(valueExpression(field) || '', `${table.name}.${field.name}`);
+    for (const field of marked(table, 'reactive')) pure.validate(valueExpression(field) || '', `${table.name}.${field.name}`, { allowRecordReads: /@rebase-depends\b/.test(field.comment || '') });
+    const validation = new Map([...table.fields.values()].filter(field => field.dependency?.phase === 'validate').map(field => [field.name, field]));
+    if (validation.size) for (const marker of ['treeMembers', 'requiredOutputs']) {
+      if (!table[marker]) continue;
+      const inputs = localDependencies(`${table[marker]}($this)`, validation, pure.declared, table.name);
+      if (inputs.length) throw new Error(`${table.name}: calculation cannot consume validation-phase query ${inputs.join(', ')}`);
+    }
   }
   const required = requiredOutputContract(schema);
   const trees = resolveTreeContract(schema);
@@ -345,11 +364,11 @@ function resolveTemporalModel(schema, systemTables, functionSource = '') {
   const enabled = [...schema.tables.values()].some((t) => t.treeMembers || t.validate || t.requiredOutputs || t.managedOutput
     || marked(t, 'treeRoot').length || marked(t, 'reactive').length);
   const routes = dependencies(schema);
-  return { trees, derivedOrder, derivedHelpers, routes, enabled, systemTables, managedOutputs: required.outputs, observed };
+  return { trees, derivedOrder, derivedHelpers, routes, enabled, systemTables, managedOutputs: required.outputs, dependencyModel };
 }
 
 function generateTemporal(schema, options, systemTables, resolved = resolveTemporalModel(schema, systemTables)) {
-  const { trees, derivedOrder, derivedHelpers, routes, enabled, managedOutputs, observed } = resolved;
+  const { trees, derivedOrder, derivedHelpers, routes, enabled, managedOutputs, dependencyModel } = resolved;
   if (!enabled) return { sql: '', routes: [], trees, derivedOrder, derivedHelpers };
   const sourceFields = new Map();
   for (const route of routes) {
@@ -358,9 +377,12 @@ function generateTemporal(schema, options, systemTables, resolved = resolveTempo
   }
   const sources = [...sourceFields].map(([table, fields]) =>
     `REMOVE FIELD IF EXISTS rebase_dependency_sources.* ON ${table};\nDEFINE FIELD OVERWRITE rebase_dependency_sources ON ${table} TYPE array<record> COMPUTED array::distinct([${[...fields].map((f) => `$this.${f}`).join(', ')}]).filter(|$r| $r != NONE) PERMISSIONS NONE;`).join('\n');
+  const directSources = `DEFINE FUNCTION OVERWRITE fn::rebase::direct_sources($row: object) {\n${[...sourceFields].map(([table, fields]) =>
+    `IF record::tb($row.id) = '${table}' { RETURN array::distinct([${[...fields].map(field => `$row.${field}`).join(', ')}]).filter(|$source| $source != NONE); };`).join('\n')}\nRETURN []; } PERMISSIONS NONE;`;
   const sql = [fs.readFileSync(path.join(__dirname, '..', 'temporal.surql'), 'utf8'),
-    fs.readFileSync(path.join(__dirname, '..', 'reads.surql'), 'utf8'), observed.generated,
-    treeFields(trees), sources, adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs, observed), derivedFields(schema, derivedOrder, derivedHelpers),
+    fs.readFileSync(path.join(__dirname, '..', 'queries.surql'), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '..', 'dependencies.surql'), 'utf8'),
+    treeFields(trees), sources, directSources, adapters(schema, routes, trees, derivedOrder, options, systemTables, managedOutputs, dependencyModel), derivedFields(schema, derivedOrder, derivedHelpers),
     events(schema, routes, systemTables), queryFunction(trees, options)].join('\n');
   return { sql, routes, trees, derivedOrder, derivedHelpers };
 }

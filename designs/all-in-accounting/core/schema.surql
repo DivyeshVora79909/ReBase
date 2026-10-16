@@ -21,8 +21,8 @@ DEFINE FUNCTION OVERWRITE fn::accounting::claim($signed: decimal) {
     RETURN fn::accounting::effects(0dec,math::max([$signed,0dec]),math::max([-$signed,0dec]));
 } PERMISSIONS FULL;
 
-DEFINE FUNCTION OVERWRITE fn::accounting::prefix($owner: record, $slot: string, $measure: string, $at: datetime) {
-    RETURN fn::tree::read_value($owner,$slot,'before',[$at],'measures.'+$measure+'.sum',0dec);
+DEFINE FUNCTION OVERWRITE fn::accounting::prefix_query($owner: record, $measure: string, $at: datetime) {
+    RETURN {source:$owner,arguments:[NONE,[$at]],path:'measures.'+$measure+'.sum',fallback:0dec};
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::same_subsidiary($left: record, $right: record) {
@@ -34,7 +34,7 @@ DEFINE FUNCTION OVERWRITE fn::accounting::resource_validate($row: object) {
     IF $row.minimum_duration != NONE AND $row.maximum_duration != NONE AND $row.minimum_duration > $row.maximum_duration { THROW 'RESOURCE_DURATION_ORDER'; };
 } PERMISSIONS FULL;
 
-DEFINE TABLE OVERWRITE currency SCHEMAFULL;
+DEFINE TABLE OVERWRITE currency SCHEMAFULL COMMENT '@rebase-members fn::accounting::identity_members';
 
 DEFINE FIELD OVERWRITE code ON currency TYPE string READONLY ASSERT string::len($value)>0 COMMENT '@rebase-audit';
 
@@ -42,15 +42,13 @@ DEFINE FIELD OVERWRITE name ON currency TYPE string COMMENT '@rebase-audit';
 
 DEFINE FIELD OVERWRITE precision ON currency TYPE int READONLY DEFAULT 2 ASSERT $value>=0 AND $value<=18 COMMENT '@rebase-audit';
 
-DEFINE INDEX OVERWRITE currency_code ON currency FIELDS tenant,code UNIQUE;
 
-DEFINE TABLE OVERWRITE measure_unit SCHEMAFULL;
+DEFINE TABLE OVERWRITE measure_unit SCHEMAFULL COMMENT '@rebase-members fn::accounting::identity_members';
 
 DEFINE FIELD OVERWRITE code ON measure_unit TYPE string READONLY COMMENT '@rebase-audit';
 
 DEFINE FIELD OVERWRITE name ON measure_unit TYPE string COMMENT '@rebase-audit';
 
-DEFINE INDEX OVERWRITE measure_unit_code ON measure_unit FIELDS tenant,code UNIQUE;
 
 DEFINE TABLE OVERWRITE item SCHEMAFULL COMMENT '@rebase-validate fn::accounting::resource_validate';
 

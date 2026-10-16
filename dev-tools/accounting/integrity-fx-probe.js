@@ -173,10 +173,10 @@ async function main() {
       timingMs: { fixtureAndMutations: Date.now() - started }, started: startedAt.toISOString(), finished: new Date().toISOString(),
       invocation: { executable: process.execPath, script: process.argv[1], args: process.argv.slice(2) },
       evidenceOutput: evidence ? path.resolve(evidence) : null,
-      sourceSha256: Object.fromEntries(['framework/reads.surql','dev-tools/compiler/reads.surql',
+      sourceSha256: Object.fromEntries(['dev-tools/compiler/dependencies.surql','dev-tools/compiler/queries.surql',
         'dev-tools/compiler/temporal.surql','dev-tools/compiler/generators/tree.js',
         'dev-tools/accounting/acceptance.js','dev-tools/accounting/source-oracle.js',
-        'dev-tools/accounting/integrity-fx-probe.js','dev-tools/temporal-tree/read-oracle.js']
+        'dev-tools/accounting/integrity-fx-probe.js','dev-tools/temporal-tree/dependency-oracle.js']
         .map(file => [file, createHash('sha256').update(fs.readFileSync(path.resolve(__dirname, '../..', file))).digest('hex')])) };
     const cleanupStarted = Date.now();
     await cleanup(h, { verifyEach: true });
@@ -202,13 +202,11 @@ async function main() {
     try {
       if (String(h.result.last).includes('DELETE ONLY invoice_settlement:f_purchase')) {
         const state = await h.snapshot();
-        const lookup = await q(`RETURN {
-          indexed: (SELECT VALUE id FROM rebase_read WHERE reader=invoice_settlement:f_purchase),
-          full: (SELECT VALUE id FROM rebase_read WITH NOINDEX WHERE reader=invoice_settlement:f_purchase)
-        };`);
-        console.error('Post-failure settlement dependency state:', JSON.stringify({ lookup,
-          reads: state.rebase_read.filter(read => read.reader === 'invoice_settlement:f_purchase'),
-          frames: state.rebase_read_frame.filter(frame => frame.id.includes('invoice_settlement:f_purchase')) }, null, 2));
+        console.error('Post-failure settlement dependency state:', JSON.stringify({
+          settlement: state.invoice_settlement.find(row => row.id === 'invoice_settlement:f_purchase'),
+          rates: state.exchange_pair.map(row => ({id:row.id,
+            dependencies:Object.fromEntries(Object.entries(row).filter(([field])=>field.startsWith('__rebase_dependents_')))})),
+        }, null, 2));
       }
     } catch (diagnosticError) { console.error('Could not capture post-failure dependency state:', diagnosticError.message); }
     throw error;

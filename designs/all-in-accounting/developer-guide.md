@@ -1,6 +1,6 @@
 # Developing with sparse accounts and temporal calculations
 
-This is the October 13 accounting contract. Start with the runnable
+This is the accounting contract with the October 16 declared-query engine. Start with the runnable
 [17-record example](../../dev-tools/accounting/fixture-example.js), then use the
 [public create schemas](schemas/). The accounting profile has 48 public tables.
 It uses ordinary SurrealQL functions, typed references and the shared ordered-tree
@@ -25,7 +25,7 @@ The useful standard for a new CRM, HRM or inventory feature is:
 3. Express each linear constraint as a measure on each contribution.
 4. State whether a calculation reads a direct field, a prefix, a predecessor,
    a bounded interval, or an entire aggregate.
-5. Declare posting memberships; use tracked reads for mutable calculation dependencies.
+5. Declare posting memberships, typed reference dependencies and named ordered queries.
 6. Prove arithmetic, insert/edit/delete behavior, date/reference moves and
    rejected-write rollback with a source replay that does not call the formula.
 
@@ -118,35 +118,27 @@ defines the fallback rate. Its `exchange_rate(pair, effective_at, rate)` records
 define later unique dated rates. A rate is received units per given unit. Pairs
 are shared across subsidiaries within a tenant; inverse pairs are independent.
 
-`fn::accounting::rate_at(pair, from, to, at)` selects the last rate at or before
+`fn::accounting::rate_query(pair, from, to, at)` constructs a declared `latest`
+query selecting the last rate at or before
 `at`. Before the first rate it uses the initial value, but it rejects dates before
 the pair is effective. Currency outputs use native decimal ties-to-even rounding.
 Each leg is rounded in its destination currency before coincident contributions
 combine. Resource quantities preserve their native decimal quantity.
 
-The calculation itself registers its dependencies. `rate_at` uses a tracked
-`latest` read of `z_rates`, plus tracked `effective_at` and conditional
-`initial_rate` field reads. The compiler captures those calls through ordinary
-helper functions, including posting providers. Applications need no FX reader
-slots or source impact functions. A rate edit, insertion, move or deletion
-selects the affected ordered read positions; unchanged consumed rates skip
-recalculation. Changing a reader's date, parent or branch repairs its subscriptions.
+Each conversion has a named query field: `q_exchange_rate` for the direct
+conversion and `q_<leg>_reporting` / `q_<leg>_organization` for its reporting legs.
+These fields declare `latest` on `exchange_pair.z_rates`; the pure helper supplies
+the source pair, `[[at + 1ns]]` boundary, rate projection and initial-rate fallback.
+Same-unit conversions return `NONE` and arithmetic uses the identity rate `1dec`.
+Optional fee queries follow the corresponding fee and creditability conditions.
 
-`npm run probe:accounting-integrity-fx` executes a complete three-currency case:
-the subsidiary reports INR, its customer reports EUR while transacting in USD,
-and its supplier reports USD while transacting in EUR. The probe creates both
-sale and purchase histories before inserting a later USD/INR quote, then inserts,
-moves and deletes earlier quotes after subscribers already exist. It checks each
-write's native position, event-time reporting amount and private read trees. The
-customer and supplier's directed conversion pairs remain independent; the USD
-cash receipt and payment cancel natively even when their invoice amounts differ.
-
-The same history creates a converted purchase issue, base tax, tax-on-tax,
-quantity adjustment and both explicit tax children. The net-tax child reads the
-adjusted base and is valued at its own date; its native delta is `-1.10 EUR`
-while the USD reporting leg uses the selected USD/INR quote. The source model
-checks each statement, including the original sales issue that exposed a stale
-index summary and the purchase child that formerly rejected a valid write.
+The compiler stores one protected query and reverse slot per declared role.
+Helpers consume `fn::dependency::value`; they do not discover reads while running.
+Quote insertion, editing, movement and deletion reconsider the affected logical
+positions. Pair metadata changes reconsider fallback/effective-date rules.
+A reader's new date or reference repairs its slots even when its amount stays
+unchanged. Account dimensions, valuation-pair references and currency precision
+are immutable; helper access to those facts does not hide mutable dependencies.
 
 This is event-time valuation. For example, opening stock of 200 at 10 contributes
 2,000. A later sale of 10 while the valuation rate is 12 contributes −120, leaving
@@ -157,16 +149,17 @@ merely because wall-clock time advances.
 
 Trade observations are separate from authoritative rates. `resource_exchange`
 contributes its given/received amounts to `z_observations`; those observations
-never feed `rate_at`. Issue prices are explicit invoice-currency amounts per
+never feed `rate_query`. Issue prices are explicit invoice-currency amounts per
 resource unit, separate from the resource's reporting valuation.
 
-Cumulative calculations use `fn::accounting::prefix`, which calls
-`fn::tree::read_value` for the specific measure. Earlier contributions can affect
-all later readers, even when the selected last record is unchanged. Adjustments
-and taxes therefore use automatic prefix subscriptions. Production guards use
-separate final-validation prefix/range reads. See the shared
-[automatic reactivity contract](../rebase-system/function-reactivity.md) for the
-API, boundary semantics, selected record/key, ordering and measured costs.
+Cumulative calculations use `fn::accounting::prefix_query` to construct a
+canonical range `[NONE, [at]]` for a named query field. Issue adjustments declare
+quantity and price queries independently, then apply the exact product-difference
+formula. Tax queries declare their own basis. Production input declares separate
+final-validation queries for available stock before the start and gross input at
+the start. Invoice validators read their own changed root directly.
+See the [declared-query contract](../rebase-system/function-reactivity.md) for
+boundary semantics, phases, concurrency and costs.
 
 ## Commercial graph and constraints
 
@@ -381,17 +374,19 @@ sales/purchase values and payment values. Taxes are excluded from base trade
 turnover. Sum numerator and denominator before dividing. Never sum quantities
 of different resources, unconverted money, or per-row averages.
 
-Financial trees do not replace every database index. Directed pair identity and
-explicit adjustment-pair uniqueness use native unique indexes; ordered history,
-native account lookup, predecessor selection and capacity use the selected trees.
-For another query dimension, declare the required composite root/membership
-explicitly. Do not create every permutation of dimensions. Likewise, a product
-plan limiting subsidiaries can declare a tenant-owned count root and validator;
-there is no hardcoded subscription limit in the accounting model.
+Business uniqueness uses explicit rooted indexes. Currency/unit codes, directed
+exchange-pair identity and the three adjustment/tax pairs use the tenant's
+`z_accounting_codes`, `z_exchange_pairs` and `z_adjustment_taxes` roots. Their
+memberships grant no additional source visibility. Native reference/backlink
+traversal and framework authentication/queue constraints retain their contracts.
+
+For another query dimension, declare the needed composite root and membership.
+Do not create every permutation of dimensions. A product limit can use an
+explicit count root and validator; there is no hardcoded subsidiary limit.
 
 Public `fn::tree::read` checks root and member access. Tree summaries follow the
 root's permission policy; they are not recomputed from the caller's visible
-subset. Reader-registration slots do not grant business access. Select root
+subset. Dependency index slots do not grant business access. Select root
 ownership deliberately, especially for combined subsidiary reports.
 
 ## Add and validate an extension
@@ -421,7 +416,9 @@ npm run build:all-in-accounting
 npm run verify:accounting
 npm run probe:accounting-integrity-fx
 npm run probe:typed-tree-seeded
-npm run probe:observed-reads
+npm run probe:dependencies
+npm run probe:intervals
+npm run probe:dependency-cost
 npm run test:dev-tools
 node dev-tools/accounting/fixture-example.js
 ```

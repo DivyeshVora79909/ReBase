@@ -66,7 +66,7 @@ function verify(data) {
     link: { rid: row.id, slot },
     owner: { rid: row.a_owner, slot: 'z_history' },
     key: [row.a_at, row.id, slot],
-    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {}, dependent: false,
+    measures: { amount: Number(row.a_amount) }, tags: {}, spans: {},
   }));
   return oracle.verify(data.owners, records, entries, compareKey);
 }

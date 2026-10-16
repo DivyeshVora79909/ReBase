@@ -9,24 +9,24 @@ DEFINE FUNCTION OVERWRITE fn::accounting::pair_matches($pair: option<record>, $f
     IF $pair = NONE OR $pair.given_resource != $from OR $pair.received_resource != $to { THROW 'EXCHANGE_PAIR_DIMENSIONS'; };
 } PERMISSIONS FULL;
 
-DEFINE FUNCTION OVERWRITE fn::accounting::rate_at($pair: option<record>, $from: record, $to: record, $at: datetime) {
+-- A pure descriptor; the declaration supplies the source root and operation.
+DEFINE FUNCTION OVERWRITE fn::accounting::rate_query($pair: option<record>, $from: record, $to: record, $at: datetime) {
     fn::accounting::pair_matches($pair,$from,$to);
-    IF $from = $to { RETURN 1dec; };
-    LET $start = fn::record::read_value($pair,'effective_at',NONE);
-    IF $start = NONE OR $at < $start { THROW 'RATE_NOT_EFFECTIVE'; };
-    LET $rate = fn::tree::read_value($pair,'z_rates','latest',[[$at+1ns]],'measures.rate.sum',NONE);
-    RETURN IF $rate = NONE THEN fn::record::read_value($pair,'initial_rate',NONE) ELSE $rate END;
+    IF $from = $to { RETURN NONE; };
+    LET $source = SELECT * FROM ONLY $pair;
+    IF $source.effective_at = NONE OR $at < $source.effective_at { THROW 'RATE_NOT_EFFECTIVE'; };
+    RETURN {source:$pair,arguments:[[$at+1ns]],path:'measures.rate.sum',fallback:$source.initial_rate};
 } PERMISSIONS FULL;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::rate_members($row: object) {
-    RETURN [fn::tree::member($row.id,'z_pair',$row.pair,'z_rates',$row.effective_at,{rate:$row.rate},{},{},false)];
+    RETURN [fn::tree::member($row.id,'z_pair',$row.pair,'z_rates',$row.effective_at,{rate:$row.rate},{},{})];
 } PERMISSIONS NONE;
 
 DEFINE FUNCTION OVERWRITE fn::accounting::rate_validate($row: object) {
     IF $row.effective_at<$row.pair.effective_at { THROW 'RATE_BEFORE_PAIR'; };
 } PERMISSIONS FULL;
 
-DEFINE TABLE OVERWRITE exchange_pair SCHEMAFULL COMMENT '@rebase-validate fn::accounting::pair_validate';
+DEFINE TABLE OVERWRITE exchange_pair SCHEMAFULL COMMENT '@rebase-members fn::accounting::identity_members @rebase-validate fn::accounting::pair_validate';
 
 DEFINE FIELD OVERWRITE given_resource ON exchange_pair TYPE record<currency | item | service> REFERENCE ON DELETE REJECT READONLY COMMENT '@rebase-audit';
 
@@ -42,7 +42,6 @@ DEFINE FIELD OVERWRITE z_rates ON exchange_pair TYPE object COMMENT '@rebase-tre
 
 DEFINE FIELD OVERWRITE z_observations ON exchange_pair TYPE object COMMENT '@rebase-tree-root @rebase-tree-key datetime @rebase-tree-duplicates';
 
-DEFINE INDEX OVERWRITE exchange_pair_identity ON exchange_pair FIELDS tenant,given_resource,received_resource UNIQUE;
 
 DEFINE TABLE OVERWRITE exchange_rate SCHEMAFULL COMMENT '@rebase-members fn::accounting::rate_members @rebase-validate fn::accounting::rate_validate';
 

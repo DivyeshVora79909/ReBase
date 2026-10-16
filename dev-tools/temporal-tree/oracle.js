@@ -2,21 +2,26 @@
 const assert = require('node:assert/strict');
 const { compareKey } = require('./harness');
 const identity = (link) => link ? `${link.rid}/${link.slot}` : null;
-const empty = () => ({ count: 0, dependents: 0, measures: {}, tags: {}, spans: {} });
+const empty = () => ({ count: 0, measures: {}, tags: {}, spans: {} });
 
 // Reconstruct the ordered sequence from source facts, not maintained node state.
 // This intentionally scans; it is an independent verification oracle.
-function scan(entries) {
+function scan(entries, compare = compareKey) {
   const result = empty();
   const timestamps = [];
   for (const entry of entries) {
+    if (entry.interval) {
+      const upper = entry.interval.upper;
+      if (!result.interval) result.interval = upper == null ? {} : { upper };
+      else if (upper == null) result.interval = {};
+      else if (result.interval.upper != null && compare(upper, result.interval.upper) > 0) result.interval.upper = upper;
+    }
     result.count++;
-    result.dependents += entry.dependent ? 1 : 0;
     result.first ??= entry.key;
     result.last = entry.key;
     const primary = entry.key[0];
     let timestamp = timestamps.at(-1);
-    if (!timestamp || !Object.is(timestamp.primary, primary)) {
+    if (!timestamp || compare([timestamp.primary], [primary]) !== 0) {
       timestamp = { primary, measures: {} };
       timestamps.push(timestamp);
     }
@@ -117,23 +122,23 @@ function verify(owners, records, entries, compare = compareKey) {
       equal(node.key, entry.key, `key ${id}`);
       if (lower) assert(compare(lower, node.key) < 0);
       if (upper) assert(compare(node.key, upper) < 0);
-      equal(node.value, scan([entry]), `leaf ${id}`);
+      equal(node.value, scan([entry], compare), `leaf ${id}`);
       const left = visit(node.left, link, lower, node.key);
       const right = visit(node.right, link, node.key, upper);
       assert(Math.abs(left.height - right.height) <= 1, `balance ${id}`);
       const height = Math.max(left.height, right.height) + 1;
       assert.equal(node.height, height, `height ${id}`);
       const sequence = [...left.entries, entry, ...right.entries];
-      equal(node.summary, scan(sequence), `summary ${id}`);
+      equal(node.summary, scan(sequence, compare), `summary ${id}`);
       return { height, entries: sequence };
     }
     const tree = visit(group.head.root, group.owner);
     assert.equal(tree.entries.length, ordered.length, `reachability ${name}`);
     assert.equal(group.head.height, tree.height, `root height ${name}`);
-    assert.equal(group.head.refreshing, false, `stuck refresh ${name}`);
+    assert.equal(group.head.refreshing, undefined, `stuck refresh ${name}`);
     assert.equal(group.head.dirty, undefined, `unprocessed invalidation ${name}`);
     assert.equal(group.head.cursor, undefined, `stale cursor ${name}`);
-    equal(group.head.summary, scan(ordered), `published ${name}`);
+    equal(group.head.summary, scan(ordered, compare), `published ${name}`);
     ordered.forEach((entry, i) => {
       const node = byRecord.get(entry.link.rid)[entry.link.slot];
       assert.deepEqual(node.prev || null, ordered[i - 1]?.link || null, `previous ${identity(entry.link)}`);

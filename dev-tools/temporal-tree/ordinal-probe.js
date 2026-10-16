@@ -18,7 +18,7 @@ function verify(data) {
     link: { rid: row.id, slot: 'rb_order' },
     owner: { rid: row.owner, slot: 'rb_order' },
     key: [row.order_value, row.id, 'rb_order'],
-    measures: { weight: Number(row.weight) }, tags: {}, spans: {}, dependent: false
+    measures: { weight: Number(row.weight) }, tags: {}, spans: {}
   }));
   return oracle.verify(data.owners, data.facts, entries, compareOrdinal);
 }
@@ -28,20 +28,20 @@ async function queries(q, groups) {
   for (const { owner, entries } of groups.values()) {
     const link = ownerLink(owner.rid);
     for (const k of new Set([0, 1, Math.ceil(entries.length / 2), entries.length, entries.length + 1])) {
-      requests.push(`fn::tree::select(${link}, ${k}, false)`);
+      requests.push(`fn::tree::select(${link}, ${k})`);
       expected.push(entries[k - 1]?.link || null);
     }
     // A short key excludes all ties; a full key can divide a tied group.
     for (const key of [[-10], [0], [2], [10], ...entries.map(entry => entry.key)]) {
       const preceding = entries.filter(entry => compareOrdinal(entry.key, key) < 0);
       requests.push(`fn::tree::before(${link}, ${literal(key)})`);
-      expected.push(oracle.scan(preceding));
+      expected.push(oracle.scan(preceding, compareOrdinal));
       requests.push(`fn::tree::before(${link}, ${literal(key)}).count + 1`);
       expected.push(preceding.length + 1);
     }
     for (const [lower, upper] of [[[-100], [100]], [[-10], [2]], [[2], [10]], [[10], [2]], [[2], [2]]]) {
       requests.push(`fn::tree::range(${link}, ${literal(lower)}, ${literal(upper)})`);
-      expected.push(oracle.scan(entries.filter(entry => compareOrdinal(entry.key, lower) >= 0 && compareOrdinal(entry.key, upper) < 0)));
+      expected.push(oracle.scan(entries.filter(entry => compareOrdinal(entry.key, lower) >= 0 && compareOrdinal(entry.key, upper) < 0), compareOrdinal));
     }
   }
   const actual = await q(`RETURN [${requests.join(',\n')}];`);
@@ -165,7 +165,7 @@ async function main() {
     for (const owner of ['alpha', 'beta', 'limited']) await mutate(`DELETE ordinal_owner:${owner};`);
     assert.deepEqual(await snapshot(q), { owners: [], facts: [] });
     console.log(`PASS ${mutations} mutation checkpoints, ${reads} numeric read assertions, ${rejections} rejection snapshots; complete cleanup`);
-    console.log('Scope: handwritten integer-key regression on the shared runtime; compiled contracts and ACL are covered by probe:typed-tree. Integer prefix dependencies remain unsupported.');
+    console.log('Scope: handwritten integer-key regression on the shared runtime; compiled contracts and ACL are covered by probe:typed-tree, and integer prefix dependencies by probe:dependencies.');
   } finally {
     await server.close();
   }
