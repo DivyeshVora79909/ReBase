@@ -1,6 +1,11 @@
 # SurrealDB Data Generation Findings
 
-Status: measured fixture-generation reference
+Status: historical measurements; current API is documented in [developer tools](../../dev-tools/README.md).
+
+The current `dev-tools/fixtures` implementation uses seeded named spaces, explicit
+recipes, native bindings, and one transaction per population. The August 2026
+materializer and its unseeded relation choices described below are historical;
+they are not guarantees or measurements of the current implementation.
 
 Tested: SurrealDB `3.2.0`, isolated in-memory database, 2026-08-10. These are
 engineering observations; rerun after changing database version, storage,
@@ -19,7 +24,7 @@ JSON Schema
 
 Implementation ownership:
 
-- `dev-tools/populate.js`: generation, AJV validation, native casting,
+- the retired `dev-tools/populate.js`: generation, AJV validation, native casting,
   dependency analysis, batching, and SurrealDB materialization;
 - `designs/<name>/data/*.schema.json`: scalar shape contracts;
 - the compiled SurrealDB schema: reference topology, required dependencies,

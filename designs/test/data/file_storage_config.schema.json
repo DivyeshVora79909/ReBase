@@ -5,11 +5,11 @@
   "required": ["owned_by", "access_key_id", "secret_access_key", "endpoint", "region"],
   "properties": {
     "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
-    "provider": { "type": "string", "minLength": 2, "x-rebase-optional-probability": 0.9 },
+    "provider": { "type": "string", "minLength": 2 },
     "access_key_id": { "type": "string", "minLength": 1 },
     "secret_access_key": { "type": "string", "minLength": 1 },
     "endpoint": { "type": "string", "format": "uri" },
     "region": { "type": "string", "minLength": 1 },
-    "default_expiry_seconds": { "type": "integer", "minimum": 1, "maximum": 604800, "x-rebase-optional-probability": 0.8 }
+    "default_expiry_seconds": { "type": "integer", "minimum": 1, "maximum": 604800 }
   }
 }

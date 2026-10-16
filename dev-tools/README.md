@@ -1,289 +1,228 @@
 # ReBase developer tools
 
-For new schemas start with the [developer blueprint](../designs/rebase-system/developer-blueprint.md)
-and [explicit analytics example](../designs/index-analytics/README.md).
-`npm run build:index-analytics` compiles that profile; `npm run probe:reader-index`
-checks custom identity indexes, scalar readers and analytics against source facts.
-Raw framework files now require compilation to install identity-tree maintenance.
+Use SurrealDB 3.3.0 and Node 20.6 or newer. The tools are ordinary Node modules;
+the workbench is Node's native REPL with top-level `await`. For core schema
+work, start with the [developer blueprint](../designs/rebase-system/developer-blueprint.md).
+Install development dependencies with `npm ci`; Faker, JSON Schema Faker, and
+Z3 are development-only packages and are omitted by production-only installs.
 
+## Workbench and build
 
-The developer tools are ordinary JavaScript modules. Import the public
-functions from `dev-tools/index.js`, or start the Node.js REPL with
-`dev-tools/workbench.js` for an interactive session.
-
-For the current backend model, read the [tenant/tree contract](../designs/rebase-system/tenant-tree-redesign.md).
-Use SurrealDB 3.3.0. Provision tenant records deliberately before population;
-`populate({ tenant: "rebase_tenant:demo" })` or `--tenant rebase_tenant:demo`
-limits sample owners/references to that tenant. If exactly one tenant exists,
-population can infer it. The compiler never creates a production tenant.
-
-## Workbench
-
-The default project is the [direct accounting model](../designs/all-in-accounting/README.md),
-`all-in-accounting`. The October 13 redesign uses subsidiaries, sparse native
-positions, dated reporting and unified adjustments, with explicit tax cash,
-fees, claims, transfers and production. The
-[developer guide](../designs/all-in-accounting/developer-guide.md) explains inputs,
-units, constraints and graph/tree queries. `npm run verify:accounting` runs the
-core and extension scenarios together in one disposable database, followed by
-populated reapplication and cleanup. Historical recipes remain separate from
-this active profile.
-
-```bash
-node dev-tools/workbench.js
-```
-
-Load a local process profile when database access is needed:
-
-```bash
+```sh
+npm run workbench
 node --env-file path/to/profile.env dev-tools/workbench.js --project all-in-accounting
 ```
 
-The workbench starts without opening a database. It puts a plain `project`
-options object and these functions into the normal Node REPL context:
-
-- `build(overrides?)` compiles the current project.
-- `check(overrides?)` checks its generated artifacts.
-- `explain(subject?, overrides?)` explains a table or calculated field without writing files.
-- `connect(context?)` opens one configured database connection.
-- `deploy(connection, overrides?)` applies that project's built schema.
-- `populate(overrides?)` uses the existing bounded data population tool.
-- `closeConnections()` closes all workbench-managed connections.
-
-`closeConnections()` begins terminal cleanup for that workbench and rejects
-later connection attempts. It waits for pending opens and close attempts, then
-reports any close failures. Close an individual handle with `await admin.close()`
-when you intend to keep working and open another session; repeated calls share
-the same close result.
-
-Use standard JavaScript, including top-level `await`:
+The workbench opens no database until `connect()` is called. Its context contains
+`project`, `build`, `explain`, `connect`, `fixtures`, and `closeConnections`.
+The default project is `all-in-accounting`; the compiler CLI defaults to `test`.
 
 ```js
-await build()
+const built = build()
+build({ check: true })
+explain("issue_adjustment.amount_delta")
 const admin = await connect()
-const [rows] = await admin.db.query("SELECT id, name, currency FROM treasury LIMIT 10;")
-rows
+await admin.db.query(built.bundle)
 ```
 
-Change the plain options object at any time, or override one call:
+`check()` and `deploy()` have been removed. Check mode belongs to `build`, and
+schema installation uses the SDK directly. Existing compiler `--check` and npm
+check scripts remain available for CI. Build and install with the same process
+profile when the bundle contains a namespace/database or runtime event binding.
+
+Change `project` or supply explicit build options:
 
 ```js
-project.outputDir = "/tmp/accounting-build"
-await build()
 project = { projectDir: "designs/test", outputDir: "/tmp/test-build" }
-await build()
-await build({ project: "all-in-accounting", outputDir: "/tmp/accounting-build" })
+const testBuild = build()
+const elsewhere = build({ project: "all-in-accounting", outputDir: "/tmp/books" })
 ```
 
-An explicit per-call `project` replaces an inherited `projectDir`; an explicit
-`projectDir` is always a path. Node's `.clear` restores the initial project and
-helpers without losing ownership of already opened connections. Bare build and
-check results display a compact summary in the REPL. Assign the result to a
-variable to inspect its full properties deliberately; these can contain private
-schema and process configuration.
+An explicit `project` replaces an inherited `projectDir`. Bare build results
+have a compact REPL display; assigned results retain full compiler metadata.
+`.clear` restores the initial helpers without losing connection ownership.
 
-A process profile selects exactly one namespace/database design. An explicit
-context must match it; tenants are records within that database:
+`connect(context?)` reads credentials and allowed contexts from
+[the process profile](../designs/rebase-system/core-configuration.md), not per-call
+credentials. Each call opens a separate SDK session. Close one handle using
+`await admin.close()`. `closeConnections()` and REPL exit wait for pending opens
+and close every managed connection; terminal cleanup rejects new connections
+and reports close failures. The SDK remains available as `admin.db`.
+
+## Fixture primitives
 
 ```js
-const admin = await connect({ namespace: "demo", database: "books" })
-await deploy(admin, { project: "all-in-accounting" })
-```
-
-Each `connect()` call opens a separate session. The returned `db` is the
-SurrealDB SDK client, so use SDK operations such as `query`, `select`, and
-`signin` directly. Sign in on a second connection when you need to keep the
-admin session available. Do not type passwords or tokens as REPL literals;
-the workbench does not configure a persistent REPL history file.
-
-`--project` accepts a design name or source directory. The compiler and
-workbench accept the project, output, and framework paths as ordinary options;
-the process profile remains the source of connection credentials and allowed
-contexts.
-
-## Public JavaScript API
-
-```js
-const { build, check, explain, connect, deploy, populate } = require("./dev-tools")
-
-const accounting = { project: "all-in-accounting" }
-const built = build(accounting)
-explain("issue_adjustment.amount_delta", accounting)
-const admin = await connect({ namespace: "demo", database: "books" })
-await deploy(admin, accounting)
-const [accounts] = await admin.db.query("SELECT id, name, currency FROM treasury LIMIT 20;")
-await admin.close()
-```
-
-`project` may be a design name; `projectDir` may be an explicit source path;
-`outputDir` may select the build destination. `build` and `check` use the
-existing compiler pipeline. `deploy` reads `schema.surql` from the selected
-build directory and sends it through the supplied SDK client. Build first.
-
-`connect(context?)` uses the environment profile resolved by
-`config/environment.js`. Credentials are never accepted as per-call endpoint,
-username, or password overrides. A selected namespace/database must be present
-in the process profile; if the profile is ambiguous, pass the configured pair.
-
-`populate({ project, context, ...limits })` calls the existing bounded
-population tool and requires a previously built schema and configured context.
-It does not create missing schema or infer application-specific fixture data.
-
-## Configuration and defaults
-
-The JavaScript API and workbench default to `all-in-accounting`. The existing
-compiler CLI, `npm run build`, and population CLI retain their `test` default.
-Use `npm run build:all-in-accounting` for the accounting CLI build.
-
-[`config/environment.js`](../config/environment.js) is the configuration source.
-Use a local profile based on [`.env.example`](../.env.example) for connections:
-`SURREAL_ENDPOINT`, `SURREAL_USERNAME`, `SURREAL_PASSWORD`, and the
-`SURREAL_NAMESPACE`/`SURREAL_DATABASE` pair. `REBASE_ALLOWED_CONTEXTS` may list
-additional allowed pairs. These are database contexts; the design project name
-does not select or create a database. See the
-[configuration reference](../designs/rebase-system/core-configuration.md) for
-the other existing settings.
-
-Offline compilation needs no connection profile. A profile-bound build embeds
-its namespace/database and, when provided, its runtime event binding. Choose
-the same intended context when deploying that build; `deploy` executes its
-SurrealQL through the supplied SDK session. It does not provision a runtime or
-select an application user.
-
-## Dependency inspection
-
-`build/<project>/dependency-plan.json` records evaluation order, local inputs,
-typed reference routes, named ordered queries, generated nodes and owner roots.
-It is a developer artifact alongside the private SQL. Check mode verifies its
-freshness. Inspect current source without a build or database:
-
-```bash
-node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta
-```
-
-Use a table name for its full contract, or `'*'` for all tables. The
-[calculation contract](../designs/rebase-system/function-reactivity.md) explains
-pure formulas, fixed query slots, interval lookup and transaction boundaries.
-
-## Public JSON Schemas
-
-Author a flat `designs/<project>/schemas/*.schema.json` directory with standard
-draft-07 JSON Schema. The compiler validates it with strict Ajv and copies the
-source bytes into `build/<project>/client/schemas/`. A missing source directory
-removes an older public schema export on build; check mode reports stale files
-without changing them. Keep output directories separate from source directories.
-
-The direct accounting profile exports forty-eight editable create-input schemas for
-identities, accounts, issues, taxes, payments, corrections, and exchange. They
-exclude protected derived fields and tree storage. Older recipe schemas remain
-in Git history. Decimal quantities use
-strings, dates use ISO strings, and record references accept simple
-`table:custom-key`, SDK `table:⟨custom-key⟩`, or canonical `table:u"uuid"` strings;
-bind their native SDK types before writing. Reference existence,
-authorization, uniqueness, and aggregate constraints are enforced by SurrealDB.
-Accounting subsidiaries and organizations are business dimensions; authorization
-ownership remains explicit in `owned_by`.
-
-For a frontend, copy only the generated `client/schemas/` contents into the
-frontend's public assets or import those JSON files with its normal bundler.
-Compile the chosen JSON Schema with Ajv and `ajv-formats`. The exported files
-need no Node helpers, fake-data variables, or ReBase fixture vocabulary.
-External references are not fetched by the build. If schemas share `$ref`, use
-explicit public `$id` values and register those schemas in the consuming Ajv
-instance; do not depend on Node loader internals.
-They do not infer a form layout, permissions, or a query. The surrounding build
-contains private schema/runtime material and is not a browser asset directory.
-
-Private `data/*.schema.json` files remain generation inputs for `populate`.
-Their `x-rebase-*` sampling metadata is intentionally absent from public schemas.
-When adding another public input, compare its fields with the current SurrealQL
-table, author the JSON shape explicitly, and add only the boundary cases that
-matter for that input. Computed fields belong in database output.
-
-## Development data in JavaScript
-
-The [direct accounting examples](../designs/all-in-accounting/examples.md) show
-ordinary source records and their dependencies. Preview the current example
-without opening a database:
-
-```bash
-node dev-tools/accounting/fixture-example.js
-```
-
-`prepareFixture()` from that module validates seventeen editable objects and returns
-rows with SDK `RecordId`, `Decimal`, and `Date` values ready for bound writes.
-It targets `all-in-accounting`; a field generator cannot infer an accounting
-scenario. Re-running it uses the same explicit record IDs.
-
-The population adapter also recognizes the database's `<string>id` output:
-single-quoted UUID literals and backtick-quoted simple keys. UUID literals stay
-typed UUIDs; UUID-looking custom keys stay strings. This bounded fixture helper
-does not parse arbitrary SurrealQL record keys.
-
-To insert them deliberately, use a configured disposable database with the
-`all-in-accounting` schema and an explicitly provisioned `rebase_tenant:default`.
-From the workbench
-started in the ReBase root:
-
-```js
-const { prepareFixture } = require("./dev-tools/accounting/fixture-example")
-const fixtureDb = await connect()
-const transaction = await fixtureDb.db.beginTransaction()
-try {
-  for (const row of prepareFixture()) {
-    await transaction.query("CREATE $id CONTENT $content RETURN AFTER;", {
-      id: row.id,
-      content: row.content,
-    })
-  }
-  await transaction.commit()
-} catch (error) {
-  await transaction.cancel().catch(() => {})
-  throw error
-} finally {
-  await fixtureDb.close()
-}
-```
-
-The example does not deploy schema, create a database, or clean up committed
-rows automatically. Use a fresh disposable database for another run, or remove
-only those fixture rows in reverse dependency order. This keeps creation,
-transaction boundaries, and cleanup visible as ordinary SDK code.
-
-For existing generic fixture schemas, keep simple value edits in JavaScript.
-After building and deploying the `test` profile to a development database with
-suitable owner records, the workbench can run:
-
-```js
-await populate({
-  project: "test",
-  table: "test_primitive",
-  count: 5,
-  seed: "example",
-  transform: (document) => ({
-    ...document,
-    a_int: Math.abs(document.a_int ?? 0),
-  }),
+const { build, connect, fixtures } = require("./dev-tools")
+const { loadClientSchemas } = require("./dev-tools/client-schemas")
+const built = build({ project: "all-in-accounting" })
+const model = fixtures.createModel({
+  schema: built.bundle,
+  schemas: loadClientSchemas("designs/all-in-accounting/schemas"),
 })
 ```
 
-The callback receives `(document, { table, index, seed })` and returns the
-document, synchronously or asynchronously. `index` is zero-based within a table
-across batches. The returned value is schema-validated before native SDK
-conversion. Built-in generation is seeded; randomness inside the callback is
-caller-owned. Population commits each batch separately, so a later failure
-does not undo earlier batches. Preserve the existing batching and sampling caps.
+Create the model once and reuse it. It compiles input validators and native type
+bindings from the complete emitted SQL using the existing compiler parser.
+`schemas` accepts either the existing public catalog or a plain
+`{ tableName: jsonSchema }` object. Complete parsed compiler metadata is also
+accepted; raw source metadata can lack generated fields such as `owned_by`.
 
-## Testing and boundaries
+| Primitive | Responsibility |
+| --- | --- |
+| `createModel({ schema, schemas })` | Validate inputs and bind native SDK types |
+| `plan(options)` | Generate an inspectable, reproducible plan without a connection |
+| `insert(transaction, plan, { batchSize })` | Write ordered statements in caller-owned transaction |
+| `populate(db, options)` | Read space, plan, write, and commit one transaction |
+| `withSolver(callback, { timeoutMs })` | Optional native Z3 session with automatic worker cleanup |
 
-The public module and workbench tests run without a database:
+No global Faker configuration, connection discovery, hidden tenant selection,
+private sampling keywords, or population CLI is involved. Use a normal Node
+script or the REPL. Import external libraries directly for other needs.
 
-```bash
-node --test dev-tools/tests/workbench.test.js
-node --test dev-tools/tests/client-schemas.test.js
+## Named spaces and recipes
+
+A space is an object of named record arrays: `{ owners: [{ id: ... }] }`.
+Records may include any attributes useful for selecting compatible combinations.
+Keep different tenant, currency, or role subsets in different named pools.
+Input records and recipe schemas are copied before generation.
+
+```js
+const options = {
+  model, seed: "currency-demo",
+  space: { owners: [{ id: "rebase_tenant:demo" }] },
+  recipe: [
+    { name: "business", table: "subsidiary",
+      refs: { owned_by: "owners", currency: "currencies" },
+      values: { name: "Demo", effective_at: "2027-01-01T00:00:00Z" } },
+    { name: "currencies", table: "currency", refs: { owned_by: "owners" },
+      values: { code: "DEMO", name: "Demo currency", precision: 2 } },
+  ],
+}
+const preview = await fixtures.plan(options)
+preview.space.business
 ```
 
-Build writes generated files to its requested output directory. Deployment and
-population require explicit calls to write to the selected database. The
-workbench is a trusted local JavaScript REPL, not a sandbox; do not use it with
-untrusted input.
+Steps have unique `name`, `table`, optional `count` (default 1), `refs`, `after`,
+`values`, and `id`. A `refs` entry names an existing space or generated step.
+The planner orders prerequisites automatically, so `currencies` runs before
+`business`. `after: ["funding"]` adds a business prerequisite independent of
+references. Unknown prerequisites and cycles fail clearly. Cycles need an
+existing anchor or an explicitly staged scenario.
+
+`values` is an object or an async function receiving
+`{ index, seed, space, faker, pick }`. `recipe` itself can be an async function
+of `{ seed, space, faker, pick }` returning steps. This is where a reusable
+recipe can calculate ranges or solve coupled constraints before generation.
+`id` can be a full record ID or a function of the same row context; otherwise
+IDs are deterministic hashes of seed, step name, and index.
+
+```js
+values: ({ space, pick }) => {
+  const invoice = pick(space.invoices)
+  const cash = pick(space.cash.filter(row => row.subsidiary === invoice.subsidiary))
+  return { invoice: invoice.id, treasury: cash.id }
+}
+```
+
+Select related fields together in `values`; independent `refs` selections do
+not infer cross-record business compatibility. Dependencies used only inside
+callbacks need explicit `after` entries. `pick` reports empty pools. Typed array
+references sample distinct matching IDs within their schema cardinality.
+
+Remaining fields are generated with JSON Schema Faker 0.6.3. Values are pinned
+before generation so schema conditionals can see them. Optional fields are
+omitted by default; opt into them through `values`. Reference IDs are never
+invented from regex patterns. Required references need `refs` or `values`;
+optional references are omitted unless supplied. Every final document passes
+the original Ajv validator and native-type validation. Referenced IDs must be
+in the supplied space or preceding generated rows.
+
+An optional `assert(plan)` callback checks whole-plan invariants before any
+writes. Throw an error or return `false` to reject; asynchronous checks work too.
+
+Money uses decimal strings and native `Decimal`; dates and references become
+native SDK values. Nanosecond timestamps retain their precision. Supported
+record text includes numeric, string, and typed UUID keys; compound record keys
+and unsupported database types fail explicitly. Public schemas stay standard
+JSON Schema and contain no fixture-specific annotations.
+
+## Existing records and atomic writes
+
+Provision the tenant and install schema explicitly. Population never bootstraps
+application records or opens/closes a connection.
+
+```js
+const admin = await connect()
+const result = await fixtures.populate(admin.db, {
+  ...options,
+  space: async transaction => {
+    const [owners] = await transaction.query(
+      "SELECT * FROM rebase_tenant WHERE id = $owner;",
+      { owner: new (require("surrealdb").RecordId)("rebase_tenant", "demo") },
+    )
+    return { owners }
+  },
+  batchSize: 100,
+})
+await admin.close()
+```
+
+Use a WebSocket SDK connection for interactive transactions. The space callback
+runs inside the same transaction as the writes. `batchSize`
+limits statements per request, not commit scope: a later failure cancels the
+whole recipe, including earlier batches. Returned `rows` contain bound inputs;
+`space` contains JSON views of inputs, and `created` contains database responses.
+Later reactive writes may change previously returned database objects; query
+again for final derived state. No conflict retry or partial-success mode is
+hidden. SurrealDB enforces actual existence, uniqueness, permissions, tenant
+compatibility, and business assertions.
+
+For custom transaction ownership, call `plan` and `insert` separately and use
+the SDK's commit/cancel operations yourself. Offline spaces may become stale.
+Repeatable inputs require the same seed, schema/library versions, recipe, and
+ordered space contents. Explicit callback randomness/time is caller-owned.
+Reusing IDs in an already populated database fails; use a fresh space or seed.
+Planning holds the requested fixture in memory; page large source queries and
+use deliberate transaction-sized scenarios for large runs.
+
+## Coupled constraints and accounting trial
+
+Simple bounds belong in ordinary functions. For coupled equations, write native
+Z3 expressions inside `withSolver`; there is no second constraint language:
+
+```js
+const pair = await fixtures.withSolver(async ({ Int, solver, solve }) => {
+  const x = Int.const("x"), y = Int.const("y")
+  solver.add(x.ge(20), y.ge(20), x.add(y).eq(90), x.le(y))
+  const solution = await solve()
+  return [solution.eval(x).value(), solution.eval(y).value()]
+})
+```
+
+Extract ordinary values inside the callback. `solve()` distinguishes impossible
+constraints from unknown/timeout outcomes. `timeoutMs` (default 5000) bounds
+each solver check, not arbitrary JavaScript callbacks. Z3 loads only when used;
+sessions clean up their workers even after errors. A satisfying model is not
+a uniform random sample. General arithmetic, rounding, and temporal rules
+must be declared; database errors are not automatically inverted into generators.
+
+The [accounting recipe](./fixtures/examples/accounting.js) composes exact-cent
+allocations, percentage plus fixed charges, named relations, and funding
+prerequisites. Its independent prefix check verifies the generated scenario.
+
+```sh
+node dev-tools/fixtures/examples/accounting.js  # offline preview
+npm run probe:fixtures                       # disposable SurrealKV integration
+npm run test:dev-tools
+```
+
+The integration probe checks native bindings, replay, exact tree prefixes,
+existing-record reads, and full-table rollback after overdraw, backdating,
+and cross-tenant failures. These are correctness trials, not throughput claims.
+The [17 explicit accounting records](./accounting/fixture-example.js) remain
+available and now share the same metadata-based binding implementation.
+
+The 48 public accounting schemas are separately authored create contracts.
+Their compilation/export checks do not prove equivalence to every SurrealQL
+business rule. The broader accounting contract is documented in the
+[accounting guide](../designs/all-in-accounting/developer-guide.md).

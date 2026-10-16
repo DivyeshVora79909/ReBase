@@ -1,5 +1,11 @@
 # Developer experience redesign plan
 
+The 2026-10-16 fixture redesign supersedes this historical plan's deploy/populate
+wrappers, compatibility flags, and private sampling vocabulary. Follow the
+[current tooling guide](../../dev-tools/README.md) for composable fixture
+models, named spaces, deterministic recipes, and atomic SDK writes. The earlier
+packets and evidence below describe their original implementation dates.
+
 Restart from [the execution handoff](developer-experience-handoff.md) for
 working-tree status, review findings, evidence, and the smallest required checks.
 

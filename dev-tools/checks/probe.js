@@ -7,7 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { Surreal } = require("surrealdb");
-const { populate } = require("../populate");
+const fixtures = require("../fixtures");
 const { resolveConfiguration } = require("../../config/environment");
 const { compileFromArgs } = require("../compiler/cli");
 
@@ -554,42 +554,62 @@ async function ownerSelectPolicyProbe(options) {
 async function dataProbe(options) {
   const states = [];
   try {
-    await assert.rejects(
-      populate({ endpoint: "ws://override/rpc" }),
-      /is process-profile configuration/,
-    );
     const snapshots = [];
     for (const suffix of ["primary", "replay"]) {
       const setupState = await setup({ ...options, database: `${options.database}_${suffix}` });
       states.push(setupState);
+      const schemaDirectory = path.resolve(__dirname, "../../designs/test/data");
+      const tables = fs.readdirSync(schemaDirectory).filter(name => name.endsWith(".schema.json"))
+        .map(name => name.slice(0, -".schema.json".length));
+      const schemas = Object.fromEntries(tables.map((table) => [table, JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, `../../designs/test/data/${table}.schema.json`), "utf8",
+      ))]));
+      const model = fixtures.createModel({
+        schema: fs.readFileSync(path.join(setupState.buildDir, "schema.surql"), "utf8"),
+        schemas,
+      });
       await setupState.db.query(`
         CREATE rebase_email_delivery_config:fixture SET owned_by=rebase_tenant:default,
           api_key='fixture-only',from_email='fixture@example.test',from_name='Fixture';
         CREATE rebase_sms_delivery_config:fixture SET owned_by=rebase_tenant:default,
           account_sid='fixture-only',auth_token='fixture-only',from_number='+12345678901';
       `);
-      const result = await populate({
-        project: "test",
-        sourceDir: path.resolve(__dirname, "../../designs/test"),
-        buildDir: setupState.buildDir,
-        configuration: resolveConfiguration({
-          SURREAL_ENDPOINT: options.endpoint,
-          SURREAL_USERNAME: "root",
-          SURREAL_PASSWORD: "root",
-          SURREAL_NAMESPACE: options.namespace,
-          SURREAL_DATABASE: `${options.database}_${suffix}`,
-        }),
-        table: "all",
-        count: 3,
-        batchSize: 2,
-        reservoirSize: 100,
-        pageSize: 50,
+      const owned = { owned_by: "users" };
+      const result = await fixtures.populate(setupState.db, {
+        model,
         seed: "rebase-data-probe",
+        space: { tenants: [{ id: "rebase_tenant:default" }],
+          emailConfigs: [{ id: "rebase_email_delivery_config:fixture" }],
+          smsConfigs: [{ id: "rebase_sms_delivery_config:fixture" }] },
+        recipe: [
+          { name: "groups", table: "rebase_group", count: 3, refs: { parents: "tenants" }, values: { role: [] } },
+          { name: "users", table: "rebase_user", count: 3, refs: { parents: "groups" } },
+          { name: "primitives", table: "test_primitive", count: 3, refs: { owned_by: "users" } },
+          { name: "relations", table: "test_relation", count: 3,
+            refs: { owned_by: "users", a_primitive: "primitives" } },
+          { name: "trees", table: "test_tree", count: 3, refs: { owned_by: "users" } },
+          { name: "multipleReferences", table: "test_multiref", count: 3,
+            refs: { ...owned, a_creator: "users", a_owning_group: "groups" } },
+          { name: "storage", table: "file_storage_config", count: 3, refs: owned,
+            values: { endpoint: "https://files.example.test" } },
+          { name: "attachments", table: "test_attachment", count: 3,
+            refs: { ...owned, storage_config: "storage", attached_to: "primitives" },
+            values: ({ index, space }) => ({ attached_to: space.primitives[index].id }) },
+          { name: "paymentConfigs", table: "razorpay_config", count: 3, refs: owned },
+          { name: "orders", table: "razorpay_order", count: 3, refs: { ...owned, config: "paymentConfigs" } },
+          { name: "emails", table: "send_brevo_email", count: 3, refs: { ...owned, config: "emailConfigs" },
+            values: { text: "Fixture email" } },
+          { name: "messages", table: "send_twilio_sms", count: 3, refs: { ...owned, config: "smsConfigs" } },
+        ],
       });
-      assert(Object.values(result.created).every((count) => count === 3));
+      assert.equal(result.created.length, tables.length * 3);
+      for (const table of tables) {
+        assert.equal(result.rows.filter((row) => row.table === table).length, 3);
+      }
       assert.equal(rows(await setupState.db.query("SELECT id FROM test_relation;")).length, 3);
       snapshots.push(rows(await setupState.db.query(`
         SELECT
+          <string>id AS id,
           a_string,
           a_int,
           <string>a_decimal AS a_decimal,
@@ -602,7 +622,7 @@ async function dataProbe(options) {
       snapshots.at(-1).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
     }
     assert.deepEqual(snapshots[1], snapshots[0]);
-    console.log("data: schema-driven generation, strict references, batching, reservoirs, and seed replay passed");
+    console.log("data: explicit fixture recipes, schema validation, strict references, and seed replay passed");
   } finally {
     for (const setupState of states) {
       await setupState.db.close().catch(() => {});

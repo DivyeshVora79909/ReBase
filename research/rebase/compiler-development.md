@@ -111,32 +111,18 @@ credentials remain process-profile configuration.
 
 ## Development data
 
-`data/<table>.schema.json` files generate scalar fake values through JSON Schema
-Faker/AJV. They are not gateway request contracts. SurrealDB validates the final
-record, including native types, assertions, references, permissions, events, and
-computed fields.
+Use the [fixture primitives](../../dev-tools/README.md) with standard JSON Schemas,
+explicit named reference spaces, and reusable JavaScript recipes. The model
+reuses complete compiler metadata for native binding and compiles Ajv validators
+once. Private `data/*.schema.json` files are fixture input shapes; public
+`schemas/*.schema.json` files are separately authored client contracts.
 
-Fixture schemas do not copy SurrealDB `DEFAULT` values into generated payloads;
-omitted fields exercise the database default. Arrays declare `minItems`,
-`maxItems`, and `uniqueItems` where appropriate. An optional fixture field may
-use the local `x-rebase-optional-probability` extension (0 to 1) to control its
-presence; this extension is consumed only by `dev-tools/populate.js`.
-
-Population uses:
-
-- keyset pagination of committed candidate IDs;
-- bounded per-table reservoirs;
-- dependency-aware batches that only reference prior committed batches;
-- optional anchors such as `groups:root`;
-- a printed seed for replayable JS payload generation.
-
-SurrealDB’s native random IDs and relation selections are intentionally not
-controlled by the JS seed. Exact graph edges need a separate deterministic
-ordinal mode; acyclicity is guaranteed by dependency ordering.
-
-Avoid precomputed large random ID arrays, repeated `COUNT + OFFSET`, full random
-sorts, cloning templates into unique-indexed tables, and one network request per
-record. Suppress bulk result serialization with `RETURN NONE`.
+Generation has isolated seeded state, deterministic IDs, and explicit dependency
+ordering. Recipe values calculate domain bounds or call the optional native Z3
+helper for coupled rules. No `x-rebase-*` sampling keywords or automatic business
+constraint inference is used. `populate(db, options)` reads supplied spaces and
+writes the entire recipe in one transaction; batches limit requests, not commits.
+Use `plan` and `insert` separately when controlling transactions yourself.
 
 ## Workbench
 
@@ -144,14 +130,12 @@ The workbench starts Node's built-in JavaScript REPL with the public functions
 from `dev-tools/index.js`. It supports ordinary JavaScript and top-level
 `await`; database access starts only when a developer explicitly calls
 `connect()`. Select among configured contexts through the SDK. The
-[developer tools guide](../../dev-tools/README.md) documents build, check,
-deploy, population, and direct SDK use.
+[developer tools guide](../../dev-tools/README.md) documents build/check mode,
+fixture planning, transactional population, and direct SDK use.
 
-Population keeps reference sampling, bounded batches, and seeded built-in
-generation from `data/<table>.schema.json`. An ordinary JS `transform` callback
-can adjust each generated document before existing AJV validation and SDK
-conversion. Private generator annotations remain in that directory; public
-accounting schemas use the separate authored `schemas/*.schema.json` path.
+The workbench exposes the fixture namespace directly with explicit inputs.
+`check()` and `deploy()` wrappers were removed; use `build({ check: true })`
+and the SDK's `query` with generated SQL.
 
 ## Verification
 

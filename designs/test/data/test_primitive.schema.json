@@ -6,14 +6,13 @@
   "properties": {
     "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
     "a_string": { "type": "string", "minLength": 2 },
-    "a_int": { "type": "integer", "minimum": -100, "maximum": 100, "x-rebase-optional-probability": 0.8 },
-    "a_decimal": { "type": "number", "minimum": 0, "maximum": 10000 },
-    "a_bool": { "type": "boolean", "x-rebase-optional-probability": 0.7 },
+    "a_int": { "type": "integer", "minimum": -100, "maximum": 100 },
+    "a_decimal": {"type": "string", "pattern": "^[0-9]{1,4}(?:\\.[0-9]{1,2})?$"},
+    "a_bool": { "type": "boolean" },
     "a_datetime": { "type": "string", "format": "date-time" },
-    "a_object": { "type": "object", "maxProperties": 4, "x-rebase-optional-probability": 0.45 },
+    "a_object": { "type": "object", "maxProperties": 4 },
     "a_enum": {
-      "enum": ["pending", "active", "archived"],
-      "x-rebase-optional-probability": 0.65
+      "enum": ["pending", "active", "archived"]
     }
   }
 }

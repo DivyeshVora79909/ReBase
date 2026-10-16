@@ -178,11 +178,9 @@ function startWorkbench({
 
   Object.assign(context, {
     build: (overrides = {}) => inspectableBuildResult(api.build(optionsFor(overrides)), "build"),
-    check: (overrides = {}) => inspectableBuildResult(api.check(optionsFor(overrides)), "check"),
     explain: (subject = '*', overrides = {}) => api.explain(subject, optionsFor(overrides)),
     connect,
-    deploy: (connection, overrides = {}) => api.deploy(connection, optionsFor(overrides)),
-    populate: (overrides = {}) => api.populate(optionsFor(overrides)),
+    fixtures: api.fixtures,
     closeConnections,
   });
 

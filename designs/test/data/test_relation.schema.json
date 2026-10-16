@@ -11,8 +11,7 @@
     },
     "a_polymorphic": {
       "type": "string",
-      "pattern": "^(test_primitive|rebase_user):.+$",
-      "x-rebase-optional-probability": 0.55
+      "pattern": "^(test_primitive|rebase_user):.+$"
     },
     "a_primitive_array": {
       "type": "array",
@@ -29,8 +28,7 @@
       },
       "minItems": 0,
       "maxItems": 5,
-      "uniqueItems": true,
-      "x-rebase-optional-probability": 0.35
+      "uniqueItems": true
     }
   }
 }

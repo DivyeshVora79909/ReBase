@@ -14,7 +14,7 @@
       "uniqueItems": true
     },
     "subject": { "type": "string", "minLength": 1 },
-    "html": { "type": "string", "x-rebase-optional-probability": 0.7 },
-    "text": { "type": "string", "x-rebase-optional-probability": 0.45 }
+    "html": { "type": "string" },
+    "text": { "type": "string" }
   }
 }

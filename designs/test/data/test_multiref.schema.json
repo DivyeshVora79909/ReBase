@@ -7,9 +7,9 @@
     "owned_by": { "type": "string", "pattern": "^(rebase_user|rebase_group|rebase_tenant):.+$" },
     "a_name": { "type": "string", "minLength": 2 },
     "a_creator": { "type": "string", "pattern": "^rebase_user:.+$" },
-    "a_reviewer": { "type": "string", "pattern": "^rebase_user:.+$", "x-rebase-optional-probability": 0.45 },
-    "a_approver": { "type": "string", "pattern": "^rebase_user:.+$", "x-rebase-optional-probability": 0.25 },
+    "a_reviewer": { "type": "string", "pattern": "^rebase_user:.+$" },
+    "a_approver": { "type": "string", "pattern": "^rebase_user:.+$" },
     "a_owning_group": { "type": "string", "pattern": "^rebase_group:.+$" },
-    "a_auditing_group": { "type": "string", "pattern": "^rebase_group:.+$", "x-rebase-optional-probability": 0.35 }
+    "a_auditing_group": { "type": "string", "pattern": "^rebase_group:.+$" }
   }
 }

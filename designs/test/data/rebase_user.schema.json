@@ -5,13 +5,11 @@
   "required": ["name", "parents"],
   "properties": {
     "name": {
-      "type": "string",
-      "faker": "person.fullName"
+      "type": "string"
     },
     "username": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_.-]{8,31}$",
-      "x-rebase-optional-probability": 0.65
+      "pattern": "^[a-z0-9][a-z0-9_.-]{8,31}$"
     },
     "parents": {
       "type": "array",
@@ -22,16 +20,14 @@
     },
     "a_favorite_primitive": {
       "type": "string",
-      "pattern": "^test_primitive:.+$",
-      "x-rebase-optional-probability": 0.35
+      "pattern": "^test_primitive:.+$"
     },
     "a_friends": {
       "type": "array",
       "items": { "type": "string", "pattern": "^rebase_user:.+$" },
       "minItems": 0,
       "maxItems": 5,
-      "uniqueItems": true,
-      "x-rebase-optional-probability": 0.45
+      "uniqueItems": true
     },
     "a_watched_items": {
       "type": "array",
@@ -41,8 +37,7 @@
       },
       "minItems": 0,
       "maxItems": 5,
-      "uniqueItems": true,
-      "x-rebase-optional-probability": 0.35
+      "uniqueItems": true
     }
   }
 }

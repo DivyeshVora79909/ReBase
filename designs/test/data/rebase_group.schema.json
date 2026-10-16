@@ -68,16 +68,14 @@
     },
     "a_associated_primitive": {
       "type": "string",
-      "pattern": "^test_primitive:.+$",
-      "x-rebase-optional-probability": 0.35
+      "pattern": "^test_primitive:.+$"
     },
     "a_partner_groups": {
       "type": "array",
       "items": { "type": "string", "pattern": "^rebase_group:.+$" },
       "minItems": 0,
       "maxItems": 4,
-      "uniqueItems": true,
-      "x-rebase-optional-probability": 0.35
+      "uniqueItems": true
     }
   }
 }

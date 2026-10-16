@@ -82,7 +82,6 @@ npm run probe:accounts
 npm run probe:suite
 npm run server
 npm run workbench
-npm run populate -- --tenant rebase_tenant:demo --table all --count 100
 ```
 
 Node loads an optional environment profile before starting each tool. For example:
@@ -90,7 +89,6 @@ Node loads an optional environment profile before starting each tool. For exampl
 ```bash
 node --env-file=.env.local gateway/server.js
 node --env-file=.env.cloud dev-tools/compiler/cli.js
-node --env-file=.env.local dev-tools/populate.js --count 100
 node --env-file=.env.local dev-tools/workbench.js
 ```
 
@@ -233,4 +231,12 @@ static map because raw-body signatures cannot be dispatched from request data.
 
 ## Development Tools
 
-`npm run populate` generates sample records from `data/*.schema.json` using the compiled reference graph. Pass a normal JavaScript `transform` callback through the public API when a fixture needs edited values. `npm run workbench` starts Node's built-in JavaScript REPL; see the [developer tools guide](./dev-tools/README.md) for the public functions and direct SDK examples.
+`npm run workbench` starts Node's built-in JavaScript REPL with `build`,
+`explain`, `connect`, and the `fixtures` namespace. Use `build({ check: true })`
+to verify generated artifacts and the connected SDK's `db.query()` to apply a
+compiled schema. Fixture generation takes an explicit model, seed, named pools,
+and recipe: `fixtures.createModel({ schema, schemas })` combines the emitted compiler bundle
+with ordinary JSON Schemas, `fixtures.plan({ model, seed, space, recipe })`
+plans rows offline, and `fixtures.populate(db, options)` creates them in one
+transaction. Recipes declare their own tables, values, and reference pools.
+See the [developer tools guide](./dev-tools/README.md) for examples.

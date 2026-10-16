@@ -14,7 +14,7 @@ const {
   writeClientSchemas,
 } = require("../client-schemas");
 const { writeArtifacts } = require("../compiler/pipeline");
-const { prepareDocument, recordId } = require("../populate");
+const { recordId } = require("../fixtures/model");
 const { fixture, prepareFixture } = require("../accounting/fixture-example");
 
 const repositoryRoot = path.resolve(__dirname, "../..");
@@ -490,19 +490,6 @@ test("accounting fixture validates native SDK values and explicit temporal sourc
   assert.throws(() => prepareFixture([invalid]), /Invalid invoice_settlement input/);
 });
 
-test("populate transform defaults to identity, supports overrides, then rejects invalid rows", async () => {
-  const catalog = loadClientSchemas(accountingSchemas), schema = catalog.schemas.get("invoice_settlement");
-  const input = { owned_by: "rebase_tenant:default", invoice: "sales_invoice:demo", treasury: "treasury:demo_cash",
-    amount: "42.50", effective_at: "2027-01-02T00:00:00Z" };
-  assert.strictEqual(await prepareDocument(input, {table:"invoice_settlement",index:0,seed:"repeatable",validate:schema.validate}),input);
-  let context;
-  const adjusted = await prepareDocument(input, {table:"invoice_settlement",index:7,seed:"repeatable",validate:schema.validate,
-    transform:async(document, options)=>{context=options;return {...document,amount:"100.25"};}});
-  assert.deepEqual(context,{table:"invoice_settlement",index:7,seed:"repeatable"});assert.equal(adjusted.amount,"100.25");
-  await assert.rejects(()=>prepareDocument(input,{table:"invoice_settlement",index:0,seed:"repeatable",validate:schema.validate,
-    transform:document=>({...document,amount:"not-a-decimal"})}),/Generated invalid invoice_settlement/);
-});
-
 test("public accounting schemas expose inputs and preserve native record identities", () => {
   const catalog = loadClientSchemas(accountingSchemas);
   const input = {owned_by:"rebase_tenant:default",account:"organization_currency_account:demo_customer",invoice_date:"2027-01-10T00:00:00Z"};
@@ -513,7 +500,7 @@ test("public accounting schemas expose inputs and preserve native record identit
   assert.equal(String(recordId(canonicalV4)),canonicalV4);
   for (const customKey of ["fixture-prefix-0198f92c-8a8a-7abc-8def-0123456789ab-suffix","0198f92c-8a8a-7abc-8def-0123456789ab"]) {
     const original = new RecordId("organization_currency_account",customKey);
-    assert(recordId(String(original)).equals(original));assert(recordId(`organization_currency_account:${customKey}`).equals(original));
+    assert(recordId(String(original)).equals(original));
     assertClientInput(catalog,"sales_invoice",{...input,account:String(original)});
   }
   assertClientInput(catalog,"sales_invoice",{...input,owned_by:String(new RecordId("rebase_group",Uuid.v7())),account:canonicalV4});
@@ -524,7 +511,7 @@ test("public accounting schemas expose inputs and preserve native record identit
   }
 });
 
-test("populate recordId converts the actual database string-cast spellings without changing key identity", () => {
+test("fixture recordId converts the actual database string-cast spellings without changing key identity", () => {
   const uuid4 = "550e8400-e29b-41d4-a716-446655440000";
   const uuidRecord = new RecordId("organization", new Uuid(uuid4));
   assert(recordId(`organization:u'${uuid4}'`).equals(uuidRecord));

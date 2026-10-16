@@ -11,7 +11,6 @@ const {
   resolveConfiguration,
 } = require("../../config/environment");
 const { parseArgs: parseCompilerArgs } = require("../compiler/cli");
-const { parseArgs: parsePopulateArgs } = require("../populate");
 const { parseArgs: parseWorkbenchArgs } = require("../workbench");
 
 function main() {
@@ -116,7 +115,6 @@ function main() {
     }), /duplicate contexts/);
     assert.throws(() => resolveConfiguration({ REBASE_QUEUE_DRIVER: "sqs" }), /SQS driver was removed/);
     assert.throws(() => parseCompilerArgs(["--namespace", "override"]), /Unknown argument/);
-    assert.throws(() => parsePopulateArgs(["--database", "override"]), /Unknown option/);
     assert.throws(() => parseWorkbenchArgs(["--endpoint", "ws://override/rpc"]), /Unknown option/);
     const testRecordValues = resolveConfiguration({
       REBASE_TEST_RECORD__EMAIL_BREVO_CONFIG__API_KEY: "documentation-only-secret",

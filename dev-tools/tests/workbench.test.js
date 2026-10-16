@@ -11,7 +11,7 @@ const {
   ROOT,
   build,
   connect,
-  deploy,
+  fixtures,
   projectOptions,
 } = require("../index");
 const { resolveConfiguration } = require("../../config/environment");
@@ -42,6 +42,24 @@ test("public build API compiles offline into the requested directory", async (t)
   assert.equal(result.projectDir, path.join(ROOT, "designs", "test"));
   assert.equal(result.outputDir, directory);
   assert.match(await fs.readFile(path.join(directory, "schema.surql"), "utf8"), /DEFINE TABLE/);
+  const checked = build({
+    project: "test",
+    outputDir: directory,
+    root: ROOT,
+    configuration: resolveConfiguration({ NODE_ENV: "test" }),
+    check: true,
+  });
+  assert.equal(checked.outputDir, directory);
+  const schemaPath = path.join(directory, "schema.surql");
+  await fs.writeFile(schemaPath, "stale schema");
+  assert.throws(() => build({
+    project: "test",
+    outputDir: directory,
+    root: ROOT,
+    configuration: resolveConfiguration({ NODE_ENV: "test" }),
+    check: true,
+  }), /Generated output is stale/);
+  assert.equal(await fs.readFile(schemaPath, "utf8"), "stale schema");
   assert.equal(projectOptions({ project: "all-in-accounting" }).projectDir, "designs/all-in-accounting");
   assert.equal(projectOptions({ projectDir: "fixtures" }).projectDir, "fixtures");
   assert.throws(() => projectOptions({ project: "test", outputDir: "" }), /outputDir must be a non-empty path/);
@@ -88,27 +106,45 @@ test("connect checks configured contexts before opening a stubbed session", asyn
   assert.equal(opened.length, 1);
 });
 
-test("deploy sends the built schema through the supplied SDK client", async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "rebase-dev-tools-deploy-"));
-  t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const schema = "DEFINE TABLE sample SCHEMAFULL;";
-  await fs.writeFile(path.join(directory, "schema.surql"), schema);
-  const queries = [];
-  const result = await deploy({ query: async (query) => { queries.push(query); return ["ok"]; } }, {
-    projectDir: "designs/test",
-    outputDir: directory,
-  });
+test("public API exposes fixtures without redundant check, deploy, or populate helpers", () => {
+  const api = require("../index");
+  assert.strictEqual(fixtures, require("../fixtures"));
+  for (const removed of ["check", "deploy", "populate"]) {
+    assert.equal(Object.hasOwn(api, removed), false);
+  }
+});
 
-  assert.deepEqual(result, ["ok"]);
-  assert.deepEqual(queries, [schema]);
-  await assert.rejects(
-    deploy({ query: async () => [] }, {
-      projectDir: "designs/test",
-      outputDir: directory,
-      environment: { SURREAL_PASSWORD: "per-call" },
-    }),
-    /environment is process-profile configuration/,
-  );
+test("workbench exposes fixture helpers directly with explicit arguments", async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const calls = [];
+  const fixtureApi = {
+    populate: async (...args) => { calls.push(args); return { populated: true }; },
+  };
+  const workbench = startWorkbench({
+    project: "test", environment: {}, input, output, api: { fixtures: fixtureApi },
+  });
+  const exited = once(workbench.server, "exit");
+  try {
+    assert.strictEqual(workbench.context.fixtures, fixtureApi);
+    for (const removed of ["check", "deploy", "populate"]) {
+      assert.equal(Object.hasOwn(workbench.context, removed), false);
+    }
+    workbench.context.project = { project: "all-in-accounting", outputDir: "unused" };
+    const connection = { db: { query: async () => [] } };
+    const options = { count: 3 };
+    assert.deepEqual(await workbench.context.fixtures.populate(connection, options), { populated: true });
+    assert.strictEqual(calls[0][0], connection);
+    assert.strictEqual(calls[0][1], options);
+    assert.equal(calls[0].length, 2);
+    input.write(".clear\n");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.strictEqual(workbench.context.fixtures, fixtureApi);
+  } finally {
+    input.end(".exit\n");
+    await exited;
+    await workbench.closeConnections();
+  }
 });
 
 test("native workbench evaluates JavaScript and await, then closes sessions", async () => {
@@ -120,13 +156,10 @@ test("native workbench evaluates JavaScript and await, then closes sessions", as
   let closed = 0;
   const api = {
     build: async () => ({ built: true }),
-    check: async () => ({ checked: true }),
     connect: async (context) => {
       opened.push(context);
       return { db: { query: async () => [] }, close: async () => { closed += 1; } };
     },
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
@@ -153,15 +186,13 @@ test("native workbench uses its live project options and allows explicit overrid
   const output = new PassThrough();
   const api = {
     build: async (options) => options,
-    check: async (options) => options,
     connect: async () => ({ close: async () => {} }),
-    deploy: async (_connection, options) => options,
-    populate: async (options) => options,
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
 
   assert.equal((await workbench.context.build()).project, "test");
+  assert.equal((await workbench.context.build({ check: true })).check, true);
   workbench.context.project.project = "all-in-accounting";
   assert.equal((await workbench.context.build()).project, "all-in-accounting");
   const explicitDirectory = await workbench.context.build({ project: "./designs/test" });
@@ -179,10 +210,7 @@ test("workbench merges mutable project options, honors reassignment, and restore
   const builds = [];
   const api = {
     build: async (options) => { builds.push(options); return options; },
-    check: async (options) => options,
     connect: async () => ({ close: async () => {} }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
@@ -229,18 +257,15 @@ test("bare build inspection is compact while full compiler results remain access
   };
   const api = {
     build: () => buildResult,
-    check: () => buildResult,
     connect: async () => ({ close: async () => {} }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
-  input.end("await build()\nawait check()\n.exit\n");
+  input.end("await build()\nawait build({ check: true })\n.exit\n");
   await exited;
 
   assert.match(text, /operation: 'build'/);
-  assert.match(text, /operation: 'check'/);
+  assert.equal((text.match(/operation: 'build'/g) || []).length, 2);
   assert.doesNotMatch(text, /artifactCount/);
   assert.doesNotMatch(text, new RegExp(secret));
   const result = await workbench.context.build();
@@ -262,7 +287,6 @@ test("managed SDK connections preserve the raw client and share pending close fa
   const sdk = { query: async (query) => [query] };
   const api = {
     build: async () => ({}),
-    check: async () => ({}),
     connect: async () => ({
       db: sdk,
       close: () => {
@@ -271,8 +295,6 @@ test("managed SDK connections preserve the raw client and share pending close fa
         return new Promise((_resolve, reject) => { rejectClose = reject; });
       },
     }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
@@ -340,10 +362,7 @@ test("REPL clear restores workbench helpers without losing connection ownership"
   let closed = 0;
   const api = {
     build: async () => ({}),
-    check: async () => ({}),
     connect: async () => ({ close: async () => { closed += 1; } }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
@@ -369,10 +388,7 @@ test("workbench shutdown waits for late SDK close and rejects later connects", a
   const closingStarted = new Promise((resolve) => { startClosing = resolve; });
   const api = {
     build: async () => ({}),
-    check: async () => ({}),
     connect: () => new Promise((resolve) => { finishOpening = resolve; }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const history = process.env.NODE_REPL_HISTORY;
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
@@ -415,10 +431,7 @@ test("workbench reports a late-open close failure after all cleanup attempts set
   const closeFailure = new Error("late-close-private-sentinel");
   const api = {
     build: async () => ({}),
-    check: async () => ({}),
     connect: () => new Promise((resolve) => { finishOpening = resolve; }),
-    deploy: async () => [],
-    populate: async () => ({}),
   };
   const workbench = startWorkbench({ project: "test", environment: {}, input, output, api });
   const exited = once(workbench.server, "exit");
