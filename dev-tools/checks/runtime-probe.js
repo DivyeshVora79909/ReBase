@@ -453,7 +453,8 @@ async function persistentReceiptAdmissionProbe({
     assert.equal(atCapacity.accepted, true);
     assert.equal(atCapacity.queued, false);
     receiptIds.push(atCapacity.receiptId);
-    assert(await store.load(atCapacity.receiptId), "the full-queue callback must be durably stored");
+    const atCapacityReceipt = await store.load(atCapacity.receiptId);
+    assert(atCapacityReceipt, "the full-queue callback must be durably stored");
     assert.equal((await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"])).length, 3);
 
     const beforeCleanup = await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"]);
@@ -461,8 +462,9 @@ async function persistentReceiptAdmissionProbe({
     const recovered = await runtime.reconcile({ namespace: state.namespace, database: state.database });
     assert(recovered.queuedIds.includes(atCapacity.receiptId),
       `bounded reconciliation must rediscover the committed receipt from SurrealDB: ${JSON.stringify({ recovered, receipt: await store.load(atCapacity.receiptId) })}`);
+    // Enqueue uses the stored SDK ID spelling, which escapes numeric-leading string keys.
     assert.equal((await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"]))
-      .some((job) => job.data?.locator?.id === atCapacity.receiptId), true);
+      .some((job) => job.data?.locator?.id === recordId(atCapacityReceipt)), true);
 
     const recoveredJobs = await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"]);
     await Promise.all(recoveredJobs.map((job) => job.remove()));
@@ -473,8 +475,8 @@ async function persistentReceiptAdmissionProbe({
     assert.equal(outage.queued, false,
       "an unavailable Redis queue must be reported as unqueued");
     receiptIds.push(outage.receiptId);
-    assert(await store.load(outage.receiptId),
-      "the Redis-outage callback must have a durable SurrealDB receipt");
+    const outageReceipt = await store.load(outage.receiptId);
+    assert(outageReceipt, "the Redis-outage callback must have a durable SurrealDB receipt");
 
     isolatedRedisChild = (await startRedis({
       port: isolatedRedis.port,
@@ -490,7 +492,7 @@ async function persistentReceiptAdmissionProbe({
     assert(outageRecovery,
       "bounded SurrealDB reconciliation must republish a receipt accepted during Redis outage");
     assert((await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"]))
-      .some((job) => job.data?.locator?.id === outage.receiptId));
+      .some((job) => job.data?.locator?.id === recordId(outageReceipt)));
   } finally {
     const jobs = await queue.queue.getJobs(["wait", "paused", "prioritized", "delayed"]).catch(() => []);
     await Promise.all(jobs.map((job) => job.remove().catch(() => {})));
@@ -3374,7 +3376,7 @@ async function main() {
 
 if (require.main === module) main().then(
   () => process.exit(0),
-  (error) => { console.error(`runtime: FAIL: ${process.env.REBASE_RUNTIME_PROBE_DEBUG ? error.stack : error.message}`); process.exit(1); },
+  (error) => { console.error(`runtime: FAIL: ${error.stack || error.message}`); process.exit(1); },
 );
 
 module.exports = { main };

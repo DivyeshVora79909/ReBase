@@ -1,10 +1,13 @@
 # ReBase developer tools
 
-Use SurrealDB 3.3.0 and Node 20.6 or newer. The tools are ordinary Node modules;
+Use SurrealDB 3.3.0 and the Node version in `.nvmrc` (currently 26.12.0).
+The tools are ordinary Node modules;
 the workbench is Node's native REPL with top-level `await`. For core schema
 work, start with the [developer blueprint](../designs/rebase-system/developer-blueprint.md).
 Install development dependencies with `npm ci`; Faker, JSON Schema Faker, and
 Z3 are development-only packages and are omitted by production-only installs.
+The project records npm 12.2.0 in `packageManager`; use the local setup commands
+in the [root README](../README.md#runtime-and-dependencies).
 
 ## Workbench and build
 

@@ -47,6 +47,50 @@ disposable demo, native/browser walkthroughs and remaining coverage.
 Local checks use disposable databases and mock providers; production delivery
 and representative capacity need their own evidence.
 
+## Runtime and dependencies
+
+Use Node **26.12.0** and npm **12.2.0**, pinned in `.nvmrc` and `package.json`.
+Node 26 is the latest stable Current release used for this project; LTS is a
+separate release channel. Previews and npm's `next` tags are excluded. Install
+the committed dependency versions locally with your existing `nvm`:
+
+```sh
+git pull --ff-only origin main
+nvm install
+nvm use
+nvm alias default "$(cat .nvmrc)"
+npm install --global npm@12.2.0
+npm ci
+npm audit
+npm run test:dev-tools
+```
+
+`nvm install` reads `.nvmrc`. Run `nvm use` when opening another shell in this
+checkout. Updating nvm itself is optional: version 0.39.7 can install the pinned
+Node release. If updating nvm, follow the [official installation instructions](https://github.com/nvm-sh/nvm#installing-and-updating).
+
+Use `npm ci` after pulling: the lockfile records the tested dependency tree.
+For intentional future upgrades, inspect `npm outdated`, update selected
+packages to their stable `latest` tags, run `npm update` to refresh compatible
+transitive dependencies, and audit/test before committing the manifest and
+lockfile together. Avoid `npm audit fix --force` as a routine update command.
+The queue adapter checks the reviewed BullMQ version because it integrates
+with native insertion scripts; its guard must be reviewed on a BullMQ upgrade.
+
+npm 12 requires approval for dependency installation scripts. The manifest
+approves only `msgpackr-extract@3.0.4`, BullMQ's optional native MessagePack
+accelerator. Its reviewed installer loads the platform binary or builds it
+locally. New versions require another explicit review; scripts are not enabled
+globally.
+
+The October 2026 dependency refresh fixed two high-severity audit entries:
+[Faker template execution](https://github.com/advisories/GHSA-qxc2-j82w-r537)
+by moving from 9.9.0 to 10.6.0, and Ajv's transitive `fast-uri` URL parsing
+advisories by moving from 3.1.5 to 3.1.8. ReBase does not call Faker's vulnerable
+`helpers.fake` helper or fetch remote schemas through Ajv; these dependency
+findings do not establish an application exploit. Audit results can change as
+new advisories are published.
+
 ## Layout
 
 ```text

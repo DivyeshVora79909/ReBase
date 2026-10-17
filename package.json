@@ -63,22 +63,27 @@
     "probe:prepare": "node dev-tools/checks/prepare-probe.js"
   },
   "engines": {
-    "node": ">=20.6.0"
+    "node": ">=26.12.0",
+    "npm": ">=12.2.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1117.0",
-    "@aws-sdk/s3-request-presigner": "^3.1117.0",
-    "@simplewebauthn/server": "^13.3.3",
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "@simplewebauthn/server": "^14.0.3",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "bullmq": "6.2.0",
+    "bullmq": "6.3.16",
     "ioredis": "6.0.0",
-    "surrealdb": "^2.0.8",
+    "surrealdb": "^2.1.1",
     "ws": "^8.22.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "9.9.0",
+    "@faker-js/faker": "10.6.0",
     "json-schema-faker": "0.6.3",
     "z3-solver": "5.3.1"
+  },
+  "packageManager": "npm@12.2.0",
+  "allowScripts": {
+    "msgpackr-extract@3.0.4": true
   }
 }

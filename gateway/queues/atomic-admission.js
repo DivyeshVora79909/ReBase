@@ -3,7 +3,7 @@ const { createRedisBackend } = require("bullmq");
 
 const BULLMQ_INTERNALS = path.dirname(require.resolve("bullmq"));
 const BULLMQ_VERSION = require(path.join(BULLMQ_INTERNALS, "version.js")).version;
-const EXPECTED_BULLMQ_VERSION = "6.2.0";
+const EXPECTED_BULLMQ_VERSION = "6.3.16";
 const CAPACITY_RESULT_PREFIX = "REBASE_ADMISSION_FULL:";
 
 const INSERT_SCRIPTS = Object.freeze({

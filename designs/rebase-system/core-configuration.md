@@ -154,7 +154,7 @@ personal `.env` or use real service keys in disposable verification.
 | Same | `terminalTaskRetentionMs` | 30 days; explicitly validates a positive safe integer. Server derives it from days. |
 | `gateway/queues/bullmq.js` policy | attempts / base backoff / concurrency | `5` / `1000ms` / `8`. |
 | Same, admission | `maxLiveHints` / `receiptReserve` | `1000` / `100`; max at least 2, reserve from 0 to max minus 1. |
-| Same, admission | Redis boundary | Capacity count and BullMQ job insertion share one Lua script execution; no distributed admission lease is used. The custom insertion adapter is tied to BullMQ `6.2.0`. |
+| Same, admission | Redis boundary | Capacity count and BullMQ job insertion share one Lua script execution; no distributed admission lease is used. The custom insertion adapter is tied to BullMQ `6.3.16`. |
 | Same, worker | `lockDurationMs` | `30000`; distinct from the task execution lease. |
 | Same, priority | operation / receipt | Operation `10..100`, default 50; receipt exactly 1. Smaller runs first. |
 | Same, completed jobs | `removeOnComplete` | Age 3600 seconds, count 1000. |
@@ -234,9 +234,10 @@ pipeline or assume the CLI is the only entrypoint.
 
 ## 9. Verification selection and bootstrap
 
-Backend baseline: SurrealDB `3.3.0` (pinned in `.surreal-version`), BullMQ `6.2.0`.
+Backend baseline: SurrealDB `3.3.0` (pinned in `.surreal-version`), BullMQ `6.3.16`.
 Dated evidence records the Node/Redis versions used for each verification.
-`package.json` permits Node `>=20.6.0`; exact audited behavior is tied to the
+`.nvmrc` pins Node `26.12.0`; `package.json` requires Node `>=26.12.0`
+and npm `>=12.2.0`. Exact audited behavior is tied to the
 versions above. Use the existing lockfile; do not upgrade dependencies while
 fixing an unrelated packet. Install with `npm ci` only if dependencies need it.
 
