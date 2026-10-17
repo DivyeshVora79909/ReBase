@@ -14,7 +14,7 @@ node --env-file path/to/profile.env dev-tools/workbench.js --project all-in-acco
 ```
 
 The workbench opens no database until `connect()` is called. Its context contains
-`project`, `build`, `explain`, `connect`, `fixtures`, and `closeConnections`.
+`project`, `build`, `explain`, `connect`, `prepare`, `fixtures`, and `closeConnections`.
 The default project is `all-in-accounting`; the compiler CLI defaults to `test`.
 
 ```js
@@ -22,11 +22,12 @@ const built = build()
 build({ check: true })
 explain("issue_adjustment.amount_delta")
 const admin = await connect()
-await admin.db.query(built.bundle)
+await prepare(admin.db, { schema: built.bundle })
 ```
 
-`check()` and `deploy()` have been removed. Check mode belongs to `build`, and
-schema installation uses the SDK directly. Existing compiler `--check` and npm
+`check()` and `deploy()` have been removed. Check mode belongs to `build`;
+use the SDK directly for SQL or `prepare` for checked, atomic installation of
+large schemas and clearing data without reinstalling. Existing compiler `--check` and npm
 check scripts remain available for CI. Build and install with the same process
 profile when the bundle contains a namespace/database or runtime event binding.
 
@@ -48,6 +49,82 @@ credentials. Each call opens a separate SDK session. Close one handle using
 `await admin.close()`. `closeConnections()` and REPL exit wait for pending opens
 and close every managed connection; terminal cleanup rejects new connections
 and reports close failures. The SDK remains available as `admin.db`.
+
+## Database preparation
+
+`prepare` takes an explicitly selected, privileged SDK client. It never opens
+or closes a connection, chooses a profile, or builds a schema. Use a dedicated
+development connection and pause application writers and workers first.
+
+```js
+const { prepare } = require("./dev-tools") // already available in the workbench
+const built = build()
+const admin = await connect()
+
+const installed = await prepare(admin.db, {
+  schema: built.bundle,
+  onProgress: ({ phase, completed, total, elapsedMs }) =>
+    console.log(phase, completed, total, Math.round(elapsedMs)),
+})
+
+const cleared = await prepare(admin.db, { clear: true })
+// Populate again using the installed schema. No build or schema replay needed.
+```
+
+Schema installation splits at existing parser-recognized statement boundaries
+and commits one WebSocket SDK transaction. Failed statements or progress
+callbacks cancel earlier batches. The helper reports all failed responses,
+the affected source-line range, and cancellation failures. A matching compiler
+`USE NS ... DB ...` header is checked and removed; foreign contexts, explicit
+transaction controls, and `OPTION` statements are rejected. Schema text should
+contain self-contained statements: top-level `LET` bindings do not span requests.
+Progress callbacks run before commit and may be asynchronous. No callback runs
+after commit, so a callback error cannot disguise a successful commit.
+
+Clearing reads the live database catalog and projects reference policies from
+native `INFO ... STRUCTURE`; it does not need compiler metadata or JSON schemas.
+One explicit transaction checks that the target and definitions are unchanged,
+temporarily sets reference-delete policies to `IGNORE`, deletes all table
+records under `OPTION IMPORT`, and restores the exact policies. All tables,
+including materialized views, are included. Fields, indexes, events, functions,
+parameters, access definitions and database users stay installed. Ordinary
+tenant, credential, configuration, job and audit **records are deleted**.
+Provision those records explicitly afterward. Reference cycles need no Node
+traversal. Native deletion maintains indexes and reference bookkeeping.
+
+`batchBytes` defaults to 256000 UTF-8 bytes. For installation it bounds schema
+statement text per request, with small additional context-guard and protocol
+overhead; a single larger statement is rejected. For clearing it bounds the
+complete SQL and JSON bindings, excluding protocol overhead. Clear cannot span
+requests because SurrealDB 3.3 rejects `OPTION IMPORT` in interactive SDK
+transactions. Small atomic combinations are supported:
+
+```js
+await prepare(admin.db, {
+  clear: true,
+  schema: "DEFINE TABLE example SCHEMALESS;",
+})
+```
+
+An oversized combination fails before mutation; increase `batchBytes` only
+within your server's request limits. Clear still deletes records and indexes
+in one transaction: request batching does not bound total transaction memory.
+For repeated single-connection tests, install once, use `db.beginTransaction()`,
+run fixture operations with `fixtures.insert(transaction, plan)`, and cancel.
+External effects cannot be rolled back by database cancellation.
+
+Clearing requires **no outstanding background work**. Native ASYNC event
+definitions cause rejection because their pending queue cannot be cleared by
+ordinary table deletion. Previously queued work can also outlive a removed
+event; removing its definition is not a workaround. This helper does not reset
+Redis, external services, or other non-table resources. Use an isolated test
+database without native async work for this operation.
+
+The returned report contains `operation`, sorted `tables`, `references`,
+`statements`, SQL `requests`, `durationMs`, and inspection/execution/commit
+`timings`. Clear's commit time is included in its execution request. Reports
+contain no row data. This is tested against pinned SurrealDB 3.3.0; installation
+and clearing require the administrative privileges needed by their SQL.
 
 ## Fixture primitives
 
@@ -213,6 +290,7 @@ prerequisites. Its independent prefix check verifies the generated scenario.
 ```sh
 node dev-tools/fixtures/examples/accounting.js  # offline preview
 npm run probe:fixtures                       # disposable SurrealKV integration
+npm run probe:prepare                        # preparation rollback, metadata and clearing
 npm run test:dev-tools
 ```
 

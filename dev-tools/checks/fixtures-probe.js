@@ -3,13 +3,13 @@
 
 const assert = require("node:assert/strict");
 const path = require("node:path");
-const { Surreal, RecordId, Decimal } = require("surrealdb");
+const { Surreal, RecordId, Decimal, escapeIdent } = require("surrealdb");
 const { createModel, plan, populate } = require("../fixtures");
 const { accountingOptions, money } = require("../fixtures/examples/accounting");
 const { loadClientSchemas } = require("../client-schemas");
 const { compile } = require("../accounting/acceptance");
 const { exact, snapshot } = require("../accounting/source-oracle");
-const { splitStatements } = require("../compiler/surql");
+const { prepare } = require("../prepare");
 const { start, client } = require("../temporal-tree/harness");
 
 async function main() {
@@ -36,21 +36,10 @@ async function main() {
     await db.query("DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;");
     await db.use({ namespace: "temporal_probe", database: "fixture" });
     console.log("CHECK installing accounting schema in disposable SurrealKV over WebSocket");
-    // Use the SDK for schema installation as well as native bound writes. Keep
-    // requests bounded without splitting inside function/event definitions.
-    const installation = await db.beginTransaction();
-    try {
-      let chunk = "";
-      for (const statement of splitStatements(built.bundle)) {
-        if (chunk.length + statement.length > 256000 && chunk) { await installation.query(chunk); chunk = ""; }
-        chunk += `${statement}\n`;
-      }
-      if (chunk) await installation.query(chunk);
-      await installation.commit();
-    } catch (error) {
-      await installation.cancel().catch(() => {});
-      throw error;
-    }
+    const installation = await prepare(db, { schema: built.bundle, onProgress: progress => {
+      if (progress.phase === "commit") console.log(`CHECK accounting DDL finished after ${Math.round(progress.elapsedMs)}ms; committing`);
+    } });
+    console.log(`PASS accounting schema installation: ${JSON.stringify(installation)}`);
     console.log("CHECK accounting schema installed; running fixture transactions");
     for (const id of [tenant, foreignTenant]) await db.query("CREATE $id CONTENT $content;", {
       id, content: { name: "Explicit fixture tenant" },
@@ -119,6 +108,25 @@ async function main() {
     assert.equal(readsInTransaction, 5, "valid, foreign, and every rejected population read their space inside a transaction");
     const report = { created: valid.created.length, exactRemaining: money(defaults.reserveCents),
       rejectedTransactions: 3, transactionSpaceReads: readsInTransaction, storage: "SurrealKV" };
+    const [catalog] = await db.query("INFO FOR DB;");
+    const tableNames = Object.keys(catalog.tables).sort();
+    const metadataSql = tableNames.map(table => `RETURN crypto::sha256(<string>(INFO FOR TABLE ${escapeIdent(table)} STRUCTURE));`).join("\n");
+    const definitionsBefore = await db.query(metadataSql);
+    const cleared = await prepare(db, { clear: true });
+    assert.deepEqual(cleared.tables, tableNames, "clear includes every public and compiler-generated table");
+    assert.deepEqual(await db.query("INFO FOR DB;"), [catalog], "database definitions survive clear");
+    assert.deepEqual(await db.query(metadataSql), definitionsBefore, "all fields, events and indexes survive clear");
+    const remaining = await db.query(tableNames.map(table => `SELECT id FROM ${escapeIdent(table)} LIMIT 1;`).join("\n"));
+    assert(remaining.every(rows => rows.length === 0), "all accounting, helper, principal, tree, dependency and audit records are empty");
+    await db.query("CREATE $tenant CONTENT $content;", { tenant, content: { name: "Recreated fixture tenant" } });
+    const replay = await populate(db, { ...accountingOptions({ ...defaults, seed: "valid", space: readSpace(tenant) }), batchSize: 2 });
+    assert.equal(replay.created.length, valid.created.length, "same deterministic IDs and native indexes work after clear");
+    exact((await db.query("RETURN $account.z_history.summary;", { account: treasury }))[0].measures.real.sum,
+      money(defaults.reserveCents), "reactive tree rebuilt after clear");
+    report.installMs = Math.round(installation.durationMs);
+    report.clearMs = Math.round(cleared.durationMs);
+    report.clearedTables = cleared.tables.length;
+    console.log(`PASS accounting schema-preserving clear and reactive fixture replay: ${JSON.stringify(cleared)}`);
     console.log(`PASS fixtures: ${JSON.stringify(report)}`);
     return report;
   } finally {

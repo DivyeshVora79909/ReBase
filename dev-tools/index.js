@@ -10,6 +10,7 @@ const {
   validateConfiguration,
 } = require("../config/environment");
 const fixtures = require("./fixtures");
+const { prepare } = require("./prepare");
 
 const ROOT = path.resolve(__dirname, "..");
 const DEFAULT_PROJECT = "all-in-accounting";
@@ -120,6 +121,7 @@ module.exports = {
   build,
   explain,
   connect,
+  prepare,
   fixtures,
   projectOptions,
 };

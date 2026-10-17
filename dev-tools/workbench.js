@@ -180,6 +180,7 @@ function startWorkbench({
     build: (overrides = {}) => inspectableBuildResult(api.build(optionsFor(overrides)), "build"),
     explain: (subject = '*', overrides = {}) => api.explain(subject, optionsFor(overrides)),
     connect,
+    prepare: api.prepare,
     fixtures: api.fixtures,
     closeConnections,
   });

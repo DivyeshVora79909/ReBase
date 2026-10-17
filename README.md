@@ -3,6 +3,8 @@
 ReBase compiles SurrealDB authorization, validation, audit, reactive calculations, and table-keyed external effects. Clients use SurrealDB directly; the native Node HTTP runtime performs work requiring privileged provider access.
 
 **Developer tools:** start with the [JavaScript workbench guide](./dev-tools/README.md).
+The REPL includes `prepare(db, { schema })` for atomic schema installation and
+`prepare(db, { clear: true })` to clear table data while retaining the installed schema.
 The [developer blueprint](./designs/rebase-system/developer-blueprint.md) and
 [declarative engine plan](./designs/rebase-system/declarative-engine-plan.md)
 explain the current model and execution gates. Earlier dated handoffs and

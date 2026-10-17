@@ -11,6 +11,7 @@ const {
   ROOT,
   build,
   connect,
+  prepare,
   fixtures,
   projectOptions,
 } = require("../index");
@@ -109,6 +110,7 @@ test("connect checks configured contexts before opening a stubbed session", asyn
 test("public API exposes fixtures without redundant check, deploy, or populate helpers", () => {
   const api = require("../index");
   assert.strictEqual(fixtures, require("../fixtures"));
+  assert.strictEqual(prepare, require("../prepare").prepare);
   for (const removed of ["check", "deploy", "populate"]) {
     assert.equal(Object.hasOwn(api, removed), false);
   }
@@ -121,12 +123,14 @@ test("workbench exposes fixture helpers directly with explicit arguments", async
   const fixtureApi = {
     populate: async (...args) => { calls.push(args); return { populated: true }; },
   };
+  const preparation = async (...args) => { calls.push(args); return { prepared: true }; };
   const workbench = startWorkbench({
-    project: "test", environment: {}, input, output, api: { fixtures: fixtureApi },
+    project: "test", environment: {}, input, output, api: { fixtures: fixtureApi, prepare: preparation },
   });
   const exited = once(workbench.server, "exit");
   try {
     assert.strictEqual(workbench.context.fixtures, fixtureApi);
+    assert.strictEqual(workbench.context.prepare, preparation);
     for (const removed of ["check", "deploy", "populate"]) {
       assert.equal(Object.hasOwn(workbench.context, removed), false);
     }
@@ -137,9 +141,13 @@ test("workbench exposes fixture helpers directly with explicit arguments", async
     assert.strictEqual(calls[0][0], connection);
     assert.strictEqual(calls[0][1], options);
     assert.equal(calls[0].length, 2);
+    assert.deepEqual(await workbench.context.prepare(connection.db, { clear: true }), { prepared: true });
+    assert.strictEqual(calls[1][0], connection.db);
+    assert.deepEqual(calls[1][1], { clear: true });
     input.write(".clear\n");
     await new Promise((resolve) => setImmediate(resolve));
     assert.strictEqual(workbench.context.fixtures, fixtureApi);
+    assert.strictEqual(workbench.context.prepare, preparation);
   } finally {
     input.end(".exit\n");
     await exited;
