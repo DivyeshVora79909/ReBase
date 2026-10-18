@@ -1,139 +1,115 @@
-# Frontend architecture
+# MetaSol architecture
 
-[MetaSol](../../MetaSol/README.md) is a JavaScript/JSX application using Solid,
-TanStack Solid Router/Query and the native SurrealDB SDK. Accounting demonstrates
-ordinary routes, explicit data functions and a small set of shared UI components.
-The [screen contracts](screen-contracts.md) map all 43 public accounting record
-types. The [execution plan](execution-plan.md), [verification](verification.md)
-and [deferred work](deferred-work.md) describe delivery scope and its limits.
+MetaSol composes Solid, TanStack Router/Query, Kobalte and the native SurrealDB SDK.
+The accounting profile demonstrates connected calculation facts, sparse native
+positions and explicit workflows. The baseline for this redesign is ReBase
+`ebe999d`; October 8 frontend assumptions are replaced.
 
-## Composition and ownership
+## Ownership and lifetime
 
-| Owner | State and responsibility | Lifetime |
+| Owner | Responsibility | Lifetime |
 | --- | --- | --- |
-| `Application` | Validated public configuration, router, QueryClient, token-storage adapter | Browser application |
-| `WorkspaceProvider` | One SDK client, connection status, reconnect/disposal | Resolved connection and tenant identity |
-| `SessionProvider` | Record authentication, verified principal, storage mode, epoch | Authenticated account in that workspace |
-| `NotificationsProvider` | Recent activity, unread state, announcement and toast | Current authenticated session, in memory |
-| `PreferencesProvider` | Appearance, accent, density, time zone, compact navigation, default token mode | Device, with memory fallback |
-| Route component | URL filters, page/view, explicit reads, open editor selection | Mounted route |
-| Form component | Input values, original record/version, stable create ID, dirty/error state | One opened editor |
+| Application | Public configuration, router, QueryClient, component overrides | Browser application |
+| WorkspaceProvider | One SDK connection and reconnect/disposal | Endpoint, fixed namespace/database, access and tenant identity |
+| SessionProvider | Verified principal, tokens, epoch and completion fences | Authenticated session |
+| NotificationsProvider | Confirmed activity and unconfirmed-write inspection | Current session, in memory |
+| PreferencesProvider | Runtime appearance plus device-local overrides | Application/device |
+| ScopeProvider | Selected subsidiary | Mounted authenticated workspace |
+| ComposerProvider | Flat stack of mounted forms | Current route and session |
+| SourceForm | Native draft, original version, stable create ID, dirty/error state | One editor |
+| RecordCollection / RecordPicker | Query input, native cursor history and display state | One mounted control |
 
-[`Application.jsx`](../../MetaSol/src/app/Application.jsx) and the providers own
-shared lifetimes; `src/routes/` composes pages; `src/data/` contains queries and input
-encoders; `src/ui/` contains repeated interactions. Business modules use these
-pieces directly. Runtime configuration supplies connection profiles, not schemas,
-menus, form descriptions or plugins. A new domain normally adds routes and a data
-module. It does not require a provider, resource registry or query language.
+A feature normally adds an ordinary read callback, route or contextual action.
+It does not register a resource, invent a query language or add a provider per
+table. The shared modules handle repeated boundaries; business workflow decisions
+remain explicit.
 
-## Connection and session identity
+## One public input contract
 
-URLs are `/w/:profile/:tenant/…`. Each public profile fixes endpoint, namespace,
-database and record access method. [`runtime.js`](../../MetaSol/src/app/runtime.js)
-includes profile ID, engine, normalized endpoint, design context, access and tenant
-in the workspace identity. A profile label is not sufficient token/cache scope.
-The workspace route keys the provider tree by that identity and disposes the old
-client and its cached queries/mutations when it changes.
+`MetaSol/client-contract.js` consumes `build/all-in-accounting/schema.surql` and
+`client/schemas`. It reuses the parent model loader instead of maintaining a
+second schema parser. The ignored generated client bundle contains the exact
+published JSON Schemas plus native input bindings, readonly flags, readable
+field names, native references and public root/member metadata. Server functions,
+credentials and private roots are not published.
 
-Password sign-in supplies the tenant. Restoration and sign-in validate token
-scope and load the principal through a native tenant-equality check. Only that
-check establishes the canonical tenant RecordId; routes and token keys then use
-it. Transient verification failures retain credentials for deliberate retry;
-rejected or expired sessions clear them. `session.can()` controls visible actions;
-record permissions and reference checks on the database authorize every request.
+`createInputModel()` compiles validators once. `prepare(table, input, {original})`
+rejects unknown fields, validates the complete input, preserves native SDK values
+and omits readonly dimensions from an update. Blank optional values are omitted
+on create and cleared with native NONE on update. Generated constraints improve
+feedback; database assertions, authorization and reactive calculations remain
+authoritative. Presentation labels, section order and contextual suggestions are
+ordinary frontend code.
 
-A query key starts with `['workspace', identity, epoch]`. Authentication changes
-rotate the epoch and clear its previous queries, mutations and notices.
-[`queries.js`](../../MetaSol/src/app/queries.js) captures SDK/session identity
-before work and checks it on completion. Successful mutations invalidate that
-session's queries. Reconnect invalidates workspace reads. Cancellation suppresses
-obsolete UI results; it does not undo a committed database write.
+## Read capabilities
 
-Tokens can use memory, tab or device storage through the scoped adapter. Storage
-changes remove the old copy and report fallback. Preferences have separate
-storage. Financial drafts and query results are not persisted.
+Direct identity reads use bound native record IDs. Business lookups follow
+declared inverse references. Catalog candidates follow ownership references from
+the authenticated principal, its groups and its explicit authorization closure.
+Generated tenant fields are not native REFERENCE fields; tenant backlinks are
+not assumed. Principals are read through the authorization closure directly.
 
-## Explicit reads and references
+Declared public roots use `fn::tree::read`. Pages retain every native key
+component and membership slot, hydrate identities, and restore traversal order.
+Filters examine bounded visited candidates; empty filtered pages preserve their
+next cursor. Changed root revisions require an explicit restart. Exact IDs in an
+indexed picker use the public member-value reader to verify membership rather
+than walking preceding pages or guessing a business key.
 
-Data modules project the fields their pages need, bind user values and apply
-`tenant = $auth.tenant`. Interpolated table/order fragments come from finite local
-choices. Sorted source scans use `WITH NOINDEX` for the documented native ID-order
-scan issue; they do not hide duplicates with client deduplication. Regular lists
-fetch 26 rows and display 25, with a sentinel for Next and no guessed total.
+Read callbacks receive the same snapshotted identity and arguments that keyed
+their request. A revision is checked when a page is fetched; cached pages are
+not a live feed. Page traversal and identity hydration are separate reads, so
+this surface does not promise a frozen database snapshot.
 
-[`references.js`](../../MetaSol/src/data/references.js) is a finite lookup
-allowlist, not domain metadata. Searches fetch 13 choices and display 12;
-hydration accepts at most 50 selected native references. Labels are separate
-from raw IDs. A copied record reference is parsed natively before an exact ID
-match, because SDK/server quoting differs; ordinary name searches need no extra
-request. Only malformed-conversion errors fall back to text search. A page-specific
-picker search binds its invoice/note/source filter
-and supplies a matching reactive `scope` prop. The picker includes that scope
-in its query key, so changing the parent selection changes the cached search.
+Composite browsing requires a typed leading prefix. A forward walk starts from
+the partial key and stops when keys leave that partition. Reverse browsing is
+available without a prefix; reverse prefix walks are rejected because the public
+API has no generic upper-bound sentinel. Current accounting public roots have
+single business components; private identity/composite roots remain private.
 
-Query callbacks receive the actual SDK, the same input used in their key and an
-abort signal. Guard Solid Query's suspending `data` getter while pending when
-controls must retain focus. A failed refresh can display the current session's
-cached rows with an error; results never cross a session boundary.
+Inverse-reference lists are bounded lookup surfaces with no pagination claim.
+They have no arbitrary sort or offset fallback. Bounding returned candidates
+does not make traversal of an unbounded backlink constant-time. Add another
+declared tree only for a demonstrated access pattern.
 
-## Authored forms and write confirmation
+## Connected forms
 
-[`SourceForm`](../../MetaSol/src/ui/SourceForm.jsx) shares the write lifecycle.
-The caller supplies `table`, optional `record`/`initial`, `encode`, callbacks and
-explicit JSX fields. Its shallow signal preserves native SDK values. The encoder
-whitelists authored inputs; owner selection is composed once by SourceForm.
-Derived balances, amounts and tree state remain server-owned. Callers disable
-immutable dimensions and pass `immutable` fields to omit them from updates.
+Kobalte owns combobox keyboard and listbox behavior. The picker supplies async
+rows, selection hydration, exact-ID parsing, scope identity and explicit
+loading/error/empty states. It retains selected options while their query
+refreshes. Pending Solid Query data is never read in a way that suspends and
+detaches the form. Scope changes and selection dependencies fence old results.
 
-Open an editor with a stable table and original record snapshot. Key its owner
-by that selection, not the latest refetched row. This keeps dirty drafts intact
-and preserves the original `updated_at` for optimistic concurrency. A create ID
-is generated once per mounted form and survives failed submissions.
+Creating a prerequisite pushes a new editor onto a flat stack. Parent drafts
+remain mounted. A successful child save returns its native identity; the user
+still submits the parent explicitly. Known parent fields initialize the child.
+Background principal refreshes retain drafts; route/session boundary changes
+clear them. Native dialogs restore focus after a child closes.
+Dialogs use a stable portal under their application's theme root; reactive
+route rendering cannot move an open dialog out of the browser's modal layer.
+Conversion assistance follows actual backend directions: invoice payments use
+treasury currency → invoice currency; transfers use outgoing → incoming native
+unit. Rates are dated, and inverse pairs are independent.
 
-[`writes.js`](../../MetaSol/src/data/writes.js) uses native transactions, exact
-one-row assertions and `updated_at` checks; deletes return the removed row with
-`RETURN BEFORE`. Every SDK statement response is inspected before accepting the
-single returned native ID. Empty transaction slots are not success evidence.
-After 20 seconds without confirmation the result is unknown. `FormError` retains
-the draft reference and offers a reviewed current-record inspection. A found row
-must be compared with the draft; absence can mean lost access or pending work.
-Writes are never automatically retried, and balances are never optimistic.
+SourceForm keeps one create ID and the originally read `updated_at`. Transactions
+inspect every SDK response and require exactly one confirmed native ID. A
+20-second confirmation timeout is an unknown outcome, with inspection of that
+same ID before retry. No automatic write retry or optimistic financial balance
+is used. Native rejection and stale-version errors leave the draft intact.
 
-SourceForm protects dirty/pending navigation and busy dialog closure. Session
-fencing prevents old-account callbacks. Its mounted flag additionally prevents a
-completed save from navigating or changing local state after its editor unmounts.
-A confirmed write can still invalidate data and publish a notice in its unchanged
-session. A late failure in that same session publishes its exact record reference
-and a manual inspection action; an old session cannot publish into a new one.
-Leaving an editor never promises to cancel the server transaction.
+## Isolation, appearance and limits
 
-## Native units, time and tree reads
+Query identity includes normalized endpoint, fixed namespace/database, access
+method, canonical tenant and session epoch. Authentication changes clear prior
+queries, mutations and notices. Read and write completion checks suppress old
+session callbacks. Leaving a form does not promise cancellation of server work.
 
-Controls keep exact decimal text; encoders use native Decimal, RecordId, Date and
-Duration. Use `undefined` for optional NONE values; preserve explicit zero/false.
-Never JSON-round-trip native values or convert financial amounts to Number.
-Date controls use device-local time with milliseconds, while display may use the
-selected time zone. Saved dates are absolute instants.
+Theme tokens come from public runtime configuration plus user overrides. Color
+mode, accent, density, navigation, radius, typeface and display time zone are
+configurable. Portals mount inside their owning native dialog or theme root.
+Ordinary JSX props replace Input/Textarea/Select/Reference primitives or a named
+field renderer while retaining the schema and write boundary.
 
-Recorded account positions include the complete timeline, including future facts.
-Historical balances use `fn::tree::read(id, 'z_history', 'before', [instant])` and
-exclude the boundary instant. History pages carry full typed keys and a separate
-revision; the route restarts paging when an observed revision changes. Analytics
-uses typed half-open ranges and sums compatible units only. Published analytics
-summaries follow root visibility policy; they are not a per-reader sum of visible
-source rows. See [screen contracts](screen-contracts.md) for exact semantics.
-
-## Small extension seams
-
-Notifications currently contain up to 30 recent updates from this sign-in, with
-announcements, dismissal and local unread state. Forms keep actionable errors;
-connection status stays in WorkspaceProvider. A durable inbox needs a public
-recipient/read-state backend contract, explicit data functions and reconnect
-catch-up. Live subscriptions would be owned by their route/query with disposal
-and targeted invalidation. Neither durable nor live notifications is implemented.
-
-Gateway recovery, OTP or passkeys can add ordinary auth routes and functions in
-`src/data/auth.js`, then feed native tokens through the same tenant verification.
-Those frontend flows are deferred. Navigation docking belongs to the shell,
-preferences and CSS; another application should share proven modules and author
-its own routes. See the [developer guide](developer-guide.md) before extending.
+This is a connected frontend harness, not an offline sync engine, a persistent
+notification service or an arbitrary-database abstraction. See
+[deferred work](deferred-work.md) and [verification](verification.md).

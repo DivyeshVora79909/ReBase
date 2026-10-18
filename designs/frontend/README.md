@@ -1,32 +1,28 @@
-# MetaSol accounting frontend
+# MetaSol accounting workspace
 
-The current frontend targets ReBase `cada5e2`: direct accounting records, explicit
-tenants, scalar readers, adjustment notes, payment charges and typed analytics.
-The separate MetaSol repository contains the implementation at `89799ec`. Earlier October 2/3
-frontend evidence describes the removed API and does not validate this version.
+MetaSol now targets the current subsidiary accounting contract from ReBase
+`ebe999d`. The separate frontend repository replaces the October 8 forms and
+scan-based readers with generated public inputs, native reference/index reads
+and contextual record creation.
 
-The October 13 [subsidiary accounting API](../all-in-accounting/developer-guide.md)
-replaces that backend contract. This frontend and the guides below still describe
-`cada5e2`; their forms, queries and demo require adaptation before use with the new
-schema. The backend redesign does not include frontend implementation changes.
+The application is a harness for connected calculation facts. Start with a
+subsidiary, inspect its native positions, follow a reference, or create the
+next fact. Missing prerequisites can be authored while the original draft stays
+mounted. The database owns authorization, constraints and calculations.
 
-The intended result is a small JavaScript/Solid engineering foundation demonstrated
-by accounting. Business pages author their own forms and queries. Shared code owns
-session lifetime, native values, confirmed writes, reusable UI and scoped notices.
+Read:
 
-Start with:
+1. [Design and acceptance plan](redesign-2026-10-18.md).
+2. [Execution decisions](execution-plan.md) and [architecture](architecture.md).
+3. [Screen contracts](screen-contracts.md).
+4. [Developer guide](developer-guide.md).
+5. [Verification and limits](verification.md).
+6. [Deferred extensions](deferred-work.md) and [continuation](continuation-prompts.md).
+7. [MetaSol README](../../MetaSol/README.md) for startup and configuration.
 
-1. [Meaning and execution plan](execution-plan.md): user intent, current authority and scope.
-2. [Architecture](architecture.md): ownership and extension boundaries.
-3. [Screen contracts](screen-contracts.md): current workflows and record types.
-4. [Developer guide](developer-guide.md): add a page using ordinary composition.
-5. [Verification](verification.md): fresh checks and their limits.
-6. [Deferred work](deferred-work.md): future capabilities and necessary contracts.
-7. [Continuation](continuation-prompts.md): how to resume from current source.
-8. [MetaSol README](../../MetaSol/README.md): run the disposable demo or configure a backend.
-
-The [backend blueprint](../all-in-accounting/blueprint.md),
-[extension contract](../all-in-accounting/extension-contract.md), and
-[public tree reader](../rebase-system/ordered-tree-contract.md) remain authoritative.
-The frontend does not calculate postings, invent compliance policy or create
-implicit business children. Read both Git repositories when reviewing a change.
+[Accounting meaning](../all-in-accounting/blueprint.md),
+[current backend APIs](../all-in-accounting/developer-guide.md), and
+[public tree reads](../rebase-system/ordered-tree-contract.md) remain authoritative.
+MetaSol is an ignored, independent repository inside ReBase; inspect and commit
+both repositories separately. October 2/8 screenshots and evidence describe
+historical implementations.

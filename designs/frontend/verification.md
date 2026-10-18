@@ -1,171 +1,132 @@
-# Frontend verification — October 8, 2026
+# Frontend verification — October 18, 2026
 
-This is historical frontend evidence for the `cada5e2` backend API. It does not
-certify compatibility with the October 13 [subsidiary redesign](../all-in-accounting/developer-guide.md).
+This packet targets ReBase `ebe999d` and replaces the October 8 frontend
+contract. MetaSol is committed independently as `816e983`; the full revision
+and artifact fingerprints belong in the [evidence record](evidence/2026-10-18-frontend.json).
+Backend source was unchanged. The two user-owned enterprise fixture scripts
+and unrelated `history.txt` are outside this packet.
 
-The current frontend targets ReBase `cada5e2`, including direct accounting,
-explicit tenants, scalar readers, adjustment notes, inline charges and typed
-analytics. MetaSol started at `ada483e` with an unfinished tenant migration.
-The [execution plan](execution-plan.md) records the review and implementation
-scope. MetaSol implementation is committed as `89799ec`. Backend source was
-unchanged during this frontend packet.
-
-New automated workflow tests were deferred at the user's request. These checks
-distinguish retained tests from one-off native/browser walkthroughs. Temporary
-scripts and synthetic records exercise the disposable demo; they are not a
-maintained regression suite or production acceptance.
-
-## Current checks
+## Checks
 
 | Check | Result |
 | --- | --- |
-| Production Vite build | Final build passed: 197 modules, 4.02 seconds in Vite |
-| Retained `npm test` | 10 passed, 0 failed, skipped or cancelled |
-| Public input audit | All 43 accounting create schemas mapped to authored form/content paths |
-| Disposable demo | Compiled current schema, provisioned a record user and created 41 seed records through record authentication |
-| Native data readers | 108 calls passed with no errors, including all four analytics modes |
-| Browser routes | Login/restoration and 14 accounting/settings/user routes opened without page errors |
-| Browser writes | Directory/account entries, invoice/tax/charged payment, adjustment-note lifecycle, claim settlement and tax operations passed |
-| Session recovery | Invalid credentials, tenant mismatch, restoration, signout, interrupted principal check and blocked connection passed |
-| Presentation | Desktop/mobile, dark mode, compact navigation and preference persistence passed |
-| Final syntax and demo shutdown | 66 files parsed; SIGINT closed both owned servers/ports and removed the temporary schema |
-| Documentation and source evidence | 153 local links resolved; all 71 source fingerprints matched |
+| `npm test` in MetaSol | 29 passed; no failures or skips |
+| `npm run build` in MetaSol | Passed: 328 modules, 3.08 seconds in Vite |
+| `npm run check:all-in-accounting` in ReBase | Passed: 65 tables, 48 public schemas, 0 views |
+| Disposable native acceptance | 10 scenarios passed against the current compiled model |
+| Maintained Playwright acceptance | 13 passed, 0 failures or retries; 3.5 minutes |
+| Public input reachability | All 48 forms opened; each published field has an input |
+| Dependency audit | `npm audit --json`: 0 vulnerabilities |
 
-## Native reads and seeded calculations
+Reproduce the maintained stages with `npm run test:acceptance`. Final verification
+runs `verifyNative(demo)` and the complete Playwright suite in the same owned
+fixture. The command's pre-hook refreshes the generated contract before importing
+readers. Startup without a pre-existing
+`generated/contract.json` was also exercised. The runner installs the compiled
+model using `prepare()` into an owned, disposable SurrealKV database, provisions
+a record user, seeds its own demo and runs native scenarios before Playwright.
+The browser receives record-user credentials through a private temporary file;
+administrator credentials remain in Node. Cleanup closed the owned connections
+and servers and removed the private manifest; process and filesystem checks
+confirmed their removal. No configured database or runtime
+profile is changed.
 
-The demo owns a loopback memory SurrealDB process and temporary compilation
-directory. Administrator credentials remain in its Node process. Browsers and
-data readers authenticate as the provisioned record user. Neither configured
-databases nor `public/runtime.json` are changed by `npm run demo`.
+Environment: Node 26.12.0, SurrealDB 3.3.0, SDK 2.1.1, Solid 1.9.17,
+TanStack Solid Router 1.170.36 / Query 5.101.4, Kobalte 0.13.14,
+Ajv 8.20.0, Vite 8.1.5 and Playwright 1.62.1.
 
-The 108 read calls cover all seven account families, details, summary/before/history
-tree readers, directory types, overview, reference search/hydration, commerce,
-claims, tax operations, production and analytics. Native Decimal and RecordId
-results were retained. Before the browser's additional records:
+## Native and unit boundaries
 
-- Sales invoice: INR 6,372 commercial value, INR 4,000 paid, INR 2,372 outstanding.
-- Charged payment: INR 4,000 gross, INR 40 charge, INR 7.20 charge tax,
-  INR 3,952.80 net cash.
-- Independent claim: INR 1,200 remaining.
-- Trade: INR 5,400 sales and INR 1,600 purchases; weighted mug price INR 450.
-- Whole-history bank balance: INR 115,752.80, including future production facts.
-- All four production line queries returned populated inputs, outputs, cost and
-  capacity. Unit, pair and operating-unit analytics ranges passed.
+The maintained unit suite covers generated input contracts, unknown fields,
+readonly updates, optional clearing, exact decimals, typed record identities,
+datetime precision, transaction responses, stable IDs on timeout, session/token
+identity, relationship scopes, conversion directions and appearance contrast.
 
-The first reader walkthrough found no notes, tax cash/offset operations or most
-correction types. Its success establishes empty-query compatibility for those
-paths; populated browser checks are recorded separately below.
+The ten native scenarios exercise:
 
-## Browser walkthrough
+1. Ownership/reference adjacency and authenticated principal scope.
+2. Forward/reverse pages, native cursors, prefix isolation and sparse filters.
+3. Copied native IDs, quoted/UUID keys and exact relationship/index membership.
+4. Equal timestamps, exact sums and changed index revisions.
+5. Clearing an optional field and rejecting stale updates/deletes.
+6. Database rejection, effect rollback and retry with the same source identity.
+7. Invoice lines, payment, signed correction and foreign-currency payment.
+8. A dated exchange rate recalculating an existing directed transfer.
+9. Production inputs/outputs and explicit subsidiary context.
+10. Denial of records and tree members to another principal.
 
-Browser time zone was Asia/Kolkata. A saved demo record-user session opened
-Accounts and its detail, Invoices and its detail, Claims, Taxes, Transfers,
-Production and its detail, Directory, Adjustments, Analytics, Settings and Users.
-No browser page errors were observed.
+The invoice scenario produces INR 200 total, INR 90 paid and INR 110 balance
+before its foreign payment. A later USD 1 cash payment calculates INR 83 while
+its movement display remains USD 1. A EUR 2 transfer initially yields USD 2.2;
+a later effective rate recalculates it to USD 2.4. These are native results,
+not frontend financial calculations.
 
-Completed mutations:
+Composite partition enforcement is covered in the read-primitive unit tests.
+Current public accounting roots have one business key component; native tests
+exercise their actual typed prefixes and duplicate tie breakers. This evidence
+does not claim that private composite identity roots are publicly browsable.
 
-- Created a currency through Directory.
-- Rejected an account entry that breached the historical account floor. The same
-  draft was corrected to INR 25, saved, changed to INR 30 and deleted. The account
-  returned to its original balance; activity showed the three confirmed writes.
-- Created a sales invoice, a one-unit INR 100 stock issue and 18% base tax. The
-  invoice displayed INR 118 commercial value.
-- Created an INR 100 payment with a 1% charge, 18% charge tax and explicit tax
-  credit. The page displayed INR 1 charge, INR 0.18 charge tax, INR 98.82 net
-  cash and INR 18 invoice outstanding.
-- Rejected finalization of an empty adjustment note. Added a price correction,
-  its recalculated tax and a negative payment adjustment. The note showed INR
-  −11.80 commercial change, INR −10 settlement change and three contributions.
-  Finalization and reopening passed. The related invoice showed INR 106.20
-  commercial value, INR 90 paid and INR 16.20 outstanding.
-- Applied an INR 120 partial claim settlement, leaving INR 1,080. Deposited
-  INR 50 tax credit, received an INR 10 tax refund and applied INR 5 credit
-  against a tax liability. All appeared through their populated page queries.
-- Selected roots in all four browser analytics modes. Enrolled issue/correction
-  values appeared in trade and operating-unit reports; payment and directed-pair
-  measures rendered with their respective units.
+## Browser scenarios
 
-Session and form-state checks:
+The maintained Chromium suite covers thirteen scenarios:
 
-- Wrong-password sign-in returns native `NotFoundError` on this server. Only that
-  sign-in result becomes a clear credential rejection; unrelated missing-record
-  queries do not invalidate a session.
-- Correct login and reload restore the saved token. A token copied into a
-  different tenant's storage key is rejected and removed. Signout removes it.
-- An isolated simulated principal-query failure preserves the authenticated
-  shell, principal and exact token; Retry access check performs a native read
-  successfully. Blocking only that context's database WebSocket during reload
-  preserves credentials and hides authenticated pages. Retry connection restores
-  the requested route after the block is removed.
-- Browser Back and Refresh preserve an opened invoice/note's captured
-  sales/purchase kind and draft values. Invoice organization remains captured.
-  Dirty Cancel prompts remain active.
-- Four browser-only injected failures exercised a mounted unknown outcome, a
-  late unknown save after navigation, a late rejected delete and an old-session
-  failure after logout/relogin. Mounted errors retained the form; same-session
-  late errors showed activity with the exact record and explicit native inspection.
-  Old-session feedback was suppressed. These injections performed no writes.
+- Workspace routes and all 48 public forms, including their published fields.
+- Keyboard reference selection, clearing and empty results with a retained draft.
+- Missing conversion creation, child cancellation/save, return focus and explicit
+  submission of the intact parent transfer.
+- Invoice payment followed by a nested adjustment note and signed correction.
+- A production material input through the shared form and picker.
+- An optimistic conflict that retains the user's draft.
+- Appearance persistence and mobile navigation focus.
+- Lookup failure and retry without losing input focus or draft values.
+- Subsidiary changes and copied-reference scope isolation.
+- A 53-entry history, next/previous pages, empty filtered pages and recovery from
+  a concurrently changed revision.
+- Touch selection, bounded mobile dialogs and focus restoration.
+- A database-accepted write whose confirmation is delayed past the actual
+  20-second timeout; inspection and deliberate retry retain one ID and one row.
+- A delayed read released after signout without restoring the old interface.
 
-At 390 × 844, Overview and Settings fit the viewport. Mobile navigation traps
-keyboard focus and Escape restores its trigger. Clean form-dialog and activity
-panel Escape restore their triggers. Dark/compact/density/UTC preferences survive
-reload. At 1280px the compact sidebar measures 78px and expands to 242px; icon
-links retain accessible names. Screenshots were visually inspected.
+Transport injection handles both SDK `query_stream` and `query` requests.
+The revision scenario reads an uncached page before asserting the change;
+returning to a cached page is not treated as a fresh database read.
 
-## Findings corrected during integration
+## Integration corrections and visual review
 
-The checks and source review corrected optional fee-tax conversion defaults,
-typed analytics range bounds, record-picker cache scope, refresh-driven editor
-remounting, stale callbacks after form unmount, history cursor revision handling,
-invalid-password classification, mutable creation-form context and late-failure
-activity/inspection. A copied SDK record ID used angle brackets while the server's
-string projection used backticks, causing text search to miss it. Reference
-searches now parse copied IDs natively and bind an exact match inside their
-existing tenant/source filters. Nine focused reads passed SDK/server ID spellings,
-plain names, partial/malformed IDs, and invoice inclusion/exclusion. These were
-frontend corrections; business validation and calculations remain on the server.
+Acceptance drove corrections to pointer focus inside native dialogs, capturing
+the invoking element before mounting a child, and restoring focus after that
+child is removed. Dialogs now use a stable portal in the owning theme root so
+reactive DOM moves cannot discard native modal state. Picker errors describe
+the settled search rather than a previous request during debounce. Parent drafts
+survive principal refresh;
+queries consume the identity snapshot that keyed their request.
 
-## Build and source evidence
+Account and invoice projections retain exact native positions and outstanding
+balance. Movement amounts keep their authored unit, and related records display
+readable names. Generated contract startup and disposable-server cleanup are
+part of the maintained harness.
 
-[Current evidence](evidence/2026-10-08-frontend.json) records the source commit,
-fingerprints and check scope. Four pages also passed against the final production
-bundle: Overview, invoice detail, adjustment-note detail and payment analytics.
-Their runtime override existed only in the checking browser. No alerts or page
-errors occurred. SIGINT closed the owned demo/database processes and ports and
-removed the temporary schema directory in 0.2 seconds.
-
-Visually inspected examples:
-[desktop invoice](evidence/2026-10-08-invoice-desktop.png),
-[finalized adjustment note](evidence/2026-10-08-adjustment-note.png) and
-[mobile overview](evidence/2026-10-08-overview-mobile.png).
-
-The final build and retained checks ran with a PATH-only process environment:
-[build log](evidence/2026-10-08-frontend-build.log) and
-[retained-test log](evidence/2026-10-08-frontend-retained-tests.log). All 66 current
-JavaScript/JSX source, test, demo and Vite configuration files parsed successfully.
-No `.env` file or prefixed environment variable configures the client; public
-connection configuration is loaded from `/runtime.json`.
-
-Environment: Node 22.23.2, SurrealDB 3.3.0, SDK 2.0.8, Solid 1.9.14,
-TanStack Solid Router 1.170.36 / Query 5.101.4, Vite 8.1.5 and Playwright 1.62.1.
+Final-run screenshots were visually inspected:
+[desktop overview](evidence/2026-10-18-overview-desktop.png),
+[nested conversion](evidence/2026-10-18-nested-conversion-desktop.png) and
+[mobile transfer](evidence/2026-10-18-transfer-mobile.png). The desktop layout
+keeps workspace context visible, nested drafts remain open, and the mobile
+dialog fits the viewport with scrollable form content. Browser assertions also
+cover horizontal overflow, native modal state and focus restoration.
 
 ## Limits and historical evidence
 
-Maintained tests now cover native values and token storage only. Superseded
-accounting, runtime and browser fixtures referred to removed APIs/routes and were
-removed. No new automated workflow tests were added. This packet does not prove
-every field combination or rejection path for all 43 forms, cross-tenant late
-responses under every transport failure, or large-dataset performance.
+Only declared index surfaces paginate. Backlink lookups bound returned rows,
+not total relationship work. Page traversal and hydration are separate reads,
+not a frozen snapshot; cached pages are not live updates. Composite prefix
+walks are forward because no generic native upper-bound sentinel is assumed.
 
-Persistent notifications, live inbox delivery, gateway recovery/passkeys, bulk
-import/export and deployment remain [deferred](deferred-work.md). Activity and
-drafts are session/page memory only. Native sorted scans retain `WITH NOINDEX`;
-public tree reads may reject an unreadable member rather than silently excluding
-it. No push or deployment is part of this packet.
+Browser coverage is Chromium desktop and touch emulation. Form reachability
+does not prove every business-field combination, assistive technology/device
+behavior or large-data throughput. Persistent notifications, offline drafts,
+bulk import/export, additional authentication flows and deployment remain in
+[deferred work](deferred-work.md). No push or deployment belongs to this packet.
 
-October 2/3 evidence remains historical:
-[frontend evidence](evidence/2026-10-02-frontend.json) and
-[combined redesign evidence](../rebase-system/evidence/2026-10-03-redesign-verification.json).
-Its 26 native/unit and 28 browser test results concern the removed accounting
-contract and must not be cited as acceptance of the current frontend.
+The [October 8 evidence](evidence/2026-10-08-frontend.json) and
+[October 2 evidence](evidence/2026-10-02-frontend.json), including their screenshots
+and logs, remain historical. Their results do not certify this implementation.

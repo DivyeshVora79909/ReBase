@@ -1,150 +1,134 @@
-# Adding and maintaining a frontend page
+# Extend MetaSol
 
-Read the [architecture](architecture.md), [screen contracts](screen-contracts.md)
-and the current [accounting inputs](../all-in-accounting/schemas). Application
-code lives in the separate `MetaSol/` Git repository; these documents live in
-ReBase. Inspect both working trees before editing shared code.
+Start with the current compiled accounting profile. MetaSol is a separate Git
+repository under ReBase; inspect and commit each checkout independently.
 
-## Start from the native contract
+## Routine development
 
-1. Read the table's public inputs and native source in the accounting
-   [source map](../all-in-accounting/context-map.md). Identify permissions,
-   immutable references, optional fields, units, date guards and derived values.
-2. Add an ordinary `src/routes/w.$profile.$tenant._app.<page>.jsx` file with
-   `createFileRoute`, validated URL search and an explicit component. Vite updates
-   `src/routeTree.gen.js`; do not hand-edit it.
-3. Add reads and content encoders to the appropriate `src/data/` module. Bind all
-   user values; allowlist dynamic table/order choices. Preserve native values.
-4. Compose fields, tables and feedback directly. Extract another shared component
-   only when the same substantial interaction already repeats.
-5. Update this page's contract and record the actual verification performed.
-   [Verification](verification.md) owns evidence; [deferred work](deferred-work.md)
-   owns unfinished capabilities.
+1. Update authored backend schemas and rebuild `build/all-in-accounting`.
+2. Run `npm run contract` in MetaSol. Dev/build/test hooks also refresh it.
+3. Keep domain decisions in a route, presentation helper or ordinary reader.
+4. Add a boundary/workflow regression where behavior changes.
+5. Run unit/build checks and disposable acceptance for native/UI changes.
 
-## One page and one form
+Use `npm run demo` for an isolated record-user workspace. It installs the current
+build using `prepare()`; it does not compile the backend or touch runtime profiles.
 
-This reduced currency page uses the real Directory API. The full
-[Directory route](../../MetaSol/src/routes/w.$profile.$tenant._app.directory.jsx)
-adds URL filters, pagination, cards and editing. For a new page, change the route
-path and import its explicit data functions; no registration layer is needed.
+## Author a record
 
 ```jsx
-import { createSignal, Show } from "solid-js";
-import { createFileRoute } from "@tanstack/solid-router";
-import { createSessionQuery } from "@/app/queries.js";
-import { useSession } from "@/app/SessionProvider.jsx";
-import { directoryContent, listDirectory } from "@/data/directory.js";
-import { QueryState } from "@/ui/Feedback.jsx";
-import { Records } from "@/ui/Records.jsx";
-import { SourceForm } from "@/ui/SourceForm.jsx";
-import { TextField } from "@/ui/Fields.jsx";
-
-export const Route = createFileRoute("/w/$profile/$tenant/_app/directory")({
-  component: CurrencyPage,
+const composer = useComposer();
+composer.open({
+  table: "sales_issue",
+  initial: { invoice: invoice.id },
+  context: { subsidiary: invoice.subsidiary },
+  onSaved: id => { /* Optional next explicit action. */ },
 });
-function CurrencyPage() {
-  const session = useSession();
-  const [creating, setCreating] = createSignal(false);
-  const close = () => setCreating(false);
-  const query = createSessionQuery(
-    () => ["directory", { kind: "currency", q: "", page: 0 }],
-    (db, [, input]) => listDirectory(db, input),
-  );
-  return <div class="page">
-    <Show when={session.can("currency_create")}>
-      <button class="btn" onClick={() => setCreating(true)}>New currency</button>
-    </Show>
-    <QueryState query={query}>
-      <Records rows={query.isPending ? [] : query.data?.rows} view="table"
-        columns={[{ label: "Currency", cell: row => `${row.name} (${row.code})` }]} />
-    </QueryState>
-    <Show when={creating()}>
-      <SourceForm table="currency" initial={{ precision: "2" }} title="Currency"
-        encode={values => directoryContent("currency", values)}
-        onSaved={close} onCancel={close}>
-        {form => <>
-          <TextField form={form} name="name" label="Name" required />
-          <TextField form={form} name="code" label="Code" required />
-          <TextField form={form} name="precision" label="Decimal places"
-            type="number" min="0" max="18" step="1" required />
-        </>}
-      </SourceForm>
-    </Show>
-  </div>;
-}
 ```
 
-`createSessionQuery` adds identity/epoch scope and completion fencing. Its read
-callback gets the real SDK and key input. `SourceForm` supplies the owner, stable
-ID, confirmation/error handling, dirty protection and success notice. Its callback
-runs after session query invalidation. New business payloads still need their
-own encoder: never spread a database row or arbitrary form values into a write.
+`RecordForm` consumes the generated fields. `SourceForm` validates all input and
+owns stable identity, optimistic concurrency, errors and completion. Pass the
+original record once when opening an editor; do not replace it with refetched
+data while the user edits. `inputModel.pick(table, record)` extracts only inputs.
+Calculated fields, tree slots, tenant and authorization metadata stay out of
+content objects.
 
-## Extending queries and pickers
-
-Use explicit projections and `tenant = $auth.tenant`; native permissions remain
-authoritative. Normal pages use an ID sort tie-breaker, `WITH NOINDEX`, a bounded
-`LIMIT` and the extra-row Next sentinel. The shared `pageResult` displays 25 of
-26 fetched rows. Aggregates need an explicit population and unit; adding loaded
-cards is not a ledger total. Put every read dependency in its query key.
-
-Use `ReferenceField` with a finite `tables` array and native field value. For an
-invoice-scoped search, the existing API is:
+For a field with distinct UX, supply ordinary JSX:
 
 ```jsx
-<ReferenceField form={form} name="source" label="Issue"
-  tables={["sales_issue"]} required
-  scope={String(form.value("invoice") ?? "")}
-  search={(db, tables, input) =>
-    searchInvoiceReferences(db, tables, input, form.value("invoice"))} />
+function InvoiceNumber(props) {
+  return <label class="form-field">
+    <span>Invoice reference</span>
+    <input name={props.name} value={props.form.value(props.name) ?? ""}
+      disabled={props.disabled}
+      onInput={event => props.form.set(props.name, event.currentTarget.value)} />
+  </label>;
+}
+
+<Application fields={{ "sales_invoice.number": InvoiceNumber }} />
 ```
 
-Import `searchInvoiceReferences` from `src/data/invoices.js`. Choose the matching
-issue table for the invoice side. A custom search must bind its filter and return
-`{ rows, hasMore }`; `scope` must include every external dependency it captures.
-Clear incompatible selected references when their parent changes. Add a
-new reference type to the finite allowlist in `src/data/references.js`, not to a
-resource or form registry. Preserve pending-state guards around picker query data.
+The renderer receives `table`, `name`, `field`, `schema`, `form`, `required` and
+`disabled`. `form` supplies `value(name)`, `values()`, `set(name,value)`,
+`error(name)` and `editing`. Application `primitives` can replace `Input`,
+`Textarea`, `Select` or `Reference` across forms. Forward native input props and
+accessible labels. New unsupported field shapes require an explicit renderer;
+the current profile uses text, enums, integers, booleans, exact decimals,
+datetimes, durations and native references.
 
-## Editing and shared controls
+## Compose reads
 
-Capture the selected original row when opening an editor. Mount SourceForm with
-that stable `record` and `table`; key the surrounding `Show` by editor selection.
-Do not key it by a refetching query result. `form.value(name)`, `form.set(name,
-value)` and `form.editing` are the field API. Pass immutable field names through
-`immutable` and disable their controls. SourceForm uses the original `updated_at`
-for update/delete and suppresses local callbacks after unmount or session change.
-A failure after unmount can still report its record and inspection action in the
-same session; it cannot publish into another session.
+```js
+relatedRecords(db, {
+  tables: ["sales_issue"], owners: [invoice.id], field: "invoice", limit: 50,
+});
 
-| Shared piece | Responsibility |
-| --- | --- |
-| `TextField`, `ReferenceField`, `CheckField`, `SelectField` | Authored input JSX over the form API |
-| `FeeFields`, `AnalyticsFields` | Actual repeated optional payment/analytics inputs |
-| `Records`, `ListToolbar`, `Pagination` | Explicit columns/cards, bounded filters and paging |
-| `Amount`, `DateTime` | Exact values with currency/resource unit and display time zone |
-| `PageHeader`, `QueryState`, `RefreshButton` | Page actions and pending/error/refresh feedback |
-| `Modal`, `useUnsavedChanges`, `FormError` | Focus, draft protection, errors and record inspection |
-| `ExportButton` | Current explicit rows/projections as exact CSV cells |
+indexRecords(db, {
+  owner: subsidiary.id, slot: "z_accounts", limit: 50,
+  after: previous.next, revision: previous.revision,
+  filter: row => row.kind === "treasury",
+});
+```
 
-Encoders use `src/data/values.js` and `inputs.js`: native IDs/decimals/instants/
-durations, allowlisted references and `undefined` for cleared optional fields.
-Keep zero and false. Quantity, pricing currency, invoice currency and cash currency
-can differ; label the input's actual unit. Calculations and date/capacity checks
-belong to the backend. Never optimistically adjust balances or retry an uncertain
-write automatically. Inspect its stable reference and compare current values.
+Values are bound. Table, field and root identifiers are checked against the
+generated public contract. Never substitute a table scan or numerical offset
+when there is no root. An indexed read makes one bounded page request and a
+bounded identity hydration. Its `next` describes visited candidates, so preserve
+it even when filtering returns no rows. Do not repeatedly fetch until a visible
+page fills. Keep cursors native and in memory; JSON serialization loses key types.
 
-## Run and verify the concrete change
+`readIndex(db, options, load)` is the smaller primitive: a caller supplies the
+native owner/root, declared `keyTypes`, optional prefix, cursor, revision, limit,
+filter and an identity projection function. Composite keys require a leading
+typed prefix. Record prefixes must be resolved native RecordId objects, not
+unparsed StringRecordId aliases. Native datetime precision is preserved.
 
-From `MetaSol/`, `npm run demo` compiles the current sibling accounting schema,
-starts a disposable loopback memory database, seeds native records and launches
-Vite. It prints the URL and record-user credentials; Ctrl+C discards the demo.
-The `surreal` executable and installed dependencies in both repositories are
-required. `npm run dev` instead uses `public/runtime.json`; keep that configuration
-public and provision the database separately.
+`RecordCollection` calls `read(db, args, identity)` with the identity that keyed
+the request. Destructure the owner, type and relationship from that snapshot:
 
-Run `npm run build`, exercise the changed native/browser flow, and run
-`git diff --check` in each edited repository. Check denied/error/empty states,
-dirty navigation and the relevant tenant/time/unit boundary. Do not infer current
-integration acceptance from utility tests or old evidence. Record actual results
-in [verification](verification.md) and missing coverage in [deferred work](deferred-work.md).
+```jsx
+<RecordCollection identity={[owner(), slot()]} indexed
+  read={(db, args, [owner, slot]) => indexRecords(db, { ...args, owner, slot })} />
+```
+
+`RecordPicker` accepts tables, a native value, `onChange`, optional
+`search(db, tables, args)`, scope and creation callbacks. A scope can be an
+inverse relationship or a public index. Exact IDs remain within that scope.
+Use contextual business references when known; ownership adjacency is the
+catalog fallback.
+
+New queries use `createSessionQuery(key, read)`. Its callback receives the actual
+SDK and the input used in its cache key. Snapshot all read inputs in that key;
+avoid reaching into a later reactive selection after starting a query. Guard
+pending `.data` getters for controls inside a form.
+
+## Units and writes
+
+Keep decimal input as text until native binding; never use Number for money.
+Keep returned RecordId, Decimal and DateTime values intact. Display can use local
+time or UTC; date entry uses device-local time. Editing other fields must not
+truncate a saved nanosecond timestamp.
+
+Invoice payments enter treasury units. Transfers enter outgoing units. Account
+and organization valuation directions differ and are immutable after creation.
+Movement projections preserve the authored amount's unit, even when the record's
+calculation currency differs. CSV amount cells retain the unit alongside the
+exact value. The helpers in `workflows.js` only guide selections; they do not recalculate
+amounts or duplicate backend validity rules. When a prerequisite is missing,
+offer its normal authoring form. Never silently create a rate or inverse pair.
+
+The native write helpers inspect `.responses()` and exact affected-row counts.
+An unknown save keeps the original ID, and an update uses the original version.
+Do not turn transport retry into another CREATE identity. Errors and warnings
+belong to the form/current session, not a global unscoped store.
+
+## Verification
+
+`npm test` covers pure boundaries. `npm run test:acceptance` owns a disposable
+database, runs `tests/native-scenarios.js`, then `tests/browser/workbench.spec.js`.
+It closes connections/servers and removes private test credentials in `finally`.
+Browser screenshots and traces are ignored artifacts. Add scenarios for changed
+relationships, permissions, validation, cursor boundaries and draft lifecycle;
+opening a page alone does not verify that it saves correctly.
+
+The [verification record](verification.md) records actual runs and limitations.

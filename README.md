@@ -40,10 +40,11 @@ The [core handoff](./designs/rebase-system/core-handoff.md) and
 [accounting handoff](./designs/all-in-accounting/implementation-handoff.md)
 track validation and domain boundaries. The [configuration reference](./designs/rebase-system/core-configuration.md)
 owns process settings. Historical evidence remains tied to its original sources.
-The [MetaSol accounting prototype](./designs/frontend/README.md) targets the earlier
-`cada5e2` accounting API and requires adaptation to the subsidiary redesign.
-Its [verification](./designs/frontend/verification.md) records the earlier
-disposable demo, native/browser walkthroughs and remaining coverage.
+The [MetaSol accounting workspace](./designs/frontend/README.md) reuses the current
+compiled input schemas, native references and declared indexes. Contextual forms
+keep parent drafts open while missing prerequisites are created.
+Its [verification](./designs/frontend/verification.md) records maintained
+disposable native/browser scenarios and their limits.
 Local checks use disposable databases and mock providers; production delivery
 and representative capacity need their own evidence.
 

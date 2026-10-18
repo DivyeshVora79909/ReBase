@@ -1,37 +1,39 @@
-# Continue the current frontend
+# Continue MetaSol
 
-Read [the execution plan](execution-plan.md), [architecture](architecture.md),
-[screen contracts](screen-contracts.md), [verification](verification.md) and the
-[current backend accounting contract](../all-in-accounting/extension-contract.md).
-Inspect both parent ReBase and nested MetaSol Git status/log/diffs before editing.
-The October 8 backend API supersedes the old frontend recipe/claim-account model.
+Start from [verification](verification.md), [architecture](architecture.md),
+[screen contracts](screen-contracts.md) and the
+[current backend guide](../all-in-accounting/developer-guide.md). Inspect both
+Git repositories independently. Rebuild the backend when its generated artifacts
+are stale; refresh the frontend contract before using changed schemas.
 
 ```text
-Continue the MetaSol accounting frontend from its actual checkout. Read the current
-frontend documents, both Git histories/diffs and the relevant backend schemas.
-Use direct JavaScript/JSX, Solid/TanStack and native SurrealDB values and queries.
-Keep pages and content builders explicit. Do not add a resource/form/query registry,
-compatibility layer, context per table or custom framework.
+Continue the current MetaSol checkout, using its actual Git diff and compiled
+contracts. Keep Solid/TanStack, native SurrealDB values and ordinary JSX/modules.
+Do not revive the October 8 forms, scalar conversion fields, retired records,
+table scans or offset pagination.
 
-Run npm run demo inside MetaSol for an owned disposable current-schema example.
-Use the printed record-user login. Do not use demo/root credentials on an existing
-server or modify a user's configured database. Review which native/browser checks
-were actually performed; historical evidence does not certify newer changes.
+Use published input schemas for validation/types and declared references/roots
+for reads. Preserve every cursor component and membership slot. Composite pages
+require typed leading prefixes; sparse result pages retain continuation. Snapshot
+query inputs in their keys instead of reading a newer reactive selection later.
 
-Preserve tenant/session fences, mounted-form callbacks, stable create IDs, exact
-Decimal values, optimistic updated_at checks and deliberate handling of uncertain
-writes. A field's actual dependency belongs in its query key (including custom
-picker scope). Use native typed tree bounds/cursors and visible units/time semantics.
-Keep a form's initial record snapshot independent of background refetches.
+Keep one original version and create identity per form. Creating a prerequisite
+preserves the parent draft and requires explicit parent submission. Principal
+refresh is not a session change. Authentication/route boundaries, late responses,
+permissions and exact values must retain their established behavior.
 
-Add only the next concrete workflow. A new capability normally owns one route and
-one data module and composes existing fields/presentation. Update current docs and
-verification/deferred boundaries with the code. No new automated tests were requested
-in the October 8 pass; ask the current task's intent before expanding that scope.
+Use npm run demo or npm run test:acceptance in MetaSol for an owned disposable
+database. Never apply demo setup to an existing connection profile. Run tests for
+changed behavior and update current documentation with actual evidence. Chromium
+must be installed for the maintained browser checks.
+
+The two user-owned files dev-tools/fixtures/examples/accounting-complete.js and
+dev-tools/fixtures/examples/populate-full-enterprise.js were excluded from this
+frontend work. Do not include them in a frontend commit. Review both repository
+statuses and stage explicitly. Commits were authorized; publishing is separate.
 ```
 
-For persistent notifications, gateway authentication screens, live collaboration,
-import/export or another application, start from the corresponding section of
-[deferred work](deferred-work.md). Complete its missing public contract before
-building user-facing controls around it. Routine implementation and reversible
-local work do not need another permission checkpoint.
+A new workflow should compose an existing field, reader, source callback or
+contextual action when those contracts fit. Introduce another abstraction only
+when actual consumers need it. Historical screenshots and verification JSON
+remain historical.

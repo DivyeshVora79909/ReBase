@@ -1,0 +1,162 @@
+{
+  "recorded_at": "2026-10-18T13:53:41.557873+00:00",
+  "backend_commit": "ebe999daa803e4deeda9ead7102d46464654354c",
+  "frontend_commit": "816e983682b02a86792f6073aeb92af428b26870",
+  "environment": {
+    "node": "26.12.0",
+    "surrealdb": "3.3.0",
+    "packages": {
+      "solid-js": "1.9.17",
+      "surrealdb": "2.1.1",
+      "@tanstack/solid-router": "1.170.36",
+      "@tanstack/solid-query": "5.101.4",
+      "@kobalte/core": "0.13.14",
+      "ajv": "8.20.0",
+      "vite": "8.1.5",
+      "@playwright/test": "1.62.1"
+    },
+    "browser": "Chromium desktop and touch emulation",
+    "timezone": "Asia/Kolkata"
+  },
+  "contract": {
+    "public_inputs": 48,
+    "public_tree_roots": 39,
+    "digest": "392571708d33a9cf4611d78f6a29541145d0b0af669f6ec8aa1c3c62c2f2cc43",
+    "compiled_schema_sha256": "f97c34d49df04f68930eb9fa67882a2a283a2cb25e98ff27fe44f847c010b275"
+  },
+  "checks": {
+    "unit": {
+      "command": "npm test",
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    "production_build": {
+      "command": "npm run build",
+      "passed": true,
+      "modules": 328,
+      "vite_seconds": 3.08,
+      "largest_chunk_kb": 425.97,
+      "largest_chunk_gzip_kb": 90.45
+    },
+    "backend": {
+      "command": "npm run check:all-in-accounting",
+      "passed": true,
+      "tables": 65,
+      "public_schemas": 48,
+      "views": 0
+    },
+    "audit": {
+      "command": "npm audit --json",
+      "vulnerabilities": 0
+    },
+    "acceptance": {
+      "reproduction_command": "npm run test:acceptance",
+      "executed_stages": "verifyNative(createDemo()) then the complete Playwright suite using the same owned fixture",
+      "browser_command": "node node_modules/@playwright/test/cli.js test",
+      "native_passed": 10,
+      "browser_passed": 13,
+      "failed": 0,
+      "retries": 0,
+      "database": "owned disposable SurrealKV",
+      "native_scenarios": [
+        "native adjacency and principal scope",
+        "full native pagination, reverse traversal and prefix isolation",
+        "copied identities remain inside native index and relation membership",
+        "equal timestamps, exact decimals and changed index revisions",
+        "schema-driven updates clear optional values and reject stale revisions",
+        "rejected writes preserve source identity and roll back effects",
+        "invoice, payment and signed correction use current contracts",
+        "dated rates revalue a directed transfer",
+        "production uses native resources and explicit subsidiary context",
+        "another principal cannot read records or tree members outside its access"
+      ],
+      "browser_scenarios": [
+        {
+          "name": "all workspace routes load and all published forms are reachable",
+          "duration": "38.8s"
+        },
+        {
+          "name": "async pickers support keyboard selection, clear and empty results without losing the form",
+          "duration": "5.3s"
+        },
+        {
+          "name": "create a missing conversion and return to the intact transfer draft",
+          "duration": "9.9s"
+        },
+        {
+          "name": "invoice payment and a nested adjustment note compose into a correction",
+          "duration": "21.8s"
+        },
+        {
+          "name": "production adds a material input through the same schema and picker",
+          "duration": "11.5s"
+        },
+        {
+          "name": "optimistic conflict keeps the draft visible with actionable feedback",
+          "duration": "5.7s"
+        },
+        {
+          "name": "appearance persists and mobile navigation remains usable by keyboard",
+          "duration": "4.9s"
+        },
+        {
+          "name": "a failed picker query can be retried without losing the draft",
+          "duration": "3.9s"
+        },
+        {
+          "name": "changing subsidiary resets collections and copied references stay within scope",
+          "duration": "5.1s"
+        },
+        {
+          "name": "native pages continue through empty filters and recover from revision changes",
+          "duration": "1.2m"
+        },
+        {
+          "name": "touch layout \u203a dialog pickers support touch selection and restore focus",
+          "duration": "4.0s"
+        },
+        {
+          "name": "an accepted write with delayed confirmation keeps one identity for inspection and retry",
+          "duration": "24.0s"
+        },
+        {
+          "name": "a late read cannot repopulate the interface after sign out",
+          "duration": "4.1s"
+        }
+      ]
+    },
+    "cleanup": {
+      "owned_runner_exited": true,
+      "owned_database_exited": true,
+      "private_manifest_removed": true
+    }
+  },
+  "frontend_sha256": {
+    "package-lock.json": "27f07fbd80044699ca28fffe27a7efa281e6a075a4022547322c7930e526d9fb",
+    "client-contract.js": "b42724e6b622e41abf42faa9c3a362ddcd8547142efddab202aecc1ea6c48653",
+    "src/data/schema.js": "941d0ade01e08e1cf6f9fa26f07c4d55cc0383b327f70b93b9c7af7d1cdc13df",
+    "src/data/records.js": "1a24fa2ee236e72b99df8ceba274013b08b4ec61593e8c1ed21d6fabd857ac06",
+    "src/data/traversal.js": "68a01d2e34c4c4bedb7d7832f2d7265131e656f368a2e094010f5c8c467d355f",
+    "src/app/ComposerProvider.jsx": "e4579b69e1004656bd5edfe81da10a65eac3d14932275b47ef9735a3aa979805",
+    "src/app/PreferencesProvider.jsx": "502ae9fcb90b6e3229c94eb128c326164fbe83afce8e28a7e45d953f7f4900e3",
+    "src/ui/Feedback.jsx": "5d4d8ca801f8ac123562686e66c202b40713132639577fbe1a1cfefd0e275e13",
+    "src/ui/RecordPicker.jsx": "112130bcd3c4f2c9f54688ae37ae175ec15064a990f3dfd7e55dce4c6371d4d4",
+    "tests/acceptance.js": "242a3a3b5966efa8391e155a56f6fd53f02b4a4ecb2313751e026419d794ae2f",
+    "tests/native-scenarios.js": "ee09f6dd2b336cc4aeb094f3cf0b5aa2a652d5adcdcaa21015c72b5d425ab5e2",
+    "tests/browser/workbench.spec.js": "ba6b50f7f594590cb5b58d2b8f7c2fd83f3e2e9ea648c4cdc52fd5ab4852333a"
+  },
+  "screenshots_sha256": {
+    "2026-10-18-overview-desktop.png": "123f0b8776c774f5cee31487ea0c9dc7822f0ec960abdf397340d2a15abe48f3",
+    "2026-10-18-nested-conversion-desktop.png": "d79aaf1f511cc051ebd0494665286850de7ebc76f2ec7508e75cbbe5278bcf4f",
+    "2026-10-18-transfer-mobile.png": "725161cf802d3ded1bfd5ed6e95555b785880049440213fd36ae37c5390a38fa"
+  },
+  "limits": [
+    "Current public accounting roots have one business key component; composite prefix behavior is verified in the read primitive.",
+    "Backlink lookups bound returned rows, not total relationship work.",
+    "Paging and hydration are separate reads; cached pages are not live snapshots.",
+    "Chromium desktop and touch emulation do not establish all browser or real-device accessibility behavior.",
+    "All 48 forms are reachable; not every business-field combination was exercised.",
+    "Persistent notifications, offline drafts, bulk import/export, additional authentication flows and deployment remain outside this packet."
+  ]
+}
