@@ -6,6 +6,7 @@ const { DateTime, Decimal, Duration, RecordId, Uuid } = require("surrealdb");
 const { SYSTEM_FIELDS, valueExpression } = require("../compiler/fields");
 const { parseSchema } = require("../compiler/schema");
 const { extractClauseExpression, findTopLevelKeyword, parseRecordType, sqlCode } = require("../compiler/surql");
+const { json } = require("./values");
 
 const TYPE_CLAUSES = ["DEFAULT", "VALUE", "COMPUTED", "ASSERT", "REFERENCE", "READONLY", "PERMISSIONS", "COMMENT", "FLEXIBLE"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -145,6 +146,11 @@ function compileType(type) {
   return { source, kind: record ? "record" : source.toLowerCase(), record };
 }
 
+function hasReferences(binding) {
+  return binding.kind === "record" || (binding.item && hasReferences(binding.item))
+    || binding.alternatives?.some(hasReferences);
+}
+
 function convertType(type, value, path, references) {
   const { source, kind } = type;
   if (kind === "option") {
@@ -219,9 +225,28 @@ function visitPath(document, parts, callback, path = []) {
   const [part, ...rest] = parts;
   const keys = part === "*" ? Object.keys(document) : [part];
   for (const key of keys) {
-    if (Object.hasOwn(document, key)) document[key] = visitPath(document[key], rest, callback, [...path, Array.isArray(document) ? Number(key) : key]);
+    if (Object.hasOwn(document, key)) visitPath(document[key], rest, callback, [...path, Array.isArray(document) ? Number(key) : key]);
   }
   return document;
+}
+
+// Inspect accepted public references, not the create-input schema. Preserve
+// native record identity in unions while normalizing other SDK scalar values.
+function referenceValue(value) {
+  if (value instanceof RecordId) return value;
+  return Array.isArray(value) ? value.map(referenceValue) : json(value);
+}
+
+function savedReferences(entry, document) {
+  const references = [];
+  const protectedPath = path => entry.protectedPaths.some(parts => parts.length <= path.length
+    && parts.every((part, index) => part === "*" || part === String(path[index])));
+  for (const { path, binding } of entry.referenceFields) {
+    visitPath(document, path, (value, actualPath) => {
+      if (value !== undefined && !protectedPath(actualPath)) convertType(binding, referenceValue(value), actualPath, references);
+    });
+  }
+  return [...new Map(references.filter(ref => !protectedPath(ref.path)).map(ref => [JSON.stringify(ref.path), ref])).values()];
 }
 
 function createModel({ schema, schemas }) {
@@ -240,6 +265,10 @@ function createModel({ schema, schemas }) {
     if (!table) throw new Error(`Client input schema has no compiled table: ${name}`);
     const fields = new Map([...table.fields].map(([key, field]) => [key, compileField(field)]));
     const nestedFields = new Map([...(table.nestedFields || [])].map(([key, field]) => [key, compileField(field)]));
+    const paths = [...fields, ...nestedFields].map(([name, field]) => ({ ...field, path: name.split(".") }));
+    const protectedPaths = paths.filter(field => field.protected).map(field => field.path);
+    const referenceFields = paths.filter(field => !field.protected && hasReferences(field.binding)
+      && Object.hasOwn(inputSchema.properties || {}, field.path[0]));
     for (const property of Object.keys(inputSchema.properties || {})) {
       if (!fields.has(property)) throw new Error(`${name}.${property}: input field has no compiled database metadata; pass the complete emitted compiler bundle to createModel`);
     }
@@ -258,7 +287,7 @@ function createModel({ schema, schemas }) {
       relations.set(fieldName, { ...field.recordType, targets: [...new Set(field.recordType.targets)], name: fieldName,
         required: (inputSchema.required || []).includes(fieldName), min, max });
     }
-    tables.set(name, { schema: inputSchema, inputSchema, validator: validator || ajv.getSchema(inputSchema.$id || `urn:rebase:fixture:${name}`), fields, nestedFields, relations });
+    tables.set(name, { schema: inputSchema, inputSchema, validator: validator || ajv.getSchema(inputSchema.$id || `urn:rebase:fixture:${name}`), fields, nestedFields, relations, referenceFields, protectedPaths });
   }
 
   function input(table, document) {
@@ -272,7 +301,7 @@ function createModel({ schema, schemas }) {
       if (field.protected) throw new Error(`${table}.${name}: protected input field`);
     }
     for (const [name, field] of entry.nestedFields) {
-      if (field.protected) visitPath(structuredClone(document), name.split("."), () => { throw new Error(`${table}.${name}: protected input field`); });
+      if (field.protected) visitPath(document, name.split("."), () => { throw new Error(`${table}.${name}: protected input field`); });
     }
     if (!entry.validator(document)) throw new Error(`Invalid ${table} input: ${ajv.errorsText(entry.validator.errors)}`);
     return entry;
@@ -282,7 +311,7 @@ function createModel({ schema, schemas }) {
     const references = [];
     const bound = Object.fromEntries(Object.entries(document).map(([name, value]) => [name, convertType(entry.fields.get(name).binding, value, [name], references)]));
     for (const [name, field] of entry.nestedFields) {
-      visitPath(structuredClone(document), name.split("."), (value, path) => {
+      visitPath(document, name.split("."), (value, path) => {
         const converted = convertType(field.binding, value, path, references);
         let parent = bound;
         for (const key of path.slice(0, -1)) parent = parent[key];
@@ -307,4 +336,4 @@ function createModel({ schema, schemas }) {
   };
 }
 
-module.exports = { createModel, recordId };
+module.exports = { createModel, recordId, savedReferences };

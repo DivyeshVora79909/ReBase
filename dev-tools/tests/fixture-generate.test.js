@@ -133,6 +133,102 @@ test("usage is per reference role, initializes from known children, and accepts 
   assert.deepEqual(inferred.usage["link.subject"], { "parent:a": 1 });
 });
 
+test("saved scalar references drive usage and the next parent selection", async () => {
+  const observed = {};
+  const result = await run({ space: [{ id: "parent:a" }, { id: "parent:b" }], counts: { child: 2 }, rules: {
+    child: { refs: { parent: { skew: -1, weight: (parent, { index, uses }) => {
+      if (index === 0) return Number(parent.id === "parent:a");
+      observed[parent.id] = uses;
+      return Number(uses === 0);
+    } } } },
+  }, apply: async (row, { index }) => ({ ...await accept(row),
+    parent: index === 0 ? new RecordId("parent", "b") : row.content.parent,
+  }) });
+  assert.deepEqual(observed, { "parent:a": 0, "parent:b": 1 });
+  assert.deepEqual(result.rows.map(row => String(row.content.parent)), ["parent:a", "parent:a"]);
+  assert.deepEqual(result.created.map(row => String(row.parent)), ["parent:b", "parent:a"]);
+  assert.deepEqual(result.space.child.map(row => row.parent), ["parent:b", "parent:a"]);
+  assert.deepEqual(result.usage["child.parent"], { "parent:b": 1, "parent:a": 1 });
+});
+
+test("saved polymorphic arrays count each parent once without revalidating input-only uniqueness", async () => {
+  const result = await run({ space: ["parent:a", "parent:b", "tag:c"].map(id => ({ id })), counts: { peers: 1 },
+    rules: { peers: { values: { members: ["parent:a", "tag:c"] } } },
+    apply: async row => ({ ...await accept(row), members: [new RecordId("parent", "b"), new RecordId("parent", "b")] }),
+  });
+  assert.deepEqual(result.usage["peers.members"], { "parent:b": 1 });
+  assert.deepEqual(result.space.peers[0].members, ["parent:b", "parent:b"]);
+});
+
+test("saving can add or remove optional references", async t => {
+  for (const remove of [false, true]) await t.test(remove ? "removed" : "added", async () => {
+    const result = await run({ space: [{ id: "optional_node:seed" }], counts: { optional_node: 1 },
+      rules: { optional_node: { values: remove ? { parent: "optional_node:seed" } : {} } },
+      apply: async row => remove ? { id: row.id } : { id: row.id, parent: new RecordId("optional_node", "seed") },
+    });
+    assert.deepEqual(result.usage["optional_node.parent"], remove ? {} : { "optional_node:seed": 1 });
+    assert.equal(result.space.optional_node[1].parent, remove ? undefined : "optional_node:seed");
+  });
+});
+
+const nestedModel = createModel({ schema: `
+  DEFINE TABLE parent SCHEMAFULL;
+  DEFINE TABLE nested SCHEMAFULL;
+  DEFINE FIELD details ON nested TYPE object;
+  DEFINE FIELD details.parent ON nested TYPE record<parent>;
+  DEFINE FIELD details.derived ON nested TYPE record<parent> VALUE parent:outside;
+  DEFINE FIELD details.generated ON nested TYPE object VALUE { parent: parent:outside };
+  DEFINE FIELD details.generated.parent ON nested TYPE record<parent>;
+  DEFINE FIELD items ON nested TYPE array<object>;
+  DEFINE FIELD items.*.parent ON nested TYPE record<parent>;
+  DEFINE FIELD items.*.derived ON nested TYPE record<parent> VALUE parent:outside;
+  DEFINE FIELD derived ON nested TYPE record<parent> VALUE parent:outside;
+`, schemas: { parent: object({}), nested: object({
+  details: object({ parent: { type: "string", pattern: "^parent:a$" } }),
+  items: { type: "array", items: object({ parent: string }) },
+}) } });
+
+test("saved nested references allow normalization and ignore protected outputs and their descendants", async () => {
+  const details = Object.freeze({ parent: new RecordId("parent", "b"), derived: new RecordId("parent", "outside"),
+    generated: Object.freeze({ parent: new RecordId("parent", "outside") }) });
+  const items = Object.freeze([Object.freeze({ parent: new RecordId("parent", "b"), derived: new RecordId("parent", "outside") })]);
+  const result = await run({ model: nestedModel, space: [{ id: "parent:a" }, { id: "parent:b" }], counts: { nested: 1 },
+    rules: { nested: { values: { details: { parent: "parent:a" }, items: [{ parent: "parent:a" }] } } },
+    apply: async row => Object.freeze({ id: row.id, details, items, derived: new RecordId("parent", "outside") }),
+  });
+  assert.equal(result.space.nested[0].details.parent, "parent:b");
+  assert.equal(result.space.nested[0].items[0].parent, "parent:b");
+  assert.strictEqual(result.created[0].details, details);
+  assert.strictEqual(result.created[0].items, items);
+});
+
+test("saved references cannot escape the pool through scalar, array, optional, or nested fields", async t => {
+  const cases = [
+    { table: "child", values: { parent: "parent:a" }, saved: { parent: new RecordId("parent", "outside") }, path: "parent" },
+    { table: "peers", values: { members: ["parent:a", "parent:b"] }, saved: { members: [new RecordId("parent", "a"), new RecordId("tag", "outside")] }, path: "members.1" },
+    { table: "optional_node", values: {}, saved: { parent: new RecordId("optional_node", "outside") }, path: "parent" },
+    { table: "nested", values: { details: { parent: "parent:a" }, items: [] },
+      saved: { details: { parent: new RecordId("parent", "outside") }, items: [] }, path: "details.parent" },
+    { table: "nested", values: { details: { parent: "parent:a" }, items: [{ parent: "parent:a" }] },
+      saved: { details: { parent: new RecordId("parent", "a") }, items: [{ parent: new RecordId("parent", "outside") }] }, path: "items.0.parent" },
+  ];
+  for (const { table, values, saved, path } of cases) await t.test(`${table}.${path}`, async () => {
+    let calls = 0, context;
+    await assert.rejects(run({ model: table === "nested" ? nestedModel : model,
+      space: [{ id: "parent:a" }, { id: "parent:b" }], counts: { [table]: 2 }, rules: { [table]: { values } },
+      apply: async (row, ctx) => { calls++; context = ctx; return { ...await accept(row), ...saved }; },
+    }), error => {
+      assert.match(error.message, /outside the supplied space or accepted rows/);
+      assert(error.message.includes(path), error.message);
+      assert.equal(error.sequence, 0);
+      return true;
+    });
+    assert.equal(calls, 1, "a bad saved reference must abort before the next apply");
+    assert.deepEqual(context.space[table], [], "reject before publishing the saved record");
+    assert.equal(context.remaining[table], 2);
+  });
+});
+
 test("compatibility follows declared field dependencies even when names have the opposite order", async () => {
   const space = [
     { id: "group:a" }, { id: "group:b" },

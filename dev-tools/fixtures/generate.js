@@ -1,7 +1,7 @@
 "use strict";
 
 const { RecordId } = require("surrealdb");
-const { recordId } = require("./model");
+const { recordId, savedReferences } = require("./model");
 const { createRandom, generateInput, hash, json } = require("./values");
 const { WeightedIndex, weightValue } = require("./weighted-index");
 
@@ -249,9 +249,11 @@ async function generate({ model, seed = 1, space: supplied = [], counts, rules =
       const row = { table, id, content: prepared.content };
       const accepted = await apply(row, rowContext);
       if (!accepted?.id || String(recordId(accepted.id)) !== String(id)) throw new Error(`apply did not accept fixture ${id}`);
+      const saved = savedReferences(model.tables.get(table), accepted);
+      for (const ref of saved) if (!records.has(ref.value)) throw new Error(`Saved reference ${ref.path.join(".")}=${ref.value} is outside the supplied space or accepted rows`);
       add(accepted);
       for (const role of definition.roles) {
-        for (const parent of new Set(references(role, prepared.document[role.name]))) {
+        for (const parent of new Set(saved.filter(ref => ref.field === role.name).map(ref => ref.value))) {
           const uses = countValue((role.usage.get(parent) ?? 0) + 1, `${role.key} usage`);
           role.usage.set(parent, uses);
           if (role.positions.has(parent)) role.index.set(role.positions.get(parent), baseWeight(role, parent));

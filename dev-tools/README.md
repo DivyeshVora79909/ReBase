@@ -388,7 +388,13 @@ Query again for final derived state. Population is sequential in counts mode;
 and indexes in memory, so choose deliberate transaction-sized counts.
 
 For explicit composition, `generate` requires `apply(row, ctx)` to return the
-accepted record. Optional `read(ids)` receives native `RecordId` values and must
+complete accepted record. Public references in that response, including nested
+references, must belong to the supplied space or previously accepted rows.
+Database normalization determines usage counts and future selection weights;
+generated/protected fields are excluded from this reference check. A bad saved
+reference fails before updating pools or quotas. `populate` cancels the whole
+transaction; custom `generate` callers own rollback of their effects.
+Optional `read(ids)` receives native `RecordId` values and must
 return exactly those records. Additional callback context can be passed as
 `context: { ... }`. It opens no connection and owns no commit/cancel boundary:
 

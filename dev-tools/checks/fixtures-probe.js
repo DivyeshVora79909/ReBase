@@ -12,8 +12,10 @@ const { compile } = require("../accounting/acceptance");
 const { exact, snapshot } = require("../accounting/source-oracle");
 const { prepare } = require("../prepare");
 const { start, client } = require("../temporal-tree/harness");
+const { main: probeSavedReferences } = require("./fixture-references-probe");
 
 async function main() {
+  await probeSavedReferences();
   const built = compile();
   const model = createModel({ schema: built.bundle,
     schemas: loadClientSchemas(path.resolve(__dirname, "../../designs/all-in-accounting/schemas")) });

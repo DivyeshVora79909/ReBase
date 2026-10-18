@@ -32,7 +32,13 @@ generation loop. `space` is an array of existing records; its table pools are
 derived from IDs. `counts` maps table names to new-record counts, with omitted
 tables requesting zero. `rules` overrides only choices the schema cannot make.
 
-`apply(row, context)` accepts one bound row and returns the accepted record.
+`apply(row, context)` accepts one bound row and returns the complete accepted record.
+Public references in that response must stay within the starting space and
+previously accepted rows, including nested references supplied through `values`.
+The saved references determine role usage and subsequent selection weights.
+Generated/protected references and create-only JSON Schema constraints are
+excluded from this check. Rejection happens before publishing the row or
+advancing quotas; native population cancels the whole transaction.
 `read(ids)` optionally refreshes chosen parents before value generation. These
 ordinary functions keep selection separate from effects. The core does not
 open connections or own transactions. For custom composition the caller owns
@@ -154,3 +160,24 @@ automatic nested-reference synthesis, exact final distribution quotas, global
 completion search, and production-scale data loading remain outside this API's
 contract. Future changes should follow concrete scenario requirements or
 measured bottlenecks.
+
+## Saved-reference correction — October 18, 2026
+
+Review of `91d6df1` exposed a missing acceptance boundary: usage came from the
+prepared input, and references rewritten by the database were not checked
+against the pool. The generator now extracts public references from the saved
+record using the compiled field bindings, validates membership before updating
+run state, and derives usage from those references. No public API, dependency,
+or database query was added.
+
+- `npm run test:dev-tools`: 112 tests passed. New regressions reproduced the
+  original failures and cover rewritten scalar/polymorphic array references,
+  optional additions/removals, nested wildcard paths, protected outputs,
+  input-only constraints, and subsequent selection feedback.
+- `node dev-tools/checks/fixture-references-probe.js`: passed on disposable
+  SurrealDB 3.3.0/SurrealKV. Native `VALUE` normalization updated the saved parent
+  and usage; a later rewrite outside the supplied pool cancelled both pending
+  child writes and every parent event update. The regular fixture probe now
+  includes this focused check.
+- `git diff --check`: passed. The full accounting fixture integration probe
+  and broader backend acceptance suites were not rerun for this correction.
