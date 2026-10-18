@@ -1,9 +1,18 @@
 # Developer experience restart handoff
 
-## Current result — October 16
+## Fixture continuation — October 18
 
-The declarative-engine replacement is implemented and accepted locally. Changes
-remain uncommitted against `cc7b98d`. The [execution plan](declarative-engine-plan.md)
+The current development-tools work adds incremental fixture generation from
+counts, inferred reference pools, weighted parent selection, and current native
+aggregate feedback. Read the [design and execution record](fixture-generation.md)
+and [usage guide](../../dev-tools/README.md#incremental-counts-and-current-database-values)
+for the API and acceptance status. The earlier deployment task was cancelled;
+`prepare` is already implemented. Current changes concern fixture generation.
+
+## Declarative-engine result — October 16
+
+The declarative-engine replacement was accepted and committed in `03edb35`.
+The [execution plan](declarative-engine-plan.md)
 records the recovered intent, mathematical model and completed gates. Read the
 [developer blueprint](developer-blueprint.md) and
 [declared-query guide](function-reactivity.md) for the current authoring contract.

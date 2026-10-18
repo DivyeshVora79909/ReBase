@@ -280,9 +280,11 @@ static map because raw-body signatures cannot be dispatched from request data.
 `npm run workbench` starts Node's built-in JavaScript REPL with `build`,
 `explain`, `connect`, and the `fixtures` namespace. Use `build({ check: true })`
 to verify generated artifacts and the connected SDK's `db.query()` to apply a
-compiled schema. Fixture generation takes an explicit model, seed, named pools,
-and recipe: `fixtures.createModel({ schema, schemas })` combines the emitted compiler bundle
-with ordinary JSON Schemas, `fixtures.plan({ model, seed, space, recipe })`
-plans rows offline, and `fixtures.populate(db, options)` creates them in one
-transaction. Recipes declare their own tables, values, and reference pools.
+compiled schema. `fixtures.createModel({ schema, schemas })` combines the emitted
+compiler bundle with ordinary JSON Schemas. `fixtures.plan({ model, seed, space,
+recipe })` prepares named, staged fixtures offline. For incremental generation,
+`fixtures.populate(db, { model, seed, space, counts, rules })` infers reference
+pools and ordering, selects weighted parents, and rereads current database values
+between inserts. Both population modes use one transaction. `fixtures.generate`
+exposes the selection loop with explicit read/apply effects for custom composition.
 See the [developer tools guide](./dev-tools/README.md) for examples.

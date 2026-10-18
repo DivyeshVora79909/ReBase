@@ -141,8 +141,10 @@ const model = fixtures.createModel({
 })
 ```
 
-Create the model once and reuse it. It compiles input validators and native type
-bindings from the complete emitted SQL using the existing compiler parser.
+Create the model once and reuse it. It compiles input validators, native type
+bindings, and public reference metadata from the complete emitted SQL using the
+existing compiler parser. Inspect `model.tables.get("account_entry").relations`
+in the REPL to see the inferred reference targets and array cardinalities.
 `schemas` accepts either the existing public catalog or a plain
 `{ tableName: jsonSchema }` object. Complete parsed compiler metadata is also
 accepted; raw source metadata can lack generated fields such as `owned_by`.
@@ -151,8 +153,9 @@ accepted; raw source metadata can lack generated fields such as `owned_by`.
 | --- | --- |
 | `createModel({ schema, schemas })` | Validate inputs and bind native SDK types |
 | `plan(options)` | Generate an inspectable, reproducible plan without a connection |
+| `generate(options)` | Choose and accept one row at a time, with explicit read/apply effects |
 | `insert(transaction, plan, { batchSize })` | Write ordered statements in caller-owned transaction |
-| `populate(db, options)` | Read space, plan, write, and commit one transaction |
+| `populate(db, options)` | Run an offline recipe or incremental counts in one transaction |
 | `withSolver(callback, { timeoutMs })` | Optional native Z3 session with automatic worker cleanup |
 
 No global Faker configuration, connection discovery, hidden tenant selection,
@@ -265,6 +268,143 @@ Reusing IDs in an already populated database fails; use a fresh space or seed.
 Planning holds the requested fixture in memory; page large source queries and
 use deliberate transaction-sized scenarios for large runs.
 
+## Incremental counts and current database values
+
+Use `counts` when later rows depend on earlier database calculations. Required
+references are selected automatically from the existing and newly accepted
+records. Tables become eligible as parents appear; a table with more remaining
+rows is more likely to run next. Existing records never consume the requested
+new-row counts.
+
+```js
+const generated = await fixtures.populate(admin.db, {
+  model, seed: "businesses",
+  space: [{ id: "rebase_tenant:demo" }], // an already provisioned tenant
+  counts: { subsidiary: 10, currency: 1 },
+  rules: {
+    currency: {
+      refs: { owned_by: {} },
+      values: { code: "DEMO", name: "Demo currency", precision: 2 },
+    },
+    subsidiary: {
+      refs: { owned_by: {} },
+      values: ({ faker }) => ({
+        name: faker.company.name(), effective_at: "2027-01-01T00:00:00Z",
+      }),
+    },
+  },
+})
+generated.space.subsidiary
+```
+
+The currency is created before any subsidiary needs it. The schema already
+declares the relation, so no currency pool mapping or table ordering is needed.
+`owned_by` is optional in these create schemas; `{}` explicitly requests it.
+The supplied tenant must exist. Repeating this example against the same data
+requires a new seed and any unique business values, or an explicitly cleared
+development dataset.
+
+In this mode, `space` is an **array of existing records**, or an async function
+of the transaction returning that array. The generator derives table pools
+from record IDs and deduplicates repeated IDs. Omitted counts default to zero;
+zero-count tables can still provide parents. `rules` contains reusable table
+policies independently of a run's counts. `counts` and `recipe` cannot be mixed.
+
+Each rule accepts `priority` (default 1), `refs`, `values`, and `id`.
+The table selection weight is `remaining × priority`; zero priority disables
+selection and leaves a blocker if its quota remains. IDs default to stable
+hashes of seed, table, and per-table accepted index. An explicit `id` or `id(ctx)`
+can supply a full record ID.
+
+A reference policy supports these independent controls:
+
+| Option | Meaning |
+| --- | --- |
+| `bias: { table: weight }` | Weight each record of that target table; unspecified targets use 1, zero excludes a target |
+| `skew` | Exponent in `(uses + offset) ** skew`; 0 is uniform, positive favors popular parents, negative favors less-used parents |
+| `offset` | Positive starting weight base, default 1; larger values soften the influence of early usage |
+| `usage: { recordId: count }` | Explicit starting totals, overriding counts inferred from supplied children for those IDs |
+| `weight(record, ctx)` | Pure synchronous custom multiplier; return zero to exclude an incompatible candidate |
+| `after: [field]` | Select the named reference fields first, so a custom weight can use `ctx.parents` |
+
+Default polymorphic selection weights records equally. Ten candidates of one
+target therefore receive ten times the total weight of a single candidate of
+another target. Usage is counted separately for each `table.field`, once per
+accepted child/parent pair. Array selection chooses distinct IDs and respects
+both schema bounds and native fixed array length. Skew controls tendencies,
+not exact 80/20 guarantees. Weights and their totals must remain finite.
+
+For related fields, declare the actual dependency:
+
+```js
+refs: {
+  treasury: {
+    after: ["invoice"],
+    weight: (cash, { parents }) =>
+      Number(cash.subsidiary === parents.invoice.subsidiary),
+  },
+}
+```
+
+Optional references are omitted unless requested through `refs` or values.
+Static `values` can pin reference IDs. `refs: { account: false }` delegates
+selection of that field to the values callback; required manual references
+must still be provided and belong to the supplied or accepted space. Nested
+reference objects also need explicit values. Empty required cycles cannot
+bootstrap; an existing seed can enable a self-reference or schema cycle.
+
+`values(ctx)` receives `{ table, index, sequence, seed, space, parents, remaining,
+faker, pick }`. `index` is the accepted count for that table; `sequence` is the
+accepted count across all tables. Native population also supplies `transaction`.
+`parents` contains a record for each selected scalar reference and an array
+for each selected array reference. IDs and decimals in these views are strings.
+Treat `space` and `parents` as read-only views; return new inputs from `values`
+and accepted records from `apply`.
+
+Before each values callback, native population rereads all selected parents in
+one bound query inside the write transaction. It then validates, binds, and
+inserts the new row before making another choice. Business calculations stay
+in SurrealDB. Use current `parents` values for capacity bounds; query more distant
+ancestors through `transaction` when needed. Custom selection weights see cached
+candidate records, so use them for stable compatibility fields. Changing
+aggregate feasibility belongs in the values callback. Unselected entries in
+`space` remain snapshots.
+
+Return `null` from `values` to decline an infeasible choice without writing or
+consuming its quota. `maxAttempts` defaults to 32 attempts per table without
+progress; an accepted row resets these budgets. When no table can proceed,
+`FixtureStalledError` exposes `code: "FIXTURE_STALLED"`, `seed`, `remaining`,
+`blocked`, `attempts`, and `completed`. This is a diagnostic of the sampled run,
+not proof that the request is unsatisfiable. There is no hidden restart.
+Thrown callback errors and database rejections are fatal. Native population
+cancels all writes on either a fatal error or a stall. `assert(result, context)`
+can also reject before commit, using `context.transaction` for final native
+aggregate checks.
+
+The result includes `rows` (bound accepted inputs), `created` (acceptance
+responses), `space` (table pools), `usage` (role counts), and total `attempts`.
+Query again for final derived state. Population is sequential in counts mode;
+`batchSize` belongs to the offline recipe path. Each run retains its records
+and indexes in memory, so choose deliberate transaction-sized counts.
+
+For explicit composition, `generate` requires `apply(row, ctx)` to return the
+accepted record. Optional `read(ids)` receives native `RecordId` values and must
+return exactly those records. Additional callback context can be passed as
+`context: { ... }`. It opens no connection and owns no commit/cancel boundary:
+
+```js
+const result = await fixtures.generate({
+  model, seed: "offline-graph", counts: { subsidiary: 3, currency: 1 },
+  rules: { subsidiary: { values: { effective_at: "2027-01-01T00:00:00Z" } } },
+  apply: async row => ({ id: row.id, ...row.content }),
+})
+```
+
+That in-memory acceptor exercises graph selection and input validation. Current
+database aggregates require read/write effects; `populate` provides the native
+composition. Ordinary callback closures can also supply another explicit effect
+implementation. All randomness and ordering must be reproducible for seed replay.
+
 ## Coupled constraints and accounting trial
 
 Simple bounds belong in ordinary functions. For coupled equations, write native
@@ -290,6 +430,29 @@ The [accounting recipe](./fixtures/examples/accounting.js) composes exact-cent
 allocations, percentage plus fixed charges, named relations, and funding
 prerequisites. Its independent prefix check verifies the generated scenario.
 
+The [incremental accounting example](./fixtures/examples/accounting-incremental.js)
+withdraws from explicitly selected funded treasuries. It reads current account
+and subsidiary summaries, applies their floors in exact cents, and chooses a
+feasible amount. It checks that the supplied start follows the relevant history
+and supports two-decimal treasuries in their subsidiary's reporting currency.
+
+```js
+const { withdrawalOptions } = require("./dev-tools/fixtures/examples/accounting-incremental")
+const result = await fixtures.populate(admin.db, withdrawalOptions({
+  model, tenant: "rebase_tenant:demo", accounts: ["treasury:cash"],
+  seed: "cash-movements", count: 20, maxCents: 500n,
+  startAt: "2027-02-01T00:00:00Z",
+}))
+```
+
+For coupled constraints, enclose the whole population in one `withSolver`
+callback. Define stable formulas once, then scope each changing bound inside
+`values`: `solver.push(); try { solver.add(currentBound); ... await solve() }
+finally { solver.pop() }`. Extract plain values before popping. Adding another
+bound does not replace an earlier bound. A solver's unsatisfiable result may be
+handled explicitly as `return null`; timeout/unknown should remain distinguishable
+from infeasibility. The generator does not swallow solver failures.
+
 ```sh
 node dev-tools/fixtures/examples/accounting.js  # offline preview
 npm run probe:fixtures                       # disposable SurrealKV integration
@@ -298,8 +461,10 @@ npm run test:dev-tools
 ```
 
 The integration probe checks native bindings, replay, exact tree prefixes,
-existing-record reads, and full-table rollback after overdraw, backdating,
-and cross-tenant failures. These are correctness trials, not throughput claims.
+current parent feedback, and full-table rollback after overdraw, backdating,
+cross-tenant failures, and incremental stalls. These are correctness trials,
+not throughput claims. The [design and verification record](../designs/rebase-system/fixture-generation.md)
+documents selection costs and implementation boundaries.
 The [17 explicit accounting records](./accounting/fixture-example.js) remain
 available and now share the same metadata-based binding implementation.
 

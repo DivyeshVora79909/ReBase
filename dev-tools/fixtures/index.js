@@ -1,27 +1,12 @@
 "use strict";
 
-const { createHash } = require("node:crypto");
-const { RecordId, Decimal, Duration, Uuid, DateTime } = require("surrealdb");
+const { RecordId } = require("surrealdb");
 const { createModel, recordId } = require("./model");
 const { withSolver } = require("./solver");
+const { createRandom, generateInput, hash, json } = require("./values");
+const { generate, FixtureStalledError } = require("./generate");
 
-const hash = value => createHash("sha256").update(value).digest();
 const own = (object, key) => Object.hasOwn(object, key);
-
-// Keep a JSON view for recipes/schema validation, then bind native values once.
-function json(value) {
-  if (value instanceof DateTime) return value.toISOString();
-  if (value instanceof RecordId || value instanceof Decimal || value instanceof Duration || value instanceof Uuid) return String(value);
-  if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map(json);
-  if (value && typeof value === "object") {
-    if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
-      throw new Error("Fixture values must be JSON objects or supported SDK values");
-    }
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, json(item)]));
-  }
-  return value;
-}
 
 function orderedSteps(recipe, space) {
   if (!Array.isArray(recipe)) throw new Error("recipe must be an array of named steps or a function returning one");
@@ -63,14 +48,7 @@ async function plan({ model, seed = 1, space: suppliedSpace = {}, recipe, assert
   if (typeof seed !== "string" && (typeof seed !== "number" || !Number.isFinite(seed))) throw new Error("seed must be a string or finite number");
   if (!suppliedSpace || typeof suppliedSpace !== "object" || Array.isArray(suppliedSpace)) throw new Error("space must be an object of named record arrays");
   if (assertPlan !== undefined && typeof assertPlan !== "function") throw new Error("assert must be a function");
-  const { Faker, en } = require("@faker-js/faker");
-  const seedText = String(seed), numericSeed = hash(seedText).readUInt32BE();
-  const faker = new Faker({ locale: [en] });
-  faker.seed(numericSeed);
-  // Faker's relative date helpers otherwise depend on wall-clock time.
-  faker.setDefaultRefDate("2020-01-01T00:00:00.000Z");
-  const { createGenerator } = await import("json-schema-faker");
-  const generator = createGenerator({ seed: numericSeed, optionalsProbability: 0, useDefaultValue: true });
+  const { seed: seedText, faker, generator } = await createRandom(seed);
   const space = Object.create(null), identities = new Set();
   for (const [name, pool] of Object.entries(suppliedSpace)) {
     if (!Array.isArray(pool)) throw new Error(`Space ${name} must be an array of records`);
@@ -121,24 +99,7 @@ async function plan({ model, seed = 1, space: suppliedSpace = {}, recipe, assert
         const overrides = json(typeof step.values === "function" ? await step.values(rowContext) : step.values ?? {});
         if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) throw new Error("values must return an object");
         const values = { ...references, ...overrides };
-        const generatedSchema = structuredClone(entry.schema);
-        generatedSchema.properties ||= {};
-        const required = new Set(generatedSchema.required || []);
-        for (const [fieldName, field] of entry.fields) {
-          if (!field.recordType?.targets?.length || !own(generatedSchema.properties, fieldName) || own(values, fieldName)) continue;
-          if (required.has(fieldName)) throw new Error(`Required reference ${fieldName} needs refs or values`);
-          // Never fabricate record IDs with a regex generator.
-          generatedSchema.properties[fieldName] = false;
-        }
-        for (const [fieldName, value] of Object.entries(values)) {
-          if (!own(generatedSchema.properties, fieldName)) throw new Error(`Unknown input field ${fieldName}`);
-          // Pin overrides before generation so conditionals can see them.
-          generatedSchema.properties[fieldName] = { ...generatedSchema.properties[fieldName], const: value };
-          required.add(fieldName);
-        }
-        generatedSchema.required = [...required];
-        const content = { ...await generator.generate(generatedSchema), ...values };
-        const prepared = model.prepare(step.table, content);
+        const prepared = await generateInput(model, step.table, values, generator);
         for (const ref of prepared.references) {
           if (!identities.has(ref.value)) throw new Error(`Reference ${ref.field}=${ref.value} is outside the supplied space or preceding steps`);
         }
@@ -149,7 +110,7 @@ async function plan({ model, seed = 1, space: suppliedSpace = {}, recipe, assert
         if (id.table.name !== step.table) throw new Error(`Record id ${id} does not belong to ${step.table}`);
         if (identities.has(String(id))) throw new Error(`Duplicate fixture id ${id}`);
         rows.push({ table: step.table, id, content: prepared.content });
-        space[step.name].push({ ...content, id: String(id) });
+        space[step.name].push({ ...prepared.document, id: String(id) });
         identities.add(String(id));
       } catch (cause) {
         throw new Error(`Fixture ${step.name}[${index}] (${step.table}): ${cause.message}`, { cause });
@@ -185,16 +146,27 @@ async function insert(transaction, planned, { batchSize = 100 } = {}) {
   return created;
 }
 
-/** Read space, plan, and insert inside one transaction; never opens/closes a connection. */
+/** Populate from an offline recipe or incremental counts, in one transaction. */
 async function populate(db, options = {}) {
   if (!db || typeof db.beginTransaction !== "function") throw new Error("populate requires a connected SurrealDB SDK client");
+  const incremental = own(options, "counts");
+  if (incremental && own(options, "recipe")) throw new Error("Use either counts for incremental generation or recipe for an offline plan");
   const transaction = await db.beginTransaction();
   try {
     const space = typeof options.space === "function" ? await options.space(transaction) : options.space;
-    const planned = await plan({ ...options, space });
-    const created = await insert(transaction, planned, options);
+    let result;
+    if (incremental) {
+      if (options.context !== undefined && (!options.context || typeof options.context !== "object" || Array.isArray(options.context))) throw new Error("context must be an object");
+      result = await generate({ ...options, space, context: { ...options.context, transaction },
+        read: async ids => (await transaction.query("SELECT * FROM $ids;", { ids }))[0],
+        apply: async row => (await insert(transaction, { rows: [row] }))[0],
+      });
+    } else {
+      const planned = await plan({ ...options, space });
+      result = { ...planned, created: await insert(transaction, planned, options) };
+    }
     await transaction.commit();
-    return { ...planned, created };
+    return result;
   } catch (error) {
     try { await transaction.cancel(); } catch (cancelError) {
       throw new AggregateError([error, cancelError], "Fixture failed and transaction cancellation also failed", { cause: error });
@@ -203,4 +175,4 @@ async function populate(db, options = {}) {
   }
 }
 
-module.exports = { createModel, plan, insert, populate, withSolver };
+module.exports = { createModel, plan, generate, insert, populate, withSolver, FixtureStalledError };

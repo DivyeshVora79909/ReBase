@@ -5,7 +5,8 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { Surreal, RecordId, Decimal, escapeIdent } = require("surrealdb");
 const { createModel, plan, populate } = require("../fixtures");
-const { accountingOptions, money } = require("../fixtures/examples/accounting");
+const { accountingOptions, money, cents } = require("../fixtures/examples/accounting");
+const { withdrawalOptions } = require("../fixtures/examples/accounting-incremental");
 const { loadClientSchemas } = require("../client-schemas");
 const { compile } = require("../accounting/acceptance");
 const { exact, snapshot } = require("../accounting/source-oracle");
@@ -80,6 +81,32 @@ async function main() {
     const foreignCash = foreign.rows.find(row => row.table === "treasury").id;
     const q = client(server.url);
     const snapshotAll = () => snapshot(q, [...built.schema.tables.keys()]);
+    const incrementalOptions = (seed, startAt) => withdrawalOptions({ model, tenant, accounts: [treasury], seed, count: 4, startAt });
+    const incremental = incrementalOptions("feedback");
+    const values = incremental.rules.account_entry.values;
+    let currentCents = defaults.reserveCents, feedbackReads = 0;
+    incremental.rules.account_entry.values = async context => {
+      exact(context.parents.account.z_history.summary.measures.real.sum, money(currentCents), "next generation sees preceding reactive writes");
+      const value = await values(context);
+      assert(value, "funded treasury can satisfy the next withdrawal");
+      currentCents += cents(value.real); feedbackReads++;
+      return value;
+    };
+    const generated = await populate(db, incremental);
+    assert.equal(generated.created.length, 4);
+    assert.equal(feedbackReads, 4);
+    exact((await db.query("RETURN $account.z_history.summary.measures.real.sum;", { account: treasury }))[0], money(currentCents), "incremental exact final balance");
+    console.log("PASS incremental accounting generation reads current account and subsidiary summaries between writes");
+    for (const variant of ["native-rejection", "stalled"]) {
+      const before = await snapshotAll(), options = incrementalOptions(variant, "2027-01-03T00:00:00.000Z");
+      options.maxAttempts = 2;
+      const original = options.rules.account_entry.values;
+      options.rules.account_entry.values = async context => context.index < 2 ? original(context)
+        : variant === "stalled" ? null : { ...await original(context), real: money(-defaults.balanceCents) };
+      await assert.rejects(populate(db, options), variant === "stalled" ? { code: "FIXTURE_STALLED" } : /ACCOUNT_BALANCE_FLOOR/);
+      assert.deepEqual(await snapshotAll(), before, `${variant}: all earlier incremental writes and reactive effects roll back`);
+      console.log(`PASS incremental ${variant} cancels the complete accounting transaction`);
+    }
     const rejected = async (variant, mutate, pattern) => {
       const before = await snapshotAll();
       const options = accountingOptions({ ...defaults, seed: variant, space: async transaction => ({
@@ -107,7 +134,8 @@ async function main() {
       ? { account: String(foreignCash) } : {}), /REBASE_DEPENDENCY_TENANT|REBASE_TENANT_REFERENCE_MISMATCH/);
     assert.equal(readsInTransaction, 5, "valid, foreign, and every rejected population read their space inside a transaction");
     const report = { created: valid.created.length, exactRemaining: money(defaults.reserveCents),
-      rejectedTransactions: 3, transactionSpaceReads: readsInTransaction, storage: "SurrealKV" };
+      incrementalCreated: generated.created.length, feedbackReads, incrementalRemaining: money(currentCents),
+      rejectedTransactions: 5, transactionSpaceReads: readsInTransaction, storage: "SurrealKV" };
     const [catalog] = await db.query("INFO FOR DB;");
     const tableNames = Object.keys(catalog.tables).sort();
     const metadataSql = tableNames.map(table => `RETURN crypto::sha256(<string>(INFO FOR TABLE ${escapeIdent(table)} STRUCTURE));`).join("\n");

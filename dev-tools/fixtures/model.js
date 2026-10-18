@@ -243,7 +243,22 @@ function createModel({ schema, schemas }) {
     for (const property of Object.keys(inputSchema.properties || {})) {
       if (!fields.has(property)) throw new Error(`${name}.${property}: input field has no compiled database metadata; pass the complete emitted compiler bundle to createModel`);
     }
-    tables.set(name, { schema: inputSchema, inputSchema, validator: validator || ajv.getSchema(inputSchema.$id || `urn:rebase:fixture:${name}`), fields, nestedFields });
+    const relations = new Map();
+    for (const [fieldName, field] of fields) {
+      if (field.protected || !field.recordType?.targets?.length || !Object.hasOwn(inputSchema.properties || {}, fieldName)) continue;
+      const property = inputSchema.properties[fieldName];
+      let binding = field.binding;
+      while (binding.kind === "option") binding = binding.item;
+      const fixed = binding.length === undefined ? undefined : Number(binding.length);
+      const min = Math.max(property.minItems ?? 0, fixed ?? 0);
+      const max = Math.min(property.maxItems ?? fixed ?? Math.max(min, 1), fixed ?? Infinity);
+      if (field.recordType.isArray && (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min < 0 || max < min)) {
+        throw new Error(`${name}.${fieldName}: incompatible reference array cardinality`);
+      }
+      relations.set(fieldName, { ...field.recordType, targets: [...new Set(field.recordType.targets)], name: fieldName,
+        required: (inputSchema.required || []).includes(fieldName), min, max });
+    }
+    tables.set(name, { schema: inputSchema, inputSchema, validator: validator || ajv.getSchema(inputSchema.$id || `urn:rebase:fixture:${name}`), fields, nestedFields, relations });
   }
 
   function input(table, document) {

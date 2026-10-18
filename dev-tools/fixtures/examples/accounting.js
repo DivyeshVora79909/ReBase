@@ -15,6 +15,12 @@ function money(cents) {
   return `${sign}${amount / 100n}.${String(amount % 100n).padStart(2, "0")}`;
 }
 
+function cents(value) {
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(String(value));
+  if (!match || /[1-9]/.test((match[3] || "").slice(2))) throw new Error(`Expected an exact two-decimal amount: ${value}`);
+  return (match[1] ? -1n : 1n) * (BigInt(match[2]) * 100n + BigInt((match[3] || "").padEnd(2, "0").slice(0, 2)));
+}
+
 async function allocation({ balanceCents, reserveCents, count, feeCents, feeBasisPoints }) {
   return withSolver(async ({ Int, solver, solve }) => {
     const withdrawals = Array.from({ length: count }, (_, index) => Int.const(`withdrawal_${index}`));
@@ -112,4 +118,4 @@ async function preview() {
 }
 
 if (require.main === module) preview().catch(error => { console.error(error); process.exitCode = 1; });
-module.exports = { accountingOptions, money, preview };
+module.exports = { accountingOptions, money, cents, preview };

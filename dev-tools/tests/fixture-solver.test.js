@@ -28,6 +28,34 @@ test("unsatisfiable constraints produce a distinct actionable error", async () =
   }), { code: "FIXTURE_SOLVER_UNSAT", message: /unsatisfiable \(unsat\)/ });
 });
 
+test("one solver session composes with generation and temporary bounds do not survive later rows", async () => {
+  const { createModel, generate } = require("../fixtures");
+  const model = createModel({ schema: `
+    DEFINE TABLE allocation SCHEMAFULL;
+    DEFINE FIELD amount ON allocation TYPE int;
+    DEFINE FIELD fee ON allocation TYPE int;
+  `, schemas: { allocation: { type: "object", additionalProperties: false,
+    properties: { amount: { type: "integer" }, fee: { type: "integer" } }, required: ["amount", "fee"] } } });
+  const result = await withSolver(async ({ Int, solver, solve }) => {
+    const amount = Int.const("amount"), fee = Int.const("fee");
+    solver.add(amount.gt(0), fee.eq(amount.mul(2).add(1)));
+    const generated = await generate({ model, counts: { allocation: 3 },
+      apply: async row => ({ id: row.id, ...row.content }),
+      rules: { allocation: { values: async ({ index }) => {
+        solver.push();
+        try {
+          solver.add(amount.eq([8, 3, 9][index]));
+          const solution = await solve();
+          return { amount: Number(solution.eval(amount).value()), fee: Number(solution.eval(fee).value()) };
+        } finally { solver.pop(); }
+      } } },
+    });
+    assert.equal(solver.assertions().length(), 2, "only the reusable formulas remain");
+    return generated.rows.map(row => row.content);
+  });
+  assert.deepEqual(result, [{ amount: 8, fee: 17 }, { amount: 3, fee: 7 }, { amount: 9, fee: 19 }]);
+});
+
 test("unknown retains the native reason instead of returning a model", async () => {
   await assert.rejects(withSolver(async ({ Int, solver, solve }) => {
     const x = Int.const("x");
