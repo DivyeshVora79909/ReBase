@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReBase Inspector</title>
+  <!-- inspector-style -->
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M7 7L21 14L7 21V7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="7" cy="7" r="4" fill="currentColor"/><circle cx="21" cy="14" r="4" fill="currentColor"/><circle cx="7" cy="21" r="4" fill="currentColor"/></svg>
+      <div><strong>ReBase Inspector</strong><span id="project-name">Explore a design</span></div>
+    </div>
+    <nav class="mode-switch" aria-label="Inspector mode">
+      <button id="schema-mode" aria-pressed="true">Schema</button>
+      <button id="access-mode" aria-pressed="false">Access</button>
+    </nav>
+    <div class="header-actions">
+      <button id="open-file">Open file</button>
+      <button id="export-file">Save snapshot</button>
+      <button id="connect" class="primary">Connect</button>
+      <button id="disconnect" hidden>Disconnect</button>
+    </div>
+    <input id="file-input" type="file" accept=".json,application/json" hidden>
+  </header>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <main class="workspace">
+    <aside class="navigator" aria-label="Find tables or records">
+      <label for="search" class="section-label">EXPLORE</label>
+      <input id="search" type="search" placeholder="Find a table or field…" autocomplete="off">
+      <label class="sr-only" for="group-filter">Table group</label>
+      <select id="group-filter">
+        <option value="all">All tables</option>
+        <option value="project">Project</option>
+        <option value="framework">Framework</option>
+        <option value="view">Views</option>
+      </select>
+      <div class="list-caption"><span id="list-count"></span><span id="connection-state">Offline</span></div>
+      <div id="table-list" class="table-list"></div>
+      <div class="navigator-footer">Select a table to follow its connections.<br>Colors stay the same while you explore.</div>
+    </aside>
+    <section class="graph-area" aria-label="Relationship graph">
+      <div class="graph-toolbar">
+        <div id="schema-controls">
+          <label class="sr-only" for="layer">Connection layer</label>
+          <select id="layer">
+            <option value="references">References</option>
+            <option value="calculations">Calculations</option>
+            <option value="memberships">Tree memberships</option>
+            <option value="access">Access fields</option>
+            <option value="views">Views</option>
+            <option value="all">All connections</option>
+          </select>
+          <label class="check-label"><input id="technical" type="checkbox"> Generated fields</label>
+        </div>
+        <div id="access-controls" hidden>
+          <button id="refresh-access">Refresh</button>
+          <span id="access-scope"></span>
+        </div>
+        <button id="fit">Fit graph</button>
+      </div>
+      <div id="cy" tabindex="0" aria-label="Graph canvas. Use the table list for keyboard navigation."></div>
+      <div id="empty-graph" class="empty-state" hidden>
+        <div class="empty-symbol" aria-hidden="true">◇</div>
+        <h1 id="empty-title">Open a design</h1>
+        <p id="empty-description">Drop devtools.json here or use Open file.</p>
+      </div>
+      <div class="graph-bottom">
+        <div class="focus-controls" aria-label="Graph focus">
+          <button data-focus="all" aria-pressed="true">All</button>
+          <button data-focus="neighbors" aria-pressed="false">Neighbors</button>
+          <button data-focus="upstream" aria-pressed="false">Upstream</button>
+          <button data-focus="downstream" aria-pressed="false">Downstream</button>
+        </div>
+        <button id="export-image" title="Save the visible graph as PNG">PNG ↗</button>
+        <span id="graph-count"></span>
+      </div>
+      <div id="legend" class="legend"></div>
+    </section>
+    <aside class="inspector" aria-label="Selection details">
+      <div class="inspector-heading"><span class="section-label">INSPECT</span><button id="clear-selection" aria-label="Clear selection" title="Clear selection">×</button></div>
+      <div id="selection-title"><h2>See how it connects</h2><p>Select a table, field or connection.</p></div>
+      <nav id="detail-tabs" class="detail-tabs" aria-label="Table details" hidden>
+        <button data-tab="fields" aria-pressed="true">Fields</button>
+        <button data-tab="dependencies" aria-pressed="false">Dependencies</button>
+        <button data-tab="trees" aria-pressed="false">Trees</button>
+        <button data-tab="source" aria-pressed="false">Source</button>
+      </nav>
+      <div id="detail-body" class="detail-body"></div>
+    </aside>
+  </main>
+  <dialog id="connection-dialog">
+    <form id="connection-form">
+      <div class="dialog-heading"><h2>Connect to a design</h2><button type="button" id="close-dialog" aria-label="Close connection dialog">×</button></div>
+      <p>The inspector reads the selected tenant. Connection credentials stay in this session.</p>
+      <label>WebSocket endpoint<input name="endpoint" type="url" placeholder="ws://localhost:8000/rpc" required></label>
+      <div class="form-row">
+        <label>Namespace<input name="namespace" required></label>
+        <label>Database<input name="database" required></label>
+      </div>
+      <label>Tenant record<input name="tenant" placeholder="rebase_tenant:demo" required></label>
+      <div class="form-row">
+        <label>Login<select name="authentication" id="authentication"><option value="server">Server user</option><option value="token">Access token</option></select></label>
+        <label>Limit per table<input name="limit" type="number" min="1" max="10000" value="1000" required></label>
+      </div>
+      <div id="server-auth" class="form-row">
+        <label>Username<input name="username" autocomplete="username"></label>
+        <label>Password<input name="password" type="password" autocomplete="off"></label>
+      </div>
+      <label id="token-auth" hidden>Access token<input name="token" type="password" autocomplete="off"></label>
+      <p id="connection-error" class="error-message" role="alert"></p>
+      <button id="connect-submit" class="primary" type="submit">Connect and load</button>
+    </form>
+  </dialog>
+  <div id="drop-target" class="drop-target" hidden>Drop a catalog or access snapshot</div>
+  <script id="rebase-catalog" type="application/json">null</script>
+  <!-- inspector-script -->
+</body>
+</html>

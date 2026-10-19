@@ -125,19 +125,8 @@ function main() {
     ], { encoding: "utf8" });
     assert.notEqual(missingProfile.status, 0);
 
-    const visualizer = fs.readFileSync(
-      path.join(__dirname, "../visualizer.html"),
-      "utf8",
-    );
-    assert.match(visualizer, /URLSearchParams/);
-    assert.match(visualizer, /finalQueryResult/);
-    assert.match(visualizer, /statements\.at\(-1\)/);
-    assert.doesNotMatch(visualizer, /res\.result\[0\]/);
-    assert.doesNotMatch(visualizer, /ws:\/\/127\.0\.0\.1:8000/);
-    assert.doesNotMatch(visualizer, /pass:\s*"root"/);
-    assert.doesNotMatch(visualizer, /rpc\("use", \["main", "main"\]\)/);
     console.log(
-      "environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, removed overrides, and visualizer configuration passed",
+      "environment: native Node profiles, inherited-variable precedence, strict immutable configuration, allowlisted contexts, and removed overrides passed",
     );
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });

@@ -149,11 +149,15 @@ profile. A connected workbench serves the one design selected by that profile.
 Provider API credentials remain typed fields in SurrealDB configuration records.
 
 The compiler emits `build/<project>/schema.surql`, private `runtime-contracts.json`
-and `dependency-plan.json` files, a `devtools.json` developer catalog, and validated
+and `dependency-plan.json` files, a `devtools.json` developer catalog, a standalone
+`inspector.html`, and validated
 `table-handlers/` modules. The catalog includes all tables and views, native field
 types, references, declared dependencies, tree slots and authored function source.
 It contains no connection profile or runtime binding. Inspect
 current calculation inputs with `node dev-tools/compiler/cli.js --project designs/all-in-accounting --explain issue_adjustment.amount_delta`.
+Open `build/<project>/inspector.html` directly in your browser to explore the
+schema, polymorphic relations, calculations and tree memberships, or connect to
+read a tenant's user/group graph. See the [inspector guide](dev-tools/README.md#browser-inspector).
 
 Runtime event generation uses the same profile's default namespace/database and
 runtime binding. Keep build and deploy on the same profile:

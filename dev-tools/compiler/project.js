@@ -5,6 +5,7 @@ const { loadMaterials } = require("./materials");
 const { validateTableHandlers, validateWebhookHandlers } = require("./table-handlers");
 const { loadClientSchemas, writeClientSchemas } = require("../client-schemas");
 const { developerCatalog } = require("./catalog");
+const { buildInspector } = require("../inspector/build");
 const { explainDependency } = require('./dependency-plan');
 const {
   assertDisjointPaths,
@@ -84,6 +85,7 @@ function buildProject(rawArgs, root = process.cwd()) {
     contracts: result.contracts,
     dependencyPlan: result.dependencyPlan,
     catalog: result.catalog,
+    inspector: buildInspector(result.catalog),
     lifecycleMigration: result.lifecycleMigration,
     copies,
   }, { check: rawArgs.check });

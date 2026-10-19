@@ -17,6 +17,7 @@
     "probe:architecture": "node dev-tools/checks/architecture-probe.js",
     "probe:compiler": "node dev-tools/checks/compiler-probe.js",
     "probe:environment": "node dev-tools/checks/environment-probe.js",
+    "probe:inspector": "node dev-tools/checks/inspector-probe.js",
     "probe:authentication": "node dev-tools/checks/authentication-probe.js",
     "probe:credentials": "node dev-tools/checks/credential-probe.js",
     "probe:runtime": "node dev-tools/checks/runtime-probe.js",
@@ -79,7 +80,11 @@
   },
   "devDependencies": {
     "@faker-js/faker": "10.6.0",
+    "cytoscape": "3.34.4",
+    "cytoscape-dagre": "4.0.1",
+    "esbuild": "0.28.2",
     "json-schema-faker": "0.6.3",
+    "playwright": "1.64.1",
     "z3-solver": "5.3.1"
   },
   "packageManager": "npm@12.2.0",

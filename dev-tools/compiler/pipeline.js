@@ -238,6 +238,7 @@ function preflightArtifacts(outputDir, copies = []) {
     "runtime-contracts.json",
     "dependency-plan.json",
     "devtools.json",
+    "inspector.html",
     "migrate-one-shot-backfill.surql",
     "migrate-one-shot-finalize.surql",
   ]) {
@@ -301,7 +302,7 @@ function checkCopiedTree(sourceDir, outputDir) {
   }
 }
 
-function writeArtifacts({ outputDir, bundle, contracts, dependencyPlan, catalog, lifecycleMigration, copies = [] }, { check = false } = {}) {
+function writeArtifacts({ outputDir, bundle, contracts, dependencyPlan, catalog, inspector = "", lifecycleMigration, copies = [] }, { check = false } = {}) {
   const trees = preflightArtifacts(outputDir, copies);
   const schemaPath = path.join(outputDir, "schema.surql");
   const contractPath = path.join(outputDir, "runtime-contracts.json");
@@ -309,12 +310,16 @@ function writeArtifacts({ outputDir, bundle, contracts, dependencyPlan, catalog,
   const dependencySource = `${JSON.stringify(dependencyPlan || { version: 1, tables: {} }, null, 2)}\n`;
   const catalogPath = path.join(outputDir, "devtools.json");
   const catalogSource = JSON.stringify(catalog || null, null, 2) + "\n";
+  const inspectorPath = path.join(outputDir, "inspector.html");
   const backfillPath = path.join(outputDir, "migrate-one-shot-backfill.surql");
   const finalizeMigrationPath = path.join(outputDir, "migrate-one-shot-finalize.surql");
   const contractSource = `${JSON.stringify(contracts || { tables: {} }, null, 2)}\n`;
   const backfillSource = `${lifecycleMigration?.backfill || ""}\n`;
   const finalizeMigrationSource = `${lifecycleMigration?.finalize || ""}\n`;
   if (check) {
+    if (!fs.existsSync(inspectorPath) || fs.readFileSync(inspectorPath, "utf8") !== inspector) {
+      throw new Error("Generated output is stale: " + inspectorPath);
+    }
     if (!fs.existsSync(catalogPath) || fs.readFileSync(catalogPath, "utf8") !== catalogSource) {
       throw new Error("Generated output is stale: " + catalogPath);
     }
@@ -334,20 +339,21 @@ function writeArtifacts({ outputDir, bundle, contracts, dependencyPlan, catalog,
       throw new Error(`Generated output is stale: ${finalizeMigrationPath}`);
     }
     for (const tree of trees) checkCopiedTree(tree.sourceDir, tree.outputDir);
-    return { schemaPath, contractPath, dependencyPath, catalogPath, backfillPath, finalizeMigrationPath, copied: [] };
+    return { schemaPath, contractPath, dependencyPath, catalogPath, inspectorPath, backfillPath, finalizeMigrationPath, copied: [] };
   }
   fs.mkdirSync(outputDir, { recursive: true });
   writeGeneratedFile(schemaPath, bundle);
   writeGeneratedFile(contractPath, contractSource);
   writeGeneratedFile(dependencyPath, dependencySource);
   writeGeneratedFile(catalogPath, catalogSource);
+  writeGeneratedFile(inspectorPath, inspector);
   writeGeneratedFile(backfillPath, backfillSource);
   writeGeneratedFile(finalizeMigrationPath, finalizeMigrationSource);
   const copied = trees.flatMap((tree) => {
     fs.rmSync(tree.outputDir, { recursive: true, force: true });
     return copyTree(tree.sourceDir, tree.outputDir).map((file) => path.join(path.basename(tree.outputDir), file));
   });
-  return { schemaPath, contractPath, dependencyPath, catalogPath, backfillPath, finalizeMigrationPath, copied };
+  return { schemaPath, contractPath, dependencyPath, catalogPath, inspectorPath, backfillPath, finalizeMigrationPath, copied };
 }
 
 module.exports = {

@@ -4,8 +4,8 @@ Use SurrealDB 3.3.0 and the Node version in `.nvmrc` (currently 26.12.0).
 The tools are ordinary Node modules;
 the workbench is Node's native REPL with top-level `await`. For core schema
 work, start with the [developer blueprint](../designs/rebase-system/developer-blueprint.md).
-Install development dependencies with `npm ci`; Faker, JSON Schema Faker, and
-Z3 are development-only packages and are omitted by production-only installs.
+Install development dependencies with `npm ci`; Faker, JSON Schema Faker, Z3,
+and the inspector's build/browser libraries are development-only packages.
 The project records npm 12.2.0 in `packageManager`; use the local setup commands
 in the [root README](../README.md#runtime-and-dependencies).
 
@@ -61,6 +61,61 @@ indexes and authored helper source come from the compiler. It describes possible
 relationships; helper conditions and actual query bounds can depend on records.
 Public input schemas remain separately authored and are included unchanged.
 No deployment context, runtime secret or database records are included.
+
+## Browser inspector
+
+Build a design, then open **`build/<project>/inspector.html`** directly in a
+browser. The single file embeds the catalog, Cytoscape, Dagre, the SurrealDB SDK,
+and styles. It needs no server, CDN, or installation on the viewer's computer.
+The shared implementation lives in [inspector/](./inspector/); each build supplies
+its own data. Open or drop another build's `devtools.json` to switch designs.
+
+The table list includes framework tables, views, nonreactive tables and isolated
+entities. Selecting a table focuses its immediate neighborhood; **All** restores
+the overview. References point from parents to dependents, with parents above
+children in acyclic portions. Cycles keep their edges and receive dashed borders.
+Use **Upstream** and **Downstream** to trace a path, or search by table/field name.
+
+- **Fields** shows inputs, types, validation and calculations. Polymorphic
+  reference swatches contain one segment per possible parent table.
+- **Dependencies** shows evaluation order, direct scalar reads and declared
+  ordered queries, including the descriptor/helper that supplies bounds.
+- **Trees** shows roots, participating slots, consumers and provider functions.
+  Expand shared aggregation functions for the monoid's identity, leaf and combine.
+- **Source** shows authored functions, invariants, annotations, native indexes
+  and unchanged public JSON Schemas. The generated-fields toggle exposes internals.
+
+Colors are evenly spaced around the hue circle and assigned by a seeded hash
+ordering of the full table catalog. Filtering and graph layers cannot recolor
+tables; a changed catalog can. Text labels and split swatches supplement color.
+Static metadata describes possible memberships and dependencies. Conditional
+memberships and query bounds come from record state; a connection enables the
+record inspector under Dependencies and Trees.
+
+**Access** replaces the old `visualizer.html`. Supply an explicit WebSocket
+endpoint, namespace, database and tenant, with a server login or existing access
+token. Reads use native SDK bindings and permissions. The diagram uses direct
+`parents`, including multiple parents, and displays native roles/effective
+permissions. There are no write controls. Reads are capped per table (1,000 by
+default, at most 10,000); truncation and unloaded parents are shown explicitly.
+The result also depends on what the login can read.
+
+Connection credentials are never saved in URLs, browser storage or exported
+snapshots; password/token inputs are cleared after use. **Save snapshot** exports
+the current catalog or tenant access snapshot for offline browsing, and **PNG**
+exports the graph. Catalogs contain authored source; access snapshots contain the
+selected tenant's visible identities and permissions.
+
+```sh
+npx playwright install chromium                 # once, for browser verification
+npm run probe:inspector                         # disposable database + file:// browser
+npm run probe:inspector -- --screenshots build/inspector-evidence
+```
+
+The probe checks graph focus/direction, polymorphic colors, cycles, escaping,
+keyboard interaction, mobile sizing, imports/exports, native access boundaries,
+record state, and cancelled/late login responses. It never connects to the
+application's configured database.
 
 ## Database preparation
 
