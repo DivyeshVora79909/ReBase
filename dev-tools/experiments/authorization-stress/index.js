@@ -17,6 +17,7 @@ const { prepare } = require("../..");
 const fixture = require("./fixture");
 const access = require("./access");
 const { readPage, filterPage } = require("./paging");
+const { soak } = require("./soak");
 
 const CONFIGS = [{ table: "stress_1_1", slots: 1, measures: 1 },
   { table: "stress_0_0", slots: 0, measures: 0 }, { table: "stress_1_0", slots: 1, measures: 0 },
@@ -33,6 +34,7 @@ function options(argv) {
     "max-disk-mb": { type: "string", default: "10000" }, "scan-timeout-ms": { type: "string", default: "3000" },
     "variant-rows": { type: "string", default: "1000" }, output: { type: "string", default: "/tmp/rebase-authorization-stress.json" },
     "seed-mode": { type: "string", default: "image" },
+    "soak-seconds": { type: "string", default: "30" },
     quick: { type: "boolean" }, help: { type: "boolean", short: "h" },
   } });
   const result = { ...values, scales: (values.quick ? "100,1000" : values.scales).split(",").map(Number) };
@@ -45,6 +47,8 @@ function options(argv) {
   assert(result.samples >= 3 && result.samples <= 30, "use 3..30 samples");
   assert(result["owner-count"] >= 3 && result["owner-count"] <= 256, "owner count must be 3..256 (two reachable owners for transfer tests)");
   assert(["image", "native"].includes(result["seed-mode"]), "seed mode must be image or native");
+  result["soak-seconds"] = Number(values["soak-seconds"]);
+  assert(Number.isSafeInteger(result["soak-seconds"]) && result["soak-seconds"] >= 0, "soak seconds must be a nonnegative integer; 0 disables it");
   return result;
 }
 
@@ -252,9 +256,9 @@ async function nativeIntegrity(db, config, n, owners) {
 async function mutations(db, root, graph, config, n, run) {
   const { table, slots, measures } = config, owner = graph.owners[0], other = graph.owners[1];
   const [before] = await root.query("SELECT * FROM $owners;", { owners: [owner, other] });
+  const beforeById = new Map(before.map(row => [String(row.id), row]));
   const results = { table, n, slots, measures, operations: {}, correctness: [] };
   const samples = Object.fromEntries(["create", "payload_update", "aggregate_update", "rekey", "owner_move", "delete"].map(key => [key, []]));
-  const expectedCount = Math.ceil(n / graph.owners.length);
   for (let index = 0; index < run.options.samples; index++) {
     const id = new RecordId(table, `mutation_${index}`);
     const actions = [
@@ -277,9 +281,17 @@ async function mutations(db, root, graph, config, n, run) {
         assert.equal(saved[0].payload, name === "create" ? "authenticated native create" : "native payload edit");
         assert.equal(saved[0].rank, ["rekey", "owner_move"].includes(name) ? 100000001 : -10);
       }
-      if (slots && name === "aggregate_update") {
-        const [head] = await root.query(`RETURN $owner.${fixture.rootSlot(table, "z0")};`, { owner });
-        if (measures) assert.equal(Number(head.summary.measures.m0.sum), expectedCount + 2, "aggregate update repairs parent sum");
+      if (slots) {
+        const [heads] = await root.query("SELECT * FROM $owners;", { owners: [owner, other] });
+        const activeOwner = name === "delete" ? null : name === "owner_move" ? other : owner;
+        const amount = ["create", "payload_update"].includes(name) ? 1 : 2;
+        for (const current of heads) for (let s = 0; s < slots; s++) {
+          const field = fixture.rootSlot(table, `z${s}`), baseline = beforeById.get(String(current.id))[field].summary;
+          const summary = current[field].summary, active = String(current.id) === String(activeOwner);
+          assert.equal(summary.count, baseline.count + Number(active), `${name}: every slot count`);
+          for (let m = 0; m < measures; m++) assert.equal(Number(summary.measures[`m${m}`]?.sum ?? 0),
+            Number(baseline.measures[`m${m}`]?.sum ?? 0) + (active ? amount * (m + 1) : 0), `${name}: every slot and measure`);
+        }
       }
     }
   }
@@ -371,11 +383,11 @@ async function main(argv = process.argv.slice(2)) {
       cpu: os.cpus()[0].model, logical_cpus: os.cpus().length,
       cpu_quota: fs.existsSync("/sys/fs/cgroup/cpu.max") ? fs.readFileSync("/sys/fs/cgroup/cpu.max", "utf8").trim() : null,
       schema_sha256: createHash("sha256").update(compiled.bundle).digest("hex"),
-      suite_sha256: createHash("sha256").update(["index.js", "paging.js", "fixture.js", "access.js"].map(file => fs.readFileSync(path.join(__dirname, file))).join("\n")).digest("hex") },
+      suite_sha256: createHash("sha256").update(["index.js", "paging.js", "fixture.js", "access.js", "soak.js"].map(file => fs.readFileSync(path.join(__dirname, file))).join("\n")).digest("hex") },
     stages: [], variants: [], skipped_scales: [], limitations: [
       "Synthetic rows exercise the current compiled authorization/tree kernels; application accounting/business rules are separate tests.",
       "Warm-cache single-host measurements; sample counts are evidence, not production latency guarantees or a capacity proof.",
-      "Bulk construction bypasses source events only; its time is separate from native authenticated mutation throughput.",
+      "Bulk construction uses precomputed nodes; image mode also suspends other field/schema processing while retaining native ownership references. Its timings are separate from native full-schema mutation throughput.",
       "Pagination revisions do not create a multi-request snapshot; consumers must handle intervening writes.",
     ] };
   const checkpoint = () => { fs.mkdirSync(path.dirname(path.resolve(config.output)), { recursive: true }); fs.writeFileSync(config.output, JSON.stringify(report, null, 2) + "\n"); };
@@ -421,6 +433,20 @@ async function main(argv = process.argv.slice(2)) {
       report.variants.push({ ...variant, n, integrity, mutation, aggregate_reads }); checkpoint();
     }
     const base = CONFIGS[0];
+    // Keep the sustained structural check small enough for a full independent
+    // post-write oracle, before large stages can consume the resource budget.
+    if (config["soak-seconds"] > 0) {
+      const n = Math.min(1000, config["variant-rows"], Math.max(...config.scales));
+      console.log(`Mixed authorization load: ${n} rows, ${config["soak-seconds"]} seconds...`);
+      const input = { ...base, n, owners: graph.owners, batchRows: config["batch-rows"], seedMode: config["seed-mode"], onProgress: run.guard };
+      await fixture.loadFacts(root, input);
+      report.soak = { n, status: "running", initial_integrity: await fixture.verifyFacts(root, input), resources_before: resources(server, pid) };
+      checkpoint();
+      Object.assign(report.soak, await soak({ endpoint: server.url, root, graph, config: base, n, seconds: config["soak-seconds"], guard: run.guard }));
+      report.soak.structural_oracle = await nativeIntegrity(root, base, n, graph.owners);
+      report.soak.resources_after = resources(server, pid); report.soak.status = "passed"; checkpoint();
+      console.log("PASS mixed load: repeated atomic CRUD, authorized pages, point reads, denials and full tree integrity");
+    } else report.soak = { status: "disabled" };
     let previousRate = null;
     for (const n of config.scales) {
       const remaining = config["budget-seconds"] - (performance.now() - started) / 1000;
@@ -470,7 +496,7 @@ async function main(argv = process.argv.slice(2)) {
       stage.concurrent_reads = await concurrentReads(server.url, graph, base, n, run);
       stage.concurrent_writes = await concurrentWrites(server.url, root, graph, base, n, run);
       stage.resources = resources(server, pid); stage.status = "passed"; checkpoint();
-      console.log(`PASS scale ${n}: authenticated reads, CRUD, candidate completeness, no leaks; load ${(stage.load_ms / 1000).toFixed(2)}s, verify ${(stage.verify_ms / 1000).toFixed(2)}s`);
+      console.log(`PASS scale ${n}: configured authorization, CRUD and integrity checks; load ${(stage.load_ms / 1000).toFixed(2)}s, verify ${(stage.verify_ms / 1000).toFixed(2)}s`);
     }
     report.status = report.skipped_scales.length ? "passed-with-resource-skips" : "passed";
   } catch (error) {

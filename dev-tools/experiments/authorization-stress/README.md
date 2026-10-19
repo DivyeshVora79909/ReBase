@@ -42,6 +42,7 @@ Measured results and their limits are recorded in the
 | `--owner-count` | `32` | Bulk owner partitions; 3–256, providing two reachable owners for transfer tests. |
 | `--batch-rows` | `500` | Maximum fact rows per construction/verification batch. |
 | `--seed-mode` | `image` | Private validated image loader, or `native` to retain all field definitions throughout loading. Both preserve native ownership backlinks. |
+| `--soak-seconds` | `30` | Mixed read/write duration on at most 1,000 rows before scaling; `0` disables it. |
 | `--budget-seconds` | `1200` | Whole-suite deadline, with progress checks and a watchdog for the disposable server. |
 | `--max-stage-seconds` | `600` | Admission threshold for projected load plus verification of subsequent scales. |
 | `--max-rss-mb` | `6000` | Sampled combined client/server RSS limit, using bytes divided by 1024². |
@@ -51,7 +52,7 @@ Measured results and their limits are recorded in the
 | `--output` | `/tmp/rebase-authorization-stress.json` | JSON checkpoint/final-report path; overwritten during the run. |
 | `--help`, `-h` | off | Print command help. |
 
-Numeric options require positive integers. Memory/disk limits use sampled
+Numeric limits require positive integers; `--soak-seconds` also accepts zero. Memory/disk limits use sampled
 checkpoints; the suite deadline terminates only its own disposable server if an
 in-flight operation stalls. There is no hard per-stage watchdog. A scale can be
 skipped when its projected construction plus verification exceeds either the
@@ -103,9 +104,12 @@ a change to production authorization.
 Every scale verifies all initial records, node images and root headers in
 batches, plus native ownership backlinks. At 1,000 rows or fewer, the independent
 tree oracle also reconstructs AVL/link/summary invariants from source facts.
+The larger initial image comparisons reuse the construction routine; they are
+not an independent full reconstruction of the large topology.
 After events are restored, authenticated native CREATE, payload/aggregate UPDATE,
 rekey, owner move and DELETE must change the intended records and restore exact
-root aggregates. Fixture-construction timings are separate from those native
+root aggregates. Every mutation phase checks the count and every measure in
+every configured slot on both affected owner roots. Fixture-construction timings are separate from those native
 mutation timings. After native writes, the independent full structural oracle
 runs at up to 1,000 rows. Larger stages check row effects and exact aggregate
 restoration; their full initial image verification does not establish every
@@ -142,6 +146,18 @@ post-write structural invariant.
   conflicts, bounded retries, committed rows, and exact aggregate restoration are
   checked. Separate native mutation variants use `(slots, measures)` of
   `(0,0)`, `(1,0)`, `(4,1)`, and `(4,8)`, alongside the main `(1,1)` workload.
+- Before scaling, two writers repeatedly run atomic six-operation CRUD lifecycles
+  against shared owner roots while two readers verify stable authorized pages,
+  permitted point reads and outsider point denials. Scratch keys sort after the
+  baseline prefix and each transaction deletes its scratch row before committing.
+  The phase uses `min(1000, variant-rows, largest requested scale)` rows so it can
+  reconstruct every final AVL/link/summary invariant with the independent oracle.
+  It records successful transactions, retries, exhausted attempts, read samples,
+  actual elapsed time and before/after resource observations. It does not measure
+  concurrent changes to the returned prefix or a million-row sustained workload.
+  Retries are immediate and capped at four attempts; exhausted requests are
+  recorded, not silently counted as commits. The check requires both writers to
+  make progress and verifies no partial records plus complete final tree state.
 - Summary and bounded-range aggregate reads check exact source-derived counts
   and every configured measure. The variant matrix runs before the large scales.
 
@@ -160,6 +176,8 @@ log, relevant source revision and hashes when comparing runs. Stage resource
 snapshots are observations, not peak-memory measurements.
 
 - `authorization` contains functional cases, assertion counts and case timings.
+- `soak` contains the bounded mixed-load phase and its full post-write structural
+  oracle. Its row count and timings are separate from the large-scale matrix.
 - `stages` contains each attempted row scale, construction/verification times,
   integrity counts, actual plans, read cases, denials, native mutations,
   concurrent reads and resource observations. `variants` contains slot/measure

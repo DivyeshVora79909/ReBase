@@ -413,4 +413,3 @@ async function verifyFacts(db, { table, n, owners, slots, measures, batchRows = 
 }
 
 module.exports = { schema, compileFixture, loadFacts, verifyFacts, rootSlot, recordId };
-

@@ -1,0 +1,2343 @@
+{
+  "started_at": "2026-10-19T06:05:52.174Z",
+  "status": "passed",
+  "options": {
+    "scales": [
+      1000
+    ],
+    "seed-mode": "image",
+    "samples": 3,
+    "soak-seconds": 30,
+    "budget-seconds": 600,
+    "max-stage-seconds": 300,
+    "output": "/tmp/rebase-authorization-soak-final.json",
+    "owner-count": 32,
+    "batch-rows": 500,
+    "max-rss-mb": 6000,
+    "max-disk-mb": 10000,
+    "scan-timeout-ms": 3000,
+    "variant-rows": 1000
+  },
+  "environment": {
+    "node": "v26.12.0",
+    "surreal": "3.3.0 for linux on x86_64",
+    "commit": "e38aba27ad68eca5d5c91f8dff548d2856493105",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "logical_cpus": 5,
+    "cpu_quota": "400000 100000",
+    "schema_sha256": "d9663fe7bfc525d75d2f0c96aeef4778fe8238248c10d295da95501569dc8643",
+    "suite_sha256": "63aa27f9f68249c80bd594a34df84fc0227f919d471a138c41f153dd53c9df1f"
+  },
+  "stages": [
+    {
+      "n": 1000,
+      "slots": 1,
+      "measures": 1,
+      "status": "passed",
+      "fixture": {
+        "table": "stress_1_1",
+        "records": 1000,
+        "nodes": 1000,
+        "owners": 32,
+        "seedMode": "image",
+        "prototypeKeys": [
+          "amount",
+          "created_at",
+          "id",
+          "owned_by",
+          "payload",
+          "rank",
+          "read_by",
+          "rebase_reader_sources",
+          "seq",
+          "status",
+          "system_ping",
+          "tenant",
+          "updated_at"
+        ]
+      },
+      "load_ms": 1517.3987710000001,
+      "integrity": {
+        "table": "stress_1_1",
+        "records": 1000,
+        "nodes": 1000,
+        "rootHeads": 32
+      },
+      "verify_ms": 212.133425,
+      "reference_backlinks": 32,
+      "plans": {
+        "plain": {
+          "attributes": {
+            "projections": "id, rank"
+          },
+          "children": [
+            {
+              "attributes": {
+                "limit": "50"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "limit": "50",
+                    "sort_keys": "rank ASC, id ASC"
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "direction": "Forward",
+                        "table": "stress_1_1",
+                        "topk_pushdown": "yes"
+                      },
+                      "context": "Db",
+                      "operator": "TableScan"
+                    }
+                  ],
+                  "context": "Db",
+                  "operator": "SortTopKByKey"
+                }
+              ],
+              "context": "Db",
+              "expressions": [
+                {
+                  "role": "limit",
+                  "sql": "50"
+                }
+              ],
+              "operator": "Limit"
+            }
+          ],
+          "context": "Db",
+          "operator": "SelectProject"
+        },
+        "reference": {
+          "attributes": {
+            "projections": "id, rank"
+          },
+          "children": [
+            {
+              "attributes": {
+                "limit": "50"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "limit": "50",
+                    "sort_keys": "rank ASC, id ASC"
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "expr": "$owner<~(stress_1_1 FIELD owned_by)"
+                      },
+                      "context": "Db",
+                      "expressions": [
+                        {
+                          "embedded_operators": [
+                            {
+                              "plan": {
+                                "attributes": {
+                                  "field": "owned_by",
+                                  "table": "stress_1_1"
+                                },
+                                "children": [
+                                  {
+                                    "context": "Rt",
+                                    "operator": "CurrentValueSource"
+                                  }
+                                ],
+                                "context": "Db",
+                                "operator": "ReferenceScan"
+                              },
+                              "role": "lookup"
+                            }
+                          ],
+                          "role": "expr",
+                          "sql": "$owner<~(stress_1_1 FIELD owned_by)"
+                        }
+                      ],
+                      "operator": "SourceExpr"
+                    }
+                  ],
+                  "context": "Db",
+                  "operator": "SortTopKByKey"
+                }
+              ],
+              "context": "Db",
+              "expressions": [
+                {
+                  "role": "limit",
+                  "sql": "50"
+                }
+              ],
+              "operator": "Limit"
+            }
+          ],
+          "context": "Db",
+          "operator": "SelectProject"
+        },
+        "point": {
+          "attributes": {
+            "projections": "id, seq"
+          },
+          "children": [
+            {
+              "attributes": {
+                "record_id": "stress_1_1:r0000000000"
+              },
+              "context": "Db",
+              "expressions": [
+                {
+                  "role": "record_id",
+                  "sql": "stress_1_1:r0000000000"
+                }
+              ],
+              "operator": "RecordIdScan"
+            }
+          ],
+          "context": "Db",
+          "operator": "SelectProject"
+        },
+        "authored_secondary_indexes": {}
+      },
+      "full_cursor_walk": [
+        {
+          "reverse": false,
+          "records": 504,
+          "requests": 39
+        },
+        {
+          "reverse": true,
+          "records": 504,
+          "requests": 39
+        }
+      ],
+      "reads": [
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 1,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            585.0010800000018,
+            581.1788510000042,
+            590.5998400000099
+          ],
+          "sample_count": 3,
+          "p50_ms": 585.0010800000018,
+          "p95_ms": 590.5998400000099,
+          "min_ms": 581.1788510000042,
+          "max_ms": 590.5998400000099,
+          "throughput_ops_s": 1.7076699365067842,
+          "returned": 1,
+          "candidates": 32,
+          "requests": 2,
+          "result_object_bytes": 401
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 1,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            69.17640100000426,
+            68.66619499999797,
+            63.55848900000274
+          ],
+          "sample_count": 3,
+          "p50_ms": 68.66619499999797,
+          "p95_ms": 69.17640100000426,
+          "min_ms": 63.55848900000274,
+          "max_ms": 69.17640100000426,
+          "throughput_ops_s": 14.895649643595148,
+          "returned": 1,
+          "result_object_bytes": 141
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            895.0376419999957,
+            879.5119790000026,
+            893.4289940000017
+          ],
+          "sample_count": 3,
+          "p50_ms": 893.4289940000017,
+          "p95_ms": 895.0376419999957,
+          "min_ms": 879.5119790000026,
+          "max_ms": 895.0376419999957,
+          "throughput_ops_s": 1.1244467939635265,
+          "returned": 50,
+          "candidates": 80,
+          "requests": 2,
+          "result_object_bytes": 11620
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-full-prefetch-heap-and-native-hydration",
+          "samples_ms": [
+            3188.1644369999995,
+            3253.964961000005,
+            3301.5591140000033
+          ],
+          "sample_count": 3,
+          "p50_ms": 3253.964961000005,
+          "p95_ms": 3301.5591140000033,
+          "min_ms": 3188.1644369999995,
+          "max_ms": 3301.5591140000033,
+          "throughput_ops_s": 0.30789161581933766,
+          "returned": 50,
+          "candidates": 504,
+          "requests": 2,
+          "result_object_bytes": 11597
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-parallel4",
+          "samples_ms": [
+            902.1085779999994,
+            864.171801000004,
+            885.2674160000024
+          ],
+          "sample_count": 3,
+          "p50_ms": 885.2674160000024,
+          "p95_ms": 902.1085779999994,
+          "min_ms": 864.171801000004,
+          "max_ms": 902.1085779999994,
+          "throughput_ops_s": 1.1314146422919724,
+          "returned": 50,
+          "candidates": 80,
+          "requests": 5,
+          "result_object_bytes": 11620
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            65.61652200002572,
+            68.19054999999935,
+            65.45011200002045
+          ],
+          "sample_count": 3,
+          "p50_ms": 65.61652200002572,
+          "p95_ms": 68.19054999999935,
+          "min_ms": 65.45011200002045,
+          "max_ms": 68.19054999999935,
+          "throughput_ops_s": 15.055918887217208,
+          "returned": 50,
+          "result_object_bytes": 6719
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 200,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            1711.582831000007,
+            1732.2619790000026,
+            1709.552480000013
+          ],
+          "sample_count": 3,
+          "p50_ms": 1711.582831000007,
+          "p95_ms": 1732.2619790000026,
+          "min_ms": 1709.552480000013,
+          "max_ms": 1732.2619790000026,
+          "throughput_ops_s": 0.5821402525711319,
+          "returned": 200,
+          "candidates": 224,
+          "requests": 2,
+          "result_object_bytes": 46313
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 200,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            75.00500500001363,
+            64.23656399999163,
+            67.23292599999695
+          ],
+          "sample_count": 3,
+          "p50_ms": 67.23292599999695,
+          "p95_ms": 75.00500500001363,
+          "min_ms": 64.23656399999163,
+          "max_ms": 75.00500500001363,
+          "throughput_ops_s": 14.529639605123954,
+          "returned": 200,
+          "result_object_bytes": 27116
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            861.3527830000094,
+            867.8300670000026,
+            879.4037449999887
+          ],
+          "sample_count": 3,
+          "p50_ms": 867.8300670000026,
+          "p95_ms": 879.4037449999887,
+          "min_ms": 861.3527830000094,
+          "max_ms": 879.4037449999887,
+          "throughput_ops_s": 1.1500480780474145,
+          "returned": 50,
+          "candidates": 80,
+          "requests": 2,
+          "result_object_bytes": 11818
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            77.71608700000797,
+            72.14101500000106,
+            70.38852300000144
+          ],
+          "sample_count": 3,
+          "p50_ms": 72.14101500000106,
+          "p95_ms": 77.71608700000797,
+          "min_ms": 70.38852300000144,
+          "max_ms": 77.71608700000797,
+          "throughput_ops_s": 13.621155925344066,
+          "returned": 50,
+          "result_object_bytes": 6850
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "last",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            604.0691039999947,
+            605.385381,
+            597.0701220000046
+          ],
+          "sample_count": 3,
+          "p50_ms": 604.0691039999947,
+          "p95_ms": 605.385381,
+          "min_ms": 597.0701220000046,
+          "max_ms": 605.385381,
+          "throughput_ops_s": 1.6606471832021943,
+          "returned": 50,
+          "candidates": 50,
+          "requests": 2,
+          "result_object_bytes": 11783
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "last",
+          "reverse": false,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            64.59975500000292,
+            64.1568649999972,
+            65.33192100000451
+          ],
+          "sample_count": 3,
+          "p50_ms": 64.59975500000292,
+          "p95_ms": 65.33192100000451,
+          "min_ms": 64.1568649999972,
+          "max_ms": 65.33192100000451,
+          "throughput_ops_s": 15.456863061276392,
+          "returned": 50,
+          "result_object_bytes": 6846
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": true,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            862.0903760000074,
+            855.9302650000027,
+            879.8358740000112
+          ],
+          "sample_count": 3,
+          "p50_ms": 862.0903760000074,
+          "p95_ms": 879.8358740000112,
+          "min_ms": 855.9302650000027,
+          "max_ms": 879.8358740000112,
+          "throughput_ops_s": 1.1547981894604273,
+          "returned": 50,
+          "candidates": 80,
+          "requests": 2,
+          "result_object_bytes": 11818
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": true,
+          "authorized_rows": 504,
+          "roots": 16,
+          "discovery_ms": 2.327877999996417,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            64.43259400001261,
+            68.37607900000876,
+            69.6054460000014
+          ],
+          "sample_count": 3,
+          "p50_ms": 68.37607900000876,
+          "p95_ms": 69.6054460000014,
+          "min_ms": 64.43259400001261,
+          "max_ms": 69.6054460000014,
+          "throughput_ops_s": 14.821100498427496,
+          "returned": 50,
+          "result_object_bytes": 6850
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "path": "native-record-id-lookup",
+          "samples_ms": [
+            1.912823999999091,
+            2.0842009999905713,
+            1.9587329999776557
+          ],
+          "sample_count": 3,
+          "p50_ms": 1.9587329999776557,
+          "p95_ms": 2.0842009999905713,
+          "min_ms": 1.912823999999091,
+          "max_ms": 2.0842009999905713,
+          "throughput_ops_s": 503.71422076190174,
+          "returned": 1,
+          "result_object_bytes": 52
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "path": "native-reference-candidates-sort",
+          "materializes": 504,
+          "samples_ms": [
+            482.75531799998134,
+            481.00124300000607,
+            482.2306899999967
+          ],
+          "sample_count": 3,
+          "p50_ms": 482.2306899999967,
+          "p95_ms": 482.75531799998134,
+          "min_ms": 481.00124300000607,
+          "max_ms": 482.75531799998134,
+          "throughput_ops_s": 2.074707088824833,
+          "returned": 50,
+          "result_object_bytes": 6719
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "path": "native-rls-deep-offset",
+          "offset": 252,
+          "samples_ms": [
+            70.11210200001369,
+            63.677713999990374,
+            63.017250999982934
+          ],
+          "sample_count": 3,
+          "p50_ms": 63.677713999990374,
+          "p95_ms": 70.11210200001369,
+          "min_ms": 63.017250999982934,
+          "max_ms": 70.11210200001369,
+          "throughput_ops_s": 15.243355056961436,
+          "returned": 50,
+          "result_object_bytes": 2110
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "path": "custom-page-unindexed-postfilter",
+          "predicate": "hot",
+          "sample_policy": "one bounded post-filter pass after preceding page warmups",
+          "samples_ms": [
+            5839.576930999989
+          ],
+          "sample_count": 1,
+          "p50_ms": 5839.576930999989,
+          "p95_ms": 5839.576930999989,
+          "min_ms": 5839.576930999989,
+          "max_ms": 5839.576930999989,
+          "throughput_ops_s": 0.1712452822894409,
+          "returned": 6,
+          "candidates": 620,
+          "visited": 504,
+          "requests": 12,
+          "truncated": false,
+          "result_object_bytes": 1205
+        },
+        {
+          "actor": "wide",
+          "n": 1000,
+          "path": "custom-page-unindexed-postfilter",
+          "predicate": "absent",
+          "sample_policy": "one bounded post-filter pass after preceding page warmups",
+          "samples_ms": [
+            5847.400785000005
+          ],
+          "sample_count": 1,
+          "p50_ms": 5847.400785000005,
+          "p95_ms": 5847.400785000005,
+          "min_ms": 5847.400785000005,
+          "max_ms": 5847.400785000005,
+          "throughput_ops_s": 0.17101615517192553,
+          "returned": 0,
+          "candidates": 620,
+          "visited": 504,
+          "requests": 12,
+          "truncated": false,
+          "result_object_bytes": 400
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 1,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            17.67603999999119,
+            17.194776999996975,
+            16.988106000004336
+          ],
+          "sample_count": 3,
+          "p50_ms": 17.194776999996975,
+          "p95_ms": 17.67603999999119,
+          "min_ms": 16.988106000004336,
+          "max_ms": 17.67603999999119,
+          "throughput_ops_s": 57.84925383044368,
+          "returned": 1,
+          "candidates": 2,
+          "requests": 2,
+          "result_object_bytes": 355
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 1,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            79.78235999998287,
+            95.96570800000336,
+            86.54985400001169
+          ],
+          "sample_count": 3,
+          "p50_ms": 86.54985400001169,
+          "p95_ms": 95.96570800000336,
+          "min_ms": 79.78235999998287,
+          "max_ms": 95.96570800000336,
+          "throughput_ops_s": 11.437376160380042,
+          "returned": 1,
+          "result_object_bytes": 141
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            76.13532999999006,
+            79.79473400002462,
+            77.20270900000469
+          ],
+          "sample_count": 3,
+          "p50_ms": 77.20270900000469,
+          "p95_ms": 79.79473400002462,
+          "min_ms": 76.13532999999006,
+          "max_ms": 79.79473400002462,
+          "throughput_ops_s": 12.868203648054882,
+          "returned": 32,
+          "candidates": 32,
+          "requests": 2,
+          "result_object_bytes": 7497
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            84.07844699997804,
+            84.45444000000134,
+            82.2031990000105
+          ],
+          "sample_count": 3,
+          "p50_ms": 84.07844699997804,
+          "p95_ms": 84.45444000000134,
+          "min_ms": 82.2031990000105,
+          "max_ms": 84.45444000000134,
+          "throughput_ops_s": 11.964771596538844,
+          "returned": 32,
+          "result_object_bytes": 4344
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 200,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            76.62286800000584,
+            75.41799299998092,
+            76.51807600000757
+          ],
+          "sample_count": 3,
+          "p50_ms": 76.51807600000757,
+          "p95_ms": 76.62286800000584,
+          "min_ms": 75.41799299998092,
+          "max_ms": 76.62286800000584,
+          "throughput_ops_s": 13.12571732865591,
+          "returned": 32,
+          "candidates": 32,
+          "requests": 2,
+          "result_object_bytes": 7497
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 200,
+          "location": "first",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            78.04664299997967,
+            87.73429500000202,
+            87.80192100000568
+          ],
+          "sample_count": 3,
+          "p50_ms": 87.73429500000202,
+          "p95_ms": 87.80192100000568,
+          "min_ms": 78.04664299997967,
+          "max_ms": 87.80192100000568,
+          "throughput_ops_s": 11.830452625349372,
+          "returned": 32,
+          "result_object_bytes": 4344
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            48.34602999998606,
+            43.08047699998133,
+            42.27464200000395
+          ],
+          "sample_count": 3,
+          "p50_ms": 43.08047699998133,
+          "p95_ms": 48.34602999998606,
+          "min_ms": 42.27464200000395,
+          "max_ms": 48.34602999998606,
+          "throughput_ops_s": 22.43810185954829,
+          "returned": 16,
+          "candidates": 16,
+          "requests": 2,
+          "result_object_bytes": 3813
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            82.38593799999217,
+            80.6452870000212,
+            81.15422999998555
+          ],
+          "sample_count": 3,
+          "p50_ms": 81.15422999998555,
+          "p95_ms": 82.38593799999217,
+          "min_ms": 80.6452870000212,
+          "max_ms": 82.38593799999217,
+          "throughput_ops_s": 12.285744046466705,
+          "returned": 16,
+          "result_object_bytes": 2185
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "last",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            73.65183000001707,
+            73.51445000001695,
+            73.51702299999306
+          ],
+          "sample_count": 3,
+          "p50_ms": 73.51702299999306,
+          "p95_ms": 73.65183000001707,
+          "min_ms": 73.51445000001695,
+          "max_ms": 73.65183000001707,
+          "throughput_ops_s": 13.594141283990261,
+          "returned": 32,
+          "candidates": 32,
+          "requests": 2,
+          "result_object_bytes": 7497
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "last",
+          "reverse": false,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            80.67297700000927,
+            79.48929800000042,
+            78.84892600000603
+          ],
+          "sample_count": 3,
+          "p50_ms": 79.48929800000042,
+          "p95_ms": 80.67297700000927,
+          "min_ms": 78.84892600000603,
+          "max_ms": 80.67297700000927,
+          "throughput_ops_s": 12.551713005282137,
+          "returned": 32,
+          "result_object_bytes": 4344
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": true,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "custom-roots-bounded-heap-and-native-hydration",
+          "samples_ms": [
+            42.237664999993285,
+            42.78324900000007,
+            44.138286000001244
+          ],
+          "sample_count": 3,
+          "p50_ms": 42.78324900000007,
+          "p95_ms": 44.138286000001244,
+          "min_ms": 42.237664999993285,
+          "max_ms": 44.138286000001244,
+          "throughput_ops_s": 23.227149130686204,
+          "returned": 16,
+          "candidates": 16,
+          "requests": 2,
+          "result_object_bytes": 3786
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "size": 50,
+          "location": "middle",
+          "reverse": true,
+          "authorized_rows": 32,
+          "roots": 1,
+          "discovery_ms": 2.3161249999830034,
+          "path": "native-rls-table-keyset",
+          "samples_ms": [
+            82.30900000000838,
+            79.9624130000011,
+            79.75478200000362
+          ],
+          "sample_count": 3,
+          "p50_ms": 79.9624130000011,
+          "p95_ms": 82.30900000000838,
+          "min_ms": 79.75478200000362,
+          "max_ms": 82.30900000000838,
+          "throughput_ops_s": 12.395352494798498,
+          "returned": 16,
+          "result_object_bytes": 2169
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "path": "native-record-id-lookup",
+          "samples_ms": [
+            1.909549000003608,
+            1.8748380000179168,
+            1.9980429999995977
+          ],
+          "sample_count": 3,
+          "p50_ms": 1.909549000003608,
+          "p95_ms": 1.9980429999995977,
+          "min_ms": 1.8748380000179168,
+          "max_ms": 1.9980429999995977,
+          "throughput_ops_s": 518.8130249720344,
+          "returned": 1,
+          "result_object_bytes": 52
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "path": "native-reference-candidates-sort",
+          "materializes": 32,
+          "samples_ms": [
+            25.559699000004912,
+            24.67395199998282,
+            27.539192999975057
+          ],
+          "sample_count": 3,
+          "p50_ms": 25.559699000004912,
+          "p95_ms": 27.539192999975057,
+          "min_ms": 24.67395199998282,
+          "max_ms": 27.539192999975057,
+          "throughput_ops_s": 38.573875477685185,
+          "returned": 32,
+          "result_object_bytes": 4344
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "path": "native-rls-deep-offset",
+          "offset": 16,
+          "samples_ms": [
+            85.90833499998553,
+            82.1937259999977,
+            82.93580199999269
+          ],
+          "sample_count": 3,
+          "p50_ms": 82.93580199999269,
+          "p95_ms": 85.90833499998553,
+          "min_ms": 82.1937259999977,
+          "max_ms": 85.90833499998553,
+          "throughput_ops_s": 11.950388535614199,
+          "returned": 16,
+          "result_object_bytes": 682
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "path": "custom-page-unindexed-postfilter",
+          "predicate": "hot",
+          "sample_policy": "one bounded post-filter pass after preceding page warmups",
+          "samples_ms": [
+            75.39791999998852
+          ],
+          "sample_count": 1,
+          "p50_ms": 75.39791999998852,
+          "p95_ms": 75.39791999998852,
+          "min_ms": 75.39791999998852,
+          "max_ms": 75.39791999998852,
+          "throughput_ops_s": 13.262965344404094,
+          "returned": 2,
+          "candidates": 32,
+          "visited": 32,
+          "requests": 2,
+          "truncated": false,
+          "result_object_bytes": 367
+        },
+        {
+          "actor": "sparse",
+          "n": 1000,
+          "path": "custom-page-unindexed-postfilter",
+          "predicate": "absent",
+          "sample_policy": "one bounded post-filter pass after preceding page warmups",
+          "samples_ms": [
+            73.93001300000469
+          ],
+          "sample_count": 1,
+          "p50_ms": 73.93001300000469,
+          "p95_ms": 73.93001300000469,
+          "min_ms": 73.93001300000469,
+          "max_ms": 73.93001300000469,
+          "throughput_ops_s": 13.526306291870076,
+          "returned": 0,
+          "candidates": 32,
+          "visited": 32,
+          "requests": 2,
+          "truncated": false,
+          "result_object_bytes": 102
+        }
+      ],
+      "denials": [
+        {
+          "actor": "outsider",
+          "native_status": "no-rows",
+          "inaccessible_custom_root": "rejected"
+        },
+        {
+          "actor": "crossTenant",
+          "native_status": "no-rows",
+          "inaccessible_custom_root": "rejected"
+        },
+        {
+          "actor": "missingPermission",
+          "native_status": "no-rows",
+          "inaccessible_custom_root": "rejected"
+        }
+      ],
+      "mutations": {
+        "table": "stress_1_1",
+        "n": 1000,
+        "slots": 1,
+        "measures": 1,
+        "operations": {
+          "create": {
+            "samples_ms": [
+              49.33361299999524,
+              40.64460599998711,
+              42.726184999977704
+            ],
+            "sample_count": 3,
+            "p50_ms": 42.726184999977704,
+            "p95_ms": 49.33361299999524,
+            "min_ms": 40.64460599998711,
+            "max_ms": 49.33361299999524,
+            "throughput_ops_s": 22.606634818245393
+          },
+          "payload_update": {
+            "samples_ms": [
+              12.779984000022523,
+              11.354502000001958,
+              11.155624000006355
+            ],
+            "sample_count": 3,
+            "p50_ms": 11.354502000001958,
+            "p95_ms": 12.779984000022523,
+            "min_ms": 11.155624000006355,
+            "max_ms": 12.779984000022523,
+            "throughput_ops_s": 85.00965284600639
+          },
+          "aggregate_update": {
+            "samples_ms": [
+              42.60560299997451,
+              38.4298579999886,
+              38.9313180000172
+            ],
+            "sample_count": 3,
+            "p50_ms": 38.9313180000172,
+            "p95_ms": 42.60560299997451,
+            "min_ms": 38.4298579999886,
+            "max_ms": 42.60560299997451,
+            "throughput_ops_s": 25.006922958234068
+          },
+          "rekey": {
+            "samples_ms": [
+              58.19350100000156,
+              56.82119500002591,
+              69.67628600000171
+            ],
+            "sample_count": 3,
+            "p50_ms": 58.19350100000156,
+            "p95_ms": 69.67628600000171,
+            "min_ms": 56.82119500002591,
+            "max_ms": 69.67628600000171,
+            "throughput_ops_s": 16.243348578868492
+          },
+          "owner_move": {
+            "samples_ms": [
+              66.9466460000258,
+              66.91393099998822,
+              66.88276400000905
+            ],
+            "sample_count": 3,
+            "p50_ms": 66.91393099998822,
+            "p95_ms": 66.9466460000258,
+            "min_ms": 66.88276400000905,
+            "max_ms": 66.9466460000258,
+            "throughput_ops_s": 14.944455866158247
+          },
+          "delete": {
+            "samples_ms": [
+              34.331709999998566,
+              40.27358300000196,
+              39.30062699998962
+            ],
+            "sample_count": 3,
+            "p50_ms": 39.30062699998962,
+            "p95_ms": 40.27358300000196,
+            "min_ms": 34.331709999998566,
+            "max_ms": 40.27358300000196,
+            "throughput_ops_s": 26.33752486262575
+          }
+        },
+        "correctness": [
+          "each authenticated mutation changed its intended row",
+          "root summaries restored after insert/update/rekey/owner move/delete"
+        ],
+        "structural_oracle": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 1000,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "aggregate_reads": [
+        {
+          "operation": "summary",
+          "table": "stress_1_1",
+          "n": 1000,
+          "samples_ms": [
+            133.2509349999891,
+            128.9741979999817,
+            127.60372399998596
+          ],
+          "sample_count": 3,
+          "p50_ms": 128.9741979999817,
+          "p95_ms": 133.2509349999891,
+          "min_ms": 127.60372399998596,
+          "max_ms": 133.2509349999891,
+          "throughput_ops_s": 7.6956847758459626,
+          "returned": 0,
+          "result_object_bytes": 23
+        },
+        {
+          "operation": "range",
+          "table": "stress_1_1",
+          "n": 1000,
+          "samples_ms": [
+            283.4945449999941,
+            289.1659069999878,
+            292.71888100000797
+          ],
+          "sample_count": 3,
+          "p50_ms": 289.1659069999878,
+          "p95_ms": 292.71888100000797,
+          "min_ms": 283.4945449999941,
+          "max_ms": 292.71888100000797,
+          "throughput_ops_s": 3.466687827637357,
+          "returned": 0,
+          "result_object_bytes": 23
+        }
+      ],
+      "concurrent_reads": [
+        {
+          "clients": 1,
+          "operations": 3,
+          "n": 1000,
+          "samples_ms": [
+            911.6821070000005,
+            880.3902340000204,
+            863.9407260000007
+          ],
+          "sample_count": 3,
+          "p50_ms": 880.3902340000204,
+          "p95_ms": 911.6821070000005,
+          "min_ms": 863.9407260000007,
+          "max_ms": 911.6821070000005,
+          "throughput_ops_s": 1.1292339351776568
+        },
+        {
+          "clients": 2,
+          "operations": 6,
+          "n": 1000,
+          "samples_ms": [
+            885.5791610000015,
+            890.3036410000059,
+            878.036632000003,
+            930.7018910000043,
+            908.6065640000161,
+            877.75821
+          ],
+          "sample_count": 6,
+          "p50_ms": 885.5791610000015,
+          "p95_ms": 930.7018910000043,
+          "min_ms": 877.75821,
+          "max_ms": 930.7018910000043,
+          "throughput_ops_s": 2.226780157496352
+        },
+        {
+          "clients": 4,
+          "operations": 12,
+          "n": 1000,
+          "samples_ms": [
+            882.8494949999731,
+            910.2531740000122,
+            923.2386770000157,
+            966.9359980000008,
+            890.390562000015,
+            892.91777,
+            920.1159589999879,
+            883.7805290000106,
+            917.9739199999894,
+            931.7770109999983,
+            931.5768910000043,
+            932.8042649999843
+          ],
+          "sample_count": 12,
+          "p50_ms": 917.9739199999894,
+          "p95_ms": 966.9359980000008,
+          "min_ms": 882.8494949999731,
+          "max_ms": 966.9359980000008,
+          "throughput_ops_s": 4.3105044633411245
+        }
+      ],
+      "concurrent_writes": {
+        "clients": 4,
+        "committed": 4,
+        "retry_exhausted": 0,
+        "surfaced_conflicts": 6,
+        "attempts": [
+          2,
+          4,
+          3,
+          1
+        ],
+        "samples_ms": [
+          44.889303000003565,
+          110.57626800000435,
+          183.99275299999863,
+          234.91840199998114
+        ],
+        "sample_count": 4,
+        "p50_ms": 110.57626800000435,
+        "p95_ms": 234.91840199998114,
+        "min_ms": 44.889303000003565,
+        "max_ms": 234.91840199998114,
+        "throughput_ops_s": 17.00773366310844,
+        "integrity": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 1000,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "resources": {
+        "server_rss_mb": 234.2109375,
+        "client_rss_mb": 198.48828125,
+        "disk_mb": 53.698506355285645
+      }
+    }
+  ],
+  "variants": [
+    {
+      "table": "stress_0_0",
+      "slots": 0,
+      "measures": 0,
+      "n": 1000,
+      "integrity": {
+        "table": "stress_0_0",
+        "records": 1000,
+        "nodes": 0,
+        "rootHeads": 0
+      },
+      "mutation": {
+        "table": "stress_0_0",
+        "n": 1000,
+        "slots": 0,
+        "measures": 0,
+        "operations": {
+          "create": {
+            "samples_ms": [
+              8.909465000000637,
+              8.58676899999955,
+              8.495902999999998
+            ],
+            "sample_count": 3,
+            "p50_ms": 8.58676899999955,
+            "p95_ms": 8.909465000000637,
+            "min_ms": 8.495902999999998,
+            "max_ms": 8.909465000000637,
+            "throughput_ops_s": 115.41952091126554
+          },
+          "payload_update": {
+            "samples_ms": [
+              8.537905000000137,
+              8.064705000000686,
+              7.067385999999715
+            ],
+            "sample_count": 3,
+            "p50_ms": 8.064705000000686,
+            "p95_ms": 8.537905000000137,
+            "min_ms": 7.067385999999715,
+            "max_ms": 8.537905000000137,
+            "throughput_ops_s": 126.74273371233066
+          },
+          "aggregate_update": {
+            "samples_ms": [
+              8.583415000000059,
+              7.9153009999999995,
+              7.0692599999993035
+            ],
+            "sample_count": 3,
+            "p50_ms": 7.9153009999999995,
+            "p95_ms": 8.583415000000059,
+            "min_ms": 7.0692599999993035,
+            "max_ms": 8.583415000000059,
+            "throughput_ops_s": 127.29137198714396
+          },
+          "rekey": {
+            "samples_ms": [
+              8.10581699999966,
+              7.196781999999985,
+              7.0466349999996964
+            ],
+            "sample_count": 3,
+            "p50_ms": 7.196781999999985,
+            "p95_ms": 8.10581699999966,
+            "min_ms": 7.0466349999996964,
+            "max_ms": 8.10581699999966,
+            "throughput_ops_s": 134.23278847051708
+          },
+          "owner_move": {
+            "samples_ms": [
+              9.894543999999769,
+              9.151968000000124,
+              8.78512800000044
+            ],
+            "sample_count": 3,
+            "p50_ms": 9.151968000000124,
+            "p95_ms": 9.894543999999769,
+            "min_ms": 8.78512800000044,
+            "max_ms": 9.894543999999769,
+            "throughput_ops_s": 107.79098896076422
+          },
+          "delete": {
+            "samples_ms": [
+              5.25126900000032,
+              5.092080000000351,
+              5.129355000000032
+            ],
+            "sample_count": 3,
+            "p50_ms": 5.129355000000032,
+            "p95_ms": 5.25126900000032,
+            "min_ms": 5.092080000000351,
+            "max_ms": 5.25126900000032,
+            "throughput_ops_s": 193.8898333478016
+          }
+        },
+        "correctness": [
+          "each authenticated mutation changed its intended row",
+          "root summaries restored after insert/update/rekey/owner move/delete"
+        ],
+        "structural_oracle": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 0,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "aggregate_reads": []
+    },
+    {
+      "table": "stress_1_0",
+      "slots": 1,
+      "measures": 0,
+      "n": 1000,
+      "integrity": {
+        "table": "stress_1_0",
+        "records": 1000,
+        "nodes": 1000,
+        "rootHeads": 32
+      },
+      "mutation": {
+        "table": "stress_1_0",
+        "n": 1000,
+        "slots": 1,
+        "measures": 0,
+        "operations": {
+          "create": {
+            "samples_ms": [
+              45.956388000000516,
+              42.03963299999941,
+              42.187887000000046
+            ],
+            "sample_count": 3,
+            "p50_ms": 42.187887000000046,
+            "p95_ms": 45.956388000000516,
+            "min_ms": 42.03963299999941,
+            "max_ms": 45.956388000000516,
+            "throughput_ops_s": 23.04432280524257
+          },
+          "payload_update": {
+            "samples_ms": [
+              11.627116999999998,
+              12.921902000000046,
+              12.618935999999849
+            ],
+            "sample_count": 3,
+            "p50_ms": 12.618935999999849,
+            "p95_ms": 12.921902000000046,
+            "min_ms": 11.627116999999998,
+            "max_ms": 12.921902000000046,
+            "throughput_ops_s": 80.71469092125216
+          },
+          "aggregate_update": {
+            "samples_ms": [
+              11.275268000000324,
+              12.177764000000025,
+              12.236463000000185
+            ],
+            "sample_count": 3,
+            "p50_ms": 12.177764000000025,
+            "p95_ms": 12.236463000000185,
+            "min_ms": 11.275268000000324,
+            "max_ms": 12.236463000000185,
+            "throughput_ops_s": 84.05834826186123
+          },
+          "rekey": {
+            "samples_ms": [
+              53.33597400000053,
+              63.872041999999965,
+              58.469224999999824
+            ],
+            "sample_count": 3,
+            "p50_ms": 58.469224999999824,
+            "p95_ms": 63.872041999999965,
+            "min_ms": 53.33597400000053,
+            "max_ms": 63.872041999999965,
+            "throughput_ops_s": 17.076770917639777
+          },
+          "owner_move": {
+            "samples_ms": [
+              60.44283899999937,
+              60.43706100000054,
+              60.153927000000294
+            ],
+            "sample_count": 3,
+            "p50_ms": 60.43706100000054,
+            "p95_ms": 60.44283899999937,
+            "min_ms": 60.153927000000294,
+            "max_ms": 60.44283899999937,
+            "throughput_ops_s": 16.571488598094966
+          },
+          "delete": {
+            "samples_ms": [
+              29.119415000000117,
+              29.01889399999982,
+              36.4080440000007
+            ],
+            "sample_count": 3,
+            "p50_ms": 29.119415000000117,
+            "p95_ms": 36.4080440000007,
+            "min_ms": 29.01889399999982,
+            "max_ms": 36.4080440000007,
+            "throughput_ops_s": 31.730467699795675
+          }
+        },
+        "correctness": [
+          "each authenticated mutation changed its intended row",
+          "root summaries restored after insert/update/rekey/owner move/delete"
+        ],
+        "structural_oracle": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 1000,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "aggregate_reads": [
+        {
+          "operation": "summary",
+          "table": "stress_1_0",
+          "n": 1000,
+          "samples_ms": [
+            118.42688700000053,
+            120.98645099999976,
+            118.60443300000043
+          ],
+          "sample_count": 3,
+          "p50_ms": 118.60443300000043,
+          "p95_ms": 120.98645099999976,
+          "min_ms": 118.42688700000053,
+          "max_ms": 120.98645099999976,
+          "throughput_ops_s": 8.379472313959504,
+          "returned": 0,
+          "result_object_bytes": 23
+        },
+        {
+          "operation": "range",
+          "table": "stress_1_0",
+          "n": 1000,
+          "samples_ms": [
+            265.9914950000002,
+            265.6565120000005,
+            264.904141
+          ],
+          "sample_count": 3,
+          "p50_ms": 265.6565120000005,
+          "p95_ms": 265.9914950000002,
+          "min_ms": 264.904141,
+          "max_ms": 265.9914950000002,
+          "throughput_ops_s": 3.7662317621419525,
+          "returned": 0,
+          "result_object_bytes": 23
+        }
+      ]
+    },
+    {
+      "table": "stress_4_1",
+      "slots": 4,
+      "measures": 1,
+      "n": 1000,
+      "integrity": {
+        "table": "stress_4_1",
+        "records": 1000,
+        "nodes": 4000,
+        "rootHeads": 128
+      },
+      "mutation": {
+        "table": "stress_4_1",
+        "n": 1000,
+        "slots": 4,
+        "measures": 1,
+        "operations": {
+          "create": {
+            "samples_ms": [
+              238.83315599999878,
+              167.5903019999987,
+              168.6423190000005
+            ],
+            "sample_count": 3,
+            "p50_ms": 168.6423190000005,
+            "p95_ms": 238.83315599999878,
+            "min_ms": 167.5903019999987,
+            "max_ms": 238.83315599999878,
+            "throughput_ops_s": 5.21679453027164
+          },
+          "payload_update": {
+            "samples_ms": [
+              20.4062959999992,
+              18.208833999999115,
+              18.2882410000002
+            ],
+            "sample_count": 3,
+            "p50_ms": 18.2882410000002,
+            "p95_ms": 20.4062959999992,
+            "min_ms": 18.208833999999115,
+            "max_ms": 20.4062959999992,
+            "throughput_ops_s": 52.720953913258995
+          },
+          "aggregate_update": {
+            "samples_ms": [
+              171.24284400000033,
+              162.38576300000022,
+              182.30258800000047
+            ],
+            "sample_count": 3,
+            "p50_ms": 171.24284400000033,
+            "p95_ms": 182.30258800000047,
+            "min_ms": 162.38576300000022,
+            "max_ms": 182.30258800000047,
+            "throughput_ops_s": 5.814728841895272
+          },
+          "rekey": {
+            "samples_ms": [
+              341.51843499999995,
+              291.7148870000001,
+              283.24165900000116
+            ],
+            "sample_count": 3,
+            "p50_ms": 291.7148870000001,
+            "p95_ms": 341.51843499999995,
+            "min_ms": 283.24165900000116,
+            "max_ms": 341.51843499999995,
+            "throughput_ops_s": 3.2734117812213315
+          },
+          "owner_move": {
+            "samples_ms": [
+              321.22683099999995,
+              330.0035060000009,
+              328.41277099999934
+            ],
+            "sample_count": 3,
+            "p50_ms": 328.41277099999934,
+            "p95_ms": 330.0035060000009,
+            "min_ms": 321.22683099999995,
+            "max_ms": 330.0035060000009,
+            "throughput_ops_s": 3.0623397189254757
+          },
+          "delete": {
+            "samples_ms": [
+              148.00866499999938,
+              143.1780920000001,
+              143.99868199999946
+            ],
+            "sample_count": 3,
+            "p50_ms": 143.99868199999946,
+            "p95_ms": 148.00866499999938,
+            "min_ms": 143.1780920000001,
+            "max_ms": 148.00866499999938,
+            "throughput_ops_s": 6.893613000686834
+          }
+        },
+        "correctness": [
+          "each authenticated mutation changed its intended row",
+          "root summaries restored after insert/update/rekey/owner move/delete"
+        ],
+        "structural_oracle": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 4000,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "aggregate_reads": [
+        {
+          "operation": "summary",
+          "table": "stress_4_1",
+          "n": 1000,
+          "samples_ms": [
+            121.7298009999995,
+            121.54043199999978,
+            120.0490860000009
+          ],
+          "sample_count": 3,
+          "p50_ms": 121.54043199999978,
+          "p95_ms": 121.7298009999995,
+          "min_ms": 120.0490860000009,
+          "max_ms": 121.7298009999995,
+          "throughput_ops_s": 8.257199226997336,
+          "returned": 0,
+          "result_object_bytes": 23
+        },
+        {
+          "operation": "range",
+          "table": "stress_4_1",
+          "n": 1000,
+          "samples_ms": [
+            301.48676499999965,
+            298.5210500000012,
+            299.69765799999914
+          ],
+          "sample_count": 3,
+          "p50_ms": 299.69765799999914,
+          "p95_ms": 301.48676499999965,
+          "min_ms": 298.5210500000012,
+          "max_ms": 301.48676499999965,
+          "throughput_ops_s": 3.3344245311709915,
+          "returned": 0,
+          "result_object_bytes": 23
+        }
+      ]
+    },
+    {
+      "table": "stress_4_8",
+      "slots": 4,
+      "measures": 8,
+      "n": 1000,
+      "integrity": {
+        "table": "stress_4_8",
+        "records": 1000,
+        "nodes": 4000,
+        "rootHeads": 128
+      },
+      "mutation": {
+        "table": "stress_4_8",
+        "n": 1000,
+        "slots": 4,
+        "measures": 8,
+        "operations": {
+          "create": {
+            "samples_ms": [
+              356.5719910000007,
+              263.31142399999953,
+              268.131985
+            ],
+            "sample_count": 3,
+            "p50_ms": 268.131985,
+            "p95_ms": 356.5719910000007,
+            "min_ms": 263.31142399999953,
+            "max_ms": 356.5719910000007,
+            "throughput_ops_s": 3.3783197904000306
+          },
+          "payload_update": {
+            "samples_ms": [
+              26.651902000001428,
+              26.28294299999834,
+              26.527666000001773
+            ],
+            "sample_count": 3,
+            "p50_ms": 26.527666000001773,
+            "p95_ms": 26.651902000001428,
+            "min_ms": 26.28294299999834,
+            "max_ms": 26.651902000001428,
+            "throughput_ops_s": 37.75365215931752
+          },
+          "aggregate_update": {
+            "samples_ms": [
+              279.76002100000187,
+              293.56665799999973,
+              273.82074999999895
+            ],
+            "sample_count": 3,
+            "p50_ms": 279.76002100000187,
+            "p95_ms": 293.56665799999973,
+            "min_ms": 273.82074999999895,
+            "max_ms": 293.56665799999973,
+            "throughput_ops_s": 3.5412962340466456
+          },
+          "rekey": {
+            "samples_ms": [
+              538.8042759999989,
+              464.91075400000045,
+              472.96898299999884
+            ],
+            "sample_count": 3,
+            "p50_ms": 472.96898299999884,
+            "p95_ms": 538.8042759999989,
+            "min_ms": 464.91075400000045,
+            "max_ms": 538.8042759999989,
+            "throughput_ops_s": 2.0315788439432394
+          },
+          "owner_move": {
+            "samples_ms": [
+              515.8025350000025,
+              491.49408799999946,
+              534.0860429999993
+            ],
+            "sample_count": 3,
+            "p50_ms": 515.8025350000025,
+            "p95_ms": 534.0860429999993,
+            "min_ms": 491.49408799999946,
+            "max_ms": 534.0860429999993,
+            "throughput_ops_s": 1.9463044876359064
+          },
+          "delete": {
+            "samples_ms": [
+              236.92897699999958,
+              244.13239599999724,
+              253.31726300000082
+            ],
+            "sample_count": 3,
+            "p50_ms": 244.13239599999724,
+            "p95_ms": 253.31726300000082,
+            "min_ms": 236.92897699999958,
+            "max_ms": 253.31726300000082,
+            "throughput_ops_s": 4.085086157108756
+          }
+        },
+        "correctness": [
+          "each authenticated mutation changed its intended row",
+          "root summaries restored after insert/update/rekey/owner move/delete"
+        ],
+        "structural_oracle": {
+          "status": "passed",
+          "records": 1000,
+          "nodes": 4000,
+          "method": "independent source membership / AVL / chronology / aggregate oracle"
+        }
+      },
+      "aggregate_reads": [
+        {
+          "operation": "summary",
+          "table": "stress_4_8",
+          "n": 1000,
+          "samples_ms": [
+            132.71633500000098,
+            131.19631200000003,
+            132.50366500000018
+          ],
+          "sample_count": 3,
+          "p50_ms": 132.50366500000018,
+          "p95_ms": 132.71633500000098,
+          "min_ms": 131.19631200000003,
+          "max_ms": 132.71633500000098,
+          "throughput_ops_s": 7.5678015994457635,
+          "returned": 0,
+          "result_object_bytes": 23
+        },
+        {
+          "operation": "range",
+          "table": "stress_4_8",
+          "n": 1000,
+          "samples_ms": [
+            414.39165400000275,
+            432.27697900000203,
+            470.6974139999984
+          ],
+          "sample_count": 3,
+          "p50_ms": 432.27697900000203,
+          "p95_ms": 470.6974139999984,
+          "min_ms": 414.39165400000275,
+          "max_ms": 470.6974139999984,
+          "throughput_ops_s": 2.2772713831753952,
+          "returned": 0,
+          "result_object_bytes": 23
+        }
+      ]
+    }
+  ],
+  "skipped_scales": [],
+  "limitations": [
+    "Synthetic rows exercise the current compiled authorization/tree kernels; application accounting/business rules are separate tests.",
+    "Warm-cache single-host measurements; sample counts are evidence, not production latency guarantees or a capacity proof.",
+    "Bulk construction uses precomputed nodes; image mode also suspends other field/schema processing while retaining native ownership references. Its timings are separate from native full-schema mutation throughput.",
+    "Pagination revisions do not create a multi-request snapshot; consumers must handle intervening writes."
+  ],
+  "authorization": {
+    "assertions": 2415,
+    "cases": [
+      "initial_graph_shapes_and_reader_selection",
+      "reader_grant_does_not_grant_writes",
+      "incomparable_reader_reorder",
+      "underlying_owner_move",
+      "reparent_grant_revoke_existing_and_fresh_sessions",
+      "direct_parent_group_access_and_delete_boundary",
+      "hidden_parent_group_without_node_select",
+      "diamond_alternate_path_and_last_path_revocation",
+      "role_revocation_same_token",
+      "rejected_cycle_cross_tenant_and_forged_closure_rollback",
+      "concurrent_cycle_changes_serialize"
+    ],
+    "timings": {
+      "initial_graph_shapes_and_reader_selection": 108.35456300000033,
+      "reader_grant_does_not_grant_writes": 2.418232999999873,
+      "incomparable_reader_reorder": 61.789932000000135,
+      "underlying_owner_move": 78.4295390000002,
+      "reparent_grant_revoke_existing_and_fresh_sessions": 164.37439700000004,
+      "direct_parent_group_access_and_delete_boundary": 108.76770299999998,
+      "hidden_parent_group_without_node_select": 78.16628300000002,
+      "diamond_alternate_path_and_last_path_revocation": 178.46320099999957,
+      "role_revocation_same_token": 48.81235599999991,
+      "rejected_cycle_cross_tenant_and_forged_closure_rollback": 231.86765699999978,
+      "concurrent_cycle_changes_serialize": 138.6984650000004
+    },
+    "graphShapes": {
+      "chainDepth": 8,
+      "balancedNodes": 15,
+      "starWidth": 32,
+      "diamond": true,
+      "bulkOwnerWidth": 32
+    },
+    "scope": "Native record sessions and independent source-graph oracle in the caller's disposable database"
+  },
+  "soak": {
+    "n": 1000,
+    "status": "passed",
+    "initial_integrity": {
+      "table": "stress_1_1",
+      "records": 1000,
+      "nodes": 1000,
+      "rootHeads": 32
+    },
+    "resources_before": {
+      "server_rss_mb": 258.33203125,
+      "client_rss_mb": 377.484375,
+      "disk_mb": 42.27793502807617
+    },
+    "requested_seconds": 30,
+    "elapsed_seconds": 30.843736875999998,
+    "writer_clients": 2,
+    "reader_clients": 2,
+    "outsider_clients": 1,
+    "writers": [
+      {
+        "committed": 74,
+        "conflicts": 44,
+        "retries": 36,
+        "exhausted": 8,
+        "deadline_interrupted": 0,
+        "sample_count": 74,
+        "samples_ms": [
+          500.6445370000001,
+          259.1178150000014,
+          239.9504190000007,
+          490.45762500000274,
+          513.795309000001,
+          257.9396590000033,
+          254.9724619999979,
+          255.50216299999738,
+          251.7597259999966,
+          264.91911800000526,
+          266.39560200000415,
+          541.6278820000007,
+          283.5662650000013,
+          268.04188499999873,
+          264.17584799999895,
+          260.89652000000206,
+          283.29647999999725,
+          261.9412400000001,
+          262.8680030000032,
+          253.42133199999807,
+          249.02077599999757,
+          249.32532399999764,
+          256.13184000000183,
+          500.2972000000009,
+          250.92141099999571,
+          248.38820500000293,
+          261.0258440000034,
+          251.69035599999916,
+          487.8191499999957,
+          490.6512670000011,
+          247.91063700000086,
+          255.59629600000335,
+          495.8414399999965,
+          241.84878800000297,
+          241.7131950000039,
+          258.0226610000027,
+          245.1073350000006,
+          256.2096870000023,
+          247.24567299999762,
+          252.39589100000012,
+          255.90188900000066,
+          248.3549669999993,
+          255.11076999999932,
+          520.0322400000005,
+          245.62984299999516,
+          238.61871700000484,
+          1002.6819260000048,
+          256.5757699999958,
+          251.51646299999993,
+          249.95262699999876,
+          259.7378700000045,
+          257.5293579999998,
+          263.34828800000105,
+          253.36121199999616,
+          252.20759700000053,
+          249.14778300000035,
+          247.35105900000053,
+          273.84885499999655,
+          250.81747400000313,
+          271.68504000000394,
+          255.03295499999513,
+          265.5624270000044,
+          265.9730039999995,
+          271.0818139999974,
+          262.82600600000296,
+          258.6043750000026,
+          251.53576699999394,
+          253.6582649999982,
+          247.82772699999623,
+          254.08660899999813,
+          256.6405250000025,
+          257.80965200000355,
+          261.3179869999949,
+          256.5812650000007
+        ],
+        "throughput_ops_s": 2.399190483873586,
+        "p50_ms": 256.5757699999958,
+        "p95_ms": 513.795309000001,
+        "native_operations": 444
+      },
+      {
+        "committed": 44,
+        "conflicts": 74,
+        "retries": 60,
+        "exhausted": 14,
+        "deadline_interrupted": 0,
+        "sample_count": 44,
+        "samples_ms": [
+          255.80307600000015,
+          982.055296999999,
+          255.2489740000019,
+          248.67402199999924,
+          256.5972279999987,
+          257.4361989999961,
+          259.881902000001,
+          252.8553879999963,
+          262.26736600000004,
+          252.18211700000393,
+          262.1277159999954,
+          254.80952300000354,
+          253.8967929999999,
+          252.12584200000128,
+          490.93004400000063,
+          241.75538600000436,
+          256.45546599999943,
+          240.71387000000686,
+          255.34174699999858,
+          252.2521859999979,
+          248.89242899999954,
+          257.448762,
+          259.0443490000034,
+          258.14641400000255,
+          256.8400479999982,
+          248.5005600000004,
+          252.94362399999955,
+          260.95980599999893,
+          257.0296329999983,
+          250.65272399999958,
+          257.0662979999979,
+          1045.449658999998,
+          241.42536299999483,
+          493.8260169999994,
+          242.65677300000243,
+          256.8917930000025,
+          242.93872600000032,
+          249.55819199999678,
+          485.83944599999813,
+          1001.0302850000007,
+          980.5277630000055,
+          996.96688,
+          249.55902100000094,
+          247.32269800000358
+        ],
+        "throughput_ops_s": 1.426545693114024,
+        "p50_ms": 255.80307600000015,
+        "p95_ms": 996.96688,
+        "native_operations": 264
+      }
+    ],
+    "readers": [
+      {
+        "page": {
+          "sample_count": 33,
+          "samples_ms": [
+            892.6089370000009,
+            900.3708669999978,
+            909.4121769999983,
+            903.8930370000016,
+            905.0718380000035,
+            917.7580690000032,
+            922.9963040000002,
+            929.5962769999969,
+            926.552251000001,
+            904.0350250000047,
+            930.8189039999997,
+            1069.2951240000039,
+            932.6343360000028,
+            931.5247489999965,
+            911.6357189999981,
+            911.9734200000021,
+            926.8343900000036,
+            1003.9537080000009,
+            903.7187370000029,
+            954.2064729999984,
+            907.3145890000014,
+            918.171061999994,
+            907.4282149999999,
+            927.8355519999968,
+            941.7324110000045,
+            905.4092339999988,
+            946.7799180000002,
+            979.6486650000006,
+            993.6410259999975,
+            916.294716999997,
+            918.9329460000008,
+            950.6514760000064,
+            878.2082850000006
+          ],
+          "throughput_ops_s": 1.069909269835518,
+          "p50_ms": 918.9329460000008,
+          "p95_ms": 1003.9537080000009
+        },
+        "point": {
+          "sample_count": 32,
+          "samples_ms": [
+            2.069208000000799,
+            2.8355290000035893,
+            2.5392940000019735,
+            2.5137159999940195,
+            2.1744459999972605,
+            2.0210060000026715,
+            2.3679269999993267,
+            2.466915999997582,
+            2.1025679999947897,
+            2.301948000000266,
+            2.1744160000016564,
+            2.293454999999085,
+            2.3237500000032014,
+            2.03513699999894,
+            2.419635999998718,
+            6.354758000001311,
+            2.872455999997328,
+            2.7514030000020284,
+            2.061917999999423,
+            2.097562000002654,
+            3.8778870000023744,
+            2.2552379999979166,
+            2.248157000001811,
+            2.478546999998798,
+            4.563305999996373,
+            1.989621000000625,
+            2.2168430000019725,
+            2.5097599999935483,
+            2.563520999996399,
+            2.2747679999956745,
+            2.3445819999978994,
+            2.410182999999961
+          ],
+          "throughput_ops_s": 1.0374877768101993,
+          "p50_ms": 2.3237500000032014,
+          "p95_ms": 4.563305999996373
+        },
+        "denial": {
+          "sample_count": 32,
+          "samples_ms": [
+            1.8905999999988126,
+            1.8313909999997122,
+            1.9464529999968363,
+            1.9152270000049612,
+            2.117739999994228,
+            2.2749170000024606,
+            2.255818999998155,
+            2.309488999999303,
+            2.0561589999997523,
+            2.17214299999614,
+            2.093624999994063,
+            2.218633000004047,
+            2.518403000001854,
+            1.9205949999959557,
+            2.034668000000238,
+            2.2325350000028266,
+            2.155918999997084,
+            2.498063999999431,
+            1.858793000006699,
+            1.8913119999997434,
+            1.8313519999937853,
+            2.0674050000015995,
+            2.032483000002685,
+            2.148570000004838,
+            2.3245659999956843,
+            2.6018410000033327,
+            2.2583860000013374,
+            2.241225999998278,
+            3.0864760000040405,
+            2.0632599999953527,
+            2.043058999995992,
+            2.3257660000017495
+          ],
+          "throughput_ops_s": 1.0374877768101993,
+          "p50_ms": 2.117739999994228,
+          "p95_ms": 2.6018410000033327
+        }
+      },
+      {
+        "page": {
+          "sample_count": 32,
+          "samples_ms": [
+            982.569449999999,
+            959.589723000001,
+            912.6765510000041,
+            912.0491679999977,
+            915.2265909999987,
+            912.2936419999969,
+            912.8336520000012,
+            942.3159939999969,
+            921.2691140000024,
+            927.9580410000053,
+            908.743432999996,
+            904.339942999999,
+            986.6653399999996,
+            956.9812190000011,
+            922.0852949999971,
+            922.314968000006,
+            914.2197760000054,
+            916.842276000003,
+            922.0408679999964,
+            923.0920920000062,
+            912.2486530000024,
+            965.8424339999983,
+            954.4138149999999,
+            915.8850950000051,
+            920.7668389999963,
+            946.5967280000041,
+            935.6261689999956,
+            930.6604989999978,
+            937.6839390000023,
+            1013.6382409999933,
+            917.0343079999948,
+            915.738182000001
+          ],
+          "throughput_ops_s": 1.0374877768101993,
+          "p50_ms": 922.0408679999964,
+          "p95_ms": 986.6653399999996
+        },
+        "point": {
+          "sample_count": 32,
+          "samples_ms": [
+            2.0927039999987755,
+            2.0978909999976167,
+            2.593485999997938,
+            2.1117020000019693,
+            5.667863999995461,
+            2.1145759999999427,
+            1.9497090000004391,
+            2.1534039999969536,
+            2.438984000000346,
+            2.194255999995221,
+            2.4963599999973667,
+            2.5119340000019292,
+            2.076809999998659,
+            1.9071449999973993,
+            2.403031000001647,
+            3.6526379999995697,
+            2.1557900000043446,
+            4.627023000000918,
+            2.1847130000023753,
+            1.9210460000031162,
+            2.410201999999117,
+            2.1264440000013565,
+            2.239784999997937,
+            2.6829129999969155,
+            2.0702319999982137,
+            3.051217000000179,
+            2.241661000000022,
+            3.183572000001732,
+            2.369981000003463,
+            2.168417999993835,
+            2.5847330000033253,
+            2.40439399999741
+          ],
+          "throughput_ops_s": 1.0374877768101993,
+          "p50_ms": 2.239784999997937,
+          "p95_ms": 4.627023000000918
+        },
+        "denial": {
+          "sample_count": 31,
+          "samples_ms": [
+            2.2957790000000386,
+            1.7989720000041416,
+            2.012473000002501,
+            2.6192139999984647,
+            4.116422999999486,
+            1.886553999996977,
+            2.01842200000101,
+            2.2988840000034543,
+            2.1667749999978696,
+            1.8150060000043595,
+            2.202497999998741,
+            2.1573110000026645,
+            2.390470999998797,
+            1.7319419999985257,
+            2.1937160000015865,
+            1.8120330000019749,
+            2.013025000000198,
+            1.861916999994719,
+            1.8724739999961457,
+            2.661989000000176,
+            2.2576920000065,
+            1.9492479999971692,
+            1.9248809999990044,
+            1.886315999996441,
+            1.9001970000026631,
+            2.0244040000034147,
+            2.718937999998161,
+            2.0612159999946016,
+            2.118612000005669,
+            1.9317520000040531,
+            2.2247219999990193
+          ],
+          "throughput_ops_s": 1.0050662837848805,
+          "p50_ms": 2.0244040000034147,
+          "p95_ms": 2.718937999998161
+        }
+      }
+    ],
+    "integrity": {
+      "scratch_absent": true,
+      "restored_root_summaries": 2,
+      "root_revisions_advanced": true
+    },
+    "structural_oracle": {
+      "status": "passed",
+      "records": 1000,
+      "nodes": 1000,
+      "method": "independent source membership / AVL / chronology / aggregate oracle"
+    },
+    "resources_after": {
+      "server_rss_mb": 228.6953125,
+      "client_rss_mb": 201.3828125,
+      "disk_mb": 49.29617404937744
+    }
+  },
+  "duration_seconds": 178.636266543,
+  "finished_at": "2026-10-19T06:08:50.811Z"
+}

@@ -111,7 +111,58 @@ walks, bounded/full buffering, fanout, overlap rejection and truncated continuat
 The archived scale report's construction limitation contains the older phrase
 “source events only.” For its recorded `seed-mode: image`, construction also
 suspends other field/schema processing as explained below; all definitions were
-restored before measurement. The source hash records the exact measured suite.
+restored before measurement. Commit `e38aba2` preserves the exact four JavaScript
+files whose concatenated SHA-256 is recorded in that report. Later test additions
+are validated separately; they do not retroactively extend the million-row evidence.
+
+## Mixed-load follow-up
+
+The suite now runs a bounded mixed-load phase before scaling, on at most 1,000
+rows so the independent oracle can reconstruct every post-write invariant. Two
+writers run atomic CREATE/payload UPDATE/aggregate UPDATE/rekey/owner move/DELETE
+lifecycles. Two readers check stable authorized prefixes and point reads while
+an outsider connection checks point denials. Scratch keys sort after the tested
+prefix, and scratch rows are deleted inside each transaction. This checks shared
+root changes during reads; it does not promise snapshot pagination under changes
+to the returned prefix.
+
+The first trial exposed a test assumption about returned images. In this schema,
+an owner-changing `UPDATE ... RETURN AFTER` returned the new owner with the old
+event-derived `read_by`. A fresh SELECT in the same transaction, and DELETE's
+before-image, both contained the correct updated reader. The test now explicitly
+reads the settled record and checks it. Persisted authorization was correct; this
+was not evidence of a broken permission update. Code that needs settled derived
+fields should read them back rather than treating the mutation response as that
+settled state.
+
+The follow-up also strengthens the isolated mutation checks: after every phase,
+counts and every measure in every slot on both affected owners must match the
+independent expected state. The original scale run checked actual row effects,
+the first aggregate during its update and exact final root summaries.
+
+The [follow-up report](authorization-stress-soak.json) records the 32-owner,
+1,000-row mixed phase. Its 30-second target drained in 30.84 seconds: the writers
+committed 74 and 44 complete transactions, or 118 lifecycles / 708 native source
+operations in total, about 3.83 committed lifecycles per second. The two readers
+completed 33/32 pages, 32/32 permitted point reads and 32/31 outsider point denials.
+Both roots restored exact summaries with advancing revisions, scratch records
+were absent, and the independent oracle verified all 1,000 nodes afterward.
+
+The phase surfaced 118 transaction conflicts. Twenty-two lifecycle requests
+exhausted their four immediate attempts; the workload then continued with later
+requests. Those rejected requests are not counted as commits. Both writers made
+progress and failed attempts left no partial state, but bounded immediate
+retries did not guarantee completion of every request. Production callers need
+an explicit retry/backoff and failure-handling policy for hot shared roots. This
+test intentionally applies no backoff; it is a short contention check, not a
+long-duration availability or fairness proof.
+
+Server/client RSS before the phase was 258.3/377.5 MiB and after it 228.7/201.4
+MiB; private storage grew from 42.3 to 49.3 MiB. These snapshots do not demonstrate
+the absence of long-term memory or storage growth. The full configured 1,000-row
+scale and stronger mutation matrix passed in this follow-up, which completed in
+178.6 seconds. All 118 unit tests also passed again. The million-row result remains
+the earlier separately identified benchmark.
 
 ## What the checks establish
 
@@ -183,7 +234,9 @@ reference fields. `OPTION IMPORT` on source records would skip reference
 bookkeeping; restoring events afterward would not reconstruct missing trees.
 
 After native writes, full structural reconstruction is capped at 1,000 rows.
-At larger scales, the checks cover intended row effects, root aggregates and
+The larger initial image comparisons reuse the construction routine, so they
+are not an independent full reconstruction of the large topology. At larger
+scales, the post-write checks cover intended row effects, root aggregates and
 revisions, but not every post-write node invariant. Initial image verification
 at every scale is complete. Functional graph changes use small isolated graphs;
 the experiment does not measure a reparent/revocation that repairs a million
@@ -202,6 +255,7 @@ query timeouts are performance limits, not completed-query correctness evidence.
 node dev-tools/experiments/authorization-stress \
   --scales 100,1000,10000,100000,1000000 \
   --seed-mode image --owner-count 32 --batch-rows 500 --samples 3 \
+  --soak-seconds 30 \
   --budget-seconds 1800 --max-stage-seconds 900 \
   --max-rss-mb 6000 --max-disk-mb 10000 \
   --scan-timeout-ms 3000 --variant-rows 1000 \
