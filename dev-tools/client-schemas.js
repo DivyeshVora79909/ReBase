@@ -99,5 +99,6 @@ function writeClientSchemas({ sourceDir, outputDir, check = false }) {
 module.exports = {
   assertClientInput,
   loadClientSchemas,
+  readSchemas,
   writeClientSchemas,
 };

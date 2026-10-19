@@ -27,10 +27,10 @@ database. Never apply demo setup to an existing connection profile. Run tests fo
 changed behavior and update current documentation with actual evidence. Chromium
 must be installed for the maintained browser checks.
 
-The two user-owned files dev-tools/fixtures/examples/accounting-complete.js and
-dev-tools/fixtures/examples/populate-full-enterprise.js were excluded from this
-frontend work. Do not include them in a frontend commit. Review both repository
-statuses and stage explicitly. Commits were authorized; publishing is separate.
+Parent-repository accounting fixtures now live under designs/all-in-accounting/fixtures
+and ship in build/all-in-accounting/fixtures. Keep unrelated parent files out of
+frontend commits. Review both repository statuses and stage explicitly.
+Commits were authorized; publishing is separate.
 ```
 
 A new workflow should compose an existing field, reader, source callback or

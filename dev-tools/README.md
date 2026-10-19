@@ -195,6 +195,42 @@ and clearing require the administrative privileges needed by their SQL.
 
 ## Fixture primitives
 
+Design-owned recipes, defaults and example-only schemas belong under
+`designs/<project>/fixtures/`; builds copy that directory to `build/<project>/fixtures/`.
+Public input schemas stay in `client/schemas/`. `fixtures.loadModel(buildDir)`
+combines those with optional `fixtures/schemas/*.schema.json`, using the emitted
+`schema.surql` for native types. Duplicate table schemas are rejected. Loading
+does not compile sources, connect, or execute a recipe.
+
+The [complete accounting example](../designs/all-in-accounting/fixtures/README.md)
+covers all 48 accounting inputs and three inert contact tables. Its settings are
+in `complete.defaults.json`; its native functions and monoid remain in the schema.
+
+```js
+const model = fixtures.loadModel("build/all-in-accounting")
+const complete = require("./build/all-in-accounting/fixtures/complete")
+const preview = await fixtures.plan(complete.options({ model }))
+const options = complete.populationOptions({ model, seed: "client-demo" })
+const result = await fixtures.populate(admin.db, options)
+```
+
+```sh
+node dev-tools/fixtures/run.js build/all-in-accounting/fixtures/complete.js --preview
+npm run probe:fixtures-complete
+```
+
+The runner accepts a built recipe exporting `options(config)` for offline
+planning and optional `populationOptions(config)` for transaction callbacks.
+`--config path.json` supplies overrides; without `--preview` the runner connects
+using the selected process profile. Recipes are ordinary trusted Node modules.
+
+Changing SurrealDB's storage engine preserves the same fixture inputs and SDK
+path. Moving to another database or key-value API requires replacing the native
+type binder, schema metadata reader, writes/transactions and any SQL callbacks;
+accounting event and tree semantics must also exist there. JSON Schemas, seeded
+source recipes and arithmetic can be reused where those contracts match. This
+is a clear separation of inputs from execution, not a universal database adapter.
+
 ```js
 const { build, connect, fixtures } = require("./dev-tools")
 const { loadClientSchemas } = require("./dev-tools/client-schemas")

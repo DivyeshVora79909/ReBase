@@ -1,10 +1,13 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
 const { DateTime, Decimal, Duration, RecordId, Uuid } = require("surrealdb");
 const { compileField } = require("../compiler/fields");
 const { parseSchema } = require("../compiler/schema");
+const { readSchemas } = require("../client-schemas");
 const { json } = require("./values");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -278,4 +281,19 @@ function createModel({ schema, schemas }) {
   };
 }
 
-module.exports = { createModel, recordId, savedReferences };
+/** Load a shipped design without compiling sources or opening a connection. */
+function loadModel(buildDir) {
+  const directory = path.resolve(buildDir);
+  const schema = fs.readFileSync(path.join(directory, "schema.surql"), "utf8");
+  const schemas = Object.create(null);
+  for (const relative of ["client/schemas", "fixtures/schemas"]) {
+    for (const entry of readSchemas(path.join(directory, relative))) {
+      if (Object.hasOwn(schemas, entry.name)) throw new Error("Duplicate fixture input schema: " + entry.name);
+      schemas[entry.name] = entry.schema;
+    }
+  }
+  if (!Object.keys(schemas).length) throw new Error("No fixture input schemas in build: " + directory);
+  return createModel({ schema, schemas });
+}
+
+module.exports = { createModel, loadModel, recordId, savedReferences };

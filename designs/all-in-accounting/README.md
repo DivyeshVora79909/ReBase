@@ -21,5 +21,9 @@ node dev-tools/accounting/fixture-example.js
 There are 48 authored public create schemas under `schemas/`; the compiler copies
 them to `build/all-in-accounting/client/schemas`. Apply the profile to a fresh
 database. Historical recipes remain in Git history.
+The [complete fixture](fixtures/README.md) ships its recipe, defaults and three
+fixture-only contact schemas in `build/all-in-accounting/fixtures/`. Open
+`build/all-in-accounting/inspector.html` directly to explore schema relationships,
+dependencies and tree memberships.
 The separate MetaSol prototype uses an earlier accounting API and is not part
 of this redesign's acceptance.

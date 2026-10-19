@@ -1,7 +1,7 @@
 "use strict";
 
 const { RecordId } = require("surrealdb");
-const { createModel, recordId } = require("./model");
+const { createModel, loadModel, recordId } = require("./model");
 const { withSolver } = require("./solver");
 const { createRandom, generateInput, hash, json } = require("./values");
 const { generate, FixtureStalledError } = require("./generate");
@@ -175,4 +175,4 @@ async function populate(db, options = {}) {
   }
 }
 
-module.exports = { createModel, plan, generate, insert, populate, withSolver, FixtureStalledError };
+module.exports = { createModel, loadModel, plan, generate, insert, populate, withSolver, FixtureStalledError };

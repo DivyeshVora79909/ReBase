@@ -4,16 +4,27 @@
 // Opt-in integration check. Always starts its own disposable server; never reads
 // the application's environment profile or connects to its development data.
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const { Surreal, RecordId } = require("surrealdb");
-const { plan, insert, populate } = require("..");
-const { prepare } = require("../..");
-const { start, client } = require("../../temporal-tree/harness");
-const { compile, acceptance } = require("../../accounting/acceptance");
-const { verify, compare, D } = require("../../accounting/source-oracle");
-const { createCompleteModel, completeOptions, populateComplete } = require("./accounting-complete");
+const { plan, insert, populate, loadModel } = require("../fixtures");
+const { build, prepare } = require("..");
+const { resolveConfiguration } = require("../../config/environment");
+const { start, client } = require("../temporal-tree/harness");
+const { acceptance } = require("../accounting/acceptance");
+const { verify, compare, D } = require("../accounting/source-oracle");
 
 async function check(db, compiled, q) {
-  const model = createCompleteModel();
+  const model = loadModel(compiled.outputDir);
+  const complete = require(path.join(compiled.outputDir, "fixtures/complete.js"));
+  const completeOptions = complete.options;
+  const run = async (config = {}) => {
+    const options = complete.populationOptions({ model, ...config });
+    const result = await populate(db, options);
+    return { ...result, ids: options.ids, counts: options.expectedCounts,
+      scenario: options.scenario, tenant: options.tenant, reused: options.reused };
+  };
   const options = completeOptions({ model });
   const preview = await plan(options);
   assert.equal(preview.rows.length, 109);
@@ -35,7 +46,7 @@ async function check(db, compiled, q) {
   console.log("PASS offline determinism, all-table coverage and configuration validation");
 
   // First use bootstraps the tenant; second seed later tests an existing tenant.
-  const first = await populateComplete(db, { model });
+  const first = await run({ model });
   assert.equal(first.reused, false);
   assert.equal(first.created.length, 109);
   const id = first.ids;
@@ -51,8 +62,8 @@ async function check(db, compiled, q) {
       owner: { rid: row.tenant, slot: "z_auth_identifiers" },
       key: [...(row.address ? ["email", row.address] : ["phone", row.number]), row.id, "z_auth_identifier"], measures: {}, tags: {} }));
     const nodes = contacts.map(row => ({ id: row.id, z_auth_identifier: row.z_auth_identifier }));
-    require("../../temporal-tree/oracle").verify(owners, nodes, entries, compare);
-    require("../../temporal-tree/exact-oracle").verify(owners, nodes, entries, compare, D);
+    require("../temporal-tree/oracle").verify(owners, nodes, entries, compare);
+    require("../temporal-tree/exact-oracle").verify(owners, nodes, entries, compare, D);
     const accounting = structuredClone(data);
     for (const rows of Object.values(accounting)) for (const row of rows) {
       delete row.z_auth_identifier; delete row.z_auth_identifiers;
@@ -92,13 +103,13 @@ async function check(db, compiled, q) {
 
   await db.query("UPDATE $id SET name = 'Developer edit';", { id: new RecordId("organization", id.customer.split(":")[1]) });
   const beforeReuse = await h.snapshot();
-  const repeated = await populateComplete(db, { model, tenantName: "Do not overwrite" });
+  const repeated = await run({ model, tenantName: "Do not overwrite" });
   assert.equal(repeated.reused, true);
   assert.equal(repeated.created.length, 0);
   assert.deepEqual(repeated.ids, id);
   assert.deepEqual(await h.snapshot(), beforeReuse, "repeat neither overwrites edits nor adds audit/history rows");
 
-  const second = await populateComplete(db, { model, seed: "another-scenario", salesCount: 1 });
+  const second = await run({ model, seed: "another-scenario", salesCount: 1 });
   assert.equal(second.created.length, 99);
   assert.notEqual(second.ids.inr, id.inr);
   const both = await checkIntegrity();
@@ -114,7 +125,7 @@ async function check(db, compiled, q) {
   try { await insert(tx, { rows: partial.rows.slice(0, 1) }); await tx.commit(); }
   catch (error) { await tx.cancel(); throw error; }
   const beforePartial = await h.snapshot();
-  await assert.rejects(populateComplete(db, partialConfig), /is incomplete/);
+  await assert.rejects(run(partialConfig), /is incomplete/);
   assert.deepEqual(await h.snapshot(), beforePartial, "partial history is not silently repaired and new tenant creation rolls back");
 
   // Compose a small extension with the existing dataset. Avoid generating a
@@ -131,10 +142,16 @@ async function check(db, compiled, q) {
 }
 
 async function main() {
-  const compiled = compile();
-  const server = await start({ engine: "surrealkv" });
-  const db = new Surreal();
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-complete-fixture-"));
+  let server, db;
   try {
+    const compiled = build({ project: "all-in-accounting", outputDir: path.join(temporary, "original"),
+      configuration: resolveConfiguration({ NODE_ENV: "test" }) });
+    const shipped = path.join(temporary, "shipped");
+    fs.renameSync(compiled.outputDir, shipped);
+    compiled.outputDir = shipped; // Exercise only relocated build files.
+    server = await start({ engine: "surrealkv" });
+    db = new Surreal();
     await db.connect(`${server.url.replace(/^http/, "ws")}/rpc`);
     await db.signin({ username: "root", password: "root" });
     await db.query("DEFINE NAMESPACE temporal_probe; USE NS temporal_probe; DEFINE DATABASE fixture;");
@@ -143,7 +160,9 @@ async function main() {
     await prepare(db, { schema: compiled.bundle });
     console.log(JSON.stringify(await check(db, compiled, client(server.url))));
   } finally {
-    try { await db.close(); } finally { await server.close(); }
+    try { if (db) await db.close(); } finally {
+      try { if (server) await server.close(); } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
+    }
   }
 }
 

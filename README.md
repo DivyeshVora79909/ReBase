@@ -289,7 +289,10 @@ static map because raw-body signatures cannot be dispatched from request data.
 `explain`, `connect`, and the `fixtures` namespace. Use `build({ check: true })`
 to verify generated artifacts and the connected SDK's `db.query()` to apply a
 compiled schema. `fixtures.createModel({ schema, schemas })` combines the emitted
-compiler bundle with ordinary JSON Schemas. `fixtures.plan({ model, seed, space,
+compiler bundle with ordinary JSON Schemas; `fixtures.loadModel("build/all-in-accounting")`
+loads that model from shipped files. Design-owned `fixtures/` directories are
+copied into builds beside `client/schemas/`. The [complete accounting recipe](designs/all-in-accounting/fixtures/README.md)
+keeps its defaults and contact input schemas together. `fixtures.plan({ model, seed, space,
 recipe })` prepares named, staged fixtures offline. For incremental generation,
 `fixtures.populate(db, { model, seed, space, counts, rules })` infers reference
 pools and ordering, selects weighted parents, and rereads current database values

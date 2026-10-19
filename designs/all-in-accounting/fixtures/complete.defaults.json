@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "seed": "complete-demo",
+  "tenant": "rebase_tenant:default",
+  "tenantName": "Default Tenant",
+  "startAt": "2027-01-01T00:00:00Z",
+  "salesCount": 3
+}

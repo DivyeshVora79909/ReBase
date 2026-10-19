@@ -1,49 +1,15 @@
-#!/usr/bin/env node
 "use strict";
 
-const path = require("node:path");
 const { createHash } = require("node:crypto");
-const { parseArgs } = require("node:util");
-const { createModel, populate } = require("..");
-const { recordId } = require("../model");
-const { build, connect } = require("../..");
-const { resolveConfiguration } = require("../../../config/environment");
-const { loadClientSchemas } = require("../../client-schemas");
-
-// These are public inputs, not forged authentication ceremony/verification state.
-// Accounting's 48 input schemas already live in designs/all-in-accounting/schemas.
-const contactSchemas = {
-  rebase_user: {
-    type: "object", additionalProperties: false, required: ["name", "parents", "login_access"],
-    properties: { name: { type: "string", minLength: 1 }, login_access: { type: "boolean" },
-      parents: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 1 } },
-  },
-  authentication_email: {
-    type: "object", additionalProperties: false, required: ["owned_by", "address"],
-    properties: { owned_by: { type: "string" }, address: { type: "string", format: "email" } },
-  },
-  authentication_phone: {
-    type: "object", additionalProperties: false, required: ["owned_by", "number"],
-    properties: { owned_by: { type: "string" }, number: { type: "string", pattern: "^\\+[1-9][0-9]{7,14}$" } },
-  },
-};
-
-function createCompleteModel() {
-  // Explain compiles metadata in memory: no build files, deployment or connection.
-  const schema = build({ project: "all-in-accounting", explain: "*",
-    configuration: resolveConfiguration({ NODE_ENV: "test" }) });
-  const catalog = loadClientSchemas(path.resolve(__dirname, "../../../designs/all-in-accounting/schemas"));
-  return createModel({ schema, schemas: {
-    ...Object.fromEntries([...catalog.schemas].map(([table, entry]) => [table, entry.schema])),
-    ...contactSchemas,
-  } });
-}
+const defaults = Object.freeze(require("./complete.defaults.json"));
 
 /** Pure configuration. Pass this straight to fixtures.plan() for an offline preview. */
-function completeOptions({ model, tenant = "rebase_tenant:default", seed = "complete-demo",
-  startAt = "2027-01-01T00:00:00Z", salesCount = 3 } = {}) {
-  const owner = String(recordId(tenant));
-  if (recordId(owner).table.name !== "rebase_tenant") throw new Error("tenant must be a rebase_tenant record id");
+function options({ model, tenant = defaults.tenant, seed = defaults.seed,
+  startAt = defaults.startAt, salesCount = defaults.salesCount } = {}) {
+  if (typeof tenant !== "string" || !tenant.startsWith("rebase_tenant:") || tenant.length <= 14) {
+    throw new Error("tenant must be a rebase_tenant record id string");
+  }
+  const owner = tenant; // The fixture model binds native identity when planning.
   if (typeof seed !== "string" || !seed.trim()) throw new Error("seed must be a nonempty string");
   if (!Number.isSafeInteger(salesCount) || salesCount < 1 || salesCount > 20) throw new Error("salesCount must be from 1 to 20");
   const start = Date.parse(startAt);
@@ -51,7 +17,7 @@ function completeOptions({ model, tenant = "rebase_tenant:default", seed = "comp
   const at = (day, seconds = 0) => new Date(start + (day - 1) * 86400000 + seconds * 1000).toISOString();
   // Version the scenario when changing its recipe. Include all configuration in
   // the identity so different datasets can coexist even within the same tenant.
-  const digest = createHash("sha256").update(JSON.stringify([1, owner, seed, at(1), salesCount])).digest("hex").slice(0, 16);
+  const digest = createHash("sha256").update(JSON.stringify([defaults.version, owner, seed, at(1), salesCount])).digest("hex").slice(0, 16);
   const scenario = `demo_${digest}`, ids = {}, recipe = [];
   const add = (table, name, values, owned = true) => {
     ids[name] = `${table}:${scenario}_${name}`;
@@ -210,54 +176,37 @@ function completeOptions({ model, tenant = "rebase_tenant:default", seed = "comp
   add("authentication_phone", "phone", { owned_by: ids.contact,
     number: `+999${(BigInt(`0x${digest}`) % 1000000000000n).toString().padStart(12, "0")}` }, false);
 
-  return { model, seed, scenario, tenant: owner, ids, recipe, space: { tenants: [{ id: owner }] } };
+  const expectedCounts = {};
+  for (const step of recipe) expectedCounts[step.table] = (expectedCounts[step.table] || 0) + 1;
+  return { model, seed, scenario, tenant: owner, ids, expectedCounts, recipe, space: { tenants: [{ id: owner }] } };
 }
 
-/** One transaction, including tenant creation. Existing complete runs are reused. */
-async function populateComplete(db, { model = createCompleteModel(), tenantName = "Default Tenant", ...config } = {}) {
-  const options = completeOptions({ ...config, model });
-  const tenant = recordId(options.tenant), intended = Object.values(options.ids).map(recordId);
+/** Tenant provisioning and repeat detection share populate's transaction. */
+function populationOptions({ tenantName = defaults.tenantName, ...config } = {}) {
+  if (typeof tenantName !== "string" || !tenantName.trim()) throw new Error("tenantName must be a nonempty string");
+  const planned = options(config);
+  const intended = Object.values(planned.ids);
   let reused = false;
-  const result = await populate(db, { ...options,
-    space: async tx => {
-      await tx.query("IF !record::exists($tenant) { CREATE $tenant SET name = $name; };", { tenant, name: tenantName });
-      const [existing] = await tx.query("SELECT id, tenant FROM $ids;", { ids: intended });
+  return { ...planned,
+    get reused() { return reused; },
+    space: async transaction => {
+      const result = (await transaction.query(`
+        LET $scope = type::record($tenant);
+        IF record::tb($scope) != 'rebase_tenant' { THROW 'Choose a rebase_tenant record'; };
+        IF !record::exists($scope) { CREATE $scope SET name = $name; };
+        LET $records = $ids.map(|$id| type::record($id));
+        RETURN { tenant: $scope, existing: (SELECT id, tenant FROM $records) };
+      `, { tenant: planned.tenant, name: tenantName, ids: intended })).at(-1);
+      const { existing, tenant } = result;
       if (existing.length && existing.length !== intended.length) {
-        throw new Error(`Scenario ${options.scenario} is incomplete (${existing.length}/${intended.length} records). Use a new seed, or explicitly clear your development database before rerunning.`);
+        throw new Error(`Scenario ${planned.scenario} is incomplete (${existing.length}/${intended.length} records). Use a new seed, or explicitly clear your development database before rerunning.`);
       }
       if (existing.some(row => String(row.tenant) !== String(tenant))) throw new Error("Existing scenario has a different tenant");
       reused = existing.length === intended.length;
       return { tenants: [{ id: String(tenant) }] };
     },
-    recipe: () => reused ? [] : options.recipe,
-  });
-  const counts = {};
-  for (const step of options.recipe) counts[step.table] = (counts[step.table] || 0) + 1;
-  return { ...result, scenario: options.scenario, tenant: options.tenant, ids: options.ids, counts, reused };
+    recipe: () => reused ? [] : planned.recipe,
+  };
 }
 
-async function main() {
-  const { values } = parseArgs({ options: {
-    seed: { type: "string" }, tenant: { type: "string" }, start: { type: "string" },
-    sales: { type: "string" }, help: { type: "boolean", short: "h" },
-  } });
-  if (values.help) {
-    console.log("Usage: node --env-file=<profile> dev-tools/fixtures/examples/accounting-complete.js [--seed NAME] [--tenant rebase_tenant:default] [--start ISO_DATE] [--sales 1..20]\nUses the configured, already-deployed development database. Same config reuses records; a new seed adds a separate scenario.");
-    return;
-  }
-  const config = { ...(values.seed !== undefined ? { seed: values.seed } : {}),
-    ...(values.tenant !== undefined ? { tenant: values.tenant } : {}),
-    ...(values.start !== undefined ? { startAt: values.start } : {}),
-    ...(values.sales !== undefined ? { salesCount: Number(values.sales) } : {}) };
-  const model = createCompleteModel();
-  completeOptions({ ...config, model }); // Validate before opening a connection.
-  const c = await connect();
-  try {
-    const result = await populateComplete(c.db, { ...config, model });
-    console.log(JSON.stringify({ scenario: result.scenario, tenant: result.tenant, reused: result.reused,
-      inserted: result.created.length, counts: result.counts, ids: result.ids }, null, 2));
-  } finally { await c.close(); }
-}
-
-if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
-module.exports = { createCompleteModel, completeOptions, populateComplete };
+module.exports = { defaults, options, populationOptions };

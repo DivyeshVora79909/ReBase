@@ -61,6 +61,7 @@
     "probe:accounting-adjustment-rekey": "node dev-tools/accounting/adjustment-rekey-probe.js",
     "probe:dependency-cost": "node dev-tools/temporal-tree/dependency-cost-probe.js",
     "probe:fixtures": "node dev-tools/checks/fixtures-probe.js",
+    "probe:fixtures-complete": "node dev-tools/checks/complete-fixture-probe.js",
     "probe:prepare": "node dev-tools/checks/prepare-probe.js"
   },
   "engines": {

@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "owned_by",
+    "address"
+  ],
+  "properties": {
+    "owned_by": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string",
+      "format": "email"
+    }
+  }
+}

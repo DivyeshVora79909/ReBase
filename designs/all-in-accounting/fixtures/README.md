@@ -1,126 +1,121 @@
 # Complete accounting fixture
 
-[`accounting-complete.js`](accounting-complete.js) creates a repeatable learning
-dataset covering all 48 public accounting input tables. It also creates one
-login-disabled user, one email address and one phone number. Use a development
-database with the current `all-in-accounting` schema already installed and a
-privileged connection. Install development dependencies with `npm ci` first.
+[complete.js](complete.js) creates a repeatable learning dataset covering all 48
+public accounting input tables, plus one login-disabled user, email and phone.
+The default scenario has **109 explicit records across 51 tables**. Native events
+calculate outputs, trees and audit records. Use the current installed accounting
+schema and a privileged development connection.
 
-## Populate from your existing REPL connection
+## Files and build output
 
-Run these commands from the repository root in the workbench. If you already
-have `c.db`, keep using that connection:
+| Authoring file | Purpose |
+| --- | --- |
+| [complete.defaults.json](complete.defaults.json) | Seed, tenant, initial tenant name, starting date, sale count and recipe version. |
+| [complete.js](complete.js) | Explicit scenario stages and transaction callbacks. |
+| [schemas/](schemas/) | Three fixture-only contact input schemas; the user schema requires login to stay disabled. |
+| [../schemas/](../schemas/) | The 48 public accounting input schemas, shared with applications. |
+
+`npm run build:all-in-accounting` copies this directory unchanged to
+`build/all-in-accounting/fixtures/`. Public schemas remain under `client/schemas/`;
+fixture schemas never become public client inputs. The build does not execute
+recipes. Change authored files, then rebuild; build check mode detects stale or
+removed fixture files. Bump the version in defaults when changing the scenario
+in a way that should allocate new identities.
+
+Monoids, memberships, query bounds and invariants remain in their native authored
+functions and annotations. They are not copied into fixture rules. The compiler's
+`devtools.json` and `inspector.html` make those facts and source functions browsable.
+The fixture contributes only valid source inputs and example values.
+
+## Populate from the workbench
+
+From the repository root, use your existing connection as `c` or open one with
+`const c = await connect()`. The following loads the built inputs without another
+compilation or connection:
 
 ```js
-const complete = require('./dev-tools/fixtures/examples/accounting-complete')
-const config = { seed: 'complete-demo', tenant: 'rebase_tenant:default', startAt: '2027-01-01T00:00:00Z', salesCount: 3 }
-const demo = await complete.populateComplete(c.db, config)
-console.log({ scenario: demo.scenario, reused: demo.reused, inserted: demo.created.length, counts: demo.counts })
+const model = fixtures.loadModel('build/all-in-accounting')
+const complete = require('./build/all-in-accounting/fixtures/complete')
+const config = { seed: 'complete-demo' } // omitted settings come from complete.defaults.json
+const options = complete.populationOptions({ ...config, model })
+const demo = await fixtures.populate(c.db, options)
+console.log({ scenario: options.scenario, reused: options.reused,
+  inserted: demo.created.length, counts: options.expectedCounts, ids: options.ids })
 ```
 
-For a new workbench session:
+For a new session:
 
 ```sh
 node --env-file=.env.local dev-tools/workbench.js --project all-in-accounting
 ```
 
-```js
-const c = await connect()
-```
-
-If this is a fresh disposable database, install its schema before population:
+For a fresh disposable database, build and install its schema first:
 
 ```js
 const built = build({ project: 'all-in-accounting' })
+const c = await connect()
 await prepare(c.db, { schema: built.bundle })
 ```
 
-The helper creates the selected tenant if absent, then inserts the scenario in
-one transaction. A failure cancels the transaction. The default recipe contains
-109 explicit records, excluding tenant creation and records maintained by the
-schema. The result exposes named record IDs in `demo.ids`, making the dataset
-easy to explore without copying generated IDs.
+`populationOptions` composes the existing `space(transaction)` and `recipe()`
+callbacks. Tenant creation, repeat detection and insertion use one transaction;
+a failure cancels all of them. The module imports only Node's hashing function
+and its local defaults. It has no source-checkout paths, compiler calls, SDK
+imports, or connection setup. The transaction callback's native SQL is the
+explicit SurrealDB-specific part.
 
 ## Configuration and repeat runs
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `seed` | `'complete-demo'` | Nonempty string controlling generated names and scenario identity. |
-| `tenant` | `'rebase_tenant:default'` | Tenant record ID; created if absent. `tenantName` can supply its initial name. |
-| `startAt` | `'2027-01-01T00:00:00Z'` | Date/time for day 1; all scenario dates move together. |
-| `salesCount` | `3` | Integer from 1 to 20; each sale adds an invoice, issue, base tax, compound tax and payment. |
+| `seed` | `'complete-demo'` | Generated names and scenario identity. |
+| `tenant` | `'rebase_tenant:default'` | Record ID string; created if absent. Use the same spelling on repeat runs. |
+| `tenantName` | `'Default Tenant'` | Initial name for a new tenant; existing names are preserved. |
+| `startAt` | `'2027-01-01T00:00:00Z'` | Day 1; all dates move together. |
+| `salesCount` | `3` | Integer 1–20; each sale adds five records. |
 
-The configuration, including tenant and normalized start time, determines stable
-IDs and unique dimension codes. Repeating the same configuration finds the
-complete scenario and inserts no scenario records: `reused` is `true` and
-`created` is empty. Your edits to those records are preserved. This checks
-record presence and tenant membership; it does not restore their original
-values or verify that edited accounting totals still match the recipe.
+Recipe version, tenant, seed, normalized start time and sale count determine
+stable IDs and unique dimension codes. Repeating that configuration inserts
+nothing, sets `options.reused` to true, and preserves developer edits. This checks
+record presence and tenant membership; it does not restore original values or
+verify edited accounting totals. `options.ids` and `options.expectedCounts`
+always describe the intended scenario; `demo.rows` and `demo.created` describe
+this call's writes and are empty on reuse.
 
-Use a new seed to add an independent scenario alongside the first:
+Use a fresh options object for each run. A new seed adds an independent scenario:
 
 ```js
-const secondDemo = await complete.populateComplete(c.db, { ...config, seed: 'second-demo' })
+const secondOptions = complete.populationOptions({ ...config, model, seed: 'second-demo' })
+const secondDemo = await fixtures.populate(c.db, secondOptions)
 ```
 
-If only some expected records exist, population fails rather than rebuilding
-the missing portion. Choose a new seed to keep existing data. For a full reset,
-the following command deletes **all database records**, including other
-scenarios, tenants, credentials, configuration and audit history. It retains
-schema definitions. Use it only in a disposable development database with
-application writers and workers paused; see the [preparation guide](../../README.md#database-preparation)
-for clearing requirements.
+A partial scenario is rejected. Choose a new seed to preserve existing data.
+For a full disposable-database reset, `await prepare(c.db, { clear: true })`
+deletes all records, including other tenants, credentials and audit history;
+then populate again with a fresh options object. See the
+[preparation guide](../../../dev-tools/README.md#database-preparation).
+
+## Offline preview and command line
 
 ```js
-await prepare(c.db, { clear: true })
-const resetDemo = await complete.populateComplete(c.db, config)
-```
-
-## Preview without a database
-
-Model compilation and planning open no connection and write no database records.
-The plan validates public inputs and binds native SDK values. Database events
-calculate accounting amounts and enforce aggregate constraints during insertion,
-so an offline plan is not a substitute for database validation.
-
-The three exported functions are ordinary, composable functions:
-
-- `createCompleteModel()` loads accounting input schemas plus the three contact
-  input schemas declared in this example. Reuse its result across plans/runs.
-- `completeOptions({ model, ...config })` returns a fixture recipe, initial tenant
-  space, stable `ids` and `scenario`. Inspect or extend `recipe` before planning.
-- `populateComplete(db, { model?, tenantName?, ...config })` handles tenant
-  creation and repeat detection, then calls the existing `fixtures.populate`.
-  It returns `rows`, `created`, `space`, `ids`, `counts` and `reused`. `counts`
-  describes the whole scenario even when a repeated run inserts nothing.
-  On reuse, `rows` and `created` are empty and `space` contains only the tenant
-  input; use the stable `ids` to query the current records in either case.
-
-```js
-const { plan } = require('./dev-tools/fixtures')
-const previewModel = complete.createCompleteModel()
-const previewOptions = complete.completeOptions({ ...config, model: previewModel })
-const preview = await plan(previewOptions)
-preview.rows.length
+const previewOptions = complete.options({ ...config, model })
+const preview = await fixtures.plan(previewOptions)
 preview.rows.map(row => ({ table: row.table, id: String(row.id), content: row.content }))
 ```
 
-## Command line
+`options` returns a plain recipe and initial tenant space. Planning validates
+JSON inputs and binds native values without connecting. Native events still
+provide the authoritative aggregate and accounting checks when inserted.
 
-Run from the repository root, using the profile for your already-deployed
-development database:
+The shared runner consumes a built module. `--config` accepts a JSON object of
+option overrides; defaults are beside the recipe. Without `--preview`, it uses
+the process profile's already-deployed database and closes its connection.
+It never installs or clears a schema.
 
 ```sh
-node --env-file=.env.local dev-tools/fixtures/examples/accounting-complete.js \
-  --seed complete-demo \
-  --tenant rebase_tenant:default \
-  --start 2027-01-01T00:00:00Z \
-  --sales 3
+node dev-tools/fixtures/run.js build/all-in-accounting/fixtures/complete.js --preview
+node --env-file=.env.local dev-tools/fixtures/run.js build/all-in-accounting/fixtures/complete.js --config /path/to/demo.json
 ```
-
-The CLI uses the existing connection configuration, prints scenario IDs and
-counts, then closes its connection. It does not install or clear the schema.
-`--start` maps to `startAt`; `--sales` maps to `salesCount`.
 
 ## Walk through the eleven stages
 
@@ -180,12 +175,12 @@ they are not fabricated as fixture data.
 
 ## Inspect the records using native RecordId bindings
 
-`demo.ids` contains readable ID strings. Convert them to native SDK `RecordId`
+`options.ids` contains readable ID strings. Convert them to native SDK `RecordId`
 values before using them as query parameters:
 
 ```js
 const { recordId } = require('./dev-tools/fixtures/model')
-const demoIds = Object.fromEntries(Object.entries(demo.ids).map(([name, id]) => [name, recordId(id)]))
+const demoIds = Object.fromEntries(Object.entries(options.ids).map(([name, id]) => [name, recordId(id)]))
 ```
 
 Inspect the first sales invoice and its original and adjusted taxes:
@@ -216,7 +211,7 @@ When finished with a connection you opened, run `await c.close()`.
 With the repository's supported `surreal` executable on `PATH`:
 
 ```sh
-node dev-tools/fixtures/examples/accounting-complete.probe.js
+npm run probe:fixtures-complete
 ```
 
 This opt-in integration check starts and removes its own SurrealKV database.

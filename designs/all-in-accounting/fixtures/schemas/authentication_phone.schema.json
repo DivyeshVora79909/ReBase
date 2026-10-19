@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "owned_by",
+    "number"
+  ],
+  "properties": {
+    "owned_by": {
+      "type": "string"
+    },
+    "number": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{7,14}$"
+    }
+  }
+}

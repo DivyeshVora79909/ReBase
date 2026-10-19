@@ -73,6 +73,8 @@ function buildProject(rawArgs, root = process.cwd()) {
       copies.push({ sourceDir: path.join(projectDir, directory), outputDir: path.join(outputDir, directory) });
     }
   }
+  // Include the empty source case so removing fixtures also prunes old copies.
+  copies.push({ sourceDir: path.join(projectDir, "fixtures"), outputDir: path.join(outputDir, "fixtures") });
   preflightArtifacts(outputDir, copies);
   const clientSchemas = writeClientSchemas({
     sourceDir: path.join(projectDir, "schemas"),
