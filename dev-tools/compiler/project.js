@@ -3,7 +3,8 @@ const path = require("node:path");
 const { resolveConfiguration, validateConfiguration } = require("../../config/environment");
 const { loadMaterials } = require("./materials");
 const { validateTableHandlers, validateWebhookHandlers } = require("./table-handlers");
-const { writeClientSchemas } = require("../client-schemas");
+const { loadClientSchemas, writeClientSchemas } = require("../client-schemas");
+const { developerCatalog } = require("./catalog");
 const { explainDependency } = require('./dependency-plan');
 const {
   assertDisjointPaths,
@@ -56,6 +57,10 @@ function buildProject(rawArgs, root = process.cwd()) {
     runtimeSecret: configuration.runtime.secret,
   };
   const result = generateBundle(materials, { context, rootPermissions: rawArgs.rootPermissions !== false });
+  result.catalog = developerCatalog(result, {
+    project: path.basename(projectDir),
+    schemas: loadClientSchemas(path.join(projectDir, "schemas")).schemas,
+  });
   if (rawArgs.explain) return { ...result, outputDir,
     explanation: explainDependency(result.dependencyPlan, rawArgs.explain) };
   const tableHandlers = validateTableHandlers(projectDir, result.schema, result.contracts);
@@ -78,6 +83,7 @@ function buildProject(rawArgs, root = process.cwd()) {
     bundle: result.bundle,
     contracts: result.contracts,
     dependencyPlan: result.dependencyPlan,
+    catalog: result.catalog,
     lifecycleMigration: result.lifecycleMigration,
     copies,
   }, { check: rawArgs.check });

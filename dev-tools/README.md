@@ -53,6 +53,15 @@ credentials. Each call opens a separate SDK session. Close one handle using
 and close every managed connection; terminal cleanup rejects new connections
 and reports close failures. The SDK remains available as `admin.db`.
 
+The build also writes `devtools.json` and returns the same plain data as
+`built.catalog`. This developer catalog includes every table and view, including
+framework and nonreactive tables without a public JSON Schema. Native types,
+polymorphic references, calculations, declared queries, root/member contracts,
+indexes and authored helper source come from the compiler. It describes possible
+relationships; helper conditions and actual query bounds can depend on records.
+Public input schemas remain separately authored and are included unchanged.
+No deployment context, runtime secret or database records are included.
+
 ## Database preparation
 
 `prepare` takes an explicitly selected, privileged SDK client. It never opens

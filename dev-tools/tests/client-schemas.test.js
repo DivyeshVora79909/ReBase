@@ -362,6 +362,8 @@ test("rejects generated-file symlinks before changing source or existing output"
   for (const name of [
     "schema.surql",
     "runtime-contracts.json",
+    "dependency-plan.json",
+    "devtools.json",
     "migrate-one-shot-backfill.surql",
     "migrate-one-shot-finalize.surql",
   ]) {
