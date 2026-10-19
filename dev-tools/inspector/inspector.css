@@ -35,8 +35,9 @@ input:focus,select:focus{border-color:#6899f5}
 .dot{display:inline-block;width:9px;height:9px;flex:0 0 9px;border-radius:3px;background:var(--swatch,#94a3b8)}
 .navigator-footer{font-size:10px;line-height:1.6;color:var(--muted);border-top:1px solid var(--border);padding:12px 2px 0}
 .graph-area{position:relative;display:flex;flex-direction:column;min-width:0;background-color:#f8fafc;background-image:radial-gradient(#ccd5e2 .6px,transparent .6px);background-size:17px 17px}
-.graph-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px;position:relative;z-index:1;background:#f8fafcf5;border-bottom:1px solid #e5eaf1}
+.graph-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:13px 16px;position:relative;z-index:1;background:#f8fafcf5;border-bottom:1px solid #e5eaf1}
 #schema-controls,#access-controls{display:flex;align-items:center;gap:13px;min-width:0;flex-wrap:wrap}
+.layout-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #access-scope{font-size:11px;word-break:break-word;color:var(--muted)}
 .check-label{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
 .check-label input{accent-color:var(--accent)}
@@ -101,5 +102,5 @@ dialog p{font-size:12px}
 .record-form button{font-size:11px}
 .empty-copy{padding:20px 0;color:var(--muted);font-size:12px;line-height:1.8}
 @media(max-width:1150px){.workspace{grid-template-columns:190px minmax(240px,1fr) 320px}.app-header{padding:12px;gap:12px}.brand{min-width:190px}.header-actions button{font-size:11px;padding:7px 8px}.graph-toolbar{padding:10px}#graph-count{display:none}}
-@media(max-width:800px){.app-header{flex-wrap:wrap;gap:9px;min-height:100px}.brand{flex:1}.header-actions{width:100%;margin:0}.mode-switch button{min-width:58px}.workspace{grid-template-columns:155px minmax(180px,1fr);grid-template-rows:minmax(260px,1fr) minmax(190px,38%)}.navigator{grid-row:1 / 3;padding:12px 9px}.navigator-footer{display:none}.inspector{grid-column:2;grid-row:2;border-top:1px solid var(--border)}.graph-area{grid-column:2;grid-row:1}.inspector-heading{padding:7px 12px 0}#selection-title{padding:5px 12px}.detail-body{padding:10px 12px}.graph-bottom{padding:5px;gap:3px}.focus-controls button{font-size:9px;padding:5px}.legend{font-size:9px;padding:2px 8px 5px}.check-label{font-size:10px}.graph-toolbar select{max-width:165px;font-size:11px}.graph-toolbar>button{font-size:10px}.empty-state h1{font-size:16px}.empty-state p{font-size:11px}}
+@media(max-width:800px){.app-header{flex-wrap:wrap;gap:9px;min-height:100px}.brand{flex:1}.header-actions{width:100%;margin:0}.mode-switch button{min-width:58px}.workspace{grid-template-columns:155px minmax(180px,1fr);grid-template-rows:minmax(260px,1fr) minmax(190px,38%)}.navigator{grid-row:1 / 3;padding:12px 9px}.navigator-footer{display:none}.inspector{grid-column:2;grid-row:2;border-top:1px solid var(--border)}.graph-area{grid-column:2;grid-row:1}.inspector-heading{padding:7px 12px 0}#selection-title{padding:5px 12px}.detail-body{padding:10px 12px}.graph-bottom{padding:5px;gap:3px}.focus-controls button{font-size:9px;padding:5px}.legend{font-size:9px;padding:2px 8px 5px}.check-label{font-size:10px}.graph-toolbar select{max-width:165px;font-size:11px}.graph-toolbar button{font-size:10px}.empty-state h1{font-size:16px}.empty-state p{font-size:11px}}
 @media(prefers-reduced-motion:no-preference){button{transition:background .1s,border-color .1s}}

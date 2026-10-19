@@ -58,7 +58,11 @@
           <button id="refresh-access">Refresh</button>
           <span id="access-scope"></span>
         </div>
-        <button id="fit">Fit graph</button>
+        <div class="layout-controls">
+          <label class="sr-only" for="layout">Graph layout</label>
+          <select id="layout"></select>
+          <button id="fit">Fit graph</button>
+        </div>
       </div>
       <div id="cy" tabindex="0" aria-label="Graph canvas. Use the table list for keyboard navigation."></div>
       <div id="empty-graph" class="empty-state" hidden>

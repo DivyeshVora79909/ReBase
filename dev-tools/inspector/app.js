@@ -1,10 +1,9 @@
 "use strict";
 
 const cytoscape = require("cytoscape");
-const dagre = require("cytoscape-dagre");
+const layouts = require("./layouts");
 const { validateCatalog, validateAccess, palette, schemaElements, accessElements, PRINCIPALS } = require("./graph");
 const { connectAccess, readAccess, readRecordState } = require("./access");
-cytoscape.use(dagre);
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -140,11 +139,8 @@ function layoutVisible() {
   // Class membership is immediate; rendered visibility can lag a style update.
   const elements = cy.elements().not(".hidden");
   if (!elements.nodes().length) return;
-  elements.layout({
-    name: "dagre", rankDir: "TB", nodeSep: 28, rankSep: 75, padding: 35,
-    acyclicer: "greedy", animate: false,
-    sort: (a, b) => a.id() < b.id() ? -1 : a.id() > b.id() ? 1 : 0,
-  }).run();
+  layouts[$("layout").value].arrange(elements);
+  cy.fit(elements, 35);
 }
 
 function applyFocus() {
@@ -391,7 +387,9 @@ $("search").oninput = renderNavigation;
 $("group-filter").onchange = () => { renderNavigation(); applyFocus(); layoutVisible(); };
 $("layer").onchange = renderDiagram;
 $("technical").onchange = renderDiagram;
-$("fit").onclick = () => cy.fit(cy.elements(":visible"), 35);
+for (const [name, layout] of Object.entries(layouts)) $("layout").add(new Option(layout.label, name));
+$("layout").onchange = layoutVisible;
+$("fit").onclick = layoutVisible;
 $("schema-mode").onclick = () => setMode("schema");
 $("access-mode").onclick = () => setMode("access");
 $("clear-selection").onclick = () => select(null);
@@ -496,7 +494,11 @@ document.addEventListener("drop", event => {
   event.preventDefault(); $("drop-target").hidden = true; openFile(event.dataTransfer.files[0]);
 });
 window.addEventListener("beforeunload", () => { state.epoch++; if (state.db) state.db.close(); });
-new ResizeObserver(() => cy.resize()).observe($("cy"));
+let resizeFrame;
+new ResizeObserver(() => {
+  cy.resize(); cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(layoutVisible);
+}).observe($("cy"));
 try {
   const embedded = JSON.parse($("rebase-catalog").textContent);
   if (embedded) loadCatalog(embedded); else renderDiagram();

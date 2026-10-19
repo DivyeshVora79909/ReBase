@@ -74,7 +74,17 @@ The table list includes framework tables, views, nonreactive tables and isolated
 entities. Selecting a table focuses its immediate neighborhood; **All** restores
 the overview. References point from parents to dependents, with parents above
 children in acyclic portions. Cycles keep their edges and receive dashed borders.
+The layout selector offers **Compact hierarchy** (initial selection), which wraps
+wide levels into rows to maximize the fitted node size, and **Standard hierarchy**,
+which keeps Dagre's original levels. Both work in Schema and Access; resizing,
+filtering and **Fit graph** reuse the selected layout.
 Use **Upstream** and **Downstream** to trace a path, or search by table/field name.
+
+Layout choices live in [inspector/layouts.js](./inspector/layouts.js). Each entry
+has a label and an `arrange(elements)` function; the first entry is the default.
+The selector uses those entries directly. Compact composes the standard hierarchy
+with Cytoscape's grid; all choices share visibility filtering and viewport fitting.
+Add a function/entry to introduce another layout, keeping its own `fit` disabled.
 
 - **Fields** shows inputs, types, validation and calculations. Polymorphic
   reference swatches contain one segment per possible parent table.
