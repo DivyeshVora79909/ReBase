@@ -183,12 +183,22 @@ often require refreshing a suffix. Arbitrary windows require interval overlap or
 stabbing discovery; augmenting maximum upper endpoints permits pruning.
 Endpoint/bound changes are semantic changes even when a numeric channel stays equal.
 
-Local field ordering uses declared dependencies, never naming order. Resolve the
-affected causal closure and evaluate ready consumers; strictly prior consumers in
-one series must respect time and remove obsolete own contributions before moving.
-Coalesce repeated dirty notifications where inputs are ready. Diamonds may require
-another evaluation if a consumed input changes later. The system must not assume
-every record is evaluated exactly once.
+Local field ordering uses declared dependencies, never naming order. The bounded
+[M3/M5 contract](09-causal-settlement.md) resolves active slots, roots, keys and
+bounds from authored facts and an acyclic direct-scalar graph before ordered
+arithmetic. Arbitrary ordered-result-dependent shape remains a separate gate.
+Use old/new routes to discover affected work, but evaluate and reject cycles
+against the **final** active calculation graph. A valid move can reverse an edge;
+the old/new union can be cyclic even when both states are individually valid.
+
+Remove obsolete contributions of the affected closure, including managed outputs
+of tree-less readers. Remaining final contributors may be unresolved; temporary
+absence is not a settled zero. Readiness belongs to the consumed interval/channel,
+not one undifferentiated root: a prefix can be ready before its later members.
+Coalesce repeated notifications only when inputs are ready. Incremental diamonds
+may require another evaluation if a consumed input changes later. The frozen
+five-step experiment agrees in every valid order; that does not establish that
+every record in a general runtime is evaluated exactly once.
 
 ## 8. Honest work bounds
 
@@ -212,3 +222,9 @@ Neither means every complete business mutation requires only three writes.
 
 The purpose of Rust/workspace redesign is lower constants, less repeated work and
 smaller dirty bytes with precise semantics. It cannot remove required consequences.
+
+Verification has a different cost boundary. The
+[M6 contract](10-independent-checker.md) derives expected populations from source
+facts and scans each subtree's leaves independently of maintained caches. Those
+bounded audit costs must not be advertised as mutation costs; a complete logical
+inventory and a valid balanced shape are separate obligations.

@@ -1,0 +1,771 @@
+{
+  "format": "rebase-native-s1-evidence",
+  "version": 1,
+  "date": "2026-10-22",
+  "repository_revision": "947cc25402444c48cc35a56c777339fb8c9f4f98",
+  "phase": "S1 independent source oracle and native observation format",
+  "command": "python3 -B research/experiments/native_slice.py",
+  "result": {
+    "status": "passed",
+    "scope": "source oracle and synthetic checker controls only",
+    "cases": 68,
+    "operations": [
+      {
+        "case": "coefficient",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rate",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "insert_quote",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_quote",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "move_quote",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "swap_quotes",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "duplicate_quote",
+        "step": 0,
+        "status": "rejected",
+        "code": "duplicate_time",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "empty_curve",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "equal_rate_new_selection",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "coincident_query_bounds",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "exact_quote_boundary",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "edit_units",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_posting",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "reparent_posting",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "change_curve",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "reparent_quote",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "zero_dependencies",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "zero_dependencies",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "zero_dependencies",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "zero_dependencies",
+        "step": 3,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "no_op_version",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "no_op_version",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "stale_derived_version",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "stale_derived_version",
+        "step": 1,
+        "status": "rejected",
+        "code": "stale_version",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_recreate_version",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_recreate_version",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_recreate_version",
+        "step": 2,
+        "status": "rejected",
+        "code": "stale_version",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_referenced_D",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_referenced_C",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_referenced_A",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_referenced_S",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_parent_first",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_account_and_reparent",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "earlier_reference",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "forward_reference",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "duplicate_commands",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "missing_curve",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "wrong_target_type",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "wrong_unit",
+        "step": 0,
+        "status": "rejected",
+        "code": "unavailable_reference",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "wrong_actor",
+        "step": 0,
+        "status": "rejected",
+        "code": "forbidden",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "wrong_tenant",
+        "step": 0,
+        "status": "rejected",
+        "code": "forbidden",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "protected",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "context_field",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "floating_integer",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "numeric_integer",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "boolean_integer",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "null_integer",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "leading_zero",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "negative_zero",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "huge_signed",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "time_overflow",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "unset_required",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "immutable_unit",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "zero_rate",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "coefficient_bound",
+        "step": 0,
+        "status": "rejected",
+        "code": "invalid_input",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "already_exists",
+        "step": 0,
+        "status": "rejected",
+        "code": "already_exists",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "historical_deficit",
+        "step": 0,
+        "status": "rejected",
+        "code": "invariant",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "same_time_cancellation",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "independent_checkpoint",
+        "step": 0,
+        "status": "rejected",
+        "code": "invariant",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "independent_checkpoint",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "valid_separate_checkpoints",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "valid_separate_checkpoints",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_credit_rejects",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "delete_credit_rejects",
+        "step": 1,
+        "status": "rejected",
+        "code": "invariant",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "extreme_times",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_ll",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_ll",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_ll",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rr",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rr",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rr",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_lr",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_lr",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_lr",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rl",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rl",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_rotation_rl",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 0,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 1,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 2,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 3,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 4,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 5,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 6,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "financial_tree_deletion",
+        "step": 7,
+        "status": "committed",
+        "code": null,
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "posting_cap",
+        "step": 0,
+        "status": "rejected",
+        "code": "state_limit",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "quote_cap",
+        "step": 0,
+        "status": "rejected",
+        "code": "state_limit",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "record_cap",
+        "step": 0,
+        "status": "rejected",
+        "code": "state_limit",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "work_limit",
+        "step": 0,
+        "status": "rejected",
+        "code": "work_limit",
+        "mechanism_requires_runtime": true
+      },
+      {
+        "case": "abort_partial_batch",
+        "step": 0,
+        "status": "rejected",
+        "code": "injected_abort",
+        "mechanism_requires_runtime": true
+      },
+      {
+        "case": "abort_full_batch",
+        "step": 0,
+        "status": "rejected",
+        "code": "injected_abort",
+        "mechanism_requires_runtime": true
+      },
+      {
+        "case": "model_mismatch",
+        "step": 0,
+        "status": "rejected",
+        "code": "model_mismatch",
+        "mechanism_requires_runtime": false
+      },
+      {
+        "case": "codec_mismatch",
+        "step": 0,
+        "status": "rejected",
+        "code": "model_mismatch",
+        "mechanism_requires_runtime": false
+      }
+    ],
+    "valid_checker_controls": 4,
+    "corruption_controls": [
+      {
+        "case": "erased_subscribers",
+        "obligation": "SUBSCRIBERS_VALUE"
+      },
+      {
+        "case": "missing_empty_root",
+        "obligation": "INVENTORY"
+      },
+      {
+        "case": "missing_source",
+        "obligation": "INVENTORY"
+      },
+      {
+        "case": "missing_member",
+        "obligation": "INVENTORY"
+      },
+      {
+        "case": "missing_direct_route",
+        "obligation": "DIRECT_VALUE"
+      },
+      {
+        "case": "missing_reference_route",
+        "obligation": "INCOMING_VALUE"
+      },
+      {
+        "case": "wrong_selected_quote",
+        "obligation": "QUERY_VALUE"
+      },
+      {
+        "case": "wrong_query_bound",
+        "obligation": "QUERY_VALUE"
+      },
+      {
+        "case": "wrong_summary",
+        "obligation": "NODE_SUMMARY"
+      },
+      {
+        "case": "wrong_scalar_type",
+        "obligation": "RECORD_VALUE"
+      },
+      {
+        "case": "wrong_parent",
+        "obligation": "PARENT"
+      },
+      {
+        "case": "wrong_endpoint",
+        "obligation": "ROOT_ENDPOINT"
+      },
+      {
+        "case": "wrong_neighbour",
+        "obligation": "NEIGHBOUR"
+      },
+      {
+        "case": "wrong_height",
+        "obligation": "HEIGHT"
+      },
+      {
+        "case": "cycle",
+        "obligation": "TREE_REVISIT"
+      },
+      {
+        "case": "cross_root_link",
+        "obligation": "WRONG_ROOT"
+      },
+      {
+        "case": "duplicate_raw_identity",
+        "obligation": "DUPLICATE_ID"
+      },
+      {
+        "case": "unknown_namespace",
+        "obligation": "KEY"
+      },
+      {
+        "case": "partial",
+        "obligation": "INCOMPLETE_SCOPE"
+      },
+      {
+        "case": "budget",
+        "obligation": "INCOMPLETE_BUDGET"
+      },
+      {
+        "case": "lost_zero_member",
+        "obligation": "INVENTORY"
+      },
+      {
+        "case": "equal_rate_old_selection",
+        "obligation": "QUERY_VALUE"
+      }
+    ],
+    "baseline_kv_rows": 33,
+    "native_runtime_checked": false
+  },
+  "source_fingerprints": {
+    "research/fixtures/native-slice.json": "7dd35e2e173ac10a2ad57f0813221faad21410e56dd59d9a9d05a934737b89c3",
+    "research/experiments/native_slice.py": "717a634a195eef9ed7aebc3a3290c2b356416aef864e7094381e4f28122b2a51",
+    "research/experiments/m6.py": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e",
+    "research/experiments/m3_m5.py": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800"
+  },
+  "not_claimed": [
+    "native mutations",
+    "real snapshot export",
+    "work-limit or injected-abort execution",
+    "storage rollback"
+  ]
+}

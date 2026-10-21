@@ -61,21 +61,32 @@ many physical operations, WAL entries and compaction writes below the adapter.
 
 1. Validate command shape and allowed fields; enforce permissions and explicit
    action preconditions against the current attempt's state.
-2. Capture old facts/slots, detach obsolete contributions when needed, and stage
-   the requested facts. A multi-command atomic operation can reference newly
-   staged records subject to their declared lifecycle.
-3. Resolve descriptors and evaluate pure fields in actual dependency order.
-   Reconcile direct routes, ordered query slots, memberships and required outputs.
-4. Discover affected consumers from old/new keys and consumed channels. Recompute
-   until the finite causal work is settled; reject feedback and exhausted budgets.
-5. Refresh validation-phase queries, publish changed roots, check affected global
-   rules and prepare a result from the settled state.
+2. Capture old facts/slots and stage the requested facts. Resolve the permitted
+   address/activation inputs before ordered arithmetic. A multi-command atomic
+   operation can reference newly staged records subject to their declared lifecycle.
+3. Discover affected consumers through old/new positions and channels, including
+   required outputs. Retire obsolete contributions of that closure while retaining
+   its pending final obligations; a temporarily absent contribution is not zero.
+4. Evaluate ready descriptors and pure fields against the final causal graph.
+   Reconcile direct routes, query slots, memberships and required outputs, making
+   internal publications available as their inputs settle. Reject active feedback
+   and exhausted budgets. A join cannot treat one old branch as a settled input.
+5. Refresh validation-phase queries after calculation/output settlement, check
+   affected global rules and prepare the permitted result from settled state.
 6. Commit final dirty keys, protected guards, audit/operation receipts and effect
    intents together. Release the result only after confirmed success.
 
 This is not a historical event replay. Historical inputs may require a large
 reactive suffix, but summaries avoid replaying history merely to validate a bound.
 No general arbitrary-function fixed-point solver is intended.
+
+The [M3/M5 experiment](09-causal-settlement.md) fixes shape before ordered
+calculation and checks this distinction with moved private outputs. Old/new graph
+union is useful for invalidation, not cycle rejection. Query readiness depends on
+its final consumed interval; waiting for an entire root would introduce artificial
+feedback for valid prefix readers. Internal publication needed by downstream
+calculations precedes terminal validation; external disclosure follows commit.
+This defines obligations, not an implemented incremental settlement algorithm.
 
 Early checks are useful when failure is conclusive: malformed references, invalid
 inputs or an independent completed command. A global deficit during an incomplete

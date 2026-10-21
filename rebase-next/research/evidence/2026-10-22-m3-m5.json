@@ -1,0 +1,1054 @@
+{
+  "format": "rebase-causal-contract-evidence",
+  "version": 1,
+  "date": "2026-10-22",
+  "phase": "research and contract wireframes",
+  "path_base": "Relative paths resolve from rebase-next.",
+  "repository_revision": "947cc25402444c48cc35a56c777339fb8c9f4f98",
+  "command": "python3 research/experiments/m3_m5.py",
+  "python": "3.12.8",
+  "exit_code": 0,
+  "model_sha256": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800",
+  "reviewed_sources": [
+    {
+      "source": "../designs/rebase-system/function-reactivity.md",
+      "review_scope": "Full current declared-query contract.",
+      "sha256": "940bce55f2f2b19c837134d8e724533897586efdb825f21e909dce1da33151f3"
+    },
+    {
+      "source": "../designs/rebase-system/ordered-tree-contract.md",
+      "review_scope": "Uniqueness/coalescing at lines 56-75; linked mutation limits at 211-235.",
+      "sha256": "5f93f34b041dc5c531d116c996020ba2fdbd5b88f8e0cabf12a551919444c557"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-plan.md",
+      "review_scope": "Transaction protocol and feedback distinction at 132-163.",
+      "sha256": "71e6c1966aababf1b80fda62d3b96432b9f8e3177ba482c7bc1438343a0be48a"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/dependencies-fixture.surql",
+      "review_scope": "Prefix formulas and upstream authored-date dependency; lines 1-126.",
+      "sha256": "e262f8431f948b45ccc22a7b7bba5401d17adb480e8887e07c6a48d50b395385"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/dependencies-probe.js",
+      "review_scope": "Source expectations and moves/feedback at 80-118; no execution.",
+      "sha256": "33c85697aad8209cc91849496f1f6ad1ab891f7cfaa94ee6b64f08569f6f4617"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/required-outputs-fixture.surql",
+      "review_scope": "Full fixture: private output roles and lifecycle/reference obligations.",
+      "sha256": "1d385659af23a88fbe9ebab074541b29f6a0bd24837d9202e25720ffbd91cd44"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/required-outputs-probe.js",
+      "review_scope": "Complete source/role inventory at 120-140; activation, privacy and rejected deletion at 178-274; no execution.",
+      "sha256": "dde508f796a66de4d1ed28711bf54e9de10c3627dbc1d02b4d289a0f62600441"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/causal-outputs-fixture.surql",
+      "review_scope": "Full fixture: separate published inputs, diamond, output rekey and zero feedback.",
+      "sha256": "7d0d7d740adf5024e05a854e5fba6592f61dccc524beffa79ff5f50c75b00084"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/causal-outputs-probe.js",
+      "review_scope": "Expected diamond values and rejections at 140-218; no execution.",
+      "sha256": "4ff1fb92d974833175ac1c9001bc89e524ceb9ce061ab5314e6f9292868cd2a9"
+    },
+    {
+      "source": "../dev-tools/compiler/temporal.surql",
+      "review_scope": "Required-output sync and move preparation at 646-800.",
+      "sha256": "9d02356f411ddee2f2de69e5c589a9917d164a1991f05d598f98e99e4ea50808"
+    },
+    {
+      "source": "../dev-tools/compiler/generators/temporal.js",
+      "review_scope": "Direct dependency restrictions at 16-59; managed-output contract/order at 118-168.",
+      "sha256": "8b35dc95aafd03624faa315e7ba69b671ea7cd409748f78581b931d8075f3081"
+    }
+  ],
+  "reused_rust_proof": {
+    "evidence": "research/feasibility.json",
+    "matched_inputs": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "examples/demo.json",
+      "examples/feasibility.rs",
+      "rust-toolchain.toml",
+      "src/algebra.rs",
+      "src/lib.rs",
+      "src/merge.rs",
+      "src/plan.rs",
+      "src/staging.rs",
+      "tests/semantics.rs"
+    ],
+    "rerun": false
+  },
+  "result": {
+    "accepted_source_states": [
+      {
+        "case": "baseline",
+        "complete_state_sha256": "1f95cc95adaee03e00f8d71f469896874b6e444ef088529fcd5ae91c3c9765d7",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "Q"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 10,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            10,
+            10
+          ],
+          "Q": [
+            20,
+            10
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 4,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 2
+      },
+      {
+        "case": "swap",
+        "complete_state_sha256": "4cb39e828531e71df1c33b3964897858c256391bc8193821bd3107c494554641",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "P"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 10,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            30,
+            -10
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 20,
+          "B": 4,
+          "final": 100,
+          "left": 40,
+          "right": 60
+        },
+        "valid_orders_checked": 2
+      },
+      {
+        "case": "move_P_later",
+        "complete_state_sha256": "acc9c26b236f788c7cc363c0a1b4e9225db66643f553ee4cd27db9a93824c67f",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "P"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 30,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            30,
+            -10
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 20,
+          "B": 4,
+          "final": 100,
+          "left": 40,
+          "right": 60
+        },
+        "valid_orders_checked": 2
+      },
+      {
+        "case": "reparent_P",
+        "complete_state_sha256": "8b44cd6c9696f7be55cc401f86617522b1e3959b87c66510032c953ee04234f2",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "B",
+            "at": 10,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            4,
+            16
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 20,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 10
+      },
+      {
+        "case": "disable_P_output",
+        "complete_state_sha256": "a2c16418f0baa26fac13e781287945a35ccd34f0ed748fd31d7f0adace1d0c0a",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 10,
+            "post": false,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 6,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            10,
+            10
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 4,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 10
+      },
+      {
+        "case": "reenable_P_output",
+        "complete_state_sha256": "1f95cc95adaee03e00f8d71f469896874b6e444ef088529fcd5ae91c3c9765d7",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "Q"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 10,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            10,
+            10
+          ],
+          "Q": [
+            20,
+            10
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 4,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 2
+      },
+      {
+        "case": "delete_P",
+        "complete_state_sha256": "6df7b16f9c3a32e0727ae7ed4b5d3ffe17f5ebc975690557e77c84768eebd6b4",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 6,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 4,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 2
+      },
+      {
+        "case": "same_time",
+        "complete_state_sha256": "1e8832714ddc3d36a8b9a76702f9bed1720829855cded4ee21db1750e1ed0d4e",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 20
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            10,
+            10
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 40,
+          "B": 4,
+          "final": 200,
+          "left": 80,
+          "right": 120
+        },
+        "valid_orders_checked": 4
+      },
+      {
+        "case": "zero_P_output",
+        "complete_state_sha256": "c575c7a8789e9fef54507366902dbdb43a876d2bee602cd2274539e9573b8ece",
+        "edges": [
+          [
+            "L",
+            "J"
+          ],
+          [
+            "P",
+            "L"
+          ],
+          [
+            "P",
+            "Q"
+          ],
+          [
+            "P",
+            "R"
+          ],
+          [
+            "Q",
+            "L"
+          ],
+          [
+            "Q",
+            "R"
+          ],
+          [
+            "R",
+            "J"
+          ]
+        ],
+        "facts": {
+          "P": {
+            "account": "A",
+            "at": 10,
+            "post": true,
+            "target": 10
+          },
+          "Q": {
+            "account": "A",
+            "at": 20,
+            "post": true,
+            "target": 30
+          }
+        },
+        "member_count": 7,
+        "output_ids": [
+          "J/post",
+          "L/post",
+          "P/post",
+          "Q/post",
+          "R/post"
+        ],
+        "prefix_and_delta": {
+          "P": [
+            10,
+            0
+          ],
+          "Q": [
+            10,
+            20
+          ]
+        },
+        "query_ids": [
+          "J/q_left",
+          "J/q_right",
+          "L/q_A",
+          "P/q_before",
+          "P/q_guard",
+          "Q/q_before",
+          "Q/q_guard",
+          "R/q_A"
+        ],
+        "root_totals": {
+          "A": 30,
+          "B": 4,
+          "final": 150,
+          "left": 60,
+          "right": 90
+        },
+        "valid_orders_checked": 2
+      }
+    ],
+    "baseline_inventory": {
+      "members": [
+        [
+          "J/post",
+          "history",
+          "final",
+          40,
+          150
+        ],
+        [
+          "L/post",
+          "history",
+          "left",
+          40,
+          60
+        ],
+        [
+          "P/post",
+          "history",
+          "A",
+          10,
+          10
+        ],
+        [
+          "Q/post",
+          "history",
+          "A",
+          20,
+          10
+        ],
+        [
+          "R/post",
+          "history",
+          "right",
+          40,
+          90
+        ],
+        [
+          "seed-A",
+          "history",
+          "A",
+          0,
+          10
+        ],
+        [
+          "seed-B",
+          "history",
+          "B",
+          0,
+          4
+        ]
+      ],
+      "outputs": [
+        "J/post",
+        "L/post",
+        "P/post",
+        "Q/post",
+        "R/post"
+      ],
+      "queries": {
+        "J/q_left": [
+          "J",
+          "left",
+          null,
+          "calculate",
+          60
+        ],
+        "J/q_right": [
+          "J",
+          "right",
+          null,
+          "calculate",
+          90
+        ],
+        "L/q_A": [
+          "L",
+          "A",
+          null,
+          "calculate",
+          30
+        ],
+        "P/q_before": [
+          "P",
+          "A",
+          10,
+          "calculate",
+          10
+        ],
+        "P/q_guard": [
+          "P",
+          "A",
+          10,
+          "validate",
+          10
+        ],
+        "Q/q_before": [
+          "Q",
+          "A",
+          20,
+          "calculate",
+          20
+        ],
+        "Q/q_guard": [
+          "Q",
+          "A",
+          20,
+          "validate",
+          20
+        ],
+        "R/q_A": [
+          "R",
+          "A",
+          null,
+          "calculate",
+          30
+        ]
+      },
+      "roots": {
+        "A": {
+          "complete_time_min": 0,
+          "count": 3,
+          "sum": 30
+        },
+        "B": {
+          "complete_time_min": 0,
+          "count": 1,
+          "sum": 4
+        },
+        "final": {
+          "complete_time_min": 0,
+          "count": 1,
+          "sum": 150
+        },
+        "left": {
+          "complete_time_min": 0,
+          "count": 1,
+          "sum": 60
+        },
+        "right": {
+          "complete_time_min": 0,
+          "count": 1,
+          "sum": 90
+        }
+      }
+    },
+    "counterexamples": {
+      "historical_floor": {
+        "final_A": 30,
+        "minimum_A": -1
+      },
+      "missing_complete_P_query_inventory_detected": true,
+      "missing_required_output_detected": true,
+      "old_new_union_falsely_cyclic": true,
+      "referenced_output_disable_and_parent_delete": "surviving REJECT reference becomes unsatisfied",
+      "unrefreshed_predecessor": {
+        "correct_A": 20,
+        "wrong_A": 30
+      },
+      "wrong_order_after_detach": {
+        "correct_A": 20,
+        "wrong_A": 40
+      },
+      "zero_feedback": "final active graph is cyclic"
+    },
+    "identity_control": {
+      "bound_deduplication_would_lose_slots": true,
+      "changed_intervals": {
+        "i_first": [
+          4,
+          9
+        ],
+        "i_second": [
+          4,
+          10
+        ]
+      },
+      "financial": [
+        [
+          "z_financial",
+          5,
+          5
+        ],
+        [
+          "later",
+          8,
+          3
+        ]
+      ],
+      "intervals": {
+        "i_first": [
+          4,
+          9
+        ],
+        "i_second": [
+          4,
+          9
+        ]
+      },
+      "provider_order_independent": true,
+      "queries": {
+        "q_first": [
+          0,
+          10,
+          8
+        ],
+        "q_second": [
+          0,
+          10,
+          8
+        ]
+      }
+    },
+    "not_exercised": [
+      "incremental discovery",
+      "AVL links or summaries",
+      "UUID allocation",
+      "storage atomicity or conflicts",
+      "authority or RPC",
+      "query-derived shape"
+    ],
+    "scope": "Fixed-shape exact contract model; not incremental or transactional execution",
+    "status": "passed",
+    "valid_orders_checked": 36
+  },
+  "validation": {
+    "status": "passed",
+    "documentation": {
+      "markdown_files": 13,
+      "local_links": 123,
+      "anchors": 12,
+      "json_examples": 1,
+      "scenario_groups": 22,
+      "unknown_scenario_references": [],
+      "hand_worked_rows_matched": 9,
+      "errors": []
+    },
+    "model_execution_reused_for_documentation_check": true,
+    "model_fingerprint_matched": true,
+    "inspected_source_fingerprints_matched": 11,
+    "git_diff_check_exit_code": 0,
+    "outside_next_changes": [],
+    "procedure": "Python standard-library checks of local links, anchors, fences, JSON examples, scenario references, the nine documented arithmetic rows, current model/source fingerprints, and Git scope."
+  },
+  "not_claimed": [
+    "current ReBase reproduced failure",
+    "Rust runtime expansion",
+    "incremental or distributed settlement acceptance",
+    "storage rollback or permission enforcement"
+  ],
+  "output_fingerprints": {
+    "CONTEXT.md": "e6778f7977ebcc8f4dc4d0da70ffa9130476de83d5c602f522a47b2617afb20e",
+    "README.md": "19b11070afe0419452a4a3fba2a43390d1f6fa3a96917a8b291fdaa141e0fef2",
+    "research/01-model-and-mathematics.md": "9a8ea0d715299505ebec545ffc3e08e3c01a93938654499458696abee368b78e",
+    "research/02-transactions-and-storage.md": "911c5ffe8f8067720245c35af0af9603885d21fc7e60d88cc42eca5e8fa00ece",
+    "research/04-implementation.md": "55fd0aa997cd38806c297513ce34e3dd4f52aec5f566894fb0eacc21173dbcf1",
+    "research/05-feasibility.md": "ff786465bcff7ac5c63d3df1496af4dcf003c075f7cf6e61e71b3523eeff7e45",
+    "research/06-system-audit.md": "20bccbdd5341bd53017c53673d19e5e30615524b298d49fd10105b695f5dcb27",
+    "research/07-contract-wireframes.md": "3df9c2c26d7857926b44e171f4c4a2461d6dd6041da6bbe89f3e79db3b67fc43",
+    "research/08-research-workflow.md": "6b42506a4bf512bbf4ca4649591df6d7ecdfb0a38d04db1e8e9dad0679b33a84",
+    "research/sources.md": "cb147a0db3e60bb909feb55a9c7b4514bbe75fd957c74ccd6151886558906cc9",
+    "research/09-causal-settlement.md": "4d9db3484e977669d0a1f9d7b818c9d347d396d25c05d99d1193ce997f007889",
+    "research/experiments/m3_m5.py": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800"
+  }
+}

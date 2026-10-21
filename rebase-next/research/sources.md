@@ -21,7 +21,7 @@ is 142,353 bytes / 1,689 lines, SHA-256
 It supplies inspector history and the previous research execution through
 `e5d13b3`; its repeated prompts/tool calls are not a new task queue.
 
-The latest direct request controls the phase: rebuild global context, learn
+The initial October 22 request controlled that phase: rebuild global context, learn
 from failures, patch research and prepare scenario wireframes inside the
 decoupled directory before implementation planning. The
 [workflow](08-research-workflow.md) replaces prior automatic runtime-next steps.
@@ -33,6 +33,69 @@ One targeted external refresh checked the FoundationDB developer guide's
 [conflict semantics](https://apple.github.io/foundationdb/developer-guide.html#how-foundationdb-detects-conflicts)
 for the authority-time clarification in paper 7. This was not a storage/version
 selection campaign or an executed distributed-adapter experiment.
+
+## M3/M5 continuation after the context commit
+
+The next packet started clean at ReBase `947cc25`. It used the recorded context
+instead of rereading the attachments or refreshing unrelated application areas.
+[Paper 9](09-causal-settlement.md) links the current query, adjustment, required-
+output and causal-output sources that constrain the combined fixture. The
+[new evidence](evidence/2026-10-22-m3-m5.json) fingerprints those scoped reads and
+the standalone Python model. It records nine source states, 36 valid orders and
+counterexamples separately from the original Rust proof, whose 11 inputs were
+unchanged at that stage. No original-ReBase/MetaSol suite or remote fetch was performed.
+The earlier source manifest and October 22 context audit remain dated evidence.
+
+## M6 continuation
+
+M6 began on the same `947cc25` checkout with the prior M3/M5 packet still
+uncommitted. All 12 of that packet's output fingerprints matched before this
+work. [Paper 10](10-independent-checker.md) owns the checker contract and source
+routes; its [evidence](evidence/2026-10-22-m6.json) fingerprints the current
+dependency/structural/exact checker reads and the new synthetic-snapshot model.
+Five valid controls, 28 invalid-state controls and two incomplete observations
+were checked. The unchanged M3/M5 source oracle is reused, not its full order
+campaign. All 11 Rust proof inputs matched at that stage, and that suite was not rerun.
+Historical evidence and original repository code remain unchanged.
+
+## First native slice planning
+
+This packet continued at `947cc25` with the M3/M5 and M6 changes still pending.
+All 12 M6 output fingerprints and all 11 original Rust proof inputs matched
+before editing. It read the actual Rust algebra, local plan, point overlay,
+example and relevant semantic tests, plus M6's fixture-specific checker and the
+affected transaction/API contracts. No attachment replay, whole-system reaudit,
+remote refresh or original application execution was needed.
+
+[Paper 11](11-native-slice-plan.md) owns the resulting M1/M2/M4 commands, state,
+settlement sequence, oracle/observation obligations and implementation stages.
+The [planning evidence](evidence/2026-10-22-native-slice-plan.json) fingerprints
+those inputs and documentation checks. Arithmetic and row counts in that plan
+were expected results; no native runtime or Python campaign ran for that packet.
+It routed next to S1's independent native-fixture oracle and observation format.
+
+## Native execution through S1–S5
+
+The later user request explicitly authorized one autonomous goal through the
+bounded native slice, superseding the earlier S1-only stop. Work continued
+inside `rebase-next/` at `947cc25`, preserving the pending research packets.
+Nine planning output fingerprints, five historical evidence files and both
+earlier Python programs matched at entry; no broad transcript/repository replay
+was needed.
+
+[S1 evidence](evidence/2026-10-22-native-s1.json) records independent command
+semantics and native-format controls before the writer. The subsequent native
+modules and redb harness execute the same fixture; [paper 12](12-native-slice.md)
+and [execution evidence](evidence/2026-10-22-native-slice.json) record complete
+observations, all 93 outcomes, real abort/reopen checks, work counts and current
+source hashes. Rust formatting/Clippy and all 13 integrated tests passed.
+The old example was not rerun. Original ReBase/MetaSol code remained untouched.
+
+Cargo manifests/lock and exports changed; the original eleven-source Rust
+fingerprints are no longer a description of the current package. Earlier
+evidence and the M3/M5/M6 programs remain byte-for-byte unchanged. New evidence
+distinguishes this fixed-model acceptance from future model/tooling, native
+prefix/output, API and distributed responsibilities.
 
 ## Supplied context
 

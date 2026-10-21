@@ -1,0 +1,598 @@
+{
+  "format": "rebase-independent-checker-evidence",
+  "version": 1,
+  "date": "2026-10-22",
+  "phase": "research and contract wireframes",
+  "path_base": "Relative paths resolve from rebase-next.",
+  "repository_revision": "947cc25402444c48cc35a56c777339fb8c9f4f98",
+  "started_with_uncommitted_m3_m5_packet": true,
+  "command": "python3 -B research/experiments/m6.py",
+  "python": "3.12.8",
+  "exit_code": 0,
+  "model_sha256": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e",
+  "reused_m3_m5": {
+    "evidence": "research/evidence/2026-10-22-m3-m5.json",
+    "source": "research/experiments/m3_m5.py",
+    "source_sha256": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800",
+    "previous_output_fingerprints_matched_at_start": 12,
+    "prior_36_order_campaign_rerun": false,
+    "source_oracle_reused": true
+  },
+  "reused_rust_proof": {
+    "evidence": "research/feasibility.json",
+    "matched_inputs": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "examples/demo.json",
+      "examples/feasibility.rs",
+      "rust-toolchain.toml",
+      "src/algebra.rs",
+      "src/lib.rs",
+      "src/merge.rs",
+      "src/plan.rs",
+      "src/staging.rs",
+      "tests/semantics.rs"
+    ],
+    "rerun": false
+  },
+  "reviewed_sources": [
+    {
+      "source": "../dev-tools/temporal-tree/dependency-oracle.js",
+      "review_scope": "Full source: independent expected query inventory and descriptor/result/index boundaries.",
+      "sha256": "77602eaafc5c5009215cc101260e9e5fe1096cc89ffa10ad410cd10f5ea875ec"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/oracle.js",
+      "review_scope": "Full source: raw scans, structural walks, global observed slots and approximate demo arithmetic.",
+      "sha256": "7faf4870da83230e8c212b2443b50d5a63d775ff47292cffc1774a8b378e0485"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/exact-oracle.js",
+      "review_scope": "Full source: independent exact scans for every subtree/publication, separate from structural checks.",
+      "sha256": "447c3384e3e5de6eb1f4adaa356a07207db0bc4c48aab25a981777ff985ca447"
+    },
+    {
+      "source": "../dev-tools/temporal-tree/dependencies-probe.js",
+      "review_scope": "Targeted source-derived expectations and composition of dependency/structural/exact checks; no execution.",
+      "sha256": "33c85697aad8209cc91849496f1f6ad1ab891f7cfaa94ee6b64f08569f6f4617"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/verification.md",
+      "review_scope": "Historical checker/corruption evidence and explicit staged-capture limits; no reexecution.",
+      "sha256": "5cf1b208619536883b948cfcaf7476dc358693710edc6ad9c3fe4fdc70361513"
+    }
+  ],
+  "result": {
+    "baseline_snapshot_sha256": "1e51ca91de8332c85ce0ec85f901f79a8da6dbf50e27c24e39ad7170cd525fd5",
+    "expected_root_ids": [
+      [
+        "A",
+        "history"
+      ],
+      [
+        "A",
+        "subscribers"
+      ],
+      [
+        "B",
+        "history"
+      ],
+      [
+        "B",
+        "subscribers"
+      ],
+      [
+        "final",
+        "history"
+      ],
+      [
+        "final",
+        "subscribers"
+      ],
+      [
+        "left",
+        "history"
+      ],
+      [
+        "left",
+        "subscribers"
+      ],
+      [
+        "right",
+        "history"
+      ],
+      [
+        "right",
+        "subscribers"
+      ]
+    ],
+    "literal_scan_controls": {
+      "historical_deficit": {
+        "complete_time_max": 10,
+        "complete_time_min": -5,
+        "count": 3,
+        "first": [
+          0,
+          "0",
+          "x"
+        ],
+        "internal_max": 10,
+        "internal_min": -5,
+        "last": [
+          20,
+          "2",
+          "x"
+        ],
+        "record_max": 10,
+        "record_min": -5,
+        "sum": 5
+      },
+      "same_time": {
+        "complete_time_max": 0,
+        "complete_time_min": 0,
+        "count": 2,
+        "first": [
+          1,
+          "0",
+          "x"
+        ],
+        "internal_max": null,
+        "internal_min": null,
+        "last": [
+          1,
+          "1",
+          "x"
+        ],
+        "record_max": 0,
+        "record_min": -5,
+        "sum": 0
+      }
+    },
+    "negative_controls": [
+      {
+        "case": "erased_A_query_inventory",
+        "identity": "queries",
+        "obligation": "QUERY_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "86c3d5265b73a063c5ca9696c0e9f6f9c287f5975cf170abe3dc0252c87b109b"
+      },
+      {
+        "case": "missing_empty_root",
+        "identity": "roots",
+        "obligation": "ROOT_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "4539ad6a12049a8abee57b8c8c6e9b0abaa45438f430f22f816a863e1510c35d"
+      },
+      {
+        "case": "duplicate_raw_node_identity",
+        "identity": [
+          "nodes",
+          [
+            "seed-A",
+            "history"
+          ]
+        ],
+        "obligation": "DUPLICATE_ID",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "e7a6103972b05e2cae29411e6d3d69ad62f7455d04d77112264d3a4fe6c2f228"
+      },
+      {
+        "case": "disconnected_extra_node",
+        "identity": "nodes",
+        "obligation": "NODE_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "bcc68d3150a5285085115be49890a35d000895211c50ded01f16919b21d4b871"
+      },
+      {
+        "case": "missing_required_output",
+        "identity": "managed",
+        "obligation": "MANAGED_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "92fcb8a2f954931681bb6432d342d0b9100a769cc90d347a837c21f5d7e9a671"
+      },
+      {
+        "case": "missing_authored_source",
+        "identity": "authored",
+        "obligation": "SOURCE_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "128502e6641bd0f32bb8a0fa6dee0c0d6a2da54e483840dbf74f10c080ca59c7"
+      },
+      {
+        "case": "zero_posting_omitted",
+        "identity": "nodes",
+        "obligation": "NODE_INVENTORY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "828af9da65b4ef59b4d8b943e8d72e32033e3ebebf5ee68a3fbf9fd1bcf94db4"
+      },
+      {
+        "case": "query_phase_changed",
+        "identity": [
+          "P",
+          "q_guard"
+        ],
+        "obligation": "QUERY_VALUE",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "65c955f9d4c0b02bb69875e131b3e2dbd2ffa2b726c5d486ad594471646bfe55"
+      },
+      {
+        "case": "bound_changed_with_equal_answer",
+        "identity": [
+          "P",
+          "q_before"
+        ],
+        "obligation": "QUERY_VALUE",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "f441ee75e27218b8a045a85ad8e581ba03535696780be8dbc5f222205378c8f6"
+      },
+      {
+        "case": "stored_query_result_changed",
+        "identity": [
+          "P",
+          "q_before"
+        ],
+        "obligation": "QUERY_VALUE",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "98c8a0c6cfda2091613ab6c87104af1e501c283d1fb0d6957795c9aefa58d09a"
+      },
+      {
+        "case": "opposite_leaf_errors_preserve_total",
+        "identity": [
+          "Q/post",
+          "history"
+        ],
+        "obligation": "NODE_PAYLOAD",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "e7a94afcb680c60f4c2310733c11cab3f43e3af9400cfcc04316dfcb90212fac"
+      },
+      {
+        "case": "wrong_parent",
+        "identity": [
+          "Q/post",
+          "history"
+        ],
+        "obligation": "PARENT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "0631b834c17df35ee653ef49f980feda607813e0dc8322bbec447964d4895f63"
+      },
+      {
+        "case": "wrong_neighbour",
+        "identity": [
+          "Q/post",
+          "history"
+        ],
+        "obligation": "NEIGHBOUR",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "4a93b3c7086bf915ca9359a875739ee2d7427aea116fc129194640af9bcfd80e"
+      },
+      {
+        "case": "wrong_cached_height",
+        "identity": [
+          "Q/post",
+          "history"
+        ],
+        "obligation": "HEIGHT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "2630cb4c376583833fd517047b563fd1136101d74e3d5b63a85886c7434c8407"
+      },
+      {
+        "case": "cycle",
+        "identity": [
+          "P/post",
+          "history"
+        ],
+        "obligation": "TREE_REVISIT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "e3438b9050413fdaa4b612fcba8fc9c9239a70e2d60df39c3d17f203db663157"
+      },
+      {
+        "case": "shared_child",
+        "identity": [
+          "seed-A",
+          "history"
+        ],
+        "obligation": "TREE_REVISIT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "577b6f1bdf3645f3fcc6b6833dabf5ffefe63cb28c677e24e05234f0b9a286e9"
+      },
+      {
+        "case": "wrong_BST_order",
+        "identity": [
+          "Q/post",
+          "history"
+        ],
+        "obligation": "ORDER",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "3ac11e1f665de76288e623c67bbfbfed656e650b11d5128fe31cb33c01d2d599"
+      },
+      {
+        "case": "cross_root_child",
+        "identity": [
+          "seed-B",
+          "history"
+        ],
+        "obligation": "WRONG_ROOT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "a1e72566a18cc5562d5dd545560f800decfbab9f94a0ce908d8e901ddd09d45d"
+      },
+      {
+        "case": "dangling_child",
+        "identity": [
+          "ghost",
+          "slot"
+        ],
+        "obligation": "DANGLING_LINK",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "2d666b657dc73f860612529c92d9be52652d779314c0c7d567bcca954892d7a2"
+      },
+      {
+        "case": "root_disconnected_from_present_nodes",
+        "identity": [
+          "A",
+          "history"
+        ],
+        "obligation": "REACHABILITY",
+        "published_financial_totals_unchanged": false,
+        "result": "invalid",
+        "snapshot_sha256": "d1035bf56ea99971960a80503d9128321338358c5eee47957f8db798c14fa6e6"
+      },
+      {
+        "case": "wrong_root_endpoint",
+        "identity": [
+          "A",
+          "history"
+        ],
+        "obligation": "ROOT_ENDPOINT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "0d559346b5994a08b13a085be81677d78dedf2a9a32242ef8bbc93151036ca8a"
+      },
+      {
+        "case": "unbalanced_BST_with_correct_caches",
+        "identity": [
+          "seed-A",
+          "history"
+        ],
+        "obligation": "BALANCE",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "830043d2288f1ba9b0f241fe01f99f23c7746a195017453df7f2db6bfe9ae45c"
+      },
+      {
+        "case": "wrong_internal_cache",
+        "identity": [
+          "seed-A",
+          "history"
+        ],
+        "obligation": "NODE_SUMMARY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "d4fefd896e7e01b2cd7dc71c2ccc6805a0ebddd2df0a2b7ca25e5297babf783a"
+      },
+      {
+        "case": "wrong_published_cache",
+        "identity": [
+          "A",
+          "history"
+        ],
+        "obligation": "ROOT_SUMMARY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "7a1c2896eb50b52dbe36234719f55a326fe043e410e64ee330704f2dbc2345a9"
+      },
+      {
+        "case": "underestimated_interval_maximum",
+        "identity": [
+          "Q",
+          "dep_q_before"
+        ],
+        "obligation": "INTERVAL_SUMMARY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "75e0d9b477c562c8ebe06697dfeb655ee20e9ccc386b288b9156e86219d6bca5"
+      },
+      {
+        "case": "floating_cached_integer",
+        "identity": [
+          "seed-A",
+          "history"
+        ],
+        "obligation": "NODE_SUMMARY",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "2c3d22da12f5f35a856ddff49861ed59f4506a900df80e698dc66aa01ce240f8"
+      },
+      {
+        "case": "unsettled_snapshot",
+        "identity": "snapshot",
+        "obligation": "PENDING_WORK",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "29a0703dda9d0edf5548f65f1bf2dc5be7ed06707805eb8af5b85ac1076e54bc"
+      },
+      {
+        "case": "valid_structure_but_negative_history",
+        "identity": "complete-time account floor",
+        "obligation": "INVARIANT",
+        "published_financial_totals_unchanged": true,
+        "result": "invalid",
+        "snapshot_sha256": "094083efb9e0fcb07989ee8b488c03069c65ca724cad9dbc8da9c643ed74fe0e"
+      },
+      {
+        "case": "partial_observation",
+        "identity": "snapshot",
+        "obligation": "INCOMPLETE_SCOPE",
+        "published_financial_totals_unchanged": true,
+        "result": "incomplete",
+        "snapshot_sha256": "1e51ca91de8332c85ce0ec85f901f79a8da6dbf50e27c24e39ad7170cd525fd5"
+      },
+      {
+        "case": "budget_exhausted",
+        "identity": 110,
+        "obligation": "INCOMPLETE_BUDGET",
+        "published_financial_totals_unchanged": true,
+        "result": "incomplete",
+        "snapshot_sha256": "1e51ca91de8332c85ce0ec85f901f79a8da6dbf50e27c24e39ad7170cd525fd5"
+      }
+    ],
+    "not_exercised": [
+      "native tree mutations",
+      "storage or snapshot export",
+      "incremental discovery",
+      "latest/next/empty-range slots",
+      "direct reverse routes",
+      "UUID codecs",
+      "permissions, receipts or rollback",
+      "distributed conflict schedules"
+    ],
+    "positive_controls": [
+      {
+        "case": "baseline_upper",
+        "counts": {
+          "authored": 12,
+          "derived": 5,
+          "managed": 5,
+          "nodes": 15,
+          "queries": 8,
+          "roots": 10
+        },
+        "snapshot_sha256": "1e51ca91de8332c85ce0ec85f901f79a8da6dbf50e27c24e39ad7170cd525fd5",
+        "work": {
+          "node_visits": 15,
+          "summary_leaf_visits": 40,
+          "work_units": 110
+        }
+      },
+      {
+        "case": "baseline_lower",
+        "counts": {
+          "authored": 12,
+          "derived": 5,
+          "managed": 5,
+          "nodes": 15,
+          "queries": 8,
+          "roots": 10
+        },
+        "snapshot_sha256": "99ad7c5b1d101365773e6f417761b8c08157802a0cdaadb509b78124bffcb71b",
+        "work": {
+          "node_visits": 15,
+          "summary_leaf_visits": 40,
+          "work_units": 110
+        }
+      },
+      {
+        "case": "zero_posting",
+        "counts": {
+          "authored": 12,
+          "derived": 5,
+          "managed": 5,
+          "nodes": 15,
+          "queries": 8,
+          "roots": 10
+        },
+        "snapshot_sha256": "3d665eabdccef644e1426674d1086e3dd5ef297ecd9672b8ad305da31128b504",
+        "work": {
+          "node_visits": 15,
+          "summary_leaf_visits": 40,
+          "work_units": 110
+        }
+      },
+      {
+        "case": "disabled_output",
+        "counts": {
+          "authored": 12,
+          "derived": 5,
+          "managed": 4,
+          "nodes": 14,
+          "queries": 8,
+          "roots": 10
+        },
+        "snapshot_sha256": "5695b1d1b98bd000187cb405f2bcadc4ecc7c496e55c56dc3ff50e1cc222e22b",
+        "work": {
+          "node_visits": 14,
+          "summary_leaf_visits": 37,
+          "work_units": 104
+        }
+      },
+      {
+        "case": "deleted_reader",
+        "counts": {
+          "authored": 11,
+          "derived": 4,
+          "managed": 4,
+          "nodes": 12,
+          "queries": 6,
+          "roots": 10
+        },
+        "snapshot_sha256": "40a32ec8bda6ffb4314d923bbdebf10220b185a5c4de4c3c9c606c7c71e04966",
+        "work": {
+          "node_visits": 12,
+          "summary_leaf_visits": 29,
+          "work_units": 88
+        }
+      }
+    ],
+    "scope": "Synthetic typed-snapshot checker, no runtime or storage",
+    "status": "passed"
+  },
+  "validation": {
+    "status": "passed",
+    "documentation": {
+      "markdown_files": 14,
+      "local_links": 146,
+      "anchors": 12,
+      "json_examples": 1,
+      "scenario_groups": 22,
+      "unknown_scenario_references": [],
+      "errors": []
+    },
+    "experiment_syntax_and_whitespace": "passed",
+    "documented_control_counts_and_work_matched": true,
+    "executed_m6_source_fingerprint_matched": true,
+    "reused_m3_m5_source_fingerprint_matched": true,
+    "inspected_source_fingerprints_matched": 5,
+    "git_diff_check_exit_code": 0,
+    "outside_next_changes": [],
+    "procedure": "Python standard-library link/anchor/fence/JSON checks, source AST/whitespace checks, scenario references, evidence count/work consistency, relevant fingerprints and Git scope. Current routing reviewed against the scenario register. No original application suite or unchanged Rust/M3-M5 order campaign rerun."
+  },
+  "not_claimed": [
+    "a defect reproduced in original ReBase",
+    "live database mutation or corruption",
+    "native AVL writer acceptance",
+    "snapshot export completeness or isolation",
+    "incremental discovery, authority, storage rollback or distributed correctness"
+  ],
+  "execution_note": "Final run after requiring the caller to provide an explicit completeness assertion; only the affected M6 model was rerun.",
+  "output_fingerprints": {
+    "CONTEXT.md": "aba0d841876c3b8dfaeb36479076e9cf074031b34cfce3bff367566495198576",
+    "README.md": "b5b8c40b01b78b18ff3bcf42adc57cff470f6885b05a3ef313f2a6df19ee023e",
+    "research/01-model-and-mathematics.md": "ed5a63c192102eceeed9f13efd60ad65deef721b53556f59357c763a60ceb7b0",
+    "research/04-implementation.md": "67828bf14adc9f2e59ef3efe97af60b49619175a1f56ea861acab137d61d5dcb",
+    "research/05-feasibility.md": "494fd7dfc2eed050128f470230eeddce7d48c717fff1187abe6ec6642bee160a",
+    "research/06-system-audit.md": "a743a51d329afddbf668cb6df78319cc39074a6bf8a4e86f5e2010b0b8e8ef99",
+    "research/07-contract-wireframes.md": "52d0687705120e5aaa1faa0afd96dde04f5e78ebe4dcfc822b302956dea2a440",
+    "research/08-research-workflow.md": "7455d3e76f949678496fe0d851da4b79bd93d4f98cf8b6dbc6d29227dcc50160",
+    "research/09-causal-settlement.md": "2a30ef6e5a0f25c7535fffc96af7b459b022d9f100acb5eed7804ab40ebc0992",
+    "research/10-independent-checker.md": "7a9ef55e280f537280052e2d071e3067cd7bcf8af7f450223184ad4c967de9ad",
+    "research/sources.md": "b377b8600d59dc918cf52e7bde647e78aafc1ac4e81b720879507a49e9af755c",
+    "research/experiments/m6.py": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e"
+  }
+}

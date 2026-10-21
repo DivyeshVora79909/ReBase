@@ -1,0 +1,3566 @@
+{
+  "format": "native-slice-cases-v1",
+  "tenant": "00000000-0000-4000-8000-000000000001",
+  "actor": "00000000-0000-4000-8000-000000000002",
+  "ids": {
+    "T": "00000000-0000-4000-8000-000000000001",
+    "U": "00000000-0000-4000-8000-000000000002",
+    "V": "00000000-0000-4000-8000-000000000003",
+    "D": "00000000-0000-4000-8000-000000000010",
+    "E": "00000000-0000-4000-8000-000000000011",
+    "C": "00000000-0000-4000-8000-000000000020",
+    "C2": "00000000-0000-4000-8000-000000000021",
+    "A": "00000000-0000-4000-8000-000000000030",
+    "B": "00000000-0000-4000-8000-000000000031",
+    "S": "00000000-0000-4000-8000-000000000040",
+    "X": "00000000-0000-4000-8000-000000000050",
+    "Y": "00000000-0000-4000-8000-000000000051",
+    "Z": "00000000-0000-4000-8000-000000000052",
+    "P": "00000000-0000-4000-8000-000000000060",
+    "Q": "00000000-0000-4000-8000-000000000061",
+    "R": "00000000-0000-4000-8000-000000000062",
+    "N": "00000000-0000-4000-8000-000000000070",
+    "L": "00000000-0000-4000-8000-000000000071",
+    "H": "00000000-0000-4000-8000-000000000072",
+    "J0": "00000000-0000-4000-8000-000000000100",
+    "J1": "00000000-0000-4000-8000-000000000101",
+    "J2": "00000000-0000-4000-8000-000000000102",
+    "J3": "00000000-0000-4000-8000-000000000103",
+    "J4": "00000000-0000-4000-8000-000000000104",
+    "J5": "00000000-0000-4000-8000-000000000105",
+    "J6": "00000000-0000-4000-8000-000000000106",
+    "J7": "00000000-0000-4000-8000-000000000107",
+    "J8": "00000000-0000-4000-8000-000000000108",
+    "J9": "00000000-0000-4000-8000-000000000109",
+    "J10": "00000000-0000-4000-8000-000000000110",
+    "J11": "00000000-0000-4000-8000-000000000111",
+    "J12": "00000000-0000-4000-8000-000000000112",
+    "J13": "00000000-0000-4000-8000-000000000113",
+    "J14": "00000000-0000-4000-8000-000000000114",
+    "J15": "00000000-0000-4000-8000-000000000115",
+    "J16": "00000000-0000-4000-8000-000000000116",
+    "J17": "00000000-0000-4000-8000-000000000117",
+    "J18": "00000000-0000-4000-8000-000000000118",
+    "J19": "00000000-0000-4000-8000-000000000119",
+    "J20": "00000000-0000-4000-8000-000000000120",
+    "J21": "00000000-0000-4000-8000-000000000121",
+    "J22": "00000000-0000-4000-8000-000000000122",
+    "J23": "00000000-0000-4000-8000-000000000123",
+    "J24": "00000000-0000-4000-8000-000000000124",
+    "J25": "00000000-0000-4000-8000-000000000125",
+    "J26": "00000000-0000-4000-8000-000000000126",
+    "J27": "00000000-0000-4000-8000-000000000127",
+    "J28": "00000000-0000-4000-8000-000000000128",
+    "J29": "00000000-0000-4000-8000-000000000129",
+    "J30": "00000000-0000-4000-8000-000000000130",
+    "J31": "00000000-0000-4000-8000-000000000131",
+    "J32": "00000000-0000-4000-8000-000000000132",
+    "J33": "00000000-0000-4000-8000-000000000133",
+    "J34": "00000000-0000-4000-8000-000000000134",
+    "J35": "00000000-0000-4000-8000-000000000135",
+    "J36": "00000000-0000-4000-8000-000000000136",
+    "J37": "00000000-0000-4000-8000-000000000137",
+    "J38": "00000000-0000-4000-8000-000000000138",
+    "J39": "00000000-0000-4000-8000-000000000139",
+    "J40": "00000000-0000-4000-8000-000000000140",
+    "J41": "00000000-0000-4000-8000-000000000141",
+    "J42": "00000000-0000-4000-8000-000000000142",
+    "J43": "00000000-0000-4000-8000-000000000143",
+    "J44": "00000000-0000-4000-8000-000000000144",
+    "J45": "00000000-0000-4000-8000-000000000145",
+    "J46": "00000000-0000-4000-8000-000000000146",
+    "J47": "00000000-0000-4000-8000-000000000147",
+    "J48": "00000000-0000-4000-8000-000000000148",
+    "J49": "00000000-0000-4000-8000-000000000149",
+    "J50": "00000000-0000-4000-8000-000000000150",
+    "J51": "00000000-0000-4000-8000-000000000151",
+    "J52": "00000000-0000-4000-8000-000000000152",
+    "J53": "00000000-0000-4000-8000-000000000153",
+    "J54": "00000000-0000-4000-8000-000000000154",
+    "J55": "00000000-0000-4000-8000-000000000155",
+    "J56": "00000000-0000-4000-8000-000000000156",
+    "J57": "00000000-0000-4000-8000-000000000157",
+    "J58": "00000000-0000-4000-8000-000000000158",
+    "J59": "00000000-0000-4000-8000-000000000159",
+    "J60": "00000000-0000-4000-8000-000000000160",
+    "J61": "00000000-0000-4000-8000-000000000161",
+    "J62": "00000000-0000-4000-8000-000000000162",
+    "J63": "00000000-0000-4000-8000-000000000163"
+  },
+  "bases": {
+    "baseline": [
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000010",
+        "contract": 1,
+        "fields": {
+          "c": "2"
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000020",
+        "contract": 2,
+        "fields": {
+          "native_unit": 1,
+          "reporting_unit": 2
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000030",
+        "contract": 4,
+        "fields": {
+          "native_unit": 1
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000031",
+        "contract": 4,
+        "fields": {
+          "native_unit": 1
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000040",
+        "contract": 5,
+        "fields": {
+          "reporting_unit": 2
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000050",
+        "contract": 3,
+        "fields": {
+          "curve": "00000000-0000-4000-8000-000000000020",
+          "at": "10",
+          "rate": "3"
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000051",
+        "contract": 3,
+        "fields": {
+          "curve": "00000000-0000-4000-8000-000000000020",
+          "at": "20",
+          "rate": "5"
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000060",
+        "contract": 6,
+        "fields": {
+          "units": "4",
+          "at": "15",
+          "rule": "00000000-0000-4000-8000-000000000010",
+          "curve": "00000000-0000-4000-8000-000000000020",
+          "account": "00000000-0000-4000-8000-000000000030",
+          "subsidiary": "00000000-0000-4000-8000-000000000040"
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000061",
+        "contract": 6,
+        "fields": {
+          "units": "1",
+          "at": "25",
+          "rule": "00000000-0000-4000-8000-000000000010",
+          "curve": "00000000-0000-4000-8000-000000000020",
+          "account": "00000000-0000-4000-8000-000000000030",
+          "subsidiary": "00000000-0000-4000-8000-000000000040"
+        }
+      }
+    ],
+    "empty": [
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000010",
+        "contract": 1,
+        "fields": {
+          "c": "1"
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000020",
+        "contract": 2,
+        "fields": {
+          "native_unit": 1,
+          "reporting_unit": 2
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000030",
+        "contract": 4,
+        "fields": {
+          "native_unit": 1
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000031",
+        "contract": 4,
+        "fields": {
+          "native_unit": 1
+        }
+      },
+      {
+        "op": "create",
+        "id": "00000000-0000-4000-8000-000000000040",
+        "contract": 5,
+        "fields": {
+          "reporting_unit": 2
+        }
+      }
+    ],
+    "blank": []
+  },
+  "cases": [
+    {
+      "name": "coefficient",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "12",
+                "36"
+              ],
+              "Q": [
+                "3",
+                "15"
+              ]
+            },
+            "totals": {
+              "A": "15",
+              "S": "51"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_rate",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "rate": "4"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "S": "42"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "insert_quote",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000052",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "12",
+                "rate": "4"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "S": "42"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_quote",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "8"
+              ],
+              "Q": [
+                "2",
+                "10"
+              ]
+            },
+            "totals": {
+              "S": "18"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "move_quote",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "at": "30"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "S": "18"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "swap_quotes",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "at": "20"
+              },
+              "unset": []
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000051",
+              "if_version": "1",
+              "set": {
+                "at": "10"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "40"
+              ],
+              "Q": [
+                "2",
+                "6"
+              ]
+            },
+            "totals": {
+              "S": "46"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate_quote",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000052",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "10",
+                "rate": "4"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "duplicate_time"
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty_curve",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1"
+            },
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000051",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "8"
+              ],
+              "Q": [
+                "2",
+                "2"
+              ]
+            },
+            "totals": {
+              "S": "10"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "equal_rate_new_selection",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000052",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "12",
+                "rate": "3"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "24"
+              ]
+            },
+            "totals": {
+              "S": "34"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "coincident_query_bounds",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "at": "25"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "40"
+              ]
+            },
+            "totals": {
+              "S": "50"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "exact_quote_boundary",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "at": "20"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "40"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit_units",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "5"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "10",
+                "30"
+              ]
+            },
+            "totals": {
+              "A": "12",
+              "S": "40"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_posting",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "2",
+              "S": "10"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reparent_posting",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "account": "00000000-0000-4000-8000-000000000031"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "2",
+              "B": "8",
+              "S": "34"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "change_curve",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000021",
+              "contract": 2,
+              "fields": {
+                "native_unit": 1,
+                "reporting_unit": 2
+              }
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "curve": "00000000-0000-4000-8000-000000000021"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "8",
+                "8"
+              ]
+            },
+            "totals": {
+              "S": "18"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reparent_quote",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000021",
+              "contract": 2,
+              "fields": {
+                "native_unit": 1,
+                "reporting_unit": 2
+              }
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "curve": "00000000-0000-4000-8000-000000000021"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "S": "18"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero_dependencies",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "0"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "0",
+                "0"
+              ]
+            },
+            "totals": {
+              "A": "2",
+              "S": "10"
+            }
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "0",
+                "0"
+              ],
+              "Q": [
+                "3",
+                "15"
+              ]
+            }
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "rate": "4"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "2",
+              "set": {
+                "units": "4"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "12",
+                "48"
+              ],
+              "Q": [
+                "3",
+                "15"
+              ]
+            },
+            "totals": {
+              "A": "15",
+              "S": "63"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "no_op_version",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {},
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "5"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "10",
+                "30"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "stale_derived_version",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "5"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "stale_version"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_recreate_version",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "contract": 6,
+              "fields": {
+                "units": "4",
+                "at": "15",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "5"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "stale_version"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_referenced_D",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_referenced_C",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000020",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_referenced_A",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000030",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_referenced_S",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000040",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_parent_first",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000020",
+              "if_version": "1"
+            },
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1"
+            },
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000051",
+              "if_version": "1"
+            },
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1"
+            },
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000061",
+              "if_version": "1"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "0",
+              "S": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_account_and_reparent",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000030",
+              "if_version": "1"
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "account": "00000000-0000-4000-8000-000000000031"
+              },
+              "unset": []
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000061",
+              "if_version": "1",
+              "set": {
+                "account": "00000000-0000-4000-8000-000000000031"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "B": "10",
+              "S": "34"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "earlier_reference",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000011",
+              "contract": 1,
+              "fields": {
+                "c": "4"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000062",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "35",
+                "rule": "00000000-0000-4000-8000-000000000011",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "R": [
+                "4",
+                "20"
+              ]
+            },
+            "totals": {
+              "A": "14",
+              "S": "54"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "forward_reference",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000062",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "30",
+                "rule": "00000000-0000-4000-8000-000000000011",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000011",
+              "contract": 1,
+              "fields": {
+                "c": "4"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate_commands",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "5"
+              },
+              "unset": []
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "at": "30"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing_curve",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "curve": "00000000-0000-4000-8000-000000000021"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_target_type",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "curve": "00000000-0000-4000-8000-000000000030"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_unit",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000011",
+              "contract": 4,
+              "fields": {
+                "native_unit": 3
+              }
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "account": "00000000-0000-4000-8000-000000000011"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "unavailable_reference"
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_actor",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "actor": "00000000-0000-4000-8000-000000000003",
+          "expect": {
+            "status": "rejected",
+            "code": "forbidden"
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_tenant",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "tenant": "00000000-0000-4000-8000-000000000003",
+          "expect": {
+            "status": "rejected",
+            "code": "forbidden"
+          }
+        }
+      ]
+    },
+    {
+      "name": "protected",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "native_minor": "10"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "context_field",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "owner": "00000000-0000-4000-8000-000000000003"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "floating_integer",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": 1.5
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "numeric_integer",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": 1
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "boolean_integer",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": true
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "null_integer",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": null
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "leading_zero",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "04"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "negative_zero",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "-0"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "huge_signed",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "units": "-170141183460469231731687303715884105728"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "time_overflow",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "at": "9223372036854775808"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "unset_required",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {},
+              "unset": [
+                "units"
+              ]
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "immutable_unit",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000030",
+              "if_version": "1",
+              "set": {
+                "native_unit": 3
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero_rate",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "if_version": "1",
+              "set": {
+                "rate": "0"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coefficient_bound",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "1001"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invalid_input"
+          }
+        }
+      ]
+    },
+    {
+      "name": "already_exists",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "30",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "already_exists"
+          }
+        }
+      ]
+    },
+    {
+      "name": "historical_deficit",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "0",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000071",
+              "contract": 6,
+              "fields": {
+                "units": "-15",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000072",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "20",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invariant",
+            "staged_min": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "same_time_cancellation",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "-10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000071",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "0",
+              "S": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "independent_checkpoint",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "-10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invariant"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "-10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000071",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "0",
+              "S": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "valid_separate_checkpoints",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000071",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "10"
+            }
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "-10",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_credit_rejects",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "contract": 6,
+              "fields": {
+                "units": "10",
+                "at": "0",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000071",
+              "contract": 6,
+              "fields": {
+                "units": "-5",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000070",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "invariant",
+            "staged_min": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "extreme_times",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000050",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "-9223372036854775808",
+                "rate": "2"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000051",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "9223372036854775807",
+                "rate": "3"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "-9223372036854775808",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000061",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "9223372036854775807",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "postings": {
+              "P": [
+                "1",
+                "2"
+              ],
+              "Q": [
+                "1",
+                "3"
+              ]
+            },
+            "totals": {
+              "A": "2",
+              "S": "5"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_rotation_ll",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "3",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "2",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "1",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_rotation_rr",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "1",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "2",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "3",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_rotation_lr",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "3",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "1",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "2",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_rotation_rl",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "1",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "3",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "2",
+                "rate": "2"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "financial_tree_deletion",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "4",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "2",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "6",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000103",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "1",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000104",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "3",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000105",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "5",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000106",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "7",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000103",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000104",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000105",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed"
+          }
+        },
+        {
+          "commands": [
+            {
+              "op": "delete",
+              "id": "00000000-0000-4000-8000-000000000106",
+              "if_version": "2"
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "committed",
+            "totals": {
+              "A": "0",
+              "S": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "posting_cap",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "0",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "1",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "2",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000103",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "3",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000104",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "4",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000105",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "5",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000106",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "6",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000107",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "7",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000108",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "8",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000109",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "9",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000110",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "10",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000111",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "11",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000112",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "12",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000113",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "13",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000114",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "14",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000115",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "15",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000116",
+              "contract": 6,
+              "fields": {
+                "units": "1",
+                "at": "16",
+                "rule": "00000000-0000-4000-8000-000000000010",
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "account": "00000000-0000-4000-8000-000000000030",
+                "subsidiary": "00000000-0000-4000-8000-000000000040"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "state_limit"
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_cap",
+      "base": "empty",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "0",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "1",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "2",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000103",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "3",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000104",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "4",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000105",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "5",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000106",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "6",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000107",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "7",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000108",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "8",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000109",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "9",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000110",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "10",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000111",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "11",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000112",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "12",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000113",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "13",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000114",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "14",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000115",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "15",
+                "rate": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000116",
+              "contract": 3,
+              "fields": {
+                "curve": "00000000-0000-4000-8000-000000000020",
+                "at": "16",
+                "rate": "1"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "state_limit"
+          }
+        }
+      ]
+    },
+    {
+      "name": "record_cap",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000100",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000101",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000102",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000103",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000104",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000105",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000106",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000107",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000108",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000109",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000110",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000111",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000112",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000113",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000114",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000115",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000116",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000117",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000118",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000119",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000120",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000121",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000122",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000123",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000124",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000125",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000126",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000127",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000128",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000129",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000130",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000131",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000132",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000133",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000134",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000135",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000136",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000137",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000138",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000139",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000140",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000141",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000142",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000143",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000144",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000145",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000146",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000147",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000148",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000149",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000150",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000151",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000152",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000153",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000154",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            },
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000155",
+              "contract": 1,
+              "fields": {
+                "c": "1"
+              }
+            }
+          ],
+          "work_limit": 100000,
+          "expect": {
+            "status": "rejected",
+            "code": "state_limit"
+          }
+        }
+      ]
+    },
+    {
+      "name": "work_limit",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 8,
+          "expect": {
+            "status": "rejected",
+            "code": "work_limit",
+            "staged_min": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "abort_partial_batch",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "abort_after": 2,
+          "expect": {
+            "status": "rejected",
+            "code": "injected_abort"
+          }
+        }
+      ]
+    },
+    {
+      "name": "abort_full_batch",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "create",
+              "id": "00000000-0000-4000-8000-000000000021",
+              "contract": 2,
+              "fields": {
+                "native_unit": 1,
+                "reporting_unit": 2
+              }
+            },
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000060",
+              "if_version": "1",
+              "set": {
+                "curve": "00000000-0000-4000-8000-000000000021",
+                "account": "00000000-0000-4000-8000-000000000031"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "abort_after": "all",
+          "expect": {
+            "status": "rejected",
+            "code": "injected_abort"
+          }
+        }
+      ]
+    },
+    {
+      "name": "model_mismatch",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "model": "different",
+          "expect": {
+            "status": "rejected",
+            "code": "model_mismatch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "codec_mismatch",
+      "base": "baseline",
+      "operations": [
+        {
+          "commands": [
+            {
+              "op": "update",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "if_version": "1",
+              "set": {
+                "c": "3"
+              },
+              "unset": []
+            }
+          ],
+          "work_limit": 100000,
+          "codec": "different",
+          "expect": {
+            "status": "rejected",
+            "code": "model_mismatch"
+          }
+        }
+      ]
+    }
+  ]
+}

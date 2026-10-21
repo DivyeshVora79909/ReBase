@@ -58,6 +58,14 @@ patterns/bindings for the new wire format, and retain allowed target contracts
 in declarations. Faithful schema export is compatible with an intentional
 breaking API change; “JSON Schema is portable” does not make old payloads so.
 
+Managed outputs need an identity binding too. The
+[M3/M5 proposal](09-causal-settlement.md#5-identity-coalescing-and-lifecycle) keeps
+logical ownership `(source UUID, role code)` and reserves a separate output UUID
+in a private source role slot, retained across disable/reenable during that
+source's lifetime. The old compound record ID does not become a bare UUID by
+serialization. Allocation/collision checks and persisted reopen are still D2
+work; public clients cannot forge or address these roles through normal writes.
+
 | Artifact | Audience and contents |
 | --- | --- |
 | Prepared plan | Engine only: resolved behavior and executable policy, with source/rule locations |
@@ -184,7 +192,10 @@ is checked; it is not the authentication context. Proposed initial command rules
    success. Losing read access through the mutation can suppress returned fields.
 
 This final-boundary proposal deliberately differs from current per-statement
-settlement. It is still subject to the causal-settlement design gate in paper 8.
+settlement. The bounded M3/M5 contract now supplies before/after graphs and
+expected states, including a surviving reference that blocks managed-output
+removal or parent deletion. It does not exercise API permissions, atomic storage
+rollback, or arbitrary query-dependent shape; those gates remain in paper 8.
 
 | Outcome | Client and engine behavior |
 | --- | --- |
@@ -290,6 +301,7 @@ Field permission applies to errors and traces as well as successful projection.
 | --- | --- |
 | Add a dependent amount | Author input/type and named dependency once → model-load error points at the source if unresolved → explain shows actual order/root/channel → both catalogs derive their allowed projections → one source-based scenario checks it |
 | Inspect a design | Open static developer catalog → choose graph/layout → select contract/slot/formula → optionally connect for bounded authorized active state; no automatic database connection or mutation |
+| Check disposable state | Supply a complete privileged test snapshot plus independent source expectations → run the M6 inventory/structural checker → report valid, invalid with an obligation/identity, or incomplete; diagnostics stay in the developer context |
 | Prepare a demo | Select a new disposable store and model → provision explicit tenant/principals → preview seeded authored fixtures offline → apply through supported operations → read settled state → stop workers/connections and discard owned resources |
 | Create a prerequisite in a form | Retain parent draft/create ID → save the child through the operation API → return its confirmed UUID → parent submission remains explicit |
 | Save with a lost response | Retain draft/version/operation identity → show unconfirmed state → inspect same operation → accept confirmed result or keep uncertainty; session changes fence late callbacks |

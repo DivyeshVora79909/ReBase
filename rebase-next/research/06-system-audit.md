@@ -1,8 +1,9 @@
 # Whole-system review and change impact
 
 **Reviewed 2026-10-22, starting at ReBase `e5d13b3` and MetaSol `28c6e7f`.**
-This is a research review. The next work is contract and scenario design;
-the previous instruction to start implementing a runtime slice is superseded.
+This research review established the need for contract and scenario design
+before a runtime slice. The [scenario register](08-research-workflow.md) owns
+the subsequent contracts, bounded implementation plan and current continuation.
 
 ## 1. Assessment
 
@@ -35,10 +36,10 @@ contracts, not implemented capabilities or proof that the whole design is ready.
 - The second attachment contains the inspector work, the request to research in
   an independent directory, and the creation of `e5d13b3`. Repeated prompts and
   tool transcripts are historical records, not new implementation instructions.
-- All 26 repository inputs in the previous source manifest still match. Git has
+- At the audit, all 26 repository inputs in the previous source manifest matched. Git had
   no changes outside `rebase-next/` between `a963b25` and the starting revision.
   The relevant current source and additional tooling/frontend seams were inspected.
-- All 11 inputs fingerprinted by the existing Rust evidence still match. Its
+- At the audit, all 11 inputs fingerprinted by the existing Rust evidence matched. Its
   eight semantic tests, redb example, formatting and Clippy results remain
   **October 21 evidence**. They were not rerun or promoted to runtime acceptance.
 - Older memory supplied failure patterns and preferences. Its October 13
@@ -129,7 +130,7 @@ modules to scaffold now.
 | --- | --- |
 | Whole-row helper aliases hid dependencies; `a_total` remained 4 when it should be 6 ([compiler review](../../designs/rebase-system/integrity-2026-10-15/compiler.md)) | Formulas receive resolved declared inputs. Use names whose lexical order disagrees with dependency order. |
 | Captured reads mutated shared structures during formula evaluation; later arithmetic could look right while links were stale ([runtime review](../../designs/rebase-system/integrity-2026-10-15/runtime.md)) | Pure evaluation and structural reconciliation are distinct stages. One workspace owns latest state; do not restore cached whole nodes over newer patches. |
-| A checker could miss an entire removed dependency inventory ([checker review](../../designs/rebase-system/integrity-2026-10-15/verification.md)) | Derive expected roles/reads from source facts and declarations, then compare with maintained state. Prove the checker detects a missing whole inventory. |
+| A checker could miss an entire removed dependency inventory ([checker review](../../designs/rebase-system/integrity-2026-10-15/verification.md)) | Derive expected roles/reads and required empty roots from source facts/declarations. Compare complete raw slot inventories before tree walks; M6 exercises missing inventories, disconnected nodes and incomplete observations. |
 | Coincident interval slots were coalesced; whole-result/endpoint changes escaped invalidation ([October 16 defects](../../designs/rebase-system/declarative-engine-verification.md#reproduced-defects)) | Preserve role identity and consumed semantic fields, even when bounds or numerical outputs coincide. |
 | Current intrusive cleanup requires old neighbours and child-first deletion | A future staged deletion must retain old slot images and apply declared reference/output policies. Do not assume that a bulk KV delete runs the engine. |
 | Build output overlapped source; generated symlinks could overwrite inputs ([tool review](../../designs/rebase-system/developer-experience-handoff.md#lead-review-and-corrections)) | Preflight all output paths before pruning/writing. Build, connect, activate and populate have separate effects. |
@@ -141,8 +142,12 @@ modules to scaffold now.
 ## 6. Decision boundary
 
 Continue with [contract wireframes](07-contract-wireframes.md), then the
-[scenario and gate register](08-research-workflow.md). The next useful experiment
-is a small source-based settlement model after its unresolved causal contract is
-closed. It is not yet a full Rust runtime, an API server, a new frontend or a
-distributed adapter. Whole-system awareness informs that small experiment;
-freezing every future product feature is not a prerequisite to learning from it.
+[scenario and gate register](08-research-workflow.md). The subsequent
+[M3/M5 packet](09-causal-settlement.md) closes a restricted causal contract,
+and [M6](10-independent-checker.md) defines and exercises the bounded independent
+checker. The [first native slice plan](11-native-slice-plan.md) defines that
+bounded implementation and its checks; [paper 12](12-native-slice.md) now records
+all S1–S5 stages and real native acceptance. There is still no complete Rust
+application runtime, API server, new frontend or distributed adapter.
+Whole-system awareness informs these small experiments; freezing every future
+product feature is not a prerequisite to learning from them.

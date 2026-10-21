@@ -171,7 +171,7 @@ Keep codec choices confined to one engine boundary with a format identifier.
 
 ## 5. A file structure proportional to implementation
 
-The present proof is one Cargo package:
+The experiments share one Cargo package:
 
 ```
 rebase-next/
@@ -184,14 +184,19 @@ rebase-next/
     plan.rs                  # declared local order and scalar-reader selection
     merge.rs                 # bounded merge/exists semantics
     staging.rs               # point-read transaction overlay
+    native_codec.rs          # fixed native key/value bindings
+    native_slice.rs          # fixed model, typed workspace and settlement
+    tree.rs                  # linked financial/quote roles
   examples/
     demo.json                # schema and fixed declarations
     feasibility.rs           # one real embedded transaction demonstration
+    native_slice.rs          # complete raw snapshots and real abort/reopen
   tests/
     semantics.rs             # unresolved semantic facts and counterexamples
+    native_tree.rs           # linked-tree operations versus source scans
 ```
 
-Later add `model.rs`, `tree.rs`, `dependency.rs`, `access.rs`, `transaction.rs`,
+Later add `model.rs`, `dependency.rs`, `access.rs`, `transaction.rs`,
 `store/redb.rs` and `rpc.rs` when the corresponding slice exists. Split a module
 when its actual responsibility outgrows a readable file. Split Cargo crates only
 for real independent build/dependency needs; do not scaffold empty subsystems.
@@ -226,15 +231,23 @@ There is no reason to build a frontend server merely to view a static catalog.
 ## 7. Next steps and stop conditions
 
 1. **Completed October 21:** recovered meaning and recorded the bounded Rust
-   mathematical/transaction proof. Its source fingerprints remain unchanged.
-2. **Current research:** audit whole-system responsibilities, specify API/tooling
-   wireframes and source-based scenarios. Paper 8 owns their status and decisions.
-3. **Next causal review:** define M3/M5 before/after dependencies for a moved
-   prefix consumer and required output, valid diamonds and rejected feedback.
-   Use a tiny executable model only if a semantic question remains unresolved.
-4. **Conditional implementation boundary:** after the relevant contracts are
-   closed, plan one native mutation slice using paper 8's bounded fixture and
-   independent oracle. A complete accounting port is not needed for that proof.
+   mathematical/transaction proof. Its dated evidence remains unchanged.
+2. **Completed October 22:** whole-system review, API/tooling wireframes and
+   source-based scenario register. Paper 8 owns their status and decisions.
+3. **Bounded causal review completed:** [M3/M5](09-causal-settlement.md) defines
+   final-shape dependencies, moved private outputs, a valid diamond, identity and
+   rejection cases. A small Python research model checked nine source states and
+   all 36 valid orders; that packet did not change the Rust proof/runtime.
+4. **Checker contract and bounded native implementation completed:**
+   [M6](10-independent-checker.md) checked five valid synthetic images, 28 invalid
+   states and two incomplete observations. The [native plan](11-native-slice-plan.md)
+   fixes paper 8's M1/M2/M4 commands, exact state, conservative reverse discovery,
+   independent observations and rejection snapshots. [Paper 12](12-native-slice.md)
+   records all S1–S5 stages, 68 native cases / 93 operations and 13 passing Rust
+   tests. Typed staging, linked trees, fixed settlement and the real raw adapter
+   are implemented. Native M3/M5 discovery/detachment needs a separate contract;
+   ordered-result-dependent shape, required outputs and a complete accounting
+   port remain outside the accepted slice.
 5. **Distributed gate:** implement one adapter and verify reads, absence,
    uniqueness, reverse-discovery phantoms, unchanged-output guards and revocation.
    Reject oversized cascades without partial publication.

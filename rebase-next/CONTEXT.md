@@ -15,12 +15,19 @@ This review started at ReBase `e5d13b3`, which adds the isolated research to
 `a963b25`; MetaSol is a separate repository at `28c6e7f`. Both trees were clean.
 The prior GitHub/GitLab checks were October 21 observations, not a fresh pull.
 
+The M3/M5 continuation started clean at `947cc25`, the committed context/audit
+packet. It inspected the relevant current query/output sources without another
+whole-project audit. Its changes and new research model remain inside this folder.
+
 The October 22 request explicitly keeps work in **research, wireframes and
 scenario design before implementation planning**. The [system review](research/06-system-audit.md)
 maps documentation, hidden database responsibilities and past failures.
 [Contract wireframes](research/07-contract-wireframes.md) define the API/tooling
 seams, and the [research workflow](research/08-research-workflow.md) owns the
-current gates. Earlier “next: implement” wording is superseded.
+current gates. Earlier automatic “next: implement” wording is superseded. The
+subsequent M contracts supported a bounded implementation plan. The later user
+request authorized completing its S1–S5 stages autonomously; those stages are
+now accepted. Deferred capabilities remain outside that bounded experiment.
 
 ## Meaning to preserve
 
@@ -146,18 +153,69 @@ The [feasibility report](research/05-feasibility.md) records the executable Rust
 checks and their scope. Standard AVL balance, heap merge and identity mathematics
 are established algorithms; their proofs need no broad stress campaign here.
 Unusual complete-time summary composition and transactional staging receive
-focused checks against independent expectations. The October 22 review verified
-all 11 executable-source fingerprints and reused the dated results; it did not
-rerun or expand the proof. All 26 original repository source fingerprints match.
+focused checks against independent expectations. The initial October 22 review
+verified all 11 executable-source fingerprints and reused the dated results;
+that audit did not rerun or expand the proof. All 26 original repository source
+fingerprints matched at that audit. Native execution below has since changed
+the package.
 
 The [bounded reference fixture](research/08-research-workflow.md#2-the-bounded-reference-scenario)
 now specifies one source type, two memberships, a direct rule, dated quotes,
 exact expected values and a historical invariant. The scenario register covers
 API/tooling and future capabilities separately; its cases are not executed tests.
 
-Next research question: define the before/after causal graph for a moved prefix
-consumer combined with a required output (M3/M5), including a valid diamond and
-rejected feedback. Close the permitted key/bound changes before choosing its
-smallest executable model. Runtime implementation planning follows that review.
-Current SurrealDB acceptance and historical LMDB experiments remain source
-evidence, not Rust-runtime or distributed benchmarks.
+[M3/M5](research/09-causal-settlement.md) now defines the combined private-output
+prefix fixture, a diamond and rejected feedback. Shape is resolved from authored
+facts and acyclic direct-scalar inputs before ordered calculation. Old/new routes
+discover invalidated work; only the final graph determines causality. Detachment
+must cover affected managed outputs and pending predecessors, not just a moved
+record's own slots. Query identity survives coincident bounds and zero amounts.
+
+The bounded Python research model checked nine source states and all 36 valid
+orders against grouped source arithmetic and literal expectations. It preserved
+wrong-order and false-cycle counterexamples, logical inventory controls and
+lifecycle rejection predicates. At that stage all 11 Rust proof inputs matched;
+its suite was not rerun or expanded by M3/M5. This is not incremental, structural,
+authority, UUID-allocation or storage-rollback evidence. General topology driven
+by ordered results remains deferred.
+
+[M6](research/10-independent-checker.md) now defines expected source/role
+inventories separately from complete raw observation and actual tree walks.
+Required empty roots, duplicate identities and disconnected slots are explicit
+obligations; exact source scans check every subtree and publication. Valid
+alternate shapes pass. Five valid synthetic snapshots passed, 28 invalid-state
+controls rejected and two incomplete-scope/budget controls stayed incomplete.
+The checker reuses the unchanged M3/M5 source oracle. It does not implement a
+native writer, snapshot adapter, direct reverse routes or storage acceptance.
+
+The [M1/M2/M4 plan](research/11-native-slice-plan.md) fixes six source types,
+exact integer/UUID bindings, authored commands, separate record/root revisions,
+final quote uniqueness and reference deletion rules. It uses linked quote and
+financial trees with bounded point-owned reverse lists. A curve edit discovers
+all old/new subscribers; minimal interval invalidation is deferred. The plan
+separates independent expected state, real raw observation and all-key rejection
+snapshots. The [execution report](research/12-native-slice.md) now verifies those
+expectations against the actual native state.
+
+**S1–S5 complete:** 68 cases / 93 operations passed the independent checker:
+53 commits and 40 rejections. All source/role inventories, actual AVL links,
+subtree caches and publications matched. Each rejected operation preserved all
+application KV bytes; two controls aborted after actual writes. Old reads stayed
+unchanged across all operations and all 68 stores matched after reopening.
+Four valid checker controls, 20 corrupt images and two incomplete observations
+also behaved as required. Thirteen integrated Rust tests, formatting and Clippy
+passed. [Dated evidence](research/evidence/2026-10-22-native-slice.json) owns the
+source hashes, commands, counts and limits.
+
+The implementation is a fixed native calculation experiment with a toy actor,
+point-owned reverse lists and one embedded writer. The baseline has 33 KV rows.
+The original algebra/order/overlay and eight semantic tests are unchanged, but
+`Cargo.toml`, `Cargo.lock` and module exports changed; the original 11-input
+fingerprint claim is historical. Earlier evidence and Python programs remain
+unchanged. No original ReBase/MetaSol code or acceptance suite was modified/run.
+
+No work remains in this bounded goal. Native M3/M5 discovery/detachment and
+required outputs/prefix scheduling need their own implementation contract;
+general model loading, API/dev-tool expansion, principal DAGs, replay/effects
+and distributed storage retain paper 8's gates. Use the execution report and
+the affected gate for continuation; do not restart S1 or repeat the broad audit.

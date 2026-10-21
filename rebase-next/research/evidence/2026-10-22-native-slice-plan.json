@@ -1,0 +1,190 @@
+{
+  "format": "rebase-native-slice-planning-evidence",
+  "version": 1,
+  "date": "2026-10-22",
+  "phase": "bounded implementation planning",
+  "path_base": "Relative paths resolve from rebase-next.",
+  "repository_revision": "947cc25402444c48cc35a56c777339fb8c9f4f98",
+  "started_with_uncommitted_m3_m5_and_m6_packets": true,
+  "pending_m6_output_fingerprints_matched_at_start": 12,
+  "original_rust_proof_inputs_matched_at_start": 11,
+  "reviewed_sources": [
+    {
+      "source": "src/algebra.rs",
+      "scope": "Complete source; financial summary fields, exact arithmetic and time bounds.",
+      "sha256": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730"
+    },
+    {
+      "source": "src/plan.rs",
+      "scope": "Complete source; prepared field order and limits of local ordering.",
+      "sha256": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2"
+    },
+    {
+      "source": "src/staging.rs",
+      "scope": "Complete source; point overlay, original bytes and final dirty batch.",
+      "sha256": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8"
+    },
+    {
+      "source": "src/lib.rs",
+      "scope": "Complete source; existing module exports.",
+      "sha256": "23970fe5864800eb163dcf87d219d1f5c9f751eb397c1ef739ccd901c380285c"
+    },
+    {
+      "source": "examples/feasibility.rs",
+      "scope": "Complete source; redb snapshot, abort/reopen, point layout and output location.",
+      "sha256": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78"
+    },
+    {
+      "source": "examples/demo.json",
+      "scope": "Complete source; current strict binding and adversarial declaration names.",
+      "sha256": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e"
+    },
+    {
+      "source": "tests/semantics.rs",
+      "scope": "Relevant source through the arithmetic, order, overlay and start of conflict checks; no test execution.",
+      "sha256": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a"
+    },
+    {
+      "source": "Cargo.toml",
+      "scope": "Complete source; package and dependency placement.",
+      "sha256": "bb2eea34159d60026a8836b41786473491e6499a4209059f5d9741e00a393fcd"
+    },
+    {
+      "source": "Cargo.lock",
+      "scope": "Existing fingerprint plus targeted dependency entries; no dependency change.",
+      "sha256": "ee9cfd30856bffb22b4b28a337f0a1f9460bafbf0d3e0a326e4b76955479c9c3"
+    },
+    {
+      "source": "rust-toolchain.toml",
+      "scope": "Complete source; pinned toolchain and components.",
+      "sha256": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f"
+    },
+    {
+      "source": "research/experiments/m6.py",
+      "scope": "Source through verify plus symbol map; fixture-specific observations and reusable checking mechanics.",
+      "sha256": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e"
+    },
+    {
+      "source": "research/02-transactions-and-storage.md",
+      "scope": "Complete contract; attempts, final validation, read-your-writes and adapter scope.",
+      "sha256": "911c5ffe8f8067720245c35af0af9603885d21fc7e60d88cc42eca5e8fa00ece"
+    },
+    {
+      "source": "research/04-implementation.md",
+      "scope": "Complete pre-edit contract; module and stack boundaries.",
+      "sha256": "67828bf14adc9f2e59ef3efe97af60b49619175a1f56ea861acab137d61d5dcb"
+    },
+    {
+      "source": "research/07-contract-wireframes.md",
+      "scope": "Relevant lifecycle, exact values, command, version and query contracts.",
+      "sha256": "52d0687705120e5aaa1faa0afd96dde04f5e78ebe4dcfc822b302956dea2a440"
+    },
+    {
+      "source": "research/08-research-workflow.md",
+      "scope": "Current fixture, gate register and continuation before this packet.",
+      "sha256": "7455d3e76f949678496fe0d851da4b79bd93d4f98cf8b6dbc6d29227dcc50160"
+    },
+    {
+      "source": "research/10-independent-checker.md",
+      "scope": "Expected inventories, observation completeness and native adapter gap.",
+      "sha256": "7a9ef55e280f537280052e2d071e3067cd7bcf8af7f450223184ad4c967de9ad"
+    },
+    {
+      "source": "research/06-system-audit.md",
+      "scope": "Affected surfaces, past failures and decision boundary only; no whole-system reaudit.",
+      "sha256": "a743a51d329afddbf668cb6df78319cc39074a6bf8a4e86f5e2010b0b8e8ef99"
+    }
+  ],
+  "preserved_evidence": {
+    "research/feasibility.json": "6b4f40aa2a2b3f192769f57517a4532064a00f23cdfd8954613f810002170e3f",
+    "research/source-manifest.json": "4968a3ee7f730dee78a50b63012e2fa059bd4f9152532ade09cecc620fec245a",
+    "research/evidence/2026-10-22-context-audit.json": "5b83d952c9a977219e4185704c29ff8c17f9115e4c13fbc36382dc5dd4e1e018",
+    "research/evidence/2026-10-22-m3-m5.json": "fbb5ab0e56792d01e7b22c11347e7240837d36b25c9d0009583da7ea6967cf41",
+    "research/evidence/2026-10-22-m6.json": "0045152713421ecd4705ec650823ca382b621d09789b7fc5e08584de9b88f45f"
+  },
+  "unchanged_research_programs": {
+    "research/experiments/m3_m5.py": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800",
+    "research/experiments/m6.py": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e"
+  },
+  "result": {
+    "status": "implementation plan prepared; native acceptance not executed",
+    "plan": "research/11-native-slice-plan.md",
+    "next": "S1: independent native-fixture source oracle and observation format",
+    "planned_stages": [
+      "S1 expectations and observation format",
+      "S2 native values and one point workspace",
+      "S3 linked trees",
+      "S4 bounded M1/M2/M4 settlement",
+      "S5 redb acceptance and closure"
+    ],
+    "planned_baseline": {
+      "authored_records": 9,
+      "root_headers": 4,
+      "nodes": 6,
+      "queries": 2,
+      "authored_reference_entries": 10,
+      "direct_users": 2,
+      "curve_subscribers": 2,
+      "incoming_list_headers": 9,
+      "direct_list_headers": 1,
+      "subscriber_list_headers": 1,
+      "application_kv_rows": 33
+    },
+    "baseline_status": "Hand-derived plan expectations, not native results."
+  },
+  "validation": {
+    "status": "passed",
+    "documentation": {
+      "status": "passed",
+      "markdown_files": 15,
+      "local_links": 173,
+      "anchors": 16,
+      "json_examples": 1,
+      "scenario_groups": 22,
+      "unknown_scenario_references": [],
+      "errors": []
+    },
+    "original_rust_proof_inputs_matched_at_end": 11,
+    "preserved_evidence_files": 5,
+    "unchanged_research_programs": 2,
+    "git_diff_check_exit_code": 0,
+    "outside_next_changes": [],
+    "removed_preexisting_files": [],
+    "packet_changed_files": [
+      "CONTEXT.md",
+      "README.md",
+      "research/04-implementation.md",
+      "research/06-system-audit.md",
+      "research/08-research-workflow.md",
+      "research/09-causal-settlement.md",
+      "research/10-independent-checker.md",
+      "research/11-native-slice-plan.md",
+      "research/evidence/2026-10-22-native-slice-plan.json",
+      "research/sources.md"
+    ],
+    "packet_contains_only_documentation_and_evidence": true,
+    "manual_review": "Reviewed this packet's routing diff against its starting text, the concrete plan against inspected Rust/M6 contracts, the baseline inventory arithmetic, equal-rate and quote-swap expectations, and the final-state/version/rejection boundaries.",
+    "procedure": "Inline Python standard-library Markdown link/anchor/fence/JSON and scenario checks, Git whitespace/scope, unchanged proof/program/evidence fingerprints and packet-specific diff review. No behavioral suite rerun."
+  },
+  "behavioral_suites_rerun": [],
+  "not_claimed": [
+    "native mutation, tree writer or snapshot adapter implementation",
+    "M1/M2/M4 runtime acceptance",
+    "new execution of the unchanged Rust or Python research campaigns",
+    "minimal interval invalidation or staged range overlays",
+    "production API, principal DAG, receipts, effects or distributed correctness",
+    "throughput or capacity evidence"
+  ],
+  "fingerprint_note": "Reviewed-input hashes describe the packet-start sources. Output hashes describe the final planning documents. Prior dated evidence and both research programs are unchanged.",
+  "output_fingerprints": {
+    "CONTEXT.md": "e62aabe9779ab0915c53b73ec0f39605e14ec716ad1c1c9ff44f386c2c194917",
+    "README.md": "4fe4e5eae929e4d0cf650d96f1f46057bd4ea0df1cd26891563b4b7ec8ab159f",
+    "research/04-implementation.md": "e2ef8833aab6a076d50744962e652244f1cd2218b1fa980f9d48629cd9f475cb",
+    "research/06-system-audit.md": "8b32d16c10aec2435e2762e297ce9d112d361d4886f1fed50a2f31f3e5e0f1bb",
+    "research/08-research-workflow.md": "d612e76317e2fa2e47d98d4c61bb9ecb2f93aaeab1631a3e3598f84de0fc205b",
+    "research/09-causal-settlement.md": "3d5484afe1c4f771a17873eb5425cb2223ed5b0bf1ad09d686ef51b23cdb569b",
+    "research/10-independent-checker.md": "28f2abdf37be0ff8a6dd67917e6c15e77cda43a54ad1b86713a43e6934272ad3",
+    "research/11-native-slice-plan.md": "f42258a134542553989d521cab7c2cc378d1782c022c861f903087d32f231c36",
+    "research/sources.md": "f5ef6c77808a83a4083e6ba7d3e24f0ff9ec641750344777fce89b2afddede58"
+  }
+}

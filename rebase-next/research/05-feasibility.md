@@ -1,5 +1,11 @@
 # Rust feasibility and stop boundary
 
+**Current executable scope also includes the October 22 native M1/M2/M4
+experiment.** [Paper 12](12-native-slice.md) records its 68 cases / 93 operations,
+real linked trees, settlement, complete snapshots, abort/reopen results and
+13 passing integrated Rust tests. The sections below describe the earlier
+October 21 proof and the separate research packets; their limits are dated.
+
 **Executed locally on 2026-10-21.** This is a small semantic feasibility check.
 It confirms that mature Rust value/schema/storage libraries can support the chosen
 mechanics. It does not implement the complete proposed engine or measure speed.
@@ -52,8 +58,10 @@ AVL height bounds/rotation mechanics, heap-merge ordering, dictionary uniqueness
 UUID bit layouts and ordinary transactional atomicity already have established
 algorithms or mature implementations. The proof composes existing library
 infrastructure and tests only the semantic boundaries relevant to this redesign.
-Reimplementing a whole balanced tree or a complete accounting demo would not
-establish a new necessary fact for this task.
+Reproving those established algorithms was unnecessary for the October 21
+composition check. A later intrusive writer still needs focused link/rotation
+tests against source scans; the native slice now supplies those. A complete
+accounting demo remains a separate capability.
 
 ## Precise limits
 
@@ -82,11 +90,38 @@ establish a new necessary fact for this task.
 
 The meaningful conclusion is that **the core composition is feasible in Rust
 without another broad framework**. Full-runtime correctness and performance are
-separate questions. On October 22 all 11 executable-source fingerprints still
-matched; the recorded checks above were reused, not rerun. The
+separate questions. At the initial October 22 audit all 11 executable-source
+fingerprints matched; the recorded checks above were reused, not rerun. The
 [context audit](evidence/2026-10-22-context-audit.json) records that distinction.
 
-The latest request keeps continuation in research and wireframes. The
-[scenario/gate register](08-research-workflow.md) now owns the next boundary;
-the earlier proposal to start implementing a mutation slice is conditional on
-that contract review. No new runtime capability is established by these papers.
+The initial October 22 request required research and wireframes before planning.
+The [scenario/gate register](08-research-workflow.md) owns those boundaries.
+After the contracts and plan were ready, the user authorized autonomous S1–S5
+completion; the resulting native capability is documented separately in paper 12.
+
+The subsequent [M3/M5 research model](09-causal-settlement.md) is a separate
+standard-library Python experiment: nine source states and all 36 valid orders
+of five fixed calculation steps, checked against independent grouped arithmetic
+and literal expectations. It checks logical output/query identity and rejection
+predicates, not incremental repair, AVL structure, storage rollback, permissions
+or UUID allocation. Its [evidence](evidence/2026-10-22-m3-m5.json) fingerprints the
+new input. All 11 original Rust inputs matched at that stage and its tests were
+not rerun by that packet; M3/M5 did not expand Rust executable scope.
+
+[M6](10-independent-checker.md) adds a separate synthetic-snapshot checker,
+reusing that Python source oracle without rerunning the 36-order campaign.
+Five valid images passed, all 28 invalid-state controls rejected with their
+expected obligation, and partial scope/budget exhaustion produced incomplete
+results. Alternate balanced shapes are accepted; raw inventories, exact subtree
+scans, interval endpoints and corrupt links are checked. The
+[new evidence](evidence/2026-10-22-m6.json) records this bounded scope. It tests no
+native tree writer, real snapshot export, direct reverse routes or storage
+repair, and does not expand or rerun the original Rust executable proof.
+
+The subsequent native packet changes `Cargo.toml`, `Cargo.lock` and `src/lib.rs`
+and adds the fixed implementation. Its integrated suite reruns the eight existing
+semantic tests alongside five new tests; the old feasibility example was not
+rerun. The [new evidence](evidence/2026-10-22-native-slice.json) fingerprints the
+current sources and explicitly retains the earlier evidence unchanged. The
+native writer/real snapshot acceptance gap is closed for its simpler fixture;
+M3/M5 lifecycle, public API and distributed acceptance remain separate gates.
