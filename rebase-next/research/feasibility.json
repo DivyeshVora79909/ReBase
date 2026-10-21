@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-21",
+  "scope": "Small semantic proof and real embedded point-staging example, not a complete runtime or distributed adapter",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "results": [
+    {
+      "command": "cargo test --locked",
+      "exit_code": 0,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 8 tests\ntest declaration_order_never_overrides_actual_field_dependencies ... ok\ntest conflict_set_counterexample_requires_a_tracked_guard_read ... ok\ntest linear_guard_needs_a_shared_difference_measure_and_historical_extrema ... ok\ntest exact_algebra_rejects_overflow_and_reversed_segments ... ok\ntest merge_preserves_authorized_order_ties_and_budgeted_existence ... ok\ntest complete_time_summary_matches_scan_at_every_split_and_grouping ... ok\ntest scalar_reader_preserves_first_incomparable_choice_and_owner_fallback ... ok\ntest point_overlay_coalesces_patches_preserves_absence_and_drops_no_ops ... ok\n\ntest result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+      "stderr": "   Compiling rebase-semantic-proof v0.1.0 (/home/divyeshvora/javascript/node/projects/ReBase/rebase-next)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s\n     Running unittests src/lib.rs (target/debug/deps/rebase_semantic_proof-32e17ff78ef845e6)\n     Running tests/semantics.rs (target/debug/deps/semantics-7ca270e7c9cb7128)\n   Doc-tests rebase_semantic_proof\n"
+    },
+    {
+      "command": "cargo run --locked --example feasibility",
+      "exit_code": 0,
+      "stdout": "{\n  \"amount_minor_units\": 600,\n  \"field_order\": [\n    \"quantity\",\n    \"unit_price\",\n    \"z_price_units\",\n    \"a_amount\"\n  ],\n  \"final_dirty_keys\": 5,\n  \"passed\": [\n    \"reused strict JSON Schema\",\n    \"exact string input and nanosecond binding\",\n    \"dependency order\",\n    \"one fact with two separately stored slots\",\n    \"read your writes\",\n    \"coalesced final writes\",\n    \"old snapshot isolation\",\n    \"atomic abort\",\n    \"durable reopen\"\n  ],\n  \"scope\": \"single-leaf embedded staging proof; no full tree/dependency/authorization runtime\",\n  \"snapshot_key_loads\": 5,\n  \"staged_patches\": 10\n}\n",
+      "stderr": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s\n     Running `target/debug/examples/feasibility`\n"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "cargo clippy --all-targets --locked -- -D warnings",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s\n"
+    }
+  ],
+  "source_fingerprints": {
+    "Cargo.lock": "ee9cfd30856bffb22b4b28a337f0a1f9460bafbf0d3e0a326e4b76955479c9c3",
+    "Cargo.toml": "bb2eea34159d60026a8836b41786473491e6499a4209059f5d9741e00a393fcd",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/lib.rs": "23970fe5864800eb163dcf87d219d1f5c9f751eb397c1ef739ccd901c380285c",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a"
+  },
+  "not_exercised": [
+    "persistent multi-node AVL",
+    "cross-record reactive settlement",
+    "authorization graph maintenance and cryptographic verification",
+    "staged ranges and predicate guards",
+    "distributed adapters/concurrent schedules",
+    "RPC/effect delivery",
+    "performance benchmarks"
+  ]
+}

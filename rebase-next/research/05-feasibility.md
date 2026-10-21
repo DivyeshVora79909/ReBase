@@ -1,0 +1,87 @@
+# Rust feasibility and stop boundary
+
+**Executed locally on 2026-10-21.** This is a small semantic feasibility check.
+It confirms that mature Rust value/schema/storage libraries can support the chosen
+mechanics. It does not implement the complete proposed engine or measure speed.
+Exact command output and fingerprints are retained in [feasibility.json](feasibility.json).
+
+## What ran
+
+From `rebase-next/`, with the local Rust 1.95.0 toolchain and locked dependencies:
+
+```sh
+cargo test --locked
+cargo run --locked --example feasibility
+cargo fmt --all -- --check
+cargo clippy --all-targets --locked -- -D warnings
+```
+
+Eight semantic tests passed, and the embedded example completed successfully.
+The JSON Schema validator uses explicit format checking and offline reference
+resolution. The example uses a real disposable redb database with its default
+durability; it creates no persistent application database or network service.
+
+## Facts checked
+
+| Question | Evidence |
+| --- | --- |
+| Can the unusual complete-time summary survive regrouping? | Seven short histories, all three-segment split pairs and both parenthesizations agree with a separate raw scan that groups equal timestamps. Includes absent channels, real deficits and simultaneous cancellation. |
+| Are historical guards different from final totals? | A positive final difference of `5` has a complete-time minimum of `-5`; independent minima return `0` and miss that violation. |
+| Do exact values reject overflow? | Checked `i128` addition rejects overflow; reversed segments reject. Ordered combination is noncommutative. |
+| Can declarations resolve actual dependency order? | A consumer with an alphabetically earlier name is evaluated after its source. Unknown inputs, duplicate fields and cycles reject. |
+| Is the reader fold deterministic? | Descendants replace ancestors, incomparable candidates retain first declaration order, and empty candidates use owner fallback. |
+| Can ordered partition merging remain bounded? | A standard `BinaryHeap` merges two authorized, disjoint sorted streams with ties; pagination matches independent sort order. Sparse existence is unknown at budget exhaustion, yes after continuation, and no only on full exhaustion. |
+| Can staging avoid repeated persistence? | Five snapshot key loads, ten staged patches and five final dirty keys; staged reads see the final source. No-op creation/deletion and cached absence are tested. |
+| Does real storage isolate/abort the staged result? | An old redb snapshot stays empty; a new snapshot sees source/two slots/two root summaries together. Aborting a later invalid mutation restores the entire original keyspace. Committed bytes survive close/reopen. |
+| Can JSON Schema and exact transport compose? | The reusable Draft-2020-12 validator accepts the typed demo, rejects a floating price, an unknown calculated field and a malformed UUID. String price/nanoseconds bind into native exact integers. |
+| Does a shared blind write suffice across isolation models? | A tiny conflict-set counterexample illustrates ordinary SI write skew and FoundationDB-style read/write conflict coverage. This is a mathematical model, not an executed distributed adapter test. |
+
+The demo's final derived amount is **600 minor units**, from quantity `3` and
+price `2.00`. Its five dirty keys are one fact, two separately addressed member
+slots and two published root summaries. Slots retain source identity; roots use
+explicit owner/slot addressing. The demo uses fixed well-formed UUIDs; it does not
+test random ID generation or collision probability.
+
+The byte overlay demonstrates persistence coalescing. It encodes each staged
+patch for clarity; the proposed production workspace should keep typed nodes and
+encode final dirty values once. The proof is not a throughput-optimized workspace.
+
+## What does not need a new implementation here
+
+AVL height bounds/rotation mechanics, heap-merge ordering, dictionary uniqueness,
+UUID bit layouts and ordinary transactional atomicity already have established
+algorithms or mature implementations. The proof composes existing library
+infrastructure and tests only the semantic boundaries relevant to this redesign.
+Reimplementing a whole balanced tree or a complete accounting demo would not
+establish a new necessary fact for this task.
+
+## Precise limits
+
+- Root publications in the example each contain one leaf. There is no persistent
+  AVL insertion/deletion, rank/range traversal or interval reverse index.
+- The ordering test prepares local declared fields. There is no complete cross-record
+  scheduler, historical move settlement, required-output lifecycle or feedback detector.
+- Reader choice is a pure fold over a supplied dominance relation. There is no
+  implemented principal DAG, closure repair, token verifier, revocation race or
+  production authorized query planner.
+- Merge streams are sorted slices, not distributed iterators. The proof supplies
+  authorized partitions upstream and does not prove candidate scope completeness,
+  snapshot pagination or arbitrary overlapping-root deduplication.
+- The overlay provides point reads only. No staged range merge, predicate/phantom
+  protection or backend-independent guard implementation has been exercised.
+- redb normally serializes writers. Its result does not prove FoundationDB/TiKV
+  conformance, distributed latency, root contention or multiwriter retry behavior.
+- The summary uses one numeric channel and ordered `i64` keys. General composite
+  comparators, decimal conversions/rounding, dynamic scales/tags and timestamp
+  ranges require their own concrete implementation choices.
+- The algebra is associative over integers. Checked fixed-width operations can
+  reject a grouping with an overflowing intermediate sum; production needs a
+  safe declared range or wider exact arithmetic. No wraparound is permitted.
+- No RPC server, external effects, durable worker recovery, migration, UI port or
+  performance benchmark is implemented. Historical ReBase tests were not rerun.
+
+The meaningful conclusion is that **the core composition is feasible in Rust
+without another broad framework**. Full-runtime correctness and performance are
+next-slice questions. The next boundary is the single mutation slice in
+[04-implementation.md](04-implementation.md#7-next-steps-and-stop-conditions),
+not a wholesale backend replacement.

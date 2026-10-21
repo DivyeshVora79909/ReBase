@@ -1,0 +1,237 @@
+{
+  "date": "2026-10-21",
+  "root_revision": "a963b2554c4596922926c7a8cfb0fa881c697c68",
+  "frontend_revision": "28c6e7f375838d05667bd08d29d2da3626f8fc89",
+  "authority_order": [
+    "latest direct user request and appended user corrections",
+    "current implementation contracts and code",
+    "original user discussion",
+    "historical memory and assistant proposals"
+  ],
+  "sources": [
+    {
+      "source": "/home/divyeshvora/.codex/attachments/819aa252-56c9-439f-a76a-a12f7b64463f/Pasted text.txt",
+      "kind": "attached discussion",
+      "bytes": 264513,
+      "lines": 5669,
+      "sha256": "5056832017a9fb41c849bc70bfa6d783c8ab21a8b5c2047b0f6bc5e12aee0f45"
+    },
+    {
+      "source": "/home/divyeshvora/Downloads/ChatGPT-Full Stack Frameworks Compared-20261021-1244.txt",
+      "kind": "original chat export",
+      "bytes": 175198,
+      "lines": 4482,
+      "sha256": "1bda931bd50bca3f9a65cce9c039baf0a28af0d8023bc29872ab902b5d2fce95"
+    },
+    {
+      "source": "../README.md",
+      "kind": "current repository",
+      "bytes": 16249,
+      "lines": 301,
+      "sha256": "c95c8f5d51a1681ed867189bc7bc6e9dfdce631ddaa68a5e1a980ed6d1746adf"
+    },
+    {
+      "source": "../designs/rebase-system/developer-blueprint.md",
+      "kind": "current repository",
+      "bytes": 18541,
+      "lines": 319,
+      "sha256": "9594e918d175c8515a5a9d325aab0b913756c81f2c7e7f36b9add0de9bde31cb"
+    },
+    {
+      "source": "../designs/rebase-system/ordered-tree-contract.md",
+      "kind": "current repository",
+      "bytes": 13667,
+      "lines": 240,
+      "sha256": "5f93f34b041dc5c531d116c996020ba2fdbd5b88f8e0cabf12a551919444c557"
+    },
+    {
+      "source": "../designs/rebase-system/function-reactivity.md",
+      "kind": "current repository",
+      "bytes": 9671,
+      "lines": 173,
+      "sha256": "940bce55f2f2b19c837134d8e724533897586efdb825f21e909dce1da33151f3"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-plan.md",
+      "kind": "current repository",
+      "bytes": 14878,
+      "lines": 247,
+      "sha256": "71e6c1966aababf1b80fda62d3b96432b9f8e3177ba482c7bc1438343a0be48a"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-verification.md",
+      "kind": "current repository",
+      "bytes": 8466,
+      "lines": 140,
+      "sha256": "91df0a84c4eb59dcb944993494f0f1382fbe46ce3094b32f0e6da6f996ed878c"
+    },
+    {
+      "source": "../designs/rebase-system/tenant-authentication.md",
+      "kind": "current repository",
+      "bytes": 15427,
+      "lines": 263,
+      "sha256": "7b429ca5ae380d4ab34964f07cbe788e4795a8d94e21e32504b04593a5664fea"
+    },
+    {
+      "source": "../designs/rebase-system/operations.md",
+      "kind": "current repository",
+      "bytes": 30228,
+      "lines": 481,
+      "sha256": "cabb1325f70e6e2c42cdd3d244258ee533ae788aa0cb9f9ebff761214223f910"
+    },
+    {
+      "source": "../designs/rebase-system/core-configuration.md",
+      "kind": "current repository",
+      "bytes": 17642,
+      "lines": 270,
+      "sha256": "7f56936ea79f05e592c58edd652c6c9368a2fd0b6fdbb854aa22fda371a38338"
+    },
+    {
+      "source": "../designs/all-in-accounting/blueprint.md",
+      "kind": "current repository",
+      "bytes": 1438,
+      "lines": 24,
+      "sha256": "fae53641798175c025042336a3046d5bfcb8a74098d84bde1d0e0baa038ab22d"
+    },
+    {
+      "source": "../designs/all-in-accounting/context-map.md",
+      "kind": "current repository",
+      "bytes": 2625,
+      "lines": 32,
+      "sha256": "bb9e41fd7fc635300b0994975eb62734151ee9c67d655fce2f5f56aeec75a584"
+    },
+    {
+      "source": "../designs/frontend/architecture.md",
+      "kind": "current repository",
+      "bytes": 6869,
+      "lines": 115,
+      "sha256": "11524013e4daf97c07f1d9a81998c25e37b0efdee2255c4043e77f50368c3f20"
+    },
+    {
+      "source": "../designs/frontend/redesign-2026-10-18.md",
+      "kind": "current repository",
+      "bytes": 5066,
+      "lines": 70,
+      "sha256": "19962128b3f3da895348b45f23e6b90d92645d562358353e4af39492ee4f6c3f"
+    },
+    {
+      "source": "../dev-tools/compiler/catalog.js",
+      "kind": "current repository",
+      "bytes": 7816,
+      "lines": 154,
+      "sha256": "8846bed851a64fb31c85e00ef3311e0fbb9e7a98105232b6e0f8d254c31873de"
+    },
+    {
+      "source": "../dev-tools/compiler/temporal.surql",
+      "kind": "current repository",
+      "bytes": 48612,
+      "lines": 821,
+      "sha256": "9d02356f411ddee2f2de69e5c589a9917d164a1991f05d598f98e99e4ea50808"
+    },
+    {
+      "source": "../dev-tools/compiler/generators/security.js",
+      "kind": "current repository",
+      "bytes": 8834,
+      "lines": 143,
+      "sha256": "348b5ea30458790dd7b78d435647b461f509cd63b6171018f0752d242679fd6a"
+    },
+    {
+      "source": "../dev-tools/compiler/generators/temporal.js",
+      "kind": "current repository",
+      "bytes": 23977,
+      "lines": 390,
+      "sha256": "8b35dc95aafd03624faa315e7ba69b671ea7cd409748f78581b931d8075f3081"
+    },
+    {
+      "source": "../dev-tools/compiler/security-policy.js",
+      "kind": "current repository",
+      "bytes": 999,
+      "lines": 25,
+      "sha256": "8c3086e0ef152b7d73e749cf915bdd082917e846b08828e94cb3a23befdc6176"
+    },
+    {
+      "source": "../framework/auth.surql",
+      "kind": "current repository",
+      "bytes": 16730,
+      "lines": 280,
+      "sha256": "21e1953aa298d9f59894ad5b949dee39bb85cd79ae15e9602b0b2c13f34aa732"
+    },
+    {
+      "source": "../dev-tools/fixtures/model.js",
+      "kind": "current repository",
+      "bytes": 15155,
+      "lines": 299,
+      "sha256": "290cc42b416f80d24c649342debf33e47ce80397e70d96ac1e0a2508c520358e"
+    },
+    {
+      "source": "../dev-tools/fixtures/run.js",
+      "kind": "current repository",
+      "bytes": 2246,
+      "lines": 40,
+      "sha256": "1c11d6050205cb4bb83c77014464e73dc3d4be877874d4707bf27eabf782b44c"
+    },
+    {
+      "source": "../dev-tools/inspector/layouts.js",
+      "kind": "current repository",
+      "bytes": 2441,
+      "lines": 53,
+      "sha256": "a12140f1ddd79e1b6691968964dde303c9a2ea11c94fbdbe3ca9e1370a56214c"
+    },
+    {
+      "source": "../dev-tools/inspector/build.js",
+      "kind": "current repository",
+      "bytes": 1175,
+      "lines": 23,
+      "sha256": "da85fee00878720fcad777ef6fc56c60dc50094fe64b68fe4b51c9d5d22a1bd2"
+    },
+    {
+      "source": "../dev-tools/experiments/authorization-stress/paging.js",
+      "kind": "current repository",
+      "bytes": 6842,
+      "lines": 131,
+      "sha256": "ca9963e67e6f7ff1c13c8dc5c921ea40565f612beeb656dd8826ca54c9b85c11"
+    },
+    {
+      "source": "../research/rebase/authorization-stress-results.md",
+      "kind": "current repository",
+      "bytes": 16034,
+      "lines": 271,
+      "sha256": "36070005837b06d39e964fd79da4b19c87c67804d3b25dc6ef56a5338517c23a"
+    },
+    {
+      "source": "../MetaSol/src/data/writes.js",
+      "kind": "current repository",
+      "bytes": 8903,
+      "lines": 156,
+      "sha256": "7510da12f9dd16c5bc76101bde598e823f6828ea69ee7d13a2af890bed4d8f9c"
+    },
+    {
+      "source": "memory:MEMORY.md",
+      "kind": "historical routing and preferences",
+      "bytes": 54155,
+      "lines": 510,
+      "sha256": "9e92e6ad8776c8538847d064855f0abbd293227d83a4813dcff03de6ba6c17d4"
+    },
+    {
+      "source": "memory:rollout_summaries/2026-10-13T11-10-43-T9V1-rebase_subsidiary_accounting_temporal_reactivity_redesign.md",
+      "kind": "historical routing and preferences",
+      "bytes": 9857,
+      "lines": 115,
+      "sha256": "6a1f7cfc1ddcb68892d2fc86c0b69e9988fcd66a8f13d8849b427de4ce39c1bf"
+    },
+    {
+      "source": "memory:rollout_summaries/2026-09-27T13-34-32-HPBP-rust_rank_range_skip_cache_benchmark.md",
+      "kind": "historical routing and preferences",
+      "bytes": 4677,
+      "lines": 67,
+      "sha256": "ac3ba0ee8f693f0688e6ef470a25c72f94c36001cebf2088b98b6c3279a5698b"
+    },
+    {
+      "source": "memory:rollout_summaries/2026-09-26T02-06-59-qUK0-simplify_metasol_to_minimal_javascript_starter.md",
+      "kind": "historical routing and preferences",
+      "bytes": 3155,
+      "lines": 45,
+      "sha256": "4f3858933298003fc34d75fbbbc41d54559047950ebc8c1f0d511afea4863610"
+    }
+  ]
+}
