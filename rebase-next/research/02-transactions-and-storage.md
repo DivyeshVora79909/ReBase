@@ -158,6 +158,20 @@ contract. PostgreSQL could supply a byte-record table and suitable isolation, bu
 that adapter also needs conformance; SurrealDB is a complete query system rather
 than a public interchangeable raw KV interface.
 
+Read-only operations need their own authority-time contract. A read can be
+authorized consistently with its snapshot without conflicting with a later
+revocation. FoundationDB read-only transactions do not commit and never conflict.
+The [wireframe](07-contract-wireframes.md#6-authority-has-a-time-boundary) chooses
+snapshot authorization for reads and protected commit validation for writes;
+neither promises to retract an already in-flight response. Also acquire a
+tracked guard read before a local write could mask its conflict obligation.
+
+Model/codec identity is part of the protected write context. The initial
+[model lifecycle](07-contract-wireframes.md#2-model-and-artifact-lifecycle)
+allows same-model reopen and rejects a changed model on populated storage.
+“No legacy migration” does not permit an old process to reinterpret or write
+records using a different codebook or comparator.
+
 ## 6. Retry, unknown outcomes and limits
 
 On a confirmed conflict, discard the snapshot, calculated patches and request

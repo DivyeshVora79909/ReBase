@@ -73,6 +73,11 @@ Nanosecond time boundaries and decimal comparisons cannot pass through JavaScrip
 floating-point values. A pure time root supplies chronological constraints; a
 composite partitioned root supplies lexicographic constraints inside its partition.
 
+The new [wireframe](07-contract-wireframes.md#5-queries-order-scope-and-budget)
+proposes typed boundaries before/after a prefix for inclusive-time and composite
+queries. Do not implement an upper boundary by incrementing the maximum timestamp
+or inventing a greatest UUID/string. Exact boundary encoding is a research gate.
+
 Coincident business contributions from one source/root/key may be coalesced when
 the declaration means one net fact. Choose a stable declared representative slot.
 Independent occurrences remain distinct. Query dependencies and interval slots

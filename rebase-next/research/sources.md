@@ -5,6 +5,35 @@ byte size, line count and revisions for the supplied discussion, export, relevan
 repository files and historical memory references. Files were inspected by topic;
 the manifest does not certify existing runtime behavior.
 
+## October 22 continuation
+
+The original manifest and executable evidence remain historical records.
+The [new audit manifest](evidence/2026-10-22-context-audit.json) records this
+review's source coverage and unchanged-proof verification. Start with the
+[system map](06-system-audit.md) for current routing and known stale paragraphs.
+
+The newly supplied discussion at
+`/home/divyeshvora/.codex/attachments/122d5863-86ae-4960-a4ed-c1f3074a9760/Pasted text.txt`
+has exactly the original attachment's bytes/hash. The second attachment at
+`/home/divyeshvora/.codex/attachments/87730ad0-666f-42ec-93f3-75e433aecc4e/Pasted text.txt`
+is 142,353 bytes / 1,689 lines, SHA-256
+`3af127762ae82f0c214cdc405fb48beec4b3d7a26d3fcd5af532236dad804e53`.
+It supplies inspector history and the previous research execution through
+`e5d13b3`; its repeated prompts/tool calls are not a new task queue.
+
+The latest direct request controls the phase: rebuild global context, learn
+from failures, patch research and prepare scenario wireframes inside the
+decoupled directory before implementation planning. The
+[workflow](08-research-workflow.md) replaces prior automatic runtime-next steps.
+All 26 original repository-source fingerprints and all 11 proof-input hashes
+were checked unchanged. Git/MetaSol state and additional API/tooling seams were
+inspected; old acceptance suites were not rerun.
+
+One targeted external refresh checked the FoundationDB developer guide's
+[conflict semantics](https://apple.github.io/foundationdb/developer-guide.html#how-foundationdb-detects-conflicts)
+for the authority-time clarification in paper 7. This was not a storage/version
+selection campaign or an executed distributed-adapter experiment.
+
 ## Supplied context
 
 The attached file is
@@ -19,7 +48,7 @@ The IDE's Downloads export is 175,198 bytes, SHA-256
 `1bda931bd50bca3f9a65cce9c039baf0a28af0d8023bc29872ab902b5d2fce95`.
 It ends after the original proposal. It is not byte-identical to the attachment;
 the appended corrections are essential, particularly the restoration of `read_by`.
-The current direct request adds the compact reference, independent directory,
+The October 21 direct request added the compact reference, independent directory,
 small mathematical Rust check and limited testing scope.
 
 The earlier conversation in this IDE supplies additional intent: common dev tools

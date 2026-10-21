@@ -1,4 +1,4 @@
-# Compact context — 2026-10-21
+# Compact context — 2026-10-22
 
 ## Purpose and authority
 
@@ -11,8 +11,16 @@ that prevent maintenance changes from spreading across unrelated components.
 The latest user corrections in the attachment take precedence over earlier
 suggestions. Current source takes precedence over historical agent reports.
 Sources, fingerprints and topic locations are in [sources.md](research/sources.md).
-The baseline is ReBase `a963b25`; MetaSol is a separate repository at `28c6e7f`.
-GitHub was checked and already current. GitLab pull failed for missing credentials.
+This review started at ReBase `e5d13b3`, which adds the isolated research to
+`a963b25`; MetaSol is a separate repository at `28c6e7f`. Both trees were clean.
+The prior GitHub/GitLab checks were October 21 observations, not a fresh pull.
+
+The October 22 request explicitly keeps work in **research, wireframes and
+scenario design before implementation planning**. The [system review](research/06-system-audit.md)
+maps documentation, hidden database responsibilities and past failures.
+[Contract wireframes](research/07-contract-wireframes.md) define the API/tooling
+seams, and the [research workflow](research/08-research-workflow.md) owns the
+current gates. Earlier “next: implement” wording is superseded.
 
 ## Meaning to preserve
 
@@ -56,9 +64,10 @@ GitHub was checked and already current. GitLab pull failed for missing credentia
 11. **Effects have durable intent.** External delivery follows commit. Inline
     waiting and background dispatch can share the same intent/lifecycle; a due
     time supplies one-shot scheduling. Pure signing grants are a separate case.
-12. **Declarations serve tools too.** Publish input schemas and operation
-    contracts; derive inspection metadata and supported access paths from the same
-    loaded model. Keep fixture recipes and appearance/workflow choices explicit.
+12. **Declarations serve tools too.** Derive separate public contracts and full
+    developer metadata from one loaded model. Private source/roles do not become
+    public through a UI toggle. Keep fixture recipes and appearance/workflow
+    choices explicit; bind artifacts and persisted state to model/codec identity.
 
 ## Corrections already resolved by the discussion and contracts
 
@@ -73,8 +82,11 @@ GitHub was checked and already current. GitLab pull failed for missing credentia
 | Shared blind write normalizes OCC | A portable guard must have a defined conflict contract, normally a tracked read plus changed write. FoundationDB does not reject concurrent blind writes solely for sharing a key. |
 | Stateless token includes a wrapper | Token proves identity and may narrow capabilities. Server-owned plans enforce current authority. Client wrappers cannot enforce a boundary. |
 | Request cache solves every revocation issue | Read current permissions in each attempt; protect those reads against concurrent edits. Session revocation remains a separate policy. |
+| Fresh authority cancels any overlapping response | Read authorization has a snapshot boundary. FoundationDB read-only transactions do not commit/conflict; response-time revocation needs a separate protocol. |
 | Owner partitions cover all reads | False when `read_by != owned_by`. Retain reader partitioning or another complete reader candidate source. |
 | K-way merge everywhere | Use it only for several streams sharing the same full order. A single root needs one traversal. |
+| A page limit bounds the whole query | Scope discovery and opening K streams require their own budget. An incomplete scope cannot establish a globally first page or exhausted search. |
+| Unchanged index key means unchanged query | Residual-filter/projection or policy changes can invalidate a page without a rekey; cursor revisions must cover their promised consistency scope. |
 | UUID includes tenant/owner/hierarchy | Keep mutable relationships out of canonical identity. Store a schema code and relations in the record/header; roots provide partitions. |
 | Deterministic short hash means unique code | A persisted explicit codebook supplies stable uniqueness. A seed cannot losslessly compress arbitrary growing identities. |
 | JSON is necessarily the bottleneck | Parse/validate at ingress, compute using native values and encode at egress/persistence. Profile before claiming a dominant cost. |
@@ -82,11 +94,16 @@ GitHub was checked and already current. GitLab pull failed for missing credentia
 
 ## Proposed smallest architecture
 
-Use one Cargo package and ordinary modules. One loaded design combines unchanged
+Use one Cargo package and ordinary modules. One loaded design combines authored
 JSON Schemas with separate declarations for references, memberships, queries,
 invariants and exposed operations. Ordinary trusted Rust functions supply behavior.
 Do not invent a general query language, dependency capture framework, universal
 middleware DSL or one package per feature.
+
+Publish the new model's authored schemas unchanged from that model, but do not
+assume today's schemas transfer byte-for-byte: current reference patterns contain
+SurrealDB table prefixes. UUID-only transport requires an explicit contract edit,
+while typed target obligations remain in the declarations.
 
 Rust is the recommended execution core; Serde and `serde_json` handle values;
 `jsonschema` compiles reusable validators. `jsonrpsee` plus Tokio can host the
@@ -129,11 +146,18 @@ The [feasibility report](research/05-feasibility.md) records the executable Rust
 checks and their scope. Standard AVL balance, heap merge and identity mathematics
 are established algorithms; their proofs need no broad stress campaign here.
 Unusual complete-time summary composition and transactional staging receive
-focused checks against independent expectations.
+focused checks against independent expectations. The October 22 review verified
+all 11 executable-source fingerprints and reused the dated results; it did not
+rerun or expand the proof. All 26 original repository source fingerprints match.
 
-Next: implement **one** runtime mutation slice with a source, two memberships,
-one direct dependency, one dated query and one invariant. Compare settled state
-and bounded work against source recomputation. Add a distributed adapter only
-after protecting reads, absences and reverse-discovery predicates correctly.
-Performance claims require profiling this slice; current SurrealDB acceptance
-and historical LMDB experiments are source evidence, not Rust-runtime benchmarks.
+The [bounded reference fixture](research/08-research-workflow.md#2-the-bounded-reference-scenario)
+now specifies one source type, two memberships, a direct rule, dated quotes,
+exact expected values and a historical invariant. The scenario register covers
+API/tooling and future capabilities separately; its cases are not executed tests.
+
+Next research question: define the before/after causal graph for a moved prefix
+consumer combined with a required output (M3/M5), including a valid diamond and
+rejected feedback. Close the permitted key/bound changes before choosing its
+smallest executable model. Runtime implementation planning follows that review.
+Current SurrealDB acceptance and historical LMDB experiments remain source
+evidence, not Rust-runtime or distributed benchmarks.

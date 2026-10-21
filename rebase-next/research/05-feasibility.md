@@ -82,6 +82,11 @@ establish a new necessary fact for this task.
 
 The meaningful conclusion is that **the core composition is feasible in Rust
 without another broad framework**. Full-runtime correctness and performance are
-next-slice questions. The next boundary is the single mutation slice in
-[04-implementation.md](04-implementation.md#7-next-steps-and-stop-conditions),
-not a wholesale backend replacement.
+separate questions. On October 22 all 11 executable-source fingerprints still
+matched; the recorded checks above were reused, not rerun. The
+[context audit](evidence/2026-10-22-context-audit.json) records that distinction.
+
+The latest request keeps continuation in research and wireframes. The
+[scenario/gate register](08-research-workflow.md) now owns the next boundary;
+the earlier proposal to start implementing a mutation slice is conditional on
+that contract review. No new runtime capability is established by these papers.

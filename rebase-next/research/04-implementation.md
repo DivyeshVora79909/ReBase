@@ -3,6 +3,11 @@
 **Status:** recommended direction, 2026-10-21. This is a stack decision proposal
 and implementation boundary, not a commitment to implement every listed feature.
 
+**October 22 continuation:** implementation planning is gated by the current
+[research workflow](08-research-workflow.md). The [system review](06-system-audit.md)
+maps affected existing tools/APIs; [contract wireframes](07-contract-wireframes.md)
+define the missing boundaries. Stack recommendations below remain proposals.
+
 ## 1. Optimize what must be maintained
 
 The primary cost is complex behavior owned by the project, not dependency count
@@ -69,6 +74,12 @@ design/
   fixtures/           # optional design-owned input recipes/defaults
 ```
 
+Reuse schema validation rules where their wire meaning matches. Current public
+reference patterns include table-prefixed SurrealDB IDs (for example,
+`account_entry.account`); switching to UUID-only references requires authored
+schema/binding changes. “Unchanged schemas” means export the selected model's
+schema faithfully, not promise byte-for-byte compatibility with the old API.
+
 This is a suggested authoring shape, not a new interpreted language. The proof
 uses one inline demo file to avoid establishing folders before concrete reuse.
 Behavior is built/deployed with the application; hot-loading arbitrary executable
@@ -109,6 +120,12 @@ where representable, and inspector metadata from that loaded model. Publish no
 credentials, backend keys or executable privileged behavior. Keep source/rule
 locations for explanation. Client validation improves feedback; the runtime
 remains authoritative.
+
+Produce distinct public and developer projections. The full authoring catalog
+can describe private roles and source; that does not make it suitable for a
+client-facing endpoint. JSON Schema `readOnly`/`default` annotations do not
+enforce authority or install defaults. Model/store activation and stale artifact
+handling follow the [lifecycle wireframe](07-contract-wireframes.md#2-model-and-artifact-lifecycle).
 
 ## 4. Identity and encoding
 
@@ -208,19 +225,23 @@ There is no reason to build a frontend server merely to view a static catalog.
 
 ## 7. Next steps and stop conditions
 
-1. **This task:** recover meaning, identify counterexamples/boundaries, run the
-   small mathematical/transaction proof and retain a compact reference.
-2. **Next implementation task:** one native mutation slice with two memberships,
-   one direct dependency, one dated selector and one global guard. Include a move,
-   delete/fallback and a shared-source concurrency case. Use one independent
-   recomputation oracle; do not port the whole accounting suite.
-3. **Distributed gate:** implement one adapter and verify reads, absence,
+1. **Completed October 21:** recovered meaning and recorded the bounded Rust
+   mathematical/transaction proof. Its source fingerprints remain unchanged.
+2. **Current research:** audit whole-system responsibilities, specify API/tooling
+   wireframes and source-based scenarios. Paper 8 owns their status and decisions.
+3. **Next causal review:** define M3/M5 before/after dependencies for a moved
+   prefix consumer and required output, valid diamonds and rejected feedback.
+   Use a tiny executable model only if a semantic question remains unresolved.
+4. **Conditional implementation boundary:** after the relevant contracts are
+   closed, plan one native mutation slice using paper 8's bounded fixture and
+   independent oracle. A complete accounting port is not needed for that proof.
+5. **Distributed gate:** implement one adapter and verify reads, absence,
    uniqueness, reverse-discovery phantoms, unchanged-output guards and revocation.
    Reject oversized cascades without partial publication.
-4. **Performance gate:** compare the same bounded workload, counting decoded
+6. **Performance gate:** compare the same bounded workload, counting decoded
    nodes, dirty keys, encoded bytes, evaluations, retries and I/O. Select measured
    optimizations such as multi-get, node layout or more native indexes.
-5. **Application expansion:** add RPC/authentication and accounting capabilities
+7. **Application expansion:** add RPC/authentication and accounting capabilities
    only after these contracts hold. Generate bindings/tools from the loaded model.
 
 This ordering limits token/context use too: read the compact reference, the topic

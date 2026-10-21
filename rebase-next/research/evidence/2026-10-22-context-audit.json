@@ -1,0 +1,1167 @@
+{
+  "format": "rebase-context-audit",
+  "version": 1,
+  "date": "2026-10-22",
+  "phase": "research and contract wireframes",
+  "scope": "Context, current-source impact map, wireframes and scenario design; no runtime implementation, new behavioral tests or performance campaign.",
+  "path_base": "Relative source/artifact paths resolve from rebase-next, not this evidence directory.",
+  "repository": {
+    "root_revision": "e5d13b329be97242263ed318d9c5563e2f622226",
+    "previous_context_revision": "a963b2554c4596922926c7a8cfb0fa881c697c68",
+    "frontend_revision": "28c6e7f375838d05667bd08d29d2da3626f8fc89",
+    "root_started_clean": true,
+    "frontend_started_clean": true,
+    "outside_next_changes_since_previous_context": [],
+    "remote_status": "No fetch/pull performed in this review."
+  },
+  "attachments": [
+    {
+      "source": "/home/divyeshvora/.codex/attachments/122d5863-86ae-4960-a4ed-c1f3074a9760/Pasted text.txt",
+      "review_scope": "Original prompt inventory and appended user corrections cross-checked with existing topic papers; identical content recognized by hash.",
+      "bytes": 264513,
+      "lines": 5669,
+      "sha256": "5056832017a9fb41c849bc70bfa6d783c8ab21a8b5c2047b0f6bc5e12aee0f45"
+    },
+    {
+      "source": "/home/divyeshvora/.codex/attachments/87730ad0-666f-42ec-93f3-75e433aecc4e/Pasted text.txt",
+      "review_scope": "Outer user instructions, inspector context and final previous research/evidence/commit record; repeated tool transcripts treated as history.",
+      "bytes": 142353,
+      "lines": 1689,
+      "sha256": "3af127762ae82f0c214cdc405fb48beec4b3d7a26d3fcd5af532236dad804e53"
+    }
+  ],
+  "prior_repository_sources": {
+    "manifest": "research/source-manifest.json",
+    "bytes": 8170,
+    "lines": 237,
+    "sha256": "4968a3ee7f730dee78a50b63012e2fa059bd4f9152532ade09cecc620fec245a",
+    "matched": 26,
+    "changed": []
+  },
+  "reused_proof": {
+    "evidence": "research/feasibility.json",
+    "bytes": 4334,
+    "lines": 54,
+    "sha256": "6b4f40aa2a2b3f192769f57517a4532064a00f23cdfd8954613f810002170e3f",
+    "original_date": "2026-10-21",
+    "matched_executable_inputs": 11,
+    "changed": [],
+    "recorded_commands": [
+      {
+        "command": "cargo test --locked",
+        "exit_code": 0
+      },
+      {
+        "command": "cargo run --locked --example feasibility",
+        "exit_code": 0
+      },
+      {
+        "command": "cargo fmt --all -- --check",
+        "exit_code": 0
+      },
+      {
+        "command": "cargo clippy --all-targets --locked -- -D warnings",
+        "exit_code": 0
+      }
+    ],
+    "rerun": false
+  },
+  "reviewed_sources": [
+    {
+      "source": "../HOW_I_THINK.md",
+      "review_scope": "All headings; engineering phases and decision guidance at lines 1170-1347.",
+      "bytes": 25681,
+      "lines": 1347,
+      "sha256": "9997e19324af0e61a97e889851173f6071e9576bbf636aa48b5b08dbe54b2a45"
+    },
+    {
+      "source": "../MetaSol/README.md",
+      "review_scope": "Lines 1-120: independent repository, generated contracts, demo and client boundaries.",
+      "bytes": 5271,
+      "lines": 122,
+      "sha256": "f1eb3671ac84196194032ee09165c552c2ae91eb834217b871f3b20b99486d10"
+    },
+    {
+      "source": "../MetaSol/client-contract.js",
+      "review_scope": "Full current generated public projection and reuse of parent schema/model parser.",
+      "bytes": 3555,
+      "lines": 62,
+      "sha256": "b42724e6b622e41abf42faa9c3a362ddcd8547142efddab202aecc1ea6c48653"
+    },
+    {
+      "source": "../MetaSol/src/data/auth.js",
+      "review_scope": "Targeted native signin and verified tenant session seam.",
+      "bytes": 3617,
+      "lines": 104,
+      "sha256": "508510681feab8a11889941c5184048df30f280c44756fab27d4fc3ab0330aa3"
+    },
+    {
+      "source": "../MetaSol/src/data/records.js",
+      "review_scope": "Targeted native IDs, preview/type metadata, scoped reads and tree queries.",
+      "bytes": 10418,
+      "lines": 152,
+      "sha256": "1a24fa2ee236e72b99df8ceba274013b08b4ec61593e8c1ed21d6fabd857ac06"
+    },
+    {
+      "source": "../MetaSol/src/data/traversal.js",
+      "review_scope": "Targeted exact native key and paging seam.",
+      "bytes": 3058,
+      "lines": 44,
+      "sha256": "68a01d2e34c4c4bedb7d7832f2d7265131e656f368a2e094010f5c8c467d355f"
+    },
+    {
+      "source": "../MetaSol/src/data/values.js",
+      "review_scope": "Targeted native ID/decimal and display value seam.",
+      "bytes": 3344,
+      "lines": 97,
+      "sha256": "9e53fc68b56b0b456e72cf288508faadaef64a601e34fab3723e20d233d71422"
+    },
+    {
+      "source": "../MetaSol/src/data/writes.js",
+      "review_scope": "Lines 1-145: exact confirmation, native transactions, versions, unknown results and public error mapping.",
+      "bytes": 8903,
+      "lines": 156,
+      "sha256": "7510da12f9dd16c5bc76101bde598e823f6828ea69ee7d13a2af890bed4d8f9c"
+    },
+    {
+      "source": "../PRODUCTION-READINESS-REPORT.md",
+      "review_scope": "Heading inventory and historical routing only.",
+      "bytes": 13746,
+      "lines": 155,
+      "sha256": "42dd420cb772bffc9a72c4bd39e2ad606bb2255d36f3cb3ed7631ece1c9ecbbd"
+    },
+    {
+      "source": "../README.md",
+      "review_scope": "Entry points, current profile, runtime/dependency layout and developer-tool contract; sections and original fingerprint.",
+      "bytes": 16249,
+      "lines": 301,
+      "sha256": "c95c8f5d51a1681ed867189bc7bc6e9dfdce631ddaa68a5e1a980ed6d1746adf"
+    },
+    {
+      "source": "../designs/all-in-accounting/context-map.md",
+      "review_scope": "Source responsibility map.",
+      "bytes": 2625,
+      "lines": 32,
+      "sha256": "bb9e41fd7fc635300b0994975eb62734151ee9c67d655fce2f5f56aeec75a584"
+    },
+    {
+      "source": "../designs/all-in-accounting/developer-guide.md",
+      "review_scope": "Headings and domain routing; no fresh comprehensive formula audit.",
+      "bytes": 24156,
+      "lines": 431,
+      "sha256": "8c2109c5d48d20486918eb4e92944d2258e9903613675283ab331aeaec12049f"
+    },
+    {
+      "source": "../designs/all-in-accounting/fixtures/README.md",
+      "review_scope": "Headings and fixture-source routing; current workflow checked in dev-tools guide.",
+      "bytes": 11803,
+      "lines": 223,
+      "sha256": "3afe9addc82ef887d2f56527e559ceca3d9df70bbb12d7ee0fd03d3fecc65f7d"
+    },
+    {
+      "source": "../designs/all-in-accounting/schemas/account_entry.schema.json",
+      "review_scope": "Targeted reference patterns, date/time format and exact numeric string constraints; confirms old table-prefixed IDs are not UUID-only wire inputs.",
+      "bytes": 1740,
+      "lines": 83,
+      "sha256": "731dc5c01b8844513f34fb9904e92d36417c0ad4aa13110edf288cc750ec48b9"
+    },
+    {
+      "source": "../designs/all-in-accounting/schemas/exchange_rate.schema.json",
+      "review_scope": "Targeted reference patterns, date/time format and exact numeric string constraints; confirms old table-prefixed IDs are not UUID-only wire inputs.",
+      "bytes": 710,
+      "lines": 35,
+      "sha256": "973acb2ceef08350f302751f0bae18cc9603db8ced13218dbd6c574204849798"
+    },
+    {
+      "source": "../designs/all-in-accounting/schemas/invoice_settlement.schema.json",
+      "review_scope": "Targeted reference patterns, date/time format and exact numeric string constraints; confirms old table-prefixed IDs are not UUID-only wire inputs.",
+      "bytes": 2018,
+      "lines": 87,
+      "sha256": "1464b35c728c5d0d23570fd967a5d5d2ba438081005fbef060df5028f87006e4"
+    },
+    {
+      "source": "../designs/all-in-accounting/verification.md",
+      "review_scope": "Headings and targeted current/historical acceptance passages.",
+      "bytes": 7614,
+      "lines": 141,
+      "sha256": "db6acaf2e39a30b25ca6127a9dca1afce08aa4801409570b88202a9f2fe5b13b"
+    },
+    {
+      "source": "../designs/frontend/architecture.md",
+      "review_scope": "Full ownership, client contract, queries, forms, exact values and session boundaries.",
+      "bytes": 6869,
+      "lines": 115,
+      "sha256": "11524013e4daf97c07f1d9a81998c25e37b0efdee2255c4043e77f50368c3f20"
+    },
+    {
+      "source": "../designs/frontend/deferred-work.md",
+      "review_scope": "Full capability/acceptance exclusions and consistency limitations.",
+      "bytes": 3385,
+      "lines": 67,
+      "sha256": "728cc57e4e86812b2f490070d609ba40c0793b1a958cc95cfa619350f52d471a"
+    },
+    {
+      "source": "../designs/frontend/developer-guide.md",
+      "review_scope": "Heading inventory and extension routing.",
+      "bytes": 6142,
+      "lines": 134,
+      "sha256": "72fc8d117acb627bd76bc3eb3fa3e0bc0ec9e474d6786ad916b265eb44a2b584"
+    },
+    {
+      "source": "../designs/frontend/screen-contracts.md",
+      "review_scope": "Full inputs, units, workflows, pagination and write behavior.",
+      "bytes": 5733,
+      "lines": 92,
+      "sha256": "5ce33f48a442caa149cbb2b0c9965646fe73533c98ad655629d175bcadb39d7b"
+    },
+    {
+      "source": "../designs/frontend/verification.md",
+      "review_scope": "Headings, targeted failure passages and lines 94-132: corrections and evidence limits.",
+      "bytes": 7408,
+      "lines": 132,
+      "sha256": "e6aea83af3e22e96f64ac1f955d1486dc6e75e619c179374b90b2379331856fc"
+    },
+    {
+      "source": "../designs/rebase-system/README.md",
+      "review_scope": "Document routes, historical scope and stale frontend statements.",
+      "bytes": 12763,
+      "lines": 188,
+      "sha256": "bf541f583c26959422d13c29f8a7d7afac331af16921e983c6f88ca8122cb84a"
+    },
+    {
+      "source": "../designs/rebase-system/core-audit.md",
+      "review_scope": "Targeted historical failures and evidence-scope passages.",
+      "bytes": 21568,
+      "lines": 353,
+      "sha256": "a8ffb23d93cd4f0e6f66a9100f80e21e62a35adb9c11ba562a659d4cc67036da"
+    },
+    {
+      "source": "../designs/rebase-system/core-configuration.md",
+      "review_scope": "Heading map and lines 235-270: verification selection and bootstrap.",
+      "bytes": 17642,
+      "lines": 270,
+      "sha256": "7f56936ea79f05e592c58edd652c6c9368a2fd0b6fdbb854aa22fda371a38338"
+    },
+    {
+      "source": "../designs/rebase-system/credential-ownership-contract.md",
+      "review_scope": "Historical actor/action matrix, credential boundaries and superseded root/default assumptions.",
+      "bytes": 10629,
+      "lines": 96,
+      "sha256": "fdfb9c40f97f96e4041ab6f2e24eccbac46af16cd1e83917607b51ab816a599c"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-plan.md",
+      "review_scope": "Lines 1-148: recovered intent, primitives, mathematics, fixed queries and transaction protocol; headings.",
+      "bytes": 14878,
+      "lines": 247,
+      "sha256": "71e6c1966aababf1b80fda62d3b96432b9f8e3177ba482c7bc1438343a0be48a"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-verification.md",
+      "review_scope": "Full historical acceptance, source boundaries, reproduced defects and scope.",
+      "bytes": 8466,
+      "lines": 140,
+      "sha256": "91df0a84c4eb59dcb944993494f0f1382fbe46ce3094b32f0e6da6f996ed878c"
+    },
+    {
+      "source": "../designs/rebase-system/developer-blueprint.md",
+      "review_scope": "Heading inventory, lines 60-101 scalar reader semantics; unchanged prior source fingerprint.",
+      "bytes": 18541,
+      "lines": 319,
+      "sha256": "9594e918d175c8515a5a9d325aab0b913756c81f2c7e7f36b9add0de9bde31cb"
+    },
+    {
+      "source": "../designs/rebase-system/developer-experience-handoff.md",
+      "review_scope": "Targeted failure passages and lines 129-152: build path safety, lifecycle, identity and evidence limits.",
+      "bytes": 20859,
+      "lines": 343,
+      "sha256": "ad391f024bc4710463c5b38299961a49a5a81b52b27fb4c32bfd229e55d59a6b"
+    },
+    {
+      "source": "../designs/rebase-system/fixture-generation.md",
+      "review_scope": "Headings and targeted failure/saved-reference correction passages.",
+      "bytes": 10906,
+      "lines": 183,
+      "sha256": "34cad7c01e46c8967d70b5d64d7985d4ddbaabe3cbcb40934e72ac0473954562"
+    },
+    {
+      "source": "../designs/rebase-system/function-reactivity.md",
+      "review_scope": "Full declared-query contract, phases, settlement, source protection and evidence limits.",
+      "bytes": 9671,
+      "lines": 173,
+      "sha256": "940bce55f2f2b19c837134d8e724533897586efdb825f21e909dce1da33151f3"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/accounting.md",
+      "review_scope": "Targeted oracle/source-fence failure passages only.",
+      "bytes": 9832,
+      "lines": 174,
+      "sha256": "6a21438eed7a6f0cfda1577fcf76db9413f11d3e82875444be0ea39858bcd144"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/compiler.md",
+      "review_scope": "Lines 1-57: alias dependency ordering, purity and counterexample.",
+      "bytes": 5424,
+      "lines": 105,
+      "sha256": "2531fc22557299b2903c27a7cb6e1c834942b2c99d9b5c13efd1b4f71713c45d"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/runtime.md",
+      "review_scope": "Lines 1-104: failed repair candidate, stale structure, staged reconciliation and old-image ownership.",
+      "bytes": 14061,
+      "lines": 232,
+      "sha256": "c0514bcf1cf55b15c955f05ff9ba8ad5bbf687e807d9205612fae6135041446e"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/verification.md",
+      "review_scope": "Lines 1-65: independent inventory/corruption checks, missing seeded coverage and evidence limits.",
+      "bytes": 6448,
+      "lines": 111,
+      "sha256": "5cf1b208619536883b948cfcaf7476dc358693710edc6ad9c3fe4fdc70361513"
+    },
+    {
+      "source": "../designs/rebase-system/operations.md",
+      "review_scope": "Lines 1-126 and 296-481: execution, cleanup, recovery, receipts, handlers and stale credential prose.",
+      "bytes": 30228,
+      "lines": 481,
+      "sha256": "cabb1325f70e6e2c42cdd3d244258ee533ae788aa0cb9f9ebff761214223f910"
+    },
+    {
+      "source": "../designs/rebase-system/ordered-tree-contract.md",
+      "review_scope": "Lines 1-182: identities, key types, coalescing, queries, intervals, publication and native limits; remaining headings.",
+      "bytes": 13667,
+      "lines": 240,
+      "sha256": "5f93f34b041dc5c531d116c996020ba2fdbd5b88f8e0cabf12a551919444c557"
+    },
+    {
+      "source": "../designs/rebase-system/single-design-runtime.md",
+      "review_scope": "Fixed design, live recovery, credentials/webhooks and stale frontend paragraph.",
+      "bytes": 5549,
+      "lines": 97,
+      "sha256": "0db403ad739b6e8731020cae3a4948c3a2d313276ceff5a65cd45762736a9d38"
+    },
+    {
+      "source": "../designs/rebase-system/tenant-authentication.md",
+      "review_scope": "Full tenant, DAG, identities, credentials, passkeys and verification contract.",
+      "bytes": 15427,
+      "lines": 263,
+      "sha256": "7b429ca5ae380d4ab34964f07cbe788e4795a8d94e21e32504b04593a5664fea"
+    },
+    {
+      "source": "../dev-tools/README.md",
+      "review_scope": "Lines 1-275 and 342-382: build, inspector, preparation, fixture model, native coupling and atomic writes.",
+      "bytes": 30906,
+      "lines": 590,
+      "sha256": "003f3d70d272efecd315b829a6a7b0132596514d03069c0406da1eb6d4f57fcd"
+    },
+    {
+      "source": "../dev-tools/checks/README.md",
+      "review_scope": "Heading inventory only.",
+      "bytes": 1424,
+      "lines": 29,
+      "sha256": "e24fa2a0359b10315c8a7a251fa56bbeac3f286fba49e7f24e900473ae8c282e"
+    },
+    {
+      "source": "../dev-tools/compiler/catalog.js",
+      "review_scope": "Full developer projection and inclusion of private/generated fields and function source.",
+      "bytes": 7816,
+      "lines": 154,
+      "sha256": "8846bed851a64fb31c85e00ef3311e0fbb9e7a98105232b6e0f8d254c31873de"
+    },
+    {
+      "source": "../dev-tools/compiler/readers.js",
+      "review_scope": "Targeted reader-selection route search; policy cross-checked in developer blueprint.",
+      "bytes": 655,
+      "lines": 16,
+      "sha256": "f32737dc5f4162c1af63b8ff911572af58396f57e40628a8b0f6968b30a61c0e"
+    },
+    {
+      "source": "../dev-tools/fixtures/model.js",
+      "review_scope": "Targeted native value/reference binding and SDK dependencies.",
+      "bytes": 15155,
+      "lines": 299,
+      "sha256": "290cc42b416f80d24c649342debf33e47ce80397e70d96ac1e0a2508c520358e"
+    },
+    {
+      "source": "../dev-tools/index.js",
+      "review_scope": "Full ordinary public development API and process profile/connection boundaries.",
+      "bytes": 4153,
+      "lines": 127,
+      "sha256": "03e4f6fd05a6191c3fb757537ce15e5d1bdf86c42a4aab0203fb1b3c4cfa31f6"
+    },
+    {
+      "source": "../dev-tools/inspector/access.js",
+      "review_scope": "Targeted native SDK and query response seam.",
+      "bytes": 3375,
+      "lines": 65,
+      "sha256": "32607a8fc44dceed84a9610a4b5c97b8ab364efb5174a5e58754a67676a3be12"
+    },
+    {
+      "source": "../dev-tools/inspector/build.js",
+      "review_scope": "Targeted embedded catalog/build seam.",
+      "bytes": 1175,
+      "lines": 23,
+      "sha256": "da85fee00878720fcad777ef6fc56c60dc50094fe64b68fe4b51c9d5d22a1bd2"
+    },
+    {
+      "source": "../dev-tools/prepare.js",
+      "review_scope": "Targeted SQL transaction, response, context and import-mode dependencies.",
+      "bytes": 10502,
+      "lines": 194,
+      "sha256": "38ca207da2d67e8abf253af792167e6ab0d53d45d9296441143d122bf13b3f25"
+    },
+    {
+      "source": "../dev-tools/workbench.js",
+      "review_scope": "Full REPL wrappers, current project options and connection lifecycle.",
+      "bytes": 6590,
+      "lines": 214,
+      "sha256": "ebd06b24f1fd529ef92df46c672eb34f3ac10e3b94557aa0ff9ada3be64897fd"
+    },
+    {
+      "source": "../framework/auth.surql",
+      "review_scope": "Targeted dominates/can_access/choose_reader and principal permissions.",
+      "bytes": 16730,
+      "lines": 280,
+      "sha256": "21e1953aa298d9f59894ad5b949dee39bb85cd79ae15e9602b0b2c13f34aa732"
+    },
+    {
+      "source": "../framework/authentication.surql",
+      "review_scope": "Targeted same-tenant credential and tenant-keyed delivery policy definitions.",
+      "bytes": 17997,
+      "lines": 253,
+      "sha256": "a3e297187b85587b62beed6947488e6b0765f107166799f7561313ac4147d695"
+    },
+    {
+      "source": "../gateway/app.js",
+      "review_scope": "Targeted route, body, authentication and deadline inventory.",
+      "bytes": 16955,
+      "lines": 397,
+      "sha256": "009077f05df499edfd8b1808deae79ca35178b1ff5a4bf53c687f8a5e804c7d2"
+    },
+    {
+      "source": "../gateway/authentication.js",
+      "review_scope": "Targeted canonical tenant and tenant-keyed delivery policy resolution, including lines 243-247.",
+      "bytes": 16612,
+      "lines": 417,
+      "sha256": "aaaa38b8b6bf7d1848880d123b5b5e0e5a0bfea0f7af073f1294b4ca569ef29f"
+    },
+    {
+      "source": "../gateway/live.js",
+      "review_scope": "Targeted live/watcher seam inventory.",
+      "bytes": 4884,
+      "lines": 132,
+      "sha256": "0fb9dd8a60255e218e54652a8ccb9289c179ed2b52804dc9970791c246b243b5"
+    },
+    {
+      "source": "../gateway/runtime.js",
+      "review_scope": "Targeted credential authority, tenant checks, effects/webhook routing and receipts.",
+      "bytes": 42446,
+      "lines": 856,
+      "sha256": "8d7be8af900d81cf02ca7629c317556a5b221b54831221ed6effd243e6e5c1e6"
+    },
+    {
+      "source": "../gateway/server.js",
+      "review_scope": "Targeted static services, configuration, connection and lifecycle inventory.",
+      "bytes": 12949,
+      "lines": 359,
+      "sha256": "1f760c640cacf96cb9313dfdc5573eedf15d4b7e34112f9d67cefbb9fdcdc7d1"
+    },
+    {
+      "source": "../package.json",
+      "review_scope": "Full current script, engine and dependency inventory; no dependencies changed.",
+      "bytes": 7041,
+      "lines": 95,
+      "sha256": "c6276b44906b575b6c874f7ec2fa64ee15b263e64464fde239b2068edfd1a168"
+    },
+    {
+      "source": "../research/README.md",
+      "review_scope": "Policy versus measured database research taxonomy and evidence conventions.",
+      "bytes": 6174,
+      "lines": 87,
+      "sha256": "af132f0fbb4d739c4f492528f44c9afb85d8785135eb4518006d15c23fc638a1"
+    }
+  ],
+  "documentation_inventory": [
+    {
+      "source": "../HOW_I_THINK.md",
+      "title": "Engineering & Thinking Profile — \"Think Like Me\"",
+      "lines": 1347,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../MetaSol/README.md",
+      "title": "MetaSol",
+      "lines": 122,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../PRODUCTION-READINESS-REPORT.md",
+      "title": "Production Readiness Report",
+      "lines": 155,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../README.md",
+      "title": "ReBase",
+      "lines": 301,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/all-in-accounting/README.md",
+      "title": "Subsidiary accounting as explicit calculation records",
+      "lines": 29,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/blueprint.md",
+      "title": "Accounting calculation contract — October 13",
+      "lines": 24,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/context-map.md",
+      "title": "Accounting source map",
+      "lines": 32,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/all-in-accounting/delivery-taxes.md",
+      "title": "Temporal tax and adjustment contract",
+      "lines": 24,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/developer-guide.md",
+      "title": "Developing with sparse accounts and temporal calculations",
+      "lines": 431,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/all-in-accounting/examples.md",
+      "title": "Worked accounting inputs",
+      "lines": 42,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/expansion-2026-10-08.md",
+      "title": "Accounting extension plan — October 8",
+      "lines": 110,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/extension-contract.md",
+      "title": "Financial and production extensions — October 13",
+      "lines": 23,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/extension-verification.md",
+      "title": "Accounting extension verification",
+      "lines": 6,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/fixtures/README.md",
+      "title": "Complete accounting fixture",
+      "lines": 223,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/all-in-accounting/implementation-handoff.md",
+      "title": "Accounting continuation boundary — October 16",
+      "lines": 43,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/normalization.md",
+      "title": "Native positions and reporting projections",
+      "lines": 26,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/plan.md",
+      "title": "Accounting execution plan",
+      "lines": 9,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/redesign-2026-10-07.md",
+      "title": "Accounting redesign — 2026-10-07",
+      "lines": 97,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/redesign-2026-10-13.md",
+      "title": "Subsidiary accounting and function-driven reactivity",
+      "lines": 118,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/all-in-accounting/verification.md",
+      "title": "Accounting verification",
+      "lines": 141,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/all-in-one/README.md",
+      "title": "ReBase calculation suite v2",
+      "lines": 64,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/frontend/README.md",
+      "title": "MetaSol accounting workspace",
+      "lines": 28,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/frontend/architecture.md",
+      "title": "MetaSol architecture",
+      "lines": 115,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/frontend/continuation-prompts.md",
+      "title": "Continue MetaSol",
+      "lines": 39,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/frontend/deferred-work.md",
+      "title": "Frontend extension boundaries",
+      "lines": 67,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/frontend/developer-guide.md",
+      "title": "Extend MetaSol",
+      "lines": 134,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/frontend/execution-plan.md",
+      "title": "Frontend execution decisions — October 18, 2026",
+      "lines": 49,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/frontend/redesign-2026-10-18.md",
+      "title": "MetaSol: current contracts and composable workflows",
+      "lines": 70,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/frontend/screen-contracts.md",
+      "title": "Accounting screen contracts",
+      "lines": 92,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/frontend/verification.md",
+      "title": "Frontend verification — October 18, 2026",
+      "lines": 132,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/index-analytics/README.md",
+      "title": "Explicit cross-table analytics example",
+      "lines": 49,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/README.md",
+      "title": "ReBase system redesign",
+      "lines": 188,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/applications.md",
+      "title": "Application designs from the same primitives",
+      "lines": 210,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/automatic-reactivity-2026-10-14.md",
+      "title": "Automatic dependencies from ordered reads",
+      "lines": 107,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/blueprint.md",
+      "title": "Domain composition blueprint",
+      "lines": 242,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/core-audit.md",
+      "title": "Core audit and tenant redesign",
+      "lines": 353,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/core-configuration.md",
+      "title": "Core configuration and verification reference",
+      "lines": 270,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/core-handoff.md",
+      "title": "Core backend handoff",
+      "lines": 362,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/credential-ownership-contract.md",
+      "title": "Credential ownership and use contract (K4a)",
+      "lines": 96,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-plan.md",
+      "title": "Declarative calculation engine: design and execution",
+      "lines": 247,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/declarative-engine-verification.md",
+      "title": "Declarative-engine verification — October 16, 2026",
+      "lines": 140,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/developer-blueprint.md",
+      "title": "Developer blueprint: records, permissions and calculation trees",
+      "lines": 319,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/developer-experience-handoff.md",
+      "title": "Developer experience restart handoff",
+      "lines": 343,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/developer-experience-plan.md",
+      "title": "Developer experience redesign plan",
+      "lines": 257,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/evidence/2026-10-14-integrity-repair.md",
+      "title": "Integrity repair verification — October 14, 2026",
+      "lines": 63,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/fixture-generation.md",
+      "title": "Incremental fixture generation",
+      "lines": 183,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/foundation.md",
+      "title": "Calculation foundation and compiler contract",
+      "lines": 357,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/function-reactivity.md",
+      "title": "Declared queries and pure calculations",
+      "lines": 173,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/README.md",
+      "title": "Integrity repair handoff — October 15, 2026",
+      "lines": 85,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/accounting.md",
+      "title": "Packet A: independent accounting dependencies and exact tree values",
+      "lines": 174,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/compiler.md",
+      "title": "Packet C: local dependency analysis",
+      "lines": 105,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/runtime.md",
+      "title": "Packet B: incremental subscription maintenance and capture ordering",
+      "lines": 232,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-2026-10-15/verification.md",
+      "title": "Packet D: trustworthy histories and final acceptance",
+      "lines": 111,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/integrity-repair-handoff-2026-10-14.md",
+      "title": "Integrity repair: lead decisions and Luna execution handoff",
+      "lines": 495,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/operations.md",
+      "title": "External operations, scheduling, and adapters",
+      "lines": 481,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/ordered-tree-contract.md",
+      "title": "Ordered tree development contract",
+      "lines": 240,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/ordinal-feasibility.md",
+      "title": "Ordinal ordering: first implementation checkpoint",
+      "lines": 173,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/plan.md",
+      "title": "ReBase redesign implementation plan",
+      "lines": 1018,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/reader-index-plan.md",
+      "title": "Reader and index implementation — 2026-10-07",
+      "lines": 36,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/reader-index-verification.md",
+      "title": "Reader and custom-index verification — 2026-10-07",
+      "lines": 75,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/review.md",
+      "title": "Design review and resolved requirements",
+      "lines": 129,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/single-design-runtime.md",
+      "title": "One design, many tenants",
+      "lines": 97,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/tenant-authentication.md",
+      "title": "Tenant and authentication contract",
+      "lines": 263,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../designs/rebase-system/tenant-tree-handoff.md",
+      "title": "Tenant/tree redesign: execution handoff",
+      "lines": 469,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/tenant-tree-redesign.md",
+      "title": "Tenant and tree development contract",
+      "lines": 249,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/tree-catalog.md",
+      "title": "ReBase tree catalog",
+      "lines": 132,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../designs/rebase-system/verification.md",
+      "title": "Redesign verification and algorithm decision",
+      "lines": 407,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../dev-tools/README.md",
+      "title": "ReBase developer tools",
+      "lines": 590,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../dev-tools/checks/README.md",
+      "title": "Developer checks",
+      "lines": 29,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../dev-tools/experiments/authorization-stress/README.md",
+      "title": "Authorization stress suite",
+      "lines": 213,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/README.md",
+      "title": "ReBase Research Index",
+      "lines": 87,
+      "coverage": "reviewed sections recorded above"
+    },
+    {
+      "source": "../research/rebase/architecture.md",
+      "title": "ReBase Architecture",
+      "lines": 380,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/authentication.md",
+      "title": "ReBase Authentication",
+      "lines": 93,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/authorization-stress-results.md",
+      "title": "Authorization stress results",
+      "lines": 271,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/authorization.md",
+      "title": "ReBase Authorization and Data Model",
+      "lines": 278,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/compiler-development.md",
+      "title": "Compiler and Development Contract",
+      "lines": 163,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/parents-field.md",
+      "title": "Parent Field Findings",
+      "lines": 112,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/runtime-dispatch.md",
+      "title": "Runtime Dispatch",
+      "lines": 221,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/scheduler.md",
+      "title": "Schedules and Reconciliation",
+      "lines": 190,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/session-lifecycle.md",
+      "title": "SurrealDB Session Lifecycle",
+      "lines": 63,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/temporal-trees.md",
+      "title": "Temporal calculation system — implementation contract",
+      "lines": 356,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/twilio-trial-sms.md",
+      "title": "Twilio Trial SMS Findings",
+      "lines": 191,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/write-amplification-plan.md",
+      "title": "Reactive write amplification test plan",
+      "lines": 54,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/rebase/write-amplification-results.md",
+      "title": "Reactive write amplification results",
+      "lines": 149,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/access-definitions.md",
+      "title": "Access Definition Execution Order",
+      "lines": 10,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/accounts-transaction-concurrency-fact-check.md",
+      "title": "Accounts Movement And Concurrency Fact Check",
+      "lines": 389,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/async-events.md",
+      "title": "SurrealDB ASYNC Events Engineering Reference",
+      "lines": 85,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/authorization-select-performance.md",
+      "title": "Authorization Select Performance",
+      "lines": 194,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/cross-namespace-reconciliation.md",
+      "title": "SurrealDB Cross-Namespace Reconciliation Scanning",
+      "lines": 239,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/data-generation.md",
+      "title": "SurrealDB Data Generation Findings",
+      "lines": 159,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/engine-performance.md",
+      "title": "SurrealDB Performance and Scaling Findings",
+      "lines": 198,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/live-queries-async-events-changefeeds.md",
+      "title": "IMPORTANT: \"Currently, LIVE SELECT is only supported in single-node deployments, with multi-node support being actively developed.\"",
+      "lines": 439,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/record-references.md",
+      "title": "Record Reference Semantics",
+      "lines": 82,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/reference-authorization.md",
+      "title": "Permission-Aware Record Existence",
+      "lines": 159,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/reference-permission-performance.md",
+      "title": "Reference-Backed Permission Performance",
+      "lines": 339,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/schema-temporal-fact-check.md",
+      "title": "Schema, Catalog, And Temporal Aggregation Fact Check",
+      "lines": 323,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/surreal_db_internals_architecture.md",
+      "title": "SurrealDB Engine Architecture & Internals: Comprehensive Reference Guide",
+      "lines": 394,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/synchronous-events.md",
+      "title": "Synchronous Event and Provisional Snapshot Findings",
+      "lines": 157,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/temporal-integrity-dimensional-fact-check.md",
+      "title": "Temporal Integrity And Dimensional Fact Check",
+      "lines": 622,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/update-permissions.md",
+      "title": "SurrealDB Update and Field Permission Findings",
+      "lines": 127,
+      "coverage": "inventory only; not a fresh substantive review"
+    },
+    {
+      "source": "../research/surrealdb/uuidv7-record-ids.md",
+      "title": "UUIDv7 Record ID Findings",
+      "lines": 117,
+      "coverage": "inventory only; not a fresh substantive review"
+    }
+  ],
+  "external_refresh": [
+    {
+      "url": "https://apple.github.io/foundationdb/developer-guide.html#how-foundationdb-detects-conflicts",
+      "checked": "2026-10-22",
+      "scope": "Read-only transaction and read/write conflict semantics; no adapter executed."
+    }
+  ],
+  "validation": {
+    "status": "passed",
+    "checks": [
+      {
+        "check": "git diff --check",
+        "exit_code": 0
+      },
+      {
+        "check": "Markdown destinations, local heading anchors, code fences, whitespace and JSON example parsing",
+        "markdown_files": 12,
+        "local_links": 97,
+        "anchors": 10,
+        "json_examples": 1,
+        "errors": []
+      },
+      {
+        "check": "Unique scenario groups and referenced scenario IDs",
+        "scenario_groups": 22,
+        "unknown_references": []
+      },
+      {
+        "check": "Exact direct arithmetic for the documented baseline/change table; no runtime or scheduler exercised",
+        "documented_rows": 8,
+        "passed": true
+      },
+      {
+        "check": "Inspected-source and supplied-attachment fingerprints",
+        "reviewed_sources": 59,
+        "attachments": 2,
+        "changed": []
+      },
+      {
+        "check": "Existing proof source fingerprints",
+        "matched": 11,
+        "changed": [],
+        "proof_rerun": false
+      },
+      {
+        "check": "Tracked and untracked diff scope plus separate frontend status",
+        "outside_next_changes": [],
+        "metasol_clean": true
+      }
+    ],
+    "new_scenario_runtime_tests_executed": false,
+    "original_rebase_or_metasol_suites_rerun": false,
+    "procedure": "Inline Python standard-library checks and Git; arithmetic checks validate documentation values only."
+  },
+  "not_claimed": [
+    "complete implementation audit of every inventoried file",
+    "Rust or storage performance improvement",
+    "full-runtime or distributed correctness",
+    "new execution of the historical acceptance suites",
+    "production-ready API, authentication, effects or model migration"
+  ],
+  "output_fingerprints": {
+    "AGENTS.md": "b0daed6f251dbdef35f914ef40e37add28ea647b1f6f935bc7dc8c3394d1b481",
+    "CONTEXT.md": "0fd16c5f986918dac0f909d0449a5bf37c17a006129d2ae3ad997b85c054c9e5",
+    "README.md": "5775ccc6040f8d1cc0321d4ec3515296f03c901c2b3860e1cdefc47389dcfe54",
+    "research/01-model-and-mathematics.md": "074699bb3c6f0600375313db2f0492eb6254459eada8eab7dc53c30f7c852615",
+    "research/02-transactions-and-storage.md": "3957193b593132a6c1b5534b5cc4eba6bb7b66fa7433a8ea109dba0a89a9f190",
+    "research/03-access-and-queries.md": "1cd6fbdb433d3fc2942df4f78793436509c26ba116d5b6a560a9bea0616b8b1a",
+    "research/04-implementation.md": "9378504456c21ad0c0ec40a4ffaef0c5bf24244985257be2526202b9c75b475e",
+    "research/05-feasibility.md": "d25a6eeb9919fe69a3e3fdd213f96753df9f7a9d7419bfa56104eb4b00135bf1",
+    "research/06-system-audit.md": "bdcbf9207ee29f0925c78b748b21462435f91def633b5a1239c2a112dacf9ac9",
+    "research/07-contract-wireframes.md": "80c733936ef55d0c9d3401078a896da9c526bfa9dae9fabf4736212c46086e7b",
+    "research/08-research-workflow.md": "14b80df8acb6fb1cd30dc607938bbba9f55183fba132de171eaea9e81ebbe949",
+    "research/sources.md": "6b653f4eb5c40bd248657b80bb05e3864d0abdb05b25c5ad3de9ea1d6b30cb7a"
+  }
+}

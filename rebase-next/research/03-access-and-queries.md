@@ -19,6 +19,12 @@ cross-request permission cache/revision scheme when each attempt reads current
 authority and protects those reads. Immediate session revocation remains an
 explicit stored-state or lifetime policy.
 
+Freshness has a defined time boundary: a read uses current authority from its
+data snapshot; a write protects authority through commit. An overlapping read
+may finish after a revocation with a snapshot that precedes it. See the
+[authority wireframe](07-contract-wireframes.md#6-authority-has-a-time-boundary);
+per-attempt caching alone does not implement response-time revocation.
+
 Server-owned operations choose permitted scope and behavior. A client may receive
 query descriptions or ergonomic wrappers, but cannot enforce restrictions on
 itself. Signed executable code/policy inside a token would create another versioned
@@ -119,6 +125,12 @@ authorized principals. K-way merge produces ordered union, not arbitrary bitmap
 intersection. Bitmaps require a separate dense identity/rank map and introduce
 their own update/lifetime costs; omit them until a workload warrants them.
 
+Partition setup needs a budget as well. Discover the complete scope and obtain
+each stream head/emptiness before promising a globally ordered page. A candidate
+visit budget does not bound that work. The initial wireframe rejects setup that
+exceeds its fanout/work limit before returning a partial ordered result; the
+current slice-based merge proof does not exercise this boundary.
+
 Scalar reader indexes partition rows disjointly. General multi-membership roots
 may overlap: decide whether output counts occurrences or distinct records. Do not
 silently deduplicate a business aggregate or assume the stress fixture's disjoint
@@ -155,6 +167,12 @@ are another operation with storage-specific limits. A revision vector across
 many roots costs space; a coarse revision trades invalidations for a smaller cursor.
 Choose that policy before implementing general multi-page reads.
 
+The proposed revision footprint must include relevant content/permission
+changes, not just index rekeys. Editing a residual-filter field can change
+membership in the result while leaving tree order unchanged. Include empty
+partition insertion and reader/scope changes too. See the
+[query wireframe](07-contract-wireframes.md#5-queries-order-scope-and-budget).
+
 Field permissions apply to projection, filtering and ordering; a hidden field in
 a predicate can disclose facts even when excluded from the response. Root
 publication is explicit: a summary can include private contributions by design,
@@ -163,6 +181,11 @@ may traverse private structural nodes internally after checking the root boundar
 but leaf-returning operations enforce their declared record/field policies.
 This is a proposed simplification of native SurrealDB traversal limitations, not
 a claim that existing public reads already do so.
+
+Preserve occurrence/ordinal meaning on general root reads: reject a selected
+unreadable member rather than silently skipping it. `records.page` over complete
+authorized reader partitions is a separate record-list contract. Root aggregates
+and record-list counts cannot be substituted for one another.
 
 ## 7. Mutations and references
 
