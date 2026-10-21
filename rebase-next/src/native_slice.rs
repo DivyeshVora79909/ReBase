@@ -44,7 +44,8 @@ pub struct Meta {
     pub actor: Uuid,
     #[serde(with = "decimal")]
     pub revision: u64,
-    pub counts: [u16; 6],
+    pub counts: [u16; 12],
+    pub reserved: u16,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -92,6 +93,63 @@ pub enum Input {
         #[serde(with = "uuid_text")]
         subsidiary: Uuid,
     },
+    Moment {
+        #[serde(with = "decimal")]
+        at: i64,
+    },
+    Entry {
+        #[serde(with = "uuid_text")]
+        account: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        #[serde(with = "decimal")]
+        amount: i128,
+    },
+    Adjustment {
+        #[serde(with = "uuid_text")]
+        account: Uuid,
+        #[serde(with = "uuid_text")]
+        moment: Uuid,
+        #[serde(with = "decimal")]
+        offset: i64,
+        #[serde(with = "decimal")]
+        target: i128,
+        post: bool,
+    },
+    Basis {
+        sources: Vec<Uuid>,
+        #[serde(with = "decimal")]
+        factor: u16,
+        #[serde(with = "uuid_text")]
+        account: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        feedback: Option<Feedback>,
+    },
+    Pin {
+        #[serde(with = "uuid_text")]
+        output: Uuid,
+    },
+    Output {
+        #[serde(with = "uuid_text")]
+        producer: Uuid,
+        role: u16,
+        #[serde(with = "uuid_text")]
+        account: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        #[serde(with = "decimal")]
+        amount: i128,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Feedback {
+    #[serde(with = "uuid_text")]
+    pub account: Uuid,
+    #[serde(with = "decimal")]
+    pub at: i64,
 }
 
 impl Input {
@@ -103,6 +161,12 @@ impl Input {
             Self::Account { .. } => 4,
             Self::Subsidiary { .. } => 5,
             Self::Posting { .. } => 6,
+            Self::Moment { .. } => 7,
+            Self::Entry { .. } => 8,
+            Self::Adjustment { .. } => 9,
+            Self::Basis { .. } => 10,
+            Self::Pin { .. } => 11,
+            Self::Output { .. } => 12,
         }
     }
     pub fn validate(&self) -> Result<()> {
@@ -116,6 +180,16 @@ impl Input {
             Self::Account { native_unit } => *native_unit > 0,
             Self::Subsidiary { reporting_unit } => *reporting_unit > 0,
             Self::Posting { units, .. } => (-1000..=1000).contains(units),
+            Self::Moment { .. } => true,
+            Self::Entry { amount, .. } => (-1000..=1000).contains(amount),
+            Self::Adjustment { offset, target, .. } => {
+                (-1000..=1000).contains(offset) && (-1000..=1000).contains(target)
+            }
+            Self::Basis {
+                sources, factor, ..
+            } => (1..=2).contains(&sources.len()) && (1..=3).contains(factor),
+            Self::Pin { .. } => true,
+            Self::Output { role, .. } => (1..=2).contains(role),
         };
         if valid {
             Ok(())
@@ -127,17 +201,23 @@ impl Input {
         }
     }
     pub fn bind(code: u16, value: serde_json::Value) -> Result<Self> {
-        let input: Self = serde_json::from_value(value)
+        let input: Self = serde_json::from_value(value.clone())
             .map_err(|e| Error::new("invalid_input", e.to_string()))?;
         if input.contract() != code {
             return Err(Error::new("invalid_input", "contract/input mismatch"));
         }
         input.validate()?;
+        if serde_json::to_value(&input).map_err(|e| Error::new("codec", e.to_string()))? != value {
+            return Err(Error::new(
+                "invalid_input",
+                "complete canonical input required",
+            ));
+        }
         Ok(input)
     }
     pub fn references(&self) -> Vec<(Uuid, u16, u16)> {
-        match *self {
-            Self::Quote { curve, .. } => vec![(curve, 2, 1)],
+        match self {
+            Self::Quote { curve, .. } => vec![(*curve, 2, 1)],
             Self::Posting {
                 rule,
                 curve,
@@ -145,11 +225,36 @@ impl Input {
                 subsidiary,
                 ..
             } => vec![
-                (rule, 1, 3),
-                (curve, 2, 4),
-                (account, 4, 5),
-                (subsidiary, 5, 6),
+                (*rule, 1, 3),
+                (*curve, 2, 4),
+                (*account, 4, 5),
+                (*subsidiary, 5, 6),
             ],
+            Self::Entry { account, .. } => vec![(*account, 4, 1)],
+            Self::Adjustment {
+                account, moment, ..
+            } => vec![(*account, 4, 1), (*moment, 7, 2)],
+            Self::Basis {
+                sources,
+                account,
+                feedback,
+                ..
+            } => {
+                let mut refs: Vec<_> = sources
+                    .iter()
+                    .enumerate()
+                    .map(|(i, id)| (*id, 4, i as u16 + 1))
+                    .collect();
+                refs.push((*account, 4, 3));
+                if let Some(feedback) = feedback {
+                    refs.push((feedback.account, 4, 4));
+                }
+                refs
+            }
+            Self::Pin { output } => vec![(*output, 12, 1)],
+            Self::Output {
+                producer, account, ..
+            } => vec![(*producer, 0, 1), (*account, 4, 2)],
             _ => vec![],
         }
     }
@@ -159,6 +264,14 @@ impl Input {
             Self::Quote { .. } => ["curve", "at", "rate"].contains(&field),
             Self::Posting { .. } => {
                 ["units", "at", "rule", "curve", "account", "subsidiary"].contains(&field)
+            }
+            Self::Moment { .. } => field == "at",
+            Self::Entry { .. } => ["account", "at", "amount"].contains(&field),
+            Self::Adjustment { .. } => {
+                ["account", "moment", "offset", "target", "post"].contains(&field)
+            }
+            Self::Basis { .. } => {
+                ["sources", "factor", "account", "at", "feedback"].contains(&field)
             }
             _ => false,
         }
@@ -174,6 +287,24 @@ pub struct Derived {
     pub reporting_minor: i128,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum Calculated {
+    Posting(Derived),
+    Adjustment {
+        #[serde(with = "decimal")]
+        at: i64,
+        #[serde(with = "decimal")]
+        before: i128,
+        #[serde(with = "decimal")]
+        delta: i128,
+    },
+    Basis {
+        #[serde(with = "decimal")]
+        value: i128,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Record {
@@ -187,13 +318,15 @@ pub struct Record {
     #[serde(with = "decimal")]
     pub version: u64,
     pub input: Input,
-    pub derived: Option<Derived>,
+    pub derived: Option<Calculated>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Bound {
     AfterTime(#[serde(with = "decimal")] i64),
+    BeforeTime(#[serde(with = "decimal")] i64),
+    All,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -207,7 +340,7 @@ pub struct Query {
     pub upper: Bound,
     pub selected: Option<Uuid>,
     #[serde(with = "decimal")]
-    pub result: u16,
+    pub result: i128,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -274,6 +407,7 @@ impl Model {
                 include_bytes!("../rust-toolchain.toml"),
             ),
             ("src/algebra.rs", include_bytes!("algebra.rs")),
+            ("src/causal.rs", include_bytes!("causal.rs")),
             ("src/native_codec.rs", include_bytes!("native_codec.rs")),
             ("src/native_slice.rs", include_bytes!("native_slice.rs")),
             ("src/plan.rs", include_bytes!("plan.rs")),
@@ -331,6 +465,12 @@ pub struct Work {
     pub candidates: u64,
     pub evaluations: u64,
     pub rotations: u64,
+    pub causal_candidates: u64,
+    pub causal_evaluations: u64,
+    pub dependency_edges: u64,
+    pub dependency_checks: u64,
+    pub allocations: u64,
+    pub detached_outputs: u64,
     pub final_dirty_keys: u64,
     pub encoded_bytes: u64,
 }
@@ -366,6 +506,9 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
             "node" => self.work.node_visits += count,
             "load" => self.work.key_loads += count,
             "patch" => self.work.staged_patches += count,
+            "edge" => self.work.dependency_edges += count,
+            "dependency" => self.work.dependency_checks += count,
+            "allocate" => self.work.allocations += count,
             _ => return Err(Error::new("internal", "unknown work counter")),
         }
         self.work.work_units = self
@@ -439,13 +582,36 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
             _ => Err(Error::new("corrupt_state", "record type")),
         }
     }
+    pub(crate) fn changed_roots(&self) -> BTreeSet<Address> {
+        let mut roots = BTreeSet::new();
+        for (key, entry) in &self.entries {
+            if let Key::Root(root) = key
+                && entry.original.is_none()
+                && entry.current.is_some()
+            {
+                roots.insert(*root);
+            }
+            if let Key::Node(_) = key {
+                let logical = |value: &Option<Stored>| match value {
+                    Some(Stored::Node(n)) => Some((n.root, n.key, n.leaf)),
+                    _ => None,
+                };
+                let old = logical(&entry.original);
+                let new = logical(&entry.current);
+                if old != new {
+                    roots.extend([old, new].into_iter().flatten().map(|n| n.0));
+                }
+            }
+        }
+        roots
+    }
 }
 
 #[derive(Clone)]
-struct Change {
-    id: Uuid,
-    old: Option<Record>,
-    new: Option<Record>,
+pub(crate) struct Change {
+    pub id: Uuid,
+    pub old: Option<Record>,
+    pub new: Option<Record>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -454,7 +620,7 @@ pub struct Settled {
     pub revision: u64,
 }
 
-fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     id: Uuid,
     code: u16,
@@ -462,7 +628,7 @@ fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
 ) -> Result<Record> {
     ws.record(id)?
         .filter(|r| {
-            r.contract == code
+            (r.contract == code || (code == 0 && matches!(r.contract, 9 | 10)))
                 && r.tenant == context.tenant
                 && r.owner == context.actor
                 && r.reader == context.actor
@@ -470,7 +636,7 @@ fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         .ok_or_else(|| Error::new("unavailable_reference", "reference target unavailable"))
 }
 
-fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     input: &Input,
     context: Context,
@@ -508,6 +674,26 @@ fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             return Err(Error::new("unavailable_reference", "unit mismatch"));
         }
     }
+    if let Input::Basis {
+        sources,
+        account,
+        feedback,
+        ..
+    } = input
+    {
+        let Input::Account { native_unit } = required(ws, *account, 4, context)?.input else {
+            unreachable!()
+        };
+        for id in sources
+            .iter()
+            .copied()
+            .chain(feedback.iter().map(|f| f.account))
+        {
+            if required(ws, id, 4, context)?.input != (Input::Account { native_unit }) {
+                return Err(Error::new("unavailable_reference", "basis unit mismatch"));
+            }
+        }
+    }
     Ok(())
 }
 
@@ -521,14 +707,14 @@ fn owned_root(id: Uuid, input: &Input) -> Option<(Address, crate::tree::Kind)> {
     }
 }
 
-fn route_values(value: Option<Stored>) -> Result<Vec<Address>> {
+pub(crate) fn route_values(value: Option<Stored>) -> Result<Vec<Address>> {
     match value {
         Some(Stored::Incoming(v) | Stored::Direct(v) | Stored::Subscribers(v)) => Ok(v),
         _ => Err(Error::new("corrupt_state", "missing reverse-route header")),
     }
 }
 
-fn routes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn routes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     key: &Key,
 ) -> Result<Vec<Address>> {
@@ -537,7 +723,7 @@ fn routes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(result)
 }
 
-fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     key: Key,
     member: Address,
@@ -560,7 +746,7 @@ fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws.put(key, Some(value))
 }
 
-fn private_headers(id: Uuid, input: &Input, revision: u64) -> Vec<(Key, Stored)> {
+pub(crate) fn private_headers(id: Uuid, input: &Input, revision: u64) -> Vec<(Key, Stored)> {
     let mut values = vec![(Key::Incoming(id), Stored::Incoming(vec![]))];
     if let Some((root, kind)) = owned_root(id, input) {
         values.push((
@@ -569,9 +755,15 @@ fn private_headers(id: Uuid, input: &Input, revision: u64) -> Vec<(Key, Stored)>
         ));
     }
     match input {
-        Input::Rule { .. } => values.push((Key::Direct(id), Stored::Direct(vec![]))),
+        Input::Rule { .. } | Input::Moment { .. } => {
+            values.push((Key::Direct(id), Stored::Direct(vec![])))
+        }
         Input::Curve { .. } => values.push((
             Key::Subscribers(Address::new(id, 1)),
+            Stored::Subscribers(vec![]),
+        )),
+        Input::Account { .. } => values.push((
+            Key::Subscribers(Address::new(id, 2)),
             Stored::Subscribers(vec![]),
         )),
         _ => {}
@@ -579,7 +771,7 @@ fn private_headers(id: Uuid, input: &Input, revision: u64) -> Vec<(Key, Stored)>
     values
 }
 
-fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
+pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
     let mut entries = BTreeSet::new();
     if let Some(input) = input {
         for (target, _, field) in input.references() {
@@ -592,11 +784,31 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
                 Address::new(id, 1),
             ));
         }
+        if let Input::Adjustment {
+            account, moment, ..
+        } = input
+        {
+            entries.insert((Key::Direct(*moment), Address::new(id, 6)));
+            for slot in [1, 2] {
+                entries.insert((
+                    Key::Subscribers(Address::new(*account, 2)),
+                    Address::new(id, slot),
+                ));
+            }
+        }
+        if let Input::Basis { sources, .. } = input {
+            for (i, root) in sources.iter().enumerate() {
+                entries.insert((
+                    Key::Subscribers(Address::new(*root, 2)),
+                    Address::new(id, i as u16 + 1),
+                ));
+            }
+        }
     }
     entries
 }
 
-fn subscribers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn subscribers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     key: Key,
     candidates: &mut BTreeSet<Uuid>,
@@ -617,13 +829,31 @@ fn quote(input: Option<&Input>) -> Option<(Uuid, i64, u16)> {
     }
 }
 
-fn financial(
+pub(crate) fn financial(
     record: Option<&Record>,
     slot: u16,
 ) -> Result<Option<(Address, i64, crate::tree::Leaf)>> {
     let Some(record) = record else {
         return Ok(None);
     };
+    if let Input::Entry {
+        account,
+        at,
+        amount,
+    }
+    | Input::Output {
+        account,
+        at,
+        amount,
+        ..
+    } = record.input
+    {
+        return Ok((slot == 1).then_some((
+            Address::new(account, 2),
+            at,
+            crate::tree::Leaf::Financial(amount),
+        )));
+    }
     let Input::Posting {
         at,
         account,
@@ -636,6 +866,9 @@ fn financial(
     let derived = record
         .derived
         .ok_or_else(|| Error::new("corrupt_state", "unsettled posting"))?;
+    let Calculated::Posting(derived) = derived else {
+        return Err(Error::new("corrupt_state", "posting calculation type"));
+    };
     Ok(Some(if slot == 1 {
         (
             Address::new(account, 2),
@@ -651,7 +884,7 @@ fn financial(
     }))
 }
 
-fn reconcile_member<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+pub(crate) fn reconcile_member<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     id: Address,
     old: Option<(Address, i64, crate::tree::Leaf)>,
@@ -694,6 +927,53 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     context: Context,
     commands: &[Command],
 ) -> Result<Settled> {
+    settle_with_ids(ws, model, context, commands, &mut || Ok(Uuid::new_v4()))
+}
+
+pub fn settle_with_ids<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    model: &Model,
+    context: Context,
+    commands: &[Command],
+    allocate: &mut dyn FnMut() -> Result<Uuid>,
+) -> Result<Settled> {
+    settle_inner(ws, model, context, commands, allocate, false)
+}
+
+/// Trusted fixture entrypoint for internal REJECT-reference controls. Never
+/// select this capability from an untrusted API parameter.
+pub fn settle_fixture<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    model: &Model,
+    context: Context,
+    commands: &[Command],
+    allocate: &mut dyn FnMut() -> Result<Uuid>,
+) -> Result<Settled> {
+    settle_inner(ws, model, context, commands, allocate, true)
+}
+
+pub(crate) fn check_counts(meta: &Meta) -> Result<()> {
+    if meta.counts[..11].iter().map(|n| u32::from(*n)).sum::<u32>() > 64
+        || meta.counts[2] > 16
+        || meta.counts[5] > 16
+        || meta.counts[8] > 16
+        || meta.counts[9] > 16
+        || meta.counts[11] > 48
+        || meta.reserved > 256
+    {
+        return Err(Error::new("state_limit", "bounded prototype population"));
+    }
+    Ok(())
+}
+
+fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    model: &Model,
+    context: Context,
+    commands: &[Command],
+    allocate: &mut dyn FnMut() -> Result<Uuid>,
+    trusted: bool,
+) -> Result<Settled> {
     use crate::tree::{self, Aggregate, Leaf};
     let Some(Stored::Meta(mut meta)) = ws.get(&Key::Meta)? else {
         return Err(Error::new("corrupt_state", "missing model header"));
@@ -730,12 +1010,27 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws.charge("command", 1)?;
         let id = command.id();
         let old = ws.record(id)?;
+        if old
+            .as_ref()
+            .is_some_and(|r| r.contract == 12 || (r.contract == 11 && !trusted))
+        {
+            return Err(Error::new("forbidden", "private record"));
+        }
         let new = match command {
             Command::Create {
                 contract, fields, ..
             } => {
+                if *contract == 12 || (*contract == 11 && !trusted) {
+                    return Err(Error::new("forbidden", "private contract"));
+                }
                 if old.is_some() {
                     return Err(Error::new("already_exists", "source UUID exists"));
+                }
+                if ws.get(&Key::Reserved(id))?.is_some()
+                    || ws.get(&Key::Role(Address::new(id, 1)))?.is_some()
+                    || ws.get(&Key::Role(Address::new(id, 2)))?.is_some()
+                {
+                    return Err(Error::new("unavailable_reference", "reserved identity"));
                 }
                 let input = Input::bind(*contract, fields.clone())?;
                 validate_references(ws, &input, context)?;
@@ -786,12 +1081,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws.put(Key::Record(id), new.clone().map(Stored::Record))?;
         changes.push(Change { id, old, new });
     }
-    if meta.counts.iter().map(|n| u32::from(*n)).sum::<u32>() > 64
-        || meta.counts[2] > 16
-        || meta.counts[5] > 16
-    {
-        return Err(Error::new("state_limit", "bounded fixture population"));
-    }
+    check_counts(&meta)?;
     for change in &changes {
         if let (None, Some(new)) = (&change.old, &change.new) {
             for (key, value) in private_headers(change.id, &new.input, revision) {
@@ -832,14 +1122,6 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             for (curve, _, _) in [quote(old), quote(new)].into_iter().flatten() {
                 curves.insert(curve);
             }
-        }
-        if let Some(input) = new {
-            validate_references(ws, input, context)?;
-        } else if !routes(ws, &Key::Incoming(change.id))?.is_empty() {
-            return Err(Error::new(
-                "unavailable_reference",
-                "surviving inbound reference",
-            ));
         }
     }
     for curve in curves {
@@ -894,7 +1176,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             };
             let selected = tree::latest(ws, Address::new(curve, 1), at)?;
             let rate = selected.map_or(1, |(_, rate)| rate);
-            record.derived = Some(model.calculate(units, c, rate)?);
+            record.derived = Some(Calculated::Posting(model.calculate(units, c, rate)?));
             ws.work.evaluations += 1;
             ws.put(Key::Record(id), Some(Stored::Record(record.clone())))?;
             ws.put(
@@ -907,7 +1189,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
                     lower: "negative_infinity".into(),
                     upper: Bound::AfterTime(at),
                     selected: selected.map(|(id, _)| id),
-                    result: rate,
+                    result: i128::from(rate),
                 })),
             )?;
         } else {
@@ -926,6 +1208,33 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
                 financial(old.as_ref(), slot)?,
                 financial(new.as_ref(), slot)?,
             )?;
+        }
+    }
+    for change in &changes {
+        if change
+            .old
+            .as_ref()
+            .or(change.new.as_ref())
+            .is_some_and(|r| r.contract == 8)
+        {
+            reconcile_member(
+                ws,
+                Address::new(change.id, 1),
+                financial(change.old.as_ref(), 1)?,
+                financial(change.new.as_ref(), 1)?,
+            )?;
+        }
+    }
+    crate::causal::settle(ws, context, &changes, &mut meta, revision, allocate)?;
+    check_counts(&meta)?;
+    for change in &changes {
+        if let Some(new) = &change.new {
+            validate_references(ws, &new.input, context)?;
+        } else if !routes(ws, &Key::Incoming(change.id))?.is_empty() {
+            return Err(Error::new(
+                "unavailable_reference",
+                "surviving inbound reference",
+            ));
         }
     }
     for change in &changes {
@@ -951,26 +1260,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             }
         }
     }
-    let mut changed_roots = BTreeSet::new();
-    for (key, entry) in &ws.entries {
-        if let Key::Root(root) = key
-            && entry.original.is_none()
-            && entry.current.is_some()
-        {
-            changed_roots.insert(*root);
-        }
-        if let Key::Node(_) = key {
-            let logical = |value: &Option<Stored>| match value {
-                Some(Stored::Node(n)) => Some((n.root, n.key, n.leaf)),
-                _ => None,
-            };
-            let old = logical(&entry.original);
-            let new = logical(&entry.current);
-            if old != new {
-                changed_roots.extend([old, new].into_iter().flatten().map(|n| n.0));
-            }
-        }
-    }
+    let changed_roots = ws.changed_roots();
     for id in changed_roots {
         if let Some(Stored::Root(mut root)) = ws.get(&Key::Root(id))? {
             if id.slot == 2 {

@@ -580,3 +580,47 @@ pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     }
     Ok(selected)
 }
+
+/// Sum complete occurrences strictly before a timestamp. Equal-time members
+/// never depend on their UUID order; None means the whole settled root.
+pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    owner: Address,
+    before: Option<i64>,
+) -> Result<i128> {
+    let header = root(ws, owner)?;
+    let Aggregate::Financial(total) = header.summary else {
+        return Err(broken("prefix on quote root"));
+    };
+    let Some(before) = before else {
+        return Ok(total.sum);
+    };
+    let mut sum: i128 = 0;
+    let mut cursor = header.head;
+    let mut parent = None;
+    let mut visited = BTreeSet::new();
+    while let Some(id) = cursor {
+        if !visited.insert(id) {
+            return Err(broken("prefix cycle"));
+        }
+        let current = node(ws, owner, id)?;
+        if current.parent != parent {
+            return Err(broken("prefix parent mismatch"));
+        }
+        parent = Some(id);
+        if current.key.at < before {
+            let left = child_info(ws, owner, id, current.left, Kind::Financial)?.1;
+            let (Aggregate::Financial(left), Leaf::Financial(leaf)) = (left, current.leaf) else {
+                return Err(broken("prefix kind"));
+            };
+            sum = sum
+                .checked_add(left.sum)
+                .and_then(|s| s.checked_add(leaf))
+                .ok_or_else(|| Error::new("overflow", "prefix sum"))?;
+            cursor = current.right;
+        } else {
+            cursor = current.left;
+        }
+    }
+    Ok(sum)
+}

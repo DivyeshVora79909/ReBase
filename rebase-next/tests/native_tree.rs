@@ -256,3 +256,70 @@ fn equal_time_complete_boundaries_and_latest_extremes() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn strict_prefix_matches_authored_scan_at_equal_times_and_extremes() -> Result<()> {
+    let owner = addr(1000, 2);
+    let mut store = initial(owner, Kind::Financial);
+    let mut expected = Leaves::new();
+    for (i, (at, amount)) in [
+        (0, -4),
+        (i64::MAX, 8),
+        (i64::MIN, 11),
+        (-20, -3),
+        (0, 6),
+        (20, 5),
+        (0, 0),
+        (i64::MAX, -2),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let id = addr(i as u128 + 1, 1);
+        let value = (at, Leaf::Financial(amount));
+        apply(&mut store, owner, id, Some(value));
+        expected.insert(id, value);
+    }
+    for removed in [None, Some(addr(1, 1)), Some(addr(3, 1))] {
+        if let Some(id) = removed {
+            apply(&mut store, owner, id, None);
+            expected.remove(&id);
+        }
+        check(&store, owner, &expected);
+        for before in [
+            Some(i64::MIN),
+            Some(i64::MIN + 1),
+            Some(-20),
+            Some(-19),
+            Some(0),
+            Some(1),
+            Some(20),
+            Some(21),
+            Some(i64::MAX),
+            None,
+        ] {
+            let sum: i128 = expected
+                .values()
+                .filter(|(at, _)| before.is_none_or(|bound| *at < bound))
+                .map(|(_, leaf)| match leaf {
+                    Leaf::Financial(amount) => *amount,
+                    _ => unreachable!(),
+                })
+                .sum();
+            let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
+            let height = tree::root(&mut ws, owner)?.height;
+            assert_eq!(tree::prefix(&mut ws, owner, before)?, sum);
+            assert!(ws.work.node_visits <= u64::from(height) * 2);
+        }
+    }
+    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
+    let head = tree::root(&mut ws, owner)?.head.unwrap();
+    let mut damaged = tree::node(&mut ws, owner, head)?;
+    damaged.parent = Some(head);
+    ws.put(Key::Node(head), Some(Stored::Node(damaged)))?;
+    assert_eq!(
+        tree::prefix(&mut ws, owner, Some(1)).unwrap_err().code,
+        "corrupt_state"
+    );
+    Ok(())
+}

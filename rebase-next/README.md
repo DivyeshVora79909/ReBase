@@ -4,7 +4,11 @@ Read [CONTEXT.md](CONTEXT.md) first. It is the compact reference for the intende
 system, settled corrections, open decisions and the next research boundary.
 The source discussion is indexed in [research/sources.md](research/sources.md).
 
-**Current phase: bounded native experiment accepted (October 22).** The
+**Current phase: building the usable local prototype (October 22).** Follow the
+[P1–P4 plan](research/13-local-prototype-plan.md). Native causal settlement P1 is
+[accepted](research/15-causal-native-result.md); model/tooling and the local
+API/demo continue under the [interface contract](research/14-local-interface-contract.md).
+The earlier bounded native experiment is also accepted. The
 [scenario/gate register](research/08-research-workflow.md) routes continuation;
 use the [system review](research/06-system-audit.md) and
 [wireframes](research/07-contract-wireframes.md) for the affected boundaries.
@@ -32,6 +36,9 @@ compiler, gateway, accounting build or frontend.
 | Source-derived inventories, tree verification and corruption controls | [M6 checker contract](research/10-independent-checker.md) |
 | First native commands, state, settlement and implementation stages | [M1/M2/M4 implementation plan](research/11-native-slice-plan.md) |
 | Native execution, independent acceptance, work counts and remaining limits | [M1/M2/M4 result](research/12-native-slice.md) |
+| Active local prototype goal and stages | [P1–P4 plan](research/13-local-prototype-plan.md) |
+| Concrete model/tooling/API/demo boundaries | [Local interface contract](research/14-local-interface-contract.md) |
+| Native prefix calculations, private outputs and independent acceptance | [P1 result](research/15-causal-native-result.md) |
 
 ```sh
 cd rebase-next

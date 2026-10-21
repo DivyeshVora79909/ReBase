@@ -1,0 +1,60 @@
+{
+  "format": "rebase-local-prototype-p1-evidence-v1",
+  "date": "2026-10-22",
+  "starting_commit": "2109687",
+  "scope": "Native causal settlement and original connected regression; not P2-P4 completion",
+  "model_identity": "4f1bc8e5e785a27d97e4938ab85c07e91a02af6f7ff7258bc8f29c8dda0ab822",
+  "codec": "native-slice-kv-2",
+  "result": {
+    "status": "passed",
+    "causal": {
+      "cases": 39,
+      "operations": 55,
+      "committed": 38,
+      "rejected": 17,
+      "reopens": 39,
+      "old_snapshot_checks": 55,
+      "raw_report": "target/native-slice/run-3997763-1792625272084163188/native-observations.json",
+      "independent_acceptance": "target/native-slice/run-3997763-1792625272084163188/acceptance.json",
+      "checker_controls": 34
+    },
+    "foundation": {
+      "cases": 68,
+      "operations": 93,
+      "committed": 53,
+      "rejected": 40,
+      "reopens": 68,
+      "old_snapshot_checks": 93,
+      "raw_report": "target/native-slice/run-3997764-1792625272083553537/native-observations.json",
+      "independent_acceptance": "target/native-slice/run-3997764-1792625272083553537/acceptance.json",
+      "checker_controls": 34
+    },
+    "rust_tests": 14,
+    "format": "passed",
+    "clippy_warnings_denied": "passed",
+    "rust_test_log": "target/native-slice/p1-rust-tests.log"
+  },
+  "source_sha256": {
+    "Cargo.toml": "baa64c6c24d14f1f4183df90c326e299f27d2c62b389184bfa4f507447aaf26e",
+    "Cargo.lock": "6ea79d8639bf6b06b1889ffa3445a1629d559903479ecf6c97e0f6b3f8983b22",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/native_slice.rs": "73d8a58673d8f5b09c1a57ae555fbfebb200a1958292b80541fb11564532a668",
+    "src/native_codec.rs": "2edecd8cc00bbc420b5026d2bb6c8839ed35bc28dfce2bef0b80af31fdda2407",
+    "src/causal.rs": "5545e648d209957fd427f1df6d53bd50997ea1358bc7b5f6299ea1975a63a805",
+    "src/tree.rs": "663a64f2d5a29c10b3333827ec4ea2c12b30de5c5735b172b21fe4e28870ca87",
+    "examples/native_slice.rs": "908b8b1594209df99d7d94784ee5474a19e667cf061e4712c713f98f011343a3",
+    "tests/native_tree.rs": "1f32d0732061ddf684fee96db4a7724400d13663d1f0f5254ba5c07b14eebd0d",
+    "research/experiments/native_slice.py": "676541993ceb95f52cf274b4dcc72ef4660114a25b730861f96db2f50b819192",
+    "research/fixtures/native-slice.json": "7dd35e2e173ac10a2ad57f0813221faad21410e56dd59d9a9d05a934737b89c3",
+    "research/fixtures/causal-slice.json": "44c7571fbced03ae2739b7c33677dfcd5b33268bc3599bf776fa02920b3a52f9"
+  },
+  "limits": [
+    "One fixed actor/tenant and bounded model",
+    "Conservative per-root invalidation with final shape dependency ordering",
+    "No public runtime, arbitrary declarations, distributed conformance, external effects or capacity claim at this stage"
+  ],
+  "next": "P2-P4 in research/13-local-prototype-plan.md and research/14-local-interface-contract.md"
+}

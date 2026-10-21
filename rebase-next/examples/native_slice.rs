@@ -11,7 +11,8 @@ use std::{
 use rebase_semantic_proof::{
     native_codec::{self, Key, Stored},
     native_slice::{
-        Command, Context, Error as NativeError, Meta, Model, Settled, Work, Workspace, settle,
+        Command, Context, Error as NativeError, Meta, Model, Settled, Work, Workspace,
+        settle_fixture, settle_with_ids,
     },
 };
 use redb::{
@@ -33,6 +34,8 @@ struct Fixtures {
     #[serde(rename = "ids")]
     _ids: Value,
     bases: BTreeMap<String, Value>,
+    #[serde(default)]
+    base_allocations: BTreeMap<String, Vec<Uuid>>,
     cases: Vec<Case>,
 }
 
@@ -56,6 +59,9 @@ struct Operation {
     model: Option<String>,
     codec: Option<String>,
     abort_after: Option<Value>,
+    allocations: Option<Vec<Uuid>>,
+    #[serde(default)]
+    trusted: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -158,7 +164,8 @@ fn initialize(db: &Database, model: &Model, context: Context) -> Result<()> {
                 tenant: context.tenant,
                 actor: context.actor,
                 revision: 0,
-                counts: [0; 6],
+                counts: [0; 12],
+                reserved: 0,
             }),
         )?;
         table.insert(Key::Meta.encode().as_slice(), bytes.as_slice())?;
@@ -217,9 +224,41 @@ fn apply(db: &Database, model: &Model, context: Context, operation: &Operation) 
             },
             operation.work_limit,
         );
+        let mut ids = operation
+            .allocations
+            .clone()
+            .unwrap_or_default()
+            .into_iter();
+        let mut allocate = || {
+            if operation.allocations.is_some() {
+                ids.next().ok_or_else(|| {
+                    NativeError::new("allocation_exhausted", "fixture identity pool exhausted")
+                })
+            } else {
+                Ok(Uuid::new_v4())
+            }
+        };
         let prepared = serde_json::from_value::<Vec<Command>>(operation.commands.clone())
             .map_err(|error| NativeError::new("invalid_input", error.to_string()))
-            .and_then(|commands| settle(&mut workspace, &requested, context, &commands))
+            .and_then(|commands| {
+                if operation.trusted {
+                    settle_fixture(
+                        &mut workspace,
+                        &requested,
+                        context,
+                        &commands,
+                        &mut allocate,
+                    )
+                } else {
+                    settle_with_ids(
+                        &mut workspace,
+                        &requested,
+                        context,
+                        &commands,
+                        &mut allocate,
+                    )
+                }
+            })
             .and_then(|settled| workspace.finish().map(|batch| (settled, batch)));
         (prepared, workspace.work.clone())
     };
@@ -243,6 +282,9 @@ fn apply(db: &Database, model: &Model, context: Context, operation: &Operation) 
                     | "model_mismatch"
                     | "revision_exhausted"
                     | "overflow"
+                    | "feedback"
+                    | "allocation_collision"
+                    | "allocation_exhausted"
             ) {
                 return Err(error.into());
             }
@@ -341,6 +383,8 @@ fn run_case(
             model: None,
             codec: None,
             abort_after: None,
+            allocations: fixtures.base_allocations.get(&case.base).cloned(),
+            trusted: false,
         };
         let result = apply(&db, model, context, &base)?;
         if result.status != "committed" {
@@ -377,8 +421,13 @@ fn run_case(
 }
 
 fn main() -> Result<()> {
-    let fixtures: Fixtures =
-        serde_json::from_str(include_str!("../research/fixtures/native-slice.json"))?;
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    let source = match args.as_slice() {
+        [] => include_str!("../research/fixtures/native-slice.json").to_owned(),
+        [flag, path] if flag == "--fixtures" => fs::read_to_string(path)?,
+        _ => return Err("usage: native_slice [--fixtures PATH]".into()),
+    };
+    let fixtures: Fixtures = serde_json::from_str(&source)?;
     if fixtures.format != "native-slice-cases-v1" {
         return Err("unknown fixture format".into());
     }

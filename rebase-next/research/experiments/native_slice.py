@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent M1/M2/M4 source oracle and complete native-KV checker.
+"""Independent source oracle and complete native-KV checker.
 
 No Rust calculation, discovery, tree or summary implementation is used here.
 Without --actual this checks source cases and deliberately synthetic images.
@@ -17,15 +17,19 @@ import uuid
 from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
-CODEC = "native-slice-kv-1"
+CODEC = "native-slice-kv-2"
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
           5: ("reporting_unit",),
-          6: ("units", "at", "rule", "curve", "account", "subsidiary")}
+          6: ("units", "at", "rule", "curve", "account", "subsidiary"),
+          7: ("at",), 8: ("account", "at", "amount"),
+          9: ("account", "moment", "offset", "target", "post"),
+          10: ("sources", "factor", "account", "at", "feedback"),
+          11: ("output",), 12: ("producer", "role", "account", "at", "amount")}
 KINDS = {0: "meta", 1: "record", 2: "root", 3: "node", 4: "query",
-         5: "incoming", 6: "direct", 7: "subscribers"}
+         5: "incoming", 6: "direct", 7: "subscribers", 8: "role", 9: "reserved"}
 MODEL_FILES = ("Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "src/algebra.rs",
-               "src/native_codec.rs", "src/native_slice.rs", "src/plan.rs",
+               "src/causal.rs", "src/native_codec.rs", "src/native_slice.rs", "src/plan.rs",
                "src/staging.rs", "src/tree.rs")
 
 
@@ -80,6 +84,16 @@ def references(code, fields):
     if code == 6:
         return [(fields[name], kind, slot) for name, kind, slot in
                 (("rule", 1, 3), ("curve", 2, 4), ("account", 4, 5), ("subsidiary", 5, 6))]
+    if code == 8:
+        return [(fields["account"], 4, 1)]
+    if code == 9:
+        return [(fields["account"], 4, 1), (fields["moment"], 7, 2)]
+    if code == 10:
+        return [(r, 4, i + 1) for i, r in enumerate(fields["sources"])] + [(fields["account"], 4, 3)] + ([(fields["feedback"]["account"], 4, 4)] if fields["feedback"] else [])
+    if code == 11:
+        return [(fields["output"], 12, 1)]
+    if code == 12:
+        return [(fields["producer"], 0, 1), (fields["account"], 4, 2)]
     return []
 
 
@@ -89,25 +103,43 @@ def validate_input(code, fields):
     for name, value in fields.items():
         if name in ("c", "rate"):
             integer(value, 1, 1000)
-        elif name == "units":
+        elif name in ("units", "amount", "offset", "target"):
             integer(value, -1000, 1000)
         elif name == "at":
             integer(value, -(2**63), 2**63 - 1)
         elif name.endswith("_unit"):
             check(type(value) is int and 1 <= value <= 65535)
+        elif name == "factor":
+            integer(value, 1, 3)
+        elif name == "post":
+            check(type(value) is bool)
+        elif name == "sources":
+            check(type(value) is list and 1 <= len(value) <= 2)
+            for source in value: identity(source)
+        elif name == "feedback":
+            check(value is None or type(value) is dict and set(value) == {"account", "at"})
+            if value is not None:
+                identity(value["account"])
+                integer(value["at"], -(2**63), 2**63 - 1)
+        elif name == "role":
+            check(type(value) is int and 1 <= value <= 2)
         else:
             identity(value)
 
 
 def validate_references(facts, code, fields):
     for target, kind, _ in references(code, fields):
-        check(target in facts and facts[target]["contract"] == kind, "unavailable_reference")
+        check(target in facts and (facts[target]["contract"] == kind or kind == 0 and facts[target]["contract"] in (9, 10)), "unavailable_reference")
     if code == 6:
         curve = facts[fields["curve"]]["input"]
         account = facts[fields["account"]]["input"]
         subsidiary = facts[fields["subsidiary"]]["input"]
         check(curve["native_unit"] == account["native_unit"] and
               curve["reporting_unit"] == subsidiary["reporting_unit"], "unavailable_reference")
+    if code == 10:
+        unit = facts[fields["account"]]["input"]["native_unit"]
+        for account in fields["sources"] + ([fields["feedback"]["account"]] if fields["feedback"] else []):
+            check(facts[account]["input"]["native_unit"] == unit, "unavailable_reference")
 
 
 def ordered(entry):
@@ -145,33 +177,38 @@ class State:
         self.tenant, self.actor, self.model = tenant, actor, model
         self.revision, self.facts, self.records, self.roots = 0, {}, {}, {}
         self.entries, self.rows = {}, {}
+        self.roles = {}
         self.derive(None)
 
-    def derive(self, previous):
+    def available(self):
+        return {**{rid: r for rid, r in self.records.items() if r["contract"] == 12}, **self.facts}
+
+    def derive(self, previous, allocations=()):
         """All populations originate in facts, not in observed descriptors."""
         self.rows, self.roots, self.entries, self.records = {}, {}, {}, {}
-        counts = [0] * 6
+        counts = [0] * 12
         for rid, fact in self.facts.items():
             code = fact["contract"]
             counts[code - 1] += 1
             self.rows[(5, rid)] = []
-            if code == 1:
+            if code in (1, 7):
                 self.rows[(6, rid)] = []
             if code in (2, 4, 5):
                 slot = {2: 1, 4: 2, 5: 3}[code]
                 self.roots[(rid, slot)] = {"kind": "quote" if code == 2 else "financial"}
             if code == 2:
                 self.rows[(7, rid, 1)] = []
+            if code == 4:
+                self.rows[(7, rid, 2)] = []
 
         def member(rid, slot, root, at, kind, amount):
             self.entries[(rid, slot)] = {"root": address(*root),
                 "key": {"at": at, "id": rid, "slot": slot},
                 "leaf": {"kind": kind, "value": str(amount)}}
 
+        derived_values, emits, times = {}, {}, {}
         for rid, fact in sorted(self.facts.items()):
             code, fields = fact["contract"], fact["input"]
-            for target, _, slot in references(code, fields):
-                self.rows[(5, target)].append(address(rid, slot))
             derived = None
             if code == 3:
                 member(rid, 3, (fields["curve"], 1), fields["at"], "quote", fields["rate"])
@@ -193,14 +230,106 @@ class State:
                     "selected": selected[1] if selected else None, "result": str(rate)}
                 member(rid, 1, (fields["account"], 2), fields["at"], "financial", native)
                 member(rid, 2, (fields["subsidiary"], 3), fields["at"], "financial", reporting)
+            if code == 8:
+                member(rid, 1, (fields["account"], 2), fields["at"], "financial", fields["amount"])
+            if code == 9:
+                at = int(self.facts[fields["moment"]]["input"]["at"]) + int(fields["offset"])
+                check(-(2**63) <= at < 2**63)
+                times[rid] = at
+                if fields["post"]: emits[rid, 1] = (fields["account"], at, False)
+                self.rows[(6, fields["moment"])].append(address(rid, 6))
+                for slot in (1, 2): self.rows[(7, fields["account"], 2)].append(address(rid, slot))
+            if code == 10:
+                emits[rid, 1] = fields["account"], int(fields["at"]), False
+                if fields["feedback"]:
+                    f = fields["feedback"]
+                    emits[rid, 2] = f["account"], int(f["at"]), True
+                for i, source in enumerate(fields["sources"]): self.rows[(7, source, 2)].append(address(rid, i + 1))
+            derived_values[rid] = derived
+
+        authored_entries = tuple(self.entries.values())
+        values, visiting = {}, set()
+
+        def checked(value):
+            check(-(2**127) <= value < 2**127, "overflow")
+            return value
+
+        def source_read(account, before=None):
+            total = sum(int(e["leaf"]["value"]) for e in authored_entries
+                        if aid(e["root"]) == (account, 2) and (before is None or int(e["key"]["at"]) < before))
+            for (producer, _), (root, at, zero) in sorted(emits.items()):
+                if root == account and (before is None or at < before):
+                    amount = calculate(producer)  # Even a zero output retains this dependency.
+                    total += 0 if zero else amount
+            return checked(total)
+
+        def calculate(rid):
+            if rid in values: return values[rid]
+            check(rid not in visiting, "feedback")
+            visiting.add(rid)
+            fact = self.facts[rid]
+            code, fields = fact["contract"], fact["input"]
+            if code == 9:
+                before = source_read(fields["account"], times[rid])
+                value = checked(int(fields["target"]) - before)
+                derived_values[rid] = {"at": str(times[rid]), "before": str(before), "delta": str(value)}
+            else:
+                value = checked(int(fields["factor"]) * sum(source_read(r) for r in fields["sources"]))
+                derived_values[rid] = {"value": str(value)}
+            visiting.remove(rid)
+            values[rid] = value
+            return value
+
+        for rid, fact in sorted(self.facts.items()):
+            if fact["contract"] in (9, 10): calculate(rid)
+        pool = iter(allocations)
+        for role in sorted(emits):
+            if role in self.roles: continue
+            for _ in range(8):
+                try: allocated = identity(next(pool))
+                except StopIteration: raise Reject("allocation_exhausted") from None
+                if allocated in self.facts or previous and allocated in previous.records or any(
+                        allocated == binding["output"] or allocated == producer for (producer, _), binding in self.roles.items()):
+                    continue
+                self.roles[role] = {"output": allocated, "retired": False}
+                check(len(self.roles) <= 256, "state_limit")
+                break
+            else: raise Reject("allocation_collision")
+        for (producer, _), binding in self.roles.items():
+            if producer not in self.facts: binding["retired"] = True
+
+        all_facts = deepcopy(self.facts)
+        for (producer, role), (account, at, zero) in sorted(emits.items()):
+            rid = self.roles[producer, role]["output"]
+            amount = 0 if zero else values[producer]
+            all_facts[rid] = {"contract": 12, "input": {"producer": producer, "role": role, "account": account, "at": str(at), "amount": str(amount)}}
+            derived_values[rid] = None
+            self.rows[(5, rid)] = []
+            counts[11] += 1
+            member(rid, 1, (account, 2), str(at), "financial", amount)
+        check(counts[11] <= 48, "state_limit")
+        for rid, fact in sorted(all_facts.items()):
+            code, fields = fact["contract"], fact["input"]
+            validate_references(all_facts, code, fields)
+            for target, _, slot in references(code, fields): self.rows[(5, target)].append(address(rid, slot))
+            if code in (9, 10):
+                reads = [(fields["account"], times[rid], "calculate"), (fields["account"], times[rid], "validate")] if code == 9 else [(source, None, "calculate") for source in fields["sources"]]
+                for i, (source, before, phase) in enumerate(reads):
+                    result = source_read(source, before)
+                    if phase == "validate": check(result >= 0, "invariant")
+                    self.rows[(4, rid, i + 1)] = {"source": address(source, 2), "operation": "sum", "phase": phase,
+                        "channel": "amount", "lower": "negative_infinity", "upper": "all" if before is None else {"before_time": str(before)}, "selected": None, "result": str(result)}
             value = {"contract": code, "tenant": self.tenant, "owner": self.actor,
                      "reader": self.actor, "version": str(self.revision),
-                     "input": deepcopy(fields), "derived": derived}
+                     "input": deepcopy(fields), "derived": derived_values[rid]}
             old = previous.records.get(rid) if previous else None
             if old and all(value[k] == old[k] for k in value if k != "version"):
                 value["version"] = old["version"]
             self.records[rid] = value
             self.rows[(1, rid)] = value
+        for (producer, slot), binding in self.roles.items():
+            self.rows[(8, producer, slot)] = deepcopy(binding)
+            self.rows[(9, binding["output"])] = address(producer, slot)
         for key, values in self.rows.items():
             if key[0] in (5, 6, 7):
                 values.sort(key=lambda a: (uuid.UUID(a["id"]).bytes, a["slot"]))
@@ -213,7 +342,7 @@ class State:
                     version = int(previous.roots[root]["revision"])
             value.update(revision=str(version), summary=scan(value["kind"], entries.values()))
         self.rows[(0,)] = {"model": self.model, "codec": CODEC, "tenant": self.tenant,
-                          "actor": self.actor, "revision": str(self.revision), "counts": counts}
+                          "actor": self.actor, "revision": str(self.revision), "counts": counts, "reserved": len(self.roles)}
 
     def apply(self, operation):
         check(operation.get("model", "current") == "current", "model_mismatch")
@@ -231,8 +360,13 @@ class State:
                     "update": {"op", "id", "if_version", "set", "unset"},
                     "delete": {"op", "id", "if_version"}}
             check(op in keys and set(command) == keys[op])
+            old = candidate.available().get(rid)
+            if old and (old["contract"] == 12 or old["contract"] == 11 and not operation.get("trusted", False)):
+                raise Reject("forbidden")
             if op == "create":
+                check(command["contract"] != 12 and (command["contract"] != 11 or operation.get("trusted", False)), "forbidden")
                 check(rid not in candidate.facts, "already_exists")
+                check(not any(rid == producer or rid == binding["output"] for (producer, _), binding in candidate.roles.items()), "unavailable_reference")
                 code, fields = command["contract"], deepcopy(command["fields"])
             else:
                 check(rid in candidate.facts, "unavailable_reference")
@@ -243,25 +377,25 @@ class State:
                     continue
                 code = candidate.facts[rid]["contract"]
                 check(type(command["set"]) is dict and exact(command["unset"], []))
-                allowed = FIELDS[code] if code in (1, 3, 6) else ()
+                allowed = FIELDS[code] if code in (1, 3, 6, 7, 8, 9, 10) else ()
                 check(set(command["set"]) <= set(allowed))
                 fields = {**candidate.facts[rid]["input"], **command["set"]}
             validate_input(code, fields)
-            validate_references(candidate.facts, code, fields)
+            validate_references(candidate.available(), code, fields)
             candidate.facts[rid] = {"contract": code, "input": fields}
-        counts = [sum(f["contract"] == c for f in candidate.facts.values()) for c in range(1, 7)]
-        check(sum(counts) <= 64 and counts[2] <= 16 and counts[5] <= 16, "state_limit")
+        counts = [sum(f["contract"] == c for f in candidate.facts.values()) for c in range(1, 12)]
+        check(sum(counts) <= 64 and all(counts[i] <= 16 for i in (2, 5, 8, 9)), "state_limit")
         quote_times = set()
         for fact in candidate.facts.values():
             code, fields = fact["contract"], fact["input"]
-            validate_references(candidate.facts, code, fields)
+            if code != 11: validate_references(candidate.facts, code, fields)
             if code == 3:
                 key = fields["curve"], int(fields["at"])
                 check(key not in quote_times, "duplicate_time")
                 quote_times.add(key)
         check(self.revision < 2**64 - 1, "revision_exhausted")
         candidate.revision += 1
-        candidate.derive(self)
+        candidate.derive(self, operation.get("allocations", []))
         for root, value in candidate.roots.items():
             if root[1] == 2:
                 check(complete_min(value["summary"]) >= 0, "invariant")
@@ -299,11 +433,11 @@ def decode_rows(raw):
             key = bytes.fromhex(row["key"])
             require(key and key[0] in KINDS and row["key"] == key.hex(), "KEY", row["key"])
             tag = key[0]
-            require(len(key) == (1 if tag == 0 else 19 if tag in (2, 3, 4, 7) else 17), "KEY", key.hex())
+            require(len(key) == (1 if tag == 0 else 19 if tag in (2, 3, 4, 7, 8) else 17), "KEY", key.hex())
             identity_key = (tag,) if tag == 0 else (tag, str(uuid.UUID(bytes=key[1:17])))
             if len(key) == 19:
                 slot = int.from_bytes(key[17:], "big")
-                require(slot in ((1, 2, 3) if tag in (2, 3) else (1,)), "KEY", key.hex())
+                require(slot in ((1, 2, 3) if tag in (2, 3, 7) else (1, 2)), "KEY", key.hex())
                 identity_key += (slot,)
             require(identity_key not in rows, "DUPLICATE_ID", identity_key)
             payload = bytes.fromhex(row["value"])
@@ -416,6 +550,8 @@ def synthetic(state, lower=False):
 
 
 def literals(state, expected, labels):
+    for name, value in expected.get("derived", {}).items():
+        require(exact(state.records[labels[name]]["derived"], value), "LITERAL_DERIVED", name)
     for name, values in expected.get("postings", {}).items():
         actual = state.records[labels[name]]["derived"]
         require([actual["native_minor"], actual["reporting_minor"]] == values, "LITERAL_AMOUNT", name)
@@ -448,7 +584,7 @@ def exercise_cases(fixtures, report=None):
         state = State(fixtures["tenant"], fixtures["actor"], report["model"] if report else "synthetic-native-model")
         base = fixtures["bases"][case["base"]]
         if base:
-            state = state.apply({"commands": base})
+            state = state.apply({"commands": base, "allocations": fixtures.get("base_allocations", {}).get(case["base"], [])})
         actual = actual_cases.get(case["name"])
         previous_raw = None
         if report:
@@ -480,6 +616,9 @@ def exercise_cases(fixtures, report=None):
                     require(observed["applied_writes"] > 0, "ABORT_NOT_EXERCISED", control)
                 if expected.get("staged_min"):
                     require(observed["work"]["staged_patches"] >= expected["staged_min"], "LATE_FAILURE", control)
+                for kind, value in expected.get("work", {}).items():
+                    require(exact(observed["work"].get(kind), value), "WORK_BOUND",
+                            (control, kind, observed["work"].get(kind), value))
                 previous_raw = image["rows"]
             controls.append(control)
         if report:
@@ -558,6 +697,55 @@ def corruption_controls(state, labels):
     return results
 
 
+def causal_corruption_controls(fixtures):
+    labels = fixtures["ids"]
+    state = State(fixtures["tenant"], fixtures["actor"]).apply({
+        "commands": fixtures["bases"]["baseline"],
+        "allocations": fixtures["base_allocations"]["baseline"]})
+    require(len(state.records) == 19 and len(state.entries) == 7
+            and len(state.rows) + len(state.roots) + len(state.entries) == 76,
+            "LITERAL_INVENTORY", "causal baseline")
+    results = []
+
+    def reject(name, source, mutate, obligation):
+        image = synthetic(source)
+        verify(source, image, complete=True)
+        rows = decode_rows(image)
+        mutate(rows)
+        try:
+            verify(source, raw_rows(rows), complete=True)
+        except Failure as error:
+            require(error.code == obligation, "WRONG_FAILURE", (name, error.code))
+            results.append({"case": name, "obligation": error.code})
+        else:
+            raise AssertionError(name)
+
+    p, output = labels["P"], labels["O_P"]
+    reject("missing_output_role", state, lambda r: r.pop((8, p, 1)), "INVENTORY")
+    reject("missing_reverse_reservation", state, lambda r: r.pop((9, output)), "INVENTORY")
+    reject("missing_private_record", state, lambda r: r.pop((1, output)), "INVENTORY")
+    reject("missing_private_member", state, lambda r: r.pop((3, output, 1)), "INVENTORY")
+    reject("redirected_role_identity", state,
+           lambda r: r[(8, p, 1)].update(output=labels["O_Q"]), "ROLE_VALUE")
+    reject("redirected_reverse_identity", state,
+           lambda r: r[(9, output)].update(id=labels["Q"]), "RESERVED_VALUE")
+    reject("wrong_output_producer", state,
+           lambda r: r[(1, output)]["input"].update(producer=labels["Q"]), "RECORD_VALUE")
+    reject("conflated_validation_query", state,
+           lambda r: r[(4, p, 2)].update(phase="calculate"), "QUERY_VALUE")
+    disabled = state.apply({"commands": [{"op": "update", "id": p, "if_version": "1",
+        "set": {"post": False}, "unset": []}]})
+    reject("lost_inactive_reservation", disabled, lambda r: r.pop((9, output)), "INVENTORY")
+    retired = state.apply({"commands": [{"op": "delete", "id": p, "if_version": "1"}]})
+    reject("lost_retired_role", retired, lambda r: r.pop((8, p, 1)), "INVENTORY")
+    reject("reactivated_retired_role", retired,
+           lambda r: r[(8, p, 1)].update(retired=False), "ROLE_VALUE")
+    zero = state.apply({"commands": [{"op": "update", "id": p, "if_version": "1",
+        "set": {"target": "10"}, "unset": []}]})
+    reject("lost_zero_output", zero, lambda r: r.pop((1, output)), "INVENTORY")
+    return results
+
+
 def model_digest():
     digest = hashlib.sha256(b"rebase-native-slice-model-v1\0")
     for name in sorted(MODEL_FILES):
@@ -570,21 +758,26 @@ def model_digest():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--actual", type=Path)
+    parser.add_argument("--fixtures", type=Path, default=ROOT / "research/fixtures/native-slice.json")
     args = parser.parse_args()
-    fixtures = json.loads((ROOT / "research/fixtures/native-slice.json").read_text(), object_pairs_hook=unique_object)
+    fixtures = json.loads(args.fixtures.read_text(), object_pairs_hook=unique_object)
     actual = json.loads(args.actual.read_text(), object_pairs_hook=unique_object) if args.actual else None
     if actual:
         require(actual["model"] == model_digest(), "MODEL", "compiled source fingerprint")
         require(actual["format"] == "native-slice-run-v1", "LAYOUT", "report")
     controls = exercise_cases(fixtures, actual)
-    base = State(fixtures["tenant"], fixtures["actor"]).apply({"commands": fixtures["bases"]["baseline"]})
+    original_fixtures = json.loads((ROOT / "research/fixtures/native-slice.json").read_text(), object_pairs_hook=unique_object)
+    base = State(original_fixtures["tenant"], original_fixtures["actor"]).apply({"commands": original_fixtures["bases"]["baseline"]})
     require(len(base.records) == 9 and len(base.roots) == 4 and len(base.entries) == 6
-            and len(base.rows) + len(base.roots) + len(base.entries) == 33, "LITERAL_INVENTORY", "baseline")
-    corruptions = corruption_controls(base, fixtures["ids"])
+            and len(base.rows) + len(base.roots) + len(base.entries) == 35, "LITERAL_INVENTORY", "baseline")
+    corruptions = corruption_controls(base, original_fixtures["ids"])
+    causal_fixtures = json.loads((ROOT / "research/fixtures/causal-slice.json").read_text(), object_pairs_hook=unique_object)
+    causal_corruptions = causal_corruption_controls(causal_fixtures)
     result = {"status": "passed", "scope": "native redb observations" if actual else "source oracle and synthetic checker controls only",
               "cases": len(fixtures["cases"]), "operations": controls,
               "valid_checker_controls": 4, "corruption_controls": corruptions,
-              "baseline_kv_rows": 33, "native_runtime_checked": actual is not None}
+              "causal_corruption_controls": causal_corruptions,
+              "baseline_kv_rows": 35, "native_runtime_checked": actual is not None}
     print(json.dumps(result, indent=2))
 
 

@@ -125,3 +125,11 @@ rerun. The [new evidence](evidence/2026-10-22-native-slice.json) fingerprints th
 current sources and explicitly retains the earlier evidence unchanged. The
 native writer/real snapshot acceptance gap is closed for its simpler fixture;
 M3/M5 lifecycle, public API and distributed acceptance remain separate gates.
+
+P1 of the later local-prototype goal now closes native M3/M5 prefix/required-output
+lifecycle for the bounded fixture. Its [result](15-causal-native-result.md) and
+[evidence](evidence/2026-10-22-local-prototype-p1.json) record 39 causal cases / 55
+operations plus the original 68 cases / 93 operations, complete rollback/reopen
+checks and 14 integrated Rust tests. Earlier limitations in this paper describe
+their dated experiment; public runtime/model tooling and distributed acceptance
+remain separate from this P1 result.

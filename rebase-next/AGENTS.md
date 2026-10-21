@@ -9,7 +9,10 @@ This is research plus a bounded proof, not an implemented application runtime.
 Preserve the difference between intent, proposals, established mathematics and
 executed evidence. Update the feasibility report when executable scope changes.
 
-The October 22 bounded native M1/M2/M4 experiment is complete through S1–S5.
+The user now authorized a usable local prototype through the autonomous goal
+in `research/13-local-prototype-plan.md`. Complete its P1–P4 stages; do not stop
+at a research or implementation substage. The earlier bounded native M1/M2/M4
+experiment is complete through S1–S5.
 Read `research/12-native-slice.md` for executed scope and
 `research/08-research-workflow.md` for the remaining gates before interpreting
 “continue.” Do not repeat completed stages or promote this result into a complete

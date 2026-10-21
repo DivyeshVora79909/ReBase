@@ -1,5 +1,20 @@
 # Compact context — 2026-10-22
 
+**Active continuation:** after committing `2109687`, the user explicitly chose
+a usable local prototype as the new autonomous finish line: engine, model
+tooling, mutation/query API and a demonstrable workflow. Follow
+[paper 13](research/13-local-prototype-plan.md) through P1–P4. Start with native
+M3/M5 discovery, ordering and private output lifecycle in the existing engine;
+then complete the model/tools/runtime/demo boundaries. The earlier bounded goal
+below is historical completion, not a request to stop this new goal.
+
+**P1 is now accepted:** 39 causal cases / 55 operations and the 68-case / 93-operation
+connected regression passed independent real-snapshot checks; 14 Rust tests,
+format and Clippy passed. [Paper 15](research/15-causal-native-result.md) records
+scope and [new evidence](research/evidence/2026-10-22-local-prototype-p1.json).
+Proceed to P2–P4 under [paper 14](research/14-local-interface-contract.md), which
+fixes the bundled model, local process API, receipt and cursor semantics.
+
 ## Purpose and authority
 
 ReBase is a calculation engine for connected, typed facts. The redesign changes

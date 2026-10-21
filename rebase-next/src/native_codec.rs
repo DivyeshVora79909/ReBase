@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    native_slice::{Error, Meta, Query, Record, Result},
+    native_slice::{Calculated, Error, Meta, Query, Record, Result},
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-1";
+pub const CODEC: &str = "native-slice-kv-2";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -164,6 +164,8 @@ pub enum Key {
     Incoming(Uuid),
     Direct(Uuid),
     Subscribers(Address),
+    Role(Address),
+    Reserved(Uuid),
 }
 
 impl Key {
@@ -177,6 +179,8 @@ impl Key {
             Self::Incoming(id) => (5, *id, None),
             Self::Direct(id) => (6, *id, None),
             Self::Subscribers(a) => (7, a.id, Some(a.slot)),
+            Self::Role(a) => (8, a.id, Some(a.slot)),
+            Self::Reserved(id) => (9, *id, None),
         };
         let mut bytes = vec![tag];
         bytes.extend_from_slice(id.as_bytes());
@@ -193,8 +197,8 @@ impl Key {
         }
         let tag = *bytes.first().ok_or_else(bad)?;
         let length = match tag {
-            1 | 5 | 6 => 17,
-            2..=4 | 7 => 19,
+            1 | 5 | 6 | 9 => 17,
+            2..=4 | 7 | 8 => 19,
             _ => return Err(bad()),
         };
         if bytes.len() != length {
@@ -207,10 +211,10 @@ impl Key {
             0
         };
         if length == 19
-            && !(if tag == 2 || tag == 3 {
+            && !(if tag == 2 || tag == 3 || tag == 7 {
                 (1..=3).contains(&slot)
             } else {
-                slot == 1
+                (1..=2).contains(&slot)
             })
         {
             return Err(bad());
@@ -224,6 +228,8 @@ impl Key {
             5 => Self::Incoming(id),
             6 => Self::Direct(id),
             7 => Self::Subscribers(a),
+            8 => Self::Role(a),
+            9 => Self::Reserved(id),
             _ => return Err(bad()),
         })
     }
@@ -245,6 +251,16 @@ pub enum Stored {
     Incoming(Vec<Address>),
     Direct(Vec<Address>),
     Subscribers(Vec<Address>),
+    Role(Role),
+    Reserved(Address),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Role {
+    #[serde(with = "uuid_text")]
+    pub output: Uuid,
+    pub retired: bool,
 }
 
 pub fn encode(key: &Key, value: &Stored) -> Result<Vec<u8>> {
@@ -267,14 +283,24 @@ fn validate(key: &Key, value: &Stored) -> Result<()> {
         (Key::Meta, Stored::Meta(meta)) => {
             !meta.codec.is_empty()
                 && !meta.model.is_empty()
-                && meta.counts.iter().map(|n| u32::from(*n)).sum::<u32>() <= 64
+                && meta.counts[..11].iter().map(|n| u32::from(*n)).sum::<u32>() <= 64
                 && meta.counts[2] <= 16
                 && meta.counts[5] <= 16
+                && meta.counts[8] <= 16
+                && meta.counts[9] <= 16
+                && meta.counts[11] <= 48
+                && meta.reserved <= 256
         }
         (Key::Record(_), Stored::Record(r)) => {
             r.contract == r.input.contract()
                 && r.input.validate().is_ok()
-                && r.derived.is_some() == (r.contract == 6)
+                && matches!(
+                    (r.contract, r.derived),
+                    (6, Some(Calculated::Posting(_)))
+                        | (9, Some(Calculated::Adjustment { .. }))
+                        | (10, Some(Calculated::Basis { .. }))
+                        | (1..=5 | 7 | 8 | 11 | 12, None)
+                )
         }
         (Key::Root(a), Stored::Root(r)) => {
             matches!(
@@ -292,19 +318,33 @@ fn validate(key: &Key, value: &Stored) -> Result<()> {
                 && n.summary.kind() == n.leaf.kind()
         }
         (Key::Query(a), Stored::Query(q)) => {
-            a.slot == 1
-                && q.source.slot == 1
-                && q.operation == "latest"
-                && q.phase == "calculate"
-                && q.channel == "rate"
-                && q.lower == "negative_infinity"
-                && (1..=1000).contains(&q.result)
+            q.lower == "negative_infinity"
+                && ((a.slot == 1
+                    && q.source.slot == 1
+                    && q.operation == "latest"
+                    && q.phase == "calculate"
+                    && q.channel == "rate"
+                    && matches!(q.upper, crate::native_slice::Bound::AfterTime(_))
+                    && (1..=1000).contains(&q.result))
+                    || ((1..=2).contains(&a.slot)
+                        && q.source.slot == 2
+                        && q.operation == "sum"
+                        && matches!(q.phase.as_str(), "calculate" | "validate")
+                        && q.channel == "amount"
+                        && q.selected.is_none()
+                        && matches!(
+                            q.upper,
+                            crate::native_slice::Bound::BeforeTime(_)
+                                | crate::native_slice::Bound::All
+                        )))
         }
         (Key::Incoming(_), Stored::Incoming(rows))
         | (Key::Direct(_), Stored::Direct(rows))
         | (Key::Subscribers(_), Stored::Subscribers(rows)) => {
             rows.windows(2).all(|w| w[0] < w[1]) && rows.iter().all(|a| a.slot > 0)
         }
+        (Key::Role(a), Stored::Role(_)) => (1..=2).contains(&a.slot),
+        (Key::Reserved(_), Stored::Reserved(a)) => (1..=2).contains(&a.slot),
         _ => false,
     };
     if valid {
