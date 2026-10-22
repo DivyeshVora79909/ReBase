@@ -1,0 +1,78 @@
+{
+  "format": "rebase-g3e-packaging-evidence-1",
+  "date": "2026-10-23",
+  "status": "build checkpoint verified; final deployment acceptance pending",
+  "base_commit": "54b124907bf6a465af869f7286f699229d81c152",
+  "trial": {
+    "binary_sha256": "3d91ebffb31e2c59e3e885a6a0dde23316a1278334bd8fdc7db7971ff4b08eba",
+    "build": {
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--manifest-path",
+        "/tmp/rebase-next-build-21p6ipcr/source/Cargo.toml",
+        "--target-dir",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/native-slice/build",
+        "--bin",
+        "rebase-next"
+      ],
+      "elapsed_seconds": 79.062,
+      "log": "build.log",
+      "outside_git": true,
+      "source_directory_removed_after_packaging": true
+    },
+    "bundle": "rebase-next-0.6.0-linux-x86_64.tar.gz",
+    "bundle_bytes": 7720878,
+    "bundle_sha256": "0c4532c7d45c9aaade4044202306f3ecffff6e6a7b4e8b5326101d27cf74fd65",
+    "checksummed_files": 157,
+    "source_commit": "54b124907bf6a465af869f7286f699229d81c152",
+    "source_files": 155,
+    "source_tree": "e0607c0cd9fa8dda021e7c2d5ad09dca04d34c5c",
+    "status": "packaged; extracted workflow acceptance is separate"
+  },
+  "verification": {
+    "status": "passed",
+    "source_commit": "54b124907bf6a465af869f7286f699229d81c152",
+    "source_tree": "e0607c0cd9fa8dda021e7c2d5ad09dca04d34c5c",
+    "archive_sha256": "0c4532c7d45c9aaade4044202306f3ecffff6e6a7b4e8b5326101d27cf74fd65",
+    "exact_git_source_files": 155,
+    "checksummed_files": 157,
+    "archive_inventory_exact": true,
+    "source_blob_hashes_match_git": true,
+    "normalized_owner_and_timestamp": true,
+    "all_three_versions_match": true,
+    "changed_file_rejected": true,
+    "missing_binary_rejected": true,
+    "binary_matches_g3d": true,
+    "minimum_glibc": "2.38"
+  },
+  "scope": "Packaging tool trial uses committed G3d sources. The final bundle must be rebuilt after committing the tool/docs and verified through all three models.",
+  "source_fingerprints": {
+    "CONTEXT.md": "f433abee64e1990ee852202c90fd9cbe7397896009771e42a6d127a6e6615413",
+    "README.md": "2811764ecd1710c09ecaa9b77abecc906d688d27723569987a365ad94a0994c4",
+    "docs/deployment.md": "e1920c6e9f7314cc8978b88950d4c18edc6c9bb29147e7b828eb39ae62dd1c47",
+    "docs/server.md": "62e87c3a2ca3afcef6e0b409553879c4e176c26c69c72cc115ea359958e7e100",
+    "docs/storage.md": "e67e84c2fa53eb85f95b821bcf59368147b4bc3511ed14f3cc60df37d29e8c90",
+    "research/28-settlement-refund-gate.md": "375ba0c9365ba0e2da6d6fad494dbad989f3c1e481aa572ecaef048bae78a067",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5"
+  },
+  "artifact_fingerprints": {
+    "target/g3e-package-trial-2/BUNDLE.json": "48a7ff61656f806b392a8d47acf6bd4858101d9a09823bdf0f48f2f4a93bb20f",
+    "target/g3e-package-trial-2/build.log": "7e074a7698180a78ba4cfc2a0ccbdcb1f287cddb9a6fc917c72d7acdd3276d36",
+    "target/g3e-package-trial-2/rebase-next-0.6.0-linux-x86_64.tar.gz": "0c4532c7d45c9aaade4044202306f3ecffff6e6a7b4e8b5326101d27cf74fd65",
+    "target/g3e-package-trial-2/rebase-next-0.6.0-linux-x86_64.tar.gz.sha256": "19cf19337fc11bf6027784b83df5062ca2c51ecc4817808c2339274fa835e3ba",
+    "target/g3e-package-trial-2/result.json": "f4cd1c4a265449938d3dea9a877d582945f8b0f3e8f86e17f78d52aa5b486fb4",
+    "target/g3e-package-trial-2/verification.json": "4c56365f668b5149d7a01d764cdfe0424a435de086b35071d0f4219a3927e75f"
+  },
+  "incidents": [
+    "Initial git archive invocation inherited the package subdirectory and produced no Cargo.toml. Running archive from the repository root fixed it; the accepted trial verifies every source blob and the complete inventory."
+  ],
+  "next": "Commit/publish the packaging tool and deployment instructions, build that committed snapshot, verify extracted workflows and recovery, then publish G3e release acceptance.",
+  "documentation": {
+    "files": 41,
+    "relative_file_links": 357,
+    "broken_targets": 0
+  }
+}

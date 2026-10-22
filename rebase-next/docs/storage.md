@@ -4,8 +4,8 @@ The supported backend is one process owning one embedded redb file. Runtime
 writes, derived repairs, indexes, authority and receipts commit atomically.
 Network startup checks complete current-state integrity before listening.
 Operator commands below take the file lock; stop the HTTP process first.
-These examples use the default `calculation` model. For equipment, prepend
-`--model equipment` before every command, including `version`, `restore`,
+These examples use the default `calculation` model. For equipment or invoicing,
+prepend `--model equipment` or `--model invoicing` before every command, including `version`, `restore`,
 `receipts archive`, and `reset`. Wrong-model opens and restores reject.
 
 ```sh
@@ -25,7 +25,7 @@ Restore writes a temporary database, validates complete table inventory, model
 and format, verifies current calculations and structures, closes/reopens it, and
 only then atomically publishes a **new** destination. Existing files/symlinks
 are never overwritten. Failed validation leaves no published destination or
-owned temporary file. Backup and restore are bounded to 64 MiB for either
+owned temporary file. Backup and restore are bounded to 64 MiB for each
 compiled model.
 Use one restored instance as the replacement, not simultaneous writable clones.
 
@@ -44,6 +44,9 @@ still verify calculation fixture histories and rollback independently. Equipment
 checking independently derives interval allocation/event arithmetic from its public
 sources and compares publications, outputs and memberships; focused tests cover
 its lifecycle, rollback and public HTTP workflow.
+Invoicing checking reconstructs pricing, tax reassessments, linked credits,
+payment/refund capacity and complete-time balance/claim histories from public
+sources before comparing private outputs and maintained trees.
 
 ## Receipt retention without unsafe retries
 

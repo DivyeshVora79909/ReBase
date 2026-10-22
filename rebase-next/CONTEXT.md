@@ -15,12 +15,25 @@ G3c store rejects with physical bytes unchanged; compatible binary/store remain
 under `target/g3c-retained-53ff9e7/`. Crashed files can require redb recovery first.
 New referenced parents precede children; deleted calculation producer UUIDs stay
 reserved. Those existing API constraints are tested and documented.
-**Exact next action:** after committing/pushing G3d, package the 0.6 binary,
-source, model tools and deployment templates with identities and checksums.
-Build from copied sources outside Git, then run the extracted bundle's calculation,
-equipment and invoicing HTTP workflows, crash recovery and verified restore.
-Record platform dependencies, exact run commands and remaining limits; commit/push
-G3e and mark this deployment goal complete. Do not repeat accepted G1/G2 workloads.
+G3d is committed and published as `54b1249`. The shell has no HTTPS Git credentials;
+the authenticated GitHub connector published the exact checked tree and updated
+`main` against its expected parent. Local `main` was aligned only after fetching
+and verifying identical trees; the original local commit remains at
+`refs/codex/checkpoints/g3d-before-connector`.
+**G3e build checkpoint verified:** `tools/package.py` exports committed sources outside Git,
+builds with the locked dependencies and reusable Cargo cache, and records exact
+source/model/platform identities in a normalized archive with checksums. The
+deployment guide now covers extracted three-model execution and host installation.
+[Packaging evidence](research/evidence/2026-10-23-g3e-package.json) proves exact
+Git source inventory, all 157 trial checksums, changed/missing-file rejection and
+a byte-identical G3d executable built outside Git.
+**Exact next action:** commit/publish the packaging tool/docs, then
+build that committed snapshot. Check extracted checksums and run the packaged
+calculation workflow (`--writes 0`), both 64-source capacity/recovery workflows,
+and invoicing settlement/recovery. Verify fresh issuer/template setup and failed
+restore isolation; record the release artifacts, platform and remaining limits.
+Commit/publish G3e acceptance and mark the deployment goal complete. No external
+host installation is required, and accepted G1/G2 populations need no repeat run.
 
 **D1–D6, G1 and G2 complete: reusable compiled bounded backend and developer tools; no frontend.**
 **G3a accepted: exact values**, [gate/result](research/25-exact-values-gate.md).

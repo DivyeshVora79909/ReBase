@@ -20,7 +20,14 @@ its own credentials, runs the public API workflow and bounded workload, checks
 restart/restore, then stops its server. The directory retains a usable store,
 saved plans and `result.json`. Use a new output directory for each run.
 Packaged releases include `bin/rebase-next`; use `--binary bin/rebase-next`
-to run the harness without building Rust locally.
+to run the harness without building Rust locally. The [deployment guide](docs/deployment.md#build-and-verify-a-release-bundle)
+shows how to build a committed source bundle and verify its extracted tools.
+For the paid/refunded invoicing workflow in an extracted bundle:
+
+```sh
+mkdir -p target
+python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing-run
+```
 
 | Task | Guide |
 | --- | --- |
@@ -58,7 +65,8 @@ reject atomically. Store/codec format 4 and the new model identities require a
 new store; format 3 has no implicit migration. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with
-`rebase-next --model equipment <command>`; calculation is the default. Use the
+`rebase-next --model equipment <command>` or invoicing with
+`rebase-next --model invoicing <command>`; calculation is the default. Use the
 same selector for every command against that store. Pure model commands need no store.
 `fixture plan` produces authored inputs; `tools/client.py` sends the ordinary
 public operations. Stored plans retain the original actor/store/receipt context

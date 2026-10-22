@@ -8,7 +8,7 @@ no frontend or external host installation.
 ## Checkpoints and finish line
 
 1. **G3d:** implement the native settlement contracts, independent source checks,
-   fixtures and authenticated HTTP acceptance below; verified, ready to commit and push.
+   fixtures and authenticated HTTP acceptance below; committed/published as `54b1249`.
 2. **G3e:** package the supported backend and tools, verify the extracted bundle
    through all three models and recovery, record platform/identity/limits and
    exact deployment commands; commit and push the shared release continuation.
@@ -145,3 +145,28 @@ requirements, verify an extracted copy through all three models and recovery,
 then publish the release result and exact deployment commands. This checkpoint
 does not establish larger invoicing populations, full accounting parity,
 external transfers, distributed conformance or a frontend.
+
+## G3e build checkpoint
+
+[Packaging evidence](evidence/2026-10-23-g3e-package.json) records a successful
+native build from an exported Git tree outside the checkout. The ordinary
+[`tools/package.py`](../tools/package.py) command packages committed sources,
+builds with the lockfile and reusable Cargo cache, and emits `BUNDLE.json`,
+`SHA256SUMS` and a normalized tar/gzip archive. The manifest reads the model
+identities, codec and limits from the compiled executable.
+
+The trial uses G3d commit `54b1249`: all **155 source files** match their Git blob
+identities, and all **157 payload checksums** pass after extraction. The executable
+is byte-for-byte identical to the G3d build. Changed-file and missing-binary
+controls fail checksum verification. The archive contains exactly the source
+tree plus the binary, manifest and checksum list; generated runtime state is
+excluded. The first trial caught an empty archive caused by invoking Git from
+the package subdirectory; exporting from the repository root fixed it, and the
+successful trial checks every source blob independently.
+
+This verifies the packaging tool against the already committed G3d source. After
+committing/publishing the tool and updated deployment instructions, build that
+new snapshot so the final bundle contains them too. Then verify the extracted
+calculation workflow, both 64-source model/recovery probes, invoicing settlement,
+template identity setup and failed-restore isolation. Publish final release
+evidence separately from the immutable bundle it certifies.

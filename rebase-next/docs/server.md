@@ -1,10 +1,11 @@
 # Authenticated backend
 
 This network boundary serves one selected compiled model over one embedded
-redb process. Calculation is the default; add `--model equipment` before `init`,
-`serve` and other operator commands for equipment. Identity configuration and
+redb process. Calculation is the default; add `--model equipment` or
+`--model invoicing` before `init`, `serve` and other operator commands for those
+models. Identity configuration and
 the HTTP protocol are shared. It does not add a distributed backend or a full
-accounting model. The [current result](../research/24-population-scaling-result.md)
+accounting model. The [current checkpoint](../research/28-settlement-refund-gate.md)
 and dated [release checkpoints](../research/17-deployable-backend.md) own acceptance.
 
 Build with `cargo build --locked --release --bin rebase-next`. Generate your own

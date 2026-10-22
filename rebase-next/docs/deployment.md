@@ -1,14 +1,7 @@
-# ReBase Next 0.4.0 deployment and acceptance
+# ReBase Next 0.6.0 deployment
 
-The 0.6 source continuation adds [bounded invoicing and settlement](invoicing.md), using the same
-server/operator commands with `--model invoicing`. Its initial profile is
-64 public sources/256 outputs/512 retained roles. The measurements and release
-bundle below remain the accepted 0.4 calculation/equipment release; the
-[G3d/G3e gate](../research/28-settlement-refund-gate.md) records the new model's
-evidence and the pending three-model deployment checkpoint.
-
-This release supports two compiled models, `calculation` and `equipment`, on one
-embedded redb store owned by one server process. Select one model per store;
+This release supports `calculation`, `equipment` and [invoicing](invoicing.md)
+on one embedded redb store owned by one server process. Select one model per store;
 its identity is checked on every open and operation. It provides exact connected calculations, historical
 invariants, private outputs, transaction-scoped DAG authority, authenticated HTTP,
 replay receipts, bounded queries, model tools and verified offline recovery.
@@ -16,16 +9,64 @@ The release is suitable for bounded applications and developer harnesses within
 the limits below. General model loading, a full accounting model, external effects,
 distributed storage and a frontend remain separate capability gates.
 
+The [G3d/G3e checkpoint](../research/28-settlement-refund-gate.md) owns settlement
+and bundle acceptance. Calculation/equipment's larger population evidence remains
+in the [G2 result](../research/24-population-scaling-result.md). Invoicing retains
+64 public sources/256 outputs/512 retained roles.
+
+## Build and verify a release bundle
+
+From the Git checkout, using Python 3.12+, Git, Rust 1.95.0, a C/C++ toolchain,
+CMake and GNU `readelf` (binutils):
+
+```sh
+python3 -B tools/package.py --out target/my-bundle
+cd target/my-bundle
+sha256sum --check rebase-next-0.6.0-linux-x86_64.tar.gz.sha256
+tar -xzf rebase-next-0.6.0-linux-x86_64.tar.gz
+cd rebase-next-0.6.0-linux-x86_64
+sha256sum --check SHA256SUMS
+mkdir -p target
+python3 -B tools/harness.py --binary bin/rebase-next --out target/calculation-workflow --writes 0
+python3 -B tools/capacity.py --binary bin/rebase-next --out target/model-recovery --populations 64
+python3 -B tools/invoicing.py --binary bin/rebase-next --out target/invoicing-workflow
+```
+
+Packaging reads **committed HEAD**, exports only `rebase-next/` into a temporary
+directory outside Git, and builds that copy with the locked dependencies. It
+reuses the Cargo cache at `target/native-slice/build`; choose another cache with
+`--target-dir`. The new output directory contains the archive, its checksum,
+`build.log`, `BUNDLE.json` and `result.json`. Build failures preserve the log.
+Uncommitted edits are excluded; commit intended source/tool changes first.
+
+The archive includes `bin/rebase-next`, source, locked dependencies' version
+metadata, schemas, tests, model tools and deployment templates. `BUNDLE.json`
+records the exact source commit/tree/file hashes, binary hash, three model
+identities and limits, Rust version and dynamic-library requirements. Source
+dependencies can be downloaded by Cargo when rebuilding; they are not vendored.
+Generated stores, issuer keys, tokens and plans are excluded. Public test fixture
+keys remain under `tests/fixtures/` solely to reproduce the tests.
+
+The extracted workflows use the packaged binary/tools without Git or the original
+checkout. Python 3.11+ and OpenSSL are sufficient once the binary's host libraries
+are available. The calculation workflow checks fixture composition, replay and
+receipt archiving. Both 64-source model runs and the invoicing workflow check
+source arithmetic, rollback, crash recovery and verified restore. These commands
+retain private disposable data under the extracted `target/` and stop all servers
+they start. Each output directory must be new.
+
 ## Run a self-contained acceptance scenario
 
 From this directory, using Rust 1.95.0, a C/C++ toolchain and CMake for AWS-LC:
 
 ```sh
 export CARGO_TARGET_DIR=target/native-slice/build
+export CARGO_INCREMENTAL=0
 cargo build --locked --release --bin rebase-next
 python3 -B tools/test_client.py -v
 python3 -B tools/harness.py --binary target/native-slice/build/release/rebase-next --out target/my-release-run --writes 128 --readers 4
 python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-capacity-run
+python3 -B tools/invoicing.py --binary target/native-slice/build/release/rebase-next --out target/my-invoicing-run
 ```
 
 The harness exercises the calculation developer workflow and concurrent workload.
@@ -97,11 +138,12 @@ It is not a static cross-platform executable. Source is included so another
 architecture can build its own binary with the pinned toolchain/lockfile.
 
 The following commands install on a host you administer. They are not run by the
-build or harness. Use the packaged `bin/rebase-next` or the release build above:
+build or harness. Run them from the extracted bundle; for a source build, replace
+`bin/rebase-next` with `target/native-slice/build/release/rebase-next`:
 
 ```sh
 sudo useradd --system --home-dir /var/lib/rebase-next --shell /usr/sbin/nologin rebase-next
-sudo install -m 0755 target/native-slice/build/release/rebase-next /usr/local/bin/rebase-next
+sudo install -m 0755 bin/rebase-next /usr/local/bin/rebase-next
 sudo install -d -m 0700 -o rebase-next -g rebase-next /var/lib/rebase-next
 sudo install -d -m 0750 -o root -g rebase-next /etc/rebase-next
 ```
@@ -136,26 +178,33 @@ sudo systemctl enable --now rebase-next
 curl --fail http://127.0.0.1:8080/health
 ```
 
-The default service unit and commands select `calculation`. To deploy equipment,
-place `--model equipment` **before** the command on initialization and every
-subsequent operator/server invocation. For example:
+The default service unit and commands select `calculation`. To deploy equipment
+or invoicing, place the corresponding `--model` selector **before** the command
+on initialization and every subsequent operator/server invocation. For invoicing:
 
 ```sh
-sudo -u rebase-next /usr/local/bin/rebase-next --model equipment init /var/lib/rebase-next/equipment.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
-/usr/local/bin/rebase-next --model equipment version
+sudo -u rebase-next /usr/local/bin/rebase-next --model invoicing init /var/lib/rebase-next/invoicing.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
+/usr/local/bin/rebase-next --model invoicing version
 ```
 
 Set the installed service's `ExecStart` to
-`/usr/local/bin/rebase-next --model equipment serve /var/lib/rebase-next/equipment.redb --config /etc/rebase-next/server.json`
+`/usr/local/bin/rebase-next --model invoicing serve /var/lib/rebase-next/invoicing.redb --config /etc/rebase-next/server.json`
 and reload systemd before starting it. The server configuration contains identity,
 listen and admission settings; model selection belongs to the command line.
-Use the same identity provisioning steps for either model. There is no RPC model
+Use the same identity provisioning steps for every model. There is no RPC model
 switch; a client uses the identity returned by `session.describe`/`model.describe`.
 
 The sample IDs illustrate the two distinct roles; replace them with your own
 canonical UUIDs and issue credentials for that administrator. `/health` is
-liveness only. Check actual readiness with authenticated `session.describe`
-and a declared query. Startup runs complete current-state verification.
+liveness only. Issue a token using the [server guide](server.md), save it in a
+private `token.txt`, and check actual readiness from the trusted client machine:
+
+```sh
+python3 -B tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt call session.describe
+```
+
+Then execute a declared query or an [invoicing fixture](invoicing.md).
+Startup runs complete current-state verification.
 The template limits the process to 512 MiB, 96 tasks and 1024 file descriptors;
 it grants writes only to its state directory. Those are deployment limits, not
 claims that every supported workload fits every constrained host.
@@ -173,8 +222,9 @@ reconcile the saved plan rather than constructing a new operation.
 | Boundary | Enforced limit or behavior |
 | --- | --- |
 | Storage/tenancy | One process, one redb file, one tenant; serialized writers and concurrent snapshot readers |
-| Models | `calculation`: ten public source contracts plus private Pin/Output; `equipment`: Pool 101, Delivery 205, Reservation 410, private Output 900 |
-| Population | Each model: 4,096 public sources, 8,192 active outputs, 16,384 retained output reservations |
+| Models | `calculation`: ten public source contracts plus private Pin/Output; `equipment`: Pool 101, Delivery 205, Reservation 410, private Output 900; `invoicing`: eight public and seven private contracts |
+| Calculation/equipment population | 4,096 public sources, 8,192 active outputs, 16,384 retained output reservations |
+| Invoicing population | 64 public sources, 256 active outputs, 512 retained output reservations |
 | Authority | 128 principals, at most eight direct parents each, 1280 reader streams opened per query |
 | Mutation | 1–64 unique source commands, at most 32 returning IDs, 200000 charged engine work units |
 | Query | UUID ordering through declared paths; 1–32 results and 1–128 candidate visits per page; bounded existence may be unknown |
@@ -195,8 +245,9 @@ count or archiving receipts does not automatically shrink the redb file.
 
 ## Verification and upgrades
 
-The [population result](../research/24-population-scaling-result.md) records the
-current workload evidence and source/build identities. The
+The [settlement/deployment checkpoint](../research/28-settlement-refund-gate.md)
+and [population result](../research/24-population-scaling-result.md) record
+their respective workload evidence and source/build identities. The
 [earlier calculation release evidence](../research/evidence/2026-10-22-d6-release.json)
 retains its original bounded workload and process measurements. These observations
 do not establish power-loss durability, a sustained throughput target, the full
@@ -204,16 +255,20 @@ DAG/population cross-product, remote-network latency or distributed capacity.
 
 Before replacing a deployed binary, stop the service, run `check`, create a
 verified backup, and compare `version` model/store identities with the intended
-release. Version 0.4.0 uses `rebase-store-4` and native codec
+release. Version 0.6.0 uses `rebase-store-4` and native codec
 `native-slice-kv-4`; calculation behavior is `rebase-calculation-contract-4` and
-equipment behavior is `equipment-reservations-3`. Resolved declarations also
-contribute to each model identity. Format 2 and 3 stores/backups
+equipment behavior is `equipment-reservations-3`. Their 0.4/0.5 identities remain
+compatible. Invoicing behavior is now `invoice-assessments-2`; its 0.5 store
+requires the retained 0.5 binary, with no implicit migration. Resolved declarations
+also contribute to each model identity. Format 2 and 3 stores/backups
 are deliberately incompatible. There is no silent migration, automatic reset or
 reinterpretation of old native payloads. Keep the
 previous compatible binary and its verified backups; create/check those backups
 with that binary before upgrading. An older-format backup must be restored using
-its compatible old binary. Use a new store for 0.4.0 unless an explicit reviewed
-migration is supplied. Test a restored compatible
+its compatible old binary. Use a new store when model or format identity changes
+unless an explicit reviewed migration is supplied. Clean incompatible opens
+preserve physical bytes; crashed stores can require allocator recovery first,
+so recover them with their matching binary. Test a restored compatible
 copy offline, then use one instance as the replacement. Roll back with the
 pre-upgrade snapshot and its matching binary. Keep saved plans and receipt
 archives for reconciliation and keep identity key backups separately.
