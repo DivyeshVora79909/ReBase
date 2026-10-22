@@ -1,5 +1,11 @@
 # Rust feasibility and stop boundary
 
+**G3c continuation:** [bounded invoicing](27-invoicing-gate.md) adds a third
+compiled model in package 0.5, with 72 Rust tests and 58 independent HTTP mutation
+scenarios, including 40 seeded history/rule stress batches, source-limit rejection,
+recovery and copied-source execution. It proves 11555 → 9244 without duplicating
+the engine. Payment/refund, full accounting and rational FX remain later gates.
+
 **G3b continuation:** [typed parent parameters](26-parent-parameters-gate.md)
 now connect declared authored rules to pure evaluation without persisted copies.
 All 66 Rust tests and 116 independent cases pass; both prior 4,096-source model

@@ -20,9 +20,28 @@ replay and reopen. All 66 Rust tests and 116 independent native/local cases pass
 copies of both G2 4,096-source stores pass complete checks. Existing bindings use
 `()`, and their model/store identities remain unchanged. No derived/multihop
 parameter support or sandboxed purity is implied.
-**Next: G3c bounded invoicing**, using exact values and typed parent parameters:
-fractional pricing, dated tax/tax-on-tax reassessments and explicit monetary
-credits, then a separate settlement/refund checkpoint. See G3b continuation.
+G3b is committed and pushed as `af858b0`.
+**G3c accepted: [bounded invoicing](research/27-invoicing-gate.md).** Package 0.5
+adds `--model invoicing`: five public/four private contracts, fractional pricing,
+dated cumulative tax/tax-on-tax reassessment, linked monetary credits and two
+repeatable developer fixtures. Behavior `invoice-assessments-1`, model
+`731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f`;
+existing model/store identities unchanged. Initial envelope 64/256/512. All 72
+Rust tests and 116 independent native/local cases pass. The independent Fraction
+HTTP workflow passes 58 mutations /200 commands, including 40 seeded stress
+batches, the 64-source boundary, replay/reopen/crash/restore; standalone copied
+sources/tools pass with an identical optimized binary. Fixtures prove 11555 → 9244.
+**Next: G3d settlement/refund** on this binding: Treasury, Payment and linked
+Refund, Invoice paid/balance and gross directional receivable/payable histories.
+No mirrored counterparty ledger. Fully paid 11555 then Credit 2001 + Refund 2311
+at time 50, reassessments −200 at 51 /−110 at 52 should end with gross/paid/cash
+9244, balance 0, R=P=13866. Credit alone or refund delayed to 52 must reject the
+historical balance. Retain the accepted binary before bumping behavior to 2.
+
+Cloud verification uses `CARGO_INCREMENTAL=0` after debug incremental cache
+filled the 32 GiB workspace. Only generated incremental cache was removed; keep
+source/evidence/observations. Check formatting/Clippy before expensive release
+tests to avoid repeating optimized compilation for style-only failures.
 The user explicitly requests a continuous checkpoint loop: verify, commit, push,
 start the next checkpoint without waiting for another command. Keep context here
 and in commit messages for switching agents; preserve uncommitted work until read.

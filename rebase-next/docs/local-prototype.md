@@ -1,5 +1,9 @@
 # Run and use the local prototype
 
+The 0.5 source also provides [bounded invoicing](invoicing.md) via
+`--model invoicing`, sharing these operations. The examples and original
+calculation/equipment acceptance below remain dated.
+
 ReBase Next 0.4.0 provides two compiled models, exact values and a local redb
 store. The examples below use the default `calculation` model. Select equipment
 with `--model equipment` before the command; the same operator and public API

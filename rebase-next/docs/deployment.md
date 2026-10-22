@@ -1,5 +1,11 @@
 # ReBase Next 0.4.0 deployment and acceptance
 
+The 0.5 source continuation adds [bounded invoicing](invoicing.md), using the same
+server/operator commands with `--model invoicing`. Its initial profile is
+64 public sources/256 outputs/512 retained roles. The measurements and release
+bundle below remain the accepted 0.4 calculation/equipment release; the
+[G3c gate](../research/27-invoicing-gate.md) records the new model's own evidence.
+
 This release supports two compiled models, `calculation` and `equipment`, on one
 embedded redb store owned by one server process. Select one model per store;
 its identity is checked on every open and operation. It provides exact connected calculations, historical

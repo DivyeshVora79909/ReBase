@@ -7,6 +7,11 @@ The calculation and equipment compiled models use the same client and operator
 commands. Select equipment with a leading `--model equipment` on the backend
 CLI; the HTTP client learns the selected model identity from the server.
 
+The 0.5 [invoicing model](invoicing.md) uses the same tools with
+`--model invoicing` and repeatable `invoice` / `invoice-credit` fixtures. The
+ordinary [invoicing acceptance script](../tools/invoicing.py) composes this client
+with an independent Fraction oracle; it is not another production mutation path.
+
 `model public`, `model developer`, `model explain` and `model validate` use the
 same prepared declarations and native bindings as the engine. Public catalogs
 exclude private roles and fixture recipes. The developer catalog names the

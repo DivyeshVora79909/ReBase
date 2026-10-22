@@ -2,3 +2,6 @@
 pub mod calculation;
 mod calculation_reactivity;
 pub mod equipment;
+pub mod invoicing;
+mod invoicing_check;
+mod invoicing_fixtures;

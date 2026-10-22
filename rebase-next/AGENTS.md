@@ -26,10 +26,13 @@ implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.
 G3a accepts [exact values](research/25-exact-values-gate.md), and G3b accepts
 [typed authored-parent parameters](research/26-parent-parameters-gate.md), with
-source-derived native acceptance and rollback checks. Continue with G3c's bounded
-invoicing model, then settlement/refund. Existing production bindings and
-persisted formats are unchanged by G3a/G3b; parameters do not add hidden reads,
+source-derived native acceptance and rollback checks. G3c accepts
+[bounded invoicing](research/27-invoicing-gate.md); continue with G3d settlement
+and refund on that binding. Existing calculation/equipment bindings and
+persisted formats are unchanged; parameters do not add hidden reads,
 published-parent or multihop dependency support.
+For constrained cloud verification use `CARGO_INCREMENTAL=0`, preserve evidence,
+and run formatting/Clippy before the optimized suite to catch cheap failures.
 Do not report full production or old-model parity merely because a server starts.
 Storage/model identity now uses an explicit behavior contract, not build bytes.
 Bump the affected `Binding::BEHAVIOR` for semantic binding/calculation/causality/

@@ -1,0 +1,1003 @@
+{
+  "format": "rebase-g3c-invoicing-evidence-1",
+  "date": "2026-10-22",
+  "status": "accepted",
+  "goal": "G3c bounded invoicing, credits and cumulative reassessment",
+  "base_commit": "af858b095554cbc22c64180ba8be448b070847c7",
+  "versions": {
+    "calculation": {
+      "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+      "store_format": "rebase-store-4",
+      "version": "0.5.0"
+    },
+    "equipment": {
+      "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+      "store_format": "rebase-store-4",
+      "version": "0.5.0"
+    },
+    "invoicing": {
+      "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+      "store_format": "rebase-store-4",
+      "version": "0.5.0"
+    }
+  },
+  "codec": "native-slice-kv-4",
+  "invoicing_behavior": "invoice-assessments-1",
+  "envelope": {
+    "public_sources": 64,
+    "active_outputs": 256,
+    "retained_roles": 512,
+    "commands": 64,
+    "returning": 32,
+    "mutation_work": 200000
+  },
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.255,
+      "log": "target/g3c-fmt.log"
+    },
+    {
+      "name": "debug-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 21.507,
+      "log": "target/g3c-debug-tests.log",
+      "tests_passed": 72
+    },
+    {
+      "name": "release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 135.084,
+      "log": "target/g3c-release-tests.log",
+      "tests_passed": 72
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.139,
+      "log": "target/g3c-clippy.log"
+    },
+    {
+      "name": "client",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.643,
+      "log": "target/g3c-client.log"
+    },
+    {
+      "name": "capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.083,
+      "log": "target/g3c-capacity-controls.log"
+    },
+    {
+      "name": "foundation",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.559,
+      "log": "target/g3c-foundation.log"
+    },
+    {
+      "name": "foundation-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-250984-1792694496093360004/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.415,
+      "log": "target/g3c-foundation-independent.log"
+    },
+    {
+      "name": "causal",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice",
+        "--",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.395,
+      "log": "target/g3c-causal.log"
+    },
+    {
+      "name": "causal-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-251030-1792694501245694032/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.476,
+      "log": "target/g3c-causal-independent.log"
+    },
+    {
+      "name": "local",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.431,
+      "log": "target/g3c-local.log"
+    },
+    {
+      "name": "local-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/local-prototype/run-251037-1792694505675088237/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.142,
+      "log": "target/g3c-local-independent.log"
+    },
+    {
+      "name": "release-binary",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.089,
+      "log": "target/g3c-release-binary.log"
+    },
+    {
+      "name": "calculation-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.006,
+      "log": "target/g3c-calculation-identity.log"
+    },
+    {
+      "name": "equipment-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.004,
+      "log": "target/g3c-equipment-identity.log"
+    },
+    {
+      "name": "invoicing-oracle-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_invoicing.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.087,
+      "log": "target/g3c-invoicing-oracle-controls.log"
+    },
+    {
+      "name": "invoicing-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "invoicing",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.006,
+      "log": "target/g3c-invoicing-identity.log"
+    },
+    {
+      "name": "invoicing-http",
+      "command": [
+        "python3",
+        "-B",
+        "tools/invoicing.py",
+        "--binary",
+        "target/verification-build/release/rebase-next",
+        "--out",
+        "target/g3c-final-http"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.065,
+      "log": "target/g3c-invoicing-http.log"
+    }
+  ],
+  "independent_corpora": [
+    {
+      "name": "foundation",
+      "cases": 68,
+      "operations": 93
+    },
+    {
+      "name": "causal",
+      "cases": 39,
+      "operations": 55
+    },
+    {
+      "name": "local",
+      "cases": 9,
+      "operations": 14
+    }
+  ],
+  "native_controls": {
+    "invoicing_integration_tests": 5,
+    "rejection_batches_with_complete_state_rollback": 11,
+    "corruption_test_families": [
+      "derived values",
+      "private output values",
+      "query cache values",
+      "tree heights",
+      "missing selector nodes"
+    ],
+    "fixture_recipes": 2,
+    "source_checker": "independent chronological source histories plus complete Snapshot::finish inventory/structure; shared exact numeric primitive has separate Fraction proof"
+  },
+  "http": {
+    "status": "passed",
+    "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+    "public_sources": 64,
+    "baseline_gross": "11555",
+    "corrected_gross": "9244",
+    "operations": [
+      {
+        "name": "baseline",
+        "commands": 6,
+        "result": "committed"
+      },
+      {
+        "name": "credit-and-reassess",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "historical-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "parent-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "net-rule-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "zero-reassessment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-00",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-01",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-02",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-03",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-04",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-05",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-06",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-07",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-08",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-09",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-10",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-11",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-12",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-13",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-14",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-15",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-16",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-17",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-18",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-19",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-20",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-21",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-22",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-23",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-24",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-25",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-26",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-27",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-28",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-29",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-30",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-31",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-32",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-33",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-34",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-35",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-36",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-37",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-38",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-39",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "restore-literal-scenario",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "duplicate-time",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "overcredit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "early-credit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "inexact-rule",
+        "commands": 1,
+        "result": "inexact"
+      },
+      {
+        "name": "overflow-price",
+        "commands": 1,
+        "result": "overflow"
+      },
+      {
+        "name": "missing-rule",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "fill-source-envelope",
+        "commands": 54,
+        "result": "committed"
+      },
+      {
+        "name": "source-overflow",
+        "commands": 1,
+        "result": "state_limit"
+      }
+    ],
+    "stress_seed": 20261022,
+    "stress_batches": 40,
+    "integrity": {
+      "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+      "nodes": 16,
+      "receipts": 51,
+      "records": 77,
+      "revision": "51",
+      "roots": 113,
+      "rows": 490,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "3e04f0e7-bcef-424c-b656-45e833e97931"
+    },
+    "reopen": true,
+    "crash_recovery": true,
+    "restore": true,
+    "binary_sha256": "1082f3f665e493b46c9f1c481e61bb836e4913fcc9f2ef1fdc9f456c2179722c"
+  },
+  "isolated": {
+    "source_directory": "/tmp/rebase-g3c-isolated-018rkrzh/rebase-next",
+    "outside_git": true,
+    "build": "passed",
+    "standalone_http": "passed",
+    "binary_sha256": "1082f3f665e493b46c9f1c481e61bb836e4913fcc9f2ef1fdc9f456c2179722c",
+    "identical_optimized_binary": true,
+    "elapsed_seconds": 2.033,
+    "http_result": "/workspace/ReBase/rebase-next/target/g3c-isolated-http/result.json"
+  },
+  "isolated_http": {
+    "status": "passed",
+    "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+    "public_sources": 64,
+    "baseline_gross": "11555",
+    "corrected_gross": "9244",
+    "operations": [
+      {
+        "name": "baseline",
+        "commands": 6,
+        "result": "committed"
+      },
+      {
+        "name": "credit-and-reassess",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "historical-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "parent-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "net-rule-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "zero-reassessment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-00",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-01",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-02",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-03",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-04",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-05",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-06",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-07",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-08",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-09",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-10",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-11",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-12",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-13",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-14",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-15",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-16",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-17",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-18",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-19",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-20",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-21",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-22",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-23",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-24",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-25",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-26",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-27",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-28",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-29",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-30",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-31",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-32",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-33",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-34",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-35",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-36",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-37",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-38",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-39",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "restore-literal-scenario",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "duplicate-time",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "overcredit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "early-credit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "inexact-rule",
+        "commands": 1,
+        "result": "inexact"
+      },
+      {
+        "name": "overflow-price",
+        "commands": 1,
+        "result": "overflow"
+      },
+      {
+        "name": "missing-rule",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "fill-source-envelope",
+        "commands": 54,
+        "result": "committed"
+      },
+      {
+        "name": "source-overflow",
+        "commands": 1,
+        "result": "state_limit"
+      }
+    ],
+    "stress_seed": 20261022,
+    "stress_batches": 40,
+    "integrity": {
+      "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+      "nodes": 16,
+      "receipts": 51,
+      "records": 77,
+      "revision": "51",
+      "roots": 113,
+      "rows": 490,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "d30897df-00d7-4d6a-a519-0bf329c9309d"
+    },
+    "reopen": true,
+    "crash_recovery": true,
+    "restore": true,
+    "binary_sha256": "1082f3f665e493b46c9f1c481e61bb836e4913fcc9f2ef1fdc9f456c2179722c"
+  },
+  "documentation": {
+    "files": 40,
+    "relative_file_links": 341,
+    "broken_targets": 0
+  },
+  "verification_incidents": [
+    "Disk full from generated debug incremental artifacts; removed only incremental cache, disabled further incremental caching, then final debug/release checks passed.",
+    "Initial HTTP oracle incorrectly included internal native enum kind in public projected fields; corrected oracle projection, final comparisons passed."
+  ],
+  "binary_sha256": "1082f3f665e493b46c9f1c481e61bb836e4913fcc9f2ef1fdc9f456c2179722c",
+  "source_fingerprints": {
+    "AGENTS.md": "074d2b2b2da977577762e205ffa1c0218d8bfc9a6ad64f06d1e82a8c0c8fe41c",
+    "CONTEXT.md": "fc90487b86e82365a03ac15126423b9d847d876ebd3365494ea0fc942d485020",
+    "Cargo.lock": "b63ed63433d4991ae45ee36527fceb727ff619a2604716583f8192a3e3720dea",
+    "Cargo.toml": "a4748d3580a7af9a77037ed2580c85602e4f03cfbabdb76408c9a5a5949b3472",
+    "README.md": "46e2eca6107401780d003785d621eda6e0a699bc0c65da625907cdd21b12344c",
+    "docs/compiled-models.md": "45ee4620d2bd78d7fb0c6f78b5c1221bbbd0df05790e355061cb27b7cf1589d7",
+    "docs/deployment.md": "1b1f4ba366112bb5247fb85d6d7ecbf326811a1f8862ed2e1c24d694be2e5db2",
+    "docs/developer-tools.md": "db29490ce80f55b0cb2d2a0b8a3fe270928d080e6124c4e3f99aa86b10fee35e",
+    "docs/invoicing.md": "773d4d305c39904cfc5f43b8bd36cdcefc57bdec339f3816f63aabb3775e0547",
+    "docs/local-prototype.md": "2bcb9982a00e48f01d7c8b9c70c3d9330687ba9a1ff0dd954a0bc10af09a965c",
+    "research/05-feasibility.md": "269ba584c09a9d3123b4f124e468d76ee81a4e8a0c03f1647901a1709f014dec",
+    "research/27-invoicing-gate.md": "931f4cdf3e4492fedecf550908a0198a2f200608bf13c4797b3f1864b065fd0f",
+    "src/bin/rebase-next.rs": "ba01828c6681b67dbffc2d2ddaad88eab07ed513c2078df6a21cac813993edf7",
+    "src/models/invoicing.rs": "33e8f6d64097f4d32c128172a8a96cb883268c4d3261ab0b26f6b4ff93b524be",
+    "src/models/invoicing_check.rs": "8237ec2c0f269e65c7a69de79c8b5d24f93a212a55a4e86fae29c5bd29398c95",
+    "src/models/invoicing_fixtures.rs": "1c48a4969706e7bde26cae1323aefc61f5988eba7b017744e0bfa119a719483e",
+    "src/models/mod.rs": "9bd26495459dc4530410e936baea9ee77bd13da52cec95013abe8196cccd88e0",
+    "tests/invoicing.rs": "2d0e4e4a532da8522252ef0864b89c1bdf3664e56a586fb6afb5d273c4444b86",
+    "tools/invoicing.py": "69b7661db8fbc90d972f6efc44093f06fe22371ae6d2cedb95a7cbc084e21d35",
+    "tools/test_invoicing.py": "e875fb833a80fb917454141b1f3f0ed1a2b5f89e819de1ad135ee094805dfa1e"
+  },
+  "artifact_fingerprints": {
+    "target/g3c-calculation-identity.log": "55e681e74ded04b3e1747d610599b8c0e4a72a6cb83cf494260e3654acbe7462",
+    "target/g3c-capacity-controls.log": "196dbd4bf13558257fa9d159b7a14cd9864e2bf4d82e13a6858609188db28c4d",
+    "target/g3c-causal-independent.log": "2665267963ff67a1d546d9fc07bf0c782ae88cff9e6b1a608002b5857f089b87",
+    "target/g3c-causal.log": "8d573d524cbb5bd8ab295a8ae27a5b3480b1897bdbfbbe36da4f383c637b0b9e",
+    "target/g3c-client.log": "c6287bcd5f30e441542c50b62dad1d54a8b4952fa2f7cf1022a7eb6d916ca1f5",
+    "target/g3c-clippy.log": "a5f4c585ee974ca44916ac30a98bbc189e067a7e0a6bc6d2e8d6bc525be724af",
+    "target/g3c-debug-tests.log": "90720eaf6cccff282b96eb5335d535c6b20151244fb0099b1663c6d49a44e55e",
+    "target/g3c-equipment-identity.log": "037ed2be0186f0b3b2731adeeff70b9695410019061d0868adb09eb9abed522e",
+    "target/g3c-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g3c-foundation-independent.log": "2c7dc5e75d8ea643ea3a832914adc127c76bfe7ba143a8046acf5f5714703255",
+    "target/g3c-foundation.log": "65d6601a8aecdecc098fd93b15527918e99247ca1994ff31199a1b2971fa31fa",
+    "target/g3c-invoicing-http.log": "a62178b566f8ad2d7c37d714e358bbdba87aa086d4bf47ffb4717cbaa3bd391a",
+    "target/g3c-invoicing-identity.log": "06b545d535453c97ec3e495b8e366e5203fd3ffbce4a5565493973a9b3adcba4",
+    "target/g3c-invoicing-oracle-controls.log": "aa202a63541bf4a83d4aad000990b6daadb55d8fa31dcce68b047cdd9e328d4a",
+    "target/g3c-isolated-build.log": "3997fc6790b8063b86c119e91f87ac7395ac6cf26135da637dcb229006bc32dc",
+    "target/g3c-isolated-http.log": "4b266da63b1cb77900037b6ab14058d51f83dcf30bb5e9ebaaf9f4767beb5ed9",
+    "target/g3c-local-independent.log": "d554369e5d05fdd4512593a14f6f696abea211aafa853ec8346b6a023d1bbcc1",
+    "target/g3c-local.log": "7dabeb9eadd22df9fe5f1dddddb83d858964e5264e6840d05cc3c46fa9f17b35",
+    "target/g3c-release-binary.log": "64d0cbd4b7e4c6329fde55978dd3d261407b55f34c21add0feebf7e0575ee531",
+    "target/g3c-release-tests.log": "d6baa6c4d19040bf92d0419a29b97fdc5073e77a97064568103a1e790e83823a"
+  },
+  "scope_limits": "One embedded store/model and one currency per invoice; monetary credits and invoice-level cumulative tax reassessment. No payments/refunds/claims, original source-specific tax parity, quantity-credit pricing, dated rational FX, larger invoicing capacity, distributed or full production parity.",
+  "next": "Commit/push G3c, then G3d explicit settlement/refund and one-perspective gross receivable/payable histories."
+}

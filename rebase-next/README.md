@@ -5,7 +5,7 @@ One Rust executable provides exact connected calculations, private outputs,
 ordered aggregates and historical invariants, transactional DAG authority,
 authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
-scripts. The calculation and equipment reservation models share the engine,
+scripts. Calculation, equipment reservation and bounded invoicing share the engine,
 authority and tools. All implementation and dependencies stay inside this directory.
 
 ```sh
@@ -27,6 +27,7 @@ to run the harness without building Rust locally.
 | Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
 | Use exact fractional rates and explicit rounding in a native model | [Exact values](docs/exact-values.md) |
 | Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
+| Run fractional invoice pricing, tax-on-tax and credits | [Invoicing](docs/invoicing.md) |
 | Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
 | Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
@@ -35,12 +36,14 @@ to run the harness without building Rust locally.
 | Current acceptance and remaining capability gates | [0.4 population result](research/24-population-scaling-result.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
-one selected compiled model**, with up to 4,096 public source records, 8,192 active
+one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
 private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, distributed storage, a full accounting port, external effects and a
-frontend are separate future gates. Read the resource envelope before choosing a workload; these are enforced bounds, not a
-claim of general production capacity.
+frontend are separate future gates. Invoicing initially supports 64 public
+sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
+Read the resource envelope before choosing a workload; these are enforced bounds,
+not a claim of general production capacity.
 
 The population probe runs both models at 64, 256, 1,024 and 4,096 public sources:
 

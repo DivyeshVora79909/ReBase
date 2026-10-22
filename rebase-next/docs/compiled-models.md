@@ -14,6 +14,11 @@ rebase-next --model equipment fixture list
 rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100 > equipment-draft.json
 ```
 
+The [invoicing model](invoicing.md) adds fractional pricing and chronological
+tax reassessment using the same interfaces, with typed authored-parent parameters.
+Select `--model invoicing`; its initial source/output/retained envelope is
+64/256/512 rather than calculation/equipment's larger accepted workload profile.
+
 `--model` must precede the command. Use the same selector for initialization,
 serving, checks, inspection, backup, restore and reset. There is no HTTP operation
 that switches a store's model. A model or codec mismatch rejects opening a store;
@@ -81,7 +86,7 @@ Native monetary/rate calculations can compose the pure
 come from the same native types used by binding; tools need no duplicate schemas.
 The bundled models retain their existing formulas and identities.
 
-Both bundled models provide an independent checker. The equipment checker derives
+Calculation and equipment provide independent checkers. The equipment checker derives
 allocations and event histories from authored sources, then compares managed
 outputs, publications, queries and memberships. Shared snapshot checking verifies
 exact key inventory, role reservations, authority/reader indexes, real tree links,
@@ -104,7 +109,7 @@ invariants. This is not a facility for arbitrary monoids, arbitrary query
 predicates, general interval optimization or automatically discovered dependencies.
 Adding a new aggregate or read operation needs an explicit engine contract.
 
-Both bundled models allow 4,096 public source records, 8,192 active private
+Calculation and equipment allow 4,096 public source records, 8,192 active private
 outputs and 16,384 retained output identity reservations. Each active equipment
 reservation consumes two outputs, including zero allocations. Calculation has
 no separate 16-record Quote/Posting/Adjustment/Basis cap. Mutations allow 1–64
