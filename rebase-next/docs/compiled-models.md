@@ -77,27 +77,37 @@ invariants. This is not a facility for arbitrary monoids, arbitrary query
 predicates, general interval optimization or automatically discovered dependencies.
 Adding a new aggregate or read operation needs an explicit engine contract.
 
-Both bundled models retain limits of 64 public source records, 48 active private
-outputs and 256 retained output identity reservations. Each active equipment
-reservation consumes two outputs, so the output limit can bind before the source
-limit. Calculation also caps each Quote, Posting, Adjustment and Basis contract
-at 16 records. Mutations allow 1–64 distinct source commands and have a work
-budget; public pages, candidate visits, receipts and transport bytes have separate
-limits published in the model catalog. A logarithmic tree path does not bound
-an affected causal closure.
+Both bundled models allow 4,096 public source records, 8,192 active private
+outputs and 16,384 retained output identity reservations. Each active equipment
+reservation consumes two outputs, including zero allocations. Calculation has
+no separate 16-record Quote/Posting/Adjustment/Basis cap. Mutations allow 1–64
+distinct source commands, at most 32 returning IDs and 200,000 charged engine
+work units. Public pages, candidate visits, receipts and transport bytes have
+separate limits published in the model catalog. A logarithmic tree path does
+not bound an affected causal closure.
 
-Tree insertion, removal and prefix lookup follow balanced paths. The current
-reactive scheduler conservatively opens affected-root subscriber lists and
-compares planned reads with planned emissions to build its final graph; with
-fixed slots, that comparison can be quadratic in affected producers. The
-independent checker inventories the complete bounded store. This gate establishes
-model reuse and correctness within the envelope, not large-population scheduling
-or constant-time validation. Those need a separate capacity gate.
+Tree insertion, removal and prefix lookup follow balanced paths. Point-addressed
+reverse AVL routes select read endpoints using changed old/new member times;
+latest-quote invalidation respects successor intervals. Original and staged
+routes preserve retargeting and moved-bound discovery. The final dependency
+graph uses prefix gates to preserve producer reachability, including zero
+outputs and feedback. For P producers, R resolved reads and E emissions, its
+nodes and edges occupy O(P + R + E) space. Building the ordered emission indexes
+and locating read prefixes takes O(E log E + R log E) CPU work, in addition to
+graph traversal and producer evaluation; linear graph size is not linear CPU
+time. Full fanout remains finite work and may reject atomically at the unchanged
+budget. The independent checker inventories the complete bounded store.
+The [population result](../research/24-population-scaling-result.md) owns measured
+workload evidence and its limits.
 
 Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
+Release 0.4.0 uses store/codec format 4, calculation behavior
+`rebase-calculation-contract-4` and equipment behavior `equipment-reservations-3`.
+Those identities and the expanded declared limits differ from 0.3.0; no implicit
+format 3 migration is supplied. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
 ## Existing client and tools
 

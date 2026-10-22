@@ -1,5 +1,11 @@
 # Rust feasibility and stop boundary
 
+**G2 continuation:** [0.4 acceptance](24-population-scaling-result.md) closes
+bounded population/index selection through both models at 4,096 sources, with
+56 Rust tests, independent state checks, fixed-work rejection and recovery.
+This does not establish unlimited cascades, general accounting or distributed
+conformance. Earlier scope descriptions and evidence below remain dated.
+
 **Current continuation:** [G1](21-compiled-model-result.md) accepts two distinct
 native models through shared typed execution, causal settlement, authority,
 storage and tools in 0.3.0. Forty-six optimized Rust tests and fresh independent

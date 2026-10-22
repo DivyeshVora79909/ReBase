@@ -69,6 +69,11 @@ The model catalog supplies contracts, schemas, mutable fields, public roots and
 capabilities. Obtain the current record and its version with `records.get`,
 author a draft, then prepare and submit it. Command envelopes are checked again
 by the server; the client does not duplicate schema or calculation rules.
+Both models declare 4,096 public sources, 8,192 active private outputs and 16,384
+retained output identity reservations. Each mutation remains limited to 64
+commands, 32 returning IDs and 200,000 charged engine work units. Populate larger
+stores through separate bounded mutations, reading current versions for later
+edits; the source count does not increase per-operation or receipt limits.
 
 Python 3.11+ and its standard library are sufficient. Ordinary imports expose
 the same functions as the CLI:
@@ -95,6 +100,7 @@ authored data and identity/context metadata, so keep them private.
 ```sh
 python3 -B tools/test_client.py -v
 python3 -B tools/harness.py --binary target/native-slice/build/debug/rebase-next --out target/my-harness --writes 0
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-capacity
 ```
 
 The harness and TLS control require OpenSSL. The harness creates its own issuer keys and secured store,
@@ -106,5 +112,23 @@ destination/model fences, replay/status after restart, redacted obsolete receipt
 projections and archive expiry. The independent fault peer exercises lost,
 truncated, misidentified, ambiguous and duplicate-key replies plus redirects.
 A real TLS peer verifies trusted-certificate and matching-hostname enforcement.
-Earlier native acceptance remains dated evidence. [D6](deployment.md) extends the same harness
-for release workloads; omit `--writes 0` to run its default 128 atomic moves.
+Earlier native acceptance remains dated evidence. The [deployment workload](deployment.md)
+extends the same harness; omit `--writes 0` to fill the catalog's declared source
+maximum in batches of at most 64 commands and run its default 128 atomic moves.
+Its revision checks adapt to the number of fill batches.
+
+`capacity.py` defaults to both equipment and calculation at 64, 256, 1,024 and
+4,096 public sources. Use `--models equipment` or `--populations 64 256` to narrow
+a run. It checks source arithmetic, selective updates, fanout, lifecycle,
+authorization, replay, pages, restart and verified restore. Its `result.json`
+records work/byte counts and observed fanout outcomes. A `work_limit` result for
+an oversized closure is checked for complete logical rollback and no success
+receipt; it does not increase the fixed 200,000-unit budget. The
+[population result](../research/24-population-scaling-result.md) records executed
+acceptance and observed boundary brackets.
+
+Release 0.4.0 changes store/codec formats to 4 and model identities to calculation
+behavior `rebase-calculation-contract-4` or equipment behavior
+`equipment-reservations-3`, combined with the selected resolved declarations.
+Older saved plans remain bound to their original destination and context; they
+cannot be retargeted to a new-format store. See [storage upgrades](storage.md#data-identity-and-upgrades).

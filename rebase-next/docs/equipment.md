@@ -76,8 +76,26 @@ rebase-next --model equipment restore equipment-backup.json restored-equipment.r
 
 One process owns a live redb file. Backup and restore destinations must be new.
 The equipment `demo` command is unsupported; its fixture and the ordinary client
-provide the workflow. Bounds remain 64 public records, 48 active outputs and 256
+provide the workflow. Bounds are 4,096 public records, 8,192 active outputs and 16,384
 retained output identities, plus shared mutation/query/receipt budgets. Every
 active reservation requires two outputs, including when allocation is zero.
+One pool and three deliveries therefore leave room for 4,092 reservations.
+Each mutation still has at most 64 commands, 32 returning IDs and 200,000 charged
+engine work units. Endpoint indexes avoid opening unaffected subscribers, while
+full fanout may exceed that budget and reject atomically.
 See [compiled model authoring](compiled-models.md) for the trusted Rust interfaces
 and declared-shape boundary.
+
+Run the source-arithmetic HTTP population probe for equipment alone with:
+
+```sh
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-equipment-capacity --models equipment
+```
+
+It defaults to 64, 256, 1,024 and 4,096 public sources. Omit `--models equipment`
+to include calculation. Results retain loaded bytes, selector work, fanout
+outcomes and rollback checks, plus lifecycle, authority, replay, pages and
+restart/restore controls. See the [population result](../research/24-population-scaling-result.md)
+for executed evidence. Release 0.4.0 equipment behavior is
+`equipment-reservations-3`, on store/codec format 4; earlier format 3 stores
+require their matching old binary and have no implicit migration.

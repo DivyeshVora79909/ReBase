@@ -1,6 +1,8 @@
 # G2: population and reactive dependency selection
 
-**Implementation gate, 2026-10-22; starts at `609cb28`.** G1 remains accepted.
+**Accepted gate, 2026-10-22; starts at `609cb28`.** G2a/G2b/G2c are complete;
+[the result](24-population-scaling-result.md) owns execution and remaining limits.
+G1 remains accepted.
 Keep implementation, fixtures, evidence and continuation inside `rebase-next/`.
 Use authenticated HTTP and the normal mutation/receipt transaction. No frontend.
 

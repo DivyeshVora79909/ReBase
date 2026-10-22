@@ -1,4 +1,4 @@
-# ReBase Next 0.3.0 deployment and acceptance
+# ReBase Next 0.4.0 deployment and acceptance
 
 This release supports two compiled models, `calculation` and `equipment`, on one
 embedded redb store owned by one server process. Select one model per store;
@@ -18,21 +18,43 @@ export CARGO_TARGET_DIR=target/native-slice/build
 cargo build --locked --release --bin rebase-next
 python3 -B tools/test_client.py -v
 python3 -B tools/harness.py --binary target/native-slice/build/release/rebase-next --out target/my-release-run --writes 128 --readers 4
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-capacity-run
 ```
 
-This harness exercises the default calculation model; its dated capacity evidence
-does not establish equipment workload capacity. The equipment model has focused
-arithmetic, lifecycle and real HTTP acceptance through the same runtime. See
-[the equipment model](equipment.md) for its allocation semantics.
+The harness exercises the calculation developer workflow and concurrent workload.
+The capacity probe defaults to both models at 64, 256, 1,024 and 4,096 public
+sources. Use `--models equipment` or `--models calculation` for one model, or
+`--populations 64 256` for a smaller run. Each run needs a new output directory.
+The [population result](../research/24-population-scaling-result.md) records
+executed evidence and the observed fanout boundaries; the command alone does
+not establish acceptance. See [equipment](equipment.md) for allocation semantics.
 
 The harness requires Python 3.11+ and OpenSSL. It creates a **new** directory,
 generates its own issuer key and credentials, initializes a secured store, and
 exercises the real HTTP process. It performs the developer workflow, fills the
-64-source limit, rejects an extra source, reconciles concurrent duplicate requests,
-checks one winner among competing edits, runs atomic date moves with concurrent
+declared source limit in batches of at most 64 commands, rejects an extra source,
+reconciles concurrent duplicate requests, checks one winner among competing
+edits, runs atomic date moves with concurrent
 root reads, invalidates a cursor, kills/reopens the process after acknowledged
 commits, then backs up/restores and reads the restored service. All servers it
 starts are stopped before the command exits.
+
+The capacity probe derives allocations and calculation values from authored
+sources, checks bounded selective edits and real fanout, and exercises
+retargeting, lifecycle, authorization, replay, pages, restart and verified restore.
+It records work counters, loaded bytes and latency in `result.json`. Oversized
+fanout may reach `work_limit`; the probe verifies logical application-table
+rollback and absence of a success receipt. Its reported boundary brackets apply
+to those authored workloads, rather than every possible causal closure.
+
+To exercise the retained-role ceiling or large-store credential revocation on
+restored copies of accepted data, use a new output directory for each auxiliary
+trial:
+
+```sh
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --churn-from target/my-capacity-run/equipment-4096 --out target/my-churn-run
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --authority-from target/my-capacity-run --out target/my-authority-run
+```
 
 `result.json` records exact outcomes, latency, counts and Linux process memory.
 The same directory retains the usable `app.redb`, `server.json`, private issuer
@@ -145,7 +167,7 @@ reconcile the saved plan rather than constructing a new operation.
 | --- | --- |
 | Storage/tenancy | One process, one redb file, one tenant; serialized writers and concurrent snapshot readers |
 | Models | `calculation`: ten public source contracts plus private Pin/Output; `equipment`: Pool 101, Delivery 205, Reservation 410, private Output 900 |
-| Population | Each model: 64 public sources, 48 active outputs, 256 retained output reservations; calculation additionally caps Quote/Posting/Adjustment/Basis at 16 each |
+| Population | Each model: 4,096 public sources, 8,192 active outputs, 16,384 retained output reservations |
 | Authority | 128 principals, at most eight direct parents each, 1280 reader streams opened per query |
 | Mutation | 1–64 unique source commands, at most 32 returning IDs, 200000 charged engine work units |
 | Query | UUID ordering through declared paths; 1–32 results and 1–128 candidate visits per page; bounded existence may be unknown |
@@ -156,29 +178,35 @@ reconcile the saved plan rather than constructing a new operation.
 | Backup | Complete private snapshot and verified restore, capped at 64 MiB |
 
 A work unit is an engine counter, not a CPU time or memory guarantee. Admission
-permits remain held while timed-out blocking work finishes. The model uses
-conservative invalidation and a global cursor revision; neither promises a
-minimal affected set or snapshot pagination across mutations. Reducing source
+permits remain held while timed-out blocking work finishes. Ordered point-addressed
+reverse AVL indexes select affected endpoint ranges; a compact prefix-gate graph
+preserves final producer dependencies without pairwise graph construction.
+Full fanout still consumes work and can reject at the same fixed budget. These
+paths do not make every mutation logarithmic. A global cursor revision does not
+provide snapshot pagination across mutations. Reducing source
 count or archiving receipts does not automatically shrink the redb file.
 
 ## Verification and upgrades
 
-The [dated calculation release evidence](../research/evidence/2026-10-22-d6-release.json)
-records the actual workload and process measurements.
-It establishes bounded execution, process restart and verified restore, not a
-power-loss test, sustained throughput target, full DAG/population cross-product,
-remote-network latency or distributed capacity.
+The [population result](../research/24-population-scaling-result.md) records the
+current workload evidence and source/build identities. The
+[earlier calculation release evidence](../research/evidence/2026-10-22-d6-release.json)
+retains its original bounded workload and process measurements. These observations
+do not establish power-loss durability, a sustained throughput target, the full
+DAG/population cross-product, remote-network latency or distributed capacity.
 
 Before replacing a deployed binary, stop the service, run `check`, create a
 verified backup, and compare `version` model/store identities with the intended
-release. Version 0.3.0 changes storage to `rebase-store-3` and native codec
-`native-slice-kv-3`; the model identity includes the selected compiled binding.
-Format 2 stores/backups are deliberately incompatible. There is no silent
-migration, automatic reset or reinterpretation of old native payloads. Keep the
+release. Version 0.4.0 uses `rebase-store-4` and native codec
+`native-slice-kv-4`; calculation behavior is `rebase-calculation-contract-4` and
+equipment behavior is `equipment-reservations-3`. Resolved declarations also
+contribute to each model identity. Format 2 and 3 stores/backups
+are deliberately incompatible. There is no silent migration, automatic reset or
+reinterpretation of old native payloads. Keep the
 previous compatible binary and its verified backups; create/check those backups
-with that binary before upgrading. A format 2 backup must be restored using its
-compatible old binary, not the 0.3.0 restore command. Use a new store for 0.3.0
-unless an explicit reviewed migration is supplied. Test a restored compatible
+with that binary before upgrading. An older-format backup must be restored using
+its compatible old binary. Use a new store for 0.4.0 unless an explicit reviewed
+migration is supplied. Test a restored compatible
 copy offline, then use one instance as the replacement. Roll back with the
 pre-upgrade snapshot and its matching binary. Keep saved plans and receipt
 archives for reconciliation and keep identity key backups separately.

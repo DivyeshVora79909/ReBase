@@ -1,6 +1,6 @@
 # Run and use the local prototype
 
-ReBase Next 0.3.0 provides two compiled models, exact values and a local redb
+ReBase Next 0.4.0 provides two compiled models, exact values and a local redb
 store. The examples below use the default `calculation` model. Select equipment
 with `--model equipment` before the command; the same operator and public API
 functions serve either model. See [equipment semantics](equipment.md). It contains no runtime
@@ -62,8 +62,10 @@ The binary selects one of the compiled `calculation` or `equipment` bindings;
 there is no runtime behavior loader. Model identity binds resolved declarations
 and schemas to the binding's explicit behavior contract and codec. Build bytes,
 HTML/CSS and source-location labels do not define data compatibility.
-Version 0.3.0 uses `rebase-store-3` and `native-slice-kv-3`; format 2 stores and
-backups reject without silent migration or automatic reset. Retain the old
+Version 0.4.0 uses `rebase-store-4` and `native-slice-kv-4`, calculation behavior
+`rebase-calculation-contract-4` and equipment behavior `equipment-reservations-3`.
+Resolved declarations also contribute to model identity. Format 2 and 3 stores
+and backups reject without silent migration or automatic reset. Retain the old
 compatible binary and its verified backups, and use that binary to restore old
 backups. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
@@ -250,13 +252,20 @@ private record identities. Record-list filtering does not redefine a root sum.
 
 ## Bounds and validation
 
-Both compiled models permit at most 64 public authored records, 48 active
-private outputs and 256 retained role reservations. Calculation additionally
-limits Quote/Posting/Adjustment/Basis to 16 each. Equipment quantities have
+Both compiled models permit at most 4,096 public authored records, 8,192 active
+private outputs and 16,384 retained role reservations. The former calculation
+16-record Quote/Posting/Adjustment/Basis limits now share the public-source
+maximum. Equipment quantities have
 model-specific bounds; read its catalog and allocation semantics.
 It allows 64 commands, 32 returning IDs, page limit 32, visit budget 128 and
 200,000 mutation work units. Calculated i128 overflow rejects. This is bounded
 acceptance, not a throughput or production-capacity claim.
+
+Ordered reverse AVL routes select affected read endpoints and a compact
+prefix-gate graph preserves final producer dependencies. Tree paths are
+logarithmic; an entire affected closure may still exceed the unchanged work
+budget and reject atomically. Store checks and backups inventory complete state,
+and backups retain the 64 MiB bound.
 
 ```sh
 CARGO_TARGET_DIR=target/native-slice/build cargo test --locked --all-targets
@@ -265,7 +274,14 @@ CARGO_TARGET_DIR=target/native-slice/build cargo clippy --locked --all-targets -
 CARGO_TARGET_DIR=target/native-slice/build cargo run --locked --example local_acceptance
 # Use the emitted observation path:
 python3 -B research/experiments/local_prototype.py --actual target/local-prototype/run-.../local-observations.json
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-population-run
 ```
+
+The population probe defaults to both models at 64, 256, 1,024 and 4,096 public
+sources. Use `--models calculation` or `--models equipment` for a single model.
+Its HTTP checks and measured fanout boundaries are described in the
+[population result](../research/24-population-scaling-result.md). It records
+work-limit rollback rather than assuming every full-population edit can commit.
 
 The local observer is privileged and used only for disposable acceptance stores.
 Its complete application-table images include test-store signing material; it

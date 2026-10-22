@@ -31,15 +31,27 @@ to run the harness without building Rust locally.
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Current acceptance and remaining capability gates | [0.3 result](research/21-compiled-model-result.md) |
+| Current acceptance and remaining capability gates | [0.4 population result](research/24-population-scaling-result.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
-one selected compiled model**, with up to 64 public source records, 48 active
-private outputs, 256 retained output identity reservations, and explicit work,
+one selected compiled model**, with up to 4,096 public source records, 8,192 active
+private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, distributed storage, a full accounting port, external effects and a
 frontend are separate future gates. Read the resource envelope before choosing a workload; these are enforced bounds, not a
 claim of general production capacity.
+
+The population probe runs both models at 64, 256, 1,024 and 4,096 public sources:
+
+```sh
+python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-capacity-run
+```
+
+It checks source arithmetic, selective updates, fanout, rollback, replay,
+authorization, restart and verified restore through the real HTTP process.
+Each mutation retains the 200,000 work-unit budget; larger causal closures can
+reject atomically. Store/codec format 4 and the new model identities require a
+new store; format 3 has no implicit migration. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with
 `rebase-next --model equipment <command>`; calculation is the default. Use the
@@ -56,7 +68,7 @@ python3 -B tools/test_client.py -v
 ```
 
 For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[current result](research/21-compiled-model-result.md). The research papers
+[current result](research/24-population-scaling-result.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

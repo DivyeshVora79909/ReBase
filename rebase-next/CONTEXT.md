@@ -1,6 +1,6 @@
 # Compact context — 2026-10-22
 
-**D1–D6 and G1 complete: reusable compiled bounded backend and developer tools; no frontend.**
+**D1–D6, G1 and G2 complete: reusable compiled bounded backend and developer tools; no frontend.**
 The user has authorized autonomous implementation, breaking changes, checkpoint
 commits on the existing `main` tree and direct pushes. The
 [release checkpoints](research/17-deployable-backend.md) now own continuation.
@@ -8,9 +8,10 @@ Preserve ReBase's **power**, not its exact implementation or old APIs. Prefer
 small, explicit, stateless functions and mature infrastructure libraries; do not
 add a universal DSL/plugin framework or duplicate schemas between runtime/tools.
 Carry context in this directory and checkpoint commit messages so another agent
-can resume without another whole-repository audit. The [0.3 result](research/21-compiled-model-result.md)
+can resume without another whole-repository audit. The [0.4 result](research/24-population-scaling-result.md)
 and [deployment guide](docs/deployment.md) own current acceptance. The
-[0.2 result](research/18-release-result.md) remains dated. Enter a named
+[0.2 result](research/18-release-result.md) and [0.3 result](research/21-compiled-model-result.md)
+remain dated. Enter a named
 future capability gate when new work is requested; do not repeat completed stages.
 
 **G1 accepted: compiled model reuse.** The [goal](research/20-compiled-model-gate.md)
@@ -26,7 +27,7 @@ equipment behavior 1; no silent opening/migration of format 2. Forty-six debug
 and optimized Rust tests, six client controls, all 116 independent cases and
 both real-process workflows pass. See the result for execution and fingerprints.
 
-**G2 active: capacity and reactive candidate selection.** The
+**G2 accepted: capacity and reactive candidate selection.** The
 [acceptance gate](research/22-population-scaling-gate.md) fixes increasing HTTP
 populations and correctness/rollback/work requirements. G2a adds operator-only
 committed-work diagnostics and a source-arithmetic equipment HTTP probe. At 24
@@ -38,13 +39,37 @@ prefix-gate graph are now [verified](research/23-indexed-selection-checkpoint.md
 55 Rust tests and all 116 independent native/local cases pass. The unfinished
 `7d7e387` implementation was retained after targeted review and strengthened
 controls; its unverified snapshot is replaced by the tested checkpoint.
-At 24 reservations, after-all/last-only edits select 0/1 producers. Next complete
-G2c's larger API workloads and coordinated capacity bounds. Record, role,
-route, receipt and inventory bounds must be considered together. Do not merely
-remove the 64-source limit or claim every mutation is logarithmic. Preserve
-independent checks, strict work limits, explicit models and stateless tools.
-Full accounting, arbitrary monoids/topology, effects and distributed adapter
-conformance remain separate capability gates.
+G2c (`3dd8b56`) coordinates the larger model/codec/inventory/recovery envelope.
+All eight real HTTP workflows pass at 64/256/1,024/4,096 public sources, with
+source-only arithmetic, exact rollback, replay, pages, retargeting, crash/reopen
+and verified restore. At 4,096 equipment sources, zero/one selection uses 24
+selector visits and 45/54 loaded keys; a 128-producer cascade commits in 77,089
+work units. Full fanout has finite measured commit/rejection brackets, not an
+unlimited cascade guarantee. Separate 4,096-source authority trials verify
+credential revocation, complete indexes and reopening. Fifty-six debug/release
+Rust tests, all 116 independent native/local cases, six client controls and
+three population-oracle controls pass. A new depth guard rejects malformed tree
+chains before unbounded checker recursion.
+Separate real HTTP churn also reaches all 16,384 retained roles with 4,096
+sources and 8,184 active outputs, then proves overflow bytewise rollback and
+receipt absence. Its 129 replacement batches stay below 39,864 work units;
+the verified ceiling backup remains below 64 MiB.
+
+The 0.4 identities are store/codec 4, calculation behavior 4 and equipment
+behavior 3. Limits are 4,096 public sources, 8,192 outputs and 16,384 retained
+role reservations; commands64, returning32, receipts1,024, backup64MiB and
+mutation work200,000 remain separate. Earlier stores require their matching
+binary. The result owns exact execution/source hashes and coverage limits.
+
+**Next continuation:** enter a named capability gate from
+[the scenario register](research/08-research-workflow.md), using current user
+priorities. Broader exact accounting/model operations are a useful next scope:
+define one representative workflow and close its missing numeric/query contracts
+through implementation and independent end-to-end checks. Do not stop at another
+unbounded prototype plan or restart accepted work. Arbitrary aggregates/topology,
+external effects, distributed conformance, full accounting parity and populations
+beyond 4,096 remain separate, unaccepted capabilities. Preserve independent
+checks, fixed work limits, explicit native models and stateless tools.
 
 The [parallel release review](research/19-peer-release-review.md) adopts remote
 `242a08b`/`1f16278` over overlapping local alternatives. Fresh execution confirmed
