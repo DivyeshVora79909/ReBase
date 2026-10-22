@@ -27,13 +27,13 @@ to run the harness without building Rust locally.
 | Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
 | Use exact fractional rates and explicit rounding in a native model | [Exact values](docs/exact-values.md) |
 | Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
-| Run fractional invoice pricing, tax-on-tax and credits | [Invoicing](docs/invoicing.md) |
+| Run invoice pricing, tax-on-tax, credits, payments and refunds | [Invoicing](docs/invoicing.md) |
 | Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
 | Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Current acceptance and remaining capability gates | [0.4 population result](research/24-population-scaling-result.md) |
+| Current acceptance and remaining capability gates | [Settlement and deployment checkpoints](research/28-settlement-refund-gate.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -72,7 +72,7 @@ python3 -B tools/test_client.py -v
 ```
 
 For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[current result](research/24-population-scaling-result.md). The research papers
+[current checkpoints](research/28-settlement-refund-gate.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

@@ -22,6 +22,26 @@ def scenario():
     }
 
 
+def settled_scenario():
+    facts = scenario()
+    facts.update({
+        "treasury": source(601, currency=1, name="Operating cash"),
+        "payment": source(701, invoice="invoice", treasury="treasury", at="30", amount_minor="11555"),
+    })
+    return facts
+
+
+def refund_scenario():
+    facts = settled_scenario()
+    facts.update({
+        "credit": source(307, invoice="invoice", issue="issue", at="50", amount_minor="2001"),
+        "refund": source(809, invoice="invoice", treasury="treasury", payment="payment", at="50", amount_minor="2311"),
+        "base-correction": source(509, invoice="invoice", rule="base", at="51"),
+        "net-correction": source(509, invoice="invoice", rule="net", at="52"),
+    })
+    return facts
+
+
 class SourceOracleTests(unittest.TestCase):
     def test_literal_tax_on_tax_and_later_corrections(self):
         facts = scenario()
@@ -65,6 +85,71 @@ class SourceOracleTests(unittest.TestCase):
         self.assertEqual(result["derived"]["base-tax"]["basis_minor"], "0")
         self.assertEqual(result["derived"]["base-tax"]["delta_minor"], "0")
         self.assertEqual(result["derived"]["net-tax"]["delta_minor"], "500")
+
+    def test_settlement_refund_and_directional_claims_are_distinct(self):
+        paid = expected(settled_scenario())
+        self.assertEqual(paid["summaries"]["invoice", 23]["sum"], "0")
+        reference = expected(refund_scenario())
+        for root in (("invoice", 13), ("invoice", 21), ("treasury", 37), ("payment", 41)):
+            self.assertEqual(reference["summaries"][root]["sum"], "9244")
+        for slot, amount in ((23, "0"), (29, "13866"), (31, "13866")):
+            self.assertEqual(reference["summaries"]["invoice", slot]["sum"], amount)
+        history = reference["histories"]["invoice", 23]
+        for at, amount in ((30, 0), (50, 310), (51, 110), (52, 0)):
+            self.assertEqual(sum(value for time, value in history if time <= at), amount)
+        # Independent complete-time identity for every authored boundary.
+        for at in sorted({time for events in reference["histories"].values() for time, _ in events}):
+            totals = {slot: sum(value for time, value in reference["histories"]["invoice", slot] if time <= at)
+                      for slot in (13, 21, 23, 29, 31)}
+            self.assertEqual(totals[23], totals[13] - totals[21])
+            self.assertEqual(totals[23], totals[29] - totals[31])
+
+    def test_credit_without_refund_and_late_refund_reject_historical_balance(self):
+        for change in ("missing", "late", "short"):
+            facts = refund_scenario()
+            if change == "missing":
+                del facts["refund"]
+            elif change == "late":
+                facts["refund"]["fields"]["at"] = "52"
+            else:
+                facts["refund"]["fields"]["amount_minor"] = "2310"
+            with self.assertRaises(RuntimeError):
+                expected(facts)
+
+    def test_refund_capacity_is_per_payment_and_complete_timestamp(self):
+        facts = settled_scenario()
+        facts["payment"]["fields"]["amount_minor"] = "1000"
+        facts["another-payment"] = source(701, invoice="invoice", treasury="treasury", at="30", amount_minor="1000")
+        facts["refund"] = source(809, invoice="invoice", treasury="treasury", payment="payment", at="31", amount_minor="1001")
+        # Overall paid/cash remain positive; the linked payment is overrefunded.
+        with self.assertRaises(RuntimeError):
+            expected(facts)
+        facts["refund"]["fields"].update(amount_minor="1000", at="30")
+        self.assertEqual(expected(facts)["summaries"]["payment", 41]["sum"], "0")
+        facts["refund"]["fields"]["at"] = "29"
+        with self.assertRaises(RuntimeError):
+            expected(facts)
+
+    def test_currency_and_refund_parent_agreement(self):
+        facts = refund_scenario()
+        facts["treasury"]["fields"]["currency"] = 2
+        with self.assertRaises(RuntimeError):
+            expected(facts)
+        facts = refund_scenario()
+        facts["other"] = source(601, currency=1, name="Other cash")
+        facts["refund"]["fields"]["treasury"] = "other"
+        with self.assertRaises(RuntimeError):
+            expected(facts)
+
+    def test_assessment_changes_direction_without_netting_claims(self):
+        facts = refund_scenario()
+        facts["more"] = source(211, invoice="invoice", at="40", quantity={"numerator":"1", "denominator":"1"},
+                               unit_price_minor="3000", rounding="exact")
+        result = expected(facts)
+        self.assertEqual(result["derived"]["base-correction"]["delta_minor"], "100")
+        self.assertEqual(result["derived"]["net-correction"]["delta_minor"], "55")
+        for slot, amount in ((13, "12709"), (21, "9244"), (23, "3465"), (29, "17021"), (31, "13556")):
+            self.assertEqual(result["summaries"]["invoice", slot]["sum"], amount)
 
 
 if __name__ == "__main__":

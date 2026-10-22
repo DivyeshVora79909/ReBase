@@ -27,8 +27,11 @@ Small composable ordinary APIs and one authoritative model are the design aim.
 G3a accepts [exact values](research/25-exact-values-gate.md), and G3b accepts
 [typed authored-parent parameters](research/26-parent-parameters-gate.md), with
 source-derived native acceptance and rollback checks. G3c accepts
-[bounded invoicing](research/27-invoicing-gate.md); continue with G3d settlement
-and refund on that binding. Existing calculation/equipment bindings and
+[bounded invoicing](research/27-invoicing-gate.md), and G3d accepts
+[settlement and refund](research/28-settlement-refund-gate.md) on that binding.
+Continue with G3e: a verified 0.6 deployment bundle in this environment, using
+copied sources/tools and all three real HTTP workflows with recovery.
+Existing calculation/equipment bindings and
 persisted formats are unchanged; parameters do not add hidden reads,
 published-parent or multihop dependency support.
 For constrained cloud verification use `CARGO_INCREMENTAL=0`, preserve evidence,

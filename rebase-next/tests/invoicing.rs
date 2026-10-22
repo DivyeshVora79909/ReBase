@@ -46,7 +46,12 @@ fn create(directory: &Directory) -> Store<Invoicing> {
 
 #[test]
 fn developer_fixtures_are_repeatable_and_execute_through_the_shared_store() {
-    for (name, base, gross) in [("invoice", 10005, 11555), ("invoice-credit", 8004, 9244)] {
+    for (name, base, gross) in [
+        ("invoice", 10005, 11555),
+        ("invoice-credit", 8004, 9244),
+        ("invoice-paid", 10005, 11555),
+        ("invoice-refund", 8004, 9244),
+    ] {
         let directory = Directory::new();
         let store = create(&directory);
         let draft = Invoicing::fixture_plan(store.model(), name, id(123)).unwrap();
@@ -81,6 +86,28 @@ fn developer_fixtures_are_repeatable_and_execute_through_the_shared_store() {
         assert_eq!(root_sum(&store, invoice.as_u128(), 7), base);
         assert_eq!(root_sum(&store, invoice.as_u128(), 13), gross);
         assert_eq!(draft["fixture"]["expected"]["gross"], gross.to_string());
+        if matches!(name, "invoice-paid" | "invoice-refund") {
+            for (slot, key) in [
+                (21, "paid"),
+                (23, "balance"),
+                (29, "receivable"),
+                (31, "payable"),
+            ] {
+                assert_eq!(
+                    root_sum(&store, invoice.as_u128(), slot).to_string(),
+                    draft["fixture"]["expected"][key]
+                );
+            }
+            for (label, slot, key) in [("Treasury", 37, "cash"), ("Payment", 41, "refund_capacity")]
+            {
+                let owner =
+                    Uuid::parse_str(draft["fixture"]["ids"][label].as_str().unwrap()).unwrap();
+                assert_eq!(
+                    root_sum(&store, owner.as_u128(), slot).to_string(),
+                    draft["fixture"]["expected"][key]
+                );
+            }
+        }
         assert!(Invoicing::fixture_plan(store.model(), "unknown", id(1)).is_err());
     }
 }
@@ -425,7 +452,7 @@ fn zero_outputs_and_owned_roots_retire_with_their_authored_producers() {
         Some(Derived::Issue { amount_minor: 0 })
     );
     let roles = output_ids(&store);
-    assert_eq!(roles.len(), 3);
+    assert_eq!(roles.len(), 5);
     assert_eq!(root_sum(&store, 10, 7), 0);
     assert_eq!(root_sum(&store, 10, 13), 0);
     assert_eq!(root_sum(&store, 20, 17), 0);
@@ -434,7 +461,7 @@ fn zero_outputs_and_owned_roots_retire_with_their_authored_producers() {
     assert_eq!(records(&store).len(), 1);
     assert_eq!(output_ids(&store), roles);
     let image = store.inspect().unwrap();
-    assert_eq!(image["roots"].as_array().unwrap().len(), 2);
+    assert_eq!(image["roots"].as_array().unwrap().len(), 6);
     for role in image["roles"].as_array().unwrap() {
         assert_eq!(role["binding"]["retired"], true);
     }
@@ -459,4 +486,327 @@ fn zero_outputs_and_owned_roots_retire_with_their_authored_producers() {
     );
     assert_eq!(output_ids(&full_store), before_roles);
     full_store.check_integrity().unwrap();
+}
+
+fn remove(store: &Store<Invoicing>, record: u128) -> Value {
+    json!({"op":"delete","id":id(record),"if_version":records(store)[&id(record)].version.to_string()})
+}
+
+fn reject(store: &Store<Invoicing>, operation: u128, commands: Value, kind: &str) {
+    let before = store.observe_for_verification().unwrap();
+    let request = request(store, operation, commands);
+    assert_eq!(
+        store.mutate(&request).unwrap_err().code,
+        kind,
+        "operation {operation}"
+    );
+    assert_eq!(
+        store.observe_for_verification().unwrap(),
+        before,
+        "operation {operation}"
+    );
+    assert_eq!(
+        store
+            .operation_status(
+                store.model().identity(),
+                &request.context,
+                request.operation_id
+            )
+            .unwrap()["status"],
+        "not_observed"
+    );
+    store.check_integrity().unwrap();
+}
+
+fn settlement_correction() -> Vec<Value> {
+    vec![
+        json!({"op":"create","id":id(50),"contract":307,"fields":{"invoice":id(10),"issue":id(20),"at":"50","amount_minor":"2001"}}),
+        json!({"op":"create","id":id(51),"contract":509,"fields":{"invoice":id(10),"rule":id(30),"at":"51"}}),
+        json!({"op":"create","id":id(52),"contract":509,"fields":{"invoice":id(10),"rule":id(31),"at":"52"}}),
+        json!({"op":"create","id":id(80),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"50","amount_minor":"2311"}}),
+    ]
+}
+
+#[test]
+fn settlement_preserves_historical_balance_and_claim_identity_across_sign_changes() {
+    for reversed in [false, true] {
+        let directory = Directory::new();
+        let store = create(&directory);
+        baseline(&store);
+        commit(
+            &store,
+            4000,
+            json!([
+                {"op":"create","id":id(60),"contract":601,"fields":{"currency":1,"name":"Cash"}},
+                {"op":"create","id":id(70),"contract":701,"fields":{"invoice":id(10),"treasury":id(60),"at":"30","amount_minor":"11555"}}
+            ]),
+        );
+        assert_eq!(root_sum(&store, 10, 23), 0);
+        let mut correction = settlement_correction();
+        reject(&store, 4001, json!(&correction[..3]), "invariant");
+        correction[3]["fields"]["at"] = json!("52");
+        reject(&store, 4002, json!(correction), "invariant");
+        correction[3]["fields"]["at"] = json!("50");
+        if reversed {
+            correction.reverse();
+        }
+        commit(&store, 4003, json!(correction));
+        for (owner, slot, amount) in [
+            (10, 7, 8004),
+            (10, 13, 9244),
+            (10, 21, 9244),
+            (10, 23, 0),
+            (10, 29, 13866),
+            (10, 31, 13866),
+            (60, 37, 9244),
+            (70, 41, 9244),
+        ] {
+            assert_eq!(root_sum(&store, owner, slot), amount);
+        }
+        for (before, expected) in [(31, "0"), (51, "310"), (52, "110"), (53, "0")] {
+            let query = serde_json::from_value(json!({"model":store.model().identity(),"owner":id(10),"slot":23,"read":{"kind":"before","at":before.to_string()}})).unwrap();
+            assert_eq!(store.root_read(&query).unwrap()["value"]["sum"], expected);
+        }
+        let stable = output_ids(&store);
+        // Extra priced source makes both negative reassessments positive. Both
+        // directional roles remain present even when their amount becomes zero.
+        commit(
+            &store,
+            4004,
+            json!([
+                {"op":"create","id":id(21),"contract":211,"fields":{"invoice":id(10),"at":"40","quantity":{"numerator":"1","denominator":"1"},"unit_price_minor":"3000","rounding":"exact"}}
+            ]),
+        );
+        assessment(&store, 51, 11004, 1000, 1100, 100);
+        assessment(&store, 52, 12104, 550, 605, 55);
+        for (slot, amount) in [
+            (13, 12709),
+            (21, 9244),
+            (23, 3465),
+            (29, 17021),
+            (31, 13556),
+        ] {
+            assert_eq!(root_sum(&store, 10, slot), amount);
+        }
+        for (role, output) in &stable {
+            assert_eq!(output_ids(&store)[role], *output);
+        }
+        let (request, outcome) = commit(&store, 4005, json!([remove(&store, 21)]));
+        reject(
+            &store,
+            4006,
+            json!([
+                {"op":"create","id":id(21),"contract":211,"fields":{"invoice":id(10),"at":"40","quantity":{"numerator":"1","denominator":"1"},"unit_price_minor":"3000","rounding":"exact"}}
+            ]),
+            "unavailable_reference",
+        );
+        for (role, output) in &stable {
+            assert_eq!(output_ids(&store)[role], *output);
+        }
+        assert_eq!(root_sum(&store, 10, 23), 0);
+        let before = store.observe_for_verification().unwrap();
+        assert_eq!(store.mutate(&request).unwrap()["result"], outcome["result"]);
+        assert_eq!(store.observe_for_verification().unwrap(), before);
+        drop(store);
+        let reopened =
+            Store::<Invoicing>::open(directory.file(), Arc::new(Prepared::load().unwrap()))
+                .unwrap();
+        assert_eq!(reopened.observe_for_verification().unwrap(), before);
+        reopened.check_integrity().unwrap();
+    }
+}
+
+#[test]
+fn invalid_settlement_batches_roll_back_every_table_revision_and_receipt() {
+    let directory = Directory::new();
+    let store = create(&directory);
+    baseline(&store);
+    commit(
+        &store,
+        5000,
+        json!([
+            {"op":"create","id":id(60),"contract":601,"fields":{"currency":1,"name":"Cash"}},
+            {"op":"create","id":id(61),"contract":601,"fields":{"currency":2,"name":"Other currency"}},
+            {"op":"create","id":id(62),"contract":601,"fields":{"currency":1,"name":"Other cash"}},
+            {"op":"create","id":id(70),"contract":701,"fields":{"invoice":id(10),"treasury":id(60),"at":"30","amount_minor":"5000"}},
+            {"op":"create","id":id(71),"contract":701,"fields":{"invoice":id(10),"treasury":id(60),"at":"30","amount_minor":"3000"}},
+            {"op":"create","id":id(80),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"40","amount_minor":"1000"}}
+        ]),
+    );
+    let payment = |treasury, at, amount| json!({"op":"create","id":id(72),"contract":701,"fields":{"invoice":id(10),"treasury":id(treasury),"at":at,"amount_minor":amount}});
+    let refund = |invoice, treasury, payment, amount| json!({"op":"create","id":id(81),"contract":809,"fields":{"invoice":id(invoice),"treasury":id(treasury),"payment":id(payment),"at":"50","amount_minor":amount}});
+    let cases = [
+        (payment(60, "30", "4000"), "invariant"),
+        (payment(60, "-1", "1"), "invariant"),
+        (payment(61, "30", "1"), "unavailable_reference"),
+        (refund(11, 60, 70, "1"), "unavailable_reference"),
+        (refund(10, 62, 70, "1"), "unavailable_reference"),
+        (refund(10, 60, 999, "1"), "unavailable_reference"),
+        (refund(10, 60, 70, "4001"), "invariant"),
+        (update(&store, 70, json!({"at":"41"})), "invariant"),
+        (
+            update(&store, 70, json!({"amount_minor":"999"})),
+            "invariant",
+        ),
+        (
+            update(&store, 70, json!({"amount_minor":"9000"})),
+            "invariant",
+        ),
+        (update(&store, 80, json!({"at":"29"})), "invariant"),
+        (
+            update(&store, 80, json!({"amount_minor":"5001"})),
+            "invariant",
+        ),
+        (
+            update(&store, 80, json!({"amount_minor":"0"})),
+            "invalid_input",
+        ),
+        (
+            update(&store, 70, json!({"amount_minor":"-1"})),
+            "invalid_input",
+        ),
+        (
+            update(&store, 70, json!({"invoice":id(11)})),
+            "invalid_input",
+        ),
+        (
+            update(&store, 70, json!({"treasury":id(62)})),
+            "invalid_input",
+        ),
+        (
+            update(&store, 80, json!({"payment":id(71)})),
+            "invalid_input",
+        ),
+        (
+            update(&store, 80, json!({"treasury":id(62)})),
+            "invalid_input",
+        ),
+        (update(&store, 60, json!({"currency":2})), "invalid_input"),
+        (update(&store, 60, json!({"name":""})), "invalid_input"),
+        (remove(&store, 70), "invariant"),
+        (remove(&store, 60), "unavailable_reference"),
+        (
+            json!({"op":"create","id":id(90),"contract":907,"fields":{"producer":id(40),"role":31,"target":id(10),"at":"10","amount":"1"}}),
+            "forbidden",
+        ),
+        (
+            update(&store, 20, json!({"unit_price_minor":"1000"})),
+            "invariant",
+        ),
+    ];
+    for (index, (command, kind)) in cases.into_iter().enumerate() {
+        reject(
+            &store,
+            5100 + index as u128,
+            json!([
+                {"op":"create","id":id(9000),"contract":101,"fields":{"currency":1}}, command
+            ]),
+            kind,
+        );
+    }
+}
+
+#[test]
+fn partial_payments_repeated_refunds_and_self_memberships_follow_the_final_graph() {
+    for reversed in [false, true] {
+        let directory = Directory::new();
+        let store = create(&directory);
+        baseline(&store);
+        // New parent links follow the shared API's creation order. Once the
+        // parents exist, both simultaneous refund command orders are valid.
+        reject(
+            &store,
+            5998,
+            json!([
+                {"op":"create","id":id(80),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"0","amount_minor":"2000"}},
+                {"op":"create","id":id(60),"contract":601,"fields":{"currency":1,"name":"Cash"}},
+                {"op":"create","id":id(70),"contract":701,"fields":{"invoice":id(10),"treasury":id(60),"at":"0","amount_minor":"5000"}}
+            ]),
+            "unavailable_reference",
+        );
+        commit(
+            &store,
+            5999,
+            json!([
+                json!({"op":"create","id":id(60),"contract":601,"fields":{"currency":1,"name":"Cash"}}),
+                json!({"op":"create","id":id(70),"contract":701,"fields":{"invoice":id(10),"treasury":id(60),"at":"0","amount_minor":"5000"}}),
+            ]),
+        );
+        assert_eq!(root_sum(&store, 10, 21), 5000);
+        // Refund UUIDs sort before the payment. An ordinary per-record prefix
+        // floor would reject this valid complete-timestamp cancellation.
+        let mut commands = vec![
+            json!({"op":"create","id":id(68),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"0","amount_minor":"2000"}}),
+            json!({"op":"create","id":id(69),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"0","amount_minor":"3000"}}),
+        ];
+        if reversed {
+            commands.reverse();
+        }
+        commit(&store, 6000, json!(commands));
+        for (owner, slot) in [(10, 21), (60, 37), (70, 41)] {
+            assert_eq!(root_sum(&store, owner, slot), 0);
+        }
+        commit(
+            &store,
+            6001,
+            json!([update(&store, 70, json!({"amount_minor":"6000"}))]),
+        );
+        assert_eq!(root_sum(&store, 10, 21), 1000);
+        assert_eq!(root_sum(&store, 10, 23), 10555);
+        commit(
+            &store,
+            6002,
+            json!([
+                {"op":"create","id":id(82),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"30","amount_minor":"1000"}}
+            ]),
+        );
+        reject(
+            &store,
+            6003,
+            json!([
+                {"op":"create","id":id(83),"contract":809,"fields":{"invoice":id(10),"treasury":id(60),"payment":id(70),"at":"31","amount_minor":"1"}}
+            ]),
+            "invariant",
+        );
+        // Deleting a parent before its children is valid when none survive.
+        let mut commands: Vec<_> = [10, 11, 60, 70, 20, 30, 31, 40, 41, 68, 69, 82]
+            .into_iter()
+            .map(|record| remove(&store, record))
+            .collect();
+        if reversed {
+            commands.reverse();
+        }
+        commit(&store, 6004, json!(commands));
+        assert!(records(&store).is_empty());
+        assert!(
+            store.inspect().unwrap()["roots"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        store.check_integrity().unwrap();
+    }
+}
+
+#[test]
+fn self_membership_resolves_only_a_declared_root_of_its_own_contract() {
+    for corruption in 0..3 {
+        let mut declarations = Invoicing::declarations().unwrap();
+        let payment = declarations.iter_mut().find(|c| c.code == 701).unwrap();
+        let member = payment
+            .memberships
+            .iter_mut()
+            .find(|m| m.through == "self")
+            .unwrap();
+        match corruption {
+            0 => {
+                member.root_contract = 101;
+                member.root_slot = 23;
+            }
+            1 => member.root_slot = 99,
+            _ => member.kind = rebase_semantic_proof::tree::Kind::Quote,
+        }
+        assert!(Prepared::<Invoicing>::prepare(declarations).is_err());
+    }
+    Prepared::<Invoicing>::load().unwrap();
 }

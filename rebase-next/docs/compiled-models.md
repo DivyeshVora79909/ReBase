@@ -14,8 +14,9 @@ rebase-next --model equipment fixture list
 rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100 > equipment-draft.json
 ```
 
-The [invoicing model](invoicing.md) adds fractional pricing and chronological
-tax reassessment using the same interfaces, with typed authored-parent parameters.
+The [invoicing model](invoicing.md) adds fractional pricing, chronological tax
+reassessment, payments and linked refunds using the same interfaces, with typed
+authored-parent parameters and explicit money memberships.
 Select `--model invoicing`; its initial source/output/retained envelope is
 64/256/512 rather than calculation/equipment's larger accepted workload profile.
 
@@ -44,6 +45,11 @@ tools. Preparation validates structural agreement; it does not prove that a
 trusted Rust formula matches its descriptive expression or that a model's
 invariant checker is complete.
 
+A direct membership can name `through: "self"` to participate in its source's
+own root. Preparation requires `root_contract` to equal that source contract and
+resolves the declared root/kind there. It adds no implicit reference or copied
+output; Payment uses it for its own refund-capacity history.
+
 `ReactiveBinding::Parameters` is an ordinary native type. `resolve` returns
 `Resolved { shape, parameters }`; the shared engine builds the final dependency
 graph from `shape`, then passes `&parameters` and ordered-query values into
@@ -60,6 +66,8 @@ not a separate field-level index. All source commands are staged before
 resolution, so a parent edit and child retarget observe the same final authored
 values in either command order. The parameter bundle is attempt-local: it needs
 no Serde schema, stored copy, global cache or `Default` value for deleted records.
+Creating new reference targets still requires parents before children during
+command staging. Final-graph calculation does not imply arbitrary creation order.
 
 This seam does not make published parent calculations or undeclared reference
 chains safe inputs. They need additional dependency contracts. Keep database

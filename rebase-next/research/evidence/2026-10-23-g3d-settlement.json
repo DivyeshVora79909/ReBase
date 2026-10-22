@@ -1,0 +1,1149 @@
+{
+  "format": "rebase-g3d-settlement-evidence-1",
+  "date": "2026-10-23",
+  "status": "accepted",
+  "goal": "G3d settlement and linked refund acceptance; G3e deployment bundle follows",
+  "base_commit": "53ff9e7d1e77c00aa61d80cc736450cd1c7c6f59",
+  "versions": {
+    "calculation": {
+      "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    },
+    "equipment": {
+      "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    },
+    "invoicing": {
+      "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    }
+  },
+  "codec": "native-slice-kv-4",
+  "invoicing_behavior": "invoice-assessments-2",
+  "envelope": {
+    "public_sources": 64,
+    "active_outputs": 256,
+    "retained_roles": 512,
+    "mutation_commands": 64,
+    "returning_ids": 32,
+    "mutation_work_units": 200000
+  },
+  "checks": [
+    {
+      "name": "debug-tests-accepted",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 22.255,
+      "log": "target/g3d-debug-tests-accepted.log",
+      "tests_passed": 76,
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "release-tests-accepted",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 252.843,
+      "log": "target/g3d-release-tests-accepted.log",
+      "tests_passed": 76,
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "foundation-final",
+      "command": [
+        "target/native-slice/build/release/examples/native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.186,
+      "log": "target/g3d-foundation-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "foundation-independent-final",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "target/native-slice/run-1046472-1792702335954481892/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.794,
+      "log": "target/g3d-foundation-independent-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "causal-final",
+      "command": [
+        "target/native-slice/build/release/examples/native_slice",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.522,
+      "log": "target/g3d-causal-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "causal-independent-final",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "target/native-slice/run-1046475-1792702335974962301/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.951,
+      "log": "target/g3d-causal-independent-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "local-final",
+      "command": [
+        "target/native-slice/build/release/examples/local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.863,
+      "log": "target/g3d-local-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "local-independent-final",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "target/local-prototype/run-1046476-1792702335986354703/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.625,
+      "log": "target/g3d-local-independent-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "invoicing-http-final",
+      "command": [
+        "python3",
+        "-B",
+        "tools/invoicing.py",
+        "--binary",
+        "target/native-slice/build/release/rebase-next",
+        "--out",
+        "target/g3d-http-final"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 25.388,
+      "log": "target/g3d-invoicing-http-final.log",
+      "provenance": "retained final execution from interrupted session"
+    },
+    {
+      "name": "resume-fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.667,
+      "log": "target/g3d-resume-fmt.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.553,
+      "log": "target/g3d-resume-clippy.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.235,
+      "log": "target/g3d-resume-release-tests.log",
+      "tests_passed": 76,
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-release-programs",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--examples",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.234,
+      "log": "target/g3d-resume-release-programs.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-oracle-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_invoicing.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.382,
+      "log": "target/g3d-resume-oracle-controls.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-client-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.047,
+      "log": "target/g3d-resume-client-controls.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.284,
+      "log": "target/g3d-resume-capacity-controls.log",
+      "provenance": "resumed source review"
+    },
+    {
+      "name": "resume-compatibility",
+      "command": [
+        "python3",
+        "target/g3d-compatibility.py",
+        "--out",
+        "target/g3d-compatibility-resume"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.368,
+      "log": "target/g3d-resume-compatibility.log",
+      "provenance": "resumed source review"
+    }
+  ],
+  "independent_corpora": [
+    {
+      "name": "foundation",
+      "cases": 68,
+      "operations": 93,
+      "independent_checker": "passed",
+      "observation_file": "target/native-slice/run-1046472-1792702335954481892/native-observations.json"
+    },
+    {
+      "name": "causal",
+      "cases": 39,
+      "operations": 55,
+      "independent_checker": "passed",
+      "observation_file": "target/native-slice/run-1046475-1792702335974962301/native-observations.json"
+    },
+    {
+      "name": "local",
+      "cases": 9,
+      "operations": 14,
+      "independent_checker": "passed",
+      "observation_file": "target/local-prototype/run-1046476-1792702335986354703/local-observations.json"
+    }
+  ],
+  "native_controls": {
+    "invoicing_integration_tests": 9,
+    "fixture_recipes": 4,
+    "whole_state_rejections": "snapshot every application table, revision and receipt; verify receipt absence",
+    "coverage": [
+      "historical paid balance",
+      "same-time cash groups and reversed orders",
+      "per-payment refund capacity",
+      "currency and parent agreement",
+      "immutable links",
+      "private write rejection",
+      "source deletion and retired identities",
+      "directional sign changes without role churn",
+      "self membership root/type resolution",
+      "complete source-derived integrity and corruption controls"
+    ],
+    "source_checker": "independent chronological source histories and complete Snapshot inventory; exact scalar primitive has separate Fraction evidence"
+  },
+  "http": {
+    "status": "passed",
+    "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+    "public_sources": 64,
+    "baseline_gross": "11555",
+    "corrected_gross": "9244",
+    "operations": [
+      {
+        "name": "baseline",
+        "commands": 6,
+        "result": "committed"
+      },
+      {
+        "name": "credit-and-reassess",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "historical-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "parent-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "net-rule-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "zero-reassessment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-00",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-01",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-02",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-03",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-04",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-05",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-06",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-07",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-08",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-09",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-10",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-11",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-12",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-13",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-14",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-15",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-16",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-17",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-18",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-19",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-20",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-21",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-22",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-23",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-24",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-25",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-26",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-27",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-28",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-29",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-30",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-31",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-32",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-33",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-34",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-35",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-36",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-37",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-38",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-39",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "restore-literal-scenario",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "remove-correction",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "fully-paid",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "paid-credit-without-refund",
+        "commands": 3,
+        "result": "invariant"
+      },
+      {
+        "name": "late-refund-final-zero",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "credit-refund-reassess",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "positive-reassessment-claims",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-negative-claims",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "retired-producer-identity",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "partial-settlement",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "second-payment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "linked-capacity-despite-positive-cash",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "combine-payments",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "split-same-time-refunds",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "combine-refunds",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "other-treasuries",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "treasury-name",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "currency-mismatch",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "refund-parent-mismatch",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "immutable-payment-treasury",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "immutable-refund-payment",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "immutable-treasury-currency",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "private-directional-output",
+        "commands": 1,
+        "result": "forbidden"
+      },
+      {
+        "name": "delete-refunded-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "delete-used-treasury",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "payment-before-issue",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "refund-before-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "excess-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "insufficient-refund",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-00",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-01",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-02",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-03",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-04",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-05",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-06",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-07",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-08",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-09",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-10",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-11",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-12",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-13",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-14",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-15",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-16",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-17",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-18",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-19",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-20",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-21",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-22",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-23",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "restore-settled-literal",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "duplicate-time",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "overcredit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "early-credit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "inexact-rule",
+        "commands": 1,
+        "result": "inexact"
+      },
+      {
+        "name": "overflow-price",
+        "commands": 1,
+        "result": "overflow"
+      },
+      {
+        "name": "missing-rule",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "fill-source-envelope",
+        "commands": 50,
+        "result": "committed"
+      },
+      {
+        "name": "source-overflow",
+        "commands": 1,
+        "result": "state_limit"
+      }
+    ],
+    "stress_seed": 20261022,
+    "stress_batches": 40,
+    "settlement": {
+      "gross": "9244",
+      "paid": "9244",
+      "balance": "0",
+      "receivable": "13866",
+      "payable": "13866",
+      "cash": "9244",
+      "refund_capacity": "9244"
+    },
+    "settlement_stress_seed": 20261023,
+    "settlement_stress_batches": 24,
+    "settlement_stress_results": {
+      "committed": 11,
+      "invariant": 13
+    },
+    "stable_directional_roles": true,
+    "logical_bytewise_rollback": true,
+    "integrity": {
+      "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+      "nodes": 40,
+      "receipts": 75,
+      "records": 89,
+      "revision": "75",
+      "roots": 313,
+      "rows": 816,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "dca6abec-eea9-4bf1-96be-baa047b88bfd"
+    },
+    "reopen": true,
+    "crash_recovery": true,
+    "restore": true,
+    "binary_sha256": "3d91ebffb31e2c59e3e885a6a0dde23316a1278334bd8fdc7db7971ff4b08eba"
+  },
+  "http_totals": {
+    "mutations": 111,
+    "commands": 340,
+    "outcomes": {
+      "committed": 75,
+      "invariant": 24,
+      "unavailable_reference": 5,
+      "invalid_input": 3,
+      "forbidden": 1,
+      "inexact": 1,
+      "overflow": 1,
+      "state_limit": 1
+    },
+    "committed_work_entries": 75,
+    "maximum_observed_committed_work_units": 2984
+  },
+  "compatibility": {
+    "status": "passed",
+    "versions": {
+      "calculation": {
+        "old": {
+          "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+          "store_format": "rebase-store-4",
+          "version": "0.5.0"
+        },
+        "new": {
+          "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+          "store_format": "rebase-store-4",
+          "version": "0.6.0"
+        }
+      },
+      "equipment": {
+        "old": {
+          "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+          "store_format": "rebase-store-4",
+          "version": "0.5.0"
+        },
+        "new": {
+          "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+          "store_format": "rebase-store-4",
+          "version": "0.6.0"
+        }
+      },
+      "invoicing": {
+        "old": {
+          "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+          "store_format": "rebase-store-4",
+          "version": "0.5.0"
+        },
+        "new": {
+          "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+          "store_format": "rebase-store-4",
+          "version": "0.6.0"
+        }
+      }
+    },
+    "old_binary_sha256": "e46d3b87bebc235a19bb241d0c48f1960f53d92098689b0d7c912615080878d1",
+    "new_binary_sha256": "3d91ebffb31e2c59e3e885a6a0dde23316a1278334bd8fdc7db7971ff4b08eba",
+    "old_store_sha256": "7cf8cace386ea4ce8c06574f79d74de0fb317a06387fae1d2616babdae79e349",
+    "incompatible_open_exit_code": 1,
+    "incompatible_open_error": "model_mismatch: store/model identity differs",
+    "physical_store_bytes_unchanged": true,
+    "compatible_old_integrity": {
+      "model": "731c9d029a8d4433f279eda2b87c0e734f2ee2c99239c459e8d7600e3689b58f",
+      "nodes": 16,
+      "receipts": 51,
+      "records": 77,
+      "revision": "51",
+      "roots": 113,
+      "rows": 490,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "beab4473-bd64-4ec5-ba99-6a01a7030b4f"
+    }
+  },
+  "source_verification": "Resumed review preserved and inspected all source diffs, reran fmt/Clippy/release tests/Python controls/compatibility, then rebuilt release programs. Binary SHA-256 equals the retained final native/HTTP executable. Debug and independent corpora retain their final interrupted-session logs.",
+  "verification_incidents": [
+    "Initial native fixtures assumed arbitrary create order and reusable retired producer UUIDs; final tests/docs preserve both existing API constraints.",
+    "The first compatibility trial found writable redb maintenance changes before model rejection. Read-only clean-store preflight and physical-byte regression controls now pass. Crashed stores retain allocator recovery and may change maintenance bytes."
+  ],
+  "binary_sha256": "3d91ebffb31e2c59e3e885a6a0dde23316a1278334bd8fdc7db7971ff4b08eba",
+  "source_fingerprints": {
+    "AGENTS.md": "2efd501f05244a77fd2802a4c1c9b46c6fd48dc33e00af6a47342fba0220afb5",
+    "CONTEXT.md": "f2c2f61585eb3af5b380ac537e2a09772f236ee40fd702675fa138a769f63035",
+    "Cargo.lock": "a942308fada0bb6eabc41859c73677f3e199e52c11cdb6a404c48aa6bfe479dd",
+    "Cargo.toml": "7612374e70d2554d326c1e9f3bb9cf6b2216efbbc7a94b067dd234c2ce2f5fc3",
+    "README.md": "1bdec2c99150e1ee5c8a347edbf906351156e6b92bfd41e6d1a2b3ed617e7fba",
+    "docs/compiled-models.md": "c6c968a49b3371740a05f095b93b6b681a5afff30fe176af715b9a40cba445e6",
+    "docs/deployment.md": "e3553c170fc75dd8860081e8cf2d6c070ccfdc3520f3733707f62f3a685e50dc",
+    "docs/developer-tools.md": "08c13be9d352160fbdfbb5186a65085dd38a5e01ad3d1813f83984ed70e7e299",
+    "docs/invoicing.md": "5cccda84f7b2d3ea65998826f12ea6e950e244b10ca7227f1a1d205533813f15",
+    "docs/local-prototype.md": "e7b83fc207655e798de9d03bf0579938c0d541beef1c75d1ac4c3cec9cfb9b14",
+    "docs/storage.md": "0c1cbfd22743822a8920d5de8c4648b1939241e971eee1e0e7160a6d573bf76b",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "4b9d401d72ac5ba46d527acb1c0fa1657d8d93c34f0d6439e97441060731f2cc",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "research/05-feasibility.md": "3a5e866a26c0e97ab2faa4140bcf70c61014a6c4021c057dcefc83db7fa4a161",
+    "research/28-settlement-refund-gate.md": "5a700477099f37a16581c1fbe2dde232755bd7d8f38337a76999f72dc4ffb2ef",
+    "research/experiments/exact_values.py": "a6dade2f8048c594a6023eecbadb8999a80076555d1bf0d2cc672923f375abbe",
+    "research/experiments/local_prototype.py": "1568a8922a05901a9220ebc646553404a4b4c9b72b93173d50e679dd550f04b9",
+    "research/experiments/m3_m5.py": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800",
+    "research/experiments/m6.py": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e",
+    "research/experiments/native_slice.py": "d9e5913c458c8926098671db4cab515971e3718a3735b02a271536de55e23d8d",
+    "research/fixtures/causal-slice.json": "2e92aba7af3d32abbe6bd155e01a498105a75bacbd2afe60eda9fca64cc49012",
+    "research/fixtures/native-slice.json": "48374fadba4d8decd98596ee6d627961b7df8eb6578da9bdbe92440e73d5de16",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "ba01828c6681b67dbffc2d2ddaad88eab07ed513c2078df6a21cac813993edf7",
+    "src/binding.rs": "381a22c3a5f9426786dc265ccd235f851e209e2ab43328e96e79d9e0b1c3779d",
+    "src/causal.rs": "3a00426e3079cdc3a9683f250cef943cb58ba9c055ece5719ec6300a5574947a",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "8965332e594cd1309cb2cfb58acfaa75161c08ba8752abea20a968f8cc099f11",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "55d4aae0f4b5bcf0e7787071c84b54206f21e9494b7ac0f7268aa9c31e26306c",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "4f9f43e04cfb984b33d0805be18580a25978f7bba27e708175c291e21c4fd595",
+    "src/lifecycle.rs": "024f5ce8db8df5aec381080fdfd3c7120dcb96f6dfe3421a23057c4b2fa03d1f",
+    "src/local.rs": "d33961ab37f26012fc3afbf1643a4bf3957c2adc6f52577c77325c2c86d5af5e",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "4323bf3aa8faefcd537c2ffe291b6ccdb1c4fe22eb3f0c532b751263fa8ebb49",
+    "src/models/calculation.rs": "b581f57eabc46d1af0e2074e42f191a747cdc32ab69a4ee4759dcbfedc45cffb",
+    "src/models/calculation_reactivity.rs": "ed41677a2aef9f44fd80000305db7d54bbdfd7c35b9375f53d320b90240b3a95",
+    "src/models/equipment.rs": "4d4d6fd92d6337e41dca6a39c23b36274afd3180350636d3b2d87ba4aa311d1f",
+    "src/models/invoicing.rs": "22649b382ba0784aac3412336c00aca4fb5e43d6fd92705e3b005c904334b255",
+    "src/models/invoicing_check.rs": "43fb6a3b75c43323e9fd1367b4c7fbab07055134b19e55028ba130f25fbf97a6",
+    "src/models/invoicing_fixtures.rs": "4e065ec36422f52781d22c92a015904d6036eb26b824cbb1691047f564386979",
+    "src/models/mod.rs": "9bd26495459dc4530410e936baea9ee77bd13da52cec95013abe8196cccd88e0",
+    "src/mutation.rs": "9fb421f27354c1bf0aa1dbb34d3059f3c793820720e7c1b02fe291a64befd58a",
+    "src/native_codec.rs": "090924555cae38ac12dbdbc63ec8314193758b29cb48c5af6bca655eb9535820",
+    "src/native_slice.rs": "23702fb141ec82de37f18672d10db727a26e252f868af63c282515121ff4a649",
+    "src/parameter_tests.rs": "f264fc8334e9f8266ec1f0f7d64b502d22abc7f80aeeb2ec35ad1450db4e6d48",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/query.rs": "9f65baee0e55dde5df7164edf03c566ed60cae0bea238c295ad10f2ffe7d0249",
+    "src/routes.rs": "0b49da7a70828f223ca4cfa2b4e7e7d6d567ed0110f8f7719b274b904ab6c517",
+    "src/rpc.rs": "f6edebbe940172161e594738c8c30826864232bac4a3bf8a7cc749a14ab21b71",
+    "src/security.rs": "9abf302d775aee8f19ad30a4fddf5713b011be26ff53b2834caba8b5585a1259",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/tree.rs": "f370fb3c897128bb87c04d690b47ec533167eb1f0efbc3b74369f9e6b2035b17",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "24c1220d33f0fc3a32c465d2dcd3ee8fb45db15f0e4d92b86f79e1ec9201bd59",
+    "tests/exact_values.rs": "0efcee4da7c8f4edbb866220db47c630259f055b9d387de56a060ea77426adb6",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "196d9949dac26c8f769145e13ac26d80db88aa38817db168511bb4a9d70c104f",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "1f32d0732061ddf684fee96db4a7724400d13663d1f0f5254ba5c07b14eebd0d",
+    "tests/network_api.rs": "9e4b7c9a4d068724aaef9617caf77176def87b5d1983cd4c5e62ed87f41ceb61",
+    "tests/routes.rs": "b42171ac54dde25a7535a4066723eee662bf184a6fd9bd562307063a2e05e31c",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a",
+    "tools/invoicing.py": "f6800062e195e06695aa8d1efeb79217b6810aed6b37c7c18887bfcc675b15d5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1",
+    "tools/test_invoicing.py": "72ae2bf938e03020a5969c87c61a05ba649bf663da42015ed68dcafe829fbb82"
+  },
+  "artifact_fingerprints": {
+    "target/g3d-causal-final.log": "cac666949a764badb428631b340c4e18932f27f56e18394a9ef3fb93a85dbd36",
+    "target/g3d-causal-final.result.json": "2965836d74d458c21aac59cd589762b42e940155f8f2f229f55b273df0057304",
+    "target/g3d-causal-independent-final.log": "2665267963ff67a1d546d9fc07bf0c782ae88cff9e6b1a608002b5857f089b87",
+    "target/g3d-causal-independent-final.result.json": "2b512543376e194f802894e8b4d6a35e512dde01ac923f3e77c66d52c40cc744",
+    "target/g3d-check.py": "7c74bfc1f093e3130f7214e10b5ae33154f95b0433f3dc1da3f515c74e681785",
+    "target/g3d-compatibility-resume/result.json": "331af0a21fbb423214b9424386b4937e60fed9183444c7693480e07e5c806284",
+    "target/g3d-compatibility.py": "7a8a16a0b476d507fafdda20f715bc0078e9c4de0068c43ecd34965c21429af4",
+    "target/g3d-debug-tests-accepted.log": "dd905789b091f634f10ba47c97b070b17020fab652d75ccbe6ae1b2eaef45590",
+    "target/g3d-debug-tests-accepted.result.json": "bec2a52389f82f0897227e6f4e54044d4d9809f82fee26797f4c39ba5f963a80",
+    "target/g3d-foundation-final.log": "c5245c57df254d5c86762172fc48339430eba0aa67f0bf4718c31a29448c3383",
+    "target/g3d-foundation-final.result.json": "cf86be4742790215c02bafa6552e8929a218804f0cc03154bdc6adb0777df088",
+    "target/g3d-foundation-independent-final.log": "2c7dc5e75d8ea643ea3a832914adc127c76bfe7ba143a8046acf5f5714703255",
+    "target/g3d-foundation-independent-final.result.json": "ee73016235e6d8924c477318da1b23ab28a1a02ed176ceebbec2be1071faf344",
+    "target/g3d-http-final/result.json": "40ccef150373f1b50e7d3b9403f6f2780e25f80e5a5646d0310424e7ca9d4569",
+    "target/g3d-http-final/server.log": "2632708904aa1aa65761b96f4a2ac14b6d1e830722619e2f65b30ee456a49b82",
+    "target/g3d-invoicing-http-final.log": "b80987d477a8a87a945914684763cf3a7c0c22b2cfbeeb035e062acbe1082296",
+    "target/g3d-invoicing-http-final.result.json": "c828e66897ed972e05fd0ad34265a9cbf0aeec7a39143de772784e3cfff55324",
+    "target/g3d-local-final.log": "b4c307ea1152040635733d7b03e504a8e70f050dd6d674f050f0164e44a45baf",
+    "target/g3d-local-final.result.json": "6892a22e33f7d7e2f42a3f5d86976f1216ad14874350067d8279d4d65a3736b6",
+    "target/g3d-local-independent-final.log": "d554369e5d05fdd4512593a14f6f696abea211aafa853ec8346b6a023d1bbcc1",
+    "target/g3d-local-independent-final.result.json": "a01af9566065a5b41a1ee6c891e8704679cf7aa07b43ea5d149897f31f210a4a",
+    "target/g3d-release-tests-accepted.log": "3490bad14f795206d2743d8d570e0de263cc74252d96e1158860f97f143a78ef",
+    "target/g3d-release-tests-accepted.result.json": "1505e1ff6dd8d8387bf452ff2c3bea85a824c8c88f36fd834d62b656952ed24e",
+    "target/g3d-resume-capacity-controls.log": "8470f08be19c9a42f3a2bbe2261d25bc9a7e6ab20124413356b7485c96471c30",
+    "target/g3d-resume-capacity-controls.result.json": "45f5c1e58c45e962f4a86827fda62ba516216f258a46e0bb9466dc019e92159d",
+    "target/g3d-resume-client-controls.log": "9edb93a4557a85afef9f248b184e98d669d4b888056633d9fc59f49a44c02225",
+    "target/g3d-resume-client-controls.result.json": "0e50e73e7fec60ead1456e662d30acbd6acff2b715c3619fd9d01990f828cb96",
+    "target/g3d-resume-clippy.log": "1f5852af1ed7025b5728e842e3c3c2f5d2f720d25557d84c38f1ffda99719c59",
+    "target/g3d-resume-clippy.result.json": "ca592341f03abe2cbdaaa7872790d30bbef3041239bd7f3e78312b29a4bce0fa",
+    "target/g3d-resume-compatibility.log": "03e004a32b6aebda89cd2801a572f8b4bef4447ebf03220ad8cdf4bcf48785fe",
+    "target/g3d-resume-compatibility.result.json": "50e54db037660ad5d4220f440a54312af79bca164813825eedc711ec0029aec0",
+    "target/g3d-resume-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g3d-resume-fmt.result.json": "3c4cd56925948983390e755a2582dd413c629b102443c5363e978c2d8106ee97",
+    "target/g3d-resume-oracle-controls.log": "eb976ea361f15ea22cae6c351ccbf9aa890fa1e1af781d5a8439694ddf97d6d9",
+    "target/g3d-resume-oracle-controls.result.json": "7fa8cf77c699ca42150c67ca9f130414256ec19c321ab57bedd7a135baef13d8",
+    "target/g3d-resume-release-programs.log": "b65d97c967cb13bb2fd061b2f5b86011ef366acea387375a92a9808f93395384",
+    "target/g3d-resume-release-programs.result.json": "adaacc52077d03502544e06609af368ecdd2b09f338a42c2be418e8737aa0fe4",
+    "target/g3d-resume-release-tests.log": "fdce1f96d3dc28f03bbc6e83c73c66eb44436fdc0790bc466babf2bff318ca8f",
+    "target/g3d-resume-release-tests.result.json": "9919692a970fa77fb9f808b76e588cfa1a2331dd9db8769545470372609ab8b1",
+    "target/local-prototype/run-1046476-1792702335986354703/local-observations.json": "a6879c3f1f281cebf6732fd49367f7a28e65c45b19dcd205898d2c3863ead388",
+    "target/native-slice/build/release/rebase-next": "3d91ebffb31e2c59e3e885a6a0dde23316a1278334bd8fdc7db7971ff4b08eba",
+    "target/native-slice/run-1046472-1792702335954481892/native-observations.json": "d6cf8213187e257fd205681731df16af10b8b7f99cd2707865ac581f865c3279",
+    "target/native-slice/run-1046475-1792702335974962301/native-observations.json": "3e3d73e4270dbfcaa25483510f095e300fdd8085f89a037f9a9b922192d5bf80"
+  },
+  "scope_limits": [
+    "One embedded process, one tenant and one selected compiled model per store.",
+    "Invoicing remains bounded at 64 sources/256 outputs/512 retained roles; constants and observed work do not establish general capacity.",
+    "Gross directional claims use one invoice perspective; no mirrored ledger, quantity-return formula, tax-law compliance or full accounting parity.",
+    "No external money transfer, dated rational FX, arbitrary behavior loading, distributed storage or frontend.",
+    "G3d accepts source/model behavior; G3e must verify the final extracted deployment bundle."
+  ],
+  "next": "Commit/push G3d; package and build copied sources outside Git, verify extracted calculation/equipment/invoicing HTTP workflows and recovery, record identities/platform/commands, then commit/push G3e.",
+  "documentation": {
+    "files": 41,
+    "relative_file_links": 349,
+    "broken_targets": 0
+  }
+}

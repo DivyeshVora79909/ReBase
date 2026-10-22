@@ -1,4 +1,26 @@
-# Compact context — 2026-10-22
+# Compact context — 2026-10-23
+
+**Active goal: G3e, verify an end-to-end deployment bundle in this environment.**
+The user selected this destination; no external host or frontend is in scope.
+[G3d/G3e checkpoints](research/28-settlement-refund-gate.md) own the continuation.
+**G3d accepted:** package 0.6 implements Treasury, Payment, linked Refund,
+complete-time invoice balance and gross directional claims through explicit
+memberships. [Evidence](research/evidence/2026-10-23-g3d-settlement.json) records
+76 debug/optimized Rust tests, 18 Python controls, all 116 independent native/local
+cases and 111 HTTP mutations /340 commands (75 commits, 36 complete rollbacks).
+The resumed session reviewed the preserved changes on `53ff9e7`, pulled safely,
+and reran formatting, Clippy, optimized tests, Python controls and compatibility.
+The rebuilt binary matches the retained final HTTP/native evidence. The clean
+G3c store rejects with physical bytes unchanged; compatible binary/store remain
+under `target/g3c-retained-53ff9e7/`. Crashed files can require redb recovery first.
+New referenced parents precede children; deleted calculation producer UUIDs stay
+reserved. Those existing API constraints are tested and documented.
+**Exact next action:** after committing/pushing G3d, package the 0.6 binary,
+source, model tools and deployment templates with identities and checksums.
+Build from copied sources outside Git, then run the extracted bundle's calculation,
+equipment and invoicing HTTP workflows, crash recovery and verified restore.
+Record platform dependencies, exact run commands and remaining limits; commit/push
+G3e and mark this deployment goal complete. Do not repeat accepted G1/G2 workloads.
 
 **D1–D6, G1 and G2 complete: reusable compiled bounded backend and developer tools; no frontend.**
 **G3a accepted: exact values**, [gate/result](research/25-exact-values-gate.md).
@@ -31,12 +53,13 @@ Rust tests and 116 independent native/local cases pass. The independent Fraction
 HTTP workflow passes 58 mutations /200 commands, including 40 seeded stress
 batches, the 64-source boundary, replay/reopen/crash/restore; standalone copied
 sources/tools pass with an identical optimized binary. Fixtures prove 11555 → 9244.
-**Next: G3d settlement/refund** on this binding: Treasury, Payment and linked
+**G3d settlement/refund now accepted** on this binding: Treasury, Payment and linked
 Refund, Invoice paid/balance and gross directional receivable/payable histories.
 No mirrored counterparty ledger. Fully paid 11555 then Credit 2001 + Refund 2311
-at time 50, reassessments −200 at 51 /−110 at 52 should end with gross/paid/cash
-9244, balance 0, R=P=13866. Credit alone or refund delayed to 52 must reject the
-historical balance. Retain the accepted binary before bumping behavior to 2.
+at time 50, reassessments −200 at 51 /−110 at 52 end with gross/paid/cash
+9244, balance 0, R=P=13866. Credit alone or refund delayed to 52 rejects the
+historical balance. Invoicing behavior is now 2; calculation/equipment identities
+and store/codec 4 remain unchanged.
 
 Cloud verification uses `CARGO_INCREMENTAL=0` after debug incremental cache
 filled the 32 GiB workspace. Only generated incremental cache was removed; keep

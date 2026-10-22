@@ -90,8 +90,8 @@ trusted operator tool and has no network RPC counterpart.
 
 ## Data identity and upgrades
 
-Release 0.4.0 uses store format `rebase-store-4` and native codec
-`native-slice-kv-4`. Both compiled models use those formats, with distinct model
+Release 0.6.0 uses store format `rebase-store-4` and native codec
+`native-slice-kv-4`. All three compiled models use those formats, with distinct model
 identities. One store holds one selected compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
 behavior contract revision. Transport formatting and dependency patch bytes do
@@ -103,22 +103,33 @@ change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
 Calculation behavior is `rebase-calculation-contract-4`; equipment behavior is
-`equipment-reservations-3`. The declared population limits are now 4,096 public
+`equipment-reservations-3`. Their declared population limits are 4,096 public
 sources, 8,192 active private outputs and 16,384 retained role reservations per
 model. The behavior revisions cover the expanded envelope. Ordered reverse-route
 nodes have a new private layout, so retaining a prior behavior string would not
 make an old store compatible. Backup remains capped at 64 MiB, and the active
 receipt window remains 1,024 operations.
+Invoicing behavior is `invoice-assessments-2`, with 64 public sources, 256 active
+outputs and 512 retained roles. Its settlement declarations change the invoicing
+model identity from 0.5; calculation/equipment identities are unchanged.
 
-Format 2 and 3 stores and their backups intentionally reject in 0.4.0. The runtime
+Format 2 and 3 stores and their backups intentionally reject. The runtime
 header is checked before native metadata decoding, so an old store reports a
 model/format mismatch rather than being reinterpreted. There is no silent format
 3 migration, automatic reset or cross-model restore. A compatible format 4
 backup restores only with its matching compiled model and behavior identity.
 
+A read-only identity check rejects a clean incompatible store without changing
+even redb's maintenance bytes. The writable handle rechecks identity as well.
+If a process crashed, redb can require allocator recovery before a read-only open
+is possible; normal recovery is retained and identity is checked afterwards.
+That recovery can change storage-maintenance bytes. Recover old stores with the
+matching binary, then check and back them up before attempting an upgrade.
+
 Before upgrading, stop the old process, run its `check` and `backup`, and retain
 that compatible binary with its verified backups and receipt archives. Restore
-older-format backups with their matching old binary. Start 0.4.0 with a new store
-unless an explicit reviewed migration is provided; do not use restore as a migration tool.
+older-format backups with their matching old binary. Use a new store whenever
+model/format identity changes unless an explicit reviewed migration is provided;
+do not use restore as a migration tool.
 For rollback, use the old binary and its pre-upgrade snapshot. Never run the old
 and replacement writable copies together. No distributed failover is promised.

@@ -338,12 +338,14 @@ impl<B: Binding> Prepared<B> {
                     .ok_or_else(|| model_error("unresolved root declaration"))
             };
             for member in &contract.memberships {
-                if !contract
-                    .references
-                    .iter()
-                    .any(|r| r.field == member.through && r.targets.contains(&member.root_contract))
-                    || !contract.fields.iter().any(|f| f.name == member.key)
-                {
+                let target_resolves = if member.through == "self" {
+                    member.root_contract == contract.code
+                } else {
+                    contract.references.iter().any(|r| {
+                        r.field == member.through && r.targets.contains(&member.root_contract)
+                    })
+                };
+                if !target_resolves || !contract.fields.iter().any(|f| f.name == member.key) {
                     return Err(model_error("unresolved member reference/key"));
                 }
                 if resolve(member.root_contract, member.root_slot)?.kind != member.kind {

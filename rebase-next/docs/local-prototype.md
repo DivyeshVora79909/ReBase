@@ -1,6 +1,6 @@
 # Run and use the local prototype
 
-The 0.5 source also provides [bounded invoicing](invoicing.md) via
+The 0.6 source also provides [bounded invoicing and settlement](invoicing.md) via
 `--model invoicing`, sharing these operations. The examples and original
 calculation/equipment acceptance below remain dated.
 

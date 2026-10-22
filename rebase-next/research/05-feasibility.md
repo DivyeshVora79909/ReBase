@@ -1,5 +1,15 @@
 # Rust feasibility and stop boundary
 
+**G3d accepted, October 23:** [settlement and linked refunds](28-settlement-refund-gate.md)
+extend the same invoicing binding with explicit cash memberships, per-payment
+refund capacity and complete-time balance/claim histories. All 76 Rust tests,
+18 Python controls, 116 independent native/local cases and 111 HTTP mutations
+pass. Rejections preserve every application-table byte and leave no receipt;
+clean incompatible stores also preserve physical file bytes. Package 0.6 retains
+the existing calculation/equipment identities and bounded 64/256/512 invoicing
+envelope. G3e now verifies the deployment bundle; full accounting, rational FX
+and distributed execution remain separate gates.
+
 **G3c continuation:** [bounded invoicing](27-invoicing-gate.md) adds a third
 compiled model in package 0.5, with 72 Rust tests and 58 independent HTTP mutation
 scenarios, including 40 seeded history/rule stress batches, source-limit rejection,

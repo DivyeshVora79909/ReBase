@@ -1,6 +1,6 @@
-//! Bounded invoice pricing and explicitly dated cumulative tax assessments.
-//! Credits are monetary corrections. Assessments are authored facts; the model
-//! does not invent tax adjustments, settle payments or claim tax-law compliance.
+//! Bounded invoice pricing, dated tax reassessment and authored cash settlement.
+//! Credits, payments and linked refunds are explicit facts. No tax adjustments
+//! or external money transfers are invented by the model.
 use crate::{
     binding::{Binding, Limits, NativeInput},
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
@@ -71,6 +71,32 @@ pub enum Input {
         #[serde(with = "decimal")]
         at: i64,
     },
+    Treasury {
+        currency: u16,
+        name: String,
+    },
+    Payment {
+        #[serde(with = "uuid_text")]
+        invoice: Uuid,
+        #[serde(with = "uuid_text")]
+        treasury: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        #[serde(with = "decimal")]
+        amount_minor: i128,
+    },
+    Refund {
+        #[serde(with = "uuid_text")]
+        invoice: Uuid,
+        #[serde(with = "uuid_text")]
+        treasury: Uuid,
+        #[serde(with = "uuid_text")]
+        payment: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        #[serde(with = "decimal")]
+        amount_minor: i128,
+    },
     Output {
         #[serde(with = "uuid_text")]
         producer: Uuid,
@@ -103,27 +129,88 @@ pub enum Derived {
     },
 }
 
+struct OutputSpec {
+    role: u16,
+    contract: u16,
+    name: &'static str,
+    target: u16,
+    root: u16,
+    producers: &'static [u16],
+}
+const OUTPUTS: &[OutputSpec] = &[
+    OutputSpec {
+        role: 11,
+        contract: 901,
+        name: "InvoiceBaseOutput",
+        target: 101,
+        root: 7,
+        producers: &[211],
+    },
+    OutputSpec {
+        role: 13,
+        contract: 902,
+        name: "InvoiceGrossOutput",
+        target: 101,
+        root: 13,
+        producers: &[211, 509],
+    },
+    OutputSpec {
+        role: 17,
+        contract: 903,
+        name: "IssueCapacityOutput",
+        target: 211,
+        root: 17,
+        producers: &[211],
+    },
+    OutputSpec {
+        role: 19,
+        contract: 904,
+        name: "TaxAssessedOutput",
+        target: 401,
+        root: 19,
+        producers: &[509],
+    },
+    OutputSpec {
+        role: 23,
+        contract: 905,
+        name: "InvoiceBalanceOutput",
+        target: 101,
+        root: 23,
+        producers: &[211, 509],
+    },
+    OutputSpec {
+        role: 29,
+        contract: 906,
+        name: "InvoiceReceivableOutput",
+        target: 101,
+        root: 29,
+        producers: &[211, 509],
+    },
+    OutputSpec {
+        role: 31,
+        contract: 907,
+        name: "InvoicePayableOutput",
+        target: 101,
+        root: 31,
+        producers: &[509],
+    },
+];
+fn output_spec(role: u16) -> Result<&'static OutputSpec> {
+    OUTPUTS
+        .iter()
+        .find(|s| s.role == role)
+        .ok_or_else(|| Error::new("invalid_input", "unknown invoicing output role"))
+}
 pub(crate) fn output_contract(role: u16) -> Result<u16> {
-    match role {
-        11 => Ok(901),
-        13 => Ok(902),
-        17 => Ok(903),
-        19 => Ok(904),
-        _ => Err(Error::new("invalid_input", "unknown invoicing output role")),
-    }
+    Ok(output_spec(role)?.contract)
 }
 pub(crate) fn output_slot(role: u16) -> Result<u16> {
     output_contract(role)?;
     Ok(role)
 }
 fn output_root(role: u16) -> Result<(u16, u16)> {
-    match role {
-        11 => Ok((101, 7)),
-        13 => Ok((101, 13)),
-        17 => Ok((211, 17)),
-        19 => Ok((401, 19)),
-        _ => Err(Error::new("invalid_input", "unknown invoicing output role")),
-    }
+    let spec = output_spec(role)?;
+    Ok((spec.target, spec.root))
 }
 impl NativeInput for Input {
     fn contract(&self) -> u16 {
@@ -133,18 +220,26 @@ impl NativeInput for Input {
             Self::Credit { .. } => 307,
             Self::TaxRule { .. } => 401,
             Self::Assessment { .. } => 509,
+            Self::Treasury { .. } => 601,
+            Self::Payment { .. } => 701,
+            Self::Refund { .. } => 809,
             Self::Output { role, .. } => output_contract(*role).unwrap_or(0),
         }
     }
     fn validate(&self) -> Result<()> {
         let valid = match self {
             Self::Invoice { currency } => *currency > 0,
+            Self::Treasury { currency, name } => {
+                *currency > 0 && (1..=80).contains(&name.chars().count())
+            }
             Self::Issue {
                 quantity,
                 unit_price_minor,
                 ..
             } => quantity.numerator() >= 0 && *unit_price_minor >= 0,
-            Self::Credit { amount_minor, .. } => *amount_minor > 0,
+            Self::Credit { amount_minor, .. }
+            | Self::Payment { amount_minor, .. }
+            | Self::Refund { amount_minor, .. } => *amount_minor > 0,
             Self::TaxRule { rate, .. } => rate.numerator() >= 0,
             Self::Assessment { .. } => true,
             Self::Output { role, .. } => output_contract(*role).is_ok(),
@@ -179,6 +274,15 @@ impl NativeInput for Input {
             Self::Issue { invoice, .. } | Self::TaxRule { invoice, .. } => vec![(*invoice, 101, 1)],
             Self::Credit { invoice, issue, .. } => vec![(*invoice, 101, 1), (*issue, 211, 2)],
             Self::Assessment { invoice, rule, .. } => vec![(*invoice, 101, 1), (*rule, 401, 2)],
+            Self::Payment {
+                invoice, treasury, ..
+            } => vec![(*invoice, 101, 1), (*treasury, 601, 2)],
+            Self::Refund {
+                invoice,
+                treasury,
+                payment,
+                ..
+            } => vec![(*invoice, 101, 1), (*treasury, 601, 2), (*payment, 701, 3)],
             Self::Output {
                 producer,
                 role,
@@ -187,16 +291,18 @@ impl NativeInput for Input {
             } => vec![
                 (
                     *producer,
-                    match role {
-                        13 => 0,
-                        19 => 509,
-                        _ => 211,
-                    },
+                    output_spec(*role).map_or(0, |s| {
+                        if s.producers.len() == 1 {
+                            s.producers[0]
+                        } else {
+                            0
+                        }
+                    }),
                     1,
                 ),
                 (*target, output_root(*role).map_or(0, |(code, _)| code), 2),
             ],
-            Self::Invoice { .. } => vec![],
+            Self::Invoice { .. } | Self::Treasury { .. } => vec![],
         }
     }
     fn managed(&self) -> Option<(Uuid, u16)> {
@@ -280,7 +386,7 @@ fn declarations() -> Result<Vec<Contract>> {
     let uuid = json!({"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$","x-rebase-binding":"uuid"});
     let time = json!({"type":"string","pattern":"^(0|-?[1-9][0-9]{0,18})$","x-rebase-binding":"i64","x-rebase-range":[i64::MIN.to_string(),i64::MAX.to_string()]});
     let mut declarations = vec![];
-    for (code, name, properties, names) in [
+    let mut contracts = vec![
         (
             101,
             "Invoice",
@@ -312,30 +418,30 @@ fn declarations() -> Result<Vec<Contract>> {
             vec!["invoice", "rule", "at"],
         ),
         (
-            901,
-            "InvoiceBaseOutput",
-            json!({"producer":uuid,"role":{"const":11},"target":uuid,"at":time,"amount":integer_schema(false)}),
-            vec!["producer", "role", "target", "at", "amount"],
+            601,
+            "Treasury",
+            json!({"currency":{"type":"integer","minimum":1,"maximum":65535,"x-rebase-binding":"u16_code"},"name":{"type":"string","minLength":1,"maxLength":80}}),
+            vec!["currency", "name"],
         ),
         (
-            902,
-            "InvoiceGrossOutput",
-            json!({"producer":uuid,"role":{"const":13},"target":uuid,"at":time,"amount":integer_schema(false)}),
-            vec!["producer", "role", "target", "at", "amount"],
+            701,
+            "Payment",
+            json!({"invoice":uuid,"treasury":uuid,"at":time,"amount_minor":integer_schema(true)}),
+            vec!["invoice", "treasury", "at", "amount_minor"],
         ),
         (
-            903,
-            "IssueCapacityOutput",
-            json!({"producer":uuid,"role":{"const":17},"target":uuid,"at":time,"amount":integer_schema(false)}),
-            vec!["producer", "role", "target", "at", "amount"],
+            809,
+            "Refund",
+            json!({"invoice":uuid,"treasury":uuid,"payment":uuid,"at":time,"amount_minor":integer_schema(true)}),
+            vec!["invoice", "treasury", "payment", "at", "amount_minor"],
         ),
-        (
-            904,
-            "TaxAssessedOutput",
-            json!({"producer":uuid,"role":{"const":19},"target":uuid,"at":time,"amount":integer_schema(false)}),
-            vec!["producer", "role", "target", "at", "amount"],
-        ),
-    ] {
+    ];
+    for spec in OUTPUTS {
+        contracts.push((spec.contract, spec.name,
+            json!({"producer":uuid,"role":{"const":spec.role},"target":uuid,"at":time,"amount":integer_schema(false)}),
+            vec!["producer", "role", "target", "at", "amount"]));
+    }
+    for (code, name, properties, names) in contracts {
         let mut c = Contract {
             code,
             name,
@@ -352,8 +458,10 @@ fn declarations() -> Result<Vec<Contract>> {
                     code: index as u16 + 1,
                     name,
                     mutable: code < 900
-                        && code != 101
-                        && !matches!(name, "invoice" | "issue" | "rule"),
+                        && !matches!(
+                            name,
+                            "currency" | "invoice" | "issue" | "rule" | "treasury" | "payment"
+                        ),
                 })
                 .collect(),
             published: vec![],
@@ -369,7 +477,16 @@ fn declarations() -> Result<Vec<Contract>> {
             behavior_source: "src/models/invoicing.rs",
         };
         match code {
-            101 => c.roots = vec![root(7, "base"), root(13, "gross")],
+            101 => {
+                c.roots = vec![
+                    root(7, "base"),
+                    root(13, "gross"),
+                    root(21, "paid"),
+                    root(23, "balance"),
+                    root(29, "receivable"),
+                    root(31, "payable"),
+                ]
+            }
             211 => {
                 c.references
                     .push(reference(1, "invoice", vec![101], vec![]));
@@ -388,6 +505,8 @@ fn declarations() -> Result<Vec<Contract>> {
                     (11, 901, "invoice"),
                     (13, 902, "invoice"),
                     (17, 903, "self"),
+                    (23, 905, "invoice"),
+                    (29, 906, "invoice"),
                 ] {
                     c.outputs.push(OutputRole {
                         role,
@@ -409,6 +528,8 @@ fn declarations() -> Result<Vec<Contract>> {
                     member(11, "invoice", 101, 7, "-amount_minor"),
                     member(13, "invoice", 101, 13, "-amount_minor"),
                     member(17, "issue", 211, 17, "-amount_minor"),
+                    member(23, "invoice", 101, 23, "-amount_minor"),
+                    member(31, "invoice", 101, 31, "amount_minor"),
                 ];
                 c.rules = vec![
                     "issue.invoice equals invoice; monetary credit only; nonnegative chronological issue capacity",
@@ -448,14 +569,20 @@ fn declarations() -> Result<Vec<Contract>> {
                 })
                 .collect();
                 c.calculations.push(model::Calculation {name:"delta_minor",inputs:vec![],expression:"rate.apply(kind == base ? query[31] : query[37]-query[41],rounding)-query[41]"});
-                for (role, contract, account) in [(13, 902, "invoice"), (19, 904, "rule")] {
+                for (role, contract, account, amount) in [
+                    (13, 902, "invoice", "delta_minor"),
+                    (19, 904, "rule", "delta_minor"),
+                    (23, 905, "invoice", "delta_minor"),
+                    (29, 906, "invoice", "max(delta_minor,0)"),
+                    (31, 907, "invoice", "max(-delta_minor,0)"),
+                ] {
                     c.outputs.push(OutputRole {
                         role,
                         contract,
                         active: "always",
                         account,
                         at: "at",
-                        amount: "delta_minor",
+                        amount,
                         depends_on: vec!["delta_minor"],
                     });
                 }
@@ -463,28 +590,47 @@ fn declarations() -> Result<Vec<Contract>> {
                     "rule.invoice equals invoice; unique assessment timestamp per rule; repeated net assessments exclude this rule's prior assessed sum",
                 ];
             }
+            601 => c.roots.push(root(37, "cash")),
+            701 => {
+                c.references = vec![
+                    reference(1, "invoice", vec![101], vec![]),
+                    reference(2, "treasury", vec![601], vec![]),
+                ];
+                c.roots.push(root(41, "refund_capacity"));
+                c.memberships = vec![
+                    member(21, "invoice", 101, 21, "amount_minor"),
+                    member(23, "invoice", 101, 23, "-amount_minor"),
+                    member(31, "invoice", 101, 31, "amount_minor"),
+                    member(37, "treasury", 601, 37, "amount_minor"),
+                    member(41, "self", 701, 41, "amount_minor"),
+                ];
+                c.rules = vec![
+                    "invoice.currency equals treasury.currency; nonnegative chronological invoice balance",
+                ];
+            }
+            809 => {
+                c.references = vec![
+                    reference(1, "invoice", vec![101], vec![]),
+                    reference(2, "treasury", vec![601], vec![]),
+                    reference(3, "payment", vec![701], vec![]),
+                ];
+                c.memberships = vec![
+                    member(21, "invoice", 101, 21, "-amount_minor"),
+                    member(23, "invoice", 101, 23, "amount_minor"),
+                    member(29, "invoice", 101, 29, "amount_minor"),
+                    member(37, "treasury", 601, 37, "-amount_minor"),
+                    member(41, "payment", 701, 41, "-amount_minor"),
+                ];
+                c.rules = vec![
+                    "payment.invoice equals invoice; payment.treasury equals treasury; nonnegative chronological payment refund capacity",
+                ];
+            }
             _ => {
-                let role = match code {
-                    901 => 11,
-                    902 => 13,
-                    903 => 17,
-                    904 => 19,
-                    _ => unreachable!(),
-                };
+                let spec = OUTPUTS.iter().find(|s| s.contract == code).unwrap();
+                let role = spec.role;
                 let (target, slot) = output_root(role)?;
                 c.references = vec![
-                    reference(
-                        1,
-                        "producer",
-                        if role == 13 {
-                            vec![211, 509]
-                        } else if role == 19 {
-                            vec![509]
-                        } else {
-                            vec![211]
-                        },
-                        vec![],
-                    ),
+                    reference(1, "producer", spec.producers.to_vec(), vec![]),
                     reference(2, "target", vec![target], vec![]),
                 ];
                 c.memberships
@@ -508,42 +654,60 @@ pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, A
     }
     registrations
 }
-pub(crate) fn credit_members(input: Option<&Input>) -> BTreeMap<u16, (Address, i64, Leaf)> {
-    match input {
+fn authored_members(id: Uuid, input: Option<&Input>) -> BTreeMap<u16, (Address, i64, Leaf)> {
+    let (at, entries) = match input {
         Some(Input::Credit {
             invoice,
             issue,
             at,
             amount_minor,
-        }) => [
-            (
-                11,
-                (
-                    Address::new(*invoice, 7),
-                    *at,
-                    Leaf::Financial(-amount_minor),
-                ),
-            ),
-            (
-                13,
-                (
-                    Address::new(*invoice, 13),
-                    *at,
-                    Leaf::Financial(-amount_minor),
-                ),
-            ),
-            (
-                17,
-                (
-                    Address::new(*issue, 17),
-                    *at,
-                    Leaf::Financial(-amount_minor),
-                ),
-            ),
-        ]
-        .into(),
-        _ => BTreeMap::new(),
-    }
+        }) => (
+            *at,
+            [
+                (11, Address::new(*invoice, 7), -amount_minor),
+                (13, Address::new(*invoice, 13), -amount_minor),
+                (17, Address::new(*issue, 17), -amount_minor),
+                (23, Address::new(*invoice, 23), -amount_minor),
+                (31, Address::new(*invoice, 31), *amount_minor),
+            ],
+        ),
+        Some(Input::Payment {
+            invoice,
+            treasury,
+            at,
+            amount_minor,
+        }) => (
+            *at,
+            [
+                (21, Address::new(*invoice, 21), *amount_minor),
+                (23, Address::new(*invoice, 23), -amount_minor),
+                (31, Address::new(*invoice, 31), *amount_minor),
+                (37, Address::new(*treasury, 37), *amount_minor),
+                (41, Address::new(id, 41), *amount_minor),
+            ],
+        ),
+        Some(Input::Refund {
+            invoice,
+            treasury,
+            payment,
+            at,
+            amount_minor,
+        }) => (
+            *at,
+            [
+                (21, Address::new(*invoice, 21), -amount_minor),
+                (23, Address::new(*invoice, 23), *amount_minor),
+                (29, Address::new(*invoice, 29), *amount_minor),
+                (37, Address::new(*treasury, 37), -amount_minor),
+                (41, Address::new(*payment, 41), -amount_minor),
+            ],
+        ),
+        _ => return BTreeMap::new(),
+    };
+    entries
+        .into_iter()
+        .map(|(slot, root, amount)| (slot, (root, at, Leaf::Financial(amount))))
+        .collect()
 }
 fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Attempt<L, Invoicing>,
@@ -560,7 +724,7 @@ impl Binding for Invoicing {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "invoice-assessments";
-    const BEHAVIOR: &'static str = "invoice-assessments-1";
+    const BEHAVIOR: &'static str = "invoice-assessments-2";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -601,6 +765,48 @@ impl Binding for Invoicing {
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
+            if let Some(record) = &change.new {
+                match record.input {
+                    Input::Payment {
+                        invoice, treasury, ..
+                    } => {
+                        let Input::Invoice { currency } =
+                            required(ws, context, invoice, 101)?.input
+                        else {
+                            unreachable!()
+                        };
+                        if !matches!(required(ws, context, treasury, 601)?.input, Input::Treasury { currency: cash_currency, .. } if cash_currency == currency)
+                        {
+                            return Err(Error::new(
+                                "unavailable_reference",
+                                "invoice and treasury currencies differ",
+                            ));
+                        }
+                    }
+                    Input::Refund {
+                        invoice,
+                        treasury,
+                        payment,
+                        ..
+                    } => {
+                        let Input::Payment {
+                            invoice: original_invoice,
+                            treasury: original_treasury,
+                            ..
+                        } = required(ws, context, payment, 701)?.input
+                        else {
+                            unreachable!()
+                        };
+                        if original_invoice != invoice || original_treasury != treasury {
+                            return Err(Error::new(
+                                "unavailable_reference",
+                                "refund disagrees with its payment",
+                            ));
+                        }
+                    }
+                    _ => {}
+                }
+            }
             if let Some(record) = &change.new
                 && let Input::Credit { invoice, issue, .. } = record.input
             {
@@ -626,9 +832,12 @@ impl Binding for Invoicing {
             for (key, address, endpoint) in new.difference(&old) {
                 routes::change(ws, key, *address, *endpoint, true)?;
             }
-            let before = credit_members(change.old.as_ref().map(|record| &record.input));
-            let after = credit_members(change.new.as_ref().map(|record| &record.input));
-            for slot in [11, 13, 17] {
+            let before =
+                authored_members(change.id, change.old.as_ref().map(|record| &record.input));
+            let after =
+                authored_members(change.id, change.new.as_ref().map(|record| &record.input));
+            let slots: BTreeSet<_> = before.keys().chain(after.keys()).copied().collect();
+            for slot in slots {
                 crate::mutation::reconcile_member(
                     ws,
                     Address::new(change.id, slot),
@@ -727,6 +936,18 @@ impl ReactiveBinding for Invoicing {
                             root: Address::new(id, 17),
                             at,
                         },
+                        Emit {
+                            role: 23,
+                            contract: 905,
+                            root: Address::new(invoice, 23),
+                            at,
+                        },
+                        Emit {
+                            role: 29,
+                            contract: 906,
+                            root: Address::new(invoice, 29),
+                            at,
+                        },
                     ],
                 },
                 parameters: Parameters::Issue,
@@ -780,6 +1001,24 @@ impl ReactiveBinding for Invoicing {
                                 root: Address::new(rule, 19),
                                 at,
                             },
+                            Emit {
+                                role: 23,
+                                contract: 905,
+                                root: Address::new(invoice, 23),
+                                at,
+                            },
+                            Emit {
+                                role: 29,
+                                contract: 906,
+                                root: Address::new(invoice, 29),
+                                at,
+                            },
+                            Emit {
+                                role: 31,
+                                contract: 907,
+                                root: Address::new(invoice, 31),
+                                at,
+                            },
                         ],
                     },
                     parameters: Parameters::Assessment {
@@ -815,7 +1054,14 @@ impl ReactiveBinding for Invoicing {
                 let amount_minor = quantity.apply(*unit_price_minor, *rounding)?;
                 Ok((
                     Derived::Issue { amount_minor },
-                    [(11, amount_minor), (13, amount_minor), (17, amount_minor)].into(),
+                    [
+                        (11, amount_minor),
+                        (13, amount_minor),
+                        (17, amount_minor),
+                        (23, amount_minor),
+                        (29, amount_minor),
+                    ]
+                    .into(),
                 ))
             }
             (
@@ -839,6 +1085,13 @@ impl ReactiveBinding for Invoicing {
                 let delta_minor = assessed_minor
                     .checked_sub(*prior_minor)
                     .ok_or_else(|| Error::new("overflow", "tax assessment difference"))?;
+                let payable = if delta_minor < 0 {
+                    delta_minor
+                        .checked_neg()
+                        .ok_or_else(|| Error::new("overflow", "tax payable claim"))?
+                } else {
+                    0
+                };
                 Ok((
                     Derived::Assessment {
                         basis_minor,
@@ -846,7 +1099,14 @@ impl ReactiveBinding for Invoicing {
                         assessed_minor,
                         delta_minor,
                     },
-                    [(13, delta_minor), (19, delta_minor)].into(),
+                    [
+                        (13, delta_minor),
+                        (19, delta_minor),
+                        (23, delta_minor),
+                        (29, delta_minor.max(0)),
+                        (31, payable),
+                    ]
+                    .into(),
                 ))
             }
             _ => Err(Error::new("internal", "invoicing parameter type mismatch")),

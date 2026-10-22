@@ -4,8 +4,8 @@
 use std::{collections::BTreeSet, fs::OpenOptions, path::Path, sync::Arc};
 
 use redb::{
-    Database, ReadTransaction, ReadableDatabase, ReadableTable, ReadableTableMetadata,
-    TableDefinition, TableHandle,
+    Database, DatabaseError, ReadOnlyDatabase, ReadTransaction, ReadableDatabase, ReadableTable,
+    ReadableTableMetadata, TableDefinition, TableHandle,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -35,6 +35,13 @@ pub(crate) fn storage(error: impl std::fmt::Display) -> Error {
 
 pub(crate) fn corrupt(detail: &str) -> Error {
     Error::new("corrupt_state", detail)
+}
+
+fn check_model_identity(meta: &Meta, expected: &str) -> Result<()> {
+    if meta.model != expected || meta.codec != native_codec::CODEC {
+        return Err(Error::new("model_mismatch", "store/model identity differs"));
+    }
+    Ok(())
 }
 
 pub(crate) fn encode<T: Serialize>(value: &T) -> Result<Vec<u8>> {
@@ -240,7 +247,21 @@ impl<B: Binding> Store<B> {
     }
 
     pub fn open(path: impl AsRef<Path>, model: Arc<Prepared<B>>) -> Result<Self> {
-        let db = Database::open(path).map_err(storage)?;
+        // A writable redb open can change maintenance bytes even with no user
+        // transaction. Reject clean incompatible stores before acquiring it.
+        // A crashed file can require allocator recovery before a read-only open
+        // is possible; retain normal recovery and recheck identity afterwards.
+        match ReadOnlyDatabase::open(path.as_ref()) {
+            Ok(preview) => {
+                let read = preview.begin_read().map_err(storage)?;
+                check_tables(&read)?;
+                read_header(&read)?;
+                check_model_identity(&read_meta(&read)?, model.identity())?;
+            }
+            Err(DatabaseError::RepairAborted) => {}
+            Err(error) => return Err(storage(error)),
+        }
+        let db = Database::open(path.as_ref()).map_err(storage)?;
         let read = db.begin_read().map_err(storage)?;
         check_tables(&read)?;
         let header = read_header(&read)?;
@@ -293,12 +314,10 @@ impl<B: Binding> Store<B> {
     }
 
     pub(crate) fn check_meta(&self, meta: &Meta, requested: &str) -> Result<()> {
-        if requested != self.model.identity()
-            || meta.model != self.model.identity()
-            || meta.codec != native_codec::CODEC
-        {
+        if requested != self.model.identity() {
             return Err(Error::new("model_mismatch", "store/model identity differs"));
         }
+        check_model_identity(meta, self.model.identity())?;
         if meta.tenant != self.context.tenant || meta.actor != self.bootstrap_actor {
             return Err(Error::new("forbidden", "local context differs"));
         }
@@ -995,6 +1014,7 @@ mod tests {
             );
         }
         drop(store);
+        let before = std::fs::read(dir.file()).unwrap();
         assert!(matches!(
             LocalStore::open(dir.file(), model),
             Err(Error {
@@ -1002,6 +1022,7 @@ mod tests {
                 ..
             })
         ));
+        assert_eq!(std::fs::read(dir.file()).unwrap(), before);
     }
     #[test]
     fn old_store_format_is_rejected_before_decoding_legacy_meta() {
@@ -1037,6 +1058,7 @@ mod tests {
                 .unwrap();
             write.commit().unwrap();
             drop(store);
+            let before = std::fs::read(dir.file()).unwrap();
             assert!(matches!(
                 LocalStore::open(dir.file(), model),
                 Err(Error {
@@ -1044,6 +1066,7 @@ mod tests {
                     ..
                 })
             ));
+            assert_eq!(std::fs::read(dir.file()).unwrap(), before);
         }
     }
 }

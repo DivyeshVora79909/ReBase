@@ -1,10 +1,11 @@
 # ReBase Next 0.4.0 deployment and acceptance
 
-The 0.5 source continuation adds [bounded invoicing](invoicing.md), using the same
+The 0.6 source continuation adds [bounded invoicing and settlement](invoicing.md), using the same
 server/operator commands with `--model invoicing`. Its initial profile is
 64 public sources/256 outputs/512 retained roles. The measurements and release
 bundle below remain the accepted 0.4 calculation/equipment release; the
-[G3c gate](../research/27-invoicing-gate.md) records the new model's own evidence.
+[G3d/G3e gate](../research/28-settlement-refund-gate.md) records the new model's
+evidence and the pending three-model deployment checkpoint.
 
 This release supports two compiled models, `calculation` and `equipment`, on one
 embedded redb store owned by one server process. Select one model per store;

@@ -115,6 +115,17 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
 
     for (&id, record) in &snapshot.records {
         match record.input {
+            Input::Invoice { .. } => {
+                for slot in [7, 13, 21, 23, 29, 31] {
+                    events.entry(Address::new(id, slot)).or_default();
+                }
+            }
+            Input::Treasury { .. } => {
+                events.entry(Address::new(id, 37)).or_default();
+            }
+            Input::TaxRule { .. } => {
+                events.entry(Address::new(id, 19)).or_default();
+            }
             Input::Issue {
                 invoice,
                 at,
@@ -133,6 +144,8 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
                     (11, Address::new(invoice, 7)),
                     (13, Address::new(invoice, 13)),
                     (17, Address::new(id, 17)),
+                    (23, Address::new(invoice, 23)),
+                    (29, Address::new(invoice, 29)),
                 ] {
                     events.entry(root).or_default().push((at, amount_minor));
                     expect_output(
@@ -162,11 +175,71 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
                 let amount = amount_minor
                     .checked_neg()
                     .ok_or_else(|| corrupt("invoicing source credit overflow"))?;
-                for (slot, root) in [
-                    (11, Address::new(invoice, 7)),
-                    (13, Address::new(invoice, 13)),
-                    (17, Address::new(issue, 17)),
+                for (slot, root, amount) in [
+                    (11, Address::new(invoice, 7), amount),
+                    (13, Address::new(invoice, 13), amount),
+                    (17, Address::new(issue, 17), amount),
+                    (23, Address::new(invoice, 23), amount),
+                    (31, Address::new(invoice, 31), amount_minor),
                 ] {
+                    events.entry(root).or_default().push((at, amount));
+                    members.insert(Address::new(id, slot), (root, at, Leaf::Financial(amount)));
+                }
+            }
+            Input::Payment {
+                invoice,
+                treasury,
+                at,
+                amount_minor,
+            }
+            | Input::Refund {
+                invoice,
+                treasury,
+                at,
+                amount_minor,
+                ..
+            } => {
+                let Some(invoice_source) = snapshot.records.get(&invoice) else {
+                    return Err(corrupt("missing settlement invoice"));
+                };
+                let Some(treasury_source) = snapshot.records.get(&treasury) else {
+                    return Err(corrupt("missing settlement treasury"));
+                };
+                require(
+                    matches!((&invoice_source.input, &treasury_source.input),
+                        (Input::Invoice { currency }, Input::Treasury { currency: cash_currency, .. })
+                        if currency == cash_currency),
+                    "source settlement currencies agree",
+                )?;
+                let negative = amount_minor
+                    .checked_neg()
+                    .ok_or_else(|| corrupt("invoicing source settlement overflow"))?;
+                let contributions = if let Input::Refund { payment, .. } = record.input {
+                    let Some(original) = snapshot.records.get(&payment) else {
+                        return Err(corrupt("missing refunded payment"));
+                    };
+                    require(
+                        matches!(original.input, Input::Payment { invoice: original_invoice, treasury: original_treasury, .. }
+                            if original_invoice == invoice && original_treasury == treasury),
+                        "refund agrees with its source payment",
+                    )?;
+                    [
+                        (21, Address::new(invoice, 21), negative),
+                        (23, Address::new(invoice, 23), amount_minor),
+                        (29, Address::new(invoice, 29), amount_minor),
+                        (37, Address::new(treasury, 37), negative),
+                        (41, Address::new(payment, 41), negative),
+                    ]
+                } else {
+                    [
+                        (21, Address::new(invoice, 21), amount_minor),
+                        (23, Address::new(invoice, 23), negative),
+                        (31, Address::new(invoice, 31), amount_minor),
+                        (37, Address::new(treasury, 37), amount_minor),
+                        (41, Address::new(id, 41), amount_minor),
+                    ]
+                };
+                for (slot, root, amount) in contributions {
                     events.entry(root).or_default().push((at, amount));
                     members.insert(Address::new(id, slot), (root, at, Leaf::Financial(amount)));
                 }
@@ -257,8 +330,21 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
             at,
             prior_minor,
         );
-        for (role, root) in [(13, Address::new(invoice, 13)), (19, assessed_root)] {
-            events.entry(root).or_default().push((at, delta_minor));
+        let payable = if delta_minor < 0 {
+            delta_minor
+                .checked_neg()
+                .ok_or_else(|| corrupt("source payable overflow"))?
+        } else {
+            0
+        };
+        for (role, root, amount) in [
+            (13, Address::new(invoice, 13), delta_minor),
+            (19, assessed_root, delta_minor),
+            (23, Address::new(invoice, 23), delta_minor),
+            (29, Address::new(invoice, 29), delta_minor.max(0)),
+            (31, Address::new(invoice, 31), payable),
+        ] {
+            events.entry(root).or_default().push((at, amount));
             expect_output(
                 &snapshot,
                 &mut outputs,
@@ -266,7 +352,7 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
                 id,
                 role,
                 root,
-                (at, delta_minor),
+                (at, amount),
             )?;
         }
     }
@@ -302,6 +388,7 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
 mod tests {
     use super::*;
     use crate::{
+        binding::Binding,
         local::{KV, Mutation},
         model::Prepared,
         native_codec,
@@ -327,14 +414,10 @@ mod tests {
             },
         )
         .unwrap();
+        let fixture = Invoicing::fixture_plan(store.model(), "invoice-refund", id(200)).unwrap();
         let request: Mutation = serde_json::from_value(json!({
             "model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),
-            "operation_id":id(100),"returning":[],"commands":[
-                {"op":"create","id":id(10),"contract":101,"fields":{"currency":1}},
-                {"op":"create","id":id(20),"contract":211,"fields":{"invoice":id(10),"at":"0","quantity":{"numerator":"3","denominator":"2"},"unit_price_minor":"6670","rounding":"half_even"}},
-                {"op":"create","id":id(30),"contract":401,"fields":{"invoice":id(10),"kind":"base","rate":{"numerator":"1","denominator":"10"},"rounding":"half_even"}},
-                {"op":"create","id":id(40),"contract":509,"fields":{"invoice":id(10),"rule":id(30),"at":"10"}}
-            ]
+            "operation_id":id(100),"returning":[],"commands":fixture["commands"]
         })).unwrap();
         store.mutate(&request).unwrap();
         store.check_integrity().unwrap();
@@ -346,6 +429,17 @@ mod tests {
                 StoredValue::Record(record) => match (&mut record.input, &mut record.derived) {
                     (Input::Output { amount, .. }, _) => {
                         *amount += 1;
+                        true
+                    }
+                    (
+                        Input::Payment { amount_minor, .. } | Input::Refund { amount_minor, .. },
+                        _,
+                    ) => {
+                        *amount_minor += 1;
+                        true
+                    }
+                    (Input::Treasury { currency, .. }, _) => {
+                        *currency += 1;
                         true
                     }
                     (_, Some(Derived::Issue { amount_minor })) => {
@@ -371,7 +465,7 @@ mod tests {
             if changed {
                 corruptions.push((key.clone(), Some(bad)));
             }
-            if matches!(value, StoredValue::RouteNode(_)) {
+            if matches!(value, StoredValue::RouteNode(_) | StoredValue::Node(_)) {
                 corruptions.push((key.clone(), None));
             }
         }
