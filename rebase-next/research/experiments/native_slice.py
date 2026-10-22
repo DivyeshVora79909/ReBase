@@ -28,9 +28,7 @@ FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           11: ("output",), 12: ("producer", "role", "account", "at", "amount")}
 KINDS = {0: "meta", 1: "record", 2: "root", 3: "node", 4: "query",
          5: "incoming", 6: "direct", 7: "subscribers", 8: "role", 9: "reserved"}
-MODEL_FILES = ("Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "src/algebra.rs",
-               "src/causal.rs", "src/native_codec.rs", "src/native_slice.rs", "src/plan.rs",
-               "src/staging.rs", "src/tree.rs")
+
 
 
 class Reject(Exception):
@@ -747,12 +745,9 @@ def causal_corruption_controls(fixtures):
 
 
 def model_digest():
-    digest = hashlib.sha256(b"rebase-native-slice-model-v1\0")
-    for name in sorted(MODEL_FILES):
-        for data in (name.encode(), (ROOT / name).read_bytes()):
-            digest.update(len(data).to_bytes(8, "big"))
-            digest.update(data)
-    return digest.hexdigest()
+    # Explicit data/behavior contract, independent of build/dependency bytes.
+    # Release evidence still fingerprints every executed source separately.
+    return hashlib.sha256(b"rebase-calculation-contract-1").hexdigest()
 
 
 def main():
@@ -763,7 +758,7 @@ def main():
     fixtures = json.loads(args.fixtures.read_text(), object_pairs_hook=unique_object)
     actual = json.loads(args.actual.read_text(), object_pairs_hook=unique_object) if args.actual else None
     if actual:
-        require(actual["model"] == model_digest(), "MODEL", "compiled source fingerprint")
+        require(actual["model"] == model_digest(), "MODEL", "declared behavior contract")
         require(actual["format"] == "native-slice-run-v1", "LAYOUT", "report")
     controls = exercise_cases(fixtures, actual)
     original_fixtures = json.loads((ROOT / "research/fixtures/native-slice.json").read_text(), object_pairs_hook=unique_object)

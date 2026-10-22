@@ -101,6 +101,7 @@ pub fn router(store: Arc<LocalStore>, config: &ServerConfig) -> Result<Router> {
             "network API requires a secured store",
         ));
     }
+    store.check_integrity()?;
     if !(1..=64).contains(&config.max_inflight)
         || !(1..=120).contains(&config.request_timeout_seconds)
     {
@@ -214,7 +215,7 @@ mod tests {
             format!("Bearer {token}").parse().unwrap(),
         );
         let operation = Uuid::from_u128(100);
-        let body=Bytes::from(serde_json::to_vec(&json!({"jsonrpc":"2.0","id":"deadline","method":"records.mutate","params":{"model":store.model().identity(),"operation_id":operation,"commands":[{"op":"create","id":Uuid::from_u128(10),"contract":7,"fields":{"at":"0"}}],"returning":[]}})).unwrap());
+        let body=Bytes::from(serde_json::to_vec(&json!({"jsonrpc":"2.0","id":"deadline","method":"records.mutate","params":{"model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":operation,"commands":[{"op":"create","id":Uuid::from_u128(10),"contract":7,"fields":{"at":"0"}}],"returning":[]}})).unwrap());
         let held = store.db.begin_write().unwrap();
         let timed = call(State(app.clone()), headers.clone(), body.clone()).await;
         assert_eq!(timed.status(), StatusCode::GATEWAY_TIMEOUT);
@@ -235,7 +236,11 @@ mod tests {
         drop(permit);
         assert_eq!(
             store
-                .operation_status(store.model().identity(), operation)
+                .operation_status(
+                    store.model().identity(),
+                    &store.operation_context(store.model().identity()).unwrap(),
+                    operation
+                )
                 .unwrap()["status"],
             "committed"
         );

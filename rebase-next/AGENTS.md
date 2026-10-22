@@ -12,6 +12,11 @@ coherent checkpoint on the existing branch. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.
 Do not report full production or old-model parity merely because a server starts.
+Storage/model identity now uses an explicit behavior contract, not build bytes.
+Bump `native_slice::BEHAVIOR_CONTRACT` for semantic binding/calculation/causality/
+invariant changes; bump store/codec versions when their formats change. Keep
+independent source fingerprints in checkpoint evidence. Mutations/status retain
+their original operation context; never bypass archive expiry by refreshing it.
 
 The accepted starting point is a local prototype backed by bounded evidence.
 Preserve the difference between intent, proposals, established mathematics and

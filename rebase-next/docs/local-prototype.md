@@ -117,8 +117,8 @@ includes input schemas, published fields, permitted predicates and limits.
 | Method | Params besides `model` |
 | --- | --- |
 | `records.get` | `id` |
-| `records.mutate` | `operation_id`, `commands`, `returning` UUID array |
-| `operations.status` | `operation_id` |
+| `records.mutate` | `context` from `session.describe`, `operation_id`, `commands`, `returning` UUID array |
+| `operations.status` | original `context`, `operation_id` |
 | `records.page` | `query`, `limit`, `visit_budget`, nullable `cursor` |
 | `records.exists` | `query`, `visit_budget`, nullable `cursor` |
 | `roots.read` | `owner`, `slot`, `read` |
@@ -151,16 +151,17 @@ def call(method, params):
 model = call("model.describe", {})["result"]["model"]
 source = "00000000-0000-4000-8000-000000000060"  # Adjustment P
 record = call("records.get", {"model": model, "id": source})["result"]
+context = call("session.describe", {})["operation_context"]
 operation_id = str(uuid.uuid4())  # Retain this ID and request until reconciled.
 params = {
-    "model": model, "operation_id": operation_id,
+    "model": model, "context": context, "operation_id": operation_id,
     "commands": [{"op": "update", "id": source,
                   "if_version": record["version"],
                   "set": {"target": "25"}, "unset": []}],
     "returning": [source]
 }
 print(call("records.mutate", params))
-print(call("operations.status", {"model": model, "operation_id": operation_id}))
+print(call("operations.status", {"model": model, "context": context, "operation_id": operation_id}))
 p.stdin.close()
 p.wait()
 ```

@@ -89,8 +89,13 @@ fn binary_demo_offline_export_process_api_and_restart_are_usable_together() {
     let source = "00000000-0000-4000-8000-000000000060";
     let account = "00000000-0000-4000-8000-000000000030";
     let operation = Uuid::new_v4();
+    let context = rpc(
+        &dir,
+        &[json!({"jsonrpc":"2.0","id":"session","method":"session.describe","params":{}})],
+    )[0]["result"]["operation_context"]
+        .clone();
     let update = json!({"jsonrpc":"2.0","id":"edit","method":"records.mutate","params":{
-        "model":catalog["model"],"operation_id":operation,"commands":[{"op":"update","id":source,
+        "model":catalog["model"],"context":context,"operation_id":operation,"commands":[{"op":"update","id":source,
         "if_version":"2","set":{"target":"25"},"unset":[]}],"returning":[source]}});
     let root = json!({"jsonrpc":"2.0","id":"root","method":"roots.read","params":{
         "model":catalog["model"],"owner":account,"slot":2,"read":{"kind":"summary"}}});

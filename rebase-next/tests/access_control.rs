@@ -83,7 +83,7 @@ fn replace(store: &LocalStore, graph: Graph) -> Result<Value, Error> {
     })
 }
 fn mutation(store: &LocalStore, operation: u128, commands: Value, returning: Value) -> Mutation {
-    serde_json::from_value(json!({"model":store.model().identity(),"operation_id":id(operation),"commands":commands,"returning":returning})).unwrap()
+    serde_json::from_value(json!({"model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(operation),"commands":commands,"returning":returning})).unwrap()
 }
 fn page(
     store: &LocalStore,
@@ -285,12 +285,22 @@ fn real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts() 
     let replay = manager.mutate(&entry).unwrap();
     assert_eq!(replay["result"]["records"][0]["record"], Value::Null);
     assert_eq!(
-        manager.operation_status(model.identity(), id(101)).unwrap()["result"]["records"][0]["record"],
+        manager
+            .operation_status(
+                model.identity(),
+                &manager.operation_context(model.identity()).unwrap(),
+                id(101)
+            )
+            .unwrap()["result"]["records"][0]["record"],
         Value::Null
     );
     assert_eq!(
         stranger
-            .operation_status(model.identity(), id(101))
+            .operation_status(
+                model.identity(),
+                &stranger.operation_context(model.identity()).unwrap(),
+                id(101)
+            )
             .unwrap()["status"],
         "not_observed"
     );

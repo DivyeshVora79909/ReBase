@@ -83,7 +83,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
     )?;
     let mut transcript = vec![];
     let seed_id = Uuid::from_u128(1000);
-    let seed = json!({"model":model.identity(),"operation_id":seed_id,"commands":recipe.commands,
+    let seed = json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":seed_id,"commands":recipe.commands,
         "returning":[recipe.ids["P"],recipe.ids["Q"],recipe.ids["J"]]});
     let seeded = call(
         &store,
@@ -112,7 +112,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "bounded existence",
     )?;
     let swap_id = Uuid::from_u128(1001);
-    let swap = json!({"model":model.identity(),"operation_id":swap_id,"commands":[
+    let swap = json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":swap_id,"commands":[
         {"op":"update","id":recipe.ids["MP"],"if_version":"1","set":{"at":"20"},"unset":[]},
         {"op":"update","id":recipe.ids["MQ"],"if_version":"1","set":{"at":"10"},"unset":[]}
     ],"returning":[recipe.ids["P"],recipe.ids["Q"],recipe.ids["J"]]});
@@ -140,7 +140,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "Reject a stale editor version",
         "records.mutate",
         json!({"model":model.identity(),
-        "operation_id":Uuid::from_u128(1002),"commands":[{"op":"update","id":recipe.ids["MP"],"if_version":"1","set":{"at":"30"},"unset":[]}],"returning":[]}),
+        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1002),"commands":[{"op":"update","id":recipe.ids["MP"],"if_version":"1","set":{"at":"30"},"unset":[]}],"returning":[]}),
     )?;
     check(
         stale["error"]["data"]["kind"] == "stale_version",
@@ -152,7 +152,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "Reject zero-valued feedback",
         "records.mutate",
         json!({"model":model.identity(),
-        "operation_id":Uuid::from_u128(1003),"commands":[{"op":"update","id":recipe.ids["J"],"if_version":"2",
+        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1003),"commands":[{"op":"update","id":recipe.ids["J"],"if_version":"2",
             "set":{"feedback":{"account":recipe.ids["A"],"at":"5"}},"unset":[]}],"returning":[]}),
     )?;
     check(
@@ -176,7 +176,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         &mut transcript,
         "Read the committed swap receipt",
         "operations.status",
-        json!({"model":model.identity(),"operation_id":swap_id}),
+        json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":swap_id}),
     )?;
     check(
         receipt["result"]["result"] == swapped["result"]["result"],

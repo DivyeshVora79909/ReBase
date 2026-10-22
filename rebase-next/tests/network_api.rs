@@ -166,6 +166,7 @@ async fn real_http_concurrency_receipts_revocation_and_reopen() {
             .unwrap();
     });
     let credential = token(&cfg, 0);
+    let operation_context = store.operation_context(model.identity()).unwrap();
     assert_eq!(
         http(addr, None, request("model.describe", json!({})))
             .await
@@ -190,7 +191,7 @@ async fn real_http_concurrency_receipts_revocation_and_reopen() {
     );
     let create = request(
         "records.mutate",
-        json!({"model":model.identity(),"operation_id":id(100),"commands":[{"op":"create","id":id(10),"contract":7,"fields":{"at":"0"}}],"returning":[id(10)]}),
+        json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(100),"commands":[{"op":"create","id":id(10),"contract":7,"fields":{"at":"0"}}],"returning":[id(10)]}),
     );
     let mut tasks = vec![];
     for _ in 0..8 {
@@ -218,7 +219,7 @@ async fn real_http_concurrency_receipts_revocation_and_reopen() {
         .to_string();
     let mut tasks = vec![];
     for n in 0..8 {
-        tasks.push(tokio::spawn(http(addr,Some(credential.clone()),request("records.mutate",json!({"model":model.identity(),"operation_id":id(200+n),"commands":[{"op":"update","id":id(10),"if_version":version,"set":{"at":(n+1).to_string()},"unset":[]}],"returning":[]})))));
+        tasks.push(tokio::spawn(http(addr,Some(credential.clone()),request("records.mutate",json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(200+n),"commands":[{"op":"update","id":id(10),"if_version":version,"set":{"at":(n+1).to_string()},"unset":[]}],"returning":[]})))));
     }
     let mut committed = 0;
     let mut stale = 0;
@@ -280,7 +281,7 @@ async fn real_http_concurrency_receipts_revocation_and_reopen() {
         reopened
             .session(id(2), 1)
             .unwrap()
-            .operation_status(model.identity(), id(100))
+            .operation_status(model.identity(), &operation_context, id(100))
             .unwrap()["status"],
         "committed"
     );

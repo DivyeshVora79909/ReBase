@@ -70,6 +70,7 @@ fn run() -> Result<()> {
         let base_commands: Vec<Command> = serde_json::from_value(fixtures["bases"][base].clone())?;
         let request = Mutation {
             model: model.identity().into(),
+            context: store.operation_context(model.identity())?,
             operation_id: Uuid::from_u128(5000),
             returning: base_commands.iter().map(Command::id).collect(),
             commands: base_commands,
@@ -79,7 +80,10 @@ fn run() -> Result<()> {
             .cloned()
             .unwrap_or(json!([]));
         let initial_result = mutate(&store, &request, &base_allocations)?;
-        let initial = store.observe_for_verification()?;
+        let initial = {
+            store.check_integrity()?;
+            store.observe_for_verification()
+        }?;
         let mut operations = vec![];
         for (i, operation) in case["operations"]
             .as_array()
@@ -89,6 +93,7 @@ fn run() -> Result<()> {
         {
             let request = Mutation {
                 model: model.identity().into(),
+                context: store.operation_context(model.identity())?,
                 operation_id: Uuid::from_u128(5001 + i as u128),
                 commands: serde_json::from_value(operation["commands"].clone())?,
                 returning: ["P", "Q", "J", "A"]
@@ -98,30 +103,46 @@ fn run() -> Result<()> {
             };
             let allocations = operation.get("allocations").cloned().unwrap_or(json!([]));
             let result = mutate(&store, &request, &allocations);
-            let after = store.observe_for_verification()?;
+            let after = {
+                store.check_integrity()?;
+                store.observe_for_verification()
+            }?;
             let observed = match result {
                 Ok(result) => {
                     let replay = mutate(&store, &request, &json!([]))?;
-                    let replay_unchanged = store.observe_for_verification()? == after;
-                    let status = store.operation_status(model.identity(), request.operation_id)?;
+                    let replay_unchanged = {
+                        store.check_integrity()?;
+                        store.observe_for_verification()
+                    }? == after;
+                    let status = store.operation_status(
+                        model.identity(),
+                        &request.context,
+                        request.operation_id,
+                    )?;
                     let mut changed = request.clone();
                     changed.returning.clear();
                     let conflict = mutate(&store, &changed, &json!([]))
                         .err()
                         .ok_or("expected operation conflict observation")?;
-                    let conflict_unchanged = store.observe_for_verification()? == after;
+                    let conflict_unchanged = {
+                        store.check_integrity()?;
+                        store.observe_for_verification()
+                    }? == after;
                     json!({"request":request,"status":"committed","returned":result,"after":after,
                         "replay":replay,"replay_unchanged":replay_unchanged,"receipt":status,
                         "conflict_code":conflict.code,"conflict_unchanged":conflict_unchanged})
                 }
                 Err(error) => {
                     json!({"request":request,"status":"rejected","code":error.code,"returned":null,"after":after,
-                    "receipt":store.operation_status(model.identity(),request.operation_id)?})
+                    "receipt":store.operation_status(model.identity(),&request.context,request.operation_id)?})
                 }
             };
             operations.push(observed);
         }
-        let final_image = store.observe_for_verification()?;
+        let final_image = {
+            store.check_integrity()?;
+            store.observe_for_verification()
+        }?;
         drop(store);
         let reopened = LocalStore::open(&path, model.clone())?;
         let reopened_image = reopened.observe_for_verification()?;

@@ -26,8 +26,8 @@ capability gates visible instead of silently calling every feature production.
 | D1 | Shared goal and continuation, existing evidence preserved | Complete |
 | D2 | Fresh transaction-scoped principal/DAG authority, separate owner/reader, complete indexed readable candidates; independently checked repair and rejection | Complete |
 | D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Complete |
-| D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Next |
-| D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Pending |
+| D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Complete |
+| D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Next |
 | D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Pending |
 
 Each checkpoint closes a concrete semantic boundary before expansion. Change
@@ -123,3 +123,28 @@ The selected lockfile passes cargo-audit 0.22.2 against 1348 current advisories,
 with zero vulnerabilities/warnings. Trial RustCrypto selection pulled unpatched
 RSA; AWS-LC removes that dependency. D3 adds no capacity or accounting-parity
 claim. [Evidence](evidence/2026-10-22-d3-network.json).
+
+D4: added a complete current-state verifier, consistent private backups, checked
+temporary-file restore with atomic no-clobber publication, and an atomic reset
+that revokes old credentials/cursors/operation contexts. An explicit behavior
+revision replaces the prototype's source/dependency-bytes-as-data-identity rule.
+Store format 2 intentionally rejects old prototype data. Maintainers bump the
+behavior contract for semantic changes; evidence still fingerprints execution.
+
+Receipt retention now has an operator archive and a cryptographic generation
+fence. Mutations/status require the original `context` from `session.describe`;
+old uncertain requests cannot silently reapply after their receipts are archived.
+The backup is durable before its receipt window is cleared. This was an actual
+release blocker found during lifecycle work, rather than an automatic eviction
+policy. [The lifecycle guide](../docs/storage.md) owns these operational rules.
+
+Acceptance: 38 Rust tests, formatting and warning-free Clippy; foundation/causal/
+local independent corpora pass after explicit identity/header/context updates.
+The new checker runs on every complete local-adapter observation and does not
+call writer/rotation/settlement/query code. More than 20 deliberate corruption
+controls reject; damaged/incomplete/duplicate-key backups publish no destination.
+Verified restore matches all tables; reset preserves principals and rejects old
+credentials; archive rejects old request replay and permits offline reconciliation
+from its restored receipt snapshot. Historical receipt truth, automatic migrations,
+large exports and distributed recovery are not claimed.
+[Evidence](evidence/2026-10-22-d4-lifecycle.json).

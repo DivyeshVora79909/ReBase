@@ -77,7 +77,11 @@ impl<'de> Deserialize<'de> for Unique {
 }
 
 pub fn parse(bytes: &[u8]) -> Result<Value> {
-    if bytes.len() > MAX_REQUEST_BYTES {
+    parse_bounded(bytes, MAX_REQUEST_BYTES)
+}
+
+pub(crate) fn parse_bounded(bytes: &[u8], limit: usize) -> Result<Value> {
+    if bytes.len() > limit {
         return Err(Error::new("request_limit", "request byte limit"));
     }
     let mut decoder = serde_json::Deserializer::from_slice(bytes);

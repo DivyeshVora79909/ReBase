@@ -10,6 +10,7 @@ record values, versions, public membership or returned receipt projections.
 import argparse
 from copy import deepcopy
 import hashlib
+import hmac
 import json
 from pathlib import Path
 import uuid
@@ -41,6 +42,12 @@ def payload(row):
     return json.loads(data, object_pairs_hook=unique_object)
 
 
+def operation_context(state, header):
+    return hmac.new(bytes.fromhex(header["cursor_key"]), b"rebase-operation-context-1\0"
+        + uuid.UUID(header["store_id"]).bytes + int(header["operation_epoch"]).to_bytes(8,"big")
+        + uuid.UUID(state.tenant).bytes + uuid.UUID(state.actor).bytes + state.model.encode(),hashlib.sha256).hexdigest()
+
+
 def returned(state, request):
     records = []
     for rid in request["returning"]:
@@ -53,7 +60,7 @@ def returned(state, request):
 def receipt(state, request):
     digest = hashlib.sha256(b"rebase-local-operation-v1\0" + uuid.UUID(state.tenant).bytes
         + uuid.UUID(state.actor).bytes + canonical(request)).hexdigest()
-    return {"model": state.model, "tenant": state.tenant, "actor": state.actor,
+    return {"context":request["context"], "model": state.model, "tenant": state.tenant, "actor": state.actor,
             "request_hash": digest, "result": returned(state, request)}
 
 
@@ -140,13 +147,15 @@ def main():
         base = fixtures["bases"][fixture["base"]]
         state = State(fixtures["tenant"], fixtures["actor"], report["model"]).apply({
             "commands": base, "allocations": fixtures["base_allocations"].get(fixture["base"], [])})
-        base_request = {"model": state.model, "operation_id": str(uuid.UUID(int=5000)),
+        header = payload(actual["initial"]["tables"]["local_runtime"][0])
+        context = operation_context(state,header)
+        base_request = {"context":context, "model": state.model, "operation_id": str(uuid.UUID(int=5000)),
                         "commands": base, "returning": [c["id"] for c in base]}
         require(exact(actual["base_request"], base_request), "REQUEST", "base")
         receipts = {base_request["operation_id"]: receipt(state, base_request)}
         require(exact(actual["base_result"], {"status": "committed", "replayed": False, "result": returned(state, base_request)}), "RESULT", "base")
         header = payload(actual["initial"]["tables"]["local_runtime"][0])
-        require(set(header) == {"format", "store_id", "cursor_key", "receipts"} and header["format"] == "rebase-local-store-1", "LOCAL_HEADER", "initializer")
+        require(set(header) == {"format", "store_id", "cursor_key", "receipts", "operation_epoch"} and header["format"] == "rebase-store-2", "LOCAL_HEADER", "initializer")
         identity(header["store_id"])
         require(len(header["cursor_key"]) == 64 and bytes.fromhex(header["cursor_key"]).hex() == header["cursor_key"], "LOCAL_HEADER", "signing key")
         header = {k: v for k, v in header.items() if k != "receipts"}
@@ -156,7 +165,7 @@ def main():
         previous = actual["initial"]
         require(len(actual["operations"]) == len(fixture["operations"]), "CASE_INVENTORY", fixture["name"])
         for index, (operation, observed) in enumerate(zip(fixture["operations"], actual["operations"])):
-            request = {"model": state.model, "operation_id": str(uuid.UUID(int=5001+index)),
+            request = {"context":context, "model": state.model, "operation_id": str(uuid.UUID(int=5001+index)),
                        "commands": operation["commands"], "returning": [fixtures["ids"][n] for n in ("P", "Q", "J", "A")]}
             require(exact(observed["request"], request), "REQUEST", (fixture["name"], index))
             try:

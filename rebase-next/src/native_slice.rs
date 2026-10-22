@@ -11,6 +11,8 @@ use crate::{
     staging::Batch,
 };
 
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-1";
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, Serialize)]
@@ -399,31 +401,12 @@ impl Model {
         })
         .collect::<Vec<_>>();
         let order = evaluation_order(&fields).map_err(|e| Error::new("model", e))?;
-        let sources: &[(&str, &[u8])] = &[
-            ("Cargo.lock", include_bytes!("../Cargo.lock")),
-            ("Cargo.toml", include_bytes!("../Cargo.toml")),
-            (
-                "rust-toolchain.toml",
-                include_bytes!("../rust-toolchain.toml"),
-            ),
-            ("src/algebra.rs", include_bytes!("algebra.rs")),
-            ("src/causal.rs", include_bytes!("causal.rs")),
-            ("src/native_codec.rs", include_bytes!("native_codec.rs")),
-            ("src/native_slice.rs", include_bytes!("native_slice.rs")),
-            ("src/plan.rs", include_bytes!("plan.rs")),
-            ("src/staging.rs", include_bytes!("staging.rs")),
-            ("src/tree.rs", include_bytes!("tree.rs")),
-        ];
-        let mut hash = Sha256::new();
-        hash.update(b"rebase-native-slice-model-v1\0");
-        for (name, bytes) in sources {
-            for data in [name.as_bytes(), *bytes] {
-                hash.update((data.len() as u64).to_be_bytes());
-                hash.update(data);
-            }
-        }
+        // Maintainers bump this contract revision for changes to formulas,
+        // binding, settlement or invariants. Build/dependency bytes are not a
+        // data model: patching transport must not strand an unchanged store.
+        let identity = native_codec::hex(&Sha256::digest(BEHAVIOR_CONTRACT.as_bytes()));
         Ok(Self {
-            identity: native_codec::hex(&hash.finalize()),
+            identity,
             codec: native_codec::CODEC.into(),
             order,
         })

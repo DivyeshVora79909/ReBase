@@ -14,7 +14,11 @@ the verified starting point, not the new finish line.
 D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
 separate owner/reader, declared reader selection and atomic reader-index repair,
 bounded indexed merging and revocation-aware receipt disclosure. The active next
-checkpoint is D4: storage lifecycle and integrity. D3 adds authenticated bounded
+checkpoint is D5: model-driven developer workflow. D4 adds current-state integrity,
+verified backup/restore, reset, stable explicit data identity and fenced receipt
+archiving (38 tests). Mutations/status now require the original `context` from
+`session.describe`; never refresh an uncertain old request across an archive or
+reset. See [storage lifecycle](docs/storage.md). D3 adds authenticated bounded
 HTTP `/rpc`, Ed25519 JWT verification, offline issuance and real concurrency /
 revocation / timeout tests (34 Rust tests; clean dependency audit). See the
 [server guide](docs/server.md). The existing stdio interface remains a trusted

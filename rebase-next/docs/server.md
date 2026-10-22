@@ -60,6 +60,12 @@ in the [operation guide](local-prototype.md), plus `session.describe {}`,
 two require a current administrator. Graph changes are compare-and-set operations;
 reconcile a lost result by reading current graph/revision before retrying.
 
+Call `session.describe {}` before constructing mutations and include its
+`operation_context` as the required `context` field. Retain this original value
+with the operation ID for retries and `operations.status`. See
+[storage lifecycle](storage.md) for verified backup/restore, reset and fenced
+receipt archiving. Never refresh an uncertain request's context to evade expiry.
+
 The token is a deliberately narrow standard JWT profile: `alg=EdDSA`, `typ=JWT`,
 configured `kid`, and exactly `iss`, `aud`, canonical UUID `sub` and `tenant`,
 integer `epoch`, `iat`, `nbf`, `exp`. Issuer/audience/signature/expiry/not-before,

@@ -5,9 +5,11 @@ use std::{
     sync::Arc,
 };
 
+use hmac::{Hmac, Mac};
 use redb::{ReadTransaction, ReadableTable, TableDefinition, WriteTransaction};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::Sha256;
 use uuid::Uuid;
 
 use crate::{
@@ -21,6 +23,52 @@ use crate::{
 pub(crate) const AUTHORITY: TableDefinition<&[u8], &[u8]> = TableDefinition::new("authority");
 pub(crate) const READERS: TableDefinition<&[u8], u16> = TableDefinition::new("reader_records");
 const GRAPH: &[u8] = b"graph";
+
+fn operation_mac(
+    header: &crate::local::RuntimeHeader,
+    context: Context,
+    model: &str,
+) -> Result<Hmac<Sha256>> {
+    let mut mac = Hmac::<Sha256>::new_from_slice(&crate::local::unhex(&header.cursor_key)?)
+        .map_err(|_| corrupt("operation context key"))?;
+    mac.update(b"rebase-operation-context-1\0");
+    mac.update(header.store_id.as_bytes());
+    mac.update(&header.operation_epoch.to_be_bytes());
+    mac.update(context.tenant.as_bytes());
+    mac.update(context.actor.as_bytes());
+    mac.update(model.as_bytes());
+    Ok(mac)
+}
+pub(crate) fn operation_context(
+    header: &crate::local::RuntimeHeader,
+    context: Context,
+    model: &str,
+) -> Result<String> {
+    Ok(native_codec::hex(
+        &operation_mac(header, context, model)?
+            .finalize()
+            .into_bytes(),
+    ))
+}
+pub(crate) fn check_operation_context(
+    tag: &str,
+    header: &crate::local::RuntimeHeader,
+    context: Context,
+    model: &str,
+) -> Result<()> {
+    let expired = || {
+        Error::new(
+            "operation_expired",
+            "request context differs; reconcile using its archive, never refresh an uncertain request",
+        )
+    };
+    if tag.len() != 64 {
+        return Err(expired());
+    }
+    operation_mac(header, context, model)?
+        .verify_slice(&crate::local::unhex(tag).map_err(|_| expired())?)
+        .map_err(|_| expired())
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -69,7 +117,7 @@ pub(crate) fn write_graph(write: &WriteTransaction) -> Result<PreparedGraph> {
         .map_err(|_| corrupt("invalid principal graph"))
 }
 
-fn store_graph(write: &WriteTransaction, graph: &PreparedGraph) -> Result<()> {
+pub(crate) fn store_graph(write: &WriteTransaction, graph: &PreparedGraph) -> Result<()> {
     let mut table = write.open_table(AUTHORITY).map_err(storage)?;
     table
         .insert(GRAPH, encode(&graph.graph)?.as_slice())
@@ -186,6 +234,11 @@ pub(crate) fn update_reader_index(
 }
 
 impl LocalStore {
+    pub fn operation_context(&self, model: &str) -> Result<String> {
+        let (read, _, header) = self.read(model)?;
+        self.authority(&read)?;
+        operation_context(&header, self.context, model)
+    }
     pub fn create_secured(
         path: impl AsRef<std::path::Path>,
         model: Arc<PreparedModel>,

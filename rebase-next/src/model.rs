@@ -490,6 +490,7 @@ impl PreparedModel {
 
     pub fn developer_catalog(&self) -> Value {
         json!({"name":MODEL_NAME,"model":self.identity(),"core_identity":self.core_identity,
+            "behavior_contract":crate::native_slice::BEHAVIOR_CONTRACT,
             "api":API_VERSION,"codec":self.engine.codec,
             "contracts":self.contracts.values().collect::<Vec<_>>(),
             "capabilities":capabilities(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
@@ -517,7 +518,7 @@ pub fn capabilities() -> Value {
             "returning":32,"page_limit":32,"visit_budget":128,"receipts":1024,"request_bytes":65536},
         "cursor":"HMAC-SHA256; bound store/model/actor/query/revision; restart after any new mutation",
         "updates":"set replaces complete fields; unset must be empty in this model",
-        "receipt":"same operation ID/content replays; different content rejects; no eviction",
+        "receipt":"required actor/store/generation context from session.describe; same operation ID/content replays; offline archive advances its fence",
         "not_observed":"receipt absence does not prove failure"})
 }
 

@@ -51,7 +51,7 @@ fn call(store: &LocalStore, method: &str, params: Value) -> Value {
     )
 }
 fn mutation(store: &LocalStore, op: u128, commands: Value, returning: Value) -> Value {
-    json!({"model":store.model().identity(),"operation_id":id(op),"commands":commands,"returning":returning})
+    json!({"model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(op),"commands":commands,"returning":returning})
 }
 fn seed(store: &LocalStore) -> (Value, Value) {
     let fixture: Value =
@@ -93,7 +93,7 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
     let first = call(
         &store,
         "operations.status",
-        json!({"model":store.model().identity(),"operation_id":id(1000)}),
+        json!({"model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(1000)}),
     );
     assert_eq!(
         first["result"]["result"]["records"][0]["record"]["derived"]["delta"],
@@ -141,7 +141,7 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
         call(
             &store,
             "operations.status",
-            json!({"model":store.model().identity(),"operation_id":id(1002)})
+            json!({"model":store.model().identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":id(1002)})
         )["result"]["status"],
         "not_observed"
     );
@@ -164,7 +164,7 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
         call(
             &reopened,
             "operations.status",
-            json!({"model":reopened.model().identity(),"operation_id":id(1000)})
+            json!({"model":reopened.model().identity(),"context":reopened.operation_context(reopened.model().identity()).unwrap(),"operation_id":id(1000)})
         ),
         first
     );

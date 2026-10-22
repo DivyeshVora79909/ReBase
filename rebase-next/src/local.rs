@@ -26,7 +26,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-local-store-1";
+pub const STORE_FORMAT: &str = "rebase-store-2";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
@@ -93,6 +93,7 @@ mod canonical_ids {
 #[serde(deny_unknown_fields)]
 pub struct Mutation {
     pub model: String,
+    pub context: String,
     #[serde(with = "uuid_text")]
     pub operation_id: Uuid,
     pub commands: Vec<Command>,
@@ -133,23 +134,43 @@ pub struct Committed {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Receipt {
-    model: String,
+    pub(crate) context: String,
+    pub(crate) model: String,
     #[serde(with = "uuid_text")]
-    tenant: Uuid,
+    pub(crate) tenant: Uuid,
     #[serde(with = "uuid_text")]
-    actor: Uuid,
-    request_hash: String,
+    pub(crate) actor: Uuid,
+    pub(crate) request_hash: String,
     pub(crate) result: Committed,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RuntimeHeader {
-    format: String,
+    pub(crate) format: String,
     #[serde(with = "uuid_text")]
     pub(crate) store_id: Uuid,
     pub(crate) cursor_key: String,
-    receipts: u16,
+    pub(crate) receipts: u16,
+    #[serde(with = "decimal")]
+    pub(crate) operation_epoch: u64,
+}
+
+impl RuntimeHeader {
+    pub(crate) fn fresh() -> Self {
+        let key = [
+            Uuid::new_v4().as_bytes().as_slice(),
+            Uuid::new_v4().as_bytes().as_slice(),
+        ]
+        .concat();
+        Self {
+            format: STORE_FORMAT.into(),
+            store_id: Uuid::new_v4(),
+            cursor_key: native_codec::hex(&key),
+            receipts: 0,
+            operation_epoch: 0,
+        }
+    }
 }
 
 pub struct LocalStore {
@@ -167,12 +188,14 @@ impl LocalStore {
         model: Arc<PreparedModel>,
         context: Context,
     ) -> Result<Self> {
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create_new(true)
-            .open(path)
-            .map_err(storage)?;
+        let mut options = OpenOptions::new();
+        options.read(true).write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let file = options.open(path).map_err(storage)?;
         let db = Database::builder().create_file(file).map_err(storage)?;
         let write = db.begin_write().map_err(storage)?;
         {
@@ -192,15 +215,7 @@ impl LocalStore {
                 .map_err(storage)?;
             write.open_table(PUBLIC).map_err(storage)?;
             write.open_table(RECEIPTS).map_err(storage)?;
-            let mut key = vec![];
-            key.extend_from_slice(Uuid::new_v4().as_bytes());
-            key.extend_from_slice(Uuid::new_v4().as_bytes());
-            let header = RuntimeHeader {
-                format: STORE_FORMAT.into(),
-                store_id: Uuid::new_v4(),
-                cursor_key: native_codec::hex(&key),
-                receipts: 0,
-            };
+            let header = RuntimeHeader::fresh();
             write
                 .open_table(RUNTIME)
                 .map_err(storage)?
@@ -407,13 +422,19 @@ impl LocalStore {
                     .value(),
             )?;
             validate_header(&header)?;
+            crate::security::check_operation_context(
+                &request.context,
+                &header,
+                self.context,
+                self.model.identity(),
+            )?;
             let receipts = write.open_table(RECEIPTS).map_err(storage)?;
             if let Some(bytes) = receipts
                 .get(self.receipt_key(request.operation_id).as_slice())
                 .map_err(storage)?
             {
                 let receipt: Receipt = decode(bytes.value())?;
-                self.check_receipt(&receipt, request.operation_id)?;
+                self.check_receipt(&receipt, request.operation_id, &header)?;
                 if receipt.request_hash != request_hash {
                     return Err(Error::new(
                         "operation_conflict",
@@ -554,6 +575,7 @@ impl LocalStore {
             }
         }
         let receipt = Receipt {
+            context: request.context.clone(),
             model: self.model.identity().into(),
             tenant: self.context.tenant,
             actor: self.context.actor,
@@ -588,7 +610,7 @@ impl LocalStore {
         Ok(json!({"status":"committed","replayed":false,"result":result}))
     }
 
-    fn check_receipt(&self, receipt: &Receipt, id: Uuid) -> Result<()> {
+    fn check_receipt(&self, receipt: &Receipt, id: Uuid, header: &RuntimeHeader) -> Result<()> {
         if receipt.model != self.model.identity()
             || receipt.tenant != self.context.tenant
             || receipt.actor != self.context.actor
@@ -596,12 +618,19 @@ impl LocalStore {
         {
             return Err(corrupt("receipt binding"));
         }
+        crate::security::check_operation_context(
+            &receipt.context,
+            header,
+            self.context,
+            self.model.identity(),
+        )?;
         Ok(())
     }
 
-    pub fn operation_status(&self, model: &str, id: Uuid) -> Result<Value> {
-        let (read, _, _) = self.read(model)?;
+    pub fn operation_status(&self, model: &str, context: &str, id: Uuid) -> Result<Value> {
+        let (read, _, header) = self.read(model)?;
         let scope = self.authority(&read)?;
+        crate::security::check_operation_context(context, &header, self.context, model)?;
         let table = read.open_table(RECEIPTS).map_err(storage)?;
         let Some(value) = table
             .get(self.receipt_key(id).as_slice())
@@ -610,7 +639,7 @@ impl LocalStore {
             return Ok(json!({"status":"not_observed"}));
         };
         let receipt: Receipt = decode(value.value())?;
-        self.check_receipt(&receipt, id)?;
+        self.check_receipt(&receipt, id, &header)?;
         let native = read.open_table(KV).map_err(storage)?;
         let mut ws = Workspace::new(
             |key: &[u8]| {
@@ -662,7 +691,7 @@ impl LocalStore {
     }
 }
 
-fn observe(read: &ReadTransaction) -> Result<Value> {
+pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
     check_tables(read)?;
     let secured = read
         .list_tables()
@@ -830,7 +859,7 @@ mod tests {
         .unwrap();
         let before = store.observe_for_verification().unwrap();
         let old = store.db.begin_read().unwrap();
-        let request:Mutation=serde_json::from_value(json!({"model":store.model.identity(),"operation_id":Uuid::from_u128(3),
+        let request:Mutation=serde_json::from_value(json!({"model":store.model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(3),
             "commands":[{"op":"create","id":Uuid::from_u128(4),"contract":7,"fields":{"at":"9223372036854775807"}}],"returning":[Uuid::from_u128(4)]})).unwrap();
         for abort in [2, usize::MAX] {
             let error = store
@@ -871,7 +900,7 @@ mod tests {
         .unwrap();
         let before = store.observe_for_verification().unwrap();
         assert_eq!(before["tables"].as_object().unwrap().len(), 6);
-        let request: Mutation = serde_json::from_value(json!({"model":store.model.identity(),"operation_id":Uuid::from_u128(3),
+        let request: Mutation = serde_json::from_value(json!({"model":store.model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(3),
             "commands":[{"op":"create","id":Uuid::from_u128(4),"contract":7,"fields":{"at":"1"}}],"returning":[]})).unwrap();
         for abort in [2, usize::MAX] {
             assert_eq!(
