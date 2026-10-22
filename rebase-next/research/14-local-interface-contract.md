@@ -4,13 +4,18 @@
 confirmed usable local prototype. It does not add a general model interpreter,
 production identity service or an HTTP deployment requirement.
 
+Implemented and accepted in [paper 16](16-local-prototype-result.md).
+The [run/API guide](../docs/local-prototype.md) supplies concrete commands and
+request examples. Older illustrative shapes in paper 7 remain proposals.
+
 ## Prepared model and tools
 
 One bundled model combines authored Draft 2020-12 input schemas, explicit stable
 contract/field/slot codes and ordinary trusted Rust behavior. Preparation checks
 schema closure, code uniqueness, typed reference targets, compatible root/member
 and query declarations, public fields and the declared local calculation order.
-Schema references are local only; no network resolution or annotation defaults.
+Schemas are self-contained; references and network resolution are rejected, and
+annotation defaults are never installed.
 Exact string binding, reference existence and global rules remain engine checks.
 Only this compiled model is supported; loading arbitrary behavior is not claimed.
 
@@ -80,7 +85,7 @@ local replay policy, not unlimited retention or distributed exactly-once claims.
 
 The registered path is `records.by_id`, ascending UUID byte order. The query
 optionally selects one public contract and one exact equality predicate on a
-declared authored field of that contract. No arbitrary ordering, private fields,
+declared scalar authored field of that contract. No arbitrary ordering, private fields,
 expressions or implicit indexes. Whole records are the initial projection.
 Every candidate, including a residual-filter reject, consumes a visit. Result
 limit is 1–32 and visit budget 1–128. An empty filtered page may have continuation.

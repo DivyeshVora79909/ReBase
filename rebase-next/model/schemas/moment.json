@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "at": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,18})$",
+      "x-rebase-binding": "i64",
+      "x-rebase-range": [
+        "-9223372036854775808",
+        "9223372036854775807"
+      ]
+    }
+  },
+  "required": [
+    "at"
+  ],
+  "additionalProperties": false
+}

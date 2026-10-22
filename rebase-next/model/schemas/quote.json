@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "curve": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "x-rebase-binding": "uuid"
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,18})$",
+      "x-rebase-binding": "i64",
+      "x-rebase-range": [
+        "-9223372036854775808",
+        "9223372036854775807"
+      ]
+    },
+    "rate": {
+      "type": "string",
+      "pattern": "^([1-9][0-9]{0,2}|1000)$",
+      "x-rebase-binding": "u16",
+      "x-rebase-range": [
+        "1",
+        "1000"
+      ]
+    }
+  },
+  "required": [
+    "curve",
+    "at",
+    "rate"
+  ],
+  "additionalProperties": false
+}

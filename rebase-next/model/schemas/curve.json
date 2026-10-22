@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "native_unit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "x-rebase-binding": "u16_code"
+    },
+    "reporting_unit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "x-rebase-binding": "u16_code"
+    }
+  },
+  "required": [
+    "native_unit",
+    "reporting_unit"
+  ],
+  "additionalProperties": false
+}

@@ -5,19 +5,19 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-This is research plus a bounded proof, not an implemented application runtime.
+This is an early local prototype backed by bounded research evidence.
 Preserve the difference between intent, proposals, established mathematics and
 executed evidence. Update the feasibility report when executable scope changes.
 
-The user now authorized a usable local prototype through the autonomous goal
-in `research/13-local-prototype-plan.md`. Complete its P1–P4 stages; do not stop
-at a research or implementation substage. The earlier bounded native M1/M2/M4
-experiment is complete through S1–S5.
-Read `research/12-native-slice.md` for executed scope and
-`research/08-research-workflow.md` for the remaining gates before interpreting
-“continue.” Do not repeat completed stages or promote this result into a complete
-runtime. Use `research/06-system-audit.md` for documentation/change impact and
-`research/07-contract-wireframes.md` for API, tooling and lifecycle boundaries.
+The user confirmed a usable local prototype as the autonomous goal. P1–P4 in
+`research/13-local-prototype-plan.md` are now complete. Read the current result
+in `research/16-local-prototype-result.md` and the runnable instructions in
+`docs/local-prototype.md`. Paper 14 fixes the local API/tooling contract; papers
+12 and 15 retain earlier native evidence. Do not repeat those stages or infer
+production/distributed/full-accounting scope from their completion.
+Use `research/08-research-workflow.md` for future gates,
+`research/06-system-audit.md` for change impact, and
+`research/07-contract-wireframes.md` for broader lifecycle requirements.
 
 Use ordinary Rust modules and trusted functions. Extract a reusable primitive
 when concrete uses justify it. Avoid compatibility layers, generic plugin

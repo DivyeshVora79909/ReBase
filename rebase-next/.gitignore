@@ -1,2 +1,4 @@
 /target/
 *.redb
+!/src/bin/
+!/src/bin/*.rs

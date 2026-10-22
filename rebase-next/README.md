@@ -1,26 +1,30 @@
-# ReBase stack redesign research
+# ReBase Next local prototype
 
-Read [CONTEXT.md](CONTEXT.md) first. It is the compact reference for the intended
-system, settled corrections, open decisions and the next research boundary.
-The source discussion is indexed in [research/sources.md](research/sources.md).
+**The confirmed usable local prototype is complete.** One Rust executable
+provides exact causal calculations, a prepared model, separate public/developer
+catalogs, transactional mutation receipts, bounded reads and a runnable demo with
+an offline developer inspector. [The result](research/16-local-prototype-result.md)
+records acceptance; [the guide](docs/local-prototype.md) explains every command
+and public operation.
 
-**Current phase: building the usable local prototype (October 22).** Follow the
-[P1–P4 plan](research/13-local-prototype-plan.md). Native causal settlement P1 is
-[accepted](research/15-causal-native-result.md); model/tooling and the local
-API/demo continue under the [interface contract](research/14-local-interface-contract.md).
-The earlier bounded native experiment is also accepted. The
-[scenario/gate register](research/08-research-workflow.md) routes continuation;
-use the [system review](research/06-system-audit.md) and
-[wireframes](research/07-contract-wireframes.md) for the affected boundaries.
-M3/M5's bounded causal review and M6's independent checker contract are complete.
-The [native slice result](research/12-native-slice.md) closes the
-[M1/M2/M4 plan](research/11-native-slice-plan.md) through S1–S5: typed staging,
-linked trees, fixed settlement and real redb observation. The independent source
-oracle verified 68 cases / 93 operations, including 40 complete-state rejections.
+```sh
+cd rebase-next
+export CARGO_TARGET_DIR=target/native-slice/build
+cargo build --locked --bin rebase-next
+target/native-slice/build/debug/rebase-next demo target/my-first-demo
+```
 
-This directory is independently buildable and movable. It contains a research
-proposal and bounded Rust/Python experiments; it does not load the existing
-compiler, gateway, accounting build or frontend.
+Choose a new directory for each demo. Open its `inspect.html`; the same folder
+contains a usable `demo.redb`, model catalogs and the operation transcript.
+`rebase-next rpc <store.redb>` serves JSON-RPC over stdin/stdout. The prototype
+uses a fixed local actor/tenant; production authentication, distributed storage
+and a full accounting/UI port remain separate scope.
+
+This directory is independently buildable and movable. It loads no original
+ReBase compiler, gateway, accounting build or MetaSol frontend. All generated
+artifacts stay under `target/`. For new development, read [CONTEXT.md](CONTEXT.md)
+and the relevant paper below. The original discussion is indexed in
+[research/sources.md](research/sources.md).
 
 | Read when working on | Paper |
 | --- | --- |
@@ -36,22 +40,22 @@ compiler, gateway, accounting build or frontend.
 | Source-derived inventories, tree verification and corruption controls | [M6 checker contract](research/10-independent-checker.md) |
 | First native commands, state, settlement and implementation stages | [M1/M2/M4 implementation plan](research/11-native-slice-plan.md) |
 | Native execution, independent acceptance, work counts and remaining limits | [M1/M2/M4 result](research/12-native-slice.md) |
-| Active local prototype goal and stages | [P1–P4 plan](research/13-local-prototype-plan.md) |
+| Completed local prototype contract and stages | [P1–P4 plan](research/13-local-prototype-plan.md) |
 | Concrete model/tooling/API/demo boundaries | [Local interface contract](research/14-local-interface-contract.md) |
 | Native prefix calculations, private outputs and independent acceptance | [P1 result](research/15-causal-native-result.md) |
+| Current runnable scope, evidence and future boundary | [Local prototype result](research/16-local-prototype-result.md) |
 
 ```sh
-cd rebase-next
 CARGO_TARGET_DIR=target/native-slice/build cargo test --locked --all-targets
-CARGO_TARGET_DIR=target/native-slice/build cargo run --locked --example native_slice
+CARGO_TARGET_DIR=target/native-slice/build cargo run --locked --example local_acceptance
 # Use the observation path printed by the example:
-python3 -B research/experiments/native_slice.py --actual target/native-slice/run-.../native-observations.json
+python3 -B research/experiments/local_prototype.py --actual target/local-prototype/run-.../local-observations.json
 ```
 
-The toolchain is pinned locally. The example creates fresh redb databases under
-`target/native-slice/`, closes/removes them and retains raw observations for the
-independent checker. The build cache is reusable. There is no application server
-or distributed cluster to install. `Cargo.lock` records dependencies.
+The toolchain and dependencies are pinned locally. Acceptance harnesses create
+fresh redb databases, remove their owned stores and retain complete observations
+for independent checking. The demo intentionally retains its usable store.
+The build cache is reusable; no distributed cluster is needed.
 
 The papers distinguish **user intent**, **current implementation**, **proposal**,
 **mathematical consequence**, and **executed evidence**. A passed small example
@@ -59,8 +63,8 @@ does not certify the proposed complete runtime or establish throughput.
 
 For research-only edits, check links, scope and unchanged evidence fingerprints;
 do not rerun the Rust proof or the original database suites without a relevant
-change. The [October 22 audit](research/evidence/2026-10-22-context-audit.json)
-retains the current inspection and verification scope.
+change. The [final evidence](research/evidence/2026-10-22-local-prototype.json)
+records current execution. Earlier audits and evidence retain their dated scope.
 
 The separate bounded research model runs with
 `python3 research/experiments/m3_m5.py` from this directory. It checks the M3/M5

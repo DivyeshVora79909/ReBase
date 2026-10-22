@@ -1,6 +1,8 @@
 # From the accepted native slice to a usable local prototype
 
-**Active goal, 2026-10-22.** The user confirmed the finish line: a usable local
+**Completed P1–P4, 2026-10-22.** [Paper 16](16-local-prototype-result.md) and its
+evidence record acceptance; [the guide](../docs/local-prototype.md) runs it.
+The plan below preserves the completion contract. The user confirmed a usable local
 prototype with the calculation engine, model tooling, mutation/query API and a
 demonstrable workflow. Continue through the stages below without treating each
 stage as a new permission boundary. Existing ReBase/MetaSol remain read-only.

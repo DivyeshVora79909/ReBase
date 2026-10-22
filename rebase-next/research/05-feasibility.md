@@ -133,3 +133,12 @@ operations plus the original 68 cases / 93 operations, complete rollback/reopen
 checks and 14 integrated Rust tests. Earlier limitations in this paper describe
 their dated experiment; public runtime/model tooling and distributed acceptance
 remain separate from this P1 result.
+
+P2–P4 subsequently complete the confirmed usable local-prototype goal. The
+[current result](16-local-prototype-result.md) and
+[final evidence](evidence/2026-10-22-local-prototype.json) add prepared model
+tooling, a local process API, transactional public indexing/receipts, bounded
+queries/cursors, demo and inspector. The integrated suite now has 27 tests;
+the original and causal native corpora pass on the final source fingerprint.
+Distributed/production capabilities remain outside that result. This paragraph
+extends current executable scope without rewriting earlier dated evidence.

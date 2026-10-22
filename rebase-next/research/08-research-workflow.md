@@ -1,12 +1,14 @@
 # Research scenarios, decisions and gates
 
-**Active phase: bounded native-slice acceptance complete, 2026-10-22.**
+**Current phase: confirmed usable local prototype complete, 2026-10-22.**
 The user requested whole-system understanding before implementation planning.
 The impact review and concrete M1/M2/M4 contracts preceded implementation.
 The [first implementation plan](11-native-slice-plan.md) is now complete through
 S1–S5; [paper 12](12-native-slice.md) records native execution and independent
-acceptance. The complete proposed application runtime remains unimplemented.
-This paper owns continuation and testing scope.
+acceptance. The later [P1–P4 goal](13-local-prototype-plan.md) is also complete;
+[paper 16](16-local-prototype-result.md) records the runnable local model/tools,
+API and demo. Broader production capabilities retain the gates below.
+This paper owns future scope; each result paper owns its dated acceptance.
 
 ## 1. What “ready” means
 
@@ -129,10 +131,10 @@ Rows group related assertions to avoid a test per phrase.
 | --- | --- |
 | M1 | Executed in the fixed native model: local field names oppose dependency order, and changing D gives 12/36 and 3/15. The existing local-plan tests reject unknown inputs/cycles; a general declaration loader remains deferred. |
 | M2 | Executed native quote/posting insert/edit/move/delete/reparent, old/new reverse routes, exact quote boundaries and empty-curve fallback. Independent source inventories and values match; missing C rejects. Curve discovery is conservative, not minimal interval invalidation. |
-| M3 | Two strictly prior prefix consumers exchange effective positions. Paper 9 defines final-shape causality and checks every valid order of a bounded private-output/diamond model. Old/new graph union and incomplete detachment are explicit counterexamples. Incremental discovery and ordered-result-dependent shape remain unproved. |
+| M3 | Executed natively for the bounded authored-shape model: prefix consumers exchange positions, direct dates move, old/new routes discover the closure, all old affected outputs detach, and final dependencies order the diamond. Paper 15 records 39 causal cases / 55 operations. General ordered-result-dependent shape remains deferred. |
 | M4 | Executed native multi-command settlement rejects final-positive/intermediate-negative history, accepts same-time cancellation and honors separate checkpoints. Independent grouped scans match; all rejected application KV state is preserved, including aborts after actual writes. |
-| M5 | Paper 9 defines coincident financial roles, two positions, identical query/interval bounds, private required-output activation/removal and rejected parent deletion. Its model checks logical inventories and rejection predicates. UUID allocation, real private-write enforcement and atomic lifecycle repair still need implementation evidence. |
-| M6 | Paper 10's synthetic contract retains five valid, 28 invalid and two incomplete controls. The simpler native fixture now adds complete real snapshots, independent role inventories, actual AVL links and exact subtree/publication checks, plus four valid, 20 invalid and two incomplete native-format controls. This does not supply a native M3/M5 writer or interval reverse index. |
+| M5 | The restricted contract now has native UUID allocation/collision checks, retained/retired private role bindings, public write rejection, disable/reenable and parent-first lifecycle acceptance. Independent expected bindings come from explicit allocation history. General interval-role support remains separate. |
+| M6 | Paper 10's synthetic evidence remains dated. Native original/causal corpora now verify complete real inventories, links/subtrees, queries and private reservations; 32 invalid-state and two incomplete controls cover the extended codec. The local adapter adds independent public-index and receipt inventories. An interval reverse index is not supplied. |
 | T1 | Change a rate concurrently with registration/quantity update of a zero-valued consumer. A no-op output does not drop the source/discovery protection. Each adapter's controlled schedule must prevent a stale committed consumer. |
 | T2 | Race unique creation against unique creation, and target deletion against a new reference. Protect absence/predicates and reverse registrations; a correct final index cannot omit a newly committed dependent. |
 | T3 | Two withdrawals each appear valid in the same old snapshot but violate the shared historical bound together. Their guards must prevent the invalid pair of commits. Retry reloads all authority and facts; limits reject without partial publication. |
@@ -157,21 +159,30 @@ causal contract in paper 9; M6 establishes the bounded checker contract and its
 failure controls in paper 10.
 T cases require controlled schedules against the intended adapter before any
 distributed concurrency claim. Q/W/D are contract tests when their
-boundaries exist, not reasons to build an HTTP server or browser today. F cases
+boundaries exist. The accepted local subset below supplies a process API and
+offline inspector without requiring HTTP hosting. F cases
 are gates before adding those capabilities, not current implementation work.
+
+Paper 16 covers local subsets of Q1–Q3 (one complete public ID path, i64 root
+bounds, exact scalar predicates, budgets and coarse revision-bound cursors), W1–W2
+(bounded durable receipts, strict exact inputs and stale/rejection behavior),
+and D1–D3 (one compiled model, separate catalogs/explain, model checks, fresh
+disposable demo and offline developer view). These are not acceptance of general
+multi-principal partition discovery, revocation, arbitrary models/activation or
+distributed concurrent schedules.
 
 ## 4. Decisions and explicit exclusions
 
 | Decision | Research position and next evidence needed |
 | --- | --- |
-| D-CORE: first calculation scope | Fixed M1/M2/M4 native commands, linked trees, bounded point-owned reverse lists and independent real snapshots are accepted in paper 12. Curve edits conservatively discover all old/new subscribers. Native M3/M5 discovery/detachment needs its own contract; general query-driven shape remains deferred. |
-| D-SETTLE: validation boundary | Final settled validation and separate operation checkpoints passed M4 for the toy context. General action permissions and public `mutate` remain gated; this deliberately differs from the current engine's statement boundary. |
+| D-CORE: calculation scope | Fixed original and authored-shape causal commands, linked trees, bounded reverse lists, managed outputs and independent real snapshots are accepted in papers 12/15/16. Discovery remains conservative per root. General query-driven shape remains deferred. |
+| D-SETTLE: validation boundary | Final settled validation now backs public local mutations. Separate requests remain separate checkpoints. Production action permissions stay gated; this deliberately differs from the old engine's statement boundary. |
 | D-VALUES: general exact values | Toy integers are bounded. Choose full decimal range/rounding, timestamp/string comparator and scalar binding before claiming production or generic type support; Q2/W2 provide counterexamples. |
-| D-MODEL: persisted identity | The native slice passed same-model reopen and requested model/codec mismatch rejection with a compiled source fingerprint. Semantic artifact identity, activation and stale-writer protection beyond the fixed model still require D1/D2. No legacy migration framework. |
-| D-QUERY: scope and cursors | Complete bounded setup, scoped content revisions, typed prefix boundaries and explicit restart are proposed. Validate Q1–Q3 before implementing a general reader API; no unbounded residual-scan fallback. |
+| D-MODEL: persisted identity | The prepared local model binds declarations/schemas and compiled core identity; every operation checks model/context and the same store reopens safely. Incompatible stores reject. General model activation/migration and stale distributed writers still require D1/D2. |
+| D-QUERY: scope and cursors | The local public ID index is complete for its fixed actor. Bounded scans, authenticated coarse-revision cursors and explicit restart are implemented. General multi-principal queries still require Q1–Q3; no unbounded residual fallback. |
 | D-STORE: distributed choice | redb remains the embedded proof. FoundationDB is conditional; conformance includes range overlays, absences, reverse phantoms, no-op guards and authority. A coarse guard's contention belongs in the cost model. |
-| D-API: replay and authority | Structured operations, exact values, explicit preconditions and same-operation reconciliation are proposed. Receipt retention and externally exposed identity/session policy must be fixed before W1/F3 acceptance. |
-| D-TOOLS: author/client views | Separate artifacts from one resolved model; source-preserving build and explicit fixture lifecycle. No custom REPL, generic form language or duplicate schema compiler is justified now. |
+| D-API: replay and authority | Local structured operations, exact values, versions and atomic receipts are implemented. Retain 1024 receipts without eviction, rejecting new work at the limit. Production identity/revocation and distributed replay schedules retain W1/F3 gates. |
+| D-TOOLS: author/client views | Separate catalogs, explain/validate, offline model view and a named demo/inspector are implemented for the compiled model. No custom REPL, generic form language or duplicate schema compiler is introduced. |
 | D-LATER: external and operational scope | Effects, webhooks, authentication providers, business-audit retention, live subscriptions, backup/restore, populated migration and large exports remain separate capabilities with recorded gates. They are not supplied by the current proof. |
 
 No throughput target, hardware workload or representative multi-tenant fanout
@@ -217,6 +228,9 @@ build the proof without loading that repository or MetaSol.
 
 ## 6. Current closure and continuation
 
+The confirmed P1–P4 local-prototype goal is complete in paper 16. The following
+paragraphs retain the research/implementation history that led to it.
+
 Completed here: attachment reconciliation, current-source impact review,
 historical-conflict routing, API/tooling/lifecycle wireframes, bounded fixture
 semantics and the scenario/gate register. Proof inputs were unchanged at that stage;
@@ -254,9 +268,8 @@ The original proof's Cargo files and module exports changed, so its original
 eleven-input fingerprint claim is historical; old evidence and Python programs
 remain unchanged.
 
-There is no pending work in that goal. The next native causal expansion must
-first close M3/M5 incremental discovery, detachment, identity reservation and
-final ordering against its source oracle. Required outputs/prefix scheduling,
-general ordered-result-dependent shape, minimal interval invalidation, full
-API/dev tools and distributed schedules retain their gates. Do not restart S1,
-repeat a whole-system audit or infer production acceptance from this experiment.
+That goal's later P1–P4 extension closed native causal discovery/detachment,
+identity reservations, final ordering and the bounded local tooling/API/demo.
+General ordered-result-dependent shape, minimal interval invalidation, production
+authorization, arbitrary models and distributed schedules retain their gates.
+Do not restart S1, repeat the broad audit or infer production acceptance.

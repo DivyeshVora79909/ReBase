@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "account": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "x-rebase-binding": "uuid"
+    },
+    "moment": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "x-rebase-binding": "uuid"
+    },
+    "offset": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,2}|-?1000)$",
+      "x-rebase-binding": "i64",
+      "x-rebase-range": [
+        "-1000",
+        "1000"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,2}|-?1000)$",
+      "x-rebase-binding": "i128",
+      "x-rebase-range": [
+        "-1000",
+        "1000"
+      ]
+    },
+    "post": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "account",
+    "moment",
+    "offset",
+    "target",
+    "post"
+  ],
+  "additionalProperties": false
+}

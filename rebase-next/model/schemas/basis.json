@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "x-rebase-binding": "uuid"
+      },
+      "minItems": 1,
+      "maxItems": 2
+    },
+    "factor": {
+      "type": "string",
+      "pattern": "^[1-3]$",
+      "x-rebase-binding": "u16",
+      "x-rebase-range": [
+        "1",
+        "3"
+      ]
+    },
+    "account": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "x-rebase-binding": "uuid"
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,18})$",
+      "x-rebase-binding": "i64",
+      "x-rebase-range": [
+        "-9223372036854775808",
+        "9223372036854775807"
+      ]
+    },
+    "feedback": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "account": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "x-rebase-binding": "uuid"
+            },
+            "at": {
+              "type": "string",
+              "pattern": "^(0|-?[1-9][0-9]{0,18})$",
+              "x-rebase-binding": "i64",
+              "x-rebase-range": [
+                "-9223372036854775808",
+                "9223372036854775807"
+              ]
+            }
+          },
+          "required": [
+            "account",
+            "at"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "sources",
+    "factor",
+    "account",
+    "at",
+    "feedback"
+  ],
+  "additionalProperties": false
+}

@@ -1,19 +1,26 @@
 # Compact context — 2026-10-22
 
-**Active continuation:** after committing `2109687`, the user explicitly chose
-a usable local prototype as the new autonomous finish line: engine, model
-tooling, mutation/query API and a demonstrable workflow. Follow
-[paper 13](research/13-local-prototype-plan.md) through P1–P4. Start with native
-M3/M5 discovery, ordering and private output lifecycle in the existing engine;
-then complete the model/tools/runtime/demo boundaries. The earlier bounded goal
-below is historical completion, not a request to stop this new goal.
+**Confirmed local-prototype finish line completed.** After `2109687`, the user
+chose engine, model tooling, mutation/query API and a demonstrable workflow.
+[P1–P4](research/13-local-prototype-plan.md) are complete. Start with the
+[current result](research/16-local-prototype-result.md) and
+[run/API guide](docs/local-prototype.md), not another whole-system audit.
 
-**P1 is now accepted:** 39 causal cases / 55 operations and the 68-case / 93-operation
-connected regression passed independent real-snapshot checks; 14 Rust tests,
-format and Clippy passed. [Paper 15](research/15-causal-native-result.md) records
-scope and [new evidence](research/evidence/2026-10-22-local-prototype-p1.json).
-Proceed to P2–P4 under [paper 14](research/14-local-interface-contract.md), which
-fixes the bundled model, local process API, receipt and cursor semantics.
+The binary `rebase-next` provides a bundled prepared model, separate catalogs,
+offline/live developer views, exact mutations, durable receipts, bounded public
+pages/exists and root publications over redb. Its JSON-RPC transport is local
+stdio with a fixed actor/tenant. `demo <new-directory>` runs the causal diamond,
+rejections/replay and reopen; it creates a usable store and offline inspector.
+The [interface contract](research/14-local-interface-contract.md) owns that scope.
+
+Current acceptance includes 27 Rust tests, 107 native cases / 148 operations and
+nine local-adapter cases / 14 operations, plus the executable demo/browser view.
+The independent checkers derive complete state and receipts from authored inputs
+and explicit allocation history. [Final evidence](research/evidence/2026-10-22-local-prototype.json)
+owns current fingerprints and counts. The [P1 result](research/15-causal-native-result.md)
+and earlier evidence remain dated. Production authorization/DAGs, arbitrary
+models, distributed adapters, effects and a full accounting/UI port remain future
+gates; they are not unfinished pieces of this confirmed local-prototype goal.
 
 ## Purpose and authority
 
@@ -116,6 +123,9 @@ now accepted. Deferred capabilities remain outside that bounded experiment.
 
 ## Proposed smallest architecture
 
+The shipped local subset is documented above. The broader architecture below
+retains design direction; it does not add capabilities to the accepted prototype.
+
 Use one Cargo package and ordinary modules. One loaded design combines authored
 JSON Schemas with separate declarations for references, memberships, queries,
 invariants and exposed operations. Ordinary trusted Rust functions supply behavior.
@@ -146,21 +156,23 @@ Queries select registered access paths, typed bounds, allowed predicates and
 projections. Unsupported orderings reject. Optional residual filtering has a
 visit budget and continuation; exhausted-budget `exists` is **unknown**.
 
-## Important choices still open
+## Production choices still open
 
-- The new mutation API should default to final settled global validation. Declare
-  independent command checkpoints explicitly; this changes current per-statement
-  acceptance semantics. Early failure must be conclusive, not a transient deficit.
+- Local mutations now use final settled global validation. Any future independent
+  command checkpoints require a separate declared operation. Early failure must
+  be conclusive, not a transient deficit.
 - Preserve current ordered scalar-reader selection initially. Its first-choice
   rule for incomparable principals is deliberate and is not a union or a universal
   lowest node. Multi-reader sharing requires a separately chosen policy.
 - Start linked augmented indexes for the required mathematical operations.
   Ordinary ordered KV prefixes may implement simple enumeration later; they must
   not become undeclared default domain indexes or dictate the portable core.
-- Exact decimal range/rounding, timestamp range, public cursor change policy and
-  large-cascade rejection budgets need explicit production decisions.
-- Distributed adapters, cryptographic identity verification, full graph repair,
-  full dependency settlement and external-effect delivery are outside this proof.
+- General decimal rounding, production timestamp policy and large cascades need
+  their own decisions. The prototype fixes i64 time, exact bounded integers,
+  revision-bound cursors and declared work/population limits.
+- Distributed adapters, cryptographic identity verification, principal graph
+  repair, ordered-result-driven topology and external delivery remain outside
+  the local prototype. Authored-shape causal settlement is implemented.
 
 ## Work completed and continuation boundary
 
@@ -229,8 +241,7 @@ The original algebra/order/overlay and eight semantic tests are unchanged, but
 fingerprint claim is historical. Earlier evidence and Python programs remain
 unchanged. No original ReBase/MetaSol code or acceptance suite was modified/run.
 
-No work remains in this bounded goal. Native M3/M5 discovery/detachment and
-required outputs/prefix scheduling need their own implementation contract;
-general model loading, API/dev-tool expansion, principal DAGs, replay/effects
-and distributed storage retain paper 8's gates. Use the execution report and
-the affected gate for continuation; do not restart S1 or repeat the broad audit.
+That bounded S1–S5 goal was complete at its dated evidence. The later P1–P4 goal
+has now added native causal/output lifecycle, prepared tooling, a public local
+API, replay receipts and a demo. Use paper 16 and the affected future gate for
+new work; do not restart S1 or repeat the broad audit.
