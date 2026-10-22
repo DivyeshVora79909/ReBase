@@ -12,6 +12,13 @@ can resume without another whole-repository audit. The [0.2 release result](rese
 and [deployment guide](docs/deployment.md) own current acceptance. Enter a named
 future capability gate when new work is requested; do not repeat completed stages.
 
+**Active continuation: G1 compiled model reuse.** Follow
+[the implementation goal](research/20-compiled-model-gate.md): typed model-neutral
+staging/storage boundaries, shared resolved-shape reactive machinery, then an
+independently checked timed-equipment model through the same lifecycle and tools.
+Breaking format/model changes are allowed and must be explicit. This extends
+capability, not the existing population/capacity claim.
+
 The [parallel release review](research/19-peer-release-review.md) adopts remote
 `242a08b`/`1f16278` over overlapping local alternatives. Fresh execution confirmed
 39 release Rust tests, six client controls and the full harness. It also found
