@@ -1,10 +1,10 @@
 [package]
 name = "rebase-semantic-proof"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.95"
 publish = false
-description = "Isolated local calculation-engine prototype and semantic checks"
+description = "Bounded transactional calculation backend with model and developer tools"
 default-run = "rebase-next"
 
 [dependencies]

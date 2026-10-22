@@ -1,0 +1,11 @@
+{
+  "listen": "127.0.0.1:8080",
+  "identity": {
+    "issuer": "rebase-local-issuer",
+    "audience": "rebase-next",
+    "public_keys": {"main": "REPLACE_WITH_ED25519_PUBLIC_PEM"},
+    "max_token_seconds": 600
+  },
+  "max_inflight": 16,
+  "request_timeout_seconds": 15
+}

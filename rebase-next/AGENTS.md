@@ -5,8 +5,10 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-The active user goal is now a deployable backend and developer tools, excluding
-frontend. Follow [the release checkpoints](research/17-deployable-backend.md).
+The deployable bounded backend and developer-tool goal, excluding frontend, is
+complete through D6. Read [the release result](research/18-release-result.md),
+[deployment guide](docs/deployment.md) and [checkpoints](research/17-deployable-backend.md).
+Future work enters a named capability gate; do not restart accepted stages.
 Continue autonomously through tested implementation checkpoints and commit each
 coherent checkpoint on the existing branch. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.

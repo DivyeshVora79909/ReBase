@@ -3,11 +3,15 @@
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import socket
+import ssl
+import subprocess
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 import uuid
 
 import client
@@ -113,6 +117,35 @@ class ClientControls(unittest.TestCase):
         with self.assertRaises(client.ClientError):
             client.loads('{"a":1,"a":2}')
         self.assertEqual(len(self.server.calls), count)
+
+    def test_https_requires_trusted_certificate_and_matching_hostname(self):
+        with tempfile.TemporaryDirectory() as directory:
+            certificate = Path(directory) / "certificate.pem"
+            private_key = Path(__file__).resolve().parents[1] / "tests/fixtures/test-ed25519-private.pem"
+            subprocess.run(["openssl", "req", "-new", "-x509", "-key", str(private_key),
+                            "-out", str(certificate), "-days", "1", "-subj", "/CN=127.0.0.1",
+                            "-addext", "subjectAltName=IP:127.0.0.1"], check=True, capture_output=True)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(certificate, private_key)
+            server = ThreadingHTTPServer(("127.0.0.1", 0), Peer)
+            server.socket = context.wrap_socket(server.socket, server_side=True)
+            server.calls = []
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            url = f"https://127.0.0.1:{server.server_port}/rpc/ok"
+            try:
+                with self.assertRaises(client.ClientError):
+                    client.call(url, "test-token", "session.describe", {})
+                self.assertEqual(server.calls, [])
+                with patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
+                    self.assertEqual(client.call(url, "test-token", "session.describe", {}), {"status": "committed"})
+                    with self.assertRaises(client.ClientError):
+                        client.call(url.replace("127.0.0.1", "localhost"), "test-token", "session.describe", {})
+                self.assertEqual(len(server.calls), 1)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(2)
 
 
 if __name__ == "__main__":

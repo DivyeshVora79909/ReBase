@@ -2,12 +2,16 @@
 """Exercise a real backend in an owned directory using only its public API."""
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
+import math
 import os
 from pathlib import Path
+import platform
 import re
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
@@ -103,6 +107,13 @@ class Backend:
         finally:
             self.process = None
             self.log.close()
+
+    def crash(self):
+        require(self.process is not None, "No owned server to terminate")
+        self.process.kill()
+        self.process.wait(timeout=5)
+        self.process = None
+        self.log.close()
 
     def call(self, method, params):
         return client.call(self.url, self.token, method, params)
@@ -202,15 +213,187 @@ def workflow(backend):
             "archive_fence": True, "integrity": final}
 
 
+def scan(backend, model):
+    """A bounded complete scan for this fixed, quiescent acceptance population."""
+    cursor, records = None, []
+    for _ in range(9):
+        page = backend.call("records.page", {"model": model,
+            "query": {"path": "records.by_id", "contract": None, "equals": None},
+            "limit": 16, "visit_budget": 128, "cursor": cursor})
+        records.extend(page["records"])
+        if page["exhausted"]:
+            require(page["cursor"] is None, "Exhausted scan retained a cursor")
+            return records
+        require(page["cursor"] is not None and page["cursor"] != cursor, "Scan made no progress")
+        cursor = page["cursor"]
+    raise RuntimeError("Scan exceeded the supported population budget")
+
+
+def latency(values):
+    ordered = sorted(values)
+    return {"count": len(ordered), "p50_ms": round(ordered[math.ceil(len(ordered) * .5) - 1], 3),
+            "p95_ms": round(ordered[math.ceil(len(ordered) * .95) - 1], 3), "max_ms": round(ordered[-1], 3)}
+
+
+def process_usage(pid):
+    path = Path(f"/proc/{pid}/status")
+    if not path.exists():
+        return {"available": False}
+    fields = {}
+    for line in path.read_text().splitlines():
+        key, _, value = line.partition(":")
+        if key in ("VmRSS", "VmHWM", "Threads"):
+            fields[key] = int(value.split()[0])
+    return {"available": True, "rss_kib": fields["VmRSS"], "peak_rss_kib": fields["VmHWM"],
+            "threads": fields["Threads"], "open_fds": len(list(Path(f"/proc/{pid}/fd").iterdir()))}
+
+
+def workload(backend, writes, readers):
+    backend.start()
+    catalog = backend.call("model.describe", {})
+    model = catalog["model"]
+    contracts = {c["name"]: c for c in catalog["contracts"]}
+    slot = next(r["slot"] for r in contracts["Account"]["roots"] if r["name"] == "history")
+    seed = client.read_json(backend.directory / "seed.plan.json")
+    ids = seed["fixture"]["ids"]
+    population = scan(backend, model)
+    limit = catalog["capabilities"]["limits"]["public_records"]
+    require(limit == 64 and len(population) == 28, "Unexpected supported population contract")
+    extra_ids = [str(uuid.uuid4()) for _ in range(limit - len(population))]
+    fill = backend.plan({"model": model, "commands": [
+        {"op": "create", "id": identity, "contract": contracts["Moment"]["code"], "fields": {"at": "0"}}
+        for identity in extra_ids], "returning": []}, "fill")
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        duplicates = list(pool.map(lambda _: client.execute(backend.url, backend.token, fill), range(8)))
+    require(sum(not r["replayed"] for r in duplicates) == 1
+            and all(r["result"]["revision"] == "4" for r in duplicates), "Duplicate receipt applied more than once")
+    expected_ids = sorted([r["id"] for r in population] + extra_ids)
+    full = scan(backend, model)
+    require([r["id"] for r in full] == expected_ids, "Complete public pagination lost, duplicated or reordered sources")
+    overflow = backend.plan({"model": model, "commands": [{"op": "create", "id": str(uuid.uuid4()),
+        "contract": contracts["Moment"]["code"], "fields": {"at": "0"}}], "returning": []}, "overflow")
+    expect_error("state_limit", lambda: client.execute(backend.url, backend.token, overflow))
+    require(client.execute(backend.url, backend.token, overflow, status=True)["status"] == "not_observed", "Rejected overflow left a receipt")
+    require(scan(backend, model) == full, "Rejected overflow changed public state")
+
+    contender_version = next(r["version"] for r in full if r["id"] == extra_ids[0])
+    contenders = [backend.plan({"model": model, "commands": [{"op": "update", "id": extra_ids[0],
+        "if_version": contender_version, "set": {"at": str(i)}, "unset": []}], "returning": [extra_ids[0]]}, f"contender-{i}")
+        for i in range(1, 9)]
+    def contend(plan):
+        try:
+            return client.execute(backend.url, backend.token, plan)["status"]
+        except client.RpcError as error:
+            return error.kind
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        races = list(pool.map(contend, contenders))
+    require(races.count("committed") == 1 and races.count("stale_version") == 7, f"Unexpected compare-and-set results: {races}")
+    cursor_request = {"model": model, "query": {"path": "records.by_id", "contract": None, "equals": None},
+                      "limit": 1, "visit_budget": 1, "cursor": None}
+    old_cursor = backend.call("records.page", cursor_request)["cursor"]
+    search = {"model": model, "query": {"path": "records.by_id", "contract": contracts["Moment"]["code"],
+              "equals": {"field": "at", "value": "-123"}}, "visit_budget": 1, "cursor": None}
+    uncertain = backend.call("records.exists", search)
+    require(uncertain["answer"] == "unknown", "An exhausted visit budget asserted absence")
+    finished = backend.call("records.exists", {**search, "cursor": uncertain["cursor"], "visit_budget": 128})
+    require(finished["answer"] == "no", "Exhausted existence search did not prove absence")
+
+    versions = {label: backend.call("records.get", {"model": model, "id": ids[label]})["version"] for label in ("MP", "MQ")}
+    barrier = threading.Barrier(readers + 1)
+    done = threading.Event()
+    def read_stream(_):
+        barrier.wait(timeout=10)
+        times, overlapping = [], 0
+        for _ in range(writes * 2):
+            begin = time.perf_counter()
+            value = backend.call("roots.read", {"model": model, "owner": ids["Final"], "slot": slot, "read": {"kind": "summary"}})
+            times.append((time.perf_counter() - begin) * 1000)
+            require(value["value"]["sum"] in ("100", "150"), "Concurrent snapshot observed unsettled arithmetic")
+            overlapping += not done.is_set()
+        return times, overlapping
+    elapsed = time.perf_counter()
+    write_times = []
+    with ThreadPoolExecutor(max_workers=readers) as pool:
+        futures = [pool.submit(read_stream, i) for i in range(readers)]
+        barrier.wait(timeout=10)
+        try:
+            for i in range(writes):
+                times = ("10", "20") if i % 2 == 0 else ("20", "10")
+                draft = {"model": model, "commands": [
+                    {"op": "update", "id": ids[label], "if_version": versions[label], "set": {"at": at}, "unset": []}
+                    for label, at in zip(("MP", "MQ"), times)], "returning": [ids["MP"], ids["MQ"]]}
+                last = backend.plan(draft, f"write-{i:04}")
+                begin = time.perf_counter()
+                last_result = client.execute(backend.url, backend.token, last)
+                write_times.append((time.perf_counter() - begin) * 1000)
+                require(last_result["result"]["revision"] == str(6 + i), "Write/replay/rejection revision mismatch")
+                for label, returned in zip(("MP", "MQ"), last_result["result"]["records"]):
+                    require(returned["record"] is not None, "Current authored result hidden from its owner")
+                    versions[label] = returned["record"]["version"]
+        finally:
+            done.set()
+        completed = [future.result() for future in futures]
+    elapsed = time.perf_counter() - elapsed
+    usage = process_usage(backend.process.pid)
+    read_times = [timing for times, _ in completed for timing in times]
+    require(sum(count for _, count in completed) > 0, "No reader overlapped the writer")
+    expect_error("query_changed", lambda: backend.call("records.page", {**cursor_request, "cursor": old_cursor}))
+    expected = seed["fixture"]["expected"]["initial" if writes % 2 else "after_move"]
+    require(publications(backend, model, ids, slot) == expected, "Final arithmetic after workload")
+    require([r["id"] for r in scan(backend, model)] == expected_ids, "Workload changed source inventory")
+    backend.crash()  # SIGKILL after acknowledged durable commits, not a power-loss claim.
+    backend.start()
+    require(publications(backend, model, ids, slot) == expected, "Acknowledged state lost across process crash")
+    require(client.execute(backend.url, backend.token, last, status=True)["result"] == last_result["result"], "Receipt lost across crash")
+    replay = client.execute(backend.url, backend.token, last)
+    require(replay["replayed"] and replay["result"] == last_result["result"], "Post-crash replay changed the outcome")
+    backend.stop()
+    final = backend.cli("check", backend.store)
+    require(final["status"] == "valid" and final["revision"] == str(writes + 5)
+            and final["records"] == 74 and final["receipts"] == writes + 2, "Final complete integrity/count mismatch")
+    backup, restored = backend.directory / "final-backup.json", backend.directory / "restored.redb"
+    backend.cli("backup", backend.store, backup)
+    backend.cli("restore", backup, restored)
+    require(backend.cli("check", restored) == final, "Verified restore differs from original")
+    original_store = backend.store
+    backend.store = restored
+    try:
+        backend.start()
+        require(publications(backend, model, ids, slot) == expected, "Restored service publication mismatch")
+        require(client.execute(backend.url, backend.token, last, status=True)["result"] == last_result["result"], "Restored receipt mismatch")
+    finally:
+        backend.stop()
+        backend.store = original_store
+    return {"public_records": limit, "private_outputs": 10, "population_overflow_rejected": True,
+            "duplicate_requests": 8, "duplicate_commits": 1, "concurrent_contenders": 8, "contender_commits": 1,
+            "writes": writes, "readers": readers, "read_results": len(read_times),
+            "reads_overlapping_writer": sum(count for _, count in completed),
+            "read_latency": latency(read_times), "mutation_latency": latency(write_times),
+            "timing_scope": "client wall time; mutation includes destination session check; plan preparation/fsync excluded from latency but included in elapsed",
+            "elapsed_seconds": round(elapsed, 3), "process": usage,
+            "store_bytes": backend.store.stat().st_size, "backup_bytes": backup.stat().st_size,
+            "graceful_restart": True, "acknowledged_process_crash_recovery": True, "verified_restore_service": True,
+            "final_publications": expected, "integrity": final}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path, help="New directory for owned store, private credentials and evidence")
+    parser.add_argument("--writes", type=int, default=128, help="0 for workflow only; otherwise 1-512 measured atomic moves")
+    parser.add_argument("--readers", type=int, default=4, help="1-8 concurrent read streams")
     args = parser.parse_args()
+    if not 0 <= args.writes <= 512 or not 1 <= args.readers <= 8:
+        parser.error("writes must be 0-512 and readers 1-8")
     backend = Backend(args.binary, args.out)
     started = time.monotonic()
     try:
-        report = {"status": "passed", "workflow": workflow(backend), "elapsed_seconds": round(time.monotonic() - started, 3)}
+        report = {"status": "passed", "version": backend.cli("version"), "workflow": workflow(backend)}
+        if args.writes:
+            report["workload"] = workload(backend, args.writes, args.readers)
+        report["host"] = {"system": platform.system(), "machine": platform.machine(), "kernel": platform.release(),
+                          "logical_cpus": os.cpu_count(), "python": platform.python_version()}
+        report["elapsed_seconds"] = round(time.monotonic() - started, 3)
         write_private(backend.directory / "result.json", client._bytes(report) + b"\n")
         print(json.dumps(report, indent=2))
     finally:

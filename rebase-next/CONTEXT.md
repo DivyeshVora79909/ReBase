@@ -1,6 +1,6 @@
 # Compact context — 2026-10-22
 
-**Active goal: deployable backend plus composable developer tools; no frontend.**
+**D1–D6 complete: deployable bounded backend plus composable developer tools; no frontend.**
 The user has authorized autonomous implementation, breaking changes, checkpoint
 commits on the existing `main` tree and direct pushes. The
 [release checkpoints](research/17-deployable-backend.md) now own continuation.
@@ -8,13 +8,18 @@ Preserve ReBase's **power**, not its exact implementation or old APIs. Prefer
 small, explicit, stateless functions and mature infrastructure libraries; do not
 add a universal DSL/plugin framework or duplicate schemas between runtime/tools.
 Carry context in this directory and checkpoint commit messages so another agent
-can resume without another whole-repository audit. The local prototype below is
-the verified starting point, not the new finish line.
+can resume without another whole-repository audit. The [0.2 release result](research/18-release-result.md)
+and [deployment guide](docs/deployment.md) own current acceptance. Enter a named
+future capability gate when new work is requested; do not repeat completed stages.
 
 D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
 separate owner/reader, declared reader selection and atomic reader-index repair,
-bounded indexed merging and revocation-aware receipt disclosure. The active next
-checkpoint is D6: workload and deployment acceptance. D5 adds model-driven
+bounded indexed merging and revocation-aware receipt disclosure. D6 now accepts
+the release build at 64 public sources: 128 writes, 1024 concurrent reads,
+duplicate/CAS races, process-crash recovery and verified restore. Thirty-nine
+release Rust tests and six Python client controls pass. The client avoids loading
+TLS trust roots for plain HTTP while retaining normal HTTPS verification.
+D5 adds model-driven
 fixture plans, a stateless HTTP client, private durable mutation plans and a
 real HTTP developer harness (39 Rust tests plus five client fault controls).
 See [developer tools](docs/developer-tools.md). D4 adds current-state integrity,
@@ -40,14 +45,14 @@ stdio with a fixed actor/tenant. `demo <new-directory>` runs the causal diamond,
 rejections/replay and reopen; it creates a usable store and offline inspector.
 The [interface contract](research/14-local-interface-contract.md) owns that scope.
 
-Current acceptance includes 27 Rust tests, 107 native cases / 148 operations and
+P1–P4 acceptance included 27 Rust tests, 107 native cases / 148 operations and
 nine local-adapter cases / 14 operations, plus the executable demo/browser view.
 The independent checkers derive complete state and receipts from authored inputs
 and explicit allocation history. [Final evidence](research/evidence/2026-10-22-local-prototype.json)
 owns current fingerprints and counts. The [P1 result](research/15-causal-native-result.md)
-and earlier evidence remain dated. Production authorization/DAGs, arbitrary
-models, distributed adapters, effects and a full accounting/UI port remain future
-gates; they are not unfinished pieces of this confirmed local-prototype goal.
+and earlier evidence remain dated. D2/D3 subsequently added bounded transactional
+DAG authorization and cryptographic network identity. Arbitrary models,
+distributed adapters, effects and a full accounting/UI port remain future gates.
 
 ## Purpose and authority
 

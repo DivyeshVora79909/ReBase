@@ -108,8 +108,15 @@ def call(url, token, method, params, *, timeout=20):
         "Accept": "application/json",
     })
     try:
+        # Python 3.12's default opener loads TLS trust roots even for plain HTTP.
+        # Select only the requested protocol; HTTPS retains the standard verifier.
+        opener = urllib.request.OpenerDirector()
+        protocol = urllib.request.HTTPSHandler() if url.startswith("https:") else urllib.request.HTTPHandler()
+        for handler in (urllib.request.ProxyHandler(), protocol,
+                        urllib.request.HTTPDefaultErrorHandler(), urllib.request.HTTPErrorProcessor(), _NoRedirect()):
+            opener.add_handler(handler)
         try:
-            response = urllib.request.build_opener(_NoRedirect()).open(request, timeout=timeout)
+            response = opener.open(request, timeout=timeout)
         except urllib.error.HTTPError as error:
             response = error
         with response:

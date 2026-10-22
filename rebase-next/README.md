@@ -1,79 +1,62 @@
-# ReBase Next local prototype
+# ReBase Next
 
-**The confirmed usable local prototype is complete.** One Rust executable
-provides exact causal calculations, a prepared model, separate public/developer
-catalogs, transactional mutation receipts, bounded reads and a runnable demo with
-an offline developer inspector. [The result](research/16-local-prototype-result.md)
-records acceptance; [the guide](docs/local-prototype.md) explains every command
-and public operation.
+**0.2.0: a bounded, deployable calculation backend and developer toolkit.**
+One Rust executable provides exact connected calculations, private outputs,
+ordered aggregates and historical invariants, transactional DAG authority,
+authenticated JSON-RPC, replay receipts and verified storage recovery. A small
+stateless Python client and model-driven fixtures make it directly usable from
+scripts. All implementation and dependencies stay inside this directory.
 
 ```sh
 cd rebase-next
 export CARGO_TARGET_DIR=target/native-slice/build
-cargo build --locked --bin rebase-next
-target/native-slice/build/debug/rebase-next demo target/my-first-demo
+cargo build --locked --release --bin rebase-next
+python3 -B tools/harness.py --binary target/native-slice/build/release/rebase-next --out target/my-first-run --writes 128 --readers 4
 ```
 
-Choose a new directory for each demo. Open its `inspect.html`; the same folder
-contains a usable `demo.redb`, model catalogs and the operation transcript.
-`rebase-next rpc <store.redb>` serves JSON-RPC over stdin/stdout. The prototype
-uses a fixed local actor/tenant; production authentication, distributed storage
-and a full accounting/UI port remain separate scope.
+The harness needs Python 3.11+ and OpenSSL. It creates a new secured store and
+its own credentials, runs the public API workflow and bounded workload, checks
+restart/restore, then stops its server. The directory retains a usable store,
+saved plans and `result.json`. Use a new output directory for each run.
+Packaged releases include `bin/rebase-next`; use `--binary bin/rebase-next`
+to run the harness without building Rust locally.
 
-This directory is independently buildable and movable. It loads no original
-ReBase compiler, gateway, accounting build or MetaSol frontend. All generated
-artifacts stay under `target/`. For new development, read [CONTEXT.md](CONTEXT.md)
-and the relevant paper below. The original discussion is indexed in
-[research/sources.md](research/sources.md).
-
-| Read when working on | Paper |
+| Task | Guide |
 | --- | --- |
-| Records, participation, aggregates, causality and cost | [Model and mathematics](research/01-model-and-mathematics.md) |
-| Snapshot, staging, guards, retry, atomicity and effects | [Transactions and storage](research/02-transactions-and-storage.md) |
-| Principal DAG, readers, indexed queries and API boundaries | [Access and queries](research/03-access-and-queries.md) |
-| Stack choices, declarations, module structure and next steps | [Implementation proposal](research/04-implementation.md) |
-| Executed evidence and its limits | [Rust feasibility](research/05-feasibility.md) |
-| Documentation, past failures and what a stack change affects | [Whole-system review](research/06-system-audit.md) |
-| Model lifecycle, API, exact values, tooling and query behavior | [Contract wireframes](research/07-contract-wireframes.md) |
-| Bounded scenarios, research decisions and minimum verification | [Research workflow](research/08-research-workflow.md) |
-| Moved prefix readers, required outputs, identity and feedback | [M3/M5 causal contract](research/09-causal-settlement.md) |
-| Source-derived inventories, tree verification and corruption controls | [M6 checker contract](research/10-independent-checker.md) |
-| First native commands, state, settlement and implementation stages | [M1/M2/M4 implementation plan](research/11-native-slice-plan.md) |
-| Native execution, independent acceptance, work counts and remaining limits | [M1/M2/M4 result](research/12-native-slice.md) |
-| Completed local prototype contract and stages | [P1–P4 plan](research/13-local-prototype-plan.md) |
-| Concrete model/tooling/API/demo boundaries | [Local interface contract](research/14-local-interface-contract.md) |
-| Native prefix calculations, private outputs and independent acceptance | [P1 result](research/15-causal-native-result.md) |
-| Current runnable scope, evidence and future boundary | [Local prototype result](research/16-local-prototype-result.md) |
+| Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
+| Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
+| Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
+| Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
+| Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
+| Measured release acceptance and remaining capability gates | [0.2 result](research/18-release-result.md) |
+
+The supported deployment is **one embedded redb process, one tenant and the
+bundled compiled model**, with up to 64 public source records and explicit work,
+query and receipt limits. Arbitrary models, distributed storage, a full accounting
+port, external effects and a frontend are separate future gates. Read the
+resource envelope before choosing a workload; these are enforced bounds, not a
+claim of general production capacity.
+
+`rebase-next --help` lists operator commands. Pure model commands need no store.
+`fixture plan` produces authored inputs; `tools/client.py` sends the ordinary
+public operations. Stored plans retain the original actor/store/receipt context
+across retries. Filesystem operator tools remain separate from the HTTP API.
 
 ```sh
-CARGO_TARGET_DIR=target/native-slice/build cargo test --locked --all-targets
-CARGO_TARGET_DIR=target/native-slice/build cargo run --locked --example local_acceptance
-# Use the observation path printed by the example:
-python3 -B research/experiments/local_prototype.py --actual target/local-prototype/run-.../local-observations.json
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked --release --all-targets
+python3 -B tools/test_client.py -v
 ```
 
-The toolchain and dependencies are pinned locally. Acceptance harnesses create
-fresh redb databases, remove their owned stores and retain complete observations
-for independent checking. The demo intentionally retains its usable store.
-The build cache is reusable; no distributed cluster is needed.
-
-The papers distinguish **user intent**, **current implementation**, **proposal**,
-**mathematical consequence**, and **executed evidence**. A passed small example
-does not certify the proposed complete runtime or establish throughput.
-
-For research-only edits, check links, scope and unchanged evidence fingerprints;
-do not rerun the Rust proof or the original database suites without a relevant
-change. The [final evidence](research/evidence/2026-10-22-local-prototype.json)
-records current execution. Earlier audits and evidence retain their dated scope.
-
-The separate bounded research model runs with
-`python3 research/experiments/m3_m5.py` from this directory. It checks the M3/M5
-wireframe using exact source scans and enumerated orders; it adds no Rust/runtime
-dependency. [Its evidence](research/evidence/2026-10-22-m3-m5.json) is separate
-from the dated October 21 Rust evidence.
-
-`python3 -B research/experiments/m6.py` runs the synthetic snapshot checker. It
-reuses the M3/M5 source oracle and checks missing inventories, tree damage, exact
-caches and incomplete verification. [Its evidence](research/evidence/2026-10-22-m6.json)
-records five valid, 28 invalid-state and two incomplete controls; no database or
-native mutation engine is exercised.
+For continuation, read [CONTEXT.md](CONTEXT.md) and the relevant
+[release checkpoint](research/17-deployable-backend.md). The research papers
+distinguish user intent, proposals, mathematical facts and executed evidence.
+[The original discussion index](research/sources.md),
+[model/mathematics](research/01-model-and-mathematics.md),
+[storage semantics](research/02-transactions-and-storage.md),
+[access/query contract](research/03-access-and-queries.md),
+[system audit](research/06-system-audit.md) and
+[research gates](research/08-research-workflow.md) preserve the broader design.
+Earlier evidence remains dated; unchanged semantic contracts do not require
+repeating a whole-project audit.

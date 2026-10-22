@@ -1,6 +1,6 @@
 # Deployable backend continuation
 
-**Authorized 2026-10-22. Implementation in progress.** The user supersedes the
+**Authorized and accepted 2026-10-22 through D6.** The user superseded the
 completed local-prototype goal. Continue autonomously, with coherent tested
 checkpoint commits on the existing branch. Work stays inside `rebase-next/`.
 
@@ -28,7 +28,7 @@ capability gates visible instead of silently calling every feature production.
 | D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Complete |
 | D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Complete |
 | D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Complete |
-| D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Next |
+| D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Complete |
 
 Each checkpoint closes a concrete semantic boundary before expansion. Change
 the sequence when implementation provides a better dependency order; record why.
@@ -168,3 +168,21 @@ The current-state verifier passes after restart and archive. Model identity is
 unchanged; no engine/binder/codec/persistence behavior changed and the earlier
 native corpora were not rerun for this tooling-only boundary.
 [Evidence](evidence/2026-10-22-d5-tools.json).
+
+D6: release 0.2.0 passes a real HTTP workload at the 64-public-source bound:
+128 atomic causal moves, 1024 concurrent root reads, one application under eight
+duplicate requests and one winner under eight version contenders. The harness
+rejects the 65th source, checks complete bounded pagination/unknown existence,
+invalidates a stale cursor, kills/reopens after acknowledged writes, and verifies
+the restored store through the actual server. Source versions are read from
+records, never inferred from per-record counters. Deployment/config templates,
+an operating guide and a supported resource envelope complete the release.
+
+Profiling caught Python's default opener loading TLS trust roots even for plain
+HTTP. Selecting the requested protocol removes that work without global client
+state. The sixth client control verifies trust and hostname checks over TLS.
+Acceptance includes all 39 Rust tests in release mode, six client controls,
+warning-free Clippy, a clean 152-dependency audit against 1348 advisories and a
+verified systemd template (built executable substituted; no host installation).
+The [result](18-release-result.md) and
+[evidence](evidence/2026-10-22-d6-release.json) retain measurements and limits.

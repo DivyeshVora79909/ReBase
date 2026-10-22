@@ -92,10 +92,10 @@ authored data and identity/context metadata, so keep them private.
 
 ```sh
 python3 -B tools/test_client.py -v
-python3 -B tools/harness.py --binary target/native-slice/build/debug/rebase-next --out target/my-harness
+python3 -B tools/harness.py --binary target/native-slice/build/debug/rebase-next --out target/my-harness --writes 0
 ```
 
-The harness requires OpenSSL, creates its own issuer keys and secured store,
+The harness and TLS control require OpenSSL. The harness creates its own issuer keys and secured store,
 uses the generated recipe over real HTTP, and stops its own server. Choose a
 new output directory each run. It retains the store, private credentials, saved
 plans, archive and a JSON result for inspection; the token expires in ten minutes.
@@ -103,5 +103,7 @@ The report verifies literal source arithmetic, namespace separation, stale edits
 destination/model fences, replay/status after restart, redacted obsolete receipt
 projections and archive expiry. The independent fault peer exercises lost,
 truncated, misidentified, ambiguous and duplicate-key replies plus redirects.
+A real TLS peer verifies trusted-certificate and matching-hostname enforcement.
 Current engine/persistence semantics are unchanged by these tools; earlier native
-acceptance remains dated evidence. D6 extends this harness for release workloads.
+acceptance remains dated evidence. [D6](deployment.md) extends the same harness
+for release workloads; omit `--writes 0` to run its default 128 atomic moves.
