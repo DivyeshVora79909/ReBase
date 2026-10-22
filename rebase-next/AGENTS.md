@@ -8,6 +8,14 @@ a task whose meaning is already recorded. Recheck current source when it matters
 The deployable bounded backend and developer-tool goal, excluding frontend, is
 complete through D6. Read [the release result](research/18-release-result.md),
 [deployment guide](docs/deployment.md) and [checkpoints](research/17-deployable-backend.md).
+G1 subsequently accepts reusable compiled model execution in 0.3.0; read
+[the current result](research/21-compiled-model-result.md) and
+[model authoring](docs/compiled-models.md). Both bundled models use the shared
+typed mutation, causal, storage, authority and tooling paths. Their fixed
+64-source envelope remains. The next capability is G2: measured population and
+reactive-candidate scaling, beginning with a bounded workload/acceptance contract
+and then implementation. Do not raise constants and call that scalability, or
+restart the completed model-reuse work.
 Future work enters a named capability gate; do not restart accepted stages.
 Continue autonomously through tested implementation checkpoints and commit each
 coherent checkpoint on the existing branch. Preserve capability, not the old
@@ -15,8 +23,10 @@ implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.
 Do not report full production or old-model parity merely because a server starts.
 Storage/model identity now uses an explicit behavior contract, not build bytes.
-Bump `native_slice::BEHAVIOR_CONTRACT` for semantic binding/calculation/causality/
-invariant changes; bump store/codec versions when their formats change. Keep
+Bump the affected `Binding::BEHAVIOR` for semantic binding/calculation/causality/
+invariant changes (Calculation uses `native_slice::BEHAVIOR_CONTRACT`);
+shared semantic changes require bumping every affected binding. Bump store/codec
+versions when their formats change. Keep
 independent source fingerprints in checkpoint evidence. Mutations/status retain
 their original operation context; never bypass archive expiry by refreshing it.
 

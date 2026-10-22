@@ -1,7 +1,8 @@
-# ReBase Next 0.2 deployment and acceptance
+# ReBase Next 0.3.0 deployment and acceptance
 
-This release supports the bundled calculation model on one embedded redb store,
-owned by one server process. It provides exact connected calculations, historical
+This release supports two compiled models, `calculation` and `equipment`, on one
+embedded redb store owned by one server process. Select one model per store;
+its identity is checked on every open and operation. It provides exact connected calculations, historical
 invariants, private outputs, transaction-scoped DAG authority, authenticated HTTP,
 replay receipts, bounded queries, model tools and verified offline recovery.
 The release is suitable for bounded applications and developer harnesses within
@@ -18,6 +19,11 @@ cargo build --locked --release --bin rebase-next
 python3 -B tools/test_client.py -v
 python3 -B tools/harness.py --binary target/native-slice/build/release/rebase-next --out target/my-release-run --writes 128 --readers 4
 ```
+
+This harness exercises the default calculation model; its dated capacity evidence
+does not establish equipment workload capacity. The equipment model has focused
+arithmetic, lifecycle and real HTTP acceptance through the same runtime. See
+[the equipment model](equipment.md) for its allocation semantics.
 
 The harness requires Python 3.11+ and OpenSSL. It creates a **new** directory,
 generates its own issuer key and credentials, initializes a secured store, and
@@ -101,6 +107,22 @@ sudo systemctl enable --now rebase-next
 curl --fail http://127.0.0.1:8080/health
 ```
 
+The default service unit and commands select `calculation`. To deploy equipment,
+place `--model equipment` **before** the command on initialization and every
+subsequent operator/server invocation. For example:
+
+```sh
+sudo -u rebase-next /usr/local/bin/rebase-next --model equipment init /var/lib/rebase-next/equipment.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
+/usr/local/bin/rebase-next --model equipment version
+```
+
+Set the installed service's `ExecStart` to
+`/usr/local/bin/rebase-next --model equipment serve /var/lib/rebase-next/equipment.redb --config /etc/rebase-next/server.json`
+and reload systemd before starting it. The server configuration contains identity,
+listen and admission settings; model selection belongs to the command line.
+Use the same identity provisioning steps for either model. There is no RPC model
+switch; a client uses the identity returned by `session.describe`/`model.describe`.
+
 The sample IDs illustrate the two distinct roles; replace them with your own
 canonical UUIDs and issue credentials for that administrator. `/health` is
 liveness only. Check actual readiness with authenticated `session.describe`
@@ -122,8 +144,8 @@ reconcile the saved plan rather than constructing a new operation.
 | Boundary | Enforced limit or behavior |
 | --- | --- |
 | Storage/tenancy | One process, one redb file, one tenant; serialized writers and concurrent snapshot readers |
-| Model | Ten public source contracts plus private Pin/Output roles; only the bundled compiled behavior |
-| Population | 64 authored sources; at most 16 each of Quote, Posting, Adjustment and Basis; 48 active outputs; 256 retained output reservations |
+| Models | `calculation`: ten public source contracts plus private Pin/Output; `equipment`: Pool 101, Delivery 205, Reservation 410, private Output 900 |
+| Population | Each model: 64 public sources, 48 active outputs, 256 retained output reservations; calculation additionally caps Quote/Posting/Adjustment/Basis at 16 each |
 | Authority | 128 principals, at most eight direct parents each, 1280 reader streams opened per query |
 | Mutation | 1–64 unique source commands, at most 32 returning IDs, 200000 charged engine work units |
 | Query | UUID ordering through declared paths; 1–32 results and 1–128 candidate visits per page; bounded existence may be unknown |
@@ -141,7 +163,7 @@ count or archiving receipts does not automatically shrink the redb file.
 
 ## Verification and upgrades
 
-The [dated release evidence](../research/evidence/2026-10-22-d6-release.json)
+The [dated calculation release evidence](../research/evidence/2026-10-22-d6-release.json)
 records the actual workload and process measurements.
 It establishes bounded execution, process restart and verified restore, not a
 power-loss test, sustained throughput target, full DAG/population cross-product,
@@ -149,11 +171,16 @@ remote-network latency or distributed capacity.
 
 Before replacing a deployed binary, stop the service, run `check`, create a
 verified backup, and compare `version` model/store identities with the intended
-release. This release retains D4's model/store/behavior identity. If identity
-changes in a later release, use a reviewed migration or a new disposable store;
-there is no automatic reinterpretation of persisted data. Test a restored copy
-offline, then use one instance as the replacement. Roll back by restoring the
-pre-upgrade snapshot with its compatible binary. Keep saved plans and receipt
+release. Version 0.3.0 changes storage to `rebase-store-3` and native codec
+`native-slice-kv-3`; the model identity includes the selected compiled binding.
+Format 2 stores/backups are deliberately incompatible. There is no silent
+migration, automatic reset or reinterpretation of old native payloads. Keep the
+previous compatible binary and its verified backups; create/check those backups
+with that binary before upgrading. A format 2 backup must be restored using its
+compatible old binary, not the 0.3.0 restore command. Use a new store for 0.3.0
+unless an explicit reviewed migration is supplied. Test a restored compatible
+copy offline, then use one instance as the replacement. Roll back with the
+pre-upgrade snapshot and its matching binary. Keep saved plans and receipt
 archives for reconciliation and keep identity key backups separately.
 
 Run the focused checks before changing a deployment build:

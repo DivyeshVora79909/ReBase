@@ -3,7 +3,9 @@
 D5 contract: offline model and fixture tools produce JSON; one stateless client
 submits public operations to the authenticated backend. There is no fixture RPC,
 hidden session cache, automatic mutation retry or alternate database writer.
-The bundled model remains the only supported behavior model.
+The calculation and equipment compiled models use the same client and operator
+commands. Select equipment with a leading `--model equipment` on the backend
+CLI; the HTTP client learns the selected model identity from the server.
 
 `model public`, `model developer`, `model explain` and `model validate` use the
 same prepared declarations and native bindings as the engine. Public catalogs
@@ -104,6 +106,5 @@ destination/model fences, replay/status after restart, redacted obsolete receipt
 projections and archive expiry. The independent fault peer exercises lost,
 truncated, misidentified, ambiguous and duplicate-key replies plus redirects.
 A real TLS peer verifies trusted-certificate and matching-hostname enforcement.
-Current engine/persistence semantics are unchanged by these tools; earlier native
-acceptance remains dated evidence. [D6](deployment.md) extends the same harness
+Earlier native acceptance remains dated evidence. [D6](deployment.md) extends the same harness
 for release workloads; omit `--writes 0` to run its default 128 atomic moves.

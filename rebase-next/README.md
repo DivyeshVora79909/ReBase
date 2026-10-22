@@ -1,11 +1,12 @@
 # ReBase Next
 
-**0.2.0: a bounded, deployable calculation backend and developer toolkit.**
+**A bounded calculation backend with reusable compiled models and developer tools.**
 One Rust executable provides exact connected calculations, private outputs,
 ordered aggregates and historical invariants, transactional DAG authority,
 authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
-scripts. All implementation and dependencies stay inside this directory.
+scripts. The calculation and equipment reservation models share the engine,
+authority and tools. All implementation and dependencies stay inside this directory.
 
 ```sh
 cd rebase-next
@@ -23,21 +24,26 @@ to run the harness without building Rust locally.
 
 | Task | Guide |
 | --- | --- |
+| Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
+| Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
 | Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
 | Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Measured release acceptance and remaining capability gates | [0.2 result](research/18-release-result.md) |
+| Current acceptance and remaining capability gates | [0.3 result](research/21-compiled-model-result.md) |
 
-The supported deployment is **one embedded redb process, one tenant and the
-bundled compiled model**, with up to 64 public source records and explicit work,
-query and receipt limits. Arbitrary models, distributed storage, a full accounting
-port, external effects and a frontend are separate future gates. Read the
-resource envelope before choosing a workload; these are enforced bounds, not a
+The supported deployment is **one embedded redb process, one tenant and
+one selected compiled model**, with up to 64 public source records, 48 active
+private outputs, 256 retained output identity reservations, and explicit work,
+query and receipt limits. Trusted Rust modules author models; arbitrary behavior
+loading, distributed storage, a full accounting port, external effects and a
+frontend are separate future gates. Read the resource envelope before choosing a workload; these are enforced bounds, not a
 claim of general production capacity.
 
-`rebase-next --help` lists operator commands. Pure model commands need no store.
+`rebase-next --help` lists operator commands. Select equipment with
+`rebase-next --model equipment <command>`; calculation is the default. Use the
+same selector for every command against that store. Pure model commands need no store.
 `fixture plan` produces authored inputs; `tools/client.py` sends the ordinary
 public operations. Stored plans retain the original actor/store/receipt context
 across retries. Filesystem operator tools remain separate from the HTTP API.
@@ -49,8 +55,8 @@ cargo test --locked --release --all-targets
 python3 -B tools/test_client.py -v
 ```
 
-For continuation, read [CONTEXT.md](CONTEXT.md) and the relevant
-[release checkpoint](research/17-deployable-backend.md). The research papers
+For continuation, read [CONTEXT.md](CONTEXT.md) and the
+[current result](research/21-compiled-model-result.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

@@ -1,6 +1,8 @@
 # G1: compiled model reuse
 
-**Active implementation goal, 2026-10-22.** The user requested continuation after
+**Accepted implementation goal, 2026-10-22.** G1a/G1b/G1c are complete;
+[the result](21-compiled-model-result.md) records execution and remaining bounds.
+The user requested continuation after
 the reviewed bounded 0.2 release. Deliver a second materially different compiled
 model through shared mutation/lifecycle/authority/tooling, preserving the existing
 calculation model and independent checks. Do not extend its fixed input enum to
@@ -30,7 +32,7 @@ select a second mutation implementation or create a compatibility protocol.
    change amounts, not discover new topology.
 3. **G1c — independent second model acceptance.** Timed equipment pools, deliveries
    and clipped reservations use sparse codes and different root/member/role slots.
-   A reservation emits a nonzero consume and release contribution. Delivery=10,
+   An active reservation emits consume and release contributions, including zero. Delivery=10,
    A requests 8 over [10,30), B requests 7 over [20,40): allocations 8/2. Delivery
    changes to 12: 8/4. A ends at 15: 8/7. Test deactivation/reactivation, retargeting,
    zero contributions, rejection/rollback, authority, pages/root reads, receipts,

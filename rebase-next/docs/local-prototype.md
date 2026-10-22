@@ -1,7 +1,9 @@
 # Run and use the local prototype
 
-This is the independently buildable ReBase Next prototype. It uses one bundled
-calculation model, exact values and a local redb store. It contains no runtime
+ReBase Next 0.3.0 provides two compiled models, exact values and a local redb
+store. The examples below use the default `calculation` model. Select equipment
+with `--model equipment` before the command; the same operator and public API
+functions serve either model. See [equipment semantics](equipment.md). It contains no runtime
 imports from the original ReBase or MetaSol projects.
 
 ## Build and demonstrate
@@ -56,12 +58,16 @@ the explicit codes, references, memberships, queries, formulas and publications.
 Formats are disabled; UUID patterns plus native binding enforce canonical UUIDs.
 Schema defaults/readOnly annotations do not create fields or grant authority.
 
-Only the bundled compiled model is supported. Its semantic fingerprint binds
-the schemas/declarations to the native core's source/dependency fingerprint and
-codec. HTML/CSS and source-location labels are presentation. The core fingerprint
-is deliberately conservative: even a core formatting/dependency-file change can
-require a new disposable store. An incompatible store is refused; no automatic
-migration or reset is provided.
+The binary selects one of the compiled `calculation` or `equipment` bindings;
+there is no runtime behavior loader. Model identity binds resolved declarations
+and schemas to the binding's explicit behavior contract and codec. Build bytes,
+HTML/CSS and source-location labels do not define data compatibility.
+Version 0.3.0 uses `rebase-store-3` and `native-slice-kv-3`; format 2 stores and
+backups reject without silent migration or automatic reset. Retain the old
+compatible binary and its verified backups, and use that binary to restore old
+backups. See [storage upgrades](storage.md#data-identity-and-upgrades).
+
+The following contract table describes `calculation`:
 
 | Code | Contract | Role |
 | ---: | --- | --- |
@@ -84,6 +90,21 @@ model. Unit codes are immutable. Exact amounts, times and versions are canonical
 decimal strings. Codes/counts/limits are JSON integers. Native binding applies
 the declared i64/i128 ranges in addition to JSON Schema validation.
 
+Equipment instead declares Pool 101 (availability root slot 7), Delivery 205,
+Reservation 410 (published availability/allocation), and private Output 900.
+Use the selected model's catalogs and fixtures rather than calculation codes:
+
+```sh
+rebase-next --model equipment model public
+rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100
+rebase-next --model equipment init target/equipment.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
+rebase-next --model equipment rpc target/equipment.redb
+rebase-next --model equipment inspect target/equipment.redb --html > target/equipment.html
+```
+
+Fixture plans are authored drafts for the [ordinary client](developer-tools.md),
+not direct writes. The `demo` command remains a calculation-only scenario.
+
 ## Start a fresh store and process API
 
 ```sh
@@ -102,8 +123,9 @@ executing their operations; a JSON-RPC batch is not a transaction.
 
 The process acts as the initialized local actor/tenant. Requests cannot change
 that identity, select a model implementation, enable fixture mode or write raw
-storage. This local process/file trust boundary is not a login service. There
-is no HTTP listener or production tenant/permission administration.
+storage. This local process/file trust boundary is not a login service. For the
+authenticated HTTP listener and current principal/grant administration, use
+[`serve` and the public authority API](server.md).
 
 Start with:
 
@@ -111,11 +133,15 @@ Start with:
 {"jsonrpc":"2.0","id":"model","method":"model.describe","params":{}}
 ```
 
-Use the returned `model` identity in every other operation. The public catalog
+Use the returned `model` identity in operations that require it.
+`session.describe` takes an empty object. The public catalog
 includes input schemas, published fields, permitted predicates and limits.
 
 | Method | Params besides `model` |
 | --- | --- |
+| `session.describe` | No params; returns model, actor and operation context |
+| `access.describe` | Administrator-only current graph |
+| `access.replace` | Administrator-only `if_revision`, `graph` |
 | `records.get` | `id` |
 | `records.mutate` | `context` from `session.describe`, `operation_id`, `commands`, `returning` UUID array |
 | `operations.status` | original `context`, `operation_id` |
@@ -151,7 +177,7 @@ def call(method, params):
 model = call("model.describe", {})["result"]["model"]
 source = "00000000-0000-4000-8000-000000000060"  # Adjustment P
 record = call("records.get", {"model": model, "id": source})["result"]
-context = call("session.describe", {})["operation_context"]
+context = call("session.describe", {})["result"]["operation_context"]
 operation_id = str(uuid.uuid4())  # Retain this ID and request until reconciled.
 params = {
     "model": model, "context": context, "operation_id": operation_id,
@@ -213,18 +239,21 @@ Root reads use one of:
 {"kind":"latest","at":"20"}
 ```
 
-Account slot 2 allows summary and strict `before`; Subsidiary slot 3 allows
+For calculation, Account slot 2 allows summary and strict `before`; Subsidiary slot 3 allows
 summary; Curve slot 1 allows summary and `latest`. A financial summary publishes
 count, sum, complete-time minimum, and first/last time. `before` excludes **all**
 equal-time occurrences, including at i64 extrema. `latest` returns a public quote
 ID/rate or `null`. Root results include the root revision and store revision.
+Equipment Pool slot 7 allows summary and strict `before` over availability.
 These publications include declared private contributions without exposing their
 private record identities. Record-list filtering does not redefine a root sum.
 
 ## Bounds and validation
 
-The prototype permits at most 64 authored records, 16 each of Quote/Posting/
-Adjustment/Basis, 48 active private outputs and 256 lifetime role reservations.
+Both compiled models permit at most 64 public authored records, 48 active
+private outputs and 256 retained role reservations. Calculation additionally
+limits Quote/Posting/Adjustment/Basis to 16 each. Equipment quantities have
+model-specific bounds; read its catalog and allocation semantics.
 It allows 64 commands, 32 returning IDs, page limit 32, visit budget 128 and
 200,000 mutation work units. Calculated i128 overflow rejects. This is bounded
 acceptance, not a throughput or production-capacity claim.
@@ -245,6 +274,6 @@ derives sources/outputs, every subtree, public index membership and receipt
 results/content hashes. Earlier native corpora still test the wider causal and
 original settlement matrix; their commands are in the research result papers.
 
-Production identity/DAG authorization, distributed adapters, external effects,
+Distributed adapters, external effects,
 general decimal rounding, arbitrary model loading/migrations and a full
 accounting/frontend port remain separate future work.

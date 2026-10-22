@@ -4,6 +4,9 @@ The supported backend is one process owning one embedded redb file. Runtime
 writes, derived repairs, indexes, authority and receipts commit atomically.
 Network startup checks complete current-state integrity before listening.
 Operator commands below take the file lock; stop the HTTP process first.
+These examples use the default `calculation` model. For equipment, prepend
+`--model equipment` before every command, including `version`, `restore`,
+`receipts archive`, and `reset`. Wrong-model opens and restores reject.
 
 ```sh
 rebase-next version
@@ -22,10 +25,13 @@ Restore writes a temporary database, validates complete table inventory, model
 and format, verifies current calculations and structures, closes/reopens it, and
 only then atomically publishes a **new** destination. Existing files/symlinks
 are never overwritten. Failed validation leaves no published destination or
-owned temporary file. Backup and restore are bounded to 64 MiB for this model.
+owned temporary file. Backup and restore are bounded to 64 MiB for either
+compiled model.
 Use one restored instance as the replacement, not simultaneous writable clones.
 
-`check` derives expected records/roles/memberships/routes/queries from complete
+Each compiled model supplies its own independent semantic check; the shared
+checker validates storage, indexes and tree structure. For calculation, `check`
+derives expected records/roles/memberships/routes/queries from complete
 source observations, checks scalar equations and final causal edges including
 zero contributions, and verifies actual AVL order, links, balance, neighbours,
 exact subtree/root summaries and historical floors. It also checks authority
@@ -34,7 +40,10 @@ It calls no tree writer/rotation/settlement/query traversal. It reuses the
 independently tested summary algebra and reader-fold primitive. This is a
 current-state verifier; it cannot reconstruct the historical truth of every old
 receipt without past source history. The separate Python acceptance oracles
-still verify fixture histories and rollback independently.
+still verify calculation fixture histories and rollback independently. Equipment
+checking independently derives interval allocation/event arithmetic from its public
+sources and compares publications, outputs and memberships; focused tests cover
+its lifecycle, rollback and public HTTP workflow.
 
 ## Receipt retention without unsafe retries
 
@@ -81,15 +90,27 @@ trusted operator tool and has no network RPC counterpart.
 
 ## Data identity and upgrades
 
-Store format `rebase-store-2` and the native codec have explicit versions.
+Release 0.3.0 uses store format `rebase-store-3` and native codec
+`native-slice-kv-3`. Both compiled models use those formats, with distinct model
+identities. One store holds one selected compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
 behavior contract revision. Transport formatting and dependency patch bytes do
-not define a data model. Maintainers must bump `BEHAVIOR_CONTRACT` when changing
-binding, calculation, causality or invariants; structural/schema changes also
+not define a data model. Maintainers must bump the affected `Binding::BEHAVIOR`
+when changing binding, calculation, causality or invariants. Calculation uses
+`native_slice::BEHAVIOR_CONTRACT`; Equipment owns its revision in its module.
+Shared semantic changes require bumping every affected binding. Structural/schema changes also
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-This is the first such data contract; old prototype stores intentionally reject.
-A changed data/model contract requires an explicit reviewed migration or a new
-disposable store. No automatic semantic migration or distributed failover is
-promised. Preserve a verified backup before changing the deployed binary/model.
+Format 2 stores and their backups intentionally reject in 0.3.0. The runtime
+header is checked before native metadata decoding, so an old store reports a
+model/format mismatch rather than being reinterpreted. There is no silent format
+2 migration, automatic reset or cross-model restore. A compatible format 3
+backup restores only with its matching compiled model and behavior identity.
+
+Before upgrading, stop the old process, run its `check` and `backup`, and retain
+that compatible binary with its verified backups and receipt archives. Restore
+format 2 backups with the old binary. Start 0.3.0 with a new store unless an
+explicit reviewed migration is provided; do not use restore as a migration tool.
+For rollback, use the old binary and its pre-upgrade snapshot. Never run the old
+and replacement writable copies together. No distributed failover is promised.

@@ -1,6 +1,6 @@
 # Compact context — 2026-10-22
 
-**D1–D6 complete: deployable bounded backend plus composable developer tools; no frontend.**
+**D1–D6 and G1 complete: reusable compiled bounded backend and developer tools; no frontend.**
 The user has authorized autonomous implementation, breaking changes, checkpoint
 commits on the existing `main` tree and direct pushes. The
 [release checkpoints](research/17-deployable-backend.md) now own continuation.
@@ -8,16 +8,33 @@ Preserve ReBase's **power**, not its exact implementation or old APIs. Prefer
 small, explicit, stateless functions and mature infrastructure libraries; do not
 add a universal DSL/plugin framework or duplicate schemas between runtime/tools.
 Carry context in this directory and checkpoint commit messages so another agent
-can resume without another whole-repository audit. The [0.2 release result](research/18-release-result.md)
-and [deployment guide](docs/deployment.md) own current acceptance. Enter a named
+can resume without another whole-repository audit. The [0.3 result](research/21-compiled-model-result.md)
+and [deployment guide](docs/deployment.md) own current acceptance. The
+[0.2 result](research/18-release-result.md) remains dated. Enter a named
 future capability gate when new work is requested; do not repeat completed stages.
 
-**Active continuation: G1 compiled model reuse.** Follow
-[the implementation goal](research/20-compiled-model-gate.md): typed model-neutral
-staging/storage boundaries, shared resolved-shape reactive machinery, then an
-independently checked timed-equipment model through the same lifecycle and tools.
-Breaking format/model changes are allowed and must be explicit. This extends
-capability, not the existing population/capacity claim.
+**G1 accepted: compiled model reuse.** The [goal](research/20-compiled-model-gate.md)
+is implemented through G1a/G1b/G1c. `Binding`/`NativeInput` own native model types,
+schemas and trusted behavior; `ReactiveBinding` supplies resolved shapes and pure
+evaluations. Shared typed staging, codec/store, final-graph settlement, authority,
+queries, receipts, HTTP and recovery serve calculation and equipment without
+extending the original input enum. `--model equipment` selects sparse contract
+and slot codes through the ordinary CLI/client. Source-derived equipment checks
+prove 8/2 → 8/4 → 8/7 allocations, role reuse, retargeting and rollback.
+Release 0.3 uses store format 3, native codec 3, calculation behavior 2 and
+equipment behavior 1; no silent opening/migration of format 2. Forty-six debug
+and optimized Rust tests, six client controls, all 116 independent cases and
+both real-process workflows pass. See the result for execution and fingerprints.
+
+**Next continuation: G2 capacity and reactive candidate selection.** Begin with
+a concrete increasing-population workload and correctness/rollback acceptance,
+then implement and measure the required changes. The current scheduler opens
+conservative subscriber sets and compares final shapes pairwise; record, role,
+route, receipt and inventory bounds must be considered together. Do not merely
+remove the 64-source limit or claim every mutation is logarithmic. Preserve
+independent checks, strict work limits, explicit models and stateless tools.
+Full accounting, arbitrary monoids/topology, effects and distributed adapter
+conformance remain separate capability gates.
 
 The [parallel release review](research/19-peer-release-review.md) adopts remote
 `242a08b`/`1f16278` over overlapping local alternatives. Fresh execution confirmed

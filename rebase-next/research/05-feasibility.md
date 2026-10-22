@@ -1,5 +1,12 @@
 # Rust feasibility and stop boundary
 
+**Current continuation:** [G1](21-compiled-model-result.md) accepts two distinct
+native models through shared typed execution, causal settlement, authority,
+storage and tools in 0.3.0. Forty-six optimized Rust tests and fresh independent
+foundation/causal/local corpora pass. Both models retain the bounded runtime
+envelope; larger populations and reactive candidate scaling are the next gate.
+The older experiments and their limitations below remain dated.
+
 **Deployable continuation:** D2–D6 now add transaction-scoped authority,
 authenticated HTTP, verified storage lifecycle and reusable model/client tools.
 The [release checkpoints](17-deployable-backend.md) own current scope and evidence;

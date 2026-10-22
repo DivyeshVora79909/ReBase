@@ -1,0 +1,467 @@
+{
+  "format": "rebase-compiled-models-evidence-1",
+  "date": "2026-10-22",
+  "goal": "G1a/G1b/G1c compiled model reuse",
+  "status": "accepted",
+  "engine_commit": "3b906a5b639bc519d1a11af1e8e8c35cd6e229d7",
+  "baseline_commit": "ad4905fda7623f6aae0a2019f4045c7635a0b6d9",
+  "path_base": "rebase-next; target artifacts are local executed observations, not committed stores or credentials",
+  "scope": "two trusted compiled native models on the same bounded runtime, not arbitrary dynamic behavior or larger capacity",
+  "models": {
+    "calculation": {
+      "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+      "store_format": "rebase-store-3",
+      "version": "0.3.0",
+      "behavior": "rebase-calculation-contract-2"
+    },
+    "equipment": {
+      "model": "54a299026f1db1ec33f36e013dfddb585aa54ded7404e04fabcdb6bd8a2e30ec",
+      "store_format": "rebase-store-3",
+      "version": "0.3.0",
+      "behavior": "equipment-reservations-1"
+    }
+  },
+  "store_format": "rebase-store-3",
+  "native_codec": "native-slice-kv-3",
+  "toolchain": {
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)"
+  },
+  "checks": {
+    "debug_rust_tests": 46,
+    "optimized_rust_tests": 46,
+    "format": "passed",
+    "clippy_warnings_denied": "passed",
+    "client_fault_and_tls_controls": 6,
+    "independent_corpora": [
+      {
+        "name": "foundation",
+        "cases": 68,
+        "operations": 93,
+        "rejected": 40,
+        "controls": 0,
+        "observation": "target/native-slice/run-193090-1792668569890213143/native-observations.json",
+        "observation_sha256": "f003c8d49c52e1ccd29a53acd8b1dec298c1a4788e99abae78ac2808114fbe6c",
+        "checker_log": "target/g1-foundation-independent.log"
+      },
+      {
+        "name": "causal",
+        "cases": 39,
+        "operations": 55,
+        "rejected": 17,
+        "controls": 0,
+        "observation": "target/native-slice/run-193240-1792668574628899424/native-observations.json",
+        "observation_sha256": "692dcd635003f51ba59e2ed828c1ebeebec1b1f3517a381bc596f252e3f1c393",
+        "checker_log": "target/g1-causal-independent.log"
+      },
+      {
+        "name": "local",
+        "cases": 9,
+        "operations": 14,
+        "rejected": 3,
+        "controls": 7,
+        "observation": "target/local-prototype/run-193256-1792668578699091255/local-observations.json",
+        "observation_sha256": "cbcbbd9c77ff12b808b2cdaf1d8641538dbd4e67a8346591c7291b8aa357560d",
+        "checker_log": "target/g1-local-independent.log"
+      }
+    ],
+    "calculation_public_process": {
+      "status": "passed",
+      "version": {
+        "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+        "store_format": "rebase-store-3",
+        "version": "0.3.0"
+      },
+      "workflow": {
+        "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+        "initial": {
+          "A": "30",
+          "Left": "60",
+          "Right": "90",
+          "Final": "150"
+        },
+        "after_move": {
+          "A": "20",
+          "Left": "40",
+          "Right": "60",
+          "Final": "100"
+        },
+        "fixture_instances": 2,
+        "committed_operations": 3,
+        "rejections": 6,
+        "restart_replay": true,
+        "archive_fence": true,
+        "integrity": {
+          "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+          "nodes": 14,
+          "receipts": 0,
+          "records": 38,
+          "revision": "3",
+          "roots": 10,
+          "rows": 151,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "6ee92887-c929-4c9b-a3ee-1d0a78d47714"
+        }
+      },
+      "workload": {
+        "public_records": 64,
+        "private_outputs": 10,
+        "population_overflow_rejected": true,
+        "duplicate_requests": 8,
+        "duplicate_commits": 1,
+        "concurrent_contenders": 8,
+        "contender_commits": 1,
+        "writes": 128,
+        "readers": 4,
+        "read_results": 1024,
+        "reads_overlapping_writer": 1024,
+        "read_latency": {
+          "count": 1024,
+          "p50_ms": 2.649,
+          "p95_ms": 5.058,
+          "max_ms": 13.414
+        },
+        "mutation_latency": {
+          "count": 128,
+          "p50_ms": 3.249,
+          "p95_ms": 10.132,
+          "max_ms": 33.318
+        },
+        "timing_scope": "client wall time; mutation includes destination session check; plan preparation/fsync excluded from latency but included in elapsed",
+        "elapsed_seconds": 1.138,
+        "process": {
+          "available": true,
+          "rss_kib": 16732,
+          "peak_rss_kib": 16732,
+          "threads": 8,
+          "open_fds": 11
+        },
+        "store_bytes": 380928,
+        "backup_bytes": 320687,
+        "graceful_restart": true,
+        "acknowledged_process_crash_recovery": true,
+        "verified_restore_service": true,
+        "final_publications": {
+          "A": "20",
+          "Final": "100",
+          "Left": "40",
+          "Right": "60"
+        },
+        "integrity": {
+          "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+          "nodes": 14,
+          "receipts": 130,
+          "records": 74,
+          "revision": "133",
+          "roots": 10,
+          "rows": 259,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "6ee92887-c929-4c9b-a3ee-1d0a78d47714"
+        }
+      },
+      "host": {
+        "system": "Linux",
+        "machine": "x86_64",
+        "kernel": "6.18.55",
+        "logical_cpus": 5,
+        "python": "3.12.14"
+      },
+      "elapsed_seconds": 1.632
+    },
+    "equipment_cli_and_client": {
+      "status": "passed",
+      "model": "54a299026f1db1ec33f36e013dfddb585aa54ded7404e04fabcdb6bd8a2e30ec",
+      "checks": [
+        "explicit equipment version/model/fixture/init",
+        "durable prepare/save/load/execute/replay; allocations 8/2",
+        "durable supply update propagates allocations 8/4",
+        "selected check/backup; default model open rejects",
+        "selected reopen, saved status/replay, stable integrity, verified restore"
+      ],
+      "initial_allocations": {
+        "a": "8",
+        "b": "2"
+      },
+      "supply12_allocations": {
+        "a": "8",
+        "b": "4"
+      },
+      "integrity": {
+        "model": "54a299026f1db1ec33f36e013dfddb585aa54ded7404e04fabcdb6bd8a2e30ec",
+        "nodes": 5,
+        "receipts": 2,
+        "records": 8,
+        "revision": "2",
+        "roots": 1,
+        "rows": 34,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "16ea2434-a1f1-49d1-85c1-75d626b8b1f7"
+      },
+      "directory": "target/g1-equipment-cli-4ef28e6d-d3f5-4b58-a483-be239251356f"
+    },
+    "isolated_source": {
+      "source_commit": "3b906a5b639bc519d1a11af1e8e8c35cd6e229d7",
+      "source_directory": "target/g1-isolated-4Y6py1",
+      "explicit_manifest_build": "passed",
+      "shared_dependency_cache": true,
+      "identical_optimized_binary": true,
+      "copied_client_controls": 6,
+      "copied_harness": {
+        "status": "passed",
+        "version": {
+          "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+          "store_format": "rebase-store-3",
+          "version": "0.3.0"
+        },
+        "workflow": {
+          "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+          "initial": {
+            "A": "30",
+            "Left": "60",
+            "Right": "90",
+            "Final": "150"
+          },
+          "after_move": {
+            "A": "20",
+            "Left": "40",
+            "Right": "60",
+            "Final": "100"
+          },
+          "fixture_instances": 2,
+          "committed_operations": 3,
+          "rejections": 6,
+          "restart_replay": true,
+          "archive_fence": true,
+          "integrity": {
+            "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+            "nodes": 14,
+            "receipts": 0,
+            "records": 38,
+            "revision": "3",
+            "roots": 10,
+            "rows": 151,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "21dc3a0b-644e-481a-b772-091a0e8ca872"
+          }
+        },
+        "workload": {
+          "public_records": 64,
+          "private_outputs": 10,
+          "population_overflow_rejected": true,
+          "duplicate_requests": 8,
+          "duplicate_commits": 1,
+          "concurrent_contenders": 8,
+          "contender_commits": 1,
+          "writes": 8,
+          "readers": 2,
+          "read_results": 32,
+          "reads_overlapping_writer": 32,
+          "read_latency": {
+            "count": 32,
+            "p50_ms": 1.509,
+            "p95_ms": 2.536,
+            "max_ms": 2.611
+          },
+          "mutation_latency": {
+            "count": 8,
+            "p50_ms": 2.963,
+            "p95_ms": 5.462,
+            "max_ms": 5.462
+          },
+          "timing_scope": "client wall time; mutation includes destination session check; plan preparation/fsync excluded from latency but included in elapsed",
+          "elapsed_seconds": 0.05,
+          "process": {
+            "available": true,
+            "rss_kib": 16548,
+            "peak_rss_kib": 16548,
+            "threads": 10,
+            "open_fds": 11
+          },
+          "store_bytes": 348160,
+          "backup_bytes": 129887,
+          "graceful_restart": true,
+          "acknowledged_process_crash_recovery": true,
+          "verified_restore_service": true,
+          "final_publications": {
+            "A": "20",
+            "Final": "100",
+            "Left": "40",
+            "Right": "60"
+          },
+          "integrity": {
+            "model": "f7e51bd8d80c29228ad6cd376873a4733e9f3bb0cdc7fdce4e0aa91696de6199",
+            "nodes": 14,
+            "receipts": 10,
+            "records": 74,
+            "revision": "13",
+            "roots": 10,
+            "rows": 259,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "21dc3a0b-644e-481a-b772-091a0e8ca872"
+          }
+        },
+        "host": {
+          "system": "Linux",
+          "machine": "x86_64",
+          "kernel": "6.18.55",
+          "logical_cpus": 5,
+          "python": "3.12.14"
+        },
+        "elapsed_seconds": 0.5
+      }
+    }
+  },
+  "commands": [
+    "cargo test --locked --all-targets",
+    "cargo test --locked --release --all-targets",
+    "cargo fmt --all -- --check",
+    "cargo clippy --locked --all-targets -- -D warnings",
+    "cargo run --locked --example native_slice",
+    "python3 -B research/experiments/native_slice.py --actual <foundation-observations>",
+    "cargo run --locked --example native_slice -- --fixtures research/fixtures/causal-slice.json",
+    "python3 -B research/experiments/native_slice.py --fixtures research/fixtures/causal-slice.json --actual <causal-observations>",
+    "cargo run --locked --example local_acceptance",
+    "python3 -B research/experiments/local_prototype.py --actual <local-observations>",
+    "python3 -B tools/test_client.py -v",
+    "python3 -B tools/harness.py --binary target/verification-build/release/rebase-next --out target/g1-release-harness --writes 128 --readers 4",
+    "python3 -B target/g1-equipment-cli.py <fresh-release-binary>",
+    "cargo build --locked --release --manifest-path <isolated-source>/rebase-next/Cargo.toml --bin rebase-next",
+    "python3 -B <isolated-source>/rebase-next/tools/harness.py --binary <isolated-binary> --out target/g1-isolated-harness --writes 8 --readers 2"
+  ],
+  "boundary_controls": [
+    "sparse schema/root/member/query/output-role codes",
+    "wrong-model store/restore refusal",
+    "format header checked before old metadata decoding",
+    "resolved query root must follow the declared authored reference",
+    "generated managed output must match its declared planned root/time/value",
+    "independent public/private/reservation/per-contract population limits",
+    "equipment source-only expected events and complete structural inventory"
+  ],
+  "corrections_during_implementation": [
+    "removed residual member-slot whitelist",
+    "restored calculation-specific unit agreement validation caught by independent wrong_unit case",
+    "restored engine codec identity check caught by independent codec_mismatch case",
+    "added independent model limits after codec generalized to sparse count maps"
+  ],
+  "binary": {
+    "path": "target/verification-build/release/rebase-next",
+    "sha256": "977720af39e19ee8de180df66194883ccc4b27f5c6ca4a7bfce720aaf1c23837",
+    "bytes": 19659392,
+    "target": "Linux x86_64, dynamic glibc2.38+/libm/libgcc_s"
+  },
+  "dependency_changes": "package version only; no dependency added/upgraded; prior audit remains dated",
+  "remaining": [
+    "64 public sources /48 outputs /256 reservations remain enforced",
+    "conservative root-subscriber discovery and pairwise final-shape dependency comparisons",
+    "equipment large-workload capacity not measured",
+    "trusted native model hooks are not a plugin sandbox",
+    "no automatic constraint-based fixture generation or arbitrary aggregate/query implementation",
+    "full accounting, durable effects, distributed adapter conformance and frontend remain separate"
+  ],
+  "artifact_fingerprints": {
+    "target/g1-release-tests.log": "209b041ead3fc8e4e536cd79f8f91969bf94b07a365c6940a1b5647961cfb4f8",
+    "target/g1-optimized-tests.log": "a0afcf85656f9e6ab12fc86b5e8558ea6bd8b4fdb6bfe3e869a17e2c0d7ea67b",
+    "target/g1-final-clippy.log": "9010f6dfb329e567818b186ced862ad64db5069bade7635a5c5bb4dc1c7ccc1a",
+    "target/g1-client-tests.log": "0d51772fe8ef2d29da0a8beb31c0749a0639d192d75309e6a072bd74e55371a3",
+    "target/g1-foundation-independent.log": "8dc73e3ed9fb2f1ea6bd670d2bcef3136957df3d69512b130bcd18958965eae7",
+    "target/g1-causal-independent.log": "78ed983553cc505f06e3f4549726daf8daeca6071158d3ccd9b2b08841ffedbb",
+    "target/g1-local-independent.log": "810d3c183669295fae10aca93056c2695a17bfe9e506a67005080bd9e3c83176",
+    "target/g1-release-build.log": "765f1396d07f30f3a451cd3f9d9cad4e83c92c8e0aecf955ffc09061a6cf1e02",
+    "target/g1-isolated-build.log": "c51b5b1a3a9d7f459e057fc5c44b701530d60a7dbc35339e47f31a490aed93ba",
+    "target/g1-isolated-client.log": "13da91c71efed63b2f2483e847207fbce609777b1096246c632da9e622e14f08",
+    "target/g1-independent.log": "9c73691569da6bd2f2594a2544abc07b8c56286b5f546cd6b3f57217cf59c601",
+    "target/g1-equipment-cli.py": "fd1701709dc59449021cad4e3f5460b95fabce8ee331755759f120ea941f064c",
+    "target/g1-equipment-cli-result.json": "246b17cf4ca3844a6c25f903f9600044b122b9468d706122748bbb0ec712053f"
+  },
+  "source_fingerprints": {
+    "AGENTS.md": "73b97e0a6e9ab41d48c0533bac5eeb19693bfb1094d054680fb3c8f8ef65d039",
+    "CONTEXT.md": "d9db5e7841821244d15fcaad5ea95cada82c2098f583efb9fb321d8048a4c94b",
+    "Cargo.lock": "eda7a73b6febc23c59c4e05c055721a3b84163afa71831af778029d454b85576",
+    "Cargo.toml": "6be861405a15f41e2ff0dbabd8d5e4a1599b0d6b32efabc22093a7a4e581482e",
+    "README.md": "7c93e6f18d0d0e7b813433b333408fc040809e9154f1e43d00ead31cf5ee91a2",
+    "deploy/rebase-next.service": "ecc0da2005cef7d7264e690262a3cd8d9c802c4edb6a1c062eb7f5dd86ceef42",
+    "deploy/server.example.json": "d977df71fbeaf82c96b3a8dd945018ff237d7b0d69f76ec1068df73f8d22e456",
+    "docs/compiled-models.md": "da245baff1dc1262666e85c56d070d1456c8922feb29ba4accd4d48e58d7d54c",
+    "docs/deployment.md": "af6ab991d3cbabd61f2b69a3ab19d712d554191504b3ee7889ad7e608f38503d",
+    "docs/developer-tools.md": "353c78c466a9ab661084d1587b3c8b18c91e428f45f12bc7c37a5674b99e67dd",
+    "docs/equipment.md": "bcaaf46a1d468d2932bdebb0f602a6a3027c15aa7a4518f294c161068880501a",
+    "docs/local-prototype.md": "07b00982603f5d212c7c8b234641643599b5c4989bfec7f646bee70cab0fba5c",
+    "docs/server.md": "cb0d4144a78089b600d6d53f865f78b59df9ada78fe2859ac1d23468d1b9c8da",
+    "docs/storage.md": "6e97db701b952659ad4bf18bd50b514bce455f2eb267000410f671ac271c9c8d",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "4b9d401d72ac5ba46d527acb1c0fa1657d8d93c34f0d6439e97441060731f2cc",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "research/05-feasibility.md": "df654dcbfa3bf1f195545ad585dd32d47f51f9db34726dac7c55af5007347491",
+    "research/20-compiled-model-gate.md": "60cb35a079aff91d93813d343f3e02d616724f177856d1703bef9b57cb0bf1ec",
+    "research/21-compiled-model-result.md": "f923ea9673239fcc018bb22d6fd920ff18b4528d9744ed342abea72a6c2fd31f",
+    "research/experiments/local_prototype.py": "df83d1d33941fecd29ef6826577ecc762dddefd21fdf049b7223e41a3757a964",
+    "research/experiments/native_slice.py": "2dacc9f8855a11a9f13f26cf1906bd8c868a202131a822663d0068b9975b078d",
+    "research/fixtures/causal-slice.json": "44c7571fbced03ae2739b7c33677dfcd5b33268bc3599bf776fa02920b3a52f9",
+    "research/fixtures/native-slice.json": "7dd35e2e173ac10a2ad57f0813221faad21410e56dd59d9a9d05a934737b89c3",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "9ab664176c2d901e5fde2c73048fbbc5f25140c313bfbd118327005d3933cfab",
+    "src/binding.rs": "7c280428197a3104a6dfef5e9f741781017c1aa3c0ad3d077aee53ba917faad4",
+    "src/causal.rs": "8497c304ce523ab7326c0972aac4f2c5b4b5f6e8be1341cfeeff14c0c901e891",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "0ca6f7195538ad3fd9e53facda499222c387469900ae913b69ebeb1df91744eb",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "576fe07a11e1582c8c99de76cbdbde83a97a380fefdafec2b3b520d99a7ca2a5",
+    "src/lifecycle.rs": "024f5ce8db8df5aec381080fdfd3c7120dcb96f6dfe3421a23057c4b2fa03d1f",
+    "src/local.rs": "4a19cfaeafe200f8f98072dd7d7f34072b5fa5dbe49857babaf4e98d6e89a004",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "6169aa9c6535c69a728e985d890a3e442f87611170df5845b3ec1928540ac9dc",
+    "src/models/calculation.rs": "3dc463c32e430924e0152c942e09348e636629a2296a9aecccc11045bff76659",
+    "src/models/calculation_reactivity.rs": "f84840b014f86c43ce1b6e9e1828da8ed07494a319b4a66300a1a69fbed1803d",
+    "src/models/equipment.rs": "5bf15c6bac7106ac45020f2953532e7b4b06af9beb187b99bc1f1bfc256c2b76",
+    "src/models/mod.rs": "40fb494f67e70ad21e6885b362c0e9b12e12ad3340d348f0ff469898ba7301c2",
+    "src/mutation.rs": "9fb421f27354c1bf0aa1dbb34d3059f3c793820720e7c1b02fe291a64befd58a",
+    "src/native_codec.rs": "b9bb8180d494465fc4bc144ccebb00d5922fd0c71db5b2a5be69d14752be8872",
+    "src/native_slice.rs": "069be158aa8a0c68a70e5d5804cdd4c3d4cc8c0421f2d0147a0ac4df2a38e595",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/query.rs": "9f65baee0e55dde5df7164edf03c566ed60cae0bea238c295ad10f2ffe7d0249",
+    "src/rpc.rs": "038eb0ad52a4a780baa1bfdb2f2ada7136c4bcb7e000cbfefae65260d4798d57",
+    "src/security.rs": "a4385ddefcef4ba6b6bcd6e7e5d1cb424ac42fd0ae09690e8a1ca5ba300fee11",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/tree.rs": "f370fb3c897128bb87c04d690b47ec533167eb1f0efbc3b74369f9e6b2035b17",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "24c1220d33f0fc3a32c465d2dcd3ee8fb45db15f0e4d92b86f79e1ec9201bd59",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "1f32d0732061ddf684fee96db4a7724400d13663d1f0f5254ba5c07b14eebd0d",
+    "tests/network_api.rs": "9e4b7c9a4d068724aaef9617caf77176def87b5d1983cd4c5e62ed87f41ceb61",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/harness.py": "03e3eaa0e91da1e72bdca8efa8678bfda943a93562bff6466b052d4f45c32076",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1"
+  }
+}
