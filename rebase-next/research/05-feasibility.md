@@ -1,5 +1,11 @@
 # Rust feasibility and stop boundary
 
+**Deployable continuation:** D2–D5 now add transaction-scoped authority,
+authenticated HTTP, verified storage lifecycle and reusable model/client tools.
+The [release checkpoints](17-deployable-backend.md) own current scope and evidence;
+the D5 toolkit passes 39 Rust tests, five independent client fault controls and
+a real HTTP fixture/restart/archive workflow. Earlier counts below remain dated.
+
 **Current executable scope also includes the October 22 native M1/M2/M4
 experiment.** [Paper 12](12-native-slice.md) records its 68 cases / 93 operations,
 real linked trees, settlement, complete snapshots, abort/reopen results and

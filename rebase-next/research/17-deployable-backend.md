@@ -27,8 +27,8 @@ capability gates visible instead of silently calling every feature production.
 | D2 | Fresh transaction-scoped principal/DAG authority, separate owner/reader, complete indexed readable candidates; independently checked repair and rejection | Complete |
 | D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Complete |
 | D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Complete |
-| D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Next |
-| D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Pending |
+| D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Complete |
+| D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Next |
 
 Each checkpoint closes a concrete semantic boundary before expansion. Change
 the sequence when implementation provides a better dependency order; record why.
@@ -148,3 +148,23 @@ credentials; archive rejects old request replay and permits offline reconciliati
 from its restored receipt snapshot. Historical receipt truth, automatic migrations,
 large exports and distributed recovery are not claimed.
 [Evidence](evidence/2026-10-22-d4-lifecycle.json).
+
+D5: added offline fixture planning from the design-owned recipe, standard UUIDv5
+namespace binding and typed reference remapping through prepared declarations.
+The public catalog stays separate; the developer catalog lists available recipes.
+The existing local demo now uses the same recipe loader and authored expectations.
+One standard-library Python client supplies ordinary RPC calls and durable JSON
+plans with explicit endpoint/model/store/tenant/actor binding. Plans contain no
+credentials and retain the original operation context through replay/status.
+No fixture RPC or alternate native writer was added. See the
+[developer workflow](../docs/developer-tools.md).
+
+Acceptance: 39 Rust tests and warning-free Clippy; five independent client wire
+controls; a real HTTP harness with two namespaced fixtures, three committed
+operations, six expected rejections, exact 150-to-100 report change, restart
+replay/status, obsolete receipt-projection suppression and archive expiry. A
+truncated Content-Length control exposed and fixed response framing in the client.
+The current-state verifier passes after restart and archive. Model identity is
+unchanged; no engine/binder/codec/persistence behavior changed and the earlier
+native corpora were not rerun for this tooling-only boundary.
+[Evidence](evidence/2026-10-22-d5-tools.json).

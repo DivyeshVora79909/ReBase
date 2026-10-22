@@ -495,7 +495,8 @@ impl PreparedModel {
             "contracts":self.contracts.values().collect::<Vec<_>>(),
             "capabilities":capabilities(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
             "identity_policy":"retained private reservations; retired producers cannot be reused",
-            "preparation":"bundled compiled model only; no arbitrary behavior loader"})
+            "preparation":"bundled compiled model only; no arbitrary behavior loader",
+            "fixtures":crate::fixtures::catalog()})
     }
 
     pub fn explain(&self, selector: &str) -> Result<Value> {

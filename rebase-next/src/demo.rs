@@ -1,26 +1,16 @@
 //! An ordinary client workflow over the same public operation adapter.
 
 use crate::{
+    fixtures::{self, Recipe},
     inspector,
     local::LocalStore,
     model::PreparedModel,
     native_slice::{Context, Error, Result},
     rpc,
 };
-use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, fs, path::Path, sync::Arc};
+use std::{fs, path::Path, sync::Arc};
 use uuid::Uuid;
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Recipe {
-    name: String,
-    tenant: Uuid,
-    actor: Uuid,
-    ids: BTreeMap<String, Uuid>,
-    commands: Value,
-}
 
 fn check(condition: bool, detail: &str) -> Result<()> {
     if condition {
@@ -68,8 +58,7 @@ fn values(
 }
 
 pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
-    let recipe: Recipe =
-        serde_json::from_str(include_str!("../model/fixtures/causal-demo.json")).map_err(io)?;
+    let recipe = fixtures::bundled()?;
     // This command owns a newly created directory only. Existing paths fail.
     fs::create_dir(directory).map_err(io)?;
     let path = directory.join("demo.redb");
@@ -95,7 +84,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
     check(seeded["result"]["status"] == "committed", "seed rejected")?;
     let initial = values(&store, &recipe, &mut transcript, "Initial")?;
     check(
-        initial == json!({"A":"30","Left":"60","Right":"90","Final":"150"}),
+        initial == recipe.expected["initial"],
         "initial publications",
     )?;
     let query =
@@ -130,10 +119,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "moved prefix result",
     )?;
     let after = values(&store, &recipe, &mut transcript, "After the move")?;
-    check(
-        after == json!({"A":"20","Left":"40","Right":"60","Final":"100"}),
-        "moved publications",
-    )?;
+    check(after == recipe.expected["after_move"], "moved publications")?;
     let stale = call(
         &store,
         &mut transcript,

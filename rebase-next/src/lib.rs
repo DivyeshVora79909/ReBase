@@ -4,6 +4,7 @@ pub mod access;
 pub mod algebra;
 pub mod causal;
 pub mod demo;
+pub mod fixtures;
 pub mod identity;
 pub mod inspector;
 pub mod integrity;

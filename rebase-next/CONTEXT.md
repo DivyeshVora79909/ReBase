@@ -14,7 +14,10 @@ the verified starting point, not the new finish line.
 D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
 separate owner/reader, declared reader selection and atomic reader-index repair,
 bounded indexed merging and revocation-aware receipt disclosure. The active next
-checkpoint is D5: model-driven developer workflow. D4 adds current-state integrity,
+checkpoint is D6: workload and deployment acceptance. D5 adds model-driven
+fixture plans, a stateless HTTP client, private durable mutation plans and a
+real HTTP developer harness (39 Rust tests plus five client fault controls).
+See [developer tools](docs/developer-tools.md). D4 adds current-state integrity,
 verified backup/restore, reset, stable explicit data identity and fenced receipt
 archiving (38 tests). Mutations/status now require the original `context` from
 `session.describe`; never refresh an uncertain old request across an archive or

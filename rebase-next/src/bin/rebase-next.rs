@@ -1,5 +1,5 @@
 use rebase_semantic_proof::{
-    demo, identity, inspector, json, lifecycle, local::LocalStore, model::PreparedModel,
+    demo, fixtures, identity, inspector, json, lifecycle, local::LocalStore, model::PreparedModel,
     native_slice::Context, rpc, server,
 };
 use std::{
@@ -31,7 +31,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.is_empty() || args == ["--help"] {
         println!(
-            "ReBase Next backend\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
+            "ReBase Next backend\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next fixture list\n  rebase-next fixture plan <name> --namespace <uuid>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
         );
         return Ok(());
     }
@@ -43,6 +43,10 @@ fn run() -> Result<(), Box<dyn Error>> {
         .as_slice()
     {
         ["model", "public"] => model.public_catalog(),
+        ["fixture", "list"] => fixtures::catalog(),
+        ["fixture", "plan", name, "--namespace", namespace] => {
+            fixtures::plan(&model, name, identity(namespace)?)?
+        }
         ["version"] => {
             serde_json::json!({"version":env!("CARGO_PKG_VERSION"),"model":model.identity(),"store_format":rebase_semantic_proof::local::STORE_FORMAT})
         }
