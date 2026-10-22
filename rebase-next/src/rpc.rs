@@ -140,6 +140,7 @@ pub(crate) fn failure(id: Value, kind: &str) -> Value {
             (-32000, "A declared local limit was reached")
         }
         "overflow" | "revision_exhausted" => (-32000, "An exact numeric limit was reached"),
+        "inexact" => (-32000, "The value requires a fractional minor unit"),
         "allocation_collision" | "allocation_exhausted" => {
             (-32000, "Could not reserve an output identity")
         }

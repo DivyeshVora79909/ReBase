@@ -54,6 +54,11 @@ to private contracts. Owner and reader remain distinct. The model hooks are
 trusted compiled code with workspace access, not a sandbox for untrusted authors.
 They must preserve tenant, reference, routing and invariant obligations.
 
+Native monetary/rate calculations can compose the pure
+[`Rational` and `Rounding` primitives](exact-values.md). Their schema helpers
+come from the same native types used by binding; tools need no duplicate schemas.
+The bundled models retain their existing formulas and identities.
+
 Both bundled models provide an independent checker. The equipment checker derives
 allocations and event histories from authored sources, then compares managed
 outputs, publications, queries and memberships. Shared snapshot checking verifies

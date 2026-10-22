@@ -25,6 +25,7 @@ to run the harness without building Rust locally.
 | Task | Guide |
 | --- | --- |
 | Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
+| Use exact fractional rates and explicit rounding in a native model | [Exact values](docs/exact-values.md) |
 | Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
 | Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
 | Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |

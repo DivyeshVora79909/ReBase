@@ -1,5 +1,12 @@
 # Rust feasibility and stop boundary
 
+**G3a continuation:** [exact values](25-exact-values-gate.md) now implements
+bounded rational multiplication and explicit rounding, with 7,396 independent
+Fraction cases in both profiles, authenticated transaction acceptance, 63 Rust
+tests and the unchanged 116-case independent native/local corpus. This closes
+the numeric foundation, not the remaining accounting workflow or distributed
+capabilities. Existing production model/store identities remain unchanged.
+
 **G2 continuation:** [0.4 acceptance](24-population-scaling-result.md) closes
 bounded population/index selection through both models at 4,096 sources, with
 56 Rust tests, independent state checks, fixed-work rejection and recovery.

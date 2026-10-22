@@ -19,3 +19,6 @@ axum = { version = "=0.8.9", default-features = false, features = ["http1", "tok
 tokio = { version = "=1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
 jsonwebtoken = { version = "=11.1.0", default-features = false, features = ["aws_lc_rs", "use_pem"] }
 base64 = "=0.22.1"
+num-bigint = "=0.4.8"
+num-integer = "=0.1.47"
+num-traits = "=0.2.19"

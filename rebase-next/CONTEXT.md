@@ -1,6 +1,21 @@
 # Compact context — 2026-10-22
 
 **D1–D6, G1 and G2 complete: reusable compiled bounded backend and developer tools; no frontend.**
+**G3a accepted: exact values**, [gate/result](research/25-exact-values-gate.md).
+`values::{Rational,Rounding}` supplies bounded exact multiplication, canonical
+fraction objects and six explicit rounding modes. All 7,396 Python Fraction
+cases match in debug/optimized builds; 63 Rust tests and all 116 independent
+native/local cases pass. A test-only binding verifies authenticated HTTP,
+derived sums, nine rejected batches with complete rollback, replay and reopen.
+G3a also closes positional-array deserialization and maps `inexact` safely over
+RPC. Existing production models, identities, store/codec 4 and limits are
+unchanged; this is a source checkpoint, not a new full-accounting release.
+**Next: G3b's explicit typed parent-parameter boundary**, then the bounded
+accounting workflow. See the gate's next-boundary section before expanding.
+The user explicitly requests a continuous checkpoint loop: verify, commit, push,
+start the next checkpoint without waiting for another command. Keep context here
+and in commit messages for switching agents; preserve uncommitted work until read.
+
 The user has authorized autonomous implementation, breaking changes, checkpoint
 commits on the existing `main` tree and direct pushes. The
 [release checkpoints](research/17-deployable-backend.md) now own continuation.
@@ -61,12 +76,11 @@ role reservations; commands64, returning32, receipts1,024, backup64MiB and
 mutation work200,000 remain separate. Earlier stores require their matching
 binary. The result owns exact execution/source hashes and coverage limits.
 
-**Next continuation:** enter a named capability gate from
-[the scenario register](research/08-research-workflow.md), using current user
-priorities. Broader exact accounting/model operations are a useful next scope:
-define one representative workflow and close its missing numeric/query contracts
-through implementation and independent end-to-end checks. Do not stop at another
-unbounded prototype plan or restart accepted work. Arbitrary aggregates/topology,
+**Continuation after G2:** G3a now closes the exact numeric foundation. G3b
+must pass declared authored parent parameters into pure evaluation without hidden
+reads or copied mutable rules, before the representative accounting workflow.
+Follow [the G3a result and next boundary](research/25-exact-values-gate.md), not
+another whole-system plan. Arbitrary aggregates/topology,
 external effects, distributed conformance, full accounting parity and populations
 beyond 4,096 remain separate, unaccepted capabilities. Preserve independent
 checks, fixed work limits, explicit native models and stateless tools.

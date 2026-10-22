@@ -18,10 +18,16 @@ the 200,000-unit mutation budget remains. Larger fanout can reject atomically.
 Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
-Continue autonomously through tested implementation checkpoints and commit each
-coherent checkpoint on the existing branch. Preserve capability, not the old
+Continue autonomously through tested implementation checkpoints: commit and push
+each coherent checkpoint on the existing `main`, then start the next without
+waiting for another "continue". Keep the current gate and exact continuation at
+the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.
+G3a now accepts [exact values](research/25-exact-values-gate.md): reduced rational
+rates, explicit rounding and native/API rollback evidence. Continue with G3b's
+typed authored-parent parameter seam, then a bounded accounting workflow.
+The existing production bindings and persisted formats are unchanged by G3a.
 Do not report full production or old-model parity merely because a server starts.
 Storage/model identity now uses an explicit behavior contract, not build bytes.
 Bump the affected `Binding::BEHAVIOR` for semantic binding/calculation/causality/

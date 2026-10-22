@@ -1,0 +1,426 @@
+{
+  "format": "rebase-g3a-values-evidence-1",
+  "date": "2026-10-22",
+  "status": "accepted",
+  "goal": "G3a exact values foundation",
+  "base_commit": "18b5e774cc8cb2671752c3d8afa2196cca0053a3",
+  "scope": "bounded exact rates and rounding, no shipped accounting model or new packaged release",
+  "versions": {
+    "calculation": {
+      "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+      "store_format": "rebase-store-4",
+      "version": "0.4.0"
+    },
+    "equipment": {
+      "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+      "store_format": "rebase-store-4",
+      "version": "0.4.0"
+    }
+  },
+  "codec": "native-slice-kv-4",
+  "behaviors": {
+    "calculation": "rebase-calculation-contract-4",
+    "equipment": "equipment-reservations-3"
+  },
+  "unchanged_prior_core_fingerprints": 30,
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.224,
+      "log": "target/g3a-fmt.log"
+    },
+    {
+      "name": "debug-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 10.043,
+      "log": "target/g3a-debug-tests.log",
+      "tests_passed": 63
+    },
+    {
+      "name": "release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 117.28,
+      "log": "target/g3a-release-tests.log",
+      "tests_passed": 63
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.455,
+      "log": "target/g3a-clippy.log"
+    },
+    {
+      "name": "client",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.651,
+      "log": "target/g3a-client.log"
+    },
+    {
+      "name": "capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.105,
+      "log": "target/g3a-capacity-controls.log"
+    },
+    {
+      "name": "foundation",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.907,
+      "log": "target/g3a-foundation.log"
+    },
+    {
+      "name": "foundation-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-236401-1792691725784018166/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.419,
+      "log": "target/g3a-foundation-independent.log"
+    },
+    {
+      "name": "causal",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice",
+        "--",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.621,
+      "log": "target/g3a-causal.log"
+    },
+    {
+      "name": "causal-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-236627-1792691730970404871/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.488,
+      "log": "target/g3a-causal-independent.log"
+    },
+    {
+      "name": "local",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.532,
+      "log": "target/g3a-local.log"
+    },
+    {
+      "name": "local-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/local-prototype/run-236661-1792691735717894566/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.15,
+      "log": "target/g3a-local-independent.log"
+    },
+    {
+      "name": "debug-adapter",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--example",
+        "exact_values"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.759,
+      "log": "target/g3a-debug-adapter.log"
+    },
+    {
+      "name": "debug-oracle",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/exact_values.py",
+        "--binary",
+        "target/verification-build/debug/examples/exact_values",
+        "--out",
+        "target/g3a-oracle-debug.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.448,
+      "log": "target/g3a-debug-oracle.log"
+    },
+    {
+      "name": "release-adapter",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next",
+        "--example",
+        "exact_values"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.761,
+      "log": "target/g3a-release-adapter.log"
+    },
+    {
+      "name": "release-oracle",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/exact_values.py",
+        "--binary",
+        "target/verification-build/release/examples/exact_values",
+        "--out",
+        "target/g3a-oracle-release.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.109,
+      "log": "target/g3a-release-oracle.log"
+    },
+    {
+      "name": "calculation-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.01,
+      "log": "target/g3a-calculation-identity.log"
+    },
+    {
+      "name": "equipment-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.004,
+      "log": "target/g3a-equipment-identity.log"
+    }
+  ],
+  "independent_corpora": [
+    {
+      "name": "foundation",
+      "cases": 68,
+      "operations": 93
+    },
+    {
+      "name": "causal",
+      "cases": 39,
+      "operations": 55
+    },
+    {
+      "name": "local",
+      "cases": 9,
+      "operations": 14
+    }
+  ],
+  "numeric": {
+    "debug": {
+      "format": "rebase-exact-values-oracle-1",
+      "seed": 20261022,
+      "cases": 7396,
+      "rounding_modes": [
+        "toward_zero",
+        "floor",
+        "ceiling",
+        "half_even",
+        "half_away_from_zero",
+        "exact"
+      ],
+      "successes": 4693,
+      "rejections": 2703,
+      "negative_controls": 3,
+      "literal_controls": 5,
+      "binary_sha256": "0b5c8ec941a4d9034160fc5f5b81c069d9a59f4b9caa578e7ed93e25ca18a8b4",
+      "requests_sha256": "6d1766151739539da5f7b3e36a8875bf0b644f0631beb5ce303745b0f37e1e5f",
+      "responses_sha256": "0b3ca0a683e0a2f70a9694d6270224af16ebdfb71eae06a2b2c8085a36b97003",
+      "source_sha256": {
+        "Cargo.toml": "bf67782809f2548b4309f655bcf501a1688f6b372d5d6f4cfdecba5c92e58b8c",
+        "Cargo.lock": "1079b4c15eee9766fa0975eb10eb7797975f3fb776378b26a77e5a4a5001ec0f",
+        "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+        "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+        "research/experiments/exact_values.py": "a6dade2f8048c594a6023eecbadb8999a80076555d1bf0d2cc672923f375abbe"
+      }
+    },
+    "optimized": {
+      "format": "rebase-exact-values-oracle-1",
+      "seed": 20261022,
+      "cases": 7396,
+      "rounding_modes": [
+        "toward_zero",
+        "floor",
+        "ceiling",
+        "half_even",
+        "half_away_from_zero",
+        "exact"
+      ],
+      "successes": 4693,
+      "rejections": 2703,
+      "negative_controls": 3,
+      "literal_controls": 5,
+      "binary_sha256": "a3768ab7a3102db5ae80693c0558e8d5e8c372f9814d5555a77f594b9d572f9d",
+      "requests_sha256": "6d1766151739539da5f7b3e36a8875bf0b644f0631beb5ce303745b0f37e1e5f",
+      "responses_sha256": "0b3ca0a683e0a2f70a9694d6270224af16ebdfb71eae06a2b2c8085a36b97003",
+      "source_sha256": {
+        "Cargo.toml": "bf67782809f2548b4309f655bcf501a1688f6b372d5d6f4cfdecba5c92e58b8c",
+        "Cargo.lock": "1079b4c15eee9766fa0975eb10eb7797975f3fb776378b26a77e5a4a5001ec0f",
+        "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+        "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+        "research/experiments/exact_values.py": "a6dade2f8048c594a6023eecbadb8999a80076555d1bf0d2cc672923f375abbe"
+      }
+    }
+  },
+  "real_http": {
+    "test": "exact_values_cross_native_binding_http_receipts_and_reopening",
+    "exact_input": "9007199254740993",
+    "rounded": "13510798882111490",
+    "sum": "13510798882111489",
+    "rejected_batches": 9,
+    "complete_logical_state_rollback": true,
+    "receipt_absence": true,
+    "replay": true,
+    "reopen": true,
+    "checker_scope": "test-only source projections; shipped complete checkers unchanged"
+  },
+  "fixed_controls": {
+    "map_only_serde": {
+      "case": "array_is_not_canonical_rational_object",
+      "request": {
+        "op": "validate",
+        "rational": [
+          "1",
+          "2"
+        ]
+      },
+      "before_fix_observed": {
+        "ok": {
+          "rational": {
+            "denominator": "2",
+            "numerator": "1"
+          }
+        }
+      },
+      "before_fix_binary_sha256": "3b29a79e314a4060356362bf909fe52c11b6a69e1dad3410e3c956ceced28d9a",
+      "expected": {
+        "error": "invalid_input"
+      }
+    },
+    "inexact_rpc_kind": "inexact, JSON-RPC -32000, safe fixed message"
+  },
+  "documentation": {
+    "files": 37,
+    "relative_file_links": 322,
+    "broken_targets": 0
+  },
+  "dependencies": "Only three root direct dependencies added; package versions already locked transitively; no new dependency versions.",
+  "binary_sha256": "97978b1c320dec42295f7d5ed63088cf0de98abc7294b2bf6024c424b1de8d8f",
+  "source_fingerprints": {
+    "Cargo.toml": "bf67782809f2548b4309f655bcf501a1688f6b372d5d6f4cfdecba5c92e58b8c",
+    "Cargo.lock": "1079b4c15eee9766fa0975eb10eb7797975f3fb776378b26a77e5a4a5001ec0f",
+    "src/lib.rs": "acf8b050eff57ede261830f219b6d01eb35cef495a89132f52a7e64525240b0f",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/rpc.rs": "f6edebbe940172161e594738c8c30826864232bac4a3bf8a7cc749a14ab21b71",
+    "tests/exact_values.rs": "0efcee4da7c8f4edbb866220db47c630259f055b9d387de56a060ea77426adb6",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "research/experiments/exact_values.py": "a6dade2f8048c594a6023eecbadb8999a80076555d1bf0d2cc672923f375abbe",
+    "research/25-exact-values-gate.md": "410092f2d4d7715a0f6a084b9b30f04a92fc924fc8deae5d6a09e869f9692b3d",
+    "docs/exact-values.md": "f96f5408474890311f86e11f03889610baf5505c8162afc48597626c65c9412e",
+    "docs/compiled-models.md": "307c09ec3324952def6bd833e28277a1befef23afc20e63966f2a072f3ce2707",
+    "README.md": "a84c4a57ac7798154c278576f26705da89bd6d755a3e9bb6c5c17d756b8a6755",
+    "AGENTS.md": "ea1fe7b14808b0bf19e4f7a887968c6c831b1ad9f7fef3492868be2a133d67e3",
+    "CONTEXT.md": "f08051e79fbf47d273ac2e9d70bfc343b7a48a8b2ea45e74a9728f44cff0682f",
+    "research/05-feasibility.md": "5f66f3b6eddf102283ad6644bbcb54e3c2f54ad00f64102eec8c166332dc33ff"
+  },
+  "artifact_fingerprints": {
+    "target/g3a-calculation-identity.log": "0c69c88a1ac0d56908deb4a3d286329b4cb99e7bbc772657fed46e2216c200b7",
+    "target/g3a-capacity-controls.log": "9c97f88ec77c55488d02393a9f5a8669523c83420a9aaceebd9be559887de60e",
+    "target/g3a-causal-independent.log": "2665267963ff67a1d546d9fc07bf0c782ae88cff9e6b1a608002b5857f089b87",
+    "target/g3a-causal.log": "403d1a8343b0509930ff378d8a989625879b57df1f4b848ec39424bd5130c51f",
+    "target/g3a-client.log": "8b72402de135e343fe8af10221bad5dc7221caebe7235154dbb8e53af5fd0a23",
+    "target/g3a-clippy.log": "f489469ee5a19de6fea9a78e19d7d3b50b9609f9a7e54090815f86d8e966e280",
+    "target/g3a-debug-adapter.log": "e44f66034d43c28b5689edcd0d64d60ae4cf7273d6b550152c428fff63fb8d45",
+    "target/g3a-debug-oracle.log": "02d2ded50b89027e8faa96b401366fc10c653818a2d947b7a15fb782feba9f38",
+    "target/g3a-debug-tests.log": "0479e01f6db2ceb46b08de97dd9ea936a3eeac73dc452d0aea869b896d9711b6",
+    "target/g3a-equipment-identity.log": "7517c349558be20a87856db8c9e21bff86fdd8a41a1bfc071fef84c353be080f",
+    "target/g3a-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g3a-foundation-independent.log": "2c7dc5e75d8ea643ea3a832914adc127c76bfe7ba143a8046acf5f5714703255",
+    "target/g3a-foundation.log": "8cc7e28339c69ebc5e785de7b05291a03f87deb302af4128ad8a9a072c730bb7",
+    "target/g3a-local-independent.log": "d554369e5d05fdd4512593a14f6f696abea211aafa853ec8346b6a023d1bbcc1",
+    "target/g3a-local.log": "3c741541836963f852245f7de144446aed7e3908a71090710966d0650457055c",
+    "target/g3a-release-adapter.log": "abf1fc4c8b54fd713ac2b4770119555833dff905d50abb431075499046ab8824",
+    "target/g3a-release-oracle.log": "4bdbdbc8d28b15f32a64f292d9fc1988533ea96f3de5e73ee84c291c3396e2cd",
+    "target/g3a-release-tests.log": "478246c278196b077e7ebcf87be61eee01afd63b6793bf4e32aeb561f98b7055"
+  },
+  "next": "G3b explicit typed authored-parent parameters, then bounded accounting workflow; do not repeat G1/G2/G3a"
+}
