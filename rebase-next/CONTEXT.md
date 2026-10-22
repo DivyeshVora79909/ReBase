@@ -10,8 +10,19 @@ derived sums, nine rejected batches with complete rollback, replay and reopen.
 G3a also closes positional-array deserialization and maps `inexact` safely over
 RPC. Existing production models, identities, store/codec 4 and limits are
 unchanged; this is a source checkpoint, not a new full-accounting release.
-**Next: G3b's explicit typed parent-parameter boundary**, then the bounded
-accounting workflow. See the gate's next-boundary section before expanding.
+G3a is committed and pushed as `16514d9`.
+**G3b accepted: [typed parent parameters](research/26-parent-parameters-gate.md).**
+`ReactiveBinding::Parameters`, `resolve -> Resolved<Parameters>` and explicit
+evaluation arguments preserve the final-graph scheduler and old/new direct routes.
+Three native tests cover inherited rounding/rates, equal-result dependency
+retention, retarget cleanup, both command orders, five whole-state rejections,
+replay and reopen. All 66 Rust tests and 116 independent native/local cases pass;
+copies of both G2 4,096-source stores pass complete checks. Existing bindings use
+`()`, and their model/store identities remain unchanged. No derived/multihop
+parameter support or sandboxed purity is implied.
+**Next: G3c bounded invoicing**, using exact values and typed parent parameters:
+fractional pricing, dated tax/tax-on-tax reassessments and explicit monetary
+credits, then a separate settlement/refund checkpoint. See G3b continuation.
 The user explicitly requests a continuous checkpoint loop: verify, commit, push,
 start the next checkpoint without waiting for another command. Keep context here
 and in commit messages for switching agents; preserve uncommitted work until read.
@@ -76,10 +87,10 @@ role reservations; commands64, returning32, receipts1,024, backup64MiB and
 mutation work200,000 remain separate. Earlier stores require their matching
 binary. The result owns exact execution/source hashes and coverage limits.
 
-**Continuation after G2:** G3a now closes the exact numeric foundation. G3b
-must pass declared authored parent parameters into pure evaluation without hidden
-reads or copied mutable rules, before the representative accounting workflow.
-Follow [the G3a result and next boundary](research/25-exact-values-gate.md), not
+**Continuation after G2:** G3a closes the numeric foundation and G3b passes
+declared authored parent parameters into pure evaluation. G3c now implements a
+representative invoicing workflow. Follow
+[the G3b result and next boundary](research/26-parent-parameters-gate.md), not
 another whole-system plan. Arbitrary aggregates/topology,
 external effects, distributed conformance, full accounting parity and populations
 beyond 4,096 remain separate, unaccepted capabilities. Preserve independent

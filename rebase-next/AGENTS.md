@@ -24,10 +24,12 @@ waiting for another "continue". Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.
-G3a now accepts [exact values](research/25-exact-values-gate.md): reduced rational
-rates, explicit rounding and native/API rollback evidence. Continue with G3b's
-typed authored-parent parameter seam, then a bounded accounting workflow.
-The existing production bindings and persisted formats are unchanged by G3a.
+G3a accepts [exact values](research/25-exact-values-gate.md), and G3b accepts
+[typed authored-parent parameters](research/26-parent-parameters-gate.md), with
+source-derived native acceptance and rollback checks. Continue with G3c's bounded
+invoicing model, then settlement/refund. Existing production bindings and
+persisted formats are unchanged by G3a/G3b; parameters do not add hidden reads,
+published-parent or multihop dependency support.
 Do not report full production or old-model parity merely because a server starts.
 Storage/model identity now uses an explicit behavior contract, not build bytes.
 Bump the affected `Binding::BEHAVIOR` for semantic binding/calculation/causality/

@@ -28,3 +28,6 @@ pub mod server;
 pub mod staging;
 pub mod tree;
 pub mod values;
+
+#[cfg(test)]
+mod parameter_tests;

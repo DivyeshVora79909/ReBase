@@ -1,0 +1,344 @@
+{
+  "format": "rebase-g3b-parameters-evidence-1",
+  "date": "2026-10-22",
+  "status": "accepted",
+  "goal": "G3b explicit authored-parent parameters",
+  "base_commit": "16514d96c7b803028c5cc1cb6fdfabee8634f0f8",
+  "versions": {
+    "calculation": {
+      "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+      "store_format": "rebase-store-4",
+      "version": "0.4.0"
+    },
+    "equipment": {
+      "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+      "store_format": "rebase-store-4",
+      "version": "0.4.0"
+    }
+  },
+  "codec": "native-slice-kv-4",
+  "behaviors": {
+    "calculation": "rebase-calculation-contract-4",
+    "equipment": "equipment-reservations-3"
+  },
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.234,
+      "log": "target/g3b-fmt.log"
+    },
+    {
+      "name": "debug-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 14.263,
+      "log": "target/g3b-debug-tests.log",
+      "tests_passed": 66
+    },
+    {
+      "name": "release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 119.535,
+      "log": "target/g3b-release-tests.log",
+      "tests_passed": 66
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.447,
+      "log": "target/g3b-clippy.log"
+    },
+    {
+      "name": "client",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.172,
+      "log": "target/g3b-client.log"
+    },
+    {
+      "name": "capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.085,
+      "log": "target/g3b-capacity-controls.log"
+    },
+    {
+      "name": "foundation",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.567,
+      "log": "target/g3b-foundation.log"
+    },
+    {
+      "name": "foundation-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-241879-1792692671789723474/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.413,
+      "log": "target/g3b-foundation-independent.log"
+    },
+    {
+      "name": "causal",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice",
+        "--",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.541,
+      "log": "target/g3b-causal.log"
+    },
+    {
+      "name": "causal-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-242132-1792692676872048611/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.468,
+      "log": "target/g3b-causal-independent.log"
+    },
+    {
+      "name": "local",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.547,
+      "log": "target/g3b-local.log"
+    },
+    {
+      "name": "local-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/local-prototype/run-242168-1792692681523545606/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.145,
+      "log": "target/g3b-local-independent.log"
+    },
+    {
+      "name": "release-binary",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.092,
+      "log": "target/g3b-release-binary.log"
+    },
+    {
+      "name": "calculation-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.011,
+      "log": "target/g3b-calculation-identity.log"
+    },
+    {
+      "name": "equipment-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.004,
+      "log": "target/g3b-equipment-identity.log"
+    }
+  ],
+  "independent_corpora": [
+    {
+      "name": "foundation",
+      "cases": 68,
+      "operations": 93
+    },
+    {
+      "name": "causal",
+      "cases": 39,
+      "operations": 55
+    },
+    {
+      "name": "local",
+      "cases": 9,
+      "operations": 14
+    }
+  ],
+  "parameter_controls": {
+    "test_cases": 3,
+    "rejection_batches": 5,
+    "rounding_results": [
+      "1000",
+      "1001",
+      "1000"
+    ],
+    "parent_rate_result": "2001",
+    "retarget_result": "2501",
+    "source_edit_result": "2502",
+    "unchanged_result_retains_dependency": true,
+    "retarget_removes_old_dependency": true,
+    "retarget_order_trials": 4,
+    "complete_logical_rollback": true,
+    "receipt_absence": true,
+    "replay": true,
+    "reopen": true,
+    "checker": "independent bounded source arithmetic and full Snapshot::finish structure/inventory"
+  },
+  "previous_stores": {
+    "calculation": {
+      "source": "target/g2c-final-capacity/calculation-4096/app.redb",
+      "source_sha256": "f2b542bb82c00d9f9861154840667507bb9515bc6d487a7b56a51d40c4339f8a",
+      "original_unchanged": true,
+      "check": {
+        "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+        "nodes": 8179,
+        "receipts": 135,
+        "records": 4096,
+        "revision": "136",
+        "roots": 4,
+        "rows": 44999,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "0f6c5090-dfc6-4ff3-a72b-e6f9b69b9041"
+      }
+    },
+    "equipment": {
+      "source": "target/g2c-final-capacity/equipment-4096/app.redb",
+      "source_sha256": "b9089a486f44e32c15156ca5516216e7cd3384172903b63e33614de159a0dbd2",
+      "original_unchanged": true,
+      "check": {
+        "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+        "nodes": 8187,
+        "receipts": 139,
+        "records": 12280,
+        "revision": "140",
+        "roots": 1,
+        "rows": 77765,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "3950d6dc-16b1-415b-82d4-c3f59be3447b"
+      }
+    }
+  },
+  "documentation": {
+    "files": 38,
+    "relative_file_links": 326,
+    "broken_targets": 0
+  },
+  "binary_sha256": "e1c8961db42517b281212dfec74cc54246f83e97afb6e0626c418862ec272adf",
+  "source_fingerprints": {
+    "src/causal.rs": "3a00426e3079cdc3a9683f250cef943cb58ba9c055ece5719ec6300a5574947a",
+    "src/lib.rs": "4f9f43e04cfb984b33d0805be18580a25978f7bba27e708175c291e21c4fd595",
+    "src/models/calculation_reactivity.rs": "ed41677a2aef9f44fd80000305db7d54bbdfd7c35b9375f53d320b90240b3a95",
+    "src/models/equipment.rs": "4d4d6fd92d6337e41dca6a39c23b36274afd3180350636d3b2d87ba4aa311d1f",
+    "src/parameter_tests.rs": "f264fc8334e9f8266ec1f0f7d64b502d22abc7f80aeeb2ec35ad1450db4e6d48",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/binding.rs": "381a22c3a5f9426786dc265ccd235f851e209e2ab43328e96e79d9e0b1c3779d",
+    "src/model.rs": "ed795f315ee2acbbf9a0e622c44e2eb66217c9f236f0b1b7e03cc9f7e556b870",
+    "src/native_slice.rs": "23702fb141ec82de37f18672d10db727a26e252f868af63c282515121ff4a649",
+    "src/native_codec.rs": "090924555cae38ac12dbdbc63ec8314193758b29cb48c5af6bca655eb9535820",
+    "src/dependency.rs": "8965332e594cd1309cb2cfb58acfaa75161c08ba8752abea20a968f8cc099f11",
+    "src/routes.rs": "0b49da7a70828f223ca4cfa2b4e7e7d6d567ed0110f8f7719b274b904ab6c517",
+    "src/integrity.rs": "55d4aae0f4b5bcf0e7787071c84b54206f21e9494b7ac0f7268aa9c31e26306c",
+    "Cargo.toml": "bf67782809f2548b4309f655bcf501a1688f6b372d5d6f4cfdecba5c92e58b8c",
+    "Cargo.lock": "1079b4c15eee9766fa0975eb10eb7797975f3fb776378b26a77e5a4a5001ec0f",
+    "AGENTS.md": "a03b4ead5a0425d306f14c1531cad0208292574f3c44d66984df64e6135aae0f",
+    "CONTEXT.md": "231b7b837af4b7bfc62b807d1c9154833addfe60244514bbe056b4144798f55b",
+    "docs/compiled-models.md": "071300cc290801435aa3cc7454c99f53184a5bb0cc07705a04e32bdc8d0eaf29",
+    "research/05-feasibility.md": "e79fc396ef2c96086a63347238dc68420823a4c3131fee68a4abad984c5c1bae",
+    "research/26-parent-parameters-gate.md": "e7e879b5552854e356bc27f5973285eef01f6c298c14d939ea6f2651319e3f04"
+  },
+  "artifact_fingerprints": {
+    "target/g3b-calculation-identity.log": "0c69c88a1ac0d56908deb4a3d286329b4cb99e7bbc772657fed46e2216c200b7",
+    "target/g3b-capacity-controls.log": "196dbd4bf13558257fa9d159b7a14cd9864e2bf4d82e13a6858609188db28c4d",
+    "target/g3b-causal-independent.log": "2665267963ff67a1d546d9fc07bf0c782ae88cff9e6b1a608002b5857f089b87",
+    "target/g3b-causal.log": "06b97415150f9d988b2773cb33b5bb9aab00443293907e25360a5c654d635374",
+    "target/g3b-client.log": "4bbff7d686c5b89368edc3aced940977be653ffc4f98b1f6f2af589bc5a9f03f",
+    "target/g3b-clippy.log": "cbc5202a6a29718012d622533517d559938c0f91e7b84083fe4b1c808dae3e60",
+    "target/g3b-debug-tests.log": "844b29211361a599236fa9fa39abed20c6abb797e5cfe01bddf266a0d447e243",
+    "target/g3b-equipment-identity.log": "7517c349558be20a87856db8c9e21bff86fdd8a41a1bfc071fef84c353be080f",
+    "target/g3b-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g3b-foundation-independent.log": "2c7dc5e75d8ea643ea3a832914adc127c76bfe7ba143a8046acf5f5714703255",
+    "target/g3b-foundation.log": "2b7272d540d836fcc0760ac996303341d6b1e9c7adae70cfbff358d1f5965466",
+    "target/g3b-local-independent.log": "d554369e5d05fdd4512593a14f6f696abea211aafa853ec8346b6a023d1bbcc1",
+    "target/g3b-local.log": "388d24a93fb5329faeff7d6515e291c24da1c04b5194425e78e6f59fec404208",
+    "target/g3b-release-binary.log": "64d0cbd4b7e4c6329fde55978dd3d261407b55f34c21add0feebf7e0575ee531",
+    "target/g3b-release-tests.log": "b8ee83be96e283a6d9b0fe00fd249d54b5cff960310117fab5eae58a68aa503e"
+  },
+  "limits": "Declared direct authored inputs only; no derived/multihop dependencies, sandboxed purity, full accounting, new capacity or distributed acceptance. Existing numerical/population benchmarks unchanged and not repeated.",
+  "next": "G3c bounded invoicing model, then G3d settlement/refund."
+}

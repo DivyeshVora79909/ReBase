@@ -1,7 +1,7 @@
 //! Calculation-specific resolution and arithmetic for the shared causal engine.
 use crate::{
     binding::Calculation,
-    causal::{Emit, ReactiveBinding, Read, ResolvedShape},
+    causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
     native_codec::Address,
     native_slice::{
         Calculated, Context, Error, Input, Record, Result, Workspace, required, validate_references,
@@ -11,12 +11,13 @@ use crate::{
 use std::collections::BTreeMap;
 use uuid::Uuid;
 impl ReactiveBinding for Calculation {
-    fn shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    type Parameters = ();
+    fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws: &mut Workspace<L>,
         context: Context,
         _id: Uuid,
         record: &Record,
-    ) -> Result<ResolvedShape> {
+    ) -> Result<Resolved<Self::Parameters>> {
         validate_references(ws, &record.input, context)?;
         let mut shape = ResolvedShape::default();
         match &record.input {
@@ -82,12 +83,16 @@ impl ReactiveBinding for Calculation {
             }
             _ => return Err(Error::new("corrupt_state", "noncausal subscriber")),
         };
-        Ok(shape)
+        Ok(Resolved {
+            shape,
+            parameters: (),
+        })
     }
     fn evaluate(
         _id: Uuid,
         record: &Record,
         shape: &ResolvedShape,
+        _parameters: &Self::Parameters,
         values: &[i128],
     ) -> Result<(Calculated, BTreeMap<u16, i128>)> {
         let (derived, amount) = match &record.input {

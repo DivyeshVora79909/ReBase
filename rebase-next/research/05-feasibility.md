@@ -1,5 +1,11 @@
 # Rust feasibility and stop boundary
 
+**G3b continuation:** [typed parent parameters](26-parent-parameters-gate.md)
+now connect declared authored rules to pure evaluation without persisted copies.
+All 66 Rust tests and 116 independent cases pass; both prior 4,096-source model
+stores pass reopening/integrity on copies. Existing behavior/store identities
+remain unchanged; bounded invoicing is next. No multihop/derived input claim.
+
 **G3a continuation:** [exact values](25-exact-values-gate.md) now implements
 bounded rational multiplication and explicit rounding, with 7,396 independent
 Fraction cases in both profiles, authenticated transaction acceptance, 63 Rust

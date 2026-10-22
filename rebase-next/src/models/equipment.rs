@@ -1,7 +1,7 @@
 //! Bounded equipment reservations, implemented as an ordinary compiled model.
 use crate::{
     binding::{Binding, NativeInput},
-    causal::{Emit, ReactiveBinding, Read, ResolvedShape},
+    causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
     local::Store,
     model::{
         self, Contract, InputField, Membership, OutputRole, Prepared, PublishedField,
@@ -400,12 +400,13 @@ impl Binding for Equipment {
     }
 }
 impl ReactiveBinding for Equipment {
-    fn shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    type Parameters = ();
+    fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         _ws: &mut Attempt<L, Self>,
         _context: Context,
         _id: Uuid,
         record: &ModelRecord<Self>,
-    ) -> Result<ResolvedShape> {
+    ) -> Result<Resolved<Self::Parameters>> {
         let Input::Reservation {
             pool,
             starts,
@@ -417,35 +418,42 @@ impl ReactiveBinding for Equipment {
             return Err(Error::new("corrupt_state", "equipment subscriber contract"));
         };
         if !active {
-            return Ok(ResolvedShape::default());
+            return Ok(Resolved {
+                shape: ResolvedShape::default(),
+                parameters: (),
+            });
         }
-        Ok(ResolvedShape {
-            reads: vec![Read {
-                slot: 31,
-                root: Address::new(pool, 7),
-                before: Some(starts),
-                validate: false,
-            }],
-            emits: vec![
-                Emit {
-                    role: 11,
-                    contract: 900,
+        Ok(Resolved {
+            shape: ResolvedShape {
+                reads: vec![Read {
+                    slot: 31,
                     root: Address::new(pool, 7),
-                    at: starts,
-                },
-                Emit {
-                    role: 29,
-                    contract: 900,
-                    root: Address::new(pool, 7),
-                    at: ends,
-                },
-            ],
+                    before: Some(starts),
+                    validate: false,
+                }],
+                emits: vec![
+                    Emit {
+                        role: 11,
+                        contract: 900,
+                        root: Address::new(pool, 7),
+                        at: starts,
+                    },
+                    Emit {
+                        role: 29,
+                        contract: 900,
+                        root: Address::new(pool, 7),
+                        at: ends,
+                    },
+                ],
+            },
+            parameters: (),
         })
     }
     fn evaluate(
         _id: Uuid,
         record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
+        _parameters: &Self::Parameters,
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
         let Input::Reservation {

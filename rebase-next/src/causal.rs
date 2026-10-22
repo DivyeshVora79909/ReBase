@@ -29,17 +29,32 @@ pub struct ResolvedShape {
     pub reads: Vec<Read>,
     pub emits: Vec<Emit>,
 }
+/// Attempt-local authored inputs alongside the declared ordered-read topology.
+/// Parameters remain native model values; they are neither persisted nor used
+/// to discover dependencies. References and direct reverse registrations must
+/// explicitly cover the authored fields that the resolver consumes.
+pub struct Resolved<P> {
+    pub shape: ResolvedShape,
+    pub parameters: P,
+}
 pub trait ReactiveBinding: Binding {
-    fn shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    /// Owned parameters from this source and its declared direct authored fields.
+    /// Resolving published derived fields or following undeclared reference chains
+    /// would require additional invalidation and causal contracts.
+    type Parameters;
+    /// All authored commands have been staged before resolution. Capture their
+    /// final values here so evaluation needs no workspace or mutable parent copy.
+    fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws: &mut Attempt<L, Self>,
         context: Context,
         id: Uuid,
         record: &ModelRecord<Self>,
-    ) -> Result<ResolvedShape>;
+    ) -> Result<Resolved<Self::Parameters>>;
     fn evaluate(
         id: Uuid,
         record: &ModelRecord<Self>,
         shape: &ResolvedShape,
+        parameters: &Self::Parameters,
         values: &[i128],
     ) -> Result<(Self::Derived, BTreeMap<u16, i128>)>;
     fn output_input(producer: Uuid, emit: &Emit, amount: i128) -> Result<Self::Input>;
@@ -157,10 +172,11 @@ fn validate_root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         )),
     }
 }
-struct Plan<B: Binding> {
+struct Plan<B: ReactiveBinding> {
     record: Option<ModelRecord<B>>,
     old_record: Option<ModelRecord<B>>,
     shape: ResolvedShape,
+    parameters: Option<B::Parameters>,
     old_outputs: BTreeMap<u16, (Uuid, ModelRecord<B>)>,
     bindings: BTreeMap<u16, Uuid>,
 }
@@ -367,19 +383,20 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         if model.contract(producer.contract)?.outputs.is_empty() {
             continue;
         }
-        let shape = match &record {
+        let (shape, parameters) = match &record {
             Some(r) => {
-                let shape = B::shape(ws, context, id, r)?;
-                validate_shape(ws, model, context, r, &shape)?;
-                shape
+                let resolved = B::resolve(ws, context, id, r)?;
+                validate_shape(ws, model, context, r, &resolved.shape)?;
+                (resolved.shape, Some(resolved.parameters))
             }
-            None => ResolvedShape::default(),
+            None => (ResolvedShape::default(), None),
         };
         subscriptions(ws, model, id, old_record.as_ref(), &shape)?;
         let mut plan = Plan {
             record,
             old_record,
             shape,
+            parameters,
             old_outputs: BTreeMap::new(),
             bindings: BTreeMap::new(),
         };
@@ -513,7 +530,11 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         for read in p.shape.reads.iter().filter(|r| !r.validate) {
             values.push(read_query(ws, id, read)?);
         }
-        let (derived, amounts) = B::evaluate(id, &r, &p.shape, &values)?;
+        let parameters = p
+            .parameters
+            .as_ref()
+            .ok_or_else(|| Error::new("internal", "missing resolved parameters"))?;
+        let (derived, amounts) = B::evaluate(id, &r, &p.shape, parameters, &values)?;
         r.derived = Some(derived);
         ws.work.causal_evaluations += 1;
         ws.put(Key::Record(id), Some(StoredValue::Record(r.clone())))?;

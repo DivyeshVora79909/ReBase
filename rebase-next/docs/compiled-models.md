@@ -29,7 +29,7 @@ Rust traits, without adding variants to another model's input enum:
 | --- | --- |
 | `NativeInput` | Bind a contract code and canonical JSON to native values; validate native bounds; enumerate typed references and managed producer/role identity. |
 | `Binding` | Supply closed schemas and explicit declarations, model name and behavior revision, limits, published-field shape, model settlement/checking functions and optional fixture recipes. |
-| `ReactiveBinding` | Resolve declared query/output shape, evaluate query values, construct managed output inputs and identify their tree memberships. |
+| `ReactiveBinding` | Resolve declared query/output shape and model-owned parameters, evaluate them with query values, construct managed output inputs and identify their tree memberships. |
 
 `Prepared::<B>::load()` validates declaration identities, closed schemas, field
 agreement, local calculation order, reference targets, roots, memberships,
@@ -38,6 +38,28 @@ schemas and mutable fields drive ingress validation, catalogs, predicates and
 tools. Preparation validates structural agreement; it does not prove that a
 trusted Rust formula matches its descriptive expression or that a model's
 invariant checker is complete.
+
+`ReactiveBinding::Parameters` is an ordinary native type. `resolve` returns
+`Resolved { shape, parameters }`; the shared engine builds the final dependency
+graph from `shape`, then passes `&parameters` and ordered-query values into
+`evaluate`. For example, a tax model can capture
+`TaxParameters { rate: Rational, rounding: Rounding }` from an authored rule and
+evaluate `parameters.rate.apply(basis, parameters.rounding)` without a workspace.
+Existing calculation/equipment bindings use `Parameters = ()`.
+
+Resolve only declared direct authored inputs. List the consumed parent fields in
+`Reference.direct_fields` and maintain that reference's old/new direct routes in
+settlement, just as existing bindings do. Parent edits then select the child;
+retargeting removes the old registration. This is parent-level invalidation,
+not a separate field-level index. All source commands are staged before
+resolution, so a parent edit and child retarget observe the same final authored
+values in either command order. The parameter bundle is attempt-local: it needs
+no Serde schema, stored copy, global cache or `Default` value for deleted records.
+
+This seam does not make published parent calculations or undeclared reference
+chains safe inputs. They need additional dependency contracts. Keep database
+handles and hidden reads out of parameters/evaluation. Model hooks remain trusted
+Rust code; the interface does not enforce purity against malicious code.
 
 `Store::<B>` supplies the shared adapter. The engine stages source commands,
 checks schema and CAS versions, enforces current authority, and creates declared
