@@ -2,3 +2,5 @@
 *.redb
 !/src/bin/
 !/src/bin/*.rs
+!/tests/fixtures/test-ed25519-private.pem
+!/tests/fixtures/test-ed25519-public.pem

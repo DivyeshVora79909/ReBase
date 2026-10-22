@@ -15,3 +15,7 @@ uuid = { version = "=1.23.1", features = ["serde", "v4"] }
 jsonschema = { version = "=0.59.0", default-features = false }
 redb = "=4.4.0"
 hmac = "=0.12.1"
+axum = { version = "=0.8.9", default-features = false, features = ["http1", "tokio"] }
+tokio = { version = "=1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
+jsonwebtoken = { version = "=11.1.0", default-features = false, features = ["aws_lc_rs", "use_pem"] }
+base64 = "=0.22.1"

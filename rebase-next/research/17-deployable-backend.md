@@ -25,8 +25,8 @@ capability gates visible instead of silently calling every feature production.
 | --- | --- | --- |
 | D1 | Shared goal and continuation, existing evidence preserved | Complete |
 | D2 | Fresh transaction-scoped principal/DAG authority, separate owner/reader, complete indexed readable candidates; independently checked repair and rejection | Complete |
-| D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Next |
-| D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Pending |
+| D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Complete |
+| D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Next |
 | D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Pending |
 | D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Pending |
 
@@ -104,3 +104,22 @@ credential revocation, actor-scoped receipts, disclosure suppression, cursor
 invalidation, unchanged rejection, physical abort and reopen. Complete privileged
 observations include authority and reader tables. No network authentication or
 capacity claim is made by D2. [Evidence](evidence/2026-10-22-d2-authority.json).
+
+D3: implemented HTTP `/rpc` with Axum/Tokio, reusing strict stdio JSON-RPC
+dispatch. Ed25519 JWT identity is verified by jsonwebtoken/AWS-LC, separately
+from current per-operation DAG authority. An offline trusted issuer helper and
+`session.describe` complete the operator/client boundary. The
+[server guide](../docs/server.md) fixes the profile, rotation, network limits,
+TLS ingress, and lost-response semantics. No inspector/raw writer/issuer RPC
+endpoint exists. A deadline retains admission for unfinished blocking work;
+SIGINT/SIGTERM drain accepted work.
+
+Acceptance: 34 Rust tests, formatting and warning-free Clippy. Real HTTP checks
+prove one application under eight concurrent identical receipts, one winner
+under eight stale-version contenders, current epoch revocation, bounded bodies,
+unknown methods and reopening. A held-writer deadline control proves the request
+can commit after its response times out, while its permit remains occupied.
+The selected lockfile passes cargo-audit 0.22.2 against 1348 current advisories,
+with zero vulnerabilities/warnings. Trial RustCrypto selection pulled unpatched
+RSA; AWS-LC removes that dependency. D3 adds no capacity or accounting-parity
+claim. [Evidence](evidence/2026-10-22-d3-network.json).

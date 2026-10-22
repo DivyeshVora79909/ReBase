@@ -14,9 +14,11 @@ the verified starting point, not the new finish line.
 D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
 separate owner/reader, declared reader selection and atomic reader-index repair,
 bounded indexed merging and revocation-aware receipt disclosure. The active next
-checkpoint is D3: authenticated network transport. See the release paper for the
-31-test acceptance and current limits. No HTTP listener or credential verifier
-is claimed by D2.
+checkpoint is D4: storage lifecycle and integrity. D3 adds authenticated bounded
+HTTP `/rpc`, Ed25519 JWT verification, offline issuance and real concurrency /
+revocation / timeout tests (34 Rust tests; clean dependency audit). See the
+[server guide](docs/server.md). The existing stdio interface remains a trusted
+filesystem/operator interface, not an authentication bypass exposed over HTTP.
 
 **Confirmed local-prototype finish line completed.** After `2109687`, the user
 chose engine, model tooling, mutation/query API and a demonstrable workflow.

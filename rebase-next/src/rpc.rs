@@ -64,6 +64,15 @@ fn dispatch(store: &LocalStore, method: &str, params: Value) -> Result<Value> {
             let p: ModelOnly = bind(params)?;
             store.access_graph(&p.model)
         }
+        "session.describe" => {
+            let _: Empty = bind(params)?;
+            let (read, _, _) = store.read(store.model().identity())?;
+            let scope = store.authority(&read)?;
+            Ok(
+                json!({"tenant":scope.tenant,"actor":scope.actor,"credential_epoch":scope.credential_epoch,
+                "permissions":scope.grants}),
+            )
+        }
         "access.replace" => store.replace_access(&bind(params)?),
         "records.get" => {
             let p: Get = bind(params)?;
@@ -94,7 +103,7 @@ fn dispatch(store: &LocalStore, method: &str, params: Value) -> Result<Value> {
     }
 }
 
-fn failure(id: Value, kind: &str) -> Value {
+pub(crate) fn failure(id: Value, kind: &str) -> Value {
     let (code, message) = match kind {
         "parse_error" => (-32700, "Parse error"),
         "invalid_request" => (

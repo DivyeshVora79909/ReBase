@@ -510,8 +510,8 @@ impl PreparedModel {
 
 pub fn capabilities() -> Value {
     json!({"methods":["model.describe","records.get","records.mutate","operations.status",
-        "records.page","records.exists","roots.read"],
-        "transport":"JSON-RPC 2.0 over newline-delimited stdio; string request IDs; no batches/notifications",
+        "records.page","records.exists","roots.read","session.describe","access.describe","access.replace"],
+        "transport":"JSON-RPC 2.0 over stdio or authenticated HTTP /rpc; string request IDs; no batches/notifications",
         "path":{"name":"records.by_id","order":"UUID ascending","filter":"optional public contract and one declared scalar authored-field equality"},
         "limits":{"commands":64,"public_records":64,"outputs":48,"reservations":256,
             "returning":32,"page_limit":32,"visit_budget":128,"receipts":1024,"request_bytes":65536},

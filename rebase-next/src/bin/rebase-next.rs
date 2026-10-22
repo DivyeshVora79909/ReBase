@@ -1,5 +1,6 @@
 use rebase_semantic_proof::{
-    demo, inspector, json, local::LocalStore, model::PreparedModel, native_slice::Context, rpc,
+    demo, identity, inspector, json, local::LocalStore, model::PreparedModel,
+    native_slice::Context, rpc, server,
 };
 use std::{
     error::Error,
@@ -18,11 +19,19 @@ fn identity(text: &str) -> Result<Uuid, Box<dyn Error>> {
     Ok(id)
 }
 
+fn read_json(path: &str) -> Result<serde_json::Value, Box<dyn Error>> {
+    let mut bytes = vec![];
+    File::open(path)?
+        .take((json::MAX_REQUEST_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)?;
+    Ok(json::parse(&bytes)?)
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.is_empty() || args == ["--help"] {
         println!(
-            "ReBase Next local prototype\n\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
+            "ReBase Next backend\n\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
         );
         return Ok(());
     }
@@ -50,7 +59,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             serde_json::json!({"status":"valid","model":model.identity(),"input":input})
         }
         ["init", path, "--tenant", tenant, "--actor", actor] => {
-            let store = LocalStore::create(
+            let store = LocalStore::create_secured(
                 path,
                 model,
                 Context {
@@ -63,6 +72,28 @@ fn run() -> Result<(), Box<dyn Error>> {
         ["rpc", path] => {
             let store = LocalStore::open(path, model)?;
             rpc::serve(&store, io::stdin().lock(), io::stdout().lock())?;
+            return Ok(());
+        }
+        ["serve", path, "--config", config] => {
+            let config: server::ServerConfig = serde_json::from_value(read_json(config)?)?;
+            let store = Arc::new(LocalStore::open(path, model)?);
+            tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()?
+                .block_on(server::serve(store, config))?;
+            return Ok(());
+        }
+        ["auth", "issue", config, request, private_key] => {
+            let config: server::ServerConfig = serde_json::from_value(read_json(config)?)?;
+            let request: identity::TokenRequest = serde_json::from_value(read_json(request)?)?;
+            let mut pem = vec![];
+            File::open(private_key)?.take(4097).read_to_end(&mut pem)?;
+            if pem.len() > 4096 {
+                return Err("private key byte limit".into());
+            }
+            let token = identity::issue(&config.identity, &request, &pem)?;
+            println!("{token}");
             return Ok(());
         }
         ["inspect", path] => LocalStore::open(path, model)?.inspect()?,

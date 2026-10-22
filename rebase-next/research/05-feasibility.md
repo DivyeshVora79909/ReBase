@@ -150,4 +150,3 @@ Its executed checks are recorded separately in
 [D2 evidence](evidence/2026-10-22-d2-authority.json). Historical results below
 retain their original scope; no distributed or production-capacity conclusion
 follows from this bounded embedded implementation.
-
