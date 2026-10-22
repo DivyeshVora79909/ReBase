@@ -138,8 +138,8 @@ def work_for(backend, operation):
     return matching[0]
 
 
-def apply(backend, model, commands, label):
-    plan = backend.plan({"model": model, "commands": commands, "returning": []}, label)
+def apply(backend, model, commands, label, returning=None):
+    plan = backend.plan({"model": model, "commands": commands, "returning": returning or []}, label)
     start = time.perf_counter()
     result = client.execute(backend.url, backend.token, plan)
     elapsed = (time.perf_counter() - start) * 1000
@@ -286,7 +286,7 @@ def authority_lifecycle(backend, model, restricted):
     return result
 
 
-def authority_run(binary, original, directory, selector):
+def restore_trial(binary, original, directory, selector):
     """Restore an accepted backup into an owned trial, leaving accepted stores untouched."""
     original = Path(original).resolve()
     backend = Backend.__new__(Backend)
@@ -310,12 +310,123 @@ def authority_run(binary, original, directory, selector):
             restricted = token
     backup = original / "final.backup.json"
     backend.cli("restore", backup, backend.store)
+    return backend, restricted, backup
+
+
+def authority_run(binary, original, directory, selector):
+    backend, restricted, backup = restore_trial(binary, original, directory, selector)
     try:
         backend.start()
         model = backend.call("model.describe", {})["model"]
         report = {"model": selector, "public_sources": 4096,
                   "source_backup_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
                   "authority_lifecycle": authority_lifecycle(backend, model, restricted)}
+        (backend.directory / "result.json").write_text(json.dumps(report, indent=2) + "\n")
+        return report
+    finally:
+        backend.stop()
+
+
+def authored_equipment(original):
+    """Reconstruct this accepted fixture from authored commands, never derived values."""
+    paths = sorted(original.glob("populate-*.plan.json"),
+                   key=lambda path: int(path.name.split("-")[1].split(".")[0]))
+    paths += [original / f"{label}.plan.json" for label in ("after_all_reads", "last_read", "fanout-128")]
+    prior = json.loads((original / "result.json").read_text())
+    if prior["measurements"]["full_fanout"]["status"] == "committed":
+        paths.append(original / "full-fanout.plan.json")
+    facts = {}
+    for path in paths:
+        for change in client.read_json(path)["request"]["commands"]:
+            if change["op"] == "create":
+                facts[change["id"]] = {"contract": change["contract"], "fields": change["fields"]}
+            else:
+                require(change["op"] == "update" and not change["unset"], "Unexpected authored fixture command")
+                facts[change["id"]]["fields"].update(change["set"])
+    return facts
+
+
+def role_inventory(payload, expected):
+    rows = payload["tables"]["native_kv"]
+    meta = json.loads(bytes.fromhex(next(row["value"] for row in rows if row["key"] == "00")))["data"]
+    roles = [json.loads(bytes.fromhex(row["value"]))["data"] for row in rows if row["key"][:2] == "08"]
+    reservations = [row for row in rows if row["key"][:2] == "09"]
+    require(meta["reserved"] == len(roles) == len(reservations) == expected,
+            "Retained metadata, role inventory and reserved-key inventory disagree")
+    require(meta["counts"]["410"] == 4092 and meta["counts"]["900"] == 8184,
+            "Retained-role churn changed active source/output populations")
+    require(sum(not role["retired"] for role in roles) == 8184,
+            "Retained role retirement inventory differs from authored history")
+    return {"retained_roles": len(roles), "reserved_keys": len(reservations),
+            "active_outputs": 8184, "retired_roles": expected - 8184}
+
+
+def churn_run(binary, original, directory):
+    original = Path(original).resolve()
+    backend, _, backup = restore_trial(binary, original, directory, "equipment")
+    facts = authored_equipment(original)
+    initial = json.loads(backup.read_text())["payload"]
+    role_inventory(initial, 8184)
+    try:
+        backend.start()
+        model = backend.call("model.describe", {})["model"]
+        observed = verify_equipment(backend, model, facts)
+        versions = {key: value["version"] for key, value in observed.items()}
+        next_at = max(int(f["fields"].get("ends", f["fields"].get("at", "0")))
+                      for f in facts.values()) + 4
+        measurements, created = [], 0
+        for batch, count in enumerate([32] * 128 + [4]):
+            latest = sorted((key for key, f in facts.items() if f["contract"] == 410),
+                            key=lambda key: int(facts[key]["fields"]["starts"]))[-count:]
+            pool = facts[latest[-1]]["fields"]["pool"]
+            additions = [{"op": "create", "id": identity(1000000 + created + i), "contract": 410,
+                "fields": {"pool": pool, "starts": str(next_at + 4 * i),
+                           "ends": str(next_at + 4 * i + 2), "requested": "20", "active": True}}
+                for i in range(count)]
+            commands = [{"op": "delete", "id": key, "if_version": versions[key]} for key in latest] + additions
+            _, result, measured = apply(backend, model, commands, f"churn-{batch:03}",
+                                        returning=[item["id"] for item in additions])
+            require(measured["work"]["causal_candidates"] == count * 2,
+                    "Churn selected producers outside the deleted/new tail")
+            check_fanout(measured, count * 2)
+            for key in latest:
+                del facts[key]
+            for item in additions:
+                facts[item["id"]] = {"contract": 410, "fields": item["fields"]}
+            for item in result["result"]["records"]:
+                require(item["record"] is not None, "Churn returning projection missing")
+                versions[item["id"]] = item["record"]["version"]
+            measurements.append({"replacements": count, **measured})
+            created += count
+            next_at += count * 4
+        verify_equipment(backend, model, facts)
+        before = snapshot(backend, "at-retained-ceiling")
+        inventory = role_inventory(before, 16384)
+        ceiling_backup = backend.directory / "at-retained-ceiling.backup.json"
+        require(ceiling_backup.stat().st_size <= 64 * 1024 * 1024, "Ceiling backup exceeded 64 MiB")
+        key = max((key for key, f in facts.items() if f["contract"] == 410),
+                  key=lambda key: int(facts[key]["fields"]["starts"]))
+        fields = {**facts[key]["fields"], "starts": str(next_at), "ends": str(next_at + 2)}
+        overflow = backend.plan({"model": model, "commands": [
+            {"op": "delete", "id": key, "if_version": versions[key]},
+            {"op": "create", "id": identity(2000000), "contract": 410, "fields": fields}],
+            "returning": []}, "retained-overflow")
+        expect_error("state_limit", lambda: client.execute(backend.url, backend.token, overflow))
+        require(client.execute(backend.url, backend.token, overflow, status=True)["status"] == "not_observed",
+                "Retained-quota rejection left a receipt")
+        require(snapshot(backend, "after-retained-overflow") == before,
+                "Retained-quota rejection changed logical application-table bytes")
+        backend.stop()
+        integrity = backend.cli("check", backend.store)
+        require(integrity["status"] == "valid" and integrity["receipts"] < 1024,
+                "Ceiling integrity or unchanged receipt window failed")
+        report = {"model": "equipment", "public_sources": len(facts), "replacement_batches": len(measurements),
+                  "replaced_producers": created, "initial_retained_roles": 8184, **inventory,
+                  "source_backup_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
+                  "ceiling_backup_sha256": hashlib.sha256(ceiling_backup.read_bytes()).hexdigest(),
+                  "ceiling_backup_bytes": ceiling_backup.stat().st_size, "integrity": integrity,
+                  "overflow_state_limit": True, "logical_bytewise_rollback": True, "receipt_absent": True,
+                  "source_arithmetic_verified": True, "measurements": measurements}
         (backend.directory / "result.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
     finally:
@@ -547,16 +658,27 @@ def main():
     parser.add_argument("--reservations", type=int, nargs="+", help="Equipment-only historical baseline counts")
     parser.add_argument("--authority-from", type=Path,
                         help="Separate authority trials restored from this accepted suite's 4096-source backups")
+    parser.add_argument("--churn-from", type=Path,
+                        help="Separate retained-role quota trial from an accepted equipment-4096 directory")
     args = parser.parse_args()
     require(all(12 <= n <= 4096 for n in args.populations), "Populations must be 12..4096")
     require(args.reservations is None or all(2 <= n <= 4092 for n in args.reservations),
             "Reservation counts must be 2..4092")
+    require(not (args.churn_from and args.authority_from), "Choose one auxiliary trial")
     args.out.mkdir(mode=0o700)
     started = time.perf_counter()
     report = {"status": "running", "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
               "probe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               "host": {"system": platform.system(), "machine": platform.machine(), "kernel": platform.release()},
               "engine_work_budget": 200000, "timing_scope": MUTATION_TIMING, "runs": []}
+    if args.churn_from:
+        report["scope"] = "Separate equipment retained-role quota trial; original population stores are unchanged"
+        report["runs"].append(churn_run(args.binary, args.churn_from, args.out / "equipment-4096"))
+        report["elapsed_seconds"] = round(time.perf_counter() - started, 3)
+        report["status"] = "passed"
+        (args.out / "result.json").write_text(json.dumps(report, indent=2) + "\n")
+        print("equipment: 16,384 retained roles, active population and quota rollback verified", flush=True)
+        return
     if args.authority_from:
         report["scope"] = "Separate restored 4096-source authority trials; original population runs are unchanged"
         report["timing_scope"] = AUTHORITY_TIMING
