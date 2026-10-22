@@ -1,9 +1,10 @@
 //! Bounded HTTP transport over the ordinary operation API. Blocking database
 //! work owns its admission permit until completion, including after a timeout.
+use crate::binding::Binding;
 use crate::{
     identity::{IdentityConfig, Verifier},
     json::MAX_REQUEST_BYTES,
-    local::LocalStore,
+    local::Store,
     native_slice::{Error, Result},
     rpc,
 };
@@ -29,8 +30,8 @@ pub struct ServerConfig {
     pub request_timeout_seconds: u16,
 }
 #[derive(Clone)]
-struct App {
-    store: Arc<LocalStore>,
+struct App<B: Binding> {
+    store: Arc<Store<B>>,
     verifier: Arc<Verifier>,
     permits: Arc<Semaphore>,
     timeout: Duration,
@@ -48,7 +49,7 @@ fn response(status: StatusCode, value: Value) -> Response {
 async fn health() -> Response {
     response(StatusCode::OK, json!({"status":"up"}))
 }
-async fn call(State(app): State<App>, headers: HeaderMap, body: Bytes) -> Response {
+async fn call<B: Binding>(State(app): State<App<B>>, headers: HeaderMap, body: Bytes) -> Response {
     if headers
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
@@ -94,7 +95,7 @@ async fn call(State(app): State<App>, headers: HeaderMap, body: Bytes) -> Respon
     }
 }
 
-pub fn router(store: Arc<LocalStore>, config: &ServerConfig) -> Result<Router> {
+pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result<Router> {
     if !store.secured {
         return Err(Error::new(
             "invalid_input",
@@ -118,12 +119,12 @@ pub fn router(store: Arc<LocalStore>, config: &ServerConfig) -> Result<Router> {
     };
     Ok(Router::new()
         .route("/health", get(health))
-        .route("/rpc", post(call))
+        .route("/rpc", post(call::<B>))
         .layer(DefaultBodyLimit::max(MAX_REQUEST_BYTES))
         .with_state(app))
 }
 
-pub async fn serve(store: Arc<LocalStore>, config: ServerConfig) -> Result<()> {
+pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<()> {
     let routes = router(store, &config)?;
     let listener = TcpListener::bind(config.listen)
         .await
@@ -156,6 +157,7 @@ async fn shutdown() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::local::LocalStore;
     use crate::{
         identity::{self, TokenRequest},
         model::PreparedModel,

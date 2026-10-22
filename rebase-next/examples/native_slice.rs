@@ -164,7 +164,7 @@ fn initialize(db: &Database, model: &Model, context: Context) -> Result<()> {
                 tenant: context.tenant,
                 actor: context.actor,
                 revision: 0,
-                counts: [0; 12],
+                counts: (1..=12).map(|code| (code, 0)).collect(),
                 reserved: 0,
             }),
         )?;

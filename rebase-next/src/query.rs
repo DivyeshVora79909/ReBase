@@ -1,5 +1,6 @@
 //! Declared local reads and authenticated revision-bound resumptions.
 
+use crate::binding::Binding;
 use std::{cmp::Reverse, collections::BinaryHeap, ops::Bound};
 
 use hmac::{Hmac, Mac};
@@ -9,10 +10,10 @@ use sha2::Sha256;
 use uuid::Uuid;
 
 use crate::{
-    local::{KV, LocalStore, PUBLIC, PublicRecord, RuntimeHeader, corrupt, encode, storage, unhex},
+    local::{KV, PUBLIC, PublicRecordValue, RuntimeHeader, Store, corrupt, encode, storage, unhex},
     model::API_VERSION,
     native_codec::{self, Address, decimal, uuid_text},
-    native_slice::{Error, Result, Workspace},
+    native_slice::{Attempt, Error, Result},
     tree::{self, Aggregate},
 };
 
@@ -61,9 +62,9 @@ pub struct ExistsRequest {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Page {
-    pub records: Vec<PublicRecord>,
+#[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
+pub struct PageValue<B: Binding> {
+    pub records: Vec<PublicRecordValue<B>>,
     pub visited: u16,
     pub exhausted: bool,
     pub cursor: Option<String>,
@@ -158,8 +159,8 @@ fn next_candidate(
     Ok(Some((id, code.value())))
 }
 
-impl LocalStore {
-    pub fn page(&self, request: &PageRequest) -> Result<Page> {
+impl<B: Binding> Store<B> {
+    pub fn page(&self, request: &PageRequest) -> Result<PageValue<B>> {
         if !(1..=32).contains(&request.limit) || !(1..=128).contains(&request.visit_budget) {
             return Err(Error::new("invalid_input", "page/visit limits"));
         }
@@ -270,7 +271,7 @@ impl LocalStore {
             }
         }
         let table = read.open_table(KV).map_err(storage)?;
-        let mut ws = Workspace::new(
+        let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 table
                     .get(key)
@@ -334,7 +335,7 @@ impl LocalStore {
                 &header,
             )?)
         };
-        Ok(Page {
+        Ok(PageValue {
             records,
             visited,
             exhausted,
@@ -368,7 +369,7 @@ impl LocalStore {
         let (read, meta, _) = self.read(&request.model)?;
         let scope = self.authority(&read)?;
         let table = read.open_table(KV).map_err(storage)?;
-        let mut ws = Workspace::new(
+        let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 table
                     .get(key)
@@ -428,3 +429,5 @@ impl LocalStore {
         )
     }
 }
+
+pub type Page = PageValue<crate::binding::Calculation>;

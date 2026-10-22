@@ -1,5 +1,6 @@
 //! Embedded authority persistence. No token parsing or domain calculation here.
 
+use crate::binding::{Binding, NativeInput};
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
@@ -14,10 +15,10 @@ use uuid::Uuid;
 
 use crate::{
     access::{Graph, PreparedGraph, Scope, denied},
-    local::{Committed, KV, LocalStore, corrupt, decode, encode, storage},
-    model::PreparedModel,
-    native_codec::{self, Key, Stored, decimal},
-    native_slice::{Context, Error, Record, Result, Workspace},
+    local::{CommittedValue, KV, Store, corrupt, decode, encode, storage},
+    model::Prepared,
+    native_codec::{self, Key, StoredValue, decimal},
+    native_slice::{Attempt, Context, Error, ModelRecord, Result},
 };
 
 pub(crate) const AUTHORITY: TableDefinition<&[u8], &[u8]> = TableDefinition::new("authority");
@@ -130,9 +131,9 @@ pub(crate) fn store_graph(write: &WriteTransaction, graph: &PreparedGraph) -> Re
     Ok(())
 }
 
-pub(crate) fn repair_readers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
-    model: &PreparedModel,
+pub(crate) fn repair_readers<B: Binding, L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Attempt<L, B>,
+    model: &Prepared<B>,
     ids: BTreeSet<Uuid>,
     revision: u64,
     select: &mut impl FnMut(&[Uuid], Uuid) -> Result<Uuid>,
@@ -144,10 +145,15 @@ pub(crate) fn repair_readers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             let Some(mut record) = ws.record(id)? else {
                 continue;
             };
-            if (record.contract == 12) != private {
+            if record.input.managed().is_none()
+                && model.contract(record.contract)?.visibility != crate::model::Visibility::Public
+            {
                 continue;
             }
-            let reader = if let crate::native_slice::Input::Output { producer, .. } = record.input {
+            if record.input.managed().is_some() != private {
+                continue;
+            }
+            let reader = if let Some((producer, _)) = record.input.managed() {
                 ws.record(producer)?
                     .ok_or_else(|| corrupt("missing output producer"))?
                     .reader
@@ -172,7 +178,7 @@ pub(crate) fn repair_readers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             if record.reader != reader {
                 record.reader = reader;
                 record.version = revision;
-                ws.put(Key::Record(id), Some(Stored::Record(record)))?;
+                ws.put(Key::Record(id), Some(StoredValue::Record(record)))?;
             }
         }
     }
@@ -198,16 +204,21 @@ pub(crate) fn stored_reader(
     Ok(selected)
 }
 
-pub(crate) fn update_reader_index(
+pub(crate) fn update_reader_index<B: Binding>(
     write: &WriteTransaction,
     native: &impl ReadableTable<&'static [u8], &'static [u8]>,
+    model: &Prepared<B>,
     id: Uuid,
     new: Option<&[u8]>,
 ) -> Result<()> {
-    let record = |bytes: &[u8]| -> Result<Option<Record>> {
-        match native_codec::decode(&Key::Record(id), bytes)? {
-            Stored::Record(r) if r.contract <= 10 => Ok(Some(r)),
-            Stored::Record(_) => Ok(None),
+    let record = |bytes: &[u8]| -> Result<Option<ModelRecord<B>>> {
+        match native_codec::decode_for::<B>(&Key::Record(id), bytes)? {
+            StoredValue::Record(r)
+                if model.contract(r.contract)?.visibility == crate::model::Visibility::Public =>
+            {
+                Ok(Some(r))
+            }
+            StoredValue::Record(_) => Ok(None),
             _ => Err(corrupt("record index type")),
         }
     };
@@ -218,7 +229,7 @@ pub(crate) fn update_reader_index(
         .transpose()?
         .flatten();
     let new = new.map(record).transpose()?.flatten();
-    let entry = |r: &Record| (reader_key(r.reader, r.contract, id), r.contract);
+    let entry = |r: &ModelRecord<B>| (reader_key(r.reader, r.contract, id), r.contract);
     let old = old.as_ref().map(entry);
     let new = new.as_ref().map(entry);
     if old != new {
@@ -233,7 +244,7 @@ pub(crate) fn update_reader_index(
     Ok(())
 }
 
-impl LocalStore {
+impl<B: Binding> Store<B> {
     pub fn operation_context(&self, model: &str) -> Result<String> {
         let (read, _, header) = self.read(model)?;
         self.authority(&read)?;
@@ -241,7 +252,7 @@ impl LocalStore {
     }
     pub fn create_secured(
         path: impl AsRef<std::path::Path>,
-        model: Arc<PreparedModel>,
+        model: Arc<Prepared<B>>,
         context: Context,
     ) -> Result<Self> {
         let graph = Graph::bootstrap(context)?;
@@ -324,9 +335,9 @@ impl LocalStore {
     pub(crate) fn disclose<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         &self,
         scope: &Scope,
-        mut result: Committed,
-        ws: &mut Workspace<L>,
-    ) -> Result<Committed> {
+        mut result: CommittedValue<B>,
+        ws: &mut Attempt<L, B>,
+    ) -> Result<CommittedValue<B>> {
         if self.secured {
             for returned in &mut result.records {
                 let current = self.project(scope, returned.id, ws.record(returned.id)?);
@@ -366,7 +377,7 @@ impl LocalStore {
             return Err(denied());
         }
         let mut native = write.open_table(KV).map_err(storage)?;
-        let mut meta = match native_codec::decode(
+        let mut meta = match native_codec::decode_for::<B>(
             &Key::Meta,
             native
                 .get(Key::Meta.encode().as_slice())
@@ -374,7 +385,7 @@ impl LocalStore {
                 .ok_or_else(|| corrupt("missing meta"))?
                 .value(),
         )? {
-            Stored::Meta(meta) => meta,
+            StoredValue::Meta(meta) => meta,
             _ => return Err(corrupt("meta type")),
         };
         self.check_meta(&meta, &request.model)?;
@@ -420,7 +431,7 @@ impl LocalStore {
             .revision
             .checked_add(1)
             .ok_or_else(|| Error::new("revision_exhausted", "store counter"))?;
-        let mut ws = Workspace::new(
+        let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 native
                     .get(key)
@@ -448,12 +459,12 @@ impl LocalStore {
                 Ok(graph.reader(owners, fallback))
             },
         )?;
-        ws.put(Key::Meta, Some(Stored::Meta(meta.clone())))?;
+        ws.put(Key::Meta, Some(StoredValue::Meta(meta.clone())))?;
         let batch = ws.finish()?;
         drop(ws);
         for (key, value) in &batch {
             if let Key::Record(id) = Key::decode(key)? {
-                update_reader_index(&write, &native, id, value.as_deref())?;
+                update_reader_index(&write, &native, &self.model, id, value.as_deref())?;
             }
             if let Some(bytes) = value {
                 native

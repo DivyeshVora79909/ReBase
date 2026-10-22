@@ -1,7 +1,8 @@
 //! A self-contained, read-only developer artifact. Browser-native disclosure
 //! controls keep the view useful without a frontend runtime or network service.
 
-use crate::{model::PreparedModel, native_slice::Result};
+use crate::binding::Binding;
+use crate::{model::Prepared, native_slice::Result};
 use serde_json::Value;
 
 fn escape(text: &str) -> String {
@@ -34,8 +35,8 @@ fn disclosure(title: &str, badge: &str, value: &Value) -> String {
     )
 }
 
-pub fn render(
-    model: &PreparedModel,
+pub fn render<B: Binding>(
+    model: &Prepared<B>,
     snapshot: Option<&Value>,
     transcript: &[Value],
 ) -> Result<String> {
@@ -61,7 +62,7 @@ pub fn render(
             let id = row["id"].as_str().unwrap_or("");
             body.push_str(&disclosure(
                 &format!("{} · {}", contract.name, label(snapshot, id).unwrap_or(id)),
-                if code <= 10 {
+                if contract.visibility == crate::model::Visibility::Public {
                     "PUBLIC SOURCE"
                 } else {
                     "PRIVATE"
@@ -80,7 +81,7 @@ pub fn render(
     } else {
         body.push_str("<section id=state><h2>Offline model</h2><p>No database was opened. The declarations below describe possible participation; a connected record chooses its active roles.</p></section>");
     }
-    body.push_str("<section id=model><div class=section-title><h2>The prepared model</h2><span>12 explicit contracts</span></div><p class=note>Expand a contract for its authored schema, references, roots, calculations and source locations. Public clients receive a separate catalog.</p>");
+    body.push_str(&format!("<section id=model><div class=section-title><h2>The prepared model</h2><span>{} explicit contracts</span></div><p class=note>Expand a contract for its authored schema, references, roots, calculations and source locations. Public clients receive a separate catalog.</p>", model.contracts().count()));
     for contract in model.developer_catalog()["contracts"]
         .as_array()
         .into_iter()
@@ -124,6 +125,7 @@ pub fn render(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::PreparedModel;
     #[test]
     fn data_is_text_in_the_offline_artifact() {
         assert_eq!(

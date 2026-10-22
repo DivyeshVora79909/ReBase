@@ -8,8 +8,9 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    binding::{Binding, Calculation as BindingCalculation, NativeInput},
     native_codec,
-    native_slice::{Calculated, Derived, Error, Input, Model, Result},
+    native_slice::{Error, Model, Result},
     plan::{Field, evaluation_order},
     tree::Kind,
 };
@@ -122,12 +123,23 @@ pub struct Contract {
     pub behavior_source: &'static str,
 }
 
-pub struct PreparedModel {
+pub type PreparedModel = Prepared<BindingCalculation>;
+
+pub struct Prepared<B: Binding> {
+    binding: std::marker::PhantomData<B>,
     engine: Model,
     core_identity: String,
     contracts: BTreeMap<u16, Contract>,
     validators: BTreeMap<u16, jsonschema::Validator>,
     field_validators: BTreeMap<(u16, &'static str), jsonschema::Validator>,
+}
+
+impl Prepared<BindingCalculation> {
+    pub(crate) fn for_native_engine(engine: &Model) -> Result<Self> {
+        let mut prepared = Self::load()?;
+        prepared.engine = engine.clone();
+        Ok(prepared)
+    }
 }
 
 fn model_error(detail: impl Into<String>) -> Error {
@@ -162,13 +174,29 @@ fn self_contained(value: &Value) -> Result<()> {
     Ok(())
 }
 
-impl PreparedModel {
+impl<B: Binding> Prepared<B> {
     pub fn load() -> Result<Self> {
-        Self::prepare(declarations()?)
+        Self::prepare(B::declarations()?)
     }
 
-    fn prepare(mut declarations: Vec<Contract>) -> Result<Self> {
+    /// Prepare explicit declarations for this trusted compiled binding. This
+    /// validates metadata; it does not load executable code from a document.
+    pub fn prepare(mut declarations: Vec<Contract>) -> Result<Self> {
         unique(declarations.iter().map(|c| c.code), "contracts")?;
+        let limits = B::limits();
+        if limits.public_records == 0
+            || limits.public_records > 64
+            || limits.outputs > 48
+            || limits.reservations > 256
+            || limits
+                .per_contract
+                .keys()
+                .any(|code| !declarations.iter().any(|c| c.code == *code))
+        {
+            return Err(model_error(
+                "model limits exceed the supported bounded runtime or name an unknown contract",
+            ));
+        }
         let mut names = BTreeSet::new();
         let mut validators = BTreeMap::new();
         let mut field_validators = BTreeMap::new();
@@ -264,21 +292,7 @@ impl PreparedModel {
         }
         let contracts: BTreeMap<_, _> = declarations.into_iter().map(|c| (c.code, c)).collect();
         for contract in contracts.values() {
-            let published_shape = match contract.code {
-                6 => Some(Calculated::Posting(Derived {
-                    native_minor: 0,
-                    reporting_minor: 0,
-                })),
-                9 => Some(Calculated::Adjustment {
-                    at: 0,
-                    before: 0,
-                    delta: 0,
-                }),
-                10 => Some(Calculated::Basis { value: 0 }),
-                _ => None,
-            };
-            let published_shape =
-                serde_json::to_value(published_shape).map_err(|e| model_error(e.to_string()))?;
+            let published_shape = B::published_shape(contract.code);
             if contract
                 .published
                 .iter()
@@ -289,10 +303,10 @@ impl PreparedModel {
             for root in &contract.roots {
                 if root.reads.iter().any(|read| {
                     !matches!(
-                        (*read, root.kind, root.slot),
-                        ("summary", _, _)
-                            | ("latest", Kind::Quote, 1)
-                            | ("before", Kind::Financial, 2)
+                        (*read, root.kind),
+                        ("summary", _)
+                            | ("latest", Kind::Quote)
+                            | ("before" | "sum", Kind::Financial)
                     )
                 }) {
                     return Err(model_error("unsupported published root read"));
@@ -367,7 +381,7 @@ impl PreparedModel {
                 }
             }
         }
-        let mut engine = Model::prepare()?;
+        let mut engine = B::engine()?;
         let core_identity = engine.identity.clone();
         let mut semantic =
             serde_json::to_value(&contracts).map_err(|e| model_error(e.to_string()))?;
@@ -379,12 +393,18 @@ impl PreparedModel {
         let bytes = serde_json::to_vec(&semantic).map_err(|e| model_error(e.to_string()))?;
         let mut hash = Sha256::new();
         hash.update(b"rebase-next-local-model-v1\0");
-        for bytes in [core_identity.as_bytes(), bytes.as_slice()] {
+        for bytes in [
+            B::NAME.as_bytes(),
+            B::BEHAVIOR.as_bytes(),
+            core_identity.as_bytes(),
+            bytes.as_slice(),
+        ] {
             hash.update((bytes.len() as u64).to_be_bytes());
             hash.update(bytes);
         }
         engine.identity = native_codec::hex(&hash.finalize());
         Ok(Self {
+            binding: std::marker::PhantomData,
             engine,
             core_identity,
             contracts,
@@ -417,7 +437,7 @@ impl PreparedModel {
         Ok(contract)
     }
 
-    pub fn validate(&self, code: u16, value: &Value) -> Result<Input> {
+    pub fn validate(&self, code: u16, value: &Value) -> Result<B::Input> {
         self.contract(code)?;
         if !self.validators[&code].is_valid(value) {
             return Err(Error::new(
@@ -425,7 +445,7 @@ impl PreparedModel {
                 "input schema validation failed",
             ));
         }
-        Input::bind(code, value.clone())
+        B::Input::bind(code, value.clone())
     }
 
     pub fn validate_predicate(&self, code: u16, field: &str, value: &Value) -> Result<()> {
@@ -481,22 +501,22 @@ impl PreparedModel {
                     "kind":r.kind,"reads":r.reads})).collect::<Vec<_>>() })
             })
             .collect();
-        json!({"name":MODEL_NAME,"model":self.identity(),"api":API_VERSION,
+        json!({"name":B::NAME,"model":self.identity(),"api":API_VERSION,
             "codec":self.engine.codec,"schema_dialect":SCHEMA_DIALECT,
             "schema_formats":"disabled; canonical UUIDs use patterns and native binding",
             "exact_values":"canonical decimal strings plus native range binding",
-            "contracts":contracts,"capabilities":capabilities()})
+            "contracts":contracts,"capabilities":model_capabilities::<B>()})
     }
 
     pub fn developer_catalog(&self) -> Value {
-        json!({"name":MODEL_NAME,"model":self.identity(),"core_identity":self.core_identity,
-            "behavior_contract":crate::native_slice::BEHAVIOR_CONTRACT,
+        json!({"name":B::NAME,"model":self.identity(),"core_identity":self.core_identity,
+            "behavior_contract":B::BEHAVIOR,
             "api":API_VERSION,"codec":self.engine.codec,
             "contracts":self.contracts.values().collect::<Vec<_>>(),
-            "capabilities":capabilities(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
+            "capabilities":model_capabilities::<B>(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
             "identity_policy":"retained private reservations; retired producers cannot be reused",
             "preparation":"bundled compiled model only; no arbitrary behavior loader",
-            "fixtures":crate::fixtures::catalog()})
+            "fixtures":B::fixture_catalog()})
     }
 
     pub fn explain(&self, selector: &str) -> Result<Value> {
@@ -511,11 +531,16 @@ impl PreparedModel {
 }
 
 pub fn capabilities() -> Value {
+    model_capabilities::<BindingCalculation>()
+}
+
+fn model_capabilities<B: Binding>() -> Value {
+    let limits = B::limits();
     json!({"methods":["model.describe","records.get","records.mutate","operations.status",
         "records.page","records.exists","roots.read","session.describe","access.describe","access.replace"],
         "transport":"JSON-RPC 2.0 over stdio or authenticated HTTP /rpc; string request IDs; no batches/notifications",
         "path":{"name":"records.by_id","order":"UUID ascending","filter":"optional public contract and one declared scalar authored-field equality"},
-        "limits":{"commands":64,"public_records":64,"outputs":48,"reservations":256,
+        "limits":{"commands":64,"public_records":limits.public_records,"outputs":limits.outputs,"reservations":limits.reservations,"per_contract":limits.per_contract,
             "returning":32,"page_limit":32,"visit_budget":128,"receipts":1024,"request_bytes":65536},
         "cursor":"HMAC-SHA256; bound store/model/actor/query/revision; restart after any new mutation",
         "updates":"set replaces complete fields; unset must be empty in this model",
@@ -575,7 +600,7 @@ fn calculation(
     }
 }
 
-fn declarations() -> Result<Vec<Contract>> {
+pub(crate) fn declarations() -> Result<Vec<Contract>> {
     type Source = (
         u16,
         &'static str,

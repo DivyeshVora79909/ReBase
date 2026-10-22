@@ -3,6 +3,7 @@
 //! Preparation is control-plane work. Requests consume a precomputed scope and
 //! current grants; they do not scan the principal graph or trust client scopes.
 
+use crate::binding::Binding;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     native_codec::uuid_text,
-    native_slice::{Context, Error, Record, Result},
+    native_slice::{Context, Error, ModelRecord, Result},
     plan::choose_reader,
 };
 
@@ -114,14 +115,14 @@ impl Scope {
         if self.active { Ok(()) } else { Err(denied()) }
     }
 
-    pub fn can_read(&self, record: &Record) -> bool {
+    pub fn can_read<B: Binding>(&self, record: &ModelRecord<B>) -> bool {
         self.active
             && record.tenant == self.tenant
             && self.grants.allows(record.contract, Action::Read)
             && self.accessible.contains(&record.reader)
     }
 
-    pub fn can_write(&self, record: &Record, action: Action) -> bool {
+    pub fn can_write<B: Binding>(&self, record: &ModelRecord<B>, action: Action) -> bool {
         self.active
             && record.tenant == self.tenant
             && self.grants.allows(record.contract, action)

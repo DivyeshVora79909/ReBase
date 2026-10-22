@@ -3,13 +3,14 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::binding::Binding;
 use crate::{
     algebra::Summary,
     native_codec::{Address, decimal, optional_decimal, summary, uuid_text},
 };
 use crate::{
-    native_codec::{Key, Stored},
-    native_slice::{Error, Result, Workspace},
+    native_codec::{Key, StoredValue},
+    native_slice::{Attempt, Error, Result},
 };
 use std::collections::BTreeSet;
 
@@ -172,41 +173,41 @@ fn broken(detail: &str) -> Error {
     Error::new("corrupt_state", detail)
 }
 
-pub fn root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     id: Address,
 ) -> Result<Root> {
     match ws.get(&Key::Root(id))? {
-        Some(Stored::Root(r)) => Ok(r),
+        Some(StoredValue::Root(r)) => Ok(r),
         _ => Err(broken("missing root")),
     }
 }
 
-pub fn node<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn node<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
 ) -> Result<Node> {
     ws.charge("node", 1)?;
     match ws.get(&Key::Node(id))? {
-        Some(Stored::Node(n)) if n.root == owner => Ok(n),
+        Some(StoredValue::Node(n)) if n.root == owner => Ok(n),
         _ => Err(broken("missing or cross-root node")),
     }
 }
 
-fn edit<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn edit<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
     change: impl FnOnce(&mut Node),
 ) -> Result<()> {
     let mut current = node(ws, owner, id)?;
     change(&mut current);
-    ws.put(Key::Node(id), Some(Stored::Node(current)))
+    ws.put(Key::Node(id), Some(StoredValue::Node(current)))
 }
 
-fn child_info<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn child_info<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     parent: Address,
     child: Option<Address>,
@@ -224,8 +225,8 @@ fn child_info<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     }
 }
 
-fn refresh<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn refresh<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
 ) -> Result<i32> {
@@ -247,8 +248,8 @@ fn refresh<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(i32::from(lh) - i32::from(rh))
 }
 
-fn replace_parent_link<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn replace_parent_link<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     old: Address,
     new: Option<Address>,
@@ -272,7 +273,7 @@ fn replace_parent_link<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             return Err(broken("root head mismatch"));
         }
         header.head = new;
-        ws.put(Key::Root(owner), Some(Stored::Root(header)))?;
+        ws.put(Key::Root(owner), Some(StoredValue::Root(header)))?;
     }
     if let Some(id) = new {
         edit(ws, owner, id, |n| n.parent = parent)?;
@@ -280,8 +281,8 @@ fn replace_parent_link<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(())
 }
 
-fn rotate_left<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn rotate_left<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     x: Address,
 ) -> Result<Address> {
@@ -306,8 +307,8 @@ fn rotate_left<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(y)
 }
 
-fn rotate_right<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn rotate_right<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     x: Address,
 ) -> Result<Address> {
@@ -332,8 +333,8 @@ fn rotate_right<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(y)
 }
 
-fn balance<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+fn balance<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     mut at: Option<Address>,
 ) -> Result<()> {
@@ -379,22 +380,18 @@ fn balance<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         header.height = 0;
         header.summary = Aggregate::empty(header.kind);
     }
-    ws.put(Key::Root(owner), Some(Stored::Root(header)))
+    ws.put(Key::Root(owner), Some(StoredValue::Root(header)))
 }
 
-pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
     at: i64,
     leaf: Leaf,
 ) -> Result<()> {
     let mut header = root(ws, owner)?;
-    if !matches!(
-        (id.slot, owner.slot, leaf.kind()),
-        (1, 2, Kind::Financial) | (2, 3, Kind::Financial) | (3, 1, Kind::Quote)
-    ) || header.kind != leaf.kind()
-    {
+    if id.slot == 0 || owner.slot == 0 || header.kind != leaf.kind() {
         return Err(broken("invalid member/root kind"));
     }
     if ws.get(&Key::Node(id))?.is_some() {
@@ -432,7 +429,7 @@ pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     }
     ws.put(
         Key::Node(id),
-        Some(Stored::Node(Node {
+        Some(StoredValue::Node(Node {
             root: owner,
             key,
             leaf,
@@ -466,12 +463,12 @@ pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     } else {
         header.last = Some(id);
     }
-    ws.put(Key::Root(owner), Some(Stored::Root(header)))?;
+    ws.put(Key::Root(owner), Some(StoredValue::Root(header)))?;
     balance(ws, owner, Some(id))
 }
 
-pub fn revalue<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn revalue<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
     leaf: Leaf,
@@ -487,8 +484,8 @@ pub fn revalue<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     balance(ws, owner, Some(id))
 }
 
-pub fn remove<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn remove<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
 ) -> Result<()> {
@@ -510,7 +507,7 @@ pub fn remove<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     } else {
         header.last = n.prev;
     }
-    ws.put(Key::Root(owner), Some(Stored::Root(header)))?;
+    ws.put(Key::Root(owner), Some(StoredValue::Root(header)))?;
     let start = match (n.left, n.right) {
         (None, child) | (child, None) => {
             replace_parent_link(ws, owner, id, child)?;
@@ -548,8 +545,8 @@ pub fn remove<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     balance(ws, owner, start)
 }
 
-pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     at: i64,
 ) -> Result<Option<(Uuid, u16)>> {
@@ -583,8 +580,8 @@ pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
 
 /// Sum complete occurrences strictly before a timestamp. Equal-time members
 /// never depend on their UUID order; None means the whole settled root.
-pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
+pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
     owner: Address,
     before: Option<i64>,
 ) -> Result<i128> {

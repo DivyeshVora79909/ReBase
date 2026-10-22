@@ -1,8 +1,9 @@
 //! Local JSON-RPC selects typed operations, never authority, fixture mode or KV.
 
+use crate::binding::Binding;
 use crate::{
     json::{self, MAX_REQUEST_BYTES},
-    local::{LocalStore, Mutation},
+    local::{Mutation, Store},
     native_codec::uuid_text,
     native_slice::{Error, Result},
     query::{ExistsRequest, PageRequest, RootRequest},
@@ -53,7 +54,7 @@ fn bind<T: for<'de> Deserialize<'de>>(params: Value) -> Result<T> {
         .map_err(|_| Error::new("invalid_input", "invalid operation params"))
 }
 
-fn dispatch(store: &LocalStore, method: &str, params: Value) -> Result<Value> {
+fn dispatch<B: Binding>(store: &Store<B>, method: &str, params: Value) -> Result<Value> {
     match method {
         "model.describe" => {
             let _: Empty = bind(params)?;
@@ -148,7 +149,7 @@ pub(crate) fn failure(id: Value, kind: &str) -> Value {
     json!({"jsonrpc":"2.0","id":id,"error":{"code":code,"message":message,"data":{"kind":safe_kind}}})
 }
 
-pub fn handle(store: &LocalStore, bytes: &[u8]) -> Value {
+pub fn handle<B: Binding>(store: &Store<B>, bytes: &[u8]) -> Value {
     let value = match json::parse(bytes) {
         Ok(v) => v,
         Err(e) => return failure(Value::Null, e.code),
@@ -177,8 +178,8 @@ pub fn handle(store: &LocalStore, bytes: &[u8]) -> Value {
 
 /// Oversize lines are drained without growing the buffer; framing resumes at
 /// the next line. Parsing and method dispatch happen only after the byte limit.
-pub fn serve(
-    store: &LocalStore,
+pub fn serve<B: Binding>(
+    store: &Store<B>,
     mut input: impl BufRead,
     mut output: impl Write,
 ) -> std::io::Result<()> {

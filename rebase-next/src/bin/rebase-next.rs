@@ -1,6 +1,11 @@
 use rebase_semantic_proof::{
-    demo, fixtures, identity, inspector, json, lifecycle, local::LocalStore, model::PreparedModel,
-    native_slice::Context, rpc, server,
+    binding::{Binding, Calculation},
+    demo, identity, inspector, json, lifecycle,
+    local::Store,
+    model::{Prepared, PreparedModel},
+    models::equipment::Equipment,
+    native_slice::Context,
+    rpc, server,
 };
 use std::{
     error::Error,
@@ -29,13 +34,49 @@ fn read_json(path: &str) -> Result<serde_json::Value, Box<dyn Error>> {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if args.is_empty() || args == ["--help"] {
+    if args.is_empty()
+        || args == ["--help"]
+        || matches!(args.as_slice(), [option, _, help] if option == "--model" && help == "--help")
+    {
         println!(
-            "ReBase Next backend\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next fixture list\n  rebase-next fixture plan <name> --namespace <uuid>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
+            "ReBase Next backend\nSelect a compiled model with --model calculation|equipment before the command (default calculation).\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next fixture list\n  rebase-next fixture plan <name> --namespace <uuid>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
         );
         return Ok(());
     }
-    let model = Arc::new(PreparedModel::load()?);
+    let (selected, arguments) = if args.first().is_some_and(|s| s == "--model") {
+        (
+            args.get(1)
+                .ok_or("--model requires calculation or equipment")?
+                .as_str(),
+            &args[2..],
+        )
+    } else {
+        ("calculation", args.as_slice())
+    };
+    if let [command, directory] = arguments
+        && command == "demo"
+    {
+        if selected != "calculation" {
+            return Err("use the selected model's fixture plan with the ordinary client".into());
+        }
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&demo::run(
+                Path::new(directory),
+                Arc::new(PreparedModel::load()?)
+            )?)?
+        );
+        return Ok(());
+    }
+    match selected {
+        "calculation" => run_model::<Calculation>(arguments),
+        "equipment" => run_model::<Equipment>(arguments),
+        _ => Err("unknown compiled model; choose calculation or equipment".into()),
+    }
+}
+
+fn run_model<B: Binding>(args: &[String]) -> Result<(), Box<dyn Error>> {
+    let model = Arc::new(Prepared::<B>::load()?);
     let result = match args
         .iter()
         .map(String::as_str)
@@ -43,21 +84,21 @@ fn run() -> Result<(), Box<dyn Error>> {
         .as_slice()
     {
         ["model", "public"] => model.public_catalog(),
-        ["fixture", "list"] => fixtures::catalog(),
+        ["fixture", "list"] => B::fixture_catalog(),
         ["fixture", "plan", name, "--namespace", namespace] => {
-            fixtures::plan(&model, name, identity(namespace)?)?
+            B::fixture_plan(&model, name, identity(namespace)?)?
         }
         ["version"] => {
             serde_json::json!({"version":env!("CARGO_PKG_VERSION"),"model":model.identity(),"store_format":rebase_semantic_proof::local::STORE_FORMAT})
         }
-        ["check", path] => LocalStore::open(path, model)?.check_integrity()?,
-        ["backup", path, destination] => LocalStore::open(path, model)?.backup(destination)?,
+        ["check", path] => Store::<B>::open(path, model)?.check_integrity()?,
+        ["backup", path, destination] => Store::<B>::open(path, model)?.backup(destination)?,
         ["receipts", "archive", path, destination] => {
-            LocalStore::open(path, model)?.archive_receipts(destination)?
+            Store::<B>::open(path, model)?.archive_receipts(destination)?
         }
         ["restore", backup, destination] => lifecycle::restore(backup, destination, model)?,
         ["reset", path, "--expect-store", store] => {
-            LocalStore::open(path, model)?.reset(identity(store)?)?
+            Store::<B>::open(path, model)?.reset(identity(store)?)?
         }
         ["model", "developer"] => model.developer_catalog(),
         ["model", "view"] => {
@@ -75,7 +116,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             serde_json::json!({"status":"valid","model":model.identity(),"input":input})
         }
         ["init", path, "--tenant", tenant, "--actor", actor] => {
-            let store = LocalStore::create_secured(
+            let store = Store::<B>::create_secured(
                 path,
                 model,
                 Context {
@@ -86,13 +127,13 @@ fn run() -> Result<(), Box<dyn Error>> {
             serde_json::json!({"status":"created","path":path,"model":store.model().identity(),"tenant":tenant,"actor":actor})
         }
         ["rpc", path] => {
-            let store = LocalStore::open(path, model)?;
+            let store = Store::<B>::open(path, model)?;
             rpc::serve(&store, io::stdin().lock(), io::stdout().lock())?;
             return Ok(());
         }
         ["serve", path, "--config", config] => {
             let config: server::ServerConfig = serde_json::from_value(read_json(config)?)?;
-            let store = Arc::new(LocalStore::open(path, model)?);
+            let store = Arc::new(Store::<B>::open(path, model)?);
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .enable_all()
@@ -112,16 +153,15 @@ fn run() -> Result<(), Box<dyn Error>> {
             println!("{token}");
             return Ok(());
         }
-        ["inspect", path] => LocalStore::open(path, model)?.inspect()?,
+        ["inspect", path] => Store::<B>::open(path, model)?.inspect()?,
         ["inspect", path, "--html"] => {
-            let store = LocalStore::open(path, model.clone())?;
+            let store = Store::<B>::open(path, model.clone())?;
             println!(
                 "{}",
                 inspector::render(&model, Some(&store.inspect()?), &[])?
             );
             return Ok(());
         }
-        ["demo", directory] => demo::run(Path::new(directory), model)?,
         _ => return Err("unsupported command; see --help".into()),
     };
     println!("{}", serde_json::to_string_pretty(&result)?);

@@ -17,7 +17,7 @@ import uuid
 from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
-CODEC = "native-slice-kv-2"
+CODEC = "native-slice-kv-3"
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
           5: ("reporting_unit",),
@@ -340,7 +340,7 @@ class State:
                     version = int(previous.roots[root]["revision"])
             value.update(revision=str(version), summary=scan(value["kind"], entries.values()))
         self.rows[(0,)] = {"model": self.model, "codec": CODEC, "tenant": self.tenant,
-                          "actor": self.actor, "revision": str(self.revision), "counts": counts, "reserved": len(self.roles)}
+                          "actor": self.actor, "revision": str(self.revision), "counts": {str(code): counts[code - 1] for code in range(1, 13)}, "reserved": len(self.roles)}
 
     def apply(self, operation):
         check(operation.get("model", "current") == "current", "model_mismatch")
@@ -747,7 +747,7 @@ def causal_corruption_controls(fixtures):
 def model_digest():
     # Explicit data/behavior contract, independent of build/dependency bytes.
     # Release evidence still fingerprints every executed source separately.
-    return hashlib.sha256(b"rebase-calculation-contract-1").hexdigest()
+    return hashlib.sha256(b"rebase-calculation-contract-2").hexdigest()
 
 
 def main():

@@ -1,5 +1,7 @@
 //! Fixed authored-key M1/M2/M4 experiment; not a public or distributed engine.
 
+use crate::binding::{Binding, Calculation};
+use crate::native_codec::StoredValue;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -11,7 +13,7 @@ use crate::{
     staging::Batch,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-1";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-2";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -46,7 +48,7 @@ pub struct Meta {
     pub actor: Uuid,
     #[serde(with = "decimal")]
     pub revision: u64,
-    pub counts: [u16; 12],
+    pub counts: BTreeMap<u16, u16>,
     pub reserved: u16,
 }
 
@@ -260,24 +262,6 @@ impl Input {
             _ => vec![],
         }
     }
-    fn allows(&self, field: &str) -> bool {
-        match self {
-            Self::Rule { .. } => field == "c",
-            Self::Quote { .. } => ["curve", "at", "rate"].contains(&field),
-            Self::Posting { .. } => {
-                ["units", "at", "rule", "curve", "account", "subsidiary"].contains(&field)
-            }
-            Self::Moment { .. } => field == "at",
-            Self::Entry { .. } => ["account", "at", "amount"].contains(&field),
-            Self::Adjustment { .. } => {
-                ["account", "moment", "offset", "target", "post"].contains(&field)
-            }
-            Self::Basis { .. } => {
-                ["sources", "factor", "account", "at", "feedback"].contains(&field)
-            }
-            _ => false,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -309,7 +293,11 @@ pub enum Calculated {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Record {
+#[serde(bound(
+    serialize = "B::Input: Serialize, B::Derived: Serialize",
+    deserialize = "B::Input: serde::de::DeserializeOwned, B::Derived: serde::de::DeserializeOwned"
+))]
+pub struct ModelRecord<B: Binding> {
     pub contract: u16,
     #[serde(with = "uuid_text")]
     pub tenant: Uuid,
@@ -319,9 +307,11 @@ pub struct Record {
     pub reader: Uuid,
     #[serde(with = "decimal")]
     pub version: u64,
-    pub input: Input,
-    pub derived: Option<Calculated>,
+    pub input: B::Input,
+    pub derived: Option<B::Derived>,
 }
+
+pub type Record = ModelRecord<Calculation>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -412,6 +402,20 @@ impl Model {
         })
     }
 
+    pub fn from_behavior(name: &str, behavior: &str) -> Self {
+        let mut hash = Sha256::new();
+        hash.update(b"rebase-native-model-3\0");
+        for part in [name.as_bytes(), behavior.as_bytes()] {
+            hash.update((part.len() as u64).to_be_bytes());
+            hash.update(part);
+        }
+        Self {
+            identity: native_codec::hex(&hash.finalize()),
+            codec: native_codec::CODEC.into(),
+            order: vec![],
+        }
+    }
+
     pub fn calculate(&self, units: i128, c: u16, rate: u16) -> Result<Derived> {
         let mut values = [None; 5];
         for &index in &self.order {
@@ -459,21 +463,21 @@ pub struct Work {
 }
 
 #[derive(Clone)]
-struct Entry {
+struct Entry<B: Binding> {
     before: Option<Vec<u8>>,
-    original: Option<Stored>,
-    current: Option<Stored>,
+    original: Option<StoredValue<B>>,
+    current: Option<StoredValue<B>>,
 }
 
 /// A synchronous point loader for this experiment, not a distributed driver API.
-pub struct Workspace<L> {
+pub struct Attempt<L, B: Binding> {
     load: L,
-    entries: BTreeMap<Key, Entry>,
+    entries: BTreeMap<Key, Entry<B>>,
     pub work: Work,
     limit: u64,
 }
 
-impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
+impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
     pub fn new(load: L, limit: u64) -> Self {
         Self {
             load,
@@ -510,7 +514,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
             let before = (self.load)(&key.encode())?;
             let original = before
                 .as_deref()
-                .map(|bytes| native_codec::decode(key, bytes))
+                .map(|bytes| native_codec::decode_for::<B>(key, bytes))
                 .transpose()?;
             self.entries.insert(
                 key.clone(),
@@ -523,15 +527,15 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
         }
         Ok(())
     }
-    pub fn get(&mut self, key: &Key) -> Result<Option<Stored>> {
+    pub fn get(&mut self, key: &Key) -> Result<Option<StoredValue<B>>> {
         self.ensure(key)?;
         Ok(self.entries[key].current.clone())
     }
-    pub fn original(&mut self, key: &Key) -> Result<Option<Stored>> {
+    pub fn original(&mut self, key: &Key) -> Result<Option<StoredValue<B>>> {
         self.ensure(key)?;
         Ok(self.entries[key].original.clone())
     }
-    pub fn put(&mut self, key: Key, value: Option<Stored>) -> Result<()> {
+    pub fn put(&mut self, key: Key, value: Option<StoredValue<B>>) -> Result<()> {
         self.ensure(&key)?;
         if self.entries[&key].current != value {
             self.charge("patch", 1)?;
@@ -548,7 +552,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
             let value = entry
                 .current
                 .as_ref()
-                .map(|v| native_codec::encode(key, v))
+                .map(|v| native_codec::encode_for::<B>(key, v))
                 .transpose()?;
             if value != entry.before {
                 self.work.encoded_bytes += value.as_ref().map_or(0, |b| b.len() as u64);
@@ -558,9 +562,9 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
         self.work.final_dirty_keys = batch.len() as u64;
         Ok(batch)
     }
-    pub fn record(&mut self, id: Uuid) -> Result<Option<Record>> {
+    pub fn record(&mut self, id: Uuid) -> Result<Option<ModelRecord<B>>> {
         match self.get(&Key::Record(id))? {
-            Some(Stored::Record(r)) => Ok(Some(r)),
+            Some(StoredValue::Record(r)) => Ok(Some(r)),
             None => Ok(None),
             _ => Err(Error::new("corrupt_state", "record type")),
         }
@@ -584,8 +588,8 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
                 roots.insert(*root);
             }
             if let Key::Node(_) = key {
-                let logical = |value: &Option<Stored>| match value {
-                    Some(Stored::Node(n)) => Some((n.root, n.key, n.leaf)),
+                let logical = |value: &Option<StoredValue<B>>| match value {
+                    Some(StoredValue::Node(n)) => Some((n.root, n.key, n.leaf)),
                     _ => None,
                 };
                 let old = logical(&entry.original);
@@ -600,11 +604,14 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
 }
 
 #[derive(Clone)]
-pub(crate) struct Change {
+pub struct ModelChange<B: Binding> {
     pub id: Uuid,
-    pub old: Option<Record>,
-    pub new: Option<Record>,
+    pub old: Option<ModelRecord<B>>,
+    pub new: Option<ModelRecord<B>>,
 }
+
+pub type Workspace<L> = Attempt<L, Calculation>;
+pub(crate) type Change = ModelChange<Calculation>;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Settled {
@@ -687,16 +694,6 @@ pub(crate) fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(())
 }
 
-fn owned_root(id: Uuid, input: &Input) -> Option<(Address, crate::tree::Kind)> {
-    use crate::tree::Kind;
-    match input {
-        Input::Curve { .. } => Some((Address::new(id, 1), Kind::Quote)),
-        Input::Account { .. } => Some((Address::new(id, 2), Kind::Financial)),
-        Input::Subsidiary { .. } => Some((Address::new(id, 3), Kind::Financial)),
-        _ => None,
-    }
-}
-
 pub(crate) fn route_values(value: Option<Stored>) -> Result<Vec<Address>> {
     match value {
         Some(Stored::Incoming(v) | Stored::Direct(v) | Stored::Subscribers(v)) => Ok(v),
@@ -734,31 +731,6 @@ pub(crate) fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         _ => return Err(Error::new("internal", "not a route key")),
     };
     ws.put(key, Some(value))
-}
-
-pub(crate) fn private_headers(id: Uuid, input: &Input, revision: u64) -> Vec<(Key, Stored)> {
-    let mut values = vec![(Key::Incoming(id), Stored::Incoming(vec![]))];
-    if let Some((root, kind)) = owned_root(id, input) {
-        values.push((
-            Key::Root(root),
-            Stored::Root(crate::tree::Root::empty(kind, revision)),
-        ));
-    }
-    match input {
-        Input::Rule { .. } | Input::Moment { .. } => {
-            values.push((Key::Direct(id), Stored::Direct(vec![])))
-        }
-        Input::Curve { .. } => values.push((
-            Key::Subscribers(Address::new(id, 1)),
-            Stored::Subscribers(vec![]),
-        )),
-        Input::Account { .. } => values.push((
-            Key::Subscribers(Address::new(id, 2)),
-            Stored::Subscribers(vec![]),
-        )),
-        _ => {}
-    }
-    values
 }
 
 pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
@@ -944,24 +916,6 @@ pub fn settle_with_ids<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     )
 }
 
-/// The adapter supplies current client authority. Internal repair remains
-/// tenant-scoped and never borrows the caller's record-write permissions.
-pub(crate) fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
-    model: &Model,
-    context: Context,
-    commands: &[Command],
-    allocate: &mut dyn FnMut() -> Result<Uuid>,
-    authorize: &mut impl FnMut(
-        &mut Workspace<L>,
-        &Command,
-        Option<&Record>,
-        Option<&Record>,
-    ) -> Result<()>,
-) -> Result<Settled> {
-    settle_inner(ws, model, context, commands, allocate, false, authorize)
-}
-
 /// Trusted fixture entrypoint for internal REJECT-reference controls. Never
 /// select this capability from an untrusted API parameter.
 pub fn settle_fixture<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -982,20 +936,6 @@ pub fn settle_fixture<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     )
 }
 
-pub(crate) fn check_counts(meta: &Meta) -> Result<()> {
-    if meta.counts[..11].iter().map(|n| u32::from(*n)).sum::<u32>() > 64
-        || meta.counts[2] > 16
-        || meta.counts[5] > 16
-        || meta.counts[8] > 16
-        || meta.counts[9] > 16
-        || meta.counts[11] > 48
-        || meta.reserved > 256
-    {
-        return Err(Error::new("state_limit", "bounded prototype population"));
-    }
-    Ok(())
-}
-
 fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     model: &Model,
@@ -1010,130 +950,30 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         Option<&Record>,
     ) -> Result<()>,
 ) -> Result<Settled> {
+    let prepared = crate::model::PreparedModel::for_native_engine(model)?;
+    crate::mutation::settle_authorized(
+        ws, &prepared, context, commands, allocate, trusted, authorize,
+    )
+}
+
+pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    model: &crate::model::PreparedModel,
+    context: Context,
+    changes: &[Change],
+    meta: &mut Meta,
+    revision: u64,
+    allocate: &mut dyn FnMut() -> Result<Uuid>,
+) -> Result<()> {
     use crate::tree::{self, Aggregate, Leaf};
-    let Some(Stored::Meta(mut meta)) = ws.get(&Key::Meta)? else {
-        return Err(Error::new("corrupt_state", "missing model header"));
-    };
-    if model.codec != native_codec::CODEC
-        || meta.codec != model.codec
-        || meta.model != model.identity
-    {
-        return Err(Error::new("model_mismatch", "store/model identity differs"));
-    }
-    if meta.tenant != context.tenant {
-        return Err(Error::new("forbidden", "tenant differs"));
-    }
-    if commands.is_empty()
-        || commands.len() > 64
-        || commands
-            .iter()
-            .map(Command::id)
-            .collect::<BTreeSet<_>>()
-            .len()
-            != commands.len()
-    {
-        return Err(Error::new(
-            "invalid_input",
-            "one command per UUID; 1..64 commands",
-        ));
-    }
-    let revision = meta
-        .revision
-        .checked_add(1)
-        .ok_or_else(|| Error::new("revision_exhausted", "store counter exhausted"))?;
-    let mut changes = vec![];
-    for command in commands {
-        ws.charge("command", 1)?;
-        let id = command.id();
-        let old = ws.record(id)?;
-        authorize(ws, command, old.as_ref(), None)?;
-        if old
-            .as_ref()
-            .is_some_and(|r| r.contract == 12 || (r.contract == 11 && !trusted))
-        {
-            return Err(Error::new("forbidden", "private record"));
-        }
-        let new = match command {
-            Command::Create {
-                contract, fields, ..
-            } => {
-                if *contract == 12 || (*contract == 11 && !trusted) {
-                    return Err(Error::new("forbidden", "private contract"));
-                }
-                if old.is_some() {
-                    return Err(Error::new("already_exists", "source UUID exists"));
-                }
-                if ws.get(&Key::Reserved(id))?.is_some()
-                    || ws.get(&Key::Role(Address::new(id, 1)))?.is_some()
-                    || ws.get(&Key::Role(Address::new(id, 2)))?.is_some()
-                {
-                    return Err(Error::new("unavailable_reference", "reserved identity"));
-                }
-                let input = Input::bind(*contract, fields.clone())?;
-                validate_references(ws, &input, context)?;
-                meta.counts[usize::from(*contract - 1)] += 1;
-                Some(Record {
-                    contract: *contract,
-                    tenant: context.tenant,
-                    owner: context.actor,
-                    reader: context.actor,
-                    version: revision,
-                    input,
-                    derived: None,
-                })
-            }
-            Command::Update { if_version, .. } | Command::Delete { if_version, .. } => {
-                let previous = old
-                    .as_ref()
-                    .ok_or_else(|| Error::new("unavailable_reference", "source unavailable"))?;
-                if previous.tenant != context.tenant {
-                    return Err(Error::new("forbidden", "source authority"));
-                }
-                if previous.version != *if_version {
-                    return Err(Error::new("stale_version", "source version"));
-                }
-                if let Command::Update { set, unset, .. } = command {
-                    if !unset.is_empty() || !set.keys().all(|key| previous.input.allows(key)) {
-                        return Err(Error::new("invalid_input", "protected or required field"));
-                    }
-                    let mut value = serde_json::to_value(&previous.input)
-                        .map_err(|e| Error::new("codec", e.to_string()))?;
-                    let fields = value
-                        .as_object_mut()
-                        .ok_or_else(|| Error::new("internal", "input is not an object"))?;
-                    fields.extend(set.clone());
-                    let mut next = previous.clone();
-                    next.input = Input::bind(previous.contract, value)?;
-                    validate_references(ws, &next.input, context)?;
-                    Some(next)
-                } else {
-                    meta.counts[usize::from(previous.contract - 1)] = meta.counts
-                        [usize::from(previous.contract - 1)]
-                    .checked_sub(1)
-                    .ok_or_else(|| Error::new("corrupt_state", "source count underflow"))?;
-                    None
-                }
-            }
-        };
-        authorize(ws, command, old.as_ref(), new.as_ref())?;
-        ws.put(Key::Record(id), new.clone().map(Stored::Record))?;
-        changes.push(Change { id, old, new });
-    }
-    check_counts(&meta)?;
-    for change in &changes {
-        if let (None, Some(new)) = (&change.old, &change.new) {
-            for (key, value) in private_headers(change.id, &new.input, revision) {
-                if ws.get(&key)?.is_some() {
-                    return Err(Error::new(
-                        "corrupt_state",
-                        "orphan private header on create",
-                    ));
-                }
-                ws.put(key, Some(value))?;
-            }
+    // Unit agreement is a calculation-model obligation, beyond shared typed
+    // reference existence/tenant checks. Keep it at the model boundary.
+    for change in changes {
+        if let Some(new) = &change.new {
+            validate_references(ws, &new.input, context)?;
         }
     }
-    for change in &changes {
+    for change in changes {
         let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
         let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
         for (key, member) in old.difference(&new) {
@@ -1145,7 +985,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     }
     let mut candidates = BTreeSet::new();
     let mut curves = BTreeSet::new();
-    for change in &changes {
+    for change in changes {
         let old = change.old.as_ref().map(|r| &r.input);
         let new = change.new.as_ref().map(|r| &r.input);
         if old.is_some_and(|i| i.contract() == 6) || new.is_some_and(|i| i.contract() == 6) {
@@ -1169,7 +1009,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             &mut candidates,
         )?;
     }
-    for change in &changes {
+    for change in changes {
         let old = quote(change.old.as_ref().map(|r| &r.input));
         let new = quote(change.new.as_ref().map(|r| &r.input));
         if let Some((curve, at, _)) = old
@@ -1178,7 +1018,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             tree::remove(ws, Address::new(curve, 1), Address::new(change.id, 3))?;
         }
     }
-    for change in &changes {
+    for change in changes {
         let old = quote(change.old.as_ref().map(|r| &r.input));
         if let Some((curve, at, rate)) = quote(change.new.as_ref().map(|r| &r.input)) {
             let root = Address::new(curve, 1);
@@ -1214,7 +1054,9 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             };
             let selected = tree::latest(ws, Address::new(curve, 1), at)?;
             let rate = selected.map_or(1, |(_, rate)| rate);
-            record.derived = Some(Calculated::Posting(model.calculate(units, c, rate)?));
+            record.derived = Some(Calculated::Posting(
+                model.engine().calculate(units, c, rate)?,
+            ));
             ws.work.evaluations += 1;
             ws.put(Key::Record(id), Some(Stored::Record(record.clone())))?;
             ws.put(
@@ -1248,7 +1090,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             )?;
         }
     }
-    for change in &changes {
+    for change in changes {
         if change
             .old
             .as_ref()
@@ -1263,84 +1105,24 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             )?;
         }
     }
-    crate::causal::settle(ws, context, &changes, &mut meta, revision, allocate)?;
-    check_counts(&meta)?;
-    for change in &changes {
-        if let Some(new) = &change.new {
-            validate_references(ws, &new.input, context)?;
-        } else if !routes(ws, &Key::Incoming(change.id))?.is_empty() {
-            return Err(Error::new(
-                "unavailable_reference",
-                "surviving inbound reference",
-            ));
-        }
-    }
-    for change in &changes {
-        if change.new.is_none() {
-            for (key, _) in private_headers(
-                change.id,
-                &change.old.as_ref().expect("deleted source").input,
-                revision,
-            ) {
-                match &key {
-                    Key::Root(id) => {
-                        if tree::root(ws, *id)?.head.is_some() {
-                            return Err(Error::new("corrupt_state", "nonempty retired root"));
-                        }
-                    }
-                    _ => {
-                        if !routes(ws, &key)?.is_empty() {
-                            return Err(Error::new("corrupt_state", "nonempty retired route"));
-                        }
-                    }
-                }
-                ws.put(key, None)?;
-            }
-        }
-    }
-    let changed_roots = ws.changed_roots();
-    for id in changed_roots {
-        if let Some(Stored::Root(mut root)) = ws.get(&Key::Root(id))? {
-            if id.slot == 2 {
-                let Aggregate::Financial(summary) = root.summary else {
-                    return Err(Error::new("corrupt_state", "account summary kind"));
-                };
-                if summary.complete_min() < 0 {
-                    return Err(Error::new(
-                        "invariant",
-                        "negative complete-time account balance",
-                    ));
-                }
-            }
-            root.revision = revision;
-            ws.put(Key::Root(id), Some(Stored::Root(root)))?;
-        }
-    }
-    let record_keys: Vec<_> = ws
-        .entries
-        .keys()
-        .filter(|k| matches!(k, Key::Record(_)))
-        .cloned()
-        .collect();
-    for key in record_keys {
-        if let Some(Stored::Record(mut current)) = ws.get(&key)? {
-            let version = if let Some(Stored::Record(old)) = ws.original(&key)? {
-                current.version = old.version;
-                if current == old {
-                    old.version
-                } else {
-                    revision
-                }
-            } else {
-                revision
+
+    crate::causal::settle(ws, model, context, changes, meta, revision, allocate)?;
+    for id in ws.changed_roots() {
+        if id.slot == 2
+            && let Some(Stored::Root(root)) = ws.get(&Key::Root(id))?
+        {
+            let Aggregate::Financial(summary) = root.summary else {
+                return Err(Error::new("corrupt_state", "account summary kind"));
             };
-            current.version = version;
-            ws.put(key, Some(Stored::Record(current)))?;
+            if summary.complete_min() < 0 {
+                return Err(Error::new(
+                    "invariant",
+                    "negative complete-time account balance",
+                ));
+            }
         }
     }
-    meta.revision = revision;
-    ws.put(Key::Meta, Some(Stored::Meta(meta)))?;
-    Ok(Settled { revision })
+    Ok(())
 }
 
 #[cfg(test)]

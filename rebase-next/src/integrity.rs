@@ -3,11 +3,15 @@
 //! No writer, rotation, query traversal or settlement function is called here.
 use crate::{
     algebra::Summary,
-    local::{self, KV, LocalStore, PUBLIC, RECEIPTS, Receipt},
+    binding::{Binding, Calculation, NativeInput},
+    local::{self, KV, PUBLIC, RECEIPTS},
+    local::{ReceiptValue, RuntimeHeader, Store},
     model::Visibility,
+    native_codec::StoredValue,
     native_codec::{self, Address, Key, Stored},
     native_slice::{Bound, Calculated, Derived, Input, Query},
     native_slice::{Error, Result},
+    native_slice::{Meta, ModelRecord},
     tree::{Aggregate, FullKey, Kind, Leaf, Node, QuoteSummary},
 };
 use redb::ReadableTable;
@@ -15,13 +19,45 @@ use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
-type Members = BTreeMap<Address, (Address, i64, Leaf)>;
-fn require(condition: bool, what: &str) -> Result<()> {
+pub(crate) type Members = BTreeMap<Address, (Address, i64, Leaf)>;
+pub(crate) fn require(condition: bool, what: &str) -> Result<()> {
     if condition {
         Ok(())
     } else {
         Err(Error::new("corrupt_state", what))
     }
+}
+// Independently enforce the model's bounded population contract; the codec
+// only knows the outer runtime envelope, not this binding's declarations.
+fn check_populations<B: Binding>(
+    model: &crate::model::Prepared<B>,
+    counts: &BTreeMap<u16, u16>,
+    reservations: u16,
+) -> Result<()> {
+    let limits = B::limits();
+    let mut public = 0u64;
+    let mut private = 0u64;
+    for (&code, &count) in counts {
+        let declaration = model.contract(code)?;
+        if declaration.visibility == Visibility::Engine {
+            private += u64::from(count);
+        } else {
+            public += u64::from(count);
+        }
+        require(
+            limits
+                .per_contract
+                .get(&code)
+                .is_none_or(|limit| count <= *limit),
+            "declared contract population limit",
+        )?;
+    }
+    require(
+        public <= u64::from(limits.public_records)
+            && private <= u64::from(limits.outputs)
+            && reservations <= limits.reservations,
+        "declared model population limits",
+    )
 }
 fn sum(values: impl IntoIterator<Item = i128>) -> Result<i128> {
     values.into_iter().try_fold(0i128, |a, b| {
@@ -108,9 +144,26 @@ impl Walk<'_> {
         Ok((node.height, order))
     }
 }
-impl LocalStore {
-    pub fn check_integrity(&self) -> Result<Value> {
-        let (read, meta, header) = self.read(self.model().identity())?;
+/// A complete bounded native snapshot. Model checkers derive semantic expectations
+/// from `records`, then finish with the shared structural and authority checker.
+pub(crate) struct Snapshot<'a, B: Binding> {
+    store: &'a Store<B>,
+    pub(crate) read: redb::ReadTransaction,
+    pub(crate) meta: Meta,
+    pub(crate) header: RuntimeHeader,
+    pub(crate) all: BTreeMap<Key, StoredValue<B>>,
+    pub(crate) records: BTreeMap<Uuid, ModelRecord<B>>,
+    pub(crate) roots: BTreeMap<Address, crate::tree::Root>,
+    pub(crate) nodes: BTreeMap<Address, Node>,
+    pub(crate) graph: Option<crate::access::PreparedGraph>,
+    pub(crate) expected_keys: BTreeSet<Key>,
+    pub(crate) routes: BTreeMap<Key, BTreeSet<Address>>,
+    public: BTreeMap<Vec<u8>, u16>,
+    readers: BTreeMap<Vec<u8>, u16>,
+}
+impl<'a, B: Binding> Snapshot<'a, B> {
+    pub(crate) fn load(store: &'a Store<B>) -> Result<Self> {
+        let (read, meta, header) = store.read(store.model().identity())?;
         local::check_tables(&read)?;
         let table = read.open_table(KV).map_err(local::storage)?;
         let mut all = BTreeMap::new();
@@ -118,12 +171,15 @@ impl LocalStore {
             require(i < 4096, "integrity inventory budget")?;
             let (key, value) = row.map_err(local::storage)?;
             let key = Key::decode(key.value())?;
-            all.insert(key.clone(), native_codec::decode(&key, value.value())?);
+            all.insert(
+                key.clone(),
+                native_codec::decode_for::<B>(&key, value.value())?,
+            );
         }
         let records: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
-                (Key::Record(id), Stored::Record(r)) => Some((*id, r.clone())),
+                (Key::Record(id), StoredValue::Record(r)) => Some((*id, r.clone())),
                 _ => None,
             })
             .collect();
@@ -131,18 +187,18 @@ impl LocalStore {
         let roots: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
-                (Key::Root(id), Stored::Root(r)) => Some((*id, r.clone())),
+                (Key::Root(id), StoredValue::Root(r)) => Some((*id, r.clone())),
                 _ => None,
             })
             .collect();
         let nodes: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
-                (Key::Node(id), Stored::Node(n)) => Some((*id, n.clone())),
+                (Key::Node(id), StoredValue::Node(n)) => Some((*id, n.clone())),
                 _ => None,
             })
             .collect();
-        let graph = if self.secured {
+        let graph = if store.secured {
             let auth = read
                 .open_table(crate::security::AUTHORITY)
                 .map_err(local::storage)?;
@@ -173,16 +229,12 @@ impl LocalStore {
         } else {
             None
         };
-        let mut counts = [0u16; 12];
-        let mut expected_keys = BTreeSet::from([Key::Meta]);
-        let mut members = Members::new();
-        let mut routes = BTreeMap::<Key, BTreeSet<Address>>::new();
-        let mut queries = BTreeMap::<Address, Query>::new();
-        let mut causal_reads = BTreeMap::<Uuid, Vec<(Uuid, Option<i64>)>>::new();
-        let mut emits = BTreeMap::<Address, (Uuid, i64, i128)>::new();
+
+        let mut counts: BTreeMap<_, u16> = store.model().contracts().map(|c| (c.code, 0)).collect();
         let mut public = BTreeMap::new();
         let mut readers = BTreeMap::new();
-        let mut quote_times = BTreeSet::new();
+        let mut expected_keys = BTreeSet::from([Key::Meta]);
+        let mut routes = BTreeMap::<Key, BTreeSet<Address>>::new();
         for (&id, r) in &records {
             require(
                 r.contract == r.input.contract()
@@ -191,14 +243,23 @@ impl LocalStore {
                     && r.version <= meta.revision,
                 "record header",
             )?;
-            self.model().validate(
+            store.model().validate(
                 r.contract,
                 &serde_json::to_value(&r.input).map_err(local::storage)?,
             )?;
-            counts[usize::from(r.contract - 1)] += 1;
+            *counts.entry(r.contract).or_insert(0u16) += 1;
             expected_keys.insert(Key::Record(id));
-            routes.entry(Key::Incoming(id)).or_default();
-            let contract = self.model().contract(r.contract)?;
+            let contract = store.model().contract(r.contract)?;
+            for (key, _) in crate::binding::headers(store.model(), id, &r.input, meta.revision)? {
+                match key {
+                    Key::Incoming(_) | Key::Direct(_) | Key::Subscribers(_) => {
+                        routes.entry(key).or_default();
+                    }
+                    _ => {
+                        expected_keys.insert(key);
+                    }
+                }
+            }
             if contract.visibility == Visibility::Public {
                 public.insert(id.as_bytes().to_vec(), r.contract);
                 readers.insert(
@@ -206,32 +267,17 @@ impl LocalStore {
                     r.contract,
                 );
             }
-            for root in &contract.roots {
-                expected_keys.insert(Key::Root(Address::new(id, root.slot)));
-            }
-            match r.input {
-                Input::Rule { .. } | Input::Moment { .. } => {
-                    routes.entry(Key::Direct(id)).or_default();
-                }
-                Input::Curve { .. } => {
-                    routes
-                        .entry(Key::Subscribers(Address::new(id, 1)))
-                        .or_default();
-                }
-                Input::Account { .. } => {
-                    routes
-                        .entry(Key::Subscribers(Address::new(id, 2)))
-                        .or_default();
-                }
-                _ => {}
-            }
-            for (target, code, slot) in r.input.references() {
+            for (target, _, slot) in r.input.references() {
                 let target_record = records
                     .get(&target)
                     .ok_or_else(|| local::corrupt("missing reference"))?;
+                let declaration = contract
+                    .references
+                    .iter()
+                    .find(|r| r.slot == slot)
+                    .ok_or_else(|| local::corrupt("undeclared reference"))?;
                 require(
-                    target_record.contract == code
-                        || code == 0 && matches!(target_record.contract, 9 | 10),
+                    declaration.targets.contains(&target_record.contract),
                     "reference contract",
                 )?;
                 routes
@@ -241,8 +287,11 @@ impl LocalStore {
             }
             if let Some(graph) = &graph {
                 require(graph.scopes.contains_key(&r.owner), "principal owner")?;
-                let expected = if let Input::Output { producer, .. } = r.input {
-                    records[&producer].reader
+                let expected = if let Some((producer, _)) = r.input.managed() {
+                    records
+                        .get(&producer)
+                        .ok_or_else(|| local::corrupt("missing producer"))?
+                        .reader
                 } else {
                     let owners: Vec<_> = r
                         .input
@@ -265,355 +314,125 @@ impl LocalStore {
                     "local owner/reader",
                 )?;
             }
-            match &r.input {
-                Input::Quote { curve, at, rate } => {
-                    require(quote_times.insert((*curve, *at)), "unique quote time")?;
-                    members.insert(
-                        Address::new(id, 3),
-                        (Address::new(*curve, 1), *at, Leaf::Quote(*rate)),
-                    );
-                }
-                Input::Entry {
-                    account,
-                    at,
-                    amount,
-                }
-                | Input::Output {
-                    account,
-                    at,
-                    amount,
-                    ..
-                } => {
-                    members.insert(
-                        Address::new(id, 1),
-                        (Address::new(*account, 2), *at, Leaf::Financial(*amount)),
-                    );
-                }
-                Input::Posting {
-                    units,
-                    at,
-                    rule,
-                    curve,
-                    account,
-                    subsidiary,
-                } => {
-                    let Input::Rule { c } = records[rule].input else {
-                        return Err(local::corrupt("rule type"));
-                    };
-                    let Input::Curve {
-                        native_unit,
-                        reporting_unit,
-                    } = records[curve].input
-                    else {
-                        return Err(local::corrupt("curve type"));
-                    };
-                    require(
-                        records[account].input == Input::Account { native_unit }
-                            && records[subsidiary].input == Input::Subsidiary { reporting_unit },
-                        "posting unit compatibility",
-                    )?;
-                    let selected = records
-                        .iter()
-                        .filter_map(|(&qid, q)| match q.input {
-                            Input::Quote {
-                                curve: c,
-                                at: q_at,
-                                rate,
-                            } if c == *curve && q_at <= *at => Some((q_at, qid, rate)),
-                            _ => None,
-                        })
-                        .max_by_key(|v| v.0);
-                    let native = units
-                        .checked_mul(i128::from(c))
-                        .ok_or_else(|| local::corrupt("native overflow"))?;
-                    let reporting = native
-                        .checked_mul(i128::from(selected.map_or(1, |v| v.2)))
-                        .ok_or_else(|| local::corrupt("reporting overflow"))?;
-                    require(
-                        r.derived
-                            == Some(Calculated::Posting(Derived {
-                                native_minor: native,
-                                reporting_minor: reporting,
-                            })),
-                        "posting calculation",
-                    )?;
-                    members.insert(
-                        Address::new(id, 1),
-                        (Address::new(*account, 2), *at, Leaf::Financial(native)),
-                    );
-                    members.insert(
-                        Address::new(id, 2),
-                        (
-                            Address::new(*subsidiary, 3),
-                            *at,
-                            Leaf::Financial(reporting),
-                        ),
-                    );
-                    queries.insert(
-                        Address::new(id, 1),
-                        Query {
-                            source: Address::new(*curve, 1),
-                            operation: "latest".into(),
-                            phase: "calculate".into(),
-                            channel: "rate".into(),
-                            lower: "negative_infinity".into(),
-                            upper: Bound::AfterTime(*at),
-                            selected: selected.map(|v| v.1),
-                            result: i128::from(selected.map_or(1, |v| v.2)),
-                        },
-                    );
-                    routes
-                        .entry(Key::Direct(*rule))
-                        .or_default()
-                        .insert(Address::new(id, 7));
-                    routes
-                        .entry(Key::Subscribers(Address::new(*curve, 1)))
-                        .or_default()
-                        .insert(Address::new(id, 1));
-                }
-                _ => {}
-            }
-            if !matches!(
-                r.input,
-                Input::Posting { .. } | Input::Adjustment { .. } | Input::Basis { .. }
-            ) {
-                require(r.derived.is_none(), "unexpected derived value")?;
-            }
         }
-        let account_sum = |account: Uuid, before: Option<i64>| -> Result<i128> {
-            sum(members.values().filter_map(|(root, at, leaf)| match leaf {
-                Leaf::Financial(amount)
-                    if *root == Address::new(account, 2) && before.is_none_or(|t| *at < t) =>
-                {
-                    Some(*amount)
-                }
-                _ => None,
-            }))
-        };
-        for (&id, r) in &records {
-            match &r.input {
-                Input::Adjustment {
-                    account,
-                    moment,
-                    offset,
-                    target,
-                    post,
-                } => {
-                    let Input::Moment { at } = records[moment].input else {
-                        return Err(local::corrupt("moment type"));
-                    };
-                    let at = at
-                        .checked_add(*offset)
-                        .ok_or_else(|| local::corrupt("adjustment time overflow"))?;
-                    let before = account_sum(*account, Some(at))?;
-                    let delta = target
-                        .checked_sub(before)
-                        .ok_or_else(|| local::corrupt("delta overflow"))?;
-                    require(
-                        r.derived == Some(Calculated::Adjustment { at, before, delta })
-                            && before >= 0,
-                        "adjustment calculation/invariant",
-                    )?;
-                    causal_reads.insert(id, vec![(*account, Some(at))]);
-                    if *post {
-                        emits.insert(Address::new(id, 1), (*account, at, delta));
-                    }
-                    routes
-                        .entry(Key::Direct(*moment))
-                        .or_default()
-                        .insert(Address::new(id, 6));
-                    for slot in [1, 2] {
-                        let query = Address::new(id, slot);
-                        routes
-                            .entry(Key::Subscribers(Address::new(*account, 2)))
-                            .or_default()
-                            .insert(query);
-                        queries.insert(
-                            query,
-                            Query {
-                                source: Address::new(*account, 2),
-                                operation: "sum".into(),
-                                phase: if slot == 1 { "calculate" } else { "validate" }.into(),
-                                channel: "amount".into(),
-                                lower: "negative_infinity".into(),
-                                upper: Bound::BeforeTime(at),
-                                selected: None,
-                                result: before,
-                            },
-                        );
-                    }
-                }
-                Input::Basis {
-                    sources,
-                    factor,
-                    account,
-                    at,
-                    feedback,
-                } => {
-                    let unit = &records[account].input;
-                    require(
-                        sources
-                            .iter()
-                            .chain(feedback.iter().map(|f| &f.account))
-                            .all(|id| &records[id].input == unit),
-                        "basis unit compatibility",
-                    )?;
-                    let value = sum(sources
-                        .iter()
-                        .map(|source| account_sum(*source, None))
-                        .collect::<Result<Vec<_>>>()?)?
-                    .checked_mul(i128::from(*factor))
-                    .ok_or_else(|| local::corrupt("basis overflow"))?;
-                    require(
-                        r.derived == Some(Calculated::Basis { value }),
-                        "basis calculation",
-                    )?;
-                    causal_reads.insert(id, sources.iter().map(|s| (*s, None)).collect());
-                    emits.insert(Address::new(id, 1), (*account, *at, value));
-                    if let Some(f) = feedback {
-                        emits.insert(Address::new(id, 2), (f.account, f.at, 0));
-                    }
-                    for (i, &source) in sources.iter().enumerate() {
-                        let q = Address::new(id, i as u16 + 1);
-                        routes
-                            .entry(Key::Subscribers(Address::new(source, 2)))
-                            .or_default()
-                            .insert(q);
-                        queries.insert(
-                            q,
-                            Query {
-                                source: Address::new(source, 2),
-                                operation: "sum".into(),
-                                phase: "calculate".into(),
-                                channel: "amount".into(),
-                                lower: "negative_infinity".into(),
-                                upper: Bound::All,
-                                selected: None,
-                                result: account_sum(source, None)?,
-                            },
-                        );
-                    }
-                }
-                _ => {}
-            }
-        }
-        // Complete expected final dependency edges, including zero contributions.
-        let mut pending: BTreeMap<_, usize> = causal_reads.keys().map(|id| (*id, 0)).collect();
-        let mut edges = BTreeMap::<Uuid, BTreeSet<Uuid>>::new();
-        for (&consumer, reads) in &causal_reads {
-            for (role, (account, at, _)) in &emits {
-                if reads
-                    .iter()
-                    .any(|(r, b)| r == account && b.is_none_or(|bound| *at < bound))
-                    && edges.entry(role.id).or_default().insert(consumer)
-                {
-                    *pending.get_mut(&consumer).unwrap() += 1;
-                }
-            }
-        }
-        let mut ready: BTreeSet<_> = pending
+        let bindings: BTreeMap<_, _> = all
             .iter()
-            .filter(|(_, v)| **v == 0)
-            .map(|(id, _)| *id)
+            .filter_map(|(key, value)| match (key, value) {
+                (Key::Role(role), StoredValue::Role(binding)) => Some((*role, *binding)),
+                _ => None,
+            })
             .collect();
-        let mut evaluated = 0;
-        while let Some(id) = ready.pop_first() {
-            evaluated += 1;
-            for consumer in edges.get(&id).into_iter().flatten() {
-                let p = pending.get_mut(consumer).unwrap();
-                *p -= 1;
-                if *p == 0 {
-                    ready.insert(*consumer);
-                }
-            }
-        }
-        require(evaluated == pending.len(), "final causal cycle")?;
-        let mut bindings = BTreeMap::new();
-        let mut reserved = BTreeMap::new();
-        for (key, value) in &all {
-            match (key, value) {
-                (Key::Role(role), Stored::Role(binding)) => {
-                    bindings.insert(*role, *binding);
-                }
-                (Key::Reserved(id), Stored::Reserved(role)) => {
-                    reserved.insert(*id, *role);
-                }
-                _ => {}
-            }
-        }
+        let reserved: BTreeMap<_, _> = all
+            .iter()
+            .filter_map(|(key, value)| match (key, value) {
+                (Key::Reserved(id), StoredValue::Reserved(role)) => Some((*id, *role)),
+                _ => None,
+            })
+            .collect();
         require(
             bindings.len() == reserved.len() && bindings.len() == usize::from(meta.reserved),
             "reservation population",
         )?;
-        require(
-            reserved
-                .keys()
-                .all(|id| !bindings.keys().any(|role| role.id == *id)),
-            "producer/output identity separation",
-        )?;
-        let mut outputs = BTreeSet::new();
         for (role, binding) in &bindings {
             require(
-                matches!(role.slot, 1 | 2) && reserved.get(&binding.output) == Some(role),
+                reserved.get(&binding.output) == Some(role),
                 "reservation inverse",
+            )?;
+            require(
+                !bindings.keys().any(|r| r.id == binding.output),
+                "producer/output identity separation",
             )?;
             require(
                 binding.retired != records.contains_key(&role.id),
                 "retired producer lifecycle",
             )?;
-            if !binding.retired {
-                require(
-                    records[&role.id].contract == 10
-                        || records[&role.id].contract == 9 && role.slot == 1,
-                    "producer contract",
-                )?;
-            }
-            if let Some(&(account, at, amount)) = emits.get(role) {
-                let r = records
-                    .get(&binding.output)
-                    .ok_or_else(|| local::corrupt("missing managed output"))?;
-                let producer = &records[&role.id];
-                require(
-                    r.input
-                        == Input::Output {
-                            producer: role.id,
-                            role: role.slot,
-                            account,
-                            at,
-                            amount,
-                        }
-                        && r.owner == producer.owner
-                        && r.reader == producer.reader,
-                    "managed output shape/authority",
-                )?;
-                outputs.insert(binding.output);
+            if let Some(producer) = records.get(&role.id) {
+                let declaration = store
+                    .model()
+                    .contract(producer.contract)?
+                    .outputs
+                    .iter()
+                    .find(|r| r.role == role.slot)
+                    .ok_or_else(|| local::corrupt("undeclared output role"))?;
+                if let Some(output) = records.get(&binding.output) {
+                    require(
+                        output.contract == declaration.contract
+                            && output.input.managed() == Some((role.id, role.slot))
+                            && output.owner == producer.owner
+                            && output.reader == producer.reader,
+                        "managed output provenance/authority",
+                    )?;
+                }
             } else {
                 require(
                     !records.contains_key(&binding.output),
-                    "inactive output remains",
+                    "retired output remains",
+                )?;
+                require(
+                    store
+                        .model()
+                        .contracts()
+                        .any(|c| c.outputs.iter().any(|r| r.role == role.slot)),
+                    "undeclared retired role",
                 )?;
             }
             expected_keys.insert(Key::Role(*role));
             expected_keys.insert(Key::Reserved(binding.output));
         }
-        require(
-            emits.keys().all(|role| bindings.contains_key(role)),
-            "unbound required output",
-        )?;
-        require(
-            records
-                .iter()
-                .filter(|(_, r)| r.contract == 12)
-                .map(|(id, _)| *id)
-                .collect::<BTreeSet<_>>()
-                == outputs,
-            "complete output inventory",
-        )?;
+        for (&id, record) in &records {
+            if let Some((producer, slot)) = record.input.managed() {
+                require(
+                    bindings
+                        .get(&Address::new(producer, slot))
+                        .is_some_and(|b| !b.retired && b.output == id),
+                    "unbound managed output",
+                )?;
+            }
+        }
+        require(counts == meta.counts, "record population")?;
+        check_populations(store.model(), &counts, meta.reserved)?;
+        Ok(Self {
+            store,
+            read,
+            meta,
+            header,
+            all,
+            records,
+            roots,
+            nodes,
+            graph,
+            expected_keys,
+            routes,
+            public,
+            readers,
+        })
+    }
+    pub(crate) fn finish(
+        &self,
+        mut expected_keys: BTreeSet<Key>,
+        members: Members,
+        routes: BTreeMap<Key, BTreeSet<Address>>,
+        queries: BTreeMap<Address, Query>,
+    ) -> Result<Value> {
+        let Self {
+            store,
+            read,
+            meta,
+            header,
+            all,
+            records,
+            roots,
+            nodes,
+            graph,
+            public,
+            readers,
+            ..
+        } = self;
         for (key, addresses) in routes {
             let expected = match &key {
-                Key::Incoming(_) => Stored::Incoming(addresses.into_iter().collect()),
-                Key::Direct(_) => Stored::Direct(addresses.into_iter().collect()),
-                _ => Stored::Subscribers(addresses.into_iter().collect()),
+                Key::Incoming(_) => StoredValue::Incoming(addresses.into_iter().collect()),
+                Key::Direct(_) => StoredValue::Direct(addresses.into_iter().collect()),
+                _ => StoredValue::Subscribers(addresses.into_iter().collect()),
             };
             require(all.get(&key) == Some(&expected), "exact reverse route")?;
             expected_keys.insert(key);
@@ -621,23 +440,23 @@ impl LocalStore {
         for (id, query) in queries {
             let key = Key::Query(id);
             require(
-                all.get(&key) == Some(&Stored::Query(query)),
+                all.get(&key) == Some(&StoredValue::Query(query)),
                 "exact ordered query",
             )?;
             expected_keys.insert(key);
         }
         require(nodes.len() == members.len(), "node inventory size")?;
         let mut walk = Walk {
-            nodes: &nodes,
+            nodes,
             members: &members,
             seen: BTreeSet::new(),
         };
-        for (&address, root) in &roots {
+        for (&address, root) in roots {
             require(
                 expected_keys.contains(&Key::Root(address)) && root.revision <= meta.revision,
                 "root inventory/version",
             )?;
-            let declaration = self
+            let declaration = store
                 .model()
                 .contract(records[&address.id].contract)?
                 .roots
@@ -674,7 +493,7 @@ impl LocalStore {
                 root.summary == aggregate(root.kind, &leaves)?,
                 "root summary",
             )?;
-            if address.slot == 2 {
+            if declaration.invariant == Some("nonnegative complete-time prefixes") {
                 let Aggregate::Financial(s) = root.summary else {
                     return Err(local::corrupt("account kind"));
                 };
@@ -690,7 +509,7 @@ impl LocalStore {
             expected_keys == all.keys().cloned().collect(),
             "complete native inventory",
         )?;
-        require(counts == meta.counts, "record population")?;
+
         let index = read.open_table(PUBLIC).map_err(local::storage)?;
         let actual = index
             .iter()
@@ -700,8 +519,8 @@ impl LocalStore {
                     .map_err(local::storage)
             })
             .collect::<Result<BTreeMap<_, _>>>()?;
-        require(actual == public, "public identity index")?;
-        if self.secured {
+        require(actual == *public, "public identity index")?;
+        if store.secured {
             let index = read
                 .open_table(crate::security::READERS)
                 .map_err(local::storage)?;
@@ -713,17 +532,17 @@ impl LocalStore {
                         .map_err(local::storage)
                 })
                 .collect::<Result<BTreeMap<_, _>>>()?;
-            require(actual == readers, "reader index inventory")?;
+            require(actual == *readers, "reader index inventory")?;
         }
         let receipts = read.open_table(RECEIPTS).map_err(local::storage)?;
         let mut receipt_count = 0;
         for row in receipts.iter().map_err(local::storage)? {
             let (k, v) = row.map_err(local::storage)?;
-            let r: Receipt = local::decode(v.value())?;
+            let r: ReceiptValue<B> = local::decode(v.value())?;
             receipt_count += 1;
             crate::security::check_operation_context(
                 &r.context,
-                &header,
+                header,
                 crate::native_slice::Context {
                     tenant: meta.tenant,
                     actor: r.actor,
@@ -755,8 +574,8 @@ impl LocalStore {
                             && record.version <= r.result.revision,
                         "receipt record binding/version",
                     )?;
-                    let contract = self.model.public_contract(record.contract)?;
-                    self.model.validate(
+                    let contract = store.model.public_contract(record.contract)?;
+                    store.model.validate(
                         record.contract,
                         &serde_json::to_value(&record.input).map_err(local::storage)?,
                     )?;
@@ -773,7 +592,7 @@ impl LocalStore {
                     )?;
                 }
             }
-            let expected = if self.secured {
+            let expected = if store.secured {
                 [
                     r.actor.as_bytes().as_slice(),
                     r.result.operation_id.as_bytes().as_slice(),
@@ -799,12 +618,385 @@ impl LocalStore {
         )
     }
 }
+pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
+    let snapshot = Snapshot::load(store)?;
+    let all = &snapshot.all;
+    let records = &snapshot.records;
+    let meta = &snapshot.meta;
+    let mut expected_keys = snapshot.expected_keys.clone();
+    let mut members = Members::new();
+    let mut routes = snapshot.routes.clone();
+    let mut queries = BTreeMap::<Address, Query>::new();
+    let mut causal_reads = BTreeMap::<Uuid, Vec<(Uuid, Option<i64>)>>::new();
+    let mut emits = BTreeMap::<Address, (Uuid, i64, i128)>::new();
+    let mut quote_times = BTreeSet::new();
+    for (&id, r) in records {
+        match &r.input {
+            Input::Quote { curve, at, rate } => {
+                require(quote_times.insert((*curve, *at)), "unique quote time")?;
+                members.insert(
+                    Address::new(id, 3),
+                    (Address::new(*curve, 1), *at, Leaf::Quote(*rate)),
+                );
+            }
+            Input::Entry {
+                account,
+                at,
+                amount,
+            }
+            | Input::Output {
+                account,
+                at,
+                amount,
+                ..
+            } => {
+                members.insert(
+                    Address::new(id, 1),
+                    (Address::new(*account, 2), *at, Leaf::Financial(*amount)),
+                );
+            }
+            Input::Posting {
+                units,
+                at,
+                rule,
+                curve,
+                account,
+                subsidiary,
+            } => {
+                let Input::Rule { c } = records[rule].input else {
+                    return Err(local::corrupt("rule type"));
+                };
+                let Input::Curve {
+                    native_unit,
+                    reporting_unit,
+                } = records[curve].input
+                else {
+                    return Err(local::corrupt("curve type"));
+                };
+                require(
+                    records[account].input == Input::Account { native_unit }
+                        && records[subsidiary].input == Input::Subsidiary { reporting_unit },
+                    "posting unit compatibility",
+                )?;
+                let selected = records
+                    .iter()
+                    .filter_map(|(&qid, q)| match q.input {
+                        Input::Quote {
+                            curve: c,
+                            at: q_at,
+                            rate,
+                        } if c == *curve && q_at <= *at => Some((q_at, qid, rate)),
+                        _ => None,
+                    })
+                    .max_by_key(|v| v.0);
+                let native = units
+                    .checked_mul(i128::from(c))
+                    .ok_or_else(|| local::corrupt("native overflow"))?;
+                let reporting = native
+                    .checked_mul(i128::from(selected.map_or(1, |v| v.2)))
+                    .ok_or_else(|| local::corrupt("reporting overflow"))?;
+                require(
+                    r.derived
+                        == Some(Calculated::Posting(Derived {
+                            native_minor: native,
+                            reporting_minor: reporting,
+                        })),
+                    "posting calculation",
+                )?;
+                members.insert(
+                    Address::new(id, 1),
+                    (Address::new(*account, 2), *at, Leaf::Financial(native)),
+                );
+                members.insert(
+                    Address::new(id, 2),
+                    (
+                        Address::new(*subsidiary, 3),
+                        *at,
+                        Leaf::Financial(reporting),
+                    ),
+                );
+                queries.insert(
+                    Address::new(id, 1),
+                    Query {
+                        source: Address::new(*curve, 1),
+                        operation: "latest".into(),
+                        phase: "calculate".into(),
+                        channel: "rate".into(),
+                        lower: "negative_infinity".into(),
+                        upper: Bound::AfterTime(*at),
+                        selected: selected.map(|v| v.1),
+                        result: i128::from(selected.map_or(1, |v| v.2)),
+                    },
+                );
+                routes
+                    .entry(Key::Direct(*rule))
+                    .or_default()
+                    .insert(Address::new(id, 7));
+                routes
+                    .entry(Key::Subscribers(Address::new(*curve, 1)))
+                    .or_default()
+                    .insert(Address::new(id, 1));
+            }
+            _ => {}
+        }
+        if !matches!(
+            r.input,
+            Input::Posting { .. } | Input::Adjustment { .. } | Input::Basis { .. }
+        ) {
+            require(r.derived.is_none(), "unexpected derived value")?;
+        }
+    }
+    let account_sum = |account: Uuid, before: Option<i64>| -> Result<i128> {
+        sum(members.values().filter_map(|(root, at, leaf)| match leaf {
+            Leaf::Financial(amount)
+                if *root == Address::new(account, 2) && before.is_none_or(|t| *at < t) =>
+            {
+                Some(*amount)
+            }
+            _ => None,
+        }))
+    };
+    for (&id, r) in records {
+        match &r.input {
+            Input::Adjustment {
+                account,
+                moment,
+                offset,
+                target,
+                post,
+            } => {
+                let Input::Moment { at } = records[moment].input else {
+                    return Err(local::corrupt("moment type"));
+                };
+                let at = at
+                    .checked_add(*offset)
+                    .ok_or_else(|| local::corrupt("adjustment time overflow"))?;
+                let before = account_sum(*account, Some(at))?;
+                let delta = target
+                    .checked_sub(before)
+                    .ok_or_else(|| local::corrupt("delta overflow"))?;
+                require(
+                    r.derived == Some(Calculated::Adjustment { at, before, delta }) && before >= 0,
+                    "adjustment calculation/invariant",
+                )?;
+                causal_reads.insert(id, vec![(*account, Some(at))]);
+                if *post {
+                    emits.insert(Address::new(id, 1), (*account, at, delta));
+                }
+                routes
+                    .entry(Key::Direct(*moment))
+                    .or_default()
+                    .insert(Address::new(id, 6));
+                for slot in [1, 2] {
+                    let query = Address::new(id, slot);
+                    routes
+                        .entry(Key::Subscribers(Address::new(*account, 2)))
+                        .or_default()
+                        .insert(query);
+                    queries.insert(
+                        query,
+                        Query {
+                            source: Address::new(*account, 2),
+                            operation: "sum".into(),
+                            phase: if slot == 1 { "calculate" } else { "validate" }.into(),
+                            channel: "amount".into(),
+                            lower: "negative_infinity".into(),
+                            upper: Bound::BeforeTime(at),
+                            selected: None,
+                            result: before,
+                        },
+                    );
+                }
+            }
+            Input::Basis {
+                sources,
+                factor,
+                account,
+                at,
+                feedback,
+            } => {
+                let unit = &records[account].input;
+                require(
+                    sources
+                        .iter()
+                        .chain(feedback.iter().map(|f| &f.account))
+                        .all(|id| &records[id].input == unit),
+                    "basis unit compatibility",
+                )?;
+                let value = sum(sources
+                    .iter()
+                    .map(|source| account_sum(*source, None))
+                    .collect::<Result<Vec<_>>>()?)?
+                .checked_mul(i128::from(*factor))
+                .ok_or_else(|| local::corrupt("basis overflow"))?;
+                require(
+                    r.derived == Some(Calculated::Basis { value }),
+                    "basis calculation",
+                )?;
+                causal_reads.insert(id, sources.iter().map(|s| (*s, None)).collect());
+                emits.insert(Address::new(id, 1), (*account, *at, value));
+                if let Some(f) = feedback {
+                    emits.insert(Address::new(id, 2), (f.account, f.at, 0));
+                }
+                for (i, &source) in sources.iter().enumerate() {
+                    let q = Address::new(id, i as u16 + 1);
+                    routes
+                        .entry(Key::Subscribers(Address::new(source, 2)))
+                        .or_default()
+                        .insert(q);
+                    queries.insert(
+                        q,
+                        Query {
+                            source: Address::new(source, 2),
+                            operation: "sum".into(),
+                            phase: "calculate".into(),
+                            channel: "amount".into(),
+                            lower: "negative_infinity".into(),
+                            upper: Bound::All,
+                            selected: None,
+                            result: account_sum(source, None)?,
+                        },
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+    // Complete expected final dependency edges, including zero contributions.
+    let mut pending: BTreeMap<_, usize> = causal_reads.keys().map(|id| (*id, 0)).collect();
+    let mut edges = BTreeMap::<Uuid, BTreeSet<Uuid>>::new();
+    for (&consumer, reads) in &causal_reads {
+        for (role, (account, at, _)) in &emits {
+            if reads
+                .iter()
+                .any(|(r, b)| r == account && b.is_none_or(|bound| *at < bound))
+                && edges.entry(role.id).or_default().insert(consumer)
+            {
+                *pending.get_mut(&consumer).unwrap() += 1;
+            }
+        }
+    }
+    let mut ready: BTreeSet<_> = pending
+        .iter()
+        .filter(|(_, v)| **v == 0)
+        .map(|(id, _)| *id)
+        .collect();
+    let mut evaluated = 0;
+    while let Some(id) = ready.pop_first() {
+        evaluated += 1;
+        for consumer in edges.get(&id).into_iter().flatten() {
+            let p = pending.get_mut(consumer).unwrap();
+            *p -= 1;
+            if *p == 0 {
+                ready.insert(*consumer);
+            }
+        }
+    }
+    require(evaluated == pending.len(), "final causal cycle")?;
+    let mut bindings = BTreeMap::new();
+    let mut reserved = BTreeMap::new();
+    for (key, value) in all {
+        match (key, value) {
+            (Key::Role(role), Stored::Role(binding)) => {
+                bindings.insert(*role, *binding);
+            }
+            (Key::Reserved(id), Stored::Reserved(role)) => {
+                reserved.insert(*id, *role);
+            }
+            _ => {}
+        }
+    }
+    require(
+        bindings.len() == reserved.len() && bindings.len() == usize::from(meta.reserved),
+        "reservation population",
+    )?;
+    require(
+        reserved
+            .keys()
+            .all(|id| !bindings.keys().any(|role| role.id == *id)),
+        "producer/output identity separation",
+    )?;
+    let mut outputs = BTreeSet::new();
+    for (role, binding) in &bindings {
+        require(
+            matches!(role.slot, 1 | 2) && reserved.get(&binding.output) == Some(role),
+            "reservation inverse",
+        )?;
+        require(
+            binding.retired != records.contains_key(&role.id),
+            "retired producer lifecycle",
+        )?;
+        if !binding.retired {
+            require(
+                records[&role.id].contract == 10
+                    || records[&role.id].contract == 9 && role.slot == 1,
+                "producer contract",
+            )?;
+        }
+        if let Some(&(account, at, amount)) = emits.get(role) {
+            let r = records
+                .get(&binding.output)
+                .ok_or_else(|| local::corrupt("missing managed output"))?;
+            let producer = &records[&role.id];
+            require(
+                r.input
+                    == Input::Output {
+                        producer: role.id,
+                        role: role.slot,
+                        account,
+                        at,
+                        amount,
+                    }
+                    && r.owner == producer.owner
+                    && r.reader == producer.reader,
+                "managed output shape/authority",
+            )?;
+            outputs.insert(binding.output);
+        } else {
+            require(
+                !records.contains_key(&binding.output),
+                "inactive output remains",
+            )?;
+        }
+        expected_keys.insert(Key::Role(*role));
+        expected_keys.insert(Key::Reserved(binding.output));
+    }
+    require(
+        emits.keys().all(|role| bindings.contains_key(role)),
+        "unbound required output",
+    )?;
+    require(
+        records
+            .iter()
+            .filter(|(_, r)| r.contract == 12)
+            .map(|(id, _)| *id)
+            .collect::<BTreeSet<_>>()
+            == outputs,
+        "complete output inventory",
+    )?;
+    snapshot.finish(expected_keys, members, routes, queries)
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::local::LocalStore;
     use redb::ReadableDatabase;
     use std::sync::Arc;
+    #[test]
+    fn model_population_limits_are_checked_inside_codec_envelope() {
+        use crate::{model::Prepared, models::equipment::Equipment};
+        let equipment = Prepared::<Equipment>::load().unwrap();
+        // Both values fit the codec's total envelope; only 64 is model-valid.
+        assert!(check_populations(&equipment, &BTreeMap::from([(101, 64)]), 0).is_ok());
+        assert!(check_populations(&equipment, &BTreeMap::from([(101, 65)]), 0).is_err());
+        assert!(check_populations(&equipment, &BTreeMap::from([(900, 48)]), 256).is_ok());
+        assert!(check_populations(&equipment, &BTreeMap::from([(900, 49)]), 256).is_err());
+        assert!(check_populations(&equipment, &BTreeMap::new(), 257).is_err());
+        let calculation = Prepared::<Calculation>::load().unwrap();
+        assert!(check_populations(&calculation, &BTreeMap::from([(3, 16)]), 0).is_ok());
+        assert!(check_populations(&calculation, &BTreeMap::from([(3, 17)]), 0).is_err());
+    }
     #[test]
     fn source_inventory_and_structure_reject_corruption_without_writer_replay() {
         let directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -841,7 +1033,7 @@ mod tests {
                     changes.push((key.clone(), Some(Stored::Record(r))));
                 }
                 Stored::Meta(mut m) => {
-                    m.counts[0] += 1;
+                    *m.counts.entry(1).or_default() += 1;
                     changes.push((key.clone(), Some(Stored::Meta(m))));
                 }
                 _ => {}

@@ -1,8 +1,9 @@
 //! Offline/operator lifecycle. These operations are never public RPC methods.
+use crate::binding::Binding;
 use crate::{
-    local::{self, HEADER, KV, LocalStore, PUBLIC, RECEIPTS, RUNTIME, RuntimeHeader},
-    model::PreparedModel,
-    native_codec::{self, Key, Stored},
+    local::{self, HEADER, KV, PUBLIC, RECEIPTS, RUNTIME, RuntimeHeader, Store},
+    model::Prepared,
+    native_codec::{self, Key, StoredValue},
     native_slice::{Error, Meta, Result},
     security::{AUTHORITY, READERS},
 };
@@ -77,7 +78,7 @@ fn publish(temp: &Temporary, destination: &Path) -> Result<()> {
         .and_then(|f| f.sync_all())
         .map_err(local::storage)
 }
-impl LocalStore {
+impl<B: Binding> Store<B> {
     pub fn backup(&self, destination: impl AsRef<Path>) -> Result<Value> {
         self.check_integrity()?;
         let (read, meta, header) = self.read(self.model().identity())?;
@@ -116,7 +117,7 @@ impl LocalStore {
                 .ok_or_else(|| local::corrupt("missing header"))?
                 .value(),
         )?;
-        let meta = match native_codec::decode(
+        let meta = match native_codec::decode_for::<B>(
             &Key::Meta,
             write
                 .open_table(KV)
@@ -126,7 +127,7 @@ impl LocalStore {
                 .ok_or_else(|| local::corrupt("missing meta"))?
                 .value(),
         )? {
-            Stored::Meta(meta) => meta,
+            StoredValue::Meta(meta) => meta,
             _ => return Err(local::corrupt("meta type")),
         };
         if backup["store"] != header.store_id.to_string()
@@ -215,7 +216,7 @@ impl LocalStore {
             tenant: self.context.tenant,
             actor: self.bootstrap_actor,
             revision: 0,
-            counts: [0; 12],
+            counts: self.model.contracts().map(|c| (c.code, 0)).collect(),
             reserved: 0,
         };
         write
@@ -223,7 +224,7 @@ impl LocalStore {
             .map_err(local::storage)?
             .insert(
                 Key::Meta.encode().as_slice(),
-                native_codec::encode(&Key::Meta, &Stored::Meta(meta))?.as_slice(),
+                native_codec::encode_for::<B>(&Key::Meta, &StoredValue::Meta(meta))?.as_slice(),
             )
             .map_err(local::storage)?;
         let fresh = RuntimeHeader::fresh();
@@ -244,10 +245,10 @@ impl LocalStore {
     }
 }
 
-pub fn restore(
+pub fn restore<B: Binding>(
     backup: impl AsRef<Path>,
     destination: impl AsRef<Path>,
-    model: Arc<PreparedModel>,
+    model: Arc<Prepared<B>>,
 ) -> Result<Value> {
     let mut bytes = vec![];
     File::open(backup)
@@ -339,7 +340,7 @@ pub fn restore(
     }
     write.commit().map_err(local::storage)?;
     drop(db);
-    let restored = LocalStore::open(&temp.0, model)?;
+    let restored = Store::open(&temp.0, model)?;
     let checked = restored.check_integrity()?;
     drop(restored);
     publish(&temp, destination)?;

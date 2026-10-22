@@ -2,6 +2,7 @@
 
 pub mod access;
 pub mod algebra;
+pub mod binding;
 pub mod causal;
 pub mod demo;
 pub mod fixtures;
@@ -13,6 +14,8 @@ pub mod lifecycle;
 pub mod local;
 pub mod merge;
 pub mod model;
+pub mod models;
+pub mod mutation;
 pub mod native_codec;
 pub mod native_slice;
 pub mod plan;

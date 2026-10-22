@@ -1,14 +1,15 @@
 //! One strict point-key/value codec for the bounded native experiment.
 
+use crate::binding::{Binding, Calculation, NativeInput};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    native_slice::{Calculated, Error, Meta, Query, Record, Result},
+    native_slice::{Error, Meta, ModelRecord, Query, Result},
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-2";
+pub const CODEC: &str = "native-slice-kv-3";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -210,13 +211,7 @@ impl Key {
         } else {
             0
         };
-        if length == 19
-            && !(if tag == 2 || tag == 3 || tag == 7 {
-                (1..=3).contains(&slot)
-            } else {
-                (1..=2).contains(&slot)
-            })
-        {
+        if length == 19 && slot == 0 {
             return Err(bad());
         }
         let a = Address::new(id, slot);
@@ -242,9 +237,13 @@ impl Key {
     rename_all = "snake_case",
     deny_unknown_fields
 )]
-pub enum Stored {
+#[serde(bound(
+    serialize = "B::Input: Serialize, B::Derived: Serialize",
+    deserialize = "B::Input: serde::de::DeserializeOwned, B::Derived: serde::de::DeserializeOwned"
+))]
+pub enum StoredValue<B: Binding> {
     Meta(Meta),
-    Record(Record),
+    Record(ModelRecord<B>),
     Root(Root),
     Node(Node),
     Query(Query),
@@ -263,72 +262,62 @@ pub struct Role {
     pub retired: bool,
 }
 
+pub type Stored = StoredValue<Calculation>;
+
 pub fn encode(key: &Key, value: &Stored) -> Result<Vec<u8>> {
+    encode_for::<Calculation>(key, value)
+}
+pub fn decode(key: &Key, bytes: &[u8]) -> Result<Stored> {
+    decode_for::<Calculation>(key, bytes)
+}
+
+pub fn encode_for<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<Vec<u8>> {
     validate(key, value)?;
     serde_json::to_vec(value).map_err(|e| Error::new("codec", e.to_string()))
 }
 
-pub fn decode(key: &Key, bytes: &[u8]) -> Result<Stored> {
+pub fn decode_for<B: Binding>(key: &Key, bytes: &[u8]) -> Result<StoredValue<B>> {
     let value =
         serde_json::from_slice(bytes).map_err(|e| Error::new("corrupt_state", e.to_string()))?;
-    if encode(key, &value)? != bytes {
+    if encode_for::<B>(key, &value)? != bytes {
         return Err(Error::new("corrupt_state", "noncanonical value bytes"));
     }
     Ok(value)
 }
 
-fn validate(key: &Key, value: &Stored) -> Result<()> {
-    use crate::tree::Kind;
+fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
     let valid = match (key, value) {
-        (Key::Meta, Stored::Meta(meta)) => {
+        (Key::Meta, StoredValue::Meta(meta)) => {
             !meta.codec.is_empty()
                 && !meta.model.is_empty()
-                && meta.counts[..11].iter().map(|n| u32::from(*n)).sum::<u32>() <= 64
-                && meta.counts[2] <= 16
-                && meta.counts[5] <= 16
-                && meta.counts[8] <= 16
-                && meta.counts[9] <= 16
-                && meta.counts[11] <= 48
+                && meta.counts.keys().all(|code| *code > 0)
+                && meta.counts.values().map(|n| u64::from(*n)).sum::<u64>() <= 112
                 && meta.reserved <= 256
         }
-        (Key::Record(_), Stored::Record(r)) => {
-            r.contract == r.input.contract()
+        (Key::Record(_), StoredValue::Record(r)) => {
+            r.contract > 0
+                && r.contract == r.input.contract()
                 && r.input.validate().is_ok()
-                && matches!(
-                    (r.contract, r.derived),
-                    (6, Some(Calculated::Posting(_)))
-                        | (9, Some(Calculated::Adjustment { .. }))
-                        | (10, Some(Calculated::Basis { .. }))
-                        | (1..=5 | 7 | 8 | 11 | 12, None)
-                )
+                && r.input.managed().is_none_or(|(_, role)| role > 0)
+                && B::valid_derived(&r.input, r.derived.as_ref())
         }
-        (Key::Root(a), Stored::Root(r)) => {
-            matches!(
-                (a.slot, r.kind),
-                (1, Kind::Quote) | (2 | 3, Kind::Financial)
-            ) && r.summary.kind() == r.kind
-        }
-        (Key::Node(a), Stored::Node(n)) => {
-            n.key.id == a.id
+        (Key::Root(a), StoredValue::Root(r)) => a.slot > 0 && r.summary.kind() == r.kind,
+        (Key::Node(a), StoredValue::Node(n)) => {
+            a.slot > 0
+                && n.root.slot > 0
+                && n.key.id == a.id
                 && n.key.slot == a.slot
-                && matches!(
-                    (a.slot, n.root.slot, n.leaf.kind()),
-                    (1, 2, Kind::Financial) | (2, 3, Kind::Financial) | (3, 1, Kind::Quote)
-                )
                 && n.summary.kind() == n.leaf.kind()
         }
-        (Key::Query(a), Stored::Query(q)) => {
-            q.lower == "negative_infinity"
-                && ((a.slot == 1
-                    && q.source.slot == 1
-                    && q.operation == "latest"
+        (Key::Query(a), StoredValue::Query(q)) => {
+            a.slot > 0
+                && q.source.slot > 0
+                && q.lower == "negative_infinity"
+                && ((q.operation == "latest"
                     && q.phase == "calculate"
                     && q.channel == "rate"
-                    && matches!(q.upper, crate::native_slice::Bound::AfterTime(_))
-                    && (1..=1000).contains(&q.result))
-                    || ((1..=2).contains(&a.slot)
-                        && q.source.slot == 2
-                        && q.operation == "sum"
+                    && matches!(q.upper, crate::native_slice::Bound::AfterTime(_)))
+                    || (q.operation == "sum"
                         && matches!(q.phase.as_str(), "calculate" | "validate")
                         && q.channel == "amount"
                         && q.selected.is_none()
@@ -338,13 +327,13 @@ fn validate(key: &Key, value: &Stored) -> Result<()> {
                                 | crate::native_slice::Bound::All
                         )))
         }
-        (Key::Incoming(_), Stored::Incoming(rows))
-        | (Key::Direct(_), Stored::Direct(rows))
-        | (Key::Subscribers(_), Stored::Subscribers(rows)) => {
+        (Key::Incoming(_), StoredValue::Incoming(rows))
+        | (Key::Direct(_), StoredValue::Direct(rows))
+        | (Key::Subscribers(_), StoredValue::Subscribers(rows)) => {
             rows.windows(2).all(|w| w[0] < w[1]) && rows.iter().all(|a| a.slot > 0)
         }
-        (Key::Role(a), Stored::Role(_)) => (1..=2).contains(&a.slot),
-        (Key::Reserved(_), Stored::Reserved(a)) => (1..=2).contains(&a.slot),
+        (Key::Role(a), StoredValue::Role(_)) => a.slot > 0,
+        (Key::Reserved(_), StoredValue::Reserved(a)) => a.slot > 0,
         _ => false,
     };
     if valid {

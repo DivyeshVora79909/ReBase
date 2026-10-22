@@ -14,11 +14,10 @@ use uuid::Uuid;
 
 use crate::{
     access::{Action, Scope},
-    model::{PreparedModel, Visibility},
-    native_codec::{self, Key, Stored, decimal, uuid_text},
-    native_slice::{
-        Command, Context, Error, Input, Meta, Record, Result, Workspace, settle_authorized,
-    },
+    binding::{Binding, Calculation, NativeInput},
+    model::{Prepared, Visibility},
+    native_codec::{self, Key, StoredValue, decimal, uuid_text},
+    native_slice::{Attempt, Command, Context, Error, Meta, ModelRecord, Result},
 };
 
 pub(crate) const KV: TableDefinition<&[u8], &[u8]> = TableDefinition::new("native_kv");
@@ -26,7 +25,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-store-2";
+pub const STORE_FORMAT: &str = "rebase-store-3";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
@@ -102,38 +101,38 @@ pub struct Mutation {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct PublicRecord {
+#[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
+pub struct PublicRecordValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub id: Uuid,
     pub contract: u16,
     #[serde(with = "decimal")]
     pub version: u64,
-    pub input: Input,
+    pub input: B::Input,
     pub derived: Option<Value>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct Returned {
+#[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
+pub struct ReturnedValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub id: Uuid,
-    pub record: Option<PublicRecord>,
+    pub record: Option<PublicRecordValue<B>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct Committed {
+#[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
+pub struct CommittedValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub operation_id: Uuid,
     #[serde(with = "decimal")]
     pub revision: u64,
-    pub records: Vec<Returned>,
+    pub records: Vec<ReturnedValue<B>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct Receipt {
+#[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
+pub(crate) struct ReceiptValue<B: Binding> {
     pub(crate) context: String,
     pub(crate) model: String,
     #[serde(with = "uuid_text")]
@@ -141,7 +140,7 @@ pub(crate) struct Receipt {
     #[serde(with = "uuid_text")]
     pub(crate) actor: Uuid,
     pub(crate) request_hash: String,
-    pub(crate) result: Committed,
+    pub(crate) result: CommittedValue<B>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -173,19 +172,24 @@ impl RuntimeHeader {
     }
 }
 
-pub struct LocalStore {
+pub struct Store<B: Binding> {
     pub(crate) db: Arc<Database>,
-    pub(crate) model: Arc<PreparedModel>,
+    pub(crate) model: Arc<Prepared<B>>,
     pub(crate) context: Context,
     pub(crate) bootstrap_actor: Uuid,
     pub(crate) secured: bool,
     pub(crate) credential_epoch: Option<u64>,
 }
 
-impl LocalStore {
+pub type LocalStore = Store<Calculation>;
+
+impl<B: Binding> Store<B> {
+    pub fn check_integrity(&self) -> Result<Value> {
+        B::check(self)
+    }
     pub fn create(
         path: impl AsRef<Path>,
-        model: Arc<PreparedModel>,
+        model: Arc<Prepared<B>>,
         context: Context,
     ) -> Result<Self> {
         let mut options = OpenOptions::new();
@@ -206,10 +210,10 @@ impl LocalStore {
                 tenant: context.tenant,
                 actor: context.actor,
                 revision: 0,
-                counts: [0; 12],
+                counts: model.contracts().map(|c| (c.code, 0)).collect(),
                 reserved: 0,
             };
-            let bytes = native_codec::encode(&Key::Meta, &Stored::Meta(meta))?;
+            let bytes = native_codec::encode_for::<B>(&Key::Meta, &StoredValue::Meta(meta))?;
             table
                 .insert(Key::Meta.encode().as_slice(), bytes.as_slice())
                 .map_err(storage)?;
@@ -235,10 +239,11 @@ impl LocalStore {
         })
     }
 
-    pub fn open(path: impl AsRef<Path>, model: Arc<PreparedModel>) -> Result<Self> {
+    pub fn open(path: impl AsRef<Path>, model: Arc<Prepared<B>>) -> Result<Self> {
         let db = Database::open(path).map_err(storage)?;
         let read = db.begin_read().map_err(storage)?;
         check_tables(&read)?;
+        let header = read_header(&read)?;
         let meta = read_meta(&read)?;
         let context = Context {
             tenant: meta.tenant,
@@ -257,14 +262,17 @@ impl LocalStore {
             credential_epoch: None,
         };
         store.check_meta(&meta, store.model.identity())?;
-        read_header(&read)?;
         let public = read.open_table(PUBLIC).map_err(storage)?;
         if public.len().map_err(storage)?
-            != meta.counts[..10].iter().map(|&n| u64::from(n)).sum::<u64>()
+            != store
+                .model
+                .contracts()
+                .filter(|c| c.visibility == Visibility::Public)
+                .map(|c| u64::from(*meta.counts.get(&c.code).unwrap_or(&0)))
+                .sum::<u64>()
         {
             return Err(corrupt("public index population"));
         }
-        let header = read_header(&read)?;
         if read
             .open_table(RECEIPTS)
             .map_err(storage)?
@@ -277,7 +285,7 @@ impl LocalStore {
         Ok(store)
     }
 
-    pub fn model(&self) -> &PreparedModel {
+    pub fn model(&self) -> &Prepared<B> {
         &self.model
     }
     pub fn context(&self) -> Context {
@@ -309,8 +317,8 @@ impl LocalStore {
         &self,
         scope: &Scope,
         id: Uuid,
-        record: Option<Record>,
-    ) -> Option<PublicRecord> {
+        record: Option<ModelRecord<B>>,
+    ) -> Option<PublicRecordValue<B>> {
         let record = record?;
         if !scope.can_read(&record)
             || self.model.contract(record.contract).ok()?.visibility != Visibility::Public
@@ -331,7 +339,7 @@ impl LocalStore {
                     .collect(),
             )
         });
-        Some(PublicRecord {
+        Some(PublicRecordValue {
             id,
             contract: record.contract,
             version: record.version,
@@ -340,11 +348,11 @@ impl LocalStore {
         })
     }
 
-    pub fn get(&self, model: &str, id: Uuid) -> Result<Option<PublicRecord>> {
+    pub fn get(&self, model: &str, id: Uuid) -> Result<Option<PublicRecordValue<B>>> {
         let (read, _, _) = self.read(model)?;
         let scope = self.authority(&read)?;
         let table = read.open_table(KV).map_err(storage)?;
-        let mut ws = Workspace::new(
+        let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 table
                     .get(key)
@@ -399,7 +407,7 @@ impl LocalStore {
         let mut header: RuntimeHeader;
         let (batch, result) = {
             let table = write.open_table(KV).map_err(storage)?;
-            let mut ws = Workspace::new(
+            let mut ws = Attempt::<_, B>::new(
                 |key: &[u8]| {
                     table
                         .get(key)
@@ -408,7 +416,7 @@ impl LocalStore {
                 },
                 MUTATION_WORK_LIMIT,
             );
-            let Some(Stored::Meta(meta)) = ws.get(&Key::Meta)? else {
+            let Some(StoredValue::Meta(meta)) = ws.get(&Key::Meta)? else {
                 return Err(corrupt("missing model header"));
             };
             self.check_meta(&meta, &request.model)?;
@@ -433,7 +441,7 @@ impl LocalStore {
                 .get(self.receipt_key(request.operation_id).as_slice())
                 .map_err(storage)?
             {
-                let receipt: Receipt = decode(bytes.value())?;
+                let receipt: ReceiptValue<B> = decode(bytes.value())?;
                 self.check_receipt(&receipt, request.operation_id, &header)?;
                 if receipt.request_hash != request_hash {
                     return Err(Error::new(
@@ -447,12 +455,13 @@ impl LocalStore {
             if header.receipts >= MAX_RECEIPTS {
                 return Err(Error::new("receipt_limit", "receipt retention exhausted"));
             }
-            let settled = settle_authorized(
+            let settled = crate::mutation::settle_authorized(
                 &mut ws,
-                self.model.engine(),
+                &self.model,
                 self.context,
                 &request.commands,
                 allocate,
+                false,
                 &mut |ws, command, old, new| {
                     let action = match command {
                         Command::Create { contract, .. } => {
@@ -518,12 +527,12 @@ impl LocalStore {
             }
             let mut records = vec![];
             for &id in &request.returning {
-                records.push(Returned {
+                records.push(ReturnedValue {
                     id,
                     record: self.project(&scope, id, ws.record(id)?),
                 });
             }
-            let result = Committed {
+            let result = CommittedValue {
                 operation_id: request.operation_id,
                 revision: settled.revision,
                 records,
@@ -536,14 +545,20 @@ impl LocalStore {
             for (i, (key, value)) in batch.iter().enumerate() {
                 if let Key::Record(id) = Key::decode(key)? {
                     if self.secured {
-                        crate::security::update_reader_index(&write, &table, id, value.as_deref())?;
+                        crate::security::update_reader_index(
+                            &write,
+                            &table,
+                            &self.model,
+                            id,
+                            value.as_deref(),
+                        )?;
                     }
                     match value
                         .as_deref()
-                        .map(|v| native_codec::decode(&Key::Record(id), v))
+                        .map(|v| native_codec::decode_for::<B>(&Key::Record(id), v))
                         .transpose()?
                     {
-                        Some(Stored::Record(record))
+                        Some(StoredValue::Record(record))
                             if self.model.contract(record.contract)?.visibility
                                 == Visibility::Public =>
                         {
@@ -574,7 +589,7 @@ impl LocalStore {
                 }
             }
         }
-        let receipt = Receipt {
+        let receipt = ReceiptValue {
             context: request.context.clone(),
             model: self.model.identity().into(),
             tenant: self.context.tenant,
@@ -610,7 +625,12 @@ impl LocalStore {
         Ok(json!({"status":"committed","replayed":false,"result":result}))
     }
 
-    fn check_receipt(&self, receipt: &Receipt, id: Uuid, header: &RuntimeHeader) -> Result<()> {
+    fn check_receipt(
+        &self,
+        receipt: &ReceiptValue<B>,
+        id: Uuid,
+        header: &RuntimeHeader,
+    ) -> Result<()> {
         if receipt.model != self.model.identity()
             || receipt.tenant != self.context.tenant
             || receipt.actor != self.context.actor
@@ -638,10 +658,10 @@ impl LocalStore {
         else {
             return Ok(json!({"status":"not_observed"}));
         };
-        let receipt: Receipt = decode(value.value())?;
+        let receipt: ReceiptValue<B> = decode(value.value())?;
         self.check_receipt(&receipt, id, &header)?;
         let native = read.open_table(KV).map_err(storage)?;
-        let mut ws = Workspace::new(
+        let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 native
                     .get(key)
@@ -669,11 +689,11 @@ impl LocalStore {
             }
             let (key, value) = row.map_err(storage)?;
             let key = Key::decode(key.value())?;
-            match (&key,native_codec::decode(&key,value.value())?) {
-                (Key::Record(id),Stored::Record(record))=>records.push(json!({"id":id,"record":record})),
-                (Key::Root(address),Stored::Root(root))=>roots.push(json!({"root":address,"revision":root.revision.to_string(),"summary":root.summary})),
-                (Key::Query(address),Stored::Query(query))=>queries.push(json!({"query":address,"descriptor":query})),
-                (Key::Role(address),Stored::Role(role))=>roles.push(json!({"source_role":address,"binding":role})),
+            match (&key,native_codec::decode_for::<B>(&key,value.value())?) {
+                (Key::Record(id),StoredValue::Record(record))=>records.push(json!({"id":id,"record":record})),
+                (Key::Root(address),StoredValue::Root(root))=>roots.push(json!({"root":address,"revision":root.revision.to_string(),"summary":root.summary})),
+                (Key::Query(address),StoredValue::Query(query))=>queries.push(json!({"query":address,"descriptor":query})),
+                (Key::Role(address),StoredValue::Role(role))=>roles.push(json!({"source_role":address,"binding":role})),
                 _=>{}
             }
         }
@@ -761,7 +781,7 @@ pub(crate) fn read_meta(read: &ReadTransaction) -> Result<Meta> {
         .map_err(storage)?
         .ok_or_else(|| corrupt("missing meta"))?;
     match native_codec::decode(&Key::Meta, value.value())? {
-        Stored::Meta(meta) => Ok(meta),
+        native_codec::Stored::Meta(meta) => Ok(meta),
         _ => Err(corrupt("meta type")),
     }
 }
@@ -821,9 +841,13 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
     Ok(())
 }
 
+pub type PublicRecord = PublicRecordValue<Calculation>;
+pub type Returned = ReturnedValue<Calculation>;
+pub type Committed = CommittedValue<Calculation>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{model::PreparedModel, native_codec::Stored};
     use std::path::PathBuf;
 
     struct Directory(PathBuf);
@@ -964,6 +988,47 @@ mod tests {
                 }
             );
         }
+        drop(store);
+        assert!(matches!(
+            LocalStore::open(dir.file(), model),
+            Err(Error {
+                code: "model_mismatch",
+                ..
+            })
+        ));
+    }
+    #[test]
+    fn old_store_format_is_rejected_before_decoding_legacy_meta() {
+        let dir = Directory::new();
+        let model = Arc::new(PreparedModel::load().unwrap());
+        let store = LocalStore::create(
+            dir.file(),
+            model.clone(),
+            Context {
+                tenant: Uuid::from_u128(1),
+                actor: Uuid::from_u128(2),
+            },
+        )
+        .unwrap();
+        let mut header = read_header(&store.db.begin_read().unwrap()).unwrap();
+        header.format = "rebase-store-2".into();
+        let write = store.db.begin_write().unwrap();
+        write
+            .open_table(RUNTIME)
+            .unwrap()
+            .insert(HEADER, encode(&header).unwrap().as_slice())
+            .unwrap();
+        // A legacy array-shaped Meta cannot decode under format 3. The runtime
+        // header must reject this store before any native payload decoding.
+        write
+            .open_table(KV)
+            .unwrap()
+            .insert(
+                Key::Meta.encode().as_slice(),
+                b"legacy-array-meta".as_slice(),
+            )
+            .unwrap();
+        write.commit().unwrap();
         drop(store);
         assert!(matches!(
             LocalStore::open(dir.file(), model),
