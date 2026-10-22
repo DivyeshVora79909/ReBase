@@ -5,11 +5,19 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-This is an early local prototype backed by bounded research evidence.
+The active user goal is now a deployable backend and developer tools, excluding
+frontend. Follow [the release checkpoints](research/17-deployable-backend.md).
+Continue autonomously through tested implementation checkpoints and commit each
+coherent checkpoint on the existing branch. Preserve capability, not the old
+implementation: choose a simpler approach when it satisfies the same contracts.
+Small composable ordinary APIs and one authoritative model are the design aim.
+Do not report full production or old-model parity merely because a server starts.
+
+The accepted starting point is a local prototype backed by bounded evidence.
 Preserve the difference between intent, proposals, established mathematics and
 executed evidence. Update the feasibility report when executable scope changes.
 
-The user confirmed a usable local prototype as the autonomous goal. P1–P4 in
+The previous user goal was a usable local prototype. P1–P4 in
 `research/13-local-prototype-plan.md` are now complete. Read the current result
 in `research/16-local-prototype-result.md` and the runnable instructions in
 `docs/local-prototype.md`. Paper 14 fixes the local API/tooling contract; papers

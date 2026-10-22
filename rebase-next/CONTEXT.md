@@ -1,5 +1,16 @@
 # Compact context — 2026-10-22
 
+**Active goal: deployable backend plus composable developer tools; no frontend.**
+The user has authorized autonomous implementation, breaking changes, checkpoint
+commits on the existing `main` tree and direct pushes. The
+[release checkpoints](research/17-deployable-backend.md) now own continuation.
+Preserve ReBase's **power**, not its exact implementation or old APIs. Prefer
+small, explicit, stateless functions and mature infrastructure libraries; do not
+add a universal DSL/plugin framework or duplicate schemas between runtime/tools.
+Carry context in this directory and checkpoint commit messages so another agent
+can resume without another whole-repository audit. The local prototype below is
+the verified starting point, not the new finish line.
+
 **Confirmed local-prototype finish line completed.** After `2109687`, the user
 chose engine, model tooling, mutation/query API and a demonstrable workflow.
 [P1–P4](research/13-local-prototype-plan.md) are complete. Start with the
