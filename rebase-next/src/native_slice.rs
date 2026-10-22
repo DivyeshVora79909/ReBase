@@ -582,6 +582,15 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>> Workspace<L> {
             _ => Err(Error::new("corrupt_state", "record type")),
         }
     }
+    pub(crate) fn changed_records(&self) -> BTreeSet<Uuid> {
+        self.entries
+            .iter()
+            .filter_map(|(key, entry)| match key {
+                Key::Record(id) if entry.current != entry.original => Some(*id),
+                _ => None,
+            })
+            .collect()
+    }
     pub(crate) fn changed_roots(&self) -> BTreeSet<Address> {
         let mut roots = BTreeSet::new();
         for (key, entry) in &self.entries {
@@ -630,8 +639,6 @@ pub(crate) fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         .filter(|r| {
             (r.contract == code || (code == 0 && matches!(r.contract, 9 | 10)))
                 && r.tenant == context.tenant
-                && r.owner == context.actor
-                && r.reader == context.actor
         })
         .ok_or_else(|| Error::new("unavailable_reference", "reference target unavailable"))
 }
@@ -937,7 +944,39 @@ pub fn settle_with_ids<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     commands: &[Command],
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<Settled> {
-    settle_inner(ws, model, context, commands, allocate, false)
+    settle_inner(
+        ws,
+        model,
+        context,
+        commands,
+        allocate,
+        false,
+        &mut |_, _, old, _| {
+            if old.is_some_and(|r| r.owner != context.actor) {
+                Err(Error::new("forbidden", "source authority"))
+            } else {
+                Ok(())
+            }
+        },
+    )
+}
+
+/// The adapter supplies current client authority. Internal repair remains
+/// tenant-scoped and never borrows the caller's record-write permissions.
+pub(crate) fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+    ws: &mut Workspace<L>,
+    model: &Model,
+    context: Context,
+    commands: &[Command],
+    allocate: &mut dyn FnMut() -> Result<Uuid>,
+    authorize: &mut impl FnMut(
+        &mut Workspace<L>,
+        &Command,
+        Option<&Record>,
+        Option<&Record>,
+    ) -> Result<()>,
+) -> Result<Settled> {
+    settle_inner(ws, model, context, commands, allocate, false, authorize)
 }
 
 /// Trusted fixture entrypoint for internal REJECT-reference controls. Never
@@ -949,7 +988,15 @@ pub fn settle_fixture<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     commands: &[Command],
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<Settled> {
-    settle_inner(ws, model, context, commands, allocate, true)
+    settle_inner(
+        ws,
+        model,
+        context,
+        commands,
+        allocate,
+        true,
+        &mut |_, _, _, _| Ok(()),
+    )
 }
 
 pub(crate) fn check_counts(meta: &Meta) -> Result<()> {
@@ -973,6 +1020,12 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     commands: &[Command],
     allocate: &mut dyn FnMut() -> Result<Uuid>,
     trusted: bool,
+    authorize: &mut impl FnMut(
+        &mut Workspace<L>,
+        &Command,
+        Option<&Record>,
+        Option<&Record>,
+    ) -> Result<()>,
 ) -> Result<Settled> {
     use crate::tree::{self, Aggregate, Leaf};
     let Some(Stored::Meta(mut meta)) = ws.get(&Key::Meta)? else {
@@ -984,8 +1037,8 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     {
         return Err(Error::new("model_mismatch", "store/model identity differs"));
     }
-    if meta.tenant != context.tenant || meta.actor != context.actor {
-        return Err(Error::new("forbidden", "fixture actor/tenant"));
+    if meta.tenant != context.tenant {
+        return Err(Error::new("forbidden", "tenant differs"));
     }
     if commands.is_empty()
         || commands.len() > 64
@@ -1010,6 +1063,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws.charge("command", 1)?;
         let id = command.id();
         let old = ws.record(id)?;
+        authorize(ws, command, old.as_ref(), None)?;
         if old
             .as_ref()
             .is_some_and(|r| r.contract == 12 || (r.contract == 11 && !trusted))
@@ -1049,7 +1103,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
                 let previous = old
                     .as_ref()
                     .ok_or_else(|| Error::new("unavailable_reference", "source unavailable"))?;
-                if previous.tenant != context.tenant || previous.owner != context.actor {
+                if previous.tenant != context.tenant {
                     return Err(Error::new("forbidden", "source authority"));
                 }
                 if previous.version != *if_version {
@@ -1078,6 +1132,7 @@ fn settle_inner<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
                 }
             }
         };
+        authorize(ws, command, old.as_ref(), new.as_ref())?;
         ws.put(Key::Record(id), new.clone().map(Stored::Record))?;
         changes.push(Change { id, old, new });
     }

@@ -13,10 +13,11 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
+    access::{Action, Scope},
     model::{PreparedModel, Visibility},
     native_codec::{self, Key, Stored, decimal, uuid_text},
     native_slice::{
-        Command, Context, Error, Input, Meta, Record, Result, Workspace, settle_with_ids,
+        Command, Context, Error, Input, Meta, Record, Result, Workspace, settle_authorized,
     },
 };
 
@@ -152,9 +153,12 @@ pub(crate) struct RuntimeHeader {
 }
 
 pub struct LocalStore {
-    pub(crate) db: Database,
+    pub(crate) db: Arc<Database>,
     pub(crate) model: Arc<PreparedModel>,
     pub(crate) context: Context,
+    pub(crate) bootstrap_actor: Uuid,
+    pub(crate) secured: bool,
+    pub(crate) credential_epoch: Option<u64>,
 }
 
 impl LocalStore {
@@ -206,7 +210,14 @@ impl LocalStore {
         write
             .commit()
             .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
-        Ok(Self { db, model, context })
+        Ok(Self {
+            db: Arc::new(db),
+            model,
+            context,
+            bootstrap_actor: context.actor,
+            secured: false,
+            credential_epoch: None,
+        })
     }
 
     pub fn open(path: impl AsRef<Path>, model: Arc<PreparedModel>) -> Result<Self> {
@@ -218,7 +229,18 @@ impl LocalStore {
             tenant: meta.tenant,
             actor: meta.actor,
         };
-        let store = Self { db, model, context };
+        let secured = read
+            .list_tables()
+            .map_err(storage)?
+            .any(|t| t.name() == "authority");
+        let store = Self {
+            db: Arc::new(db),
+            model,
+            context,
+            bootstrap_actor: context.actor,
+            secured,
+            credential_epoch: None,
+        };
         store.check_meta(&meta, store.model.identity())?;
         read_header(&read)?;
         let public = read.open_table(PUBLIC).map_err(storage)?;
@@ -254,7 +276,7 @@ impl LocalStore {
         {
             return Err(Error::new("model_mismatch", "store/model identity differs"));
         }
-        if meta.tenant != self.context.tenant || meta.actor != self.context.actor {
+        if meta.tenant != self.context.tenant || meta.actor != self.bootstrap_actor {
             return Err(Error::new("forbidden", "local context differs"));
         }
         Ok(())
@@ -268,10 +290,14 @@ impl LocalStore {
         Ok((read, meta, header))
     }
 
-    pub(crate) fn project(&self, id: Uuid, record: Option<Record>) -> Option<PublicRecord> {
+    pub(crate) fn project(
+        &self,
+        scope: &Scope,
+        id: Uuid,
+        record: Option<Record>,
+    ) -> Option<PublicRecord> {
         let record = record?;
-        if record.tenant != self.context.tenant
-            || record.reader != self.context.actor
+        if !scope.can_read(&record)
             || self.model.contract(record.contract).ok()?.visibility != Visibility::Public
         {
             return None;
@@ -301,6 +327,7 @@ impl LocalStore {
 
     pub fn get(&self, model: &str, id: Uuid) -> Result<Option<PublicRecord>> {
         let (read, _, _) = self.read(model)?;
+        let scope = self.authority(&read)?;
         let table = read.open_table(KV).map_err(storage)?;
         let mut ws = Workspace::new(
             |key: &[u8]| {
@@ -311,7 +338,7 @@ impl LocalStore {
             },
             1000,
         );
-        Ok(self.project(id, ws.record(id)?))
+        Ok(self.project(&scope, id, ws.record(id)?))
     }
 
     pub fn mutate(&self, request: &Mutation) -> Result<Value> {
@@ -353,6 +380,7 @@ impl LocalStore {
         hash.update(&normalized);
         let request_hash = native_codec::hex(&hash.finalize());
         let write = self.db.begin_write().map_err(storage)?;
+        let scope = self.write_authority(&write)?;
         let mut header: RuntimeHeader;
         let (batch, result) = {
             let table = write.open_table(KV).map_err(storage)?;
@@ -381,7 +409,7 @@ impl LocalStore {
             validate_header(&header)?;
             let receipts = write.open_table(RECEIPTS).map_err(storage)?;
             if let Some(bytes) = receipts
-                .get(request.operation_id.as_bytes().as_slice())
+                .get(self.receipt_key(request.operation_id).as_slice())
                 .map_err(storage)?
             {
                 let receipt: Receipt = decode(bytes.value())?;
@@ -392,25 +420,43 @@ impl LocalStore {
                         "operation ID bound to different request",
                     ));
                 }
-                return Ok(json!({"status":"committed","replayed":true,"result":receipt.result}));
+                let result = self.disclose(&scope, receipt.result, &mut ws)?;
+                return Ok(json!({"status":"committed","replayed":true,"result":result}));
             }
             if header.receipts >= MAX_RECEIPTS {
                 return Err(Error::new("receipt_limit", "receipt retention exhausted"));
             }
-            for command in &request.commands {
-                match command {
-                    Command::Create {
-                        contract, fields, ..
-                    } => {
-                        self.model.public_contract(*contract)?;
-                        self.model.validate(*contract, fields)?;
+            let settled = settle_authorized(
+                &mut ws,
+                self.model.engine(),
+                self.context,
+                &request.commands,
+                allocate,
+                &mut |ws, command, old, new| {
+                    let action = match command {
+                        Command::Create { contract, .. } => {
+                            if !scope.grants.allows(*contract, Action::Create) {
+                                return Err(crate::access::denied());
+                            }
+                            Action::Create
+                        }
+                        Command::Update { .. } => Action::Update,
+                        Command::Delete { .. } => Action::Delete,
+                    };
+                    if old.is_some_and(|r| !scope.can_write(r, action)) {
+                        return Err(crate::access::denied());
                     }
-                    Command::Update { id, set, unset, .. } => {
-                        if let Some(record) = ws.record(*id)? {
-                            let contract = self.model.public_contract(record.contract)?;
+                    if let Some(new) = new {
+                        self.model.public_contract(new.contract)?;
+                        self.model.validate(
+                            new.contract,
+                            &serde_json::to_value(&new.input).map_err(storage)?,
+                        )?;
+                        if let Command::Update { set, unset, .. } = command {
+                            let contract = self.model.public_contract(new.contract)?;
                             if !unset.is_empty()
-                                || set.keys().any(|k| {
-                                    !contract.fields.iter().any(|f| f.name == k && f.mutable)
+                                || set.keys().any(|key| {
+                                    !contract.fields.iter().any(|f| f.name == key && f.mutable)
                                 })
                             {
                                 return Err(Error::new(
@@ -418,29 +464,42 @@ impl LocalStore {
                                     "protected or required field",
                                 ));
                             }
-                            let mut input = serde_json::to_value(&record.input).map_err(storage)?;
-                            input
-                                .as_object_mut()
-                                .expect("typed input")
-                                .extend(set.clone());
-                            self.model.validate(record.contract, &input)?;
+                        }
+                        let old_refs = old.map(|r| r.input.references()).unwrap_or_default();
+                        for (target, _, slot) in new.input.references() {
+                            if old_refs
+                                .iter()
+                                .any(|(id, _, s)| *id == target && *s == slot)
+                            {
+                                continue;
+                            }
+                            let target = ws.record(target)?.ok_or_else(crate::access::denied)?;
+                            if !scope.can_read(&target) {
+                                return Err(crate::access::denied());
+                            }
                         }
                     }
-                    Command::Delete { .. } => {}
-                }
-            }
-            let settled = settle_with_ids(
-                &mut ws,
-                self.model.engine(),
-                self.context,
-                &request.commands,
-                allocate,
+                    Ok(())
+                },
             )?;
+            if self.secured {
+                let ids = ws.changed_records();
+                let mut dominance = std::collections::BTreeMap::new();
+                crate::security::repair_readers(
+                    &mut ws,
+                    &self.model,
+                    ids,
+                    settled.revision,
+                    &mut |owners, fallback| {
+                        crate::security::stored_reader(&write, owners, fallback, &mut dominance)
+                    },
+                )?;
+            }
             let mut records = vec![];
             for &id in &request.returning {
                 records.push(Returned {
                     id,
-                    record: self.project(id, ws.record(id)?),
+                    record: self.project(&scope, id, ws.record(id)?),
                 });
             }
             let result = Committed {
@@ -455,6 +514,9 @@ impl LocalStore {
             let mut index = write.open_table(PUBLIC).map_err(storage)?;
             for (i, (key, value)) in batch.iter().enumerate() {
                 if let Key::Record(id) = Key::decode(key)? {
+                    if self.secured {
+                        crate::security::update_reader_index(&write, &table, id, value.as_deref())?;
+                    }
                     match value
                         .as_deref()
                         .map(|v| native_codec::decode(&Key::Record(id), v))
@@ -503,7 +565,7 @@ impl LocalStore {
                 .open_table(RECEIPTS)
                 .map_err(storage)?
                 .insert(
-                    request.operation_id.as_bytes().as_slice(),
+                    self.receipt_key(request.operation_id).as_slice(),
                     encode(&receipt)?.as_slice(),
                 )
                 .map_err(storage)?;
@@ -539,13 +601,28 @@ impl LocalStore {
 
     pub fn operation_status(&self, model: &str, id: Uuid) -> Result<Value> {
         let (read, _, _) = self.read(model)?;
+        let scope = self.authority(&read)?;
         let table = read.open_table(RECEIPTS).map_err(storage)?;
-        let Some(value) = table.get(id.as_bytes().as_slice()).map_err(storage)? else {
+        let Some(value) = table
+            .get(self.receipt_key(id).as_slice())
+            .map_err(storage)?
+        else {
             return Ok(json!({"status":"not_observed"}));
         };
         let receipt: Receipt = decode(value.value())?;
         self.check_receipt(&receipt, id)?;
-        Ok(json!({"status":"committed","result":receipt.result}))
+        let native = read.open_table(KV).map_err(storage)?;
+        let mut ws = Workspace::new(
+            |key: &[u8]| {
+                native
+                    .get(key)
+                    .map(|v| v.map(|v| v.value().to_vec()))
+                    .map_err(storage)
+            },
+            1000,
+        );
+        let result = self.disclose(&scope, receipt.result, &mut ws)?;
+        Ok(json!({"status":"committed","result":result}))
     }
 
     /// Trusted local developer view. No signing material or raw storage write API.
@@ -587,12 +664,23 @@ impl LocalStore {
 
 fn observe(read: &ReadTransaction) -> Result<Value> {
     check_tables(read)?;
+    let secured = read
+        .list_tables()
+        .map_err(storage)?
+        .any(|t| t.name() == "authority");
     let mut tables = serde_json::Map::new();
-    for (definition, limit) in [
+    let mut definitions = vec![
         (KV, 4096),
         (RUNTIME, 1),
         (RECEIPTS, usize::from(MAX_RECEIPTS)),
-    ] {
+    ];
+    if secured {
+        definitions.push((
+            crate::security::AUTHORITY,
+            crate::access::MAX_PRINCIPALS + 1,
+        ));
+    }
+    for (definition, limit) in definitions {
         let table = read.open_table(definition).map_err(storage)?;
         let mut rows = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
@@ -617,7 +705,24 @@ fn observe(read: &ReadTransaction) -> Result<Value> {
         rows.push(json!({"key":native_codec::hex(key.value()),"contract":code.value()}));
     }
     tables.insert(PUBLIC.name().into(), json!(rows));
-    Ok(json!({"format":"rebase-local-observation-1","complete":true,"tables":tables}))
+    if secured {
+        let table = read.open_table(crate::security::READERS).map_err(storage)?;
+        let mut rows = vec![];
+        for (i, row) in table.iter().map_err(storage)?.enumerate() {
+            if i >= 64 {
+                return Err(Error::new(
+                    "work_limit",
+                    "reader index observation incomplete",
+                ));
+            }
+            let (key, code) = row.map_err(storage)?;
+            rows.push(json!({"key":native_codec::hex(key.value()),"contract":code.value()}));
+        }
+        tables.insert("reader_records".into(), json!(rows));
+    }
+    Ok(
+        json!({"format":if secured {"rebase-authorized-observation-1"} else {"rebase-local-observation-1"},"complete":true,"tables":tables}),
+    )
 }
 
 pub(crate) fn read_meta(read: &ReadTransaction) -> Result<Meta> {
@@ -666,7 +771,16 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
         .map(|t| t.name().to_owned())
         .collect();
     names.sort();
-    if names != ["local_runtime", "native_kv", "operations", "public_records"]
+    if (names != ["local_runtime", "native_kv", "operations", "public_records"]
+        && names
+            != [
+                "authority",
+                "local_runtime",
+                "native_kv",
+                "operations",
+                "public_records",
+                "reader_records",
+            ])
         || read
             .list_multimap_tables()
             .map_err(storage)?
@@ -741,6 +855,34 @@ mod tests {
             LocalStore::open(dir.file(), Arc::new(PreparedModel::load().unwrap())).unwrap();
         assert_eq!(reopened.observe_for_verification().unwrap(), after);
         assert_eq!(reopened.mutate(&request).unwrap()["replayed"], true);
+    }
+
+    #[test]
+    fn secured_physical_aborts_include_authority_and_reader_tables() {
+        let dir = Directory::new();
+        let store = LocalStore::create_secured(
+            dir.file(),
+            Arc::new(PreparedModel::load().unwrap()),
+            Context {
+                tenant: Uuid::from_u128(1),
+                actor: Uuid::from_u128(2),
+            },
+        )
+        .unwrap();
+        let before = store.observe_for_verification().unwrap();
+        assert_eq!(before["tables"].as_object().unwrap().len(), 6);
+        let request: Mutation = serde_json::from_value(json!({"model":store.model.identity(),"operation_id":Uuid::from_u128(3),
+            "commands":[{"op":"create","id":Uuid::from_u128(4),"contract":7,"fields":{"at":"1"}}],"returning":[]})).unwrap();
+        for abort in [2, usize::MAX] {
+            assert_eq!(
+                store
+                    .mutate_inner(&request, &mut || Ok(Uuid::new_v4()), Some(abort))
+                    .unwrap_err()
+                    .code,
+                "injected_abort"
+            );
+            assert_eq!(store.observe_for_verification().unwrap(), before);
+        }
     }
 
     #[test]

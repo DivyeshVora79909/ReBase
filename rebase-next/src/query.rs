@@ -1,6 +1,6 @@
 //! Declared local reads and authenticated revision-bound resumptions.
 
-use std::ops::Bound;
+use std::{cmp::Reverse, collections::BinaryHeap, ops::Bound};
 
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
@@ -141,6 +141,23 @@ pub struct RootRequest {
     pub read: RootRead,
 }
 
+fn next_candidate(
+    range: &mut redb::Range<'_, &'static [u8], u16>,
+    secured: bool,
+) -> Result<Option<(Uuid, u16)>> {
+    let Some(row) = range.next() else {
+        return Ok(None);
+    };
+    let (key, code) = row.map_err(storage)?;
+    let bytes = key.value();
+    let offset = if secured { 18 } else { 0 };
+    if bytes.len() != offset + 16 {
+        return Err(corrupt("candidate index key"));
+    }
+    let id = Uuid::from_slice(&bytes[offset..]).map_err(|_| corrupt("candidate identity"))?;
+    Ok(Some((id, code.value())))
+}
+
 impl LocalStore {
     pub fn page(&self, request: &PageRequest) -> Result<Page> {
         if !(1..=32).contains(&request.limit) || !(1..=128).contains(&request.visit_budget) {
@@ -161,6 +178,14 @@ impl LocalStore {
                 .validate_predicate(code, &predicate.field, &predicate.value)?;
         }
         let (read, meta, header) = self.read(&request.model)?;
+        let scope = self.authority(&read)?;
+        if request
+            .query
+            .contract
+            .is_some_and(|c| !scope.grants.allows(c, crate::access::Action::Read))
+        {
+            return Err(crate::access::denied());
+        }
         let after = if let Some(token) = &request.cursor {
             let cursor = parse_cursor(token, &header)?;
             if cursor.api != API_VERSION
@@ -183,6 +208,67 @@ impl LocalStore {
             None
         };
         let index = read.open_table(PUBLIC).map_err(storage)?;
+        let readers = if self.secured {
+            Some(read.open_table(crate::security::READERS).map_err(storage)?)
+        } else {
+            None
+        };
+        let mut streams = vec![];
+        let mut partitions = vec![];
+        if let Some(index) = &readers {
+            let codes: Vec<_> = self
+                .model
+                .contracts()
+                .filter(|c| {
+                    c.visibility == crate::model::Visibility::Public
+                        && scope.grants.allows(c.code, crate::access::Action::Read)
+                        && request.query.contract.is_none_or(|code| code == c.code)
+                })
+                .map(|c| c.code)
+                .collect();
+            if scope.accessible.len().saturating_mul(codes.len())
+                > crate::access::MAX_READER_STREAMS
+            {
+                return Err(Error::new("work_limit", "reader partition setup limit"));
+            }
+            for &reader in &scope.accessible {
+                for &code in &codes {
+                    let lower = match after {
+                        Some(id) => Bound::Excluded(crate::security::reader_key(reader, code, id)),
+                        None => {
+                            Bound::Included(crate::security::reader_key(reader, code, Uuid::nil()))
+                        }
+                    };
+                    let upper =
+                        Bound::Included(crate::security::reader_key(reader, code, Uuid::max()));
+                    streams.push(
+                        index
+                            .range::<&[u8]>((
+                                lower.as_ref().map(Vec::as_slice),
+                                upper.as_ref().map(Vec::as_slice),
+                            ))
+                            .map_err(storage)?,
+                    );
+                    partitions.push(Some(reader));
+                }
+            }
+        } else {
+            let lower = after.map_or(Bound::Unbounded, |id| {
+                Bound::Excluded(id.as_bytes().to_vec())
+            });
+            streams.push(
+                index
+                    .range::<&[u8]>((lower.as_ref().map(Vec::as_slice), Bound::Unbounded))
+                    .map_err(storage)?,
+            );
+            partitions.push(None);
+        }
+        let mut heads = BinaryHeap::new();
+        for (stream, range) in streams.iter_mut().enumerate() {
+            if let Some((id, code)) = next_candidate(range, self.secured)? {
+                heads.push(Reverse((id, stream, code)));
+            }
+        }
         let table = read.open_table(KV).map_err(storage)?;
         let mut ws = Workspace::new(
             |key: &[u8]| {
@@ -193,27 +279,28 @@ impl LocalStore {
             },
             10_000,
         );
-        let lower = after.as_ref().map_or(Bound::Unbounded, |id| {
-            Bound::Excluded(id.as_bytes().as_slice())
-        });
-        let mut range = index
-            .range::<&[u8]>((lower, Bound::Unbounded))
-            .map_err(storage)?;
         let (mut visited, mut exhausted, mut last) = (0_u16, false, None);
         let mut records = vec![];
         while visited < request.visit_budget && records.len() < usize::from(request.limit) {
-            let Some(row) = range.next() else {
+            let Some(Reverse((id, stream, code))) = heads.pop() else {
                 exhausted = true;
                 break;
             };
-            let (key, code) = row.map_err(storage)?;
-            let id = Uuid::from_slice(key.value()).map_err(|_| corrupt("public index identity"))?;
+            if let Some((next, next_code)) = next_candidate(&mut streams[stream], self.secured)? {
+                heads.push(Reverse((next, stream, next_code)));
+            }
             visited += 1;
             last = Some(id);
+            let raw = ws
+                .record(id)?
+                .ok_or_else(|| corrupt("missing indexed record"))?;
+            if partitions[stream].is_some_and(|reader| reader != raw.reader) {
+                return Err(corrupt("reader index partition"));
+            }
             let record = self
-                .project(id, ws.record(id)?)
-                .ok_or_else(|| corrupt("unreadable public index member"))?;
-            if code.value() != record.contract {
+                .project(&scope, id, Some(raw))
+                .ok_or_else(|| corrupt("unreadable index member"))?;
+            if code != record.contract {
                 return Err(corrupt("public index contract"));
             }
             if request.query.contract.is_some_and(|c| c != record.contract) {
@@ -279,6 +366,7 @@ impl LocalStore {
 
     pub fn root_read(&self, request: &RootRequest) -> Result<Value> {
         let (read, meta, _) = self.read(&request.model)?;
+        let scope = self.authority(&read)?;
         let table = read.open_table(KV).map_err(storage)?;
         let mut ws = Workspace::new(
             |key: &[u8]| {
@@ -290,7 +378,7 @@ impl LocalStore {
             10_000,
         );
         let owner = self
-            .project(request.owner, ws.record(request.owner)?)
+            .project(&scope, request.owner, ws.record(request.owner)?)
             .ok_or_else(|| Error::new("not_found", "root owner unavailable"))?;
         let contract = self.model.public_contract(owner.contract)?;
         let declaration = contract
@@ -323,7 +411,7 @@ impl LocalStore {
             }
             RootRead::Latest { at } => match tree::latest(&mut ws, address, at)? {
                 Some((id, rate)) => {
-                    if self.project(id, ws.record(id)?).is_none() {
+                    if self.project(&scope, id, ws.record(id)?).is_none() {
                         return Err(Error::new(
                             "unavailable_reference",
                             "selected quote unavailable",

@@ -48,6 +48,7 @@ pub struct Reference {
     pub optional: bool,
     pub direct_fields: Vec<&'static str>,
     pub on_delete: &'static str,
+    pub reader: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -491,7 +492,7 @@ impl PreparedModel {
         json!({"name":MODEL_NAME,"model":self.identity(),"core_identity":self.core_identity,
             "api":API_VERSION,"codec":self.engine.codec,
             "contracts":self.contracts.values().collect::<Vec<_>>(),
-            "capabilities":capabilities(),"authority":"fixed local actor and tenant",
+            "capabilities":capabilities(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
             "identity_policy":"retained private reservations; retired producers cannot be reused",
             "preparation":"bundled compiled model only; no arbitrary behavior loader"})
     }
@@ -534,6 +535,10 @@ fn reference(
         optional,
         direct_fields: direct.to_vec(),
         on_delete: "reject",
+        reader: matches!(
+            field,
+            "account" | "subsidiary" | "sources[0]" | "sources[1]"
+        ),
     }
 }
 

@@ -1,5 +1,6 @@
 //! Isolated local calculation prototype, model tools and semantic primitives.
 
+pub mod access;
 pub mod algebra;
 pub mod causal;
 pub mod demo;
@@ -13,5 +14,6 @@ pub mod native_slice;
 pub mod plan;
 pub mod query;
 pub mod rpc;
+pub mod security;
 pub mod staging;
 pub mod tree;

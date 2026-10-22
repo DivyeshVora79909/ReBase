@@ -142,3 +142,12 @@ queries/cursors, demo and inspector. The integrated suite now has 27 tests;
 the original and causal native corpora pass on the final source fingerprint.
 Distributed/production capabilities remain outside that result. This paragraph
 extends current executable scope without rewriting earlier dated evidence.
+# Deployable continuation — October 22
+
+The subsequent [D2 authority checkpoint](17-deployable-backend.md) adds real
+tenant-local principal scopes, reader repair and indexed public candidates.
+Its executed checks are recorded separately in
+[D2 evidence](evidence/2026-10-22-d2-authority.json). Historical results below
+retain their original scope; no distributed or production-capacity conclusion
+follows from this bounded embedded implementation.
+

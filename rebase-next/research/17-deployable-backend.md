@@ -24,8 +24,8 @@ capability gates visible instead of silently calling every feature production.
 | Checkpoint | Required result | Status |
 | --- | --- | --- |
 | D1 | Shared goal and continuation, existing evidence preserved | Complete |
-| D2 | Fresh transaction-scoped principal/DAG authority, separate owner/reader, complete indexed readable candidates; independently checked repair and rejection | Next |
-| D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Pending |
+| D2 | Fresh transaction-scoped principal/DAG authority, separate owner/reader, complete indexed readable candidates; independently checked repair and rejection | Complete |
+| D3 | Authenticated bounded network API using the same ordinary operations; shutdown, limits, receipt/replay and revocation exercised over the wire | Next |
 | D4 | Storage lifecycle: explicit model/format identity, safe backup/restore, reset of owned disposable state, integrity and recovery checks | Pending |
 | D5 | Model-driven developer workflow and repeatable valid fixture scenario through public operations; no raw fixture writes | Pending |
 | D6 | Workload and deployment acceptance: release build, concurrency, restart, documented resource envelope and runnable deployment instructions | Pending |
@@ -84,3 +84,23 @@ atomic transaction boundary as the state it governs.
 D1: established the new user goal and preserved the distinction between the
 completed local experiment and production capability acceptance. No runtime
 behavior or historical evidence changed in this checkpoint.
+
+D2: implemented ordinary pure graph/scope functions in `access`, the embedded
+authority adapter in `security`, and per-operation actor sessions on the existing
+store. Domain repair now uses tenant-scoped engine authority, while authored
+commands/new links use the freshly loaded scope. Managed outputs retain their
+producer's owner. Declaration-marked references choose immediate-owner readers.
+Graph replacement atomically repairs readers and disjoint reader/contract/UUID
+indexes; requests merge only permitted partitions. Normal writes point-load
+cached dominance sets rather than rebuilding the graph. Graph edits use explicit
+compare-and-set administration; disabled identities are retained, credential
+epochs cannot decrease, and reactivation requires a new epoch.
+
+Acceptance: 31 Rust tests, formatting and warning-free Clippy; the existing 68
+foundation, 39 causal and nine local-adapter cases still pass their independent
+checkers. New checks exhaust 64 small DAGs against an independent parent walk,
+exercise alternate paths, group scope, divergent owner/reader, reader repair,
+credential revocation, actor-scoped receipts, disclosure suppression, cursor
+invalidation, unchanged rejection, physical abort and reopen. Complete privileged
+observations include authority and reader tables. No network authentication or
+capacity claim is made by D2. [Evidence](evidence/2026-10-22-d2-authority.json).

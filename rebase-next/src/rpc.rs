@@ -27,6 +27,12 @@ struct Empty {}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ModelOnly {
+    model: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Get {
     model: String,
     #[serde(with = "uuid_text")]
@@ -50,8 +56,15 @@ fn dispatch(store: &LocalStore, method: &str, params: Value) -> Result<Value> {
     match method {
         "model.describe" => {
             let _: Empty = bind(params)?;
+            let (read, _, _) = store.read(store.model().identity())?;
+            store.authority(&read)?;
             Ok(store.model().public_catalog())
         }
+        "access.describe" => {
+            let p: ModelOnly = bind(params)?;
+            store.access_graph(&p.model)
+        }
+        "access.replace" => store.replace_access(&bind(params)?),
         "records.get" => {
             let p: Get = bind(params)?;
             serde_json::to_value(store.get(&p.model, p.id)?)

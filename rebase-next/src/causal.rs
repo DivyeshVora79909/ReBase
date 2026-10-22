@@ -448,8 +448,8 @@ pub(crate) fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
             let new = Record {
                 contract: 12,
                 tenant: context.tenant,
-                owner: context.actor,
-                reader: context.actor,
+                owner: plan.record.as_ref().expect("producer").owner,
+                reader: plan.record.as_ref().expect("producer").reader,
                 version: revision,
                 input: Input::Output {
                     producer: id,

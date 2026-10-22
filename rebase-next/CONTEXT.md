@@ -11,6 +11,13 @@ Carry context in this directory and checkpoint commit messages so another agent
 can resume without another whole-repository audit. The local prototype below is
 the verified starting point, not the new finish line.
 
+D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
+separate owner/reader, declared reader selection and atomic reader-index repair,
+bounded indexed merging and revocation-aware receipt disclosure. The active next
+checkpoint is D3: authenticated network transport. See the release paper for the
+31-test acceptance and current limits. No HTTP listener or credential verifier
+is claimed by D2.
+
 **Confirmed local-prototype finish line completed.** After `2109687`, the user
 chose engine, model tooling, mutation/query API and a demonstrable workflow.
 [P1–P4](research/13-local-prototype-plan.md) are complete. Start with the
