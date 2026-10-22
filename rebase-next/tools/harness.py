@@ -42,8 +42,9 @@ def command(*args):
 class Backend:
     """Harness-owned process and files; no client session or authority cache."""
 
-    def __init__(self, binary, directory):
+    def __init__(self, binary, directory, model="calculation"):
         self.binary = Path(binary).resolve()
+        self.selector = ["--model", model]
         self.directory = Path(directory).resolve()
         self.directory.mkdir(mode=0o700)
         self.store = self.directory / "app.redb"
@@ -68,14 +69,14 @@ class Backend:
         write_private(self.token_path, (self.token + "\n").encode())
 
     def cli(self, *args):
-        return client.loads(command(self.binary, *args))
+        return client.loads(command(self.binary, *self.selector, *args))
 
     def start(self):
         require(self.process is None, "Server already running")
         log_path = self.directory / "server.log"
         offset = log_path.stat().st_size if log_path.exists() else 0
         self.log = log_path.open("ab")
-        self.process = subprocess.Popen([str(self.binary), "serve", str(self.store), "--config", str(self.config_path)],
+        self.process = subprocess.Popen([str(self.binary), *self.selector, "serve", str(self.store), "--config", str(self.config_path)],
                                         stdout=self.log, stderr=self.log)
         for _ in range(400):
             require(self.process.poll() is None, "Server exited during startup; inspect server.log")

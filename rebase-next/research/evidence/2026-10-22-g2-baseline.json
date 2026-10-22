@@ -1,0 +1,235 @@
+{
+  "status": "passed",
+  "binary_sha256": "4510e0cf8894a85ab4ed1970ba4846fe83efc75b4dde801c187832e0b89e16b0",
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "kernel": "7.0.0-34-generic"
+  },
+  "runs": [
+    {
+      "public_sources": 20,
+      "active_reservations": 16,
+      "measurements": {
+        "after_all_reads": {
+          "latency_ms": 14.536,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 16,
+            "causal_evaluations": 16,
+            "command_visits": 1,
+            "dependency_checks": 514,
+            "dependency_edges": 120,
+            "detached_outputs": 32,
+            "encoded_bytes": 4943,
+            "evaluations": 0,
+            "final_dirty_keys": 9,
+            "key_loads": 169,
+            "loaded_bytes": 50714,
+            "node_visits": 3160,
+            "rotations": 47,
+            "route_entries": 32,
+            "staged_patches": 1106,
+            "work_units": 5102
+          }
+        },
+        "last_read": {
+          "latency_ms": 16.42,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 16,
+            "causal_evaluations": 16,
+            "command_visits": 1,
+            "dependency_checks": 516,
+            "dependency_edges": 120,
+            "detached_outputs": 32,
+            "encoded_bytes": 6308,
+            "evaluations": 0,
+            "final_dirty_keys": 13,
+            "key_loads": 169,
+            "loaded_bytes": 50714,
+            "node_visits": 3199,
+            "rotations": 48,
+            "route_entries": 32,
+            "staged_patches": 1127,
+            "work_units": 5164
+          }
+        },
+        "full_fanout": {
+          "latency_ms": 16.293,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 16,
+            "causal_evaluations": 16,
+            "command_visits": 1,
+            "dependency_checks": 546,
+            "dependency_edges": 120,
+            "detached_outputs": 32,
+            "encoded_bytes": 43581,
+            "evaluations": 0,
+            "final_dirty_keys": 101,
+            "key_loads": 169,
+            "loaded_bytes": 50714,
+            "node_visits": 3147,
+            "rotations": 47,
+            "route_entries": 32,
+            "staged_patches": 1120,
+            "work_units": 5135
+          }
+        }
+      },
+      "integrity": {
+        "model": "54a299026f1db1ec33f36e013dfddb585aa54ded7404e04fabcdb6bd8a2e30ec",
+        "nodes": 35,
+        "receipts": 4,
+        "records": 52,
+        "revision": "4",
+        "roots": 1,
+        "rows": 222,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "ad96979a-7d53-444d-a35b-fdf38fd83ecc"
+      },
+      "process": {
+        "available": true,
+        "rss_kib": 16112,
+        "peak_rss_kib": 16112,
+        "threads": 4,
+        "open_fds": 11
+      }
+    },
+    {
+      "public_sources": 28,
+      "active_reservations": 24,
+      "measurements": {
+        "after_all_reads": {
+          "latency_ms": 22.414,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 24,
+            "causal_evaluations": 24,
+            "command_visits": 1,
+            "dependency_checks": 1154,
+            "dependency_edges": 276,
+            "detached_outputs": 48,
+            "encoded_bytes": 5647,
+            "evaluations": 0,
+            "final_dirty_keys": 10,
+            "key_loads": 249,
+            "loaded_bytes": 74610,
+            "node_visits": 4962,
+            "rotations": 70,
+            "route_entries": 48,
+            "staged_patches": 1691,
+            "work_units": 8381
+          }
+        },
+        "last_read": {
+          "latency_ms": 18.268,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 24,
+            "causal_evaluations": 24,
+            "command_visits": 1,
+            "dependency_checks": 1156,
+            "dependency_edges": 276,
+            "detached_outputs": 48,
+            "encoded_bytes": 7017,
+            "evaluations": 0,
+            "final_dirty_keys": 14,
+            "key_loads": 249,
+            "loaded_bytes": 74610,
+            "node_visits": 5035,
+            "rotations": 72,
+            "route_entries": 48,
+            "staged_patches": 1724,
+            "work_units": 8489
+          }
+        },
+        "full_fanout": {
+          "latency_ms": 20.545,
+          "work": {
+            "allocations": 0,
+            "candidates": 0,
+            "causal_candidates": 24,
+            "causal_evaluations": 24,
+            "command_visits": 1,
+            "dependency_checks": 1202,
+            "dependency_edges": 276,
+            "detached_outputs": 48,
+            "encoded_bytes": 64305,
+            "evaluations": 0,
+            "final_dirty_keys": 149,
+            "key_loads": 249,
+            "loaded_bytes": 74609,
+            "node_visits": 4949,
+            "rotations": 70,
+            "route_entries": 48,
+            "staged_patches": 1713,
+            "work_units": 8438
+          }
+        }
+      },
+      "integrity": {
+        "model": "54a299026f1db1ec33f36e013dfddb585aa54ded7404e04fabcdb6bd8a2e30ec",
+        "nodes": 51,
+        "receipts": 4,
+        "records": 76,
+        "revision": "4",
+        "roots": 1,
+        "rows": 326,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "3aa5a42e-edbb-49a6-ae7f-0d7e00732276"
+      },
+      "process": {
+        "available": true,
+        "rss_kib": 16440,
+        "peak_rss_kib": 16440,
+        "threads": 4,
+        "open_fds": 11
+      }
+    }
+  ],
+  "gate": "G2a",
+  "date": "2026-10-22",
+  "parent_revision": "609cb288c1beac33777514b4b84edc9fa0a65435",
+  "scope": "operator instrumentation and the unoptimized G1 population envelope",
+  "commands": [
+    "cargo fmt --all -- --check",
+    "CARGO_TARGET_DIR=target/native-slice/build cargo build --locked --release --bin rebase-next",
+    "python3 -B tools/test_client.py -v",
+    "python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/g2-baseline --reservations 16 24"
+  ],
+  "checks": {
+    "formatting": "passed",
+    "client_controls": 6,
+    "source_arithmetic_http_runs": 2,
+    "full_native_integrity_runs": 2
+  },
+  "metrics_scope": "engine attempt; excludes authorization table IO, reader-index/receipt physical writes and transport; bytes are raw native values loaded; dependency_checks currently includes reader selection",
+  "source_fingerprints": {
+    "src/local.rs": "9d589d6110b1676647a1355ff0e654167ba540a7bcc24f260238a03a8c18440a",
+    "src/native_slice.rs": "9e1218e8c78911614ed51f496bfb6d79c01da91b096851248b9d8f276b005900",
+    "src/causal.rs": "8497c304ce523ab7326c0972aac4f2c5b4b5f6e8be1341cfeeff14c0c901e891",
+    "src/native_codec.rs": "b9bb8180d494465fc4bc144ccebb00d5922fd0c71db5b2a5be69d14752be8872",
+    "src/binding.rs": "7c280428197a3104a6dfef5e9f741781017c1aa3c0ad3d077aee53ba917faad4",
+    "src/models/equipment.rs": "5bf15c6bac7106ac45020f2953532e7b4b06af9beb187b99bc1f1bfc256c2b76",
+    "tools/harness.py": "1fe78273a4ad6649024f6e51ace5cc51db4b4fd1620a151bf3a10e22bdfbe191",
+    "tools/capacity.py": "d1d5e5a1684198a7e832747952b165cbb7fd46b473786863bae2d89cc1b71f70",
+    "research/22-population-scaling-gate.md": "ce5293208c2d2055bfc72b5035718a3c23388bb1ee92bbb544964462cc780fdc",
+    "CONTEXT.md": "c0add904195c2fd574f3714d728ab07ff26981102ad9475ae69ebf680d3ca303",
+    "Cargo.toml": "6be861405a15f41e2ff0dbabd8d5e4a1599b0d6b32efabc22093a7a4e581482e",
+    "Cargo.lock": "eda7a73b6febc23c59c4e05c055721a3b84163afa71831af778029d454b85576"
+  },
+  "artifact_fingerprints": {
+    "target/g2-baseline-build.log": "ccb8165c2e71343668ff8a8c528c8bceb42eb235c141a1618b0d44dd54629e60",
+    "target/g2-baseline.log": "d59fa34b210e714e01318454ca2bf49935f2ddba51ffdcd59b2809da1abc7ee0",
+    "target/g2-baseline/result.json": "e5a9dafa937ea4dfd9d5402edee00582e07f32a9f356d766ec146fa3d3588293"
+  }
+}

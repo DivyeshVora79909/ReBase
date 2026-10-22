@@ -448,6 +448,7 @@ pub struct Work {
     pub route_entries: u64,
     pub node_visits: u64,
     pub key_loads: u64,
+    pub loaded_bytes: u64,
     pub staged_patches: u64,
     pub candidates: u64,
     pub evaluations: u64,
@@ -512,6 +513,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         if !self.entries.contains_key(key) {
             self.charge("load", 1)?;
             let before = (self.load)(&key.encode())?;
+            self.work.loaded_bytes += before.as_ref().map_or(0, |bytes| bytes.len() as u64);
             let original = before
                 .as_deref()
                 .map(|bytes| native_codec::decode_for::<B>(key, bytes))

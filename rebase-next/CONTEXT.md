@@ -26,9 +26,16 @@ equipment behavior 1; no silent opening/migration of format 2. Forty-six debug
 and optimized Rust tests, six client controls, all 116 independent cases and
 both real-process workflows pass. See the result for execution and fingerprints.
 
-**Next continuation: G2 capacity and reactive candidate selection.** Begin with
-a concrete increasing-population workload and correctness/rollback acceptance,
-then implement and measure the required changes. The current scheduler opens
+**G2 active: capacity and reactive candidate selection.** The
+[acceptance gate](research/22-population-scaling-gate.md) fixes increasing HTTP
+populations and correctness/rollback/work requirements. G2a adds operator-only
+committed-work diagnostics and a source-arithmetic equipment HTTP probe. At 24
+reservations, an edit after every read still selects all 24, performs 1,154
+dependency checks and loads 74,610 native bytes. The
+[baseline](research/evidence/2026-10-22-g2-baseline.json) preserves source/build
+identity and the 16/24-reservation runs. Next implement G2b's ordered reverse
+indexes and compact final dependency graph, then G2c's larger API workloads.
+The current scheduler opens
 conservative subscriber sets and compares final shapes pairwise; record, role,
 route, receipt and inventory bounds must be considered together. Do not merely
 remove the 64-source limit or claim every mutation is logarithmic. Preserve

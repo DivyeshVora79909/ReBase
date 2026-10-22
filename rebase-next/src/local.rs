@@ -405,7 +405,7 @@ impl<B: Binding> Store<B> {
         let write = self.db.begin_write().map_err(storage)?;
         let scope = self.write_authority(&write)?;
         let mut header: RuntimeHeader;
-        let (batch, result) = {
+        let (batch, result, work) = {
             let table = write.open_table(KV).map_err(storage)?;
             let mut ws = Attempt::<_, B>::new(
                 |key: &[u8]| {
@@ -537,7 +537,7 @@ impl<B: Binding> Store<B> {
                 revision: settled.revision,
                 records,
             };
-            (ws.finish()?, result)
+            (ws.finish()?, result, ws.work)
         };
         {
             let mut table = write.open_table(KV).map_err(storage)?;
@@ -622,6 +622,12 @@ impl<B: Binding> Store<B> {
         write
             .commit()
             .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        // Operator diagnostics only: private repair counts are not public RPC
+        // fields, receipt contents, or evidence of a commit before it succeeds.
+        eprintln!(
+            "{}",
+            json!({"event":"mutation_work","operation_id":request.operation_id,"work":work})
+        );
         Ok(json!({"status":"committed","replayed":false,"result":result}))
     }
 
