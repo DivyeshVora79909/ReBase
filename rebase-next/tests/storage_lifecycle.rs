@@ -1,8 +1,9 @@
 use rebase_semantic_proof::{
-    lifecycle,
+    fixtures, lifecycle,
     local::{LocalStore, Mutation},
     model::PreparedModel,
     native_slice::Context,
+    query::{RootRead, RootRequest},
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -207,4 +208,102 @@ fn archived_receipts_fence_old_uncertain_requests_and_remain_reconcilable() {
     fresh.returning.clear();
     store.mutate(&fresh).unwrap();
     store.check_integrity().unwrap();
+}
+
+#[test]
+fn mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startup() {
+    let dir = Directory::new();
+    let model = Arc::new(PreparedModel::load().unwrap());
+    let store = LocalStore::create_secured(
+        dir.0.join("mixed.redb"),
+        model.clone(),
+        Context {
+            tenant: id(1),
+            actor: id(2),
+        },
+    )
+    .unwrap();
+    let draft = fixtures::plan(&model, "causal-diamond", id(500)).unwrap();
+    let mut commands = draft["commands"].as_array().unwrap().clone();
+    commands.extend(json!([
+        {"op":"create","id":id(1000),"contract":1,"fields":{"c":"2"}},
+        {"op":"create","id":id(1001),"contract":2,"fields":{"native_unit":1,"reporting_unit":2}},
+        {"op":"create","id":id(1002),"contract":4,"fields":{"native_unit":1}},
+        {"op":"create","id":id(1003),"contract":5,"fields":{"reporting_unit":2}},
+        {"op":"create","id":id(1004),"contract":3,"fields":{"curve":id(1001),"at":"0","rate":"3"}},
+        {"op":"create","id":id(1005),"contract":3,"fields":{"curve":id(1001),"at":"10","rate":"4"}},
+        {"op":"create","id":id(1006),"contract":6,"fields":{"units":"5","at":"5","rule":id(1000),"curve":id(1001),"account":id(1002),"subsidiary":id(1003)}},
+        {"op":"create","id":id(1007),"contract":6,"fields":{"units":"3","at":"15","rule":id(1000),"curve":id(1001),"account":id(1002),"subsidiary":id(1003)}}
+    ]).as_array().unwrap().clone());
+    let contracts: std::collections::BTreeSet<_> = commands
+        .iter()
+        .map(|c| c["contract"].as_u64().unwrap())
+        .collect();
+    assert_eq!(contracts, (1..=10).collect());
+    let request:Mutation=serde_json::from_value(json!({"model":model.identity(),"context":store.operation_context(model.identity()).unwrap(),"operation_id":id(600),"commands":commands,"returning":[]})).unwrap();
+    store.mutate(&request).unwrap();
+    // In the old checker, this valid committed state failed with "extra node":
+    // quote memberships occupy slot 3, independently of the curve root slot 1.
+    assert_eq!(store.check_integrity().unwrap()["records"], 27);
+    let total = |store: &LocalStore, owner, slot| {
+        store
+            .root_read(&RootRequest {
+                model: model.identity().into(),
+                owner,
+                slot,
+                read: RootRead::Summary,
+            })
+            .unwrap()["value"]["sum"]
+            .clone()
+    };
+    assert_eq!(total(&store, id(1002), 2), "16");
+    assert_eq!(total(&store, id(1003), 3), "54");
+    let early = store.get(model.identity(), id(1006)).unwrap().unwrap();
+    let later = store.get(model.identity(), id(1007)).unwrap().unwrap();
+    let version = store
+        .get(model.identity(), id(1004))
+        .unwrap()
+        .unwrap()
+        .version;
+    let update:Mutation=serde_json::from_value(json!({"model":model.identity(),"context":store.operation_context(model.identity()).unwrap(),"operation_id":id(601),"commands":[{"op":"update","id":id(1004),"if_version":version.to_string(),"set":{"rate":"5"},"unset":[]}],"returning":[]})).unwrap();
+    store.mutate(&update).unwrap();
+    store.check_integrity().unwrap();
+    assert_eq!(total(&store, id(1003), 3), "74");
+    assert!(
+        store
+            .get(model.identity(), early.id)
+            .unwrap()
+            .unwrap()
+            .version
+            > early.version
+    );
+    assert_eq!(
+        store
+            .get(model.identity(), later.id)
+            .unwrap()
+            .unwrap()
+            .version,
+        later.version
+    );
+    let complete = store.observe_for_verification().unwrap();
+    let backup = dir.0.join("mixed.json");
+    store.backup(&backup).unwrap();
+    lifecycle::restore(&backup, dir.0.join("restored.redb"), model.clone()).unwrap();
+    let restored = Arc::new(LocalStore::open(dir.0.join("restored.redb"), model.clone()).unwrap());
+    assert_eq!(restored.observe_for_verification().unwrap(), complete);
+    let config = rebase_semantic_proof::server::ServerConfig {
+        listen: "127.0.0.1:0".parse().unwrap(),
+        max_inflight: 1,
+        request_timeout_seconds: 5,
+        identity: rebase_semantic_proof::identity::IdentityConfig {
+            issuer: "https://review.example.test".into(),
+            audience: "review".into(),
+            max_token_seconds: 60,
+            public_keys: std::collections::BTreeMap::from([(
+                "test".into(),
+                include_str!("fixtures/test-ed25519-public.pem").into(),
+            )]),
+        },
+    };
+    assert!(rebase_semantic_proof::server::router(restored, &config).is_ok());
 }

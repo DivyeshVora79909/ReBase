@@ -12,6 +12,14 @@ can resume without another whole-repository audit. The [0.2 release result](rese
 and [deployment guide](docs/deployment.md) own current acceptance. Enter a named
 future capability gate when new work is requested; do not repeat completed stages.
 
+The [parallel release review](research/19-peer-release-review.md) adopts remote
+`242a08b`/`1f16278` over overlapping local alternatives. Fresh execution confirmed
+39 release Rust tests, six client controls and the full harness. It also found
+and corrected an inherited integrity-checker bug: quote member slot 3 was
+mistaken for slot 1, causing valid exchange state to fail check/startup/restore.
+The mixed causal/FX regression now brings the suite to 40 tests. Model/store/
+behavior identity is unchanged; historical D6 evidence remains dated.
+
 D1/D2 are complete: pure principal/DAG scopes, per-operation actor sessions,
 separate owner/reader, declared reader selection and atomic reader-index repair,
 bounded indexed merging and revocation-aware receipt disclosure. D6 now accepts

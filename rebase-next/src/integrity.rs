@@ -269,7 +269,7 @@ impl LocalStore {
                 Input::Quote { curve, at, rate } => {
                     require(quote_times.insert((*curve, *at)), "unique quote time")?;
                     members.insert(
-                        Address::new(id, 1),
+                        Address::new(id, 3),
                         (Address::new(*curve, 1), *at, Leaf::Quote(*rate)),
                     );
                 }

@@ -1,0 +1,168 @@
+{
+  "date": "2026-10-22",
+  "reviewed_commits": [
+    "242a08b743e13991c0284e56297082a2276abae1",
+    "1f16278edab01ccec2e86ae326c2bb5aea595010"
+  ],
+  "decision": "adopt peer D5/D6 release; set aside overlapping local designs; carry focused inherited quote-checker correction",
+  "peer_source_fingerprints_verified": 48,
+  "peer_fresh_release_tests": 39,
+  "peer_fresh_client_controls": 6,
+  "peer_fresh_public_harness": {
+    "status": "passed",
+    "version": {
+      "model": "dc1f590815e66b699e3b2ae62556c03c65088fdcf5b7fb30c97f5f75d129bc39",
+      "store_format": "rebase-store-2",
+      "version": "0.2.0"
+    },
+    "workflow": {
+      "model": "dc1f590815e66b699e3b2ae62556c03c65088fdcf5b7fb30c97f5f75d129bc39",
+      "initial": {
+        "A": "30",
+        "Left": "60",
+        "Right": "90",
+        "Final": "150"
+      },
+      "after_move": {
+        "A": "20",
+        "Left": "40",
+        "Right": "60",
+        "Final": "100"
+      },
+      "fixture_instances": 2,
+      "committed_operations": 3,
+      "rejections": 6,
+      "restart_replay": true,
+      "archive_fence": true,
+      "integrity": {
+        "model": "dc1f590815e66b699e3b2ae62556c03c65088fdcf5b7fb30c97f5f75d129bc39",
+        "nodes": 14,
+        "receipts": 0,
+        "records": 38,
+        "revision": "3",
+        "roots": 10,
+        "rows": 151,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "9770af6a-d729-4c5c-bd55-46117904c466"
+      }
+    },
+    "workload": {
+      "public_records": 64,
+      "private_outputs": 10,
+      "population_overflow_rejected": true,
+      "duplicate_requests": 8,
+      "duplicate_commits": 1,
+      "concurrent_contenders": 8,
+      "contender_commits": 1,
+      "writes": 128,
+      "readers": 4,
+      "read_results": 1024,
+      "reads_overlapping_writer": 1024,
+      "read_latency": {
+        "count": 1024,
+        "p50_ms": 2.669,
+        "p95_ms": 4.547,
+        "max_ms": 8.265
+      },
+      "mutation_latency": {
+        "count": 128,
+        "p50_ms": 2.767,
+        "p95_ms": 9.312,
+        "max_ms": 12.577
+      },
+      "timing_scope": "client wall time; mutation includes destination session check; plan preparation/fsync excluded from latency but included in elapsed",
+      "elapsed_seconds": 1.046,
+      "process": {
+        "available": true,
+        "rss_kib": 15648,
+        "peak_rss_kib": 15648,
+        "threads": 11,
+        "open_fds": 11
+      },
+      "store_bytes": 364544,
+      "backup_bytes": 320585,
+      "graceful_restart": true,
+      "acknowledged_process_crash_recovery": true,
+      "verified_restore_service": true,
+      "final_publications": {
+        "A": "20",
+        "Final": "100",
+        "Left": "40",
+        "Right": "60"
+      },
+      "integrity": {
+        "model": "dc1f590815e66b699e3b2ae62556c03c65088fdcf5b7fb30c97f5f75d129bc39",
+        "nodes": 14,
+        "receipts": 130,
+        "records": 74,
+        "revision": "133",
+        "roots": 10,
+        "rows": 259,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "9770af6a-d729-4c5c-bd55-46117904c466"
+      }
+    },
+    "host": {
+      "system": "Linux",
+      "machine": "x86_64",
+      "kernel": "6.18.55",
+      "logical_cpus": 5,
+      "python": "3.12.14"
+    },
+    "elapsed_seconds": 1.516
+  },
+  "before_fix": {
+    "valid_create_committed": true,
+    "check_exit": 1,
+    "check_error": "corrupt_state: extra node",
+    "consequence": "startup and verified restore reject a valid quote-containing store"
+  },
+  "fix": "expected quote member address slot 3; curve root remains slot 1",
+  "model_store_behavior_unchanged": true,
+  "after_fix_release_tests": 40,
+  "mixed_regression": {
+    "public_contracts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "records": 27,
+    "native_total": "16",
+    "reporting_before": "54",
+    "reporting_after_early_quote_edit": "74",
+    "later_posting_version_unchanged": true,
+    "complete_restore_equality": true,
+    "server_router_startup": true
+  },
+  "checks": [
+    "cargo test --locked --release --all-targets",
+    "cargo fmt --all -- --check",
+    "cargo clippy --locked --all-targets -- -D warnings",
+    "python3 -B tools/test_client.py",
+    "python3 -B tools/harness.py --binary <fresh release binary> --out <new private directory>"
+  ],
+  "fingerprints": {
+    "src/integrity.rs": "8e9e8d9c5718e968e58d6c3687207e1766513bfa921975c09b4677a23ca4180c",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/harness.py": "03e3eaa0e91da1e72bdca8efa8678bfda943a93562bff6466b052d4f45c32076",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1",
+    "Cargo.toml": "08ed83dda4922dd4b094881e28dbe262f773d5c7f412989cf4a333dbd2726b08",
+    "Cargo.lock": "8df605d3246c4b89ac0a5d686d86f5f47fc7f46ecb644e042a1a53cb8ac9f27d",
+    "research/19-peer-release-review.md": "cb3a58cfd07802e1f0c7c78c3045bf2ddf4cbf202dee89e1639e4a5bea2cfc3e"
+  },
+  "not_verified": [
+    "peer original packaged binary",
+    "public TLS deployment",
+    "whole-backend capacity above documented bounds"
+  ]
+}
