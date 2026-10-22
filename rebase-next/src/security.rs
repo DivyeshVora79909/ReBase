@@ -172,7 +172,7 @@ pub(crate) fn repair_readers<B: Binding, L: FnMut(&[u8]) -> Result<Option<Vec<u8
                         owners.push(target.owner);
                     }
                 }
-                ws.charge("dependency", owners.len() as u64 + 1)?;
+                ws.charge("reader", owners.len() as u64 + 1)?;
                 select(&owners, record.owner)?
             };
             if record.reader != reader {

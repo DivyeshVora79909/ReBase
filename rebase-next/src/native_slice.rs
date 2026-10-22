@@ -10,10 +10,11 @@ use uuid::Uuid;
 use crate::{
     native_codec::{self, Address, Key, Stored, decimal, uuid_text},
     plan::{Field, evaluation_order},
+    routes::{self, Endpoint},
     staging::Batch,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-2";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-3";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -446,6 +447,7 @@ pub struct Work {
     pub work_units: u64,
     pub command_visits: u64,
     pub route_entries: u64,
+    pub selector_visits: u64,
     pub node_visits: u64,
     pub key_loads: u64,
     pub loaded_bytes: u64,
@@ -457,6 +459,9 @@ pub struct Work {
     pub causal_evaluations: u64,
     pub dependency_edges: u64,
     pub dependency_checks: u64,
+    pub graph_nodes: u64,
+    pub scheduler_visits: u64,
+    pub reader_checks: u64,
     pub allocations: u64,
     pub detached_outputs: u64,
     pub final_dirty_keys: u64,
@@ -491,11 +496,15 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         match kind {
             "command" => self.work.command_visits += count,
             "route" => self.work.route_entries += count,
+            "select" => self.work.selector_visits += count,
             "node" => self.work.node_visits += count,
             "load" => self.work.key_loads += count,
             "patch" => self.work.staged_patches += count,
             "edge" => self.work.dependency_edges += count,
             "dependency" => self.work.dependency_checks += count,
+            "graph" => self.work.graph_nodes += count,
+            "schedule" => self.work.scheduler_visits += count,
+            "reader" => self.work.reader_checks += count,
             "allocate" => self.work.allocations += count,
             _ => return Err(Error::new("internal", "unknown work counter")),
         }
@@ -603,6 +612,31 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         }
         roots
     }
+    pub(crate) fn financial_impacts(&self) -> BTreeMap<Address, i64> {
+        let mut impacts = BTreeMap::new();
+        for (key, entry) in &self.entries {
+            if !matches!(key, Key::Node(_)) {
+                continue;
+            }
+            let logical = |v: &Option<StoredValue<B>>| match v {
+                Some(StoredValue::Node(n)) if matches!(n.leaf, crate::tree::Leaf::Financial(_)) => {
+                    Some((n.root, n.key.at, n.leaf))
+                }
+                _ => None,
+            };
+            let old = logical(&entry.original);
+            let new = logical(&entry.current);
+            if old != new {
+                for (root, at, _) in [old, new].into_iter().flatten() {
+                    impacts
+                        .entry(root)
+                        .and_modify(|earliest: &mut i64| *earliest = (*earliest).min(at))
+                        .or_insert(at);
+                }
+            }
+        }
+        impacts
+    }
 }
 
 #[derive(Clone)]
@@ -696,94 +730,61 @@ pub(crate) fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(())
 }
 
-pub(crate) fn route_values(value: Option<Stored>) -> Result<Vec<Address>> {
-    match value {
-        Some(Stored::Incoming(v) | Stored::Direct(v) | Stored::Subscribers(v)) => Ok(v),
-        _ => Err(Error::new("corrupt_state", "missing reverse-route header")),
-    }
-}
-
-pub(crate) fn routes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
-    key: &Key,
-) -> Result<Vec<Address>> {
-    let result = route_values(ws.get(key)?)?;
-    ws.charge("route", result.len() as u64)?;
-    Ok(result)
-}
-
-pub(crate) fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Workspace<L>,
-    key: Key,
-    member: Address,
-    add: bool,
-) -> Result<()> {
-    let mut values = routes(ws, &key)?;
-    match (add, values.binary_search(&member)) {
-        (true, Err(index)) => values.insert(index, member),
-        (false, Ok(index)) => {
-            values.remove(index);
-        }
-        _ => return Err(Error::new("corrupt_state", "reverse registration mismatch")),
-    }
-    let value = match key {
-        Key::Incoming(_) => Stored::Incoming(values),
-        Key::Direct(_) => Stored::Direct(values),
-        Key::Subscribers(_) => Stored::Subscribers(values),
-        _ => return Err(Error::new("internal", "not a route key")),
-    };
-    ws.put(key, Some(value))
-}
-
-pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
+pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address, Endpoint)> {
     let mut entries = BTreeSet::new();
     if let Some(input) = input {
         for (target, _, field) in input.references() {
-            entries.insert((Key::Incoming(target), Address::new(id, field)));
+            entries.insert((
+                Key::Incoming(target),
+                Address::new(id, field),
+                Endpoint::All,
+            ));
         }
-        if let Input::Posting { rule, curve, .. } = input {
-            entries.insert((Key::Direct(*rule), Address::new(id, 7)));
+        if let Input::Posting {
+            rule, curve, at, ..
+        } = input
+        {
+            entries.insert((Key::Direct(*rule), Address::new(id, 7), Endpoint::All));
             entries.insert((
                 Key::Subscribers(Address::new(*curve, 1)),
                 Address::new(id, 1),
+                Endpoint::Time(*at),
             ));
         }
-        if let Input::Adjustment {
-            account, moment, ..
-        } = input
-        {
-            entries.insert((Key::Direct(*moment), Address::new(id, 6)));
-            for slot in [1, 2] {
-                entries.insert((
-                    Key::Subscribers(Address::new(*account, 2)),
-                    Address::new(id, slot),
-                ));
-            }
-        }
-        if let Input::Basis { sources, .. } = input {
-            for (i, root) in sources.iter().enumerate() {
-                entries.insert((
-                    Key::Subscribers(Address::new(*root, 2)),
-                    Address::new(id, i as u16 + 1),
-                ));
-            }
+        if let Input::Adjustment { moment, .. } = input {
+            entries.insert((Key::Direct(*moment), Address::new(id, 6), Endpoint::All));
         }
     }
     entries
 }
 
-pub(crate) fn subscribers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+fn quote_successor<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
-    key: Key,
-    candidates: &mut BTreeSet<Uuid>,
-) -> Result<()> {
-    if let Some(value) = ws.original(&key)? {
-        let old = route_values(Some(value))?;
-        ws.charge("route", old.len() as u64)?;
-        candidates.extend(old.into_iter().map(|a| a.id));
+    id: Uuid,
+    original: bool,
+) -> Result<Option<i64>> {
+    let key = Key::Node(Address::new(id, 3));
+    let value = if original {
+        ws.original(&key)?
+    } else {
+        ws.get(&key)?
+    };
+    let Some(Stored::Node(n)) = value else {
+        return Err(Error::new("corrupt_state", "missing quote membership"));
+    };
+    let Some(next) = n.next else {
+        return Ok(None);
+    };
+    let key = Key::Node(next);
+    let value = if original {
+        ws.original(&key)?
+    } else {
+        ws.get(&key)?
+    };
+    match value {
+        Some(Stored::Node(v)) if v.root == n.root && v.key.at > n.key.at => Ok(Some(v.key.at)),
+        _ => Err(Error::new("corrupt_state", "quote successor")),
     }
-    candidates.extend(routes(ws, &key)?.into_iter().map(|a| a.id));
-    Ok(())
 }
 
 fn quote(input: Option<&Input>) -> Option<(Uuid, i64, u16)> {
@@ -978,15 +979,15 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
     for change in changes {
         let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
         let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
-        for (key, member) in old.difference(&new) {
-            change_route(ws, key.clone(), *member, false)?;
+        for (key, member, endpoint) in old.difference(&new) {
+            routes::change(ws, key, *member, *endpoint, false)?;
         }
-        for (key, member) in new.difference(&old) {
-            change_route(ws, key.clone(), *member, true)?;
+        for (key, member, endpoint) in new.difference(&old) {
+            routes::change(ws, key, *member, *endpoint, true)?;
         }
     }
     let mut candidates = BTreeSet::new();
-    let mut curves = BTreeSet::new();
+    let mut intervals = BTreeSet::new();
     for change in changes {
         let old = change.old.as_ref().map(|r| &r.input);
         let new = change.new.as_ref().map(|r| &r.input);
@@ -996,20 +997,17 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
         if old != new
             && (old.is_some_and(|i| i.contract() == 1) || new.is_some_and(|i| i.contract() == 1))
         {
-            subscribers(ws, Key::Direct(change.id), &mut candidates)?;
+            routes::collect(ws, &Key::Direct(change.id), &mut candidates)?;
         }
-        if old != new {
-            for (curve, _, _) in [quote(old), quote(new)].into_iter().flatten() {
-                curves.insert(curve);
-            }
+        if old != new
+            && let Some((curve, at, _)) = quote(old)
+        {
+            intervals.insert((
+                Address::new(curve, 1),
+                at,
+                quote_successor(ws, change.id, true)?,
+            ));
         }
-    }
-    for curve in curves {
-        subscribers(
-            ws,
-            Key::Subscribers(Address::new(curve, 1)),
-            &mut candidates,
-        )?;
     }
     for change in changes {
         let old = quote(change.old.as_ref().map(|r| &r.input));
@@ -1030,6 +1028,34 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
             } else {
                 tree::insert(ws, root, node, at, Leaf::Quote(rate))?;
             }
+        }
+    }
+    for change in changes {
+        if change.old.as_ref().map(|r| &r.input) != change.new.as_ref().map(|r| &r.input)
+            && let Some((curve, at, _)) = quote(change.new.as_ref().map(|r| &r.input))
+        {
+            intervals.insert((
+                Address::new(curve, 1),
+                at,
+                quote_successor(ws, change.id, false)?,
+            ));
+        }
+    }
+    for (root, from, until) in intervals {
+        for original in [true, false] {
+            candidates.extend(
+                routes::select(
+                    ws,
+                    &Key::Subscribers(root),
+                    std::ops::Bound::Included(Endpoint::Time(from)),
+                    until.map_or(std::ops::Bound::Unbounded, |at| {
+                        std::ops::Bound::Excluded(Endpoint::Time(at))
+                    }),
+                    original,
+                )?
+                .into_iter()
+                .map(|a| a.id),
+            );
         }
     }
     ws.work.candidates = candidates.len() as u64;
@@ -1169,7 +1195,7 @@ mod tests {
     #[test]
     fn typed_workspace_retains_old_images_and_coalesces_current_state() {
         let key = Key::Incoming(Uuid::nil());
-        let value = Stored::Incoming(vec![]);
+        let value = Stored::Incoming(Default::default());
         let bytes = native_codec::encode(&key, &value).unwrap();
         let mut loads = 0;
         let mut workspace = Workspace::new(

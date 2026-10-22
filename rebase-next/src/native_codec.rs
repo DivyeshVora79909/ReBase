@@ -9,7 +9,7 @@ use crate::{
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-3";
+pub const CODEC: &str = "native-slice-kv-4";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -167,6 +167,9 @@ pub enum Key {
     Subscribers(Address),
     Role(Address),
     Reserved(Uuid),
+    IncomingNode(Address),
+    DirectNode(Address),
+    SubscriberNode(Address),
 }
 
 impl Key {
@@ -182,6 +185,9 @@ impl Key {
             Self::Subscribers(a) => (7, a.id, Some(a.slot)),
             Self::Role(a) => (8, a.id, Some(a.slot)),
             Self::Reserved(id) => (9, *id, None),
+            Self::IncomingNode(a) => (10, a.id, Some(a.slot)),
+            Self::DirectNode(a) => (11, a.id, Some(a.slot)),
+            Self::SubscriberNode(a) => (12, a.id, Some(a.slot)),
         };
         let mut bytes = vec![tag];
         bytes.extend_from_slice(id.as_bytes());
@@ -199,7 +205,7 @@ impl Key {
         let tag = *bytes.first().ok_or_else(bad)?;
         let length = match tag {
             1 | 5 | 6 | 9 => 17,
-            2..=4 | 7 | 8 => 19,
+            2..=4 | 7 | 8 | 10..=12 => 19,
             _ => return Err(bad()),
         };
         if bytes.len() != length {
@@ -225,6 +231,9 @@ impl Key {
             7 => Self::Subscribers(a),
             8 => Self::Role(a),
             9 => Self::Reserved(id),
+            10 => Self::IncomingNode(a),
+            11 => Self::DirectNode(a),
+            12 => Self::SubscriberNode(a),
             _ => return Err(bad()),
         })
     }
@@ -247,9 +256,10 @@ pub enum StoredValue<B: Binding> {
     Root(Root),
     Node(Node),
     Query(Query),
-    Incoming(Vec<Address>),
-    Direct(Vec<Address>),
-    Subscribers(Vec<Address>),
+    Incoming(crate::routes::Header),
+    Direct(crate::routes::Header),
+    Subscribers(crate::routes::Header),
+    RouteNode(crate::routes::Node),
     Role(Role),
     Reserved(Address),
 }
@@ -327,10 +337,28 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
                                 | crate::native_slice::Bound::All
                         )))
         }
-        (Key::Incoming(_), StoredValue::Incoming(rows))
-        | (Key::Direct(_), StoredValue::Direct(rows))
-        | (Key::Subscribers(_), StoredValue::Subscribers(rows)) => {
-            rows.windows(2).all(|w| w[0] < w[1]) && rows.iter().all(|a| a.slot > 0)
+        (Key::Incoming(_), StoredValue::Incoming(h))
+        | (Key::Direct(_), StoredValue::Direct(h))
+        | (Key::Subscribers(_), StoredValue::Subscribers(h)) => {
+            h.head.is_none() == h.is_empty() && h.head.is_none_or(|a| a.slot > 0)
+        }
+        (
+            Key::IncomingNode(a) | Key::DirectNode(a) | Key::SubscriberNode(a),
+            StoredValue::RouteNode(n),
+        ) => {
+            use crate::routes::{Endpoint, Route};
+            a.slot > 0
+                && n.key.member == *a
+                && n.route.node_key(*a) == *key
+                && n.height > 0
+                && n.height < 64
+                && n.left.is_none_or(|v| v.slot > 0 && v != *a)
+                && n.right.is_none_or(|v| v.slot > 0 && v != *a)
+                && (n.left.is_none() || n.left != n.right)
+                && match n.route {
+                    Route::Subscribers(root) => root.slot > 0,
+                    _ => n.key.endpoint == Endpoint::All,
+                }
         }
         (Key::Role(a), StoredValue::Role(_)) => a.slot > 0,
         (Key::Reserved(_), StoredValue::Reserved(a)) => a.slot > 0,

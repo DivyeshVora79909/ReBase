@@ -25,7 +25,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-store-3";
+pub const STORE_FORMAT: &str = "rebase-store-4";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
@@ -1005,43 +1005,45 @@ mod tests {
     }
     #[test]
     fn old_store_format_is_rejected_before_decoding_legacy_meta() {
-        let dir = Directory::new();
-        let model = Arc::new(PreparedModel::load().unwrap());
-        let store = LocalStore::create(
-            dir.file(),
-            model.clone(),
-            Context {
-                tenant: Uuid::from_u128(1),
-                actor: Uuid::from_u128(2),
-            },
-        )
-        .unwrap();
-        let mut header = read_header(&store.db.begin_read().unwrap()).unwrap();
-        header.format = "rebase-store-2".into();
-        let write = store.db.begin_write().unwrap();
-        write
-            .open_table(RUNTIME)
-            .unwrap()
-            .insert(HEADER, encode(&header).unwrap().as_slice())
-            .unwrap();
-        // A legacy array-shaped Meta cannot decode under format 3. The runtime
-        // header must reject this store before any native payload decoding.
-        write
-            .open_table(KV)
-            .unwrap()
-            .insert(
-                Key::Meta.encode().as_slice(),
-                b"legacy-array-meta".as_slice(),
+        for previous_format in ["rebase-store-2", "rebase-store-3"] {
+            let dir = Directory::new();
+            let model = Arc::new(PreparedModel::load().unwrap());
+            let store = LocalStore::create(
+                dir.file(),
+                model.clone(),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
             )
             .unwrap();
-        write.commit().unwrap();
-        drop(store);
-        assert!(matches!(
-            LocalStore::open(dir.file(), model),
-            Err(Error {
-                code: "model_mismatch",
-                ..
-            })
-        ));
+            let mut header = read_header(&store.db.begin_read().unwrap()).unwrap();
+            header.format = previous_format.into();
+            let write = store.db.begin_write().unwrap();
+            write
+                .open_table(RUNTIME)
+                .unwrap()
+                .insert(HEADER, encode(&header).unwrap().as_slice())
+                .unwrap();
+            // A legacy array-shaped Meta cannot decode under format 4. The runtime
+            // header must reject this store before any native payload decoding.
+            write
+                .open_table(KV)
+                .unwrap()
+                .insert(
+                    Key::Meta.encode().as_slice(),
+                    b"legacy-array-meta".as_slice(),
+                )
+                .unwrap();
+            write.commit().unwrap();
+            drop(store);
+            assert!(matches!(
+                LocalStore::open(dir.file(), model),
+                Err(Error {
+                    code: "model_mismatch",
+                    ..
+                })
+            ));
+        }
     }
 }

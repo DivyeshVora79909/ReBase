@@ -2439,7 +2439,7 @@
             },
             "work": {
               "candidates": 1,
-              "causal_evaluations": 5
+              "causal_evaluations": 4
             }
           }
         }

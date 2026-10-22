@@ -5,6 +5,7 @@ use crate::{
     mutation::{check_counts, reconcile_member},
     native_codec::{Address, Key, Role, StoredValue},
     native_slice::{Attempt, Bound, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
+    routes::{self, Endpoint, Route},
     tree::{self, Kind, Leaf},
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -173,53 +174,57 @@ fn original<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         _ => Err(Error::new("corrupt_state", "old record type")),
     }
 }
-fn route_values<B: Binding>(value: Option<StoredValue<B>>) -> Result<Vec<Address>> {
-    match value {
-        None => Ok(vec![]),
-        Some(StoredValue::Incoming(v) | StoredValue::Direct(v) | StoredValue::Subscribers(v)) => {
-            Ok(v)
-        }
-        _ => Err(Error::new("corrupt_state", "route type")),
-    }
-}
-fn routes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+fn subscriptions<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
-    key: &Key,
-) -> Result<Vec<Address>> {
-    let v = route_values(ws.get(key)?)?;
-    ws.charge("route", v.len() as u64)?;
-    Ok(v)
-}
-fn subscribers<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
-    ws: &mut Attempt<L, B>,
-    key: Key,
-    set: &mut BTreeSet<Uuid>,
+    model: &Prepared<B>,
+    id: Uuid,
+    old: Option<&ModelRecord<B>>,
+    shape: &ResolvedShape,
 ) -> Result<()> {
-    let old = route_values(ws.original(&key)?)?;
-    ws.charge("route", old.len() as u64)?;
-    set.extend(old.into_iter().map(|a| a.id));
-    set.extend(routes(ws, &key)?.into_iter().map(|a| a.id));
+    let mut before = BTreeSet::new();
+    if let Some(old) = old {
+        for query in &model.contract(old.contract)?.queries {
+            if let Some(value) = ws.original(&Key::Query(Address::new(id, query.slot)))? {
+                let StoredValue::Query(q) = value else {
+                    return Err(Error::new("corrupt_state", "old query type"));
+                };
+                let endpoint = match q.upper {
+                    Bound::BeforeTime(at) => Endpoint::Time(at),
+                    Bound::All => Endpoint::All,
+                    _ => return Err(Error::new("corrupt_state", "old reactive query bound")),
+                };
+                before.insert((
+                    Key::Subscribers(q.source),
+                    Address::new(id, query.slot),
+                    endpoint,
+                ));
+            }
+        }
+    }
+    let after: BTreeSet<_> = shape
+        .reads
+        .iter()
+        .map(|r| {
+            (
+                Key::Subscribers(r.root),
+                Address::new(id, r.slot),
+                r.before.map_or(Endpoint::All, Endpoint::Time),
+            )
+        })
+        .collect();
+    for (key, member, endpoint) in before.difference(&after) {
+        routes::change(ws, key, *member, *endpoint, false)?;
+    }
+    for (key, member, endpoint) in after.difference(&before) {
+        routes::change(ws, key, *member, *endpoint, true)?;
+    }
     Ok(())
 }
-fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
-    ws: &mut Attempt<L, B>,
-    key: Key,
-    member: Address,
-    add: bool,
-) -> Result<()> {
-    let mut v = routes(ws, &key)?;
-    match (add, v.binary_search(&member)) {
-        (true, Err(i)) => v.insert(i, member),
-        (false, Ok(i)) => {
-            v.remove(i);
-        }
-        _ => return Err(Error::new("corrupt_state", "reverse registration mismatch")),
-    };
-    let value = match key {
-        Key::Incoming(_) => StoredValue::Incoming(v),
-        _ => return Err(Error::new("internal", "output route")),
-    };
-    ws.put(key, Some(value))
+fn impact(roots: &mut BTreeMap<Address, i64>, root: Address, at: i64) {
+    roots
+        .entry(root)
+        .and_modify(|v| *v = (*v).min(at))
+        .or_insert(at);
 }
 fn incoming<B: Binding>(id: Uuid, r: Option<&ModelRecord<B>>) -> BTreeSet<(Key, Address)> {
     r.into_iter()
@@ -255,13 +260,13 @@ fn write_output<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     let before = incoming(id, old);
     let after = incoming(id, new.as_ref());
     for (k, a) in before.difference(&after) {
-        change_route(ws, k.clone(), *a, false)?;
+        routes::change(ws, k, *a, Endpoint::All, false)?;
     }
     for (k, a) in after.difference(&before) {
-        change_route(ws, k.clone(), *a, true)?;
+        routes::change(ws, k, *a, Endpoint::All, true)?;
     }
     if new.is_none() {
-        if !routes(ws, &Key::Incoming(id))?.is_empty() {
+        if routes::header(ws, Route::Incoming(id), false)?.is_some_and(|h| !h.is_empty()) {
             return Err(Error::new(
                 "unavailable_reference",
                 "surviving reference to private output",
@@ -307,7 +312,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<()> {
     let mut pending = BTreeSet::new();
-    let mut roots: BTreeSet<_> = ws.changed_roots().into_iter().collect();
+    let mut roots = ws.financial_impacts();
     for c in changes {
         if c.old.as_ref().into_iter().chain(c.new.as_ref()).any(|r| {
             model
@@ -317,15 +322,36 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             pending.insert(c.id);
         }
         if c.old.as_ref().map(|r| &r.input) != c.new.as_ref().map(|r| &r.input) {
-            subscribers(ws, Key::Direct(c.id), &mut pending)?;
+            routes::collect(ws, &Key::Direct(c.id), &mut pending)?;
         }
     }
-    let mut visited = BTreeSet::new();
+    let mut visited: BTreeMap<Address, i64> = BTreeMap::new();
     let mut plans: BTreeMap<Uuid, Plan<B>> = BTreeMap::new();
     loop {
-        while let Some(root) = roots.pop_first() {
-            if visited.insert(root) {
-                subscribers(ws, Key::Subscribers(root), &mut pending)?;
+        while let Some((root, at)) = roots.pop_first() {
+            if visited.get(&root).is_some_and(|previous| *previous <= at) {
+                continue;
+            }
+            // Only the newly exposed interval is opened when an old/new output
+            // moves the earliest impact backwards. Changed producers/direct
+            // consumers are seeded even if their new read was already passed.
+            let upper = visited
+                .insert(root, at)
+                .map_or(std::ops::Bound::Unbounded, |previous| {
+                    std::ops::Bound::Included(Endpoint::Time(previous))
+                });
+            for original in [true, false] {
+                pending.extend(
+                    routes::select(
+                        ws,
+                        &Key::Subscribers(root),
+                        std::ops::Bound::Excluded(Endpoint::Time(at)),
+                        upper,
+                        original,
+                    )?
+                    .into_iter()
+                    .map(|a| a.id),
+                );
             }
         }
         let Some(id) = pending.pop_first() else { break };
@@ -349,6 +375,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             }
             None => ResolvedShape::default(),
         };
+        subscriptions(ws, model, id, old_record.as_ref(), &shape)?;
         let mut plan = Plan {
             record,
             old_record,
@@ -376,61 +403,28 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
                     if output.input.managed() != Some((id, role)) {
                         return Err(Error::new("corrupt_state", "role output owner"));
                     }
-                    roots.insert(B::output_member(&output.input)?.0);
+                    let (root, at, _) = B::output_member(&output.input)?;
+                    impact(&mut roots, root, at);
                     plan.old_outputs.insert(role, (b.output, output));
                 }
             }
         }
         for e in &plan.shape.emits {
-            roots.insert(e.root);
+            impact(&mut roots, e.root, e.at);
         }
         plans.insert(id, plan);
-        if plans.len() > 64 {
+        if plans.len() > usize::from(B::limits().public_records) {
             return Err(Error::new("state_limit", "causal closure"));
         }
     }
     ws.work.causal_candidates = plans.len() as u64;
-    let mut deps: BTreeMap<Uuid, BTreeSet<Uuid>> = plans
-        .iter()
-        .filter(|(_, p)| p.record.is_some())
-        .map(|(id, _)| (*id, BTreeSet::new()))
-        .collect();
-    for (consumer, p) in &plans {
-        if p.record.is_none() {
-            continue;
-        }
-        for r in p.shape.reads.iter().filter(|r| !r.validate) {
-            for (producer, s) in &plans {
-                for e in &s.shape.emits {
-                    ws.charge("dependency", 1)?;
-                    if r.root == e.root
-                        && r.before.is_none_or(|at| e.at < at)
-                        && deps.get_mut(consumer).unwrap().insert(*producer)
-                    {
-                        ws.charge("edge", 1)?;
-                    }
-                }
-            }
-        }
-    }
-    let mut order = vec![];
-    while !deps.is_empty() {
-        let ready: Vec<_> = deps
+    let order = crate::dependency::order(
+        ws,
+        plans
             .iter()
-            .filter(|(_, d)| d.is_empty())
-            .map(|(id, _)| *id)
-            .collect();
-        if ready.is_empty() {
-            return Err(Error::new("feedback", "final active calculation cycle"));
-        }
-        for id in ready {
-            deps.remove(&id);
-            order.push(id);
-            for d in deps.values_mut() {
-                d.remove(&id);
-            }
-        }
-    }
+            .filter(|(_, p)| p.record.is_some())
+            .map(|(id, p)| (*id, &p.shape)),
+    )?;
     let role_slots: BTreeSet<_> = model
         .contracts()
         .flat_map(|c| c.outputs.iter().map(|o| o.role))
@@ -608,6 +602,308 @@ fn member_slot<B: Binding>(model: &Prepared<B>, contract: u16) -> Result<u16> {
 mod tests {
     use super::*;
     use crate::{binding::Calculation, native_slice::Input};
+
+    // Keep authored inputs separately from the native image: expected results
+    // must never depend on writer-produced private outputs or query caches.
+    #[test]
+    fn selective_closure_matches_source_arithmetic_through_repeated_topology_edits() {
+        use crate::{
+            models::equipment::{Derived, Equipment, Input as EquipmentInput},
+            native_codec,
+            native_slice::{Command, Work},
+        };
+        use serde_json::json;
+        type Bytes = BTreeMap<Vec<u8>, Vec<u8>>;
+
+        fn expected(sources: &BTreeMap<Uuid, EquipmentInput>) -> (BTreeMap<Uuid, Derived>, bool) {
+            let mut events: BTreeMap<Uuid, Vec<(i64, i128)>> = BTreeMap::new();
+            let mut reservations = vec![];
+            for (id, input) in sources {
+                match input {
+                    EquipmentInput::Delivery { pool, at, quantity } => {
+                        events.entry(*pool).or_default().push((*at, *quantity));
+                    }
+                    EquipmentInput::Reservation { starts, .. } => reservations.push((*starts, *id)),
+                    _ => {}
+                }
+            }
+            reservations.sort();
+            let mut derived = BTreeMap::new();
+            for (_, id) in reservations {
+                let EquipmentInput::Reservation {
+                    pool,
+                    starts,
+                    ends,
+                    requested,
+                    active,
+                } = sources[&id]
+                else {
+                    unreachable!()
+                };
+                let events = events.entry(pool).or_default();
+                let before = if active {
+                    events
+                        .iter()
+                        .filter(|(at, _)| *at < starts)
+                        .map(|(_, amount)| amount)
+                        .sum::<i128>()
+                } else {
+                    0
+                };
+                let allocated = if active {
+                    requested.min(before.max(0))
+                } else {
+                    0
+                };
+                derived.insert(
+                    id,
+                    Derived {
+                        available_before: before,
+                        allocated,
+                    },
+                );
+                if active {
+                    events.extend([(starts, -allocated), (ends, allocated)]);
+                }
+            }
+            let valid = events.values().all(|events| {
+                let mut grouped = BTreeMap::<i64, i128>::new();
+                for (at, amount) in events {
+                    *grouped.entry(*at).or_default() += amount;
+                }
+                let mut balance = 0;
+                grouped.values().all(|amount| {
+                    balance += amount;
+                    balance >= 0
+                })
+            });
+            (derived, valid)
+        }
+        fn mutate(
+            bytes: &mut Bytes,
+            model: &Prepared<Equipment>,
+            commands: Vec<Command>,
+        ) -> Result<Work> {
+            let mut ws =
+                Attempt::<_, Equipment>::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 200_000);
+            crate::mutation::settle_authorized(
+                &mut ws,
+                model,
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+                &commands,
+                &mut || Ok(Uuid::new_v4()),
+                false,
+                &mut |_, _, _, _| Ok(()),
+            )?;
+            let batch = ws.finish()?;
+            let work = ws.work.clone();
+            drop(ws);
+            for (key, value) in batch {
+                if let Some(value) = value {
+                    bytes.insert(key, value);
+                } else {
+                    bytes.remove(&key);
+                }
+            }
+            Ok(work)
+        }
+        fn check(bytes: &Bytes, sources: &BTreeMap<Uuid, EquipmentInput>) {
+            let (expected, valid) = expected(sources);
+            assert!(valid);
+            let mut ws =
+                Attempt::<_, Equipment>::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 200_000);
+            let mut active = 0;
+            for (id, input) in sources {
+                let record = ws.record(*id).unwrap().unwrap();
+                assert_eq!(&record.input, input);
+                let Some(derived) = expected.get(id) else {
+                    continue;
+                };
+                assert_eq!(record.derived.as_ref(), Some(derived));
+                let EquipmentInput::Reservation {
+                    pool,
+                    starts,
+                    ends,
+                    active: enabled,
+                    ..
+                } = input
+                else {
+                    unreachable!()
+                };
+                let query = ws.get(&Key::Query(Address::new(*id, 31))).unwrap();
+                if *enabled {
+                    active += 1;
+                    let Some(StoredValue::Query(query)) = query else {
+                        panic!("active query missing")
+                    };
+                    assert_eq!(
+                        (query.source, query.result),
+                        (Address::new(*pool, 7), derived.available_before)
+                    );
+                    for (role, at, quantity) in [
+                        (11, *starts, -derived.allocated),
+                        (29, *ends, derived.allocated),
+                    ] {
+                        let Some(StoredValue::Role(binding)) =
+                            ws.get(&Key::Role(Address::new(*id, role))).unwrap()
+                        else {
+                            panic!("role missing")
+                        };
+                        assert_eq!(
+                            ws.record(binding.output).unwrap().unwrap().input,
+                            EquipmentInput::Output {
+                                producer: *id,
+                                role,
+                                pool: *pool,
+                                at,
+                                quantity
+                            }
+                        );
+                    }
+                } else {
+                    assert_eq!(query, None);
+                }
+            }
+            // Detect stale outputs after deactivation as well as missing ones.
+            let outputs = bytes.iter().filter(|(key, value)| {
+                let key = Key::decode(key).unwrap();
+                matches!(native_codec::decode_for::<Equipment>(&key, value).unwrap(), StoredValue::Record(r) if r.contract == 900)
+            }).count();
+            assert_eq!(outputs, 2 * active);
+        }
+
+        let model = Prepared::<Equipment>::load().unwrap();
+        let meta = Meta {
+            model: model.identity().into(),
+            codec: native_codec::CODEC.into(),
+            tenant: Uuid::from_u128(1),
+            actor: Uuid::from_u128(2),
+            revision: 0,
+            counts: model.contracts().map(|c| (c.code, 0)).collect(),
+            reserved: 0,
+        };
+        let mut bytes = BTreeMap::from([(
+            Key::Meta.encode(),
+            native_codec::encode_for::<Equipment>(&Key::Meta, &StoredValue::Meta(meta)).unwrap(),
+        )]);
+        let mut sources = BTreeMap::new();
+        for (id, pool) in [(100, 100), (101, 101)] {
+            sources.insert(Uuid::from_u128(id), EquipmentInput::Pool { unit: 1 });
+            sources.insert(
+                Uuid::from_u128(id + 100),
+                EquipmentInput::Delivery {
+                    pool: Uuid::from_u128(pool),
+                    at: 0,
+                    quantity: if pool == 100 { 10 } else { 7 },
+                },
+            );
+        }
+        for i in 0..6 {
+            sources.insert(
+                Uuid::from_u128(300 + i),
+                EquipmentInput::Reservation {
+                    pool: Uuid::from_u128(100 + i % 2),
+                    starts: (i as i64 + 1) * 10,
+                    ends: (i as i64 + 1) * 10 + 5,
+                    requested: 8,
+                    active: true,
+                },
+            );
+        }
+        sources.insert(
+            Uuid::from_u128(202),
+            EquipmentInput::Delivery {
+                pool: Uuid::from_u128(101),
+                at: i64::MAX,
+                quantity: 1,
+            },
+        );
+        // Roots precede referencing sources; reservation UUIDs deliberately do
+        // not change when their temporal order is changed below.
+        let creates = sources
+            .iter()
+            .map(|(id, input)| Command::Create {
+                id: *id,
+                contract: input.contract(),
+                fields: serde_json::to_value(input).unwrap(),
+            })
+            .collect();
+        mutate(&mut bytes, &model, creates).unwrap();
+        check(&bytes, &sources);
+        let mut random = 41u64;
+        let mut commits = 0;
+        let mut rejections = 0;
+        for step in 0..160 {
+            random = random.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let draw = random >> 32;
+            let id = Uuid::from_u128(if step < 2 {
+                202
+            } else {
+                300 + u128::from(draw % 6)
+            });
+            let mut proposed = sources.clone();
+            let set = if step < 2 {
+                let EquipmentInput::Delivery { at, quantity, .. } = proposed.get_mut(&id).unwrap()
+                else {
+                    unreachable!()
+                };
+                *quantity = 2;
+                if step == 1 {
+                    *at = 55;
+                }
+                json!({"at":at.to_string(), "quantity":quantity.to_string()})
+            } else {
+                let EquipmentInput::Reservation {
+                    pool,
+                    starts,
+                    ends,
+                    requested,
+                    active,
+                } = proposed.get_mut(&id).unwrap()
+                else {
+                    unreachable!()
+                };
+                *pool = Uuid::from_u128(100 + u128::from((draw >> 4) % 2));
+                *starts = ((draw >> 7) % 15) as i64 * 5 + 5;
+                *ends = *starts + ((draw >> 12) % 5) as i64 * 5 + 5;
+                *requested = i128::from((draw >> 17) % 13);
+                *active = !(draw >> 22).is_multiple_of(4);
+                json!({"pool":pool, "starts":starts.to_string(), "ends":ends.to_string(), "requested":requested.to_string(), "active":active})
+            };
+            let mut ws =
+                Attempt::<_, Equipment>::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 200_000);
+            let version = ws.record(id).unwrap().unwrap().version;
+            drop(ws);
+            let before = bytes.clone();
+            let result = mutate(
+                &mut bytes,
+                &model,
+                vec![Command::Update {
+                    id,
+                    if_version: version,
+                    set: set.as_object().unwrap().clone().into_iter().collect(),
+                    unset: vec![],
+                }],
+            );
+            if expected(&proposed).1 {
+                let work = result.unwrap();
+                if step < 2 {
+                    assert_eq!(work.causal_candidates, step);
+                }
+                sources = proposed;
+                commits += 1;
+            } else {
+                assert_eq!(result.unwrap_err().code, "invariant");
+                assert_eq!(bytes, before);
+                rejections += 1;
+            }
+            check(&bytes, &sources);
+        }
+        assert!(commits > 100 && rejections > 0);
+    }
 
     #[test]
     fn resolved_query_cannot_substitute_an_unauthored_account() {

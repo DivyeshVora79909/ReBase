@@ -86,6 +86,103 @@ fn aggregate(kind: Kind, leaves: &[(i64, Leaf)]) -> Result<Aggregate> {
         }
     }
 }
+
+// This walker derives registration keys from source-expected references and
+// queries. It does not call the route writer or its range selector.
+struct RouteWalk<'a, B: Binding> {
+    all: &'a BTreeMap<Key, StoredValue<B>>,
+    expected: BTreeMap<Key, (crate::routes::Route, crate::routes::Order)>,
+    seen: BTreeSet<Key>,
+}
+impl<B: Binding> RouteWalk<'_, B> {
+    fn visit(
+        &mut self,
+        route: crate::routes::Route,
+        id: Option<Address>,
+        lower: Option<crate::routes::Order>,
+        upper: Option<crate::routes::Order>,
+        depth: u16,
+    ) -> Result<(u16, u32)> {
+        let Some(id) = id else {
+            return Ok((0, 0));
+        };
+        require(depth < 64, "selector depth")?;
+        let key = route.node_key(id);
+        require(self.seen.insert(key.clone()), "selector repeated node")?;
+        let Some(StoredValue::RouteNode(n)) = self.all.get(&key) else {
+            return Err(local::corrupt("selector dangling link"));
+        };
+        require(
+            self.expected.get(&key) == Some(&(n.route, n.key)) && n.route == route,
+            "selector exact source membership/bound",
+        )?;
+        require(
+            lower.is_none_or(|k| k < n.key) && upper.is_none_or(|k| n.key < k),
+            "selector order",
+        )?;
+        let n = n.clone();
+        let (lh, lc) = self.visit(route, n.left, lower, Some(n.key), depth + 1)?;
+        let (rh, rc) = self.visit(route, n.right, Some(n.key), upper, depth + 1)?;
+        require(
+            lh.abs_diff(rh) <= 1 && n.height == 1 + lh.max(rh),
+            "selector balance/height",
+        )?;
+        Ok((n.height, 1 + lc + rc))
+    }
+}
+fn check_routes<B: Binding>(
+    all: &BTreeMap<Key, StoredValue<B>>,
+    routes: &BTreeMap<Key, BTreeSet<Address>>,
+    queries: &BTreeMap<Address, Query>,
+) -> Result<BTreeSet<Key>> {
+    use crate::routes::{Endpoint, Order, Route};
+    let mut walk = RouteWalk {
+        all,
+        expected: BTreeMap::new(),
+        seen: BTreeSet::new(),
+    };
+    for (key, addresses) in routes {
+        let route = Route::from_key(key)?;
+        for &member in addresses {
+            let endpoint = if let Route::Subscribers(root) = route {
+                let q = queries
+                    .get(&member)
+                    .ok_or_else(|| local::corrupt("selector lacks expected query"))?;
+                require(q.source == root, "selector query root")?;
+                match q.upper {
+                    Bound::All => Endpoint::All,
+                    Bound::BeforeTime(at) | Bound::AfterTime(at) => Endpoint::Time(at),
+                }
+            } else {
+                Endpoint::All
+            };
+            require(
+                walk.expected
+                    .insert(route.node_key(member), (route, Order { endpoint, member }))
+                    .is_none(),
+                "duplicate selector identity",
+            )?;
+        }
+    }
+    for (key, addresses) in routes {
+        let Some(StoredValue::Incoming(h) | StoredValue::Direct(h) | StoredValue::Subscribers(h)) =
+            all.get(key)
+        else {
+            return Err(local::corrupt("missing selector header"));
+        };
+        let (_, count) = walk.visit(Route::from_key(key)?, h.head, None, None, 0)?;
+        require(
+            count as usize == addresses.len() && count == h.len,
+            "selector complete count",
+        )?;
+    }
+    require(
+        walk.seen == walk.expected.keys().cloned().collect(),
+        "selector disconnected registration",
+    )?;
+    walk.seen.extend(routes.keys().cloned());
+    Ok(walk.seen)
+}
 struct Walk<'a> {
     nodes: &'a BTreeMap<Address, Node>,
     members: &'a Members,
@@ -168,7 +265,10 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         let table = read.open_table(KV).map_err(local::storage)?;
         let mut all = BTreeMap::new();
         for (i, row) in table.iter().map_err(local::storage)?.enumerate() {
-            require(i < 4096, "integrity inventory budget")?;
+            require(
+                i < crate::binding::MAX_INVENTORY_ROWS,
+                "integrity inventory budget",
+            )?;
             let (key, value) = row.map_err(local::storage)?;
             let key = Key::decode(key.value())?;
             all.insert(
@@ -183,7 +283,10 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 _ => None,
             })
             .collect();
-        require(records.len() <= 112, "integrity record budget")?;
+        require(
+            records.len() <= crate::binding::MAX_NATIVE_RECORDS,
+            "integrity record budget",
+        )?;
         let roots: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
@@ -428,15 +531,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             readers,
             ..
         } = self;
-        for (key, addresses) in routes {
-            let expected = match &key {
-                Key::Incoming(_) => StoredValue::Incoming(addresses.into_iter().collect()),
-                Key::Direct(_) => StoredValue::Direct(addresses.into_iter().collect()),
-                _ => StoredValue::Subscribers(addresses.into_iter().collect()),
-            };
-            require(all.get(&key) == Some(&expected), "exact reverse route")?;
-            expected_keys.insert(key);
-        }
+        expected_keys.extend(check_routes(all, &routes, &queries)?);
         for (id, query) in queries {
             let key = Key::Query(id);
             require(
@@ -987,15 +1082,184 @@ mod tests {
     fn model_population_limits_are_checked_inside_codec_envelope() {
         use crate::{model::Prepared, models::equipment::Equipment};
         let equipment = Prepared::<Equipment>::load().unwrap();
-        // Both values fit the codec's total envelope; only 64 is model-valid.
-        assert!(check_populations(&equipment, &BTreeMap::from([(101, 64)]), 0).is_ok());
-        assert!(check_populations(&equipment, &BTreeMap::from([(101, 65)]), 0).is_err());
-        assert!(check_populations(&equipment, &BTreeMap::from([(900, 48)]), 256).is_ok());
-        assert!(check_populations(&equipment, &BTreeMap::from([(900, 49)]), 256).is_err());
-        assert!(check_populations(&equipment, &BTreeMap::new(), 257).is_err());
+        let limits = Equipment::limits();
+        // Per-model limits remain checked independently of codec decoding.
+        assert!(
+            check_populations(
+                &equipment,
+                &BTreeMap::from([(101, limits.public_records)]),
+                0
+            )
+            .is_ok()
+        );
+        assert!(
+            check_populations(
+                &equipment,
+                &BTreeMap::from([(101, limits.public_records + 1)]),
+                0
+            )
+            .is_err()
+        );
+        assert!(
+            check_populations(
+                &equipment,
+                &BTreeMap::from([(900, limits.outputs)]),
+                limits.reservations
+            )
+            .is_ok()
+        );
+        assert!(
+            check_populations(
+                &equipment,
+                &BTreeMap::from([(900, limits.outputs + 1)]),
+                limits.reservations
+            )
+            .is_err()
+        );
+        assert!(check_populations(&equipment, &BTreeMap::new(), limits.reservations + 1).is_err());
         let calculation = Prepared::<Calculation>::load().unwrap();
-        assert!(check_populations(&calculation, &BTreeMap::from([(3, 16)]), 0).is_ok());
-        assert!(check_populations(&calculation, &BTreeMap::from([(3, 17)]), 0).is_err());
+        let limit = Calculation::limits().per_contract[&3];
+        assert!(check_populations(&calculation, &BTreeMap::from([(3, limit)]), 0).is_ok());
+        assert!(check_populations(&calculation, &BTreeMap::from([(3, limit + 1)]), 0).is_err());
+    }
+    #[test]
+    fn selector_checker_rejects_wrong_order_imbalance_and_disconnected_nodes() {
+        use crate::routes::{Endpoint, Header, Order, Route};
+        let root = Address::new(Uuid::from_u128(100), 2);
+        let route = Route::Subscribers(root);
+        let ids: Vec<_> = (1..=4)
+            .map(|id| Address::new(Uuid::from_u128(id), 1))
+            .collect();
+        let bounds = [
+            Bound::BeforeTime(i64::MIN),
+            Bound::AfterTime(0),
+            Bound::BeforeTime(i64::MAX),
+            Bound::All,
+        ];
+        let queries: BTreeMap<_, _> = ids
+            .iter()
+            .zip(bounds.iter().cloned())
+            .map(|(&id, upper)| {
+                (
+                    id,
+                    Query {
+                        source: root,
+                        operation: "sum".into(),
+                        phase: "calculate".into(),
+                        channel: "amount".into(),
+                        lower: "negative_infinity".into(),
+                        upper,
+                        selected: None,
+                        result: 0,
+                    },
+                )
+            })
+            .collect();
+        let routes = BTreeMap::from([(route.key(), ids.iter().copied().collect())]);
+        let mut all = BTreeMap::<Key, Stored>::new();
+        for (i, &member) in ids.iter().enumerate() {
+            let endpoint = match bounds[i] {
+                Bound::BeforeTime(t) | Bound::AfterTime(t) => Endpoint::Time(t),
+                Bound::All => Endpoint::All,
+            };
+            all.insert(
+                route.node_key(member),
+                Stored::RouteNode(crate::routes::Node {
+                    route,
+                    key: Order { endpoint, member },
+                    left: None,
+                    right: None,
+                    height: 1,
+                }),
+            );
+        }
+        let configure = |all: &mut BTreeMap<Key, Stored>,
+                         head: usize,
+                         links: &[(Option<usize>, Option<usize>, u16)]| {
+            all.insert(
+                route.key(),
+                Stored::Subscribers(Header {
+                    head: Some(ids[head]),
+                    len: 4,
+                }),
+            );
+            for (i, &(left, right, height)) in links.iter().enumerate() {
+                let Some(Stored::RouteNode(n)) = all.get_mut(&route.node_key(ids[i])) else {
+                    unreachable!()
+                };
+                n.left = left.map(|i| ids[i]);
+                n.right = right.map(|i| ids[i]);
+                n.height = height;
+            }
+        };
+        configure(
+            &mut all,
+            2,
+            &[
+                (None, None, 1),
+                (Some(0), None, 2),
+                (Some(1), Some(3), 3),
+                (None, None, 1),
+            ],
+        );
+        check_routes(&all, &routes, &queries).unwrap();
+        configure(
+            &mut all,
+            1,
+            &[
+                (None, None, 1),
+                (Some(0), Some(2), 3),
+                (None, Some(3), 2),
+                (None, None, 1),
+            ],
+        );
+        check_routes(&all, &routes, &queries).unwrap();
+        let valid = all.clone();
+        configure(
+            &mut all,
+            1,
+            &[
+                (None, None, 1),
+                (Some(2), Some(0), 3),
+                (None, Some(3), 2),
+                (None, None, 1),
+            ],
+        );
+        assert_eq!(
+            check_routes(&all, &routes, &queries).unwrap_err().detail,
+            "selector order"
+        );
+        all = valid.clone();
+        // All cached heights and ordering are exact, but this chain is not AVL.
+        configure(
+            &mut all,
+            3,
+            &[
+                (None, None, 1),
+                (Some(0), None, 2),
+                (Some(1), None, 3),
+                (Some(2), None, 4),
+            ],
+        );
+        assert_eq!(
+            check_routes(&all, &routes, &queries).unwrap_err().detail,
+            "selector balance/height"
+        );
+        all = valid;
+        configure(
+            &mut all,
+            1,
+            &[
+                (None, None, 1),
+                (Some(0), None, 2),
+                (None, Some(3), 2),
+                (None, None, 1),
+            ],
+        );
+        assert_eq!(
+            check_routes(&all, &routes, &queries).unwrap_err().detail,
+            "selector complete count"
+        );
     }
     #[test]
     fn source_inventory_and_structure_reject_corruption_without_writer_replay() {
@@ -1026,6 +1290,19 @@ mod tests {
                     changes.push((key.clone(), Some(Stored::Query(q))));
                 }
                 Stored::Incoming(_) => changes.push((key.clone(), None)),
+                Stored::RouteNode(mut n) => {
+                    changes.push((key.clone(), None));
+                    let mut wrong_height = n.clone();
+                    wrong_height.height += 1;
+                    changes.push((key.clone(), Some(Stored::RouteNode(wrong_height))));
+                    if matches!(n.route, crate::routes::Route::Subscribers(_)) {
+                        n.key.endpoint = match n.key.endpoint {
+                            crate::routes::Endpoint::All => crate::routes::Endpoint::Time(0),
+                            _ => crate::routes::Endpoint::All,
+                        };
+                        changes.push((key.clone(), Some(Stored::RouteNode(n))));
+                    }
+                }
                 Stored::Record(mut r) if r.contract == 12 => {
                     if let Input::Output { amount, .. } = &mut r.input {
                         *amount += 1;

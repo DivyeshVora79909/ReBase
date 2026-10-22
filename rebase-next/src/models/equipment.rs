@@ -294,42 +294,8 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
         for (target, _, slot) in input.references() {
             set.insert((Key::Incoming(target), Address::new(id, slot)));
         }
-        if let Input::Reservation {
-            pool, active: true, ..
-        } = input
-        {
-            set.insert((
-                Key::Subscribers(Address::new(*pool, 7)),
-                Address::new(id, 31),
-            ));
-        }
     }
     set
-}
-fn change_route<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
-    ws: &mut Attempt<L, Equipment>,
-    key: Key,
-    a: Address,
-    add: bool,
-) -> Result<()> {
-    let mut values = match ws.get(&key)? {
-        Some(StoredValue::Incoming(v) | StoredValue::Subscribers(v)) => v,
-        None => vec![],
-        _ => return Err(Error::new("corrupt_state", "equipment route type")),
-    };
-    match (add, values.binary_search(&a)) {
-        (true, Err(i)) => values.insert(i, a),
-        (false, Ok(i)) => {
-            values.remove(i);
-        }
-        _ => return Err(Error::new("corrupt_state", "equipment route membership")),
-    };
-    let value = match key {
-        Key::Incoming(_) => StoredValue::Incoming(values),
-        Key::Subscribers(_) => StoredValue::Subscribers(values),
-        _ => unreachable!(),
-    };
-    ws.put(key, Some(value))
 }
 fn delivery(input: Option<&Input>) -> Option<(Address, i64, Leaf)> {
     match input {
@@ -343,7 +309,7 @@ impl Binding for Equipment {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "equipment-reservations";
-    const BEHAVIOR: &'static str = "equipment-reservations-1";
+    const BEHAVIOR: &'static str = "equipment-reservations-2";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -374,10 +340,10 @@ impl Binding for Equipment {
             let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
             let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
             for (k, a) in old.difference(&new) {
-                change_route(ws, k.clone(), *a, false)?
+                crate::routes::change(ws, k, *a, crate::routes::Endpoint::All, false)?
             }
             for (k, a) in new.difference(&old) {
-                change_route(ws, k.clone(), *a, true)?
+                crate::routes::change(ws, k, *a, crate::routes::Endpoint::All, true)?
             }
             crate::mutation::reconcile_member(
                 ws,

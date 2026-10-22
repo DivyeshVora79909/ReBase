@@ -11,6 +11,14 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fmt::Debug};
 use uuid::Uuid;
 
+// Outer supported envelopes. Each compiled binding may declare smaller limits;
+// command, transport, receipt and per-attempt work budgets remain independent.
+pub const MAX_PUBLIC_RECORDS: u16 = 4096;
+pub const MAX_OUTPUTS: u16 = 8192;
+pub const MAX_RESERVATIONS: u16 = 16384;
+pub const MAX_NATIVE_RECORDS: usize = MAX_PUBLIC_RECORDS as usize + MAX_OUTPUTS as usize;
+pub const MAX_INVENTORY_ROWS: usize = 262144;
+
 pub trait NativeInput:
     Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static
 {
@@ -87,13 +95,13 @@ pub(crate) fn headers<B: Binding>(
     revision: u64,
 ) -> Result<Vec<(Key, StoredValue<B>)>> {
     let contract = model.contract(input.contract())?;
-    let mut values = vec![(Key::Incoming(id), StoredValue::Incoming(vec![]))];
+    let mut values = vec![(Key::Incoming(id), StoredValue::Incoming(Default::default()))];
     if model.contracts().any(|c| {
         c.references
             .iter()
             .any(|r| r.targets.contains(&contract.code) && !r.direct_fields.is_empty())
     }) {
-        values.push((Key::Direct(id), StoredValue::Direct(vec![])));
+        values.push((Key::Direct(id), StoredValue::Direct(Default::default())));
     }
     for root in &contract.roots {
         let address = crate::native_codec::Address::new(id, root.slot);
@@ -106,7 +114,10 @@ pub(crate) fn headers<B: Binding>(
                 .iter()
                 .any(|q| q.root_contract == contract.code && q.root_slot == root.slot)
         }) {
-            values.push((Key::Subscribers(address), StoredValue::Subscribers(vec![])));
+            values.push((
+                Key::Subscribers(address),
+                StoredValue::Subscribers(Default::default()),
+            ));
         }
     }
     Ok(values)

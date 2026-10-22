@@ -33,10 +33,13 @@ committed-work diagnostics and a source-arithmetic equipment HTTP probe. At 24
 reservations, an edit after every read still selects all 24, performs 1,154
 dependency checks and loads 74,610 native bytes. The
 [baseline](research/evidence/2026-10-22-g2-baseline.json) preserves source/build
-identity and the 16/24-reservation runs. Next implement G2b's ordered reverse
-indexes and compact final dependency graph, then G2c's larger API workloads.
-The current scheduler opens
-conservative subscriber sets and compares final shapes pairwise; record, role,
+identity and the 16/24-reservation runs. G2b's ordered reverse indexes and compact
+prefix-gate graph are now [verified](research/23-indexed-selection-checkpoint.md):
+55 Rust tests and all 116 independent native/local cases pass. The unfinished
+`7d7e387` implementation was retained after targeted review and strengthened
+controls; its unverified snapshot is replaced by the tested checkpoint.
+At 24 reservations, after-all/last-only edits select 0/1 producers. Next complete
+G2c's larger API workloads and coordinated capacity bounds. Record, role,
 route, receipt and inventory bounds must be considered together. Do not merely
 remove the 64-source limit or claim every mutation is logarithmic. Preserve
 independent checks, strict work limits, explicit models and stateless tools.

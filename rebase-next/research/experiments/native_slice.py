@@ -17,7 +17,7 @@ import uuid
 from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
-CODEC = "native-slice-kv-3"
+CODEC = "native-slice-kv-4"
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
           5: ("reporting_unit",),
@@ -27,7 +27,8 @@ FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           10: ("sources", "factor", "account", "at", "feedback"),
           11: ("output",), 12: ("producer", "role", "account", "at", "amount")}
 KINDS = {0: "meta", 1: "record", 2: "root", 3: "node", 4: "query",
-         5: "incoming", 6: "direct", 7: "subscribers", 8: "role", 9: "reserved"}
+         5: "incoming", 6: "direct", 7: "subscribers", 8: "role", 9: "reserved",
+         10: "route_node", 11: "route_node", 12: "route_node"}
 
 
 
@@ -431,11 +432,14 @@ def decode_rows(raw):
             key = bytes.fromhex(row["key"])
             require(key and key[0] in KINDS and row["key"] == key.hex(), "KEY", row["key"])
             tag = key[0]
-            require(len(key) == (1 if tag == 0 else 19 if tag in (2, 3, 4, 7, 8) else 17), "KEY", key.hex())
+            require(len(key) == (1 if tag == 0 else 19 if tag in (2, 3, 4, 7, 8, 10, 11, 12) else 17), "KEY", key.hex())
             identity_key = (tag,) if tag == 0 else (tag, str(uuid.UUID(bytes=key[1:17])))
             if len(key) == 19:
                 slot = int.from_bytes(key[17:], "big")
-                require(slot in ((1, 2, 3) if tag in (2, 3, 7) else (1, 2)), "KEY", key.hex())
+                # Calculation's existing namespaces keep their declared slots;
+                # route registrations also address reference/direct-input slots.
+                allowed = (1, 2, 3) if tag in (2, 3, 7) else (1, 2) if tag in (4, 8) else range(1, 65536)
+                require(slot in allowed, "KEY", key.hex())
                 identity_key += (slot,)
             require(identity_key not in rows, "DUPLICATE_ID", identity_key)
             payload = bytes.fromhex(row["value"])
@@ -446,6 +450,68 @@ def decode_rows(raw):
         except (ValueError, TypeError, KeyError, UnicodeError) as error:
             raise Failure("DECODE", row) from error
     return rows
+
+
+def route_expectations(state):
+    """Only authored references and independently calculated query descriptors."""
+    expected = {}
+    for key, members in state.rows.items():
+        if key[0] not in (5, 6, 7):
+            continue
+        route = {"kind": KINDS[key[0]], "owner": address(*key[1:]) if key[0] == 7 else key[1]}
+        for member in members:
+            ident = aid(member)
+            endpoint = {"kind": "all"}
+            if key[0] == 7:
+                q = state.rows[(4, *ident)]
+                require(aid(q["source"]) == key[1:], "ORACLE_ROUTE", key)
+                if q["upper"] != "all":
+                    endpoint = {"kind": "time", "at": next(iter(q["upper"].values()))}
+            node = (key[0] + 5, *ident)
+            require(node not in expected, "ORACLE_ROUTE", node)
+            expected[node] = {"route": route, "key": {"endpoint": endpoint, "member": member}}
+    return expected
+
+
+def route_order(node):
+    endpoint, member = node["key"]["endpoint"], aid(node["key"]["member"])
+    return (1, 0, member) if endpoint["kind"] == "all" else (0, int(endpoint["at"]), member)
+
+
+def verify_routes(state, rows, expected, tick):
+    seen = set()
+    for key, members in state.rows.items():
+        if key[0] not in (5, 6, 7):
+            continue
+        header = rows[key]
+        obligation = KINDS[key[0]].upper() + "_VALUE"
+        require(set(header) == {"head", "len"} and exact(header["len"], len(members)), obligation, key)
+        route = {"kind": KINDS[key[0]], "owner": address(*key[1:]) if key[0] == 7 else key[1]}
+
+        def visit(link, lower, upper, depth):
+            member = aid(link)
+            if member is None:
+                return 0, 0
+            require(depth < 64, "ROUTE_DEPTH", key)
+            node_key = (key[0] + 5, *member)
+            require(node_key not in seen, "ROUTE_REVISIT", node_key)
+            seen.add(node_key)
+            tick("nodes", 1)
+            require(node_key in expected and node_key in rows, "ROUTE_LINK", node_key)
+            node = rows[node_key]
+            require(set(node) == {"route", "key", "left", "right", "height"}, "ROUTE_LAYOUT", node_key)
+            require(exact({k: node[k] for k in ("route", "key")}, expected[node_key]) and node["route"] == route,
+                    "ROUTE_NODE_VALUE", node_key)
+            order = route_order(node)
+            require((lower is None or lower < order) and (upper is None or order < upper), "ROUTE_ORDER", node_key)
+            lh, lc = visit(node["left"], lower, order, depth + 1)
+            rh, rc = visit(node["right"], order, upper, depth + 1)
+            require(abs(lh - rh) <= 1 and exact(node["height"], 1 + max(lh, rh)), "ROUTE_BALANCE", node_key)
+            return 1 + max(lh, rh), lc + rc + 1
+
+        _, count = visit(header["head"], None, None, 0)
+        require(count == len(members), "ROUTE_REACHABILITY", key)
+    require(seen == expected.keys(), "ROUTE_REACHABILITY", "complete selector inventory")
 
 
 def verify(state, raw, *, complete, budget=10000):
@@ -460,8 +526,12 @@ def verify(state, raw, *, complete, budget=10000):
     rows = decode_rows(raw)
     root_keys = {(2, *r) for r in state.roots}
     node_keys = {(3, *n) for n in state.entries}
-    require(rows.keys() == state.rows.keys() | root_keys | node_keys, "INVENTORY", "all KV namespaces")
+    route_nodes = route_expectations(state)
+    require(rows.keys() == state.rows.keys() | root_keys | node_keys | route_nodes.keys(), "INVENTORY", "all KV namespaces")
+    verify_routes(state, rows, route_nodes, tick)
     for key, expected in state.rows.items():
+        if key[0] in (5, 6, 7):
+            continue
         require(exact(rows[key], expected), KINDS[key[0]].upper() + "_VALUE", key)
     visited = set()
 
@@ -519,6 +589,24 @@ def verify(state, raw, *, complete, budget=10000):
 def synthetic(state, lower=False):
     """Assemble two valid shapes for checker controls; never used as native evidence."""
     rows = deepcopy(state.rows)
+    route_nodes = route_expectations(state)
+    for key, members in state.rows.items():
+        if key[0] not in (5, 6, 7):
+            continue
+        ids = sorted(((key[0] + 5, *aid(member)) for member in members), key=lambda k: route_order(route_nodes[k]))
+
+        def arrange_routes(nodes):
+            if not nodes:
+                return None, 0
+            mid = (len(nodes) - int(lower)) // 2
+            current = nodes[mid]
+            left, lh = arrange_routes(nodes[:mid])
+            right, rh = arrange_routes(nodes[mid + 1:])
+            rows[current] = {**deepcopy(route_nodes[current]), "left": left, "right": right, "height": 1 + max(lh, rh)}
+            return address(*current[1:]), 1 + max(lh, rh)
+
+        head, _ = arrange_routes(ids)
+        rows[key] = {"head": head, "len": len(members)}
     for root, info in state.roots.items():
         ids = sorted((n for n, e in state.entries.items() if aid(e["root"]) == root),
                      key=lambda n: ordered(state.entries[n]))
@@ -648,6 +736,32 @@ def corruption_controls(state, labels):
     reject("missing_member", lambda r: r.pop((3, p, 1)), "INVENTORY")
     reject("missing_direct_route", lambda r: r[(6, d)].clear(), "DIRECT_VALUE")
     reject("missing_reference_route", lambda r: r[(5, a)].clear(), "INCOMING_VALUE")
+    reject("missing_selector_node", lambda r: r.pop((12, p, 1)), "INVENTORY")
+    reject("wrong_selector_endpoint", lambda r: r[(12, p, 1)]["key"].update(endpoint={"kind": "all"}), "ROUTE_NODE_VALUE")
+    reject("wrong_selector_height", lambda r: r[(12, p, 1)].update(height=99), "ROUTE_BALANCE")
+    reject("selector_cycle", lambda r: r[(12, p, 1)].update(left=address(p, 1)), "ROUTE_REVISIT")
+    reject("wrong_selector_member", lambda r: r[(12, p, 1)]["key"].update(member=address(p, 2)), "ROUTE_NODE_VALUE")
+    reject("cross_selector_route", lambda r: r[(12, p, 1)]["route"].update(owner=address(a, 2)), "ROUTE_NODE_VALUE")
+    reject("disconnected_selector", lambda r: r[(12, labels["Q"], 1)].update(left=None, height=1), "ROUTE_REACHABILITY")
+    reject("wrong_selector_count", lambda r: r[(7, c, 1)].update(len=1), "SUBSCRIBERS_VALUE")
+    reject("cross_selector_link", lambda r: r[(7, c, 1)].update(head=address(p, 2)), "ROUTE_LINK")
+    reject("selector_order", lambda r: r[(12, labels["Q"], 1)].update(left=None, right=address(p, 1)), "ROUTE_ORDER")
+
+    def orphan_selector(rows):
+        rows[(12, labels["Z"], 1)] = deepcopy(rows[(12, p, 1)])
+    reject("orphan_selector_node", orphan_selector, "INVENTORY")
+
+    def unbalanced_selector(rows):
+        # Preserve every expected key, payload, order and cached height. Only
+        # the AVL condition is wrong, so a stale-height check cannot catch it.
+        keys = sorted((key for key, node in route_expectations(state).items()
+                       if node["route"] == {"kind": "incoming", "owner": c}),
+                      key=lambda key: route_order(rows[key]))
+        for index, key in enumerate(keys):
+            rows[key].update(left=address(*keys[index - 1][1:]) if index else None,
+                             right=None, height=index + 1)
+        rows[(5, c)]["head"] = address(*keys[-1][1:])
+    reject("selector_imbalance_with_exact_heights", unbalanced_selector, "ROUTE_BALANCE")
     reject("wrong_selected_quote", lambda r: r[(4, p, 1)].update(selected=None), "QUERY_VALUE")
     reject("wrong_query_bound", lambda r: r[(4, p, 1)].update(upper={"after_time": "16"}), "QUERY_VALUE")
     reject("wrong_summary", lambda r: r[(3, p, 1)]["summary"]["value"].update(sum="9"), "NODE_SUMMARY")
@@ -741,13 +855,62 @@ def causal_corruption_controls(fixtures):
     zero = state.apply({"commands": [{"op": "update", "id": p, "if_version": "1",
         "set": {"target": "10"}, "unset": []}]})
     reject("lost_zero_output", zero, lambda r: r.pop((1, output)), "INVENTORY")
+    selective_posting_control(fixtures)
     return results
+
+
+def selective_posting_control(fixtures):
+    """Independent source scan for the mixed posting's strict-prefix closure."""
+    case = next(c for c in fixtures["cases"] if c["name"] == "posting_coefficient_feeds_prefix")
+    before = State(fixtures["tenant"], fixtures["actor"]).apply({
+        "commands": fixtures["bases"][case["base"]],
+        "allocations": fixtures["base_allocations"][case["base"]]})
+    after = before.apply(case["operations"][0])
+    states = (before, after)
+    impacts = set()
+    # Start from changed authored memberships, including the posting calculated
+    # from its source coefficient. Managed emissions enter only through closure.
+    for member in before.entries.keys() | after.entries.keys():
+        if before.entries.get(member) == after.entries.get(member):
+            continue
+        for source in states:
+            if member in source.entries and source.records[member[0]]["contract"] != 12:
+                entry = source.entries[member]
+                impacts.add((aid(entry["root"]), int(entry["key"]["at"])))
+    selected = set()
+    while True:
+        newly = set()
+        for source in states:
+            for key, query in source.rows.items():
+                if key[0] != 4 or source.records[key[1]]["contract"] not in (9, 10):
+                    continue
+                bound = query["upper"]
+                if any(aid(query["source"]) == root and
+                       (bound == "all" or at < int(bound["before_time"]))
+                       for root, at in impacts):
+                    newly.add(key[1])
+        newly -= selected
+        if not newly:
+            break
+        selected |= newly
+        for source in states:
+            for member, entry in source.entries.items():
+                record = source.records[member[0]]
+                if record["contract"] == 12 and record["input"]["producer"] in newly:
+                    impacts.add((aid(entry["root"]), int(entry["key"]["at"])))
+    # W changes at 15; P's strict bound is 10 and Q's is 20. Whole-root
+    # consumers L/R and their diamond consumer J remain selected even when
+    # their final output amounts happen to be unchanged.
+    require(selected == {fixtures["ids"][name] for name in ("Q", "L", "R", "J")},
+            "SELECTIVE_CLOSURE", "mixed posting source-derived producer inventory")
+    require(exact(case["operations"][0]["expect"]["work"]["causal_evaluations"], len(selected)),
+            "SELECTIVE_CLOSURE", "exact fixture work count")
 
 
 def model_digest():
     # Explicit data/behavior contract, independent of build/dependency bytes.
     # Release evidence still fingerprints every executed source separately.
-    return hashlib.sha256(b"rebase-calculation-contract-2").hexdigest()
+    return hashlib.sha256(b"rebase-calculation-contract-3").hexdigest()
 
 
 def main():
@@ -772,7 +935,7 @@ def main():
               "cases": len(fixtures["cases"]), "operations": controls,
               "valid_checker_controls": 4, "corruption_controls": corruptions,
               "causal_corruption_controls": causal_corruptions,
-              "baseline_kv_rows": 35, "native_runtime_checked": actual is not None}
+              "baseline_kv_rows": len(synthetic(base)), "native_runtime_checked": actual is not None}
     print(json.dumps(result, indent=2))
 
 
