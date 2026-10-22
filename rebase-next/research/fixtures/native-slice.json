@@ -2544,7 +2544,7 @@
       ]
     },
     {
-      "name": "posting_cap",
+      "name": "seventeen_postings_admitted",
       "base": "empty",
       "operations": [
         {
@@ -2773,14 +2773,19 @@
           ],
           "work_limit": 100000,
           "expect": {
-            "status": "rejected",
-            "code": "state_limit"
+            "status": "committed",
+            "public_sources": 22,
+            "totals": {
+              "A": "17",
+              "B": "0",
+              "S": "17"
+            }
           }
         }
       ]
     },
     {
-      "name": "quote_cap",
+      "name": "seventeen_quotes_admitted",
       "base": "empty",
       "operations": [
         {
@@ -2958,14 +2963,14 @@
           ],
           "work_limit": 100000,
           "expect": {
-            "status": "rejected",
-            "code": "state_limit"
+            "status": "committed",
+            "public_sources": 22
           }
         }
       ]
     },
     {
-      "name": "record_cap",
+      "name": "sixty_five_sources_admitted",
       "base": "baseline",
       "operations": [
         {
@@ -3421,8 +3426,8 @@
           ],
           "work_limit": 100000,
           "expect": {
-            "status": "rejected",
-            "code": "state_limit"
+            "status": "committed",
+            "public_sources": 65
           }
         }
       ]

@@ -45,7 +45,9 @@ impl Binding for Calculation {
     }
     fn limits() -> Limits {
         Limits {
-            per_contract: [(3, 16), (6, 16), (9, 16), (10, 16)].into(),
+            per_contract: [3, 6, 9, 10]
+                .map(|code| (code, crate::binding::MAX_PUBLIC_RECORDS))
+                .into(),
             ..Limits::default()
         }
     }

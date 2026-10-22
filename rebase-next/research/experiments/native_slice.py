@@ -18,6 +18,7 @@ from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
 CODEC = "native-slice-kv-4"
+MAX_PUBLIC_SOURCES, MAX_OUTPUTS, MAX_RESERVATIONS = 4096, 8192, 16384
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
           5: ("reporting_unit",),
@@ -291,7 +292,7 @@ class State:
                         allocated == binding["output"] or allocated == producer for (producer, _), binding in self.roles.items()):
                     continue
                 self.roles[role] = {"output": allocated, "retired": False}
-                check(len(self.roles) <= 256, "state_limit")
+                check(len(self.roles) <= MAX_RESERVATIONS, "state_limit")
                 break
             else: raise Reject("allocation_collision")
         for (producer, _), binding in self.roles.items():
@@ -306,7 +307,7 @@ class State:
             self.rows[(5, rid)] = []
             counts[11] += 1
             member(rid, 1, (account, 2), str(at), "financial", amount)
-        check(counts[11] <= 48, "state_limit")
+        check(counts[11] <= MAX_OUTPUTS, "state_limit")
         for rid, fact in sorted(all_facts.items()):
             code, fields = fact["contract"], fact["input"]
             validate_references(all_facts, code, fields)
@@ -383,7 +384,7 @@ class State:
             validate_references(candidate.available(), code, fields)
             candidate.facts[rid] = {"contract": code, "input": fields}
         counts = [sum(f["contract"] == c for f in candidate.facts.values()) for c in range(1, 12)]
-        check(sum(counts) <= 64 and all(counts[i] <= 16 for i in (2, 5, 8, 9)), "state_limit")
+        check(sum(counts) <= MAX_PUBLIC_SOURCES, "state_limit")
         quote_times = set()
         for fact in candidate.facts.values():
             code, fields = fact["contract"], fact["input"]
@@ -636,6 +637,9 @@ def synthetic(state, lower=False):
 
 
 def literals(state, expected, labels):
+    if "public_sources" in expected:
+        require(exact(sum(r["contract"] != 12 for r in state.records.values()), expected["public_sources"]),
+                "LITERAL_POPULATION", "public sources")
     for name, value in expected.get("derived", {}).items():
         require(exact(state.records[labels[name]]["derived"], value), "LITERAL_DERIVED", name)
     for name, values in expected.get("postings", {}).items():
@@ -910,7 +914,7 @@ def selective_posting_control(fixtures):
 def model_digest():
     # Explicit data/behavior contract, independent of build/dependency bytes.
     # Release evidence still fingerprints every executed source separately.
-    return hashlib.sha256(b"rebase-calculation-contract-3").hexdigest()
+    return hashlib.sha256(b"rebase-calculation-contract-4").hexdigest()
 
 
 def main():

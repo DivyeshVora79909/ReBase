@@ -195,10 +195,12 @@ impl Walk<'_> {
         parent: Option<Address>,
         root: Address,
         kind: Kind,
+        depth: u16,
     ) -> Result<(u16, Vec<Address>)> {
         let Some(id) = id else {
             return Ok((0, vec![]));
         };
+        require(depth < 64, "tree path depth")?;
         require(self.seen.insert(id), "tree cycle or duplicate reachability")?;
         let node = self
             .nodes
@@ -218,9 +220,9 @@ impl Walk<'_> {
                 && node.key.slot == id.slot,
             "source membership",
         )?;
-        let (left_height, mut order) = self.visit(node.left, Some(id), root, kind)?;
+        let (left_height, mut order) = self.visit(node.left, Some(id), root, kind, depth + 1)?;
         order.push(id);
-        let (right_height, right) = self.visit(node.right, Some(id), root, kind)?;
+        let (right_height, right) = self.visit(node.right, Some(id), root, kind, depth + 1)?;
         order.extend(right);
         require(
             left_height.abs_diff(right_height) <= 1
@@ -559,7 +561,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 .find(|r| r.slot == address.slot)
                 .ok_or_else(|| local::corrupt("undeclared root"))?;
             require(root.kind == declaration.kind, "root kind")?;
-            let (height, order) = walk.visit(root.head, None, address, root.kind)?;
+            let (height, order) = walk.visit(root.head, None, address, root.kind, 0)?;
             require(
                 root.height == height
                     && root.first == order.first().copied()
@@ -1078,6 +1080,50 @@ mod tests {
     use crate::local::LocalStore;
     use redb::ReadableDatabase;
     use std::sync::Arc;
+    #[test]
+    fn corrupt_data_chain_is_rejected_before_unbounded_recursion() {
+        let root = Address::new(Uuid::from_u128(1000), 7);
+        let ids: Vec<_> = (1..=256)
+            .map(|n| Address::new(Uuid::from_u128(n), 17))
+            .collect();
+        let mut nodes = BTreeMap::new();
+        let mut members = BTreeMap::new();
+        for (i, &id) in ids.iter().enumerate() {
+            let at = i as i64;
+            let leaf = Leaf::Financial(1);
+            members.insert(id, (root, at, leaf));
+            nodes.insert(
+                id,
+                Node {
+                    root,
+                    key: FullKey {
+                        at,
+                        id: id.id,
+                        slot: id.slot,
+                    },
+                    leaf,
+                    parent: i.checked_sub(1).map(|p| ids[p]),
+                    left: None,
+                    right: ids.get(i + 1).copied(),
+                    prev: i.checked_sub(1).map(|p| ids[p]),
+                    next: ids.get(i + 1).copied(),
+                    height: 1,
+                    summary: Aggregate::Financial(Summary::leaf(at, Some(1))),
+                },
+            );
+        }
+        let mut walk = Walk {
+            nodes: &nodes,
+            members: &members,
+            seen: BTreeSet::new(),
+        };
+        let error = walk
+            .visit(Some(ids[0]), None, root, Kind::Financial, 0)
+            .unwrap_err();
+        assert_eq!(error.code, "corrupt_state");
+        assert_eq!(error.detail, "tree path depth");
+        assert_eq!(walk.seen.len(), 64);
+    }
     #[test]
     fn model_population_limits_are_checked_inside_codec_envelope() {
         use crate::{model::Prepared, models::equipment::Equipment};

@@ -217,7 +217,8 @@ def workflow(backend):
 def scan(backend, model):
     """A bounded complete scan for this fixed, quiescent acceptance population."""
     cursor, records = None, []
-    for _ in range(9):
+    limit = backend.call("model.describe", {})["capabilities"]["limits"]["public_records"]
+    for _ in range(limit // 16 + 2):
         page = backend.call("records.page", {"model": model,
             "query": {"path": "records.by_id", "contract": None, "equals": None},
             "limit": 16, "visit_budget": 128, "cursor": cursor})
@@ -259,15 +260,22 @@ def workload(backend, writes, readers):
     ids = seed["fixture"]["ids"]
     population = scan(backend, model)
     limit = catalog["capabilities"]["limits"]["public_records"]
-    require(limit == 64 and len(population) == 28, "Unexpected supported population contract")
+    require(limit >= 64 and len(population) == 28, "Unexpected supported population contract")
     extra_ids = [str(uuid.uuid4()) for _ in range(limit - len(population))]
-    fill = backend.plan({"model": model, "commands": [
-        {"op": "create", "id": identity, "contract": contracts["Moment"]["code"], "fields": {"at": "0"}}
-        for identity in extra_ids], "returning": []}, "fill")
+    # Keep every mutation within the same public 64-command envelope, even when
+    # the supported population grows. Race only the final saved operation.
+    batches = [extra_ids[i:i + 64] for i in range(0, len(extra_ids), 64)]
+    for batch_number, batch in enumerate(batches):
+        fill = backend.plan({"model": model, "commands": [
+            {"op": "create", "id": identity, "contract": contracts["Moment"]["code"], "fields": {"at": "0"}}
+            for identity in batch], "returning": []}, f"fill-{batch_number}")
+        if batch_number + 1 < len(batches):
+            client.execute(backend.url, backend.token, fill)
+    filled_revision = 3 + len(batches)
     with ThreadPoolExecutor(max_workers=8) as pool:
         duplicates = list(pool.map(lambda _: client.execute(backend.url, backend.token, fill), range(8)))
     require(sum(not r["replayed"] for r in duplicates) == 1
-            and all(r["result"]["revision"] == "4" for r in duplicates), "Duplicate receipt applied more than once")
+            and all(r["result"]["revision"] == str(filled_revision) for r in duplicates), "Duplicate receipt applied more than once")
     expected_ids = sorted([r["id"] for r in population] + extra_ids)
     full = scan(backend, model)
     require([r["id"] for r in full] == expected_ids, "Complete public pagination lost, duplicated or reordered sources")
@@ -296,7 +304,11 @@ def workload(backend, writes, readers):
               "equals": {"field": "at", "value": "-123"}}, "visit_budget": 1, "cursor": None}
     uncertain = backend.call("records.exists", search)
     require(uncertain["answer"] == "unknown", "An exhausted visit budget asserted absence")
-    finished = backend.call("records.exists", {**search, "cursor": uncertain["cursor"], "visit_budget": 128})
+    finished = uncertain
+    for _ in range(limit // 128 + 2):
+        if finished["answer"] != "unknown":
+            break
+        finished = backend.call("records.exists", {**search, "cursor": finished["cursor"], "visit_budget": 128})
     require(finished["answer"] == "no", "Exhausted existence search did not prove absence")
 
     versions = {label: backend.call("records.get", {"model": model, "id": ids[label]})["version"] for label in ("MP", "MQ")}
@@ -327,7 +339,7 @@ def workload(backend, writes, readers):
                 begin = time.perf_counter()
                 last_result = client.execute(backend.url, backend.token, last)
                 write_times.append((time.perf_counter() - begin) * 1000)
-                require(last_result["result"]["revision"] == str(6 + i), "Write/replay/rejection revision mismatch")
+                require(last_result["result"]["revision"] == str(filled_revision + 2 + i), "Write/replay/rejection revision mismatch")
                 for label, returned in zip(("MP", "MQ"), last_result["result"]["records"]):
                     require(returned["record"] is not None, "Current authored result hidden from its owner")
                     versions[label] = returned["record"]["version"]
@@ -350,8 +362,8 @@ def workload(backend, writes, readers):
     require(replay["replayed"] and replay["result"] == last_result["result"], "Post-crash replay changed the outcome")
     backend.stop()
     final = backend.cli("check", backend.store)
-    require(final["status"] == "valid" and final["revision"] == str(writes + 5)
-            and final["records"] == 74 and final["receipts"] == writes + 2, "Final complete integrity/count mismatch")
+    require(final["status"] == "valid" and final["revision"] == str(writes + filled_revision + 1)
+            and final["records"] == limit + 10 and final["receipts"] == writes + len(batches) + 1, "Final complete integrity/count mismatch")
     backup, restored = backend.directory / "final-backup.json", backend.directory / "restored.redb"
     backend.cli("backup", backend.store, backup)
     backend.cli("restore", backup, restored)

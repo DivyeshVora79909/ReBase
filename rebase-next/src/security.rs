@@ -438,10 +438,11 @@ impl<B: Binding> Store<B> {
                     .map(|v| v.map(|v| v.value().to_vec()))
                     .map_err(storage)
             },
-            200_000,
+            crate::local::MUTATION_WORK_LIMIT,
         );
         let mut ids = BTreeSet::new();
         for row in native.iter().map_err(storage)? {
+            ws.charge("inventory", 1)?;
             let (key, _) = row.map_err(storage)?;
             if let Key::Record(id) = Key::decode(key.value())? {
                 ids.insert(id);

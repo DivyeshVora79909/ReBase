@@ -41,9 +41,9 @@ pub struct Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            public_records: 64,
-            outputs: 48,
-            reservations: 256,
+            public_records: MAX_PUBLIC_RECORDS,
+            outputs: MAX_OUTPUTS,
+            reservations: MAX_RESERVATIONS,
             per_contract: BTreeMap::new(),
         }
     }

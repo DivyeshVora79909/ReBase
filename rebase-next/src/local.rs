@@ -690,7 +690,7 @@ impl<B: Binding> Store<B> {
         let mut queries = vec![];
         let mut roles = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
-            if i >= 4096 {
+            if i >= crate::binding::MAX_INVENTORY_ROWS {
                 return Err(Error::new("work_limit", "inspection row limit"));
             }
             let (key, value) = row.map_err(storage)?;
@@ -725,7 +725,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
         .any(|t| t.name() == "authority");
     let mut tables = serde_json::Map::new();
     let mut definitions = vec![
-        (KV, 4096),
+        (KV, crate::binding::MAX_INVENTORY_ROWS),
         (RUNTIME, 1),
         (RECEIPTS, usize::from(MAX_RECEIPTS)),
     ];
@@ -750,7 +750,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
     let table = read.open_table(PUBLIC).map_err(storage)?;
     let mut rows = vec![];
     for (i, row) in table.iter().map_err(storage)?.enumerate() {
-        if i >= 64 {
+        if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
             return Err(Error::new(
                 "work_limit",
                 "public index observation is incomplete",
@@ -764,7 +764,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
         let table = read.open_table(crate::security::READERS).map_err(storage)?;
         let mut rows = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
-            if i >= 64 {
+            if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
                 return Err(Error::new(
                     "work_limit",
                     "reader index observation incomplete",

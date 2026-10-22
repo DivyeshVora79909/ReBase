@@ -31,9 +31,9 @@ def prepared_identity(catalog):
     require(set(declarations) == {str(c) for c in range(1, 13)}, "CODEBOOK", "all contracts")
     digest = hashlib.sha256(b"rebase-next-local-model-v1\0")
     require(catalog["name"] == "rebase-next-local"
-            and catalog["behavior_contract"] == "rebase-calculation-contract-3",
+            and catalog["behavior_contract"] == "rebase-calculation-contract-4",
             "BEHAVIOR_IDENTITY", "compiled calculation model")
-    for data in (b"rebase-next-local", b"rebase-calculation-contract-3", core.encode(), canonical(declarations)):
+    for data in (b"rebase-next-local", b"rebase-calculation-contract-4", core.encode(), canonical(declarations)):
         digest.update(len(data).to_bytes(8, "big"))
         digest.update(data)
     return digest.hexdigest()

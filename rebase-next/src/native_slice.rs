@@ -14,7 +14,7 @@ use crate::{
     staging::Batch,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-3";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-4";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -462,6 +462,7 @@ pub struct Work {
     pub graph_nodes: u64,
     pub scheduler_visits: u64,
     pub reader_checks: u64,
+    pub inventory_visits: u64,
     pub allocations: u64,
     pub detached_outputs: u64,
     pub final_dirty_keys: u64,
@@ -505,6 +506,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
             "graph" => self.work.graph_nodes += count,
             "schedule" => self.work.scheduler_visits += count,
             "reader" => self.work.reader_checks += count,
+            "inventory" => self.work.inventory_visits += count,
             "allocate" => self.work.allocations += count,
             _ => return Err(Error::new("internal", "unknown work counter")),
         }

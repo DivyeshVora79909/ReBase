@@ -301,8 +301,9 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
             !meta.codec.is_empty()
                 && !meta.model.is_empty()
                 && meta.counts.keys().all(|code| *code > 0)
-                && meta.counts.values().map(|n| u64::from(*n)).sum::<u64>() <= 112
-                && meta.reserved <= 256
+                && meta.counts.values().map(|n| u64::from(*n)).sum::<u64>()
+                    <= crate::binding::MAX_NATIVE_RECORDS as u64
+                && meta.reserved <= crate::binding::MAX_RESERVATIONS
         }
         (Key::Record(_), StoredValue::Record(r)) => {
             r.contract > 0

@@ -309,7 +309,7 @@ impl Binding for Equipment {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "equipment-reservations";
-    const BEHAVIOR: &'static str = "equipment-reservations-2";
+    const BEHAVIOR: &'static str = "equipment-reservations-3";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }

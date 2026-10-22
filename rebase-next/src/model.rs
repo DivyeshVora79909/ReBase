@@ -185,9 +185,9 @@ impl<B: Binding> Prepared<B> {
         unique(declarations.iter().map(|c| c.code), "contracts")?;
         let limits = B::limits();
         if limits.public_records == 0
-            || limits.public_records > 64
-            || limits.outputs > 48
-            || limits.reservations > 256
+            || limits.public_records > crate::binding::MAX_PUBLIC_RECORDS
+            || limits.outputs > crate::binding::MAX_OUTPUTS
+            || limits.reservations > crate::binding::MAX_RESERVATIONS
             || limits
                 .per_contract
                 .keys()
