@@ -138,6 +138,119 @@ fn request(method: &str, params: Value) -> Vec<u8> {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn authenticated_ranges_preserve_complete_times_exact_bounds_and_reopen() {
+    let dir = Directory::new();
+    let cfg = config();
+    let model = Arc::new(PreparedModel::load().unwrap());
+    let file = dir.0.join("ranges.redb");
+    let store = Arc::new(
+        LocalStore::create_secured(
+            &file,
+            model.clone(),
+            Context {
+                tenant: id(1),
+                actor: id(2),
+            },
+        )
+        .unwrap(),
+    );
+    let listener = tokio::net::TcpListener::bind(cfg.listen).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let router = server::router(store.clone(), &cfg).unwrap();
+    let (stop, stopped) = tokio::sync::oneshot::channel();
+    let serving = tokio::spawn(async move {
+        axum::serve(listener, router)
+            .with_graceful_shutdown(async {
+                let _ = stopped.await;
+            })
+            .await
+            .unwrap();
+    });
+    let credential = token(&cfg, 0);
+    let mut commands =
+        vec![json!({"op":"create","id":id(20),"contract":4,"fields":{"native_unit":1}})];
+    for (n, at, amount) in [(30, 0, 10), (31, 10, 20), (32, 10, -5), (33, 20, 30)] {
+        commands.push(json!({"op":"create","id":id(n),"contract":8,"fields":{"account":id(20),"at":at.to_string(),"amount":amount.to_string()}}));
+    }
+    let (_, result) = http(addr, Some(credential.clone()), request("records.mutate",json!({"model":model.identity(),"context":store.operation_context(model.identity()).unwrap(),"operation_id":id(200),"commands":commands,"returning":[]}))).await;
+    assert_eq!(result["result"]["status"], "committed", "{result}");
+    let read = |range: Value| json!({"model":model.identity(),"owner":id(20),"slot":2,"read":{"kind":"range","range":range}});
+    for (range, count, sum) in [
+        (json!({"lower":null,"upper":null}), 4, "55"),
+        (
+            json!({"lower":{"included":"10"},"upper":{"included":"10"}}),
+            2,
+            "15",
+        ),
+        (
+            json!({"lower":{"included":"0"},"upper":{"excluded":"10"}}),
+            1,
+            "10",
+        ),
+        (json!({"lower":{"excluded":"10"},"upper":null}), 1, "30"),
+        (
+            json!({"lower":{"included":"20"},"upper":{"excluded":"0"}}),
+            0,
+            "0",
+        ),
+        (
+            json!({"lower":null,"upper":{"excluded":i64::MIN.to_string()}}),
+            0,
+            "0",
+        ),
+    ] {
+        let (_, response) = http(
+            addr,
+            Some(credential.clone()),
+            request("roots.read", read(range)),
+        )
+        .await;
+        assert_eq!(response["result"]["value"]["count"], count, "{response}");
+        assert_eq!(response["result"]["value"]["sum"], sum, "{response}");
+    }
+    let range = json!({"lower":{"included":"10"},"upper":{"included":"10"}});
+    assert_eq!(
+        http(addr, None, request("roots.read", read(range.clone())))
+            .await
+            .0,
+        401
+    );
+    let (_, missing) = http(addr,Some(credential.clone()),request("roots.read",json!({"model":model.identity(),"owner":id(999),"slot":2,"read":{"kind":"range","range":range}}))).await;
+    assert_eq!(missing["error"]["data"]["kind"], "not_found");
+    for range in [
+        json!([null, null]),
+        json!({"lower":{"included":0},"upper":null}),
+        json!({"lower":null,"upper":null,"extra":true}),
+    ] {
+        let (_, malformed) = http(
+            addr,
+            Some(credential.clone()),
+            request("roots.read", read(range)),
+        )
+        .await;
+        assert_eq!(malformed["error"]["code"], -32602, "{malformed}");
+    }
+    store.check_integrity().unwrap();
+    stop.send(()).unwrap();
+    serving.await.unwrap();
+    drop(store);
+    let reopened = LocalStore::open(&file, model.clone()).unwrap();
+    reopened.check_integrity().unwrap();
+    let request = serde_json::from_value(read(
+        json!({"lower":{"included":"10"},"upper":{"included":"10"}}),
+    ))
+    .unwrap();
+    assert_eq!(
+        reopened
+            .session(id(2), 0)
+            .unwrap()
+            .root_read(&request)
+            .unwrap()["value"]["sum"],
+        "15"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn real_http_concurrency_receipts_revocation_and_reopen() {
     let dir = Directory::new();
     let cfg = config();

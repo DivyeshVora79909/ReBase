@@ -6,6 +6,7 @@ use crate::{
     native_slice::{
         Calculated, Context, Error, Input, Record, Result, Workspace, required, validate_references,
     },
+    time_range::{TimeBound, TimeRange},
     tree::Leaf,
 };
 use std::collections::BTreeMap;
@@ -38,7 +39,7 @@ impl ReactiveBinding for Calculation {
                     shape.reads.push(Read {
                         slot,
                         root: Address::new(*account, 2),
-                        before: Some(at),
+                        range: TimeRange::before(at),
                         validate: slot == 2,
                     });
                 }
@@ -62,7 +63,7 @@ impl ReactiveBinding for Calculation {
                     shape.reads.push(Read {
                         slot: i as u16 + 1,
                         root: Address::new(*root, 2),
-                        before: None,
+                        range: TimeRange::ALL,
                         validate: false,
                     });
                 }
@@ -102,7 +103,10 @@ impl ReactiveBinding for Calculation {
                     .ok_or_else(|| Error::new("overflow", "adjustment difference"))?;
                 (
                     Calculated::Adjustment {
-                        at: shape.reads[0].before.expect("prefix time"),
+                        at: match shape.reads[0].range.upper {
+                            TimeBound::Excluded(at) => at,
+                            _ => unreachable!("adjustment read is strictly before its emission"),
+                        },
                         before: values[0],
                         delta,
                     },

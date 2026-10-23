@@ -94,13 +94,17 @@ register ordinary dependencies and run after all final contributions settle;
 they need no dummy output or formula. Calculation-only readers can publish
 derived values without emissions. Whether a formula runs follows the contract's
 declarations, so disabling an active query still recomputes its explicit fallback.
-The current shared validation predicate is a nonnegative aggregate sum; this
-does not automatically provide arbitrary predicates or bounded time windows.
+Reactive reads use exact typed `TimeRange` values. A validation-only read can
+check a window after all outputs settle without creating calculation edges. The
+shared validator remains a nonnegative aggregate sum; windows do not add
+arbitrary predicates. See [exact time windows](reactive-windows.md) for the
+wire form and public root read.
 
 Native monetary/rate calculations can compose the pure
 [`Rational` and `Rounding` primitives](exact-values.md). Their schema helpers
 come from the same native types used by binding; tools need no duplicate schemas.
-The bundled models retain their existing formulas and identities.
+The bundled formula arithmetic remains unchanged; the format and behavior
+revisions below record the new stored query/index identities.
 
 Calculation and equipment provide independent checkers. The equipment checker derives
 allocations and event histories from authored sources, then compares managed
@@ -119,11 +123,11 @@ calculated values; they cannot create new slots or select new dependency topolog
 Both zero amounts and coincident bounds retain their declared identities.
 
 The shared ordered tree currently supports signed i128 quantity histories and
-u16 dated quotes, using i64 time plus deterministic identity ties. Its associative
-summaries support the implemented sum/prefix/latest operations and complete-time
-invariants. This is not a facility for arbitrary monoids, arbitrary query
-predicates, general interval optimization or automatically discovered dependencies.
-Adding a new aggregate or read operation needs an explicit engine contract.
+u16 dated quotes, using i64 time plus deterministic identity ties. Its summaries
+support sum, prefix and latest reads, complete-time invariants, and exact
+two-bound financial sum windows. This is not a facility for arbitrary monoids,
+arbitrary query predicates or automatically discovered dependencies. Adding a
+new aggregate or result type needs an explicit engine contract.
 
 Calculation and equipment allow 4,096 public source records, 8,192 active private
 outputs and 16,384 retained output identity reservations. Each active equipment
@@ -135,16 +139,20 @@ separate limits published in the model catalog. A logarithmic tree path does
 not bound an affected causal closure.
 
 Tree insertion, removal and prefix lookup follow balanced paths. Point-addressed
-reverse AVL routes select read endpoints using changed old/new member times;
-latest-quote invalidation respects successor intervals. Original and staged
-routes preserve retargeting and moved-bound discovery. The final dependency
-graph uses prefix gates to preserve producer reachability, including zero
-outputs and feedback. For P producers, R resolved reads and E emissions, its
-nodes and edges occupy O(P + R + E) space. Building the ordered emission indexes
-and locating read prefixes takes O(E log E + R log E) CPU work, in addition to
-graph traversal and producer evaluation; linear graph size is not linear CPU
-time. Full fanout remains finite work and may reject atomically at the unchanged
-budget. The independent checker inventories the complete bounded store.
+reverse AVL routes retain subscriber ranges and select affected readers from
+changed old/new member times. Prefix-only roots keep the earlier earliest-impact
+suffix path; roots with bounded lower ends use interval stabbing against both
+original and staged route state. Latest-quote invalidation respects successor
+intervals. The final dependency graph uses prefix gates for lower-unbounded
+reads and segment covers for bounded reads, preserving zero-output dependencies
+and excluding out-of-window producers. For P producers, E distinct emission
+times and R reads, the bounded graph has O(P + E) nodes and
+O(P + E + R log E) edges; prefix-only graph edges retain the prior linear
+construction. Building time indexes and locating read spans takes
+O(E log E + R log E) comparisons, besides graph traversal and producer
+evaluation. These bounds do not make mutations logarithmic: full fanout remains
+finite work and may reject atomically at the unchanged budget. The independent
+checker inventories the complete bounded store.
 The [population result](../research/24-population-scaling-result.md) owns measured
 workload evidence and its limits.
 
@@ -152,10 +160,12 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-Release 0.4.0 uses store/codec format 4, calculation behavior
-`rebase-calculation-contract-4` and equipment behavior `equipment-reservations-3`.
-Those identities and the expanded declared limits differ from 0.3.0; no implicit
-format 3 migration is supplied. See [storage upgrades](storage.md#data-identity-and-upgrades).
+The 0.7.0 source uses store/native codec format 5, calculation behavior
+`rebase-calculation-contract-5`, equipment behavior `equipment-reservations-4`
+and invoicing behavior `invoice-assessments-3`. Every model identity changed;
+there is no implicit migration from the verified 0.6.0 bundle's format 4 stores.
+The [0.6 deployment result](../research/29-deployment-result.md) remains dated
+evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
 ## Existing client and tools
 

@@ -24,9 +24,9 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 
 | Gate | Observable power | Preparation and acceptance boundary |
 | --- | --- | --- |
-| G4a | Validate a declared aggregate without a private output | [Terminal validation gate](31-terminal-validation.md); first implementation checkpoint |
-| G4b | Reactive time windows with two, one or zero bounds | Typed exact boundaries, old/new point discovery, augmented interval registrations, exact final-graph dependencies and independent source-window checks |
-| G4c | Maintain a genuinely new summary/key contract | Choose a useful index, then carry its algebra, leaf/key types, codec, checker, reads and model/tool descriptions end to end; an unused generic algebra helper does not satisfy this gate |
+| G4a | Validate a declared aggregate without a private output | Accepted: [terminal validation gate](31-terminal-validation.md) |
+| G4b | Reactive time windows with two, one or zero bounds | Accepted: [exact windows and final-graph scheduling](32-reactive-windows.md) |
+| G4c | Maintain a genuinely new summary/key contract | Active: [native index extension](34-native-index-extension.md); first port the active engine, then prove a new measurement summary end to end |
 | G4d | Additional declared value dependencies | Published-parent values, richer query results and selection operations need explicit invalidation/readiness contracts; no hidden or multihop reads |
 | G5 | Reliable external work | Atomic immutable intent, bounded due discovery, fenced claims/start/completion, uncertainty/reconciliation, cancellation and durable webhook inbox; start with a deterministic fake provider |
 | G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
@@ -91,5 +91,6 @@ Preserve complete state and receipt absence on rejected writes, replay, reopenin
 and model/store identity. Commit and push each coherent checkpoint, then continue
 without another prompt. Keep `CONTEXT.md` current for switching agents.
 
-First implement and verify G4a, then close G4b's exact range/discovery/graph
-contract. Later rows remain planned capabilities until their acceptance executes.
+G4a and G4b are accepted. Continue with G4c's active engine port and concrete
+measurement proof. Later rows remain planned capabilities until their acceptance
+executes.

@@ -6,7 +6,8 @@ use crate::{
     integrity::{Members, Snapshot, require},
     local::Store,
     native_codec::{Address, Key, StoredValue},
-    native_slice::{Bound, Error, Query, Result},
+    native_slice::{Error, Query, Result},
+    time_range::TimeRange,
     tree::Leaf,
 };
 use num_bigint::BigInt;
@@ -50,8 +51,7 @@ fn add_query(
             operation: "sum".into(),
             phase: "calculate".into(),
             channel: "amount".into(),
-            lower: "negative_infinity".into(),
-            upper: Bound::BeforeTime(at),
+            range: TimeRange::before(at),
             selected: None,
             result,
         },

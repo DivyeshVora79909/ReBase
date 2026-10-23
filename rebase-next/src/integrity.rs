@@ -9,9 +9,10 @@ use crate::{
     model::Visibility,
     native_codec::StoredValue,
     native_codec::{self, Address, Key, Stored},
-    native_slice::{Bound, Calculated, Derived, Input, Query},
+    native_slice::{Calculated, Derived, Input, Query},
     native_slice::{Error, Result},
     native_slice::{Meta, ModelRecord},
+    time_range::{TimeBound, TimeRange},
     tree::{Aggregate, FullKey, Kind, Leaf, Node, QuoteSummary},
 };
 use redb::ReadableTable;
@@ -87,11 +88,47 @@ fn aggregate(kind: Kind, leaves: &[(i64, Leaf)]) -> Result<Aggregate> {
     }
 }
 
-// This walker derives registration keys from source-expected references and
-// queries. It does not call the route writer or its range selector.
+// This walker derives exact registration identities and augmentation from source
+// queries. Its bound ordering and emptiness oracle are independent of the writer.
+fn source_lower_order(bound: TimeBound) -> (i128, bool) {
+    match bound {
+        TimeBound::Unbounded => (i128::from(i64::MIN) - 1, false),
+        TimeBound::Included(at) => (i128::from(at), false),
+        TimeBound::Excluded(at) => (i128::from(at), true),
+    }
+}
+fn source_route_order(order: crate::routes::Order) -> ((i128, bool), Address) {
+    use crate::routes::Endpoint;
+    let endpoint = match order.endpoint {
+        Endpoint::Time(at) => (i128::from(at), false),
+        Endpoint::Through(at) => (i128::from(at), true),
+        Endpoint::All => (i128::from(i64::MAX) + 1, false),
+    };
+    (endpoint, order.member)
+}
+fn source_nonempty(range: TimeRange) -> bool {
+    let lower = match range.lower {
+        TimeBound::Unbounded => i128::from(i64::MIN),
+        TimeBound::Included(at) => i128::from(at),
+        TimeBound::Excluded(at) => i128::from(at) + 1,
+    };
+    let upper = match range.upper {
+        TimeBound::Unbounded => i128::from(i64::MAX),
+        TimeBound::Included(at) => i128::from(at),
+        TimeBound::Excluded(at) => i128::from(at) - 1,
+    };
+    lower <= upper
+}
+#[derive(Default)]
+struct RouteStats {
+    height: u16,
+    len: u32,
+    bounded: u32,
+    min_lower: Option<TimeBound>,
+}
 struct RouteWalk<'a, B: Binding> {
     all: &'a BTreeMap<Key, StoredValue<B>>,
-    expected: BTreeMap<Key, (crate::routes::Route, crate::routes::Order)>,
+    expected: BTreeMap<Key, (crate::routes::Route, crate::routes::Order, TimeRange)>,
     seen: BTreeSet<Key>,
 }
 impl<B: Binding> RouteWalk<'_, B> {
@@ -102,9 +139,9 @@ impl<B: Binding> RouteWalk<'_, B> {
         lower: Option<crate::routes::Order>,
         upper: Option<crate::routes::Order>,
         depth: u16,
-    ) -> Result<(u16, u32)> {
+    ) -> Result<RouteStats> {
         let Some(id) = id else {
-            return Ok((0, 0));
+            return Ok(RouteStats::default());
         };
         require(depth < 64, "selector depth")?;
         let key = route.node_key(id);
@@ -112,22 +149,40 @@ impl<B: Binding> RouteWalk<'_, B> {
         let Some(StoredValue::RouteNode(n)) = self.all.get(&key) else {
             return Err(local::corrupt("selector dangling link"));
         };
+        let expected = self.expected.get(&key).copied();
         require(
-            self.expected.get(&key) == Some(&(n.route, n.key)) && n.route == route,
+            expected == Some((n.route, n.key, n.range)) && n.route == route,
             "selector exact source membership/bound",
         )?;
+        let range = expected.expect("required source registration").2;
         require(
-            lower.is_none_or(|k| k < n.key) && upper.is_none_or(|k| n.key < k),
+            lower.is_none_or(|k| source_route_order(k) < source_route_order(n.key))
+                && upper.is_none_or(|k| source_route_order(n.key) < source_route_order(k)),
             "selector order",
         )?;
         let n = n.clone();
-        let (lh, lc) = self.visit(route, n.left, lower, Some(n.key), depth + 1)?;
-        let (rh, rc) = self.visit(route, n.right, Some(n.key), upper, depth + 1)?;
+        let left = self.visit(route, n.left, lower, Some(n.key), depth + 1)?;
+        let right = self.visit(route, n.right, Some(n.key), upper, depth + 1)?;
         require(
-            lh.abs_diff(rh) <= 1 && n.height == 1 + lh.max(rh),
+            left.height.abs_diff(right.height) <= 1
+                && n.height == 1 + left.height.max(right.height),
             "selector balance/height",
         )?;
-        Ok((n.height, 1 + lc + rc))
+        let own = source_nonempty(range).then_some(range.lower);
+        let min_lower = [own, left.min_lower, right.min_lower]
+            .into_iter()
+            .flatten()
+            .min_by_key(|bound| source_lower_order(*bound));
+        require(
+            n.min_lower == min_lower,
+            "selector exact minimum lower bound",
+        )?;
+        Ok(RouteStats {
+            height: n.height,
+            len: 1 + left.len + right.len,
+            bounded: u32::from(range.lower != TimeBound::Unbounded) + left.bounded + right.bounded,
+            min_lower,
+        })
     }
 }
 fn check_routes<B: Binding>(
@@ -144,21 +199,26 @@ fn check_routes<B: Binding>(
     for (key, addresses) in routes {
         let route = Route::from_key(key)?;
         for &member in addresses {
-            let endpoint = if let Route::Subscribers(root) = route {
+            let range = if let Route::Subscribers(root) = route {
                 let q = queries
                     .get(&member)
                     .ok_or_else(|| local::corrupt("selector lacks expected query"))?;
                 require(q.source == root, "selector query root")?;
-                match q.upper {
-                    Bound::All => Endpoint::All,
-                    Bound::BeforeTime(at) | Bound::AfterTime(at) => Endpoint::Time(at),
-                }
+                q.range
             } else {
-                Endpoint::All
+                TimeRange::ALL
+            };
+            let endpoint = match range.upper {
+                TimeBound::Included(at) => Endpoint::Through(at),
+                TimeBound::Excluded(at) => Endpoint::Time(at),
+                TimeBound::Unbounded => Endpoint::All,
             };
             require(
                 walk.expected
-                    .insert(route.node_key(member), (route, Order { endpoint, member }))
+                    .insert(
+                        route.node_key(member),
+                        (route, Order { endpoint, member }, range),
+                    )
                     .is_none(),
                 "duplicate selector identity",
             )?;
@@ -170,11 +230,12 @@ fn check_routes<B: Binding>(
         else {
             return Err(local::corrupt("missing selector header"));
         };
-        let (_, count) = walk.visit(Route::from_key(key)?, h.head, None, None, 0)?;
+        let stats = walk.visit(Route::from_key(key)?, h.head, None, None, 0)?;
         require(
-            count as usize == addresses.len() && count == h.len,
+            stats.len as usize == addresses.len() && stats.len == h.len,
             "selector complete count",
         )?;
+        require(stats.bounded == h.bounded, "selector exact bounded count")?;
     }
     require(
         walk.seen == walk.expected.keys().cloned().collect(),
@@ -183,6 +244,7 @@ fn check_routes<B: Binding>(
     walk.seen.extend(routes.keys().cloned());
     Ok(walk.seen)
 }
+
 struct Walk<'a> {
     nodes: &'a BTreeMap<Address, Node>,
     members: &'a Members,
@@ -819,8 +881,7 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
                         operation: "latest".into(),
                         phase: "calculate".into(),
                         channel: "rate".into(),
-                        lower: "negative_infinity".into(),
-                        upper: Bound::AfterTime(*at),
+                        range: TimeRange::through(*at),
                         selected: selected.map(|v| v.1),
                         result: i128::from(selected.map_or(1, |v| v.2)),
                     },
@@ -897,8 +958,7 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
                             operation: "sum".into(),
                             phase: if slot == 1 { "calculate" } else { "validate" }.into(),
                             channel: "amount".into(),
-                            lower: "negative_infinity".into(),
-                            upper: Bound::BeforeTime(at),
+                            range: TimeRange::before(at),
                             selected: None,
                             result: before,
                         },
@@ -948,8 +1008,7 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
                             operation: "sum".into(),
                             phase: "calculate".into(),
                             channel: "amount".into(),
-                            lower: "negative_infinity".into(),
-                            upper: Bound::All,
+                            range: TimeRange::ALL,
                             selected: None,
                             result: account_sum(source, None)?,
                         },
@@ -1177,15 +1236,15 @@ mod tests {
             .map(|id| Address::new(Uuid::from_u128(id), 1))
             .collect();
         let bounds = [
-            Bound::BeforeTime(i64::MIN),
-            Bound::AfterTime(0),
-            Bound::BeforeTime(i64::MAX),
-            Bound::All,
+            TimeRange::before(i64::MIN),
+            TimeRange::through(0),
+            TimeRange::before(i64::MAX),
+            TimeRange::ALL,
         ];
         let queries: BTreeMap<_, _> = ids
             .iter()
             .zip(bounds.iter().cloned())
-            .map(|(&id, upper)| {
+            .map(|(&id, range)| {
                 (
                     id,
                     Query {
@@ -1193,8 +1252,7 @@ mod tests {
                         operation: "sum".into(),
                         phase: "calculate".into(),
                         channel: "amount".into(),
-                        lower: "negative_infinity".into(),
-                        upper,
+                        range,
                         selected: None,
                         result: 0,
                     },
@@ -1204,15 +1262,22 @@ mod tests {
         let routes = BTreeMap::from([(route.key(), ids.iter().copied().collect())]);
         let mut all = BTreeMap::<Key, Stored>::new();
         for (i, &member) in ids.iter().enumerate() {
-            let endpoint = match bounds[i] {
-                Bound::BeforeTime(t) | Bound::AfterTime(t) => Endpoint::Time(t),
-                Bound::All => Endpoint::All,
+            let endpoint = match bounds[i].upper {
+                TimeBound::Excluded(t) => Endpoint::Time(t),
+                TimeBound::Included(t) => Endpoint::Through(t),
+                TimeBound::Unbounded => Endpoint::All,
             };
             all.insert(
                 route.node_key(member),
                 Stored::RouteNode(crate::routes::Node {
                     route,
                     key: Order { endpoint, member },
+                    range: bounds[i],
+                    min_lower: if i == 0 {
+                        None
+                    } else {
+                        Some(TimeBound::Unbounded)
+                    },
                     left: None,
                     right: None,
                     height: 1,
@@ -1227,6 +1292,7 @@ mod tests {
                 Stored::Subscribers(Header {
                     head: Some(ids[head]),
                     len: 4,
+                    bounded: 0,
                 }),
             );
             for (i, &(left, right, height)) in links.iter().enumerate() {
@@ -1308,6 +1374,144 @@ mod tests {
         );
     }
     #[test]
+    fn selector_checker_recomputes_empty_identity_minimum_and_bounded_count_from_sources() {
+        use crate::routes::{Endpoint, Header, Order, Route};
+        use TimeBound::{Excluded, Included, Unbounded};
+        let root = Address::new(Uuid::from_u128(100), 2);
+        let route = Route::Subscribers(root);
+        let member = Address::new(Uuid::from_u128(1), 7);
+        let cases = [
+            (TimeRange::ALL, Some(Unbounded), 0),
+            (TimeRange::before(i64::MIN), None, 0),
+            (TimeRange::through(i64::MIN), Some(Unbounded), 0),
+            (
+                TimeRange {
+                    lower: Excluded(i64::MAX),
+                    upper: Unbounded,
+                },
+                None,
+                1,
+            ),
+            (
+                TimeRange {
+                    lower: Excluded(0),
+                    upper: Excluded(1),
+                },
+                None,
+                1,
+            ),
+            (
+                TimeRange {
+                    lower: Included(0),
+                    upper: Excluded(0),
+                },
+                None,
+                1,
+            ),
+            (
+                TimeRange {
+                    lower: Excluded(0),
+                    upper: Included(0),
+                },
+                None,
+                1,
+            ),
+            (
+                TimeRange {
+                    lower: Included(0),
+                    upper: Included(0),
+                },
+                Some(Included(0)),
+                1,
+            ),
+            (
+                TimeRange {
+                    lower: Excluded(0),
+                    upper: Included(1),
+                },
+                Some(Excluded(0)),
+                1,
+            ),
+        ];
+        let routes = BTreeMap::from([(route.key(), BTreeSet::from([member]))]);
+        for (range, min_lower, bounded) in cases {
+            let endpoint = match range.upper {
+                Unbounded => Endpoint::All,
+                Included(at) => Endpoint::Through(at),
+                Excluded(at) => Endpoint::Time(at),
+            };
+            let queries = BTreeMap::from([(
+                member,
+                Query {
+                    source: root,
+                    operation: "sum".into(),
+                    phase: "calculate".into(),
+                    channel: "amount".into(),
+                    range,
+                    selected: None,
+                    result: 0,
+                },
+            )]);
+            let mut all = BTreeMap::from([
+                (
+                    route.key(),
+                    Stored::Subscribers(Header {
+                        head: Some(member),
+                        len: 1,
+                        bounded,
+                    }),
+                ),
+                (
+                    route.node_key(member),
+                    Stored::RouteNode(crate::routes::Node {
+                        route,
+                        key: Order { endpoint, member },
+                        range,
+                        min_lower,
+                        left: None,
+                        right: None,
+                        height: 1,
+                    }),
+                ),
+            ]);
+            check_routes(&all, &routes, &queries).unwrap();
+            let valid = all.clone();
+            let Some(Stored::RouteNode(n)) = all.get_mut(&route.node_key(member)) else {
+                unreachable!()
+            };
+            n.min_lower = if min_lower.is_some() {
+                None
+            } else {
+                Some(Unbounded)
+            };
+            assert_eq!(
+                check_routes(&all, &routes, &queries).unwrap_err().detail,
+                "selector exact minimum lower bound"
+            );
+            all = valid.clone();
+            let Some(Stored::Subscribers(h)) = all.get_mut(&route.key()) else {
+                unreachable!()
+            };
+            h.bounded = 1 - bounded;
+            assert_eq!(
+                check_routes(&all, &routes, &queries).unwrap_err().detail,
+                "selector exact bounded count"
+            );
+            all = valid;
+            let Some(Stored::RouteNode(n)) = all.get_mut(&route.node_key(member)) else {
+                unreachable!()
+            };
+            n.range.lower = match range.lower {
+                Unbounded => Included(0),
+                _ => Unbounded,
+            };
+            assert_eq!(
+                check_routes(&all, &routes, &queries).unwrap_err().detail,
+                "selector exact source membership/bound"
+            );
+        }
+    }
+    #[test]
     fn source_inventory_and_structure_reject_corruption_without_writer_replay() {
         let directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("target/integrity-tests")
@@ -1342,9 +1546,11 @@ mod tests {
                     wrong_height.height += 1;
                     changes.push((key.clone(), Some(Stored::RouteNode(wrong_height))));
                     if matches!(n.route, crate::routes::Route::Subscribers(_)) {
-                        n.key.endpoint = match n.key.endpoint {
-                            crate::routes::Endpoint::All => crate::routes::Endpoint::Time(0),
-                            _ => crate::routes::Endpoint::All,
+                        (n.key.endpoint, n.range.upper) = match n.key.endpoint {
+                            crate::routes::Endpoint::All => {
+                                (crate::routes::Endpoint::Time(0), TimeBound::Excluded(0))
+                            }
+                            _ => (crate::routes::Endpoint::All, TimeBound::Unbounded),
                         };
                         changes.push((key.clone(), Some(Stored::RouteNode(n))));
                     }

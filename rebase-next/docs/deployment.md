@@ -1,5 +1,13 @@
 # ReBase Next 0.6.0 deployment
 
+This guide documents the **last verified 0.6.0 bundle**, whose results are
+recorded in the [0.6 release report](../research/29-deployment-result.md). The
+0.7.0 source checkout adds exact reactive time windows and uses incompatible
+store/native codec format 5. Use the source from the recorded 0.6.0 commit when
+reproducing this bundle; do not treat a package built from the current checkout
+as the verified 0.6.0 artifact. See [exact time windows](reactive-windows.md)
+and [storage upgrades](storage.md#data-identity-and-upgrades) for current source.
+
 This release supports `calculation`, `equipment` and [invoicing](invoicing.md)
 on one embedded redb store owned by one server process. Select one model per store;
 its identity is checked on every open and operation. It provides exact connected calculations, historical
@@ -237,9 +245,11 @@ reconcile the saved plan rather than constructing a new operation.
 | Backup | Complete private snapshot and verified restore, capped at 64 MiB |
 
 A work unit is an engine counter, not a CPU time or memory guarantee. Admission
-permits remain held while timed-out blocking work finishes. Ordered point-addressed
-reverse AVL indexes select affected endpoint ranges; a compact prefix-gate graph
-preserves final producer dependencies without pairwise graph construction.
+permits remain held while timed-out blocking work finishes. In this 0.6.0
+binary, ordered point-addressed reverse AVL indexes select affected endpoint
+ranges and the prefix-gate graph preserves final producer dependencies without
+pairwise graph construction. The current 0.7.0 range and segment-cover behavior
+is documented separately; it is not part of this deployment evidence.
 Full fanout still consumes work and can reject at the same fixed budget. These
 paths do not make every mutation logarithmic. A global cursor revision does not
 provide snapshot pagination across mutations. Reducing source

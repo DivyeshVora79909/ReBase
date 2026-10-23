@@ -31,9 +31,9 @@ def prepared_identity(catalog):
     require(set(declarations) == {str(c) for c in range(1, 13)}, "CODEBOOK", "all contracts")
     digest = hashlib.sha256(b"rebase-next-local-model-v1\0")
     require(catalog["name"] == "rebase-next-local"
-            and catalog["behavior_contract"] == "rebase-calculation-contract-4",
+            and catalog["behavior_contract"] == "rebase-calculation-contract-5",
             "BEHAVIOR_IDENTITY", "compiled calculation model")
-    for data in (b"rebase-next-local", b"rebase-calculation-contract-4", core.encode(), canonical(declarations)):
+    for data in (b"rebase-next-local", b"rebase-calculation-contract-5", core.encode(), canonical(declarations)):
         digest.update(len(data).to_bytes(8, "big"))
         digest.update(data)
     return digest.hexdigest()
@@ -158,7 +158,7 @@ def main():
         receipts = {base_request["operation_id"]: receipt(state, base_request)}
         require(exact(actual["base_result"], {"status": "committed", "replayed": False, "result": returned(state, base_request)}), "RESULT", "base")
         header = payload(actual["initial"]["tables"]["local_runtime"][0])
-        require(set(header) == {"format", "store_id", "cursor_key", "receipts", "operation_epoch"} and header["format"] == "rebase-store-4", "LOCAL_HEADER", "initializer")
+        require(set(header) == {"format", "store_id", "cursor_key", "receipts", "operation_epoch"} and header["format"] == "rebase-store-5", "LOCAL_HEADER", "initializer")
         identity(header["store_id"])
         require(len(header["cursor_key"]) == 64 and bytes.fromhex(header["cursor_key"]).hex() == header["cursor_key"], "LOCAL_HEADER", "signing key")
         header = {k: v for k, v in header.items() if k != "receipts"}

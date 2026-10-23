@@ -178,12 +178,13 @@ the mutation algorithm.
 
 [The G3d/G3e gate](../research/28-settlement-refund-gate.md) owns settlement and
 deployment acceptance; [G3c](../research/27-invoicing-gate.md) retains dated pricing
-evidence. Package 0.6 uses invoicing behavior `invoice-assessments-2`. Its changed
-declarations require a new invoicing store; the previous binary must check and
-restore an older invoicing store. Calculation/equipment identities and store/
-codec format 4 are unchanged. See [upgrades](storage.md#data-identity-and-upgrades).
+evidence. The last verified package 0.6 uses invoicing behavior
+`invoice-assessments-2` and format 4. Current 0.7.0 source adds exact financial
+range reads, uses behavior `invoice-assessments-3` and format 5, and requires a
+new store. Keep the 0.6 binary with its stores and backups. The [window guide](reactive-windows.md)
+describes the public root read and range semantics; see [upgrades](storage.md#data-identity-and-upgrades).
 
-This model
-implements invoice-level cumulative reassessment, not the old per-issue linked
-tax graph or a complete accounting suite. Dated rational FX, distributed storage, arbitrary monoids,
-general two-bound reads and frontend remain separate gates.
+This model implements invoice-level cumulative reassessment, not the old
+per-issue linked tax graph or a complete accounting suite. Exact financial sum
+windows are available in current source; arbitrary monoids, query predicates,
+dated rational FX, distributed storage and frontend remain separate gates.

@@ -219,7 +219,7 @@ fn declarations() -> Result<Vec<Contract>> {
                 slot: 7,
                 name: "availability",
                 kind: Kind::Financial,
-                reads: vec!["summary", "before"],
+                reads: vec!["summary", "before", "range"],
                 invariant: Some("nonnegative complete-time prefixes"),
             });
         }
@@ -309,7 +309,7 @@ impl Binding for Equipment {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "equipment-reservations";
-    const BEHAVIOR: &'static str = "equipment-reservations-3";
+    const BEHAVIOR: &'static str = "equipment-reservations-4";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -340,10 +340,10 @@ impl Binding for Equipment {
             let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
             let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
             for (k, a) in old.difference(&new) {
-                crate::routes::change(ws, k, *a, crate::routes::Endpoint::All, false)?
+                crate::routes::change(ws, k, *a, crate::time_range::TimeRange::ALL, false)?
             }
             for (k, a) in new.difference(&old) {
-                crate::routes::change(ws, k, *a, crate::routes::Endpoint::All, true)?
+                crate::routes::change(ws, k, *a, crate::time_range::TimeRange::ALL, true)?
             }
             crate::mutation::reconcile_member(
                 ws,
@@ -428,7 +428,7 @@ impl ReactiveBinding for Equipment {
                 reads: vec![Read {
                     slot: 31,
                     root: Address::new(pool, 7),
-                    before: Some(starts),
+                    range: crate::time_range::TimeRange::before(starts),
                     validate: false,
                 }],
                 emits: vec![
@@ -503,7 +503,7 @@ impl ReactiveBinding for Equipment {
 // Independent source arithmetic and inventory checking is implemented below.
 fn check(store: &Store<Equipment>) -> Result<Value> {
     use crate::integrity::{Snapshot, require};
-    use crate::native_slice::{Bound, Query};
+    use crate::native_slice::Query;
     let snapshot = Snapshot::load(store)?;
     let keys = snapshot.expected_keys.clone();
     let mut routes = snapshot.routes.clone();
@@ -579,8 +579,7 @@ fn check(store: &Store<Equipment>) -> Result<Value> {
                     operation: "sum".into(),
                     phase: "calculate".into(),
                     channel: "amount".into(),
-                    lower: "negative_infinity".into(),
-                    upper: Bound::BeforeTime(starts),
+                    range: crate::time_range::TimeRange::before(starts),
                     selected: None,
                     result: before,
                 },

@@ -11,8 +11,9 @@ use rebase_semantic_proof::{
     mutation::reconcile_member,
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, Result},
-    routes::{self, Endpoint},
+    routes,
     server::{self, ServerConfig},
+    time_range::TimeRange,
     tree::{Kind, Leaf},
     values::{Rational, Rounding},
 };
@@ -221,10 +222,10 @@ impl Binding for ExactEntries {
             let before = registrations(change.old.as_ref());
             let after = registrations(change.new.as_ref());
             for (key, address) in before.difference(&after) {
-                routes::change(ws, key, *address, Endpoint::All, false)?;
+                routes::change(ws, key, *address, TimeRange::ALL, false)?;
             }
             for (key, address) in after.difference(&before) {
-                routes::change(ws, key, *address, Endpoint::All, true)?;
+                routes::change(ws, key, *address, TimeRange::ALL, true)?;
             }
             let member = |record: Option<
                 &rebase_semantic_proof::native_slice::ModelRecord<Self>,

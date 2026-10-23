@@ -11,6 +11,7 @@ use crate::{
 use crate::{
     native_codec::{Key, StoredValue},
     native_slice::{Attempt, Error, Result},
+    time_range::{TimeBound, TimeRange},
 };
 use std::collections::BTreeSet;
 
@@ -620,4 +621,132 @@ pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         }
     }
     Ok(sum)
+}
+
+fn span(summary: Aggregate) -> Result<Option<(i64, i64)>> {
+    let (count, first, last) = match summary {
+        Aggregate::Financial(value) => (value.count, value.first, value.last),
+        Aggregate::Quote(value) => (value.count, value.first, value.last),
+    };
+    match (count, first, last) {
+        (0, None, None) => Ok(None),
+        (1.., Some(first), Some(last)) if first <= last => Ok(Some((first, last))),
+        _ => Err(broken("range summary span")),
+    }
+}
+
+struct RangeFold {
+    owner: Address,
+    window: TimeRange,
+    kind: Kind,
+    seen: BTreeSet<Address>,
+}
+
+impl RangeFold {
+    fn visit<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+        &mut self,
+        ws: &mut Attempt<L, B>,
+        id: Option<Address>,
+        parent: Option<Address>,
+        depth: u16,
+    ) -> Result<Aggregate> {
+        let Some(id) = id else {
+            return Ok(Aggregate::empty(self.kind));
+        };
+        if depth >= 64 {
+            return Err(broken("range path depth"));
+        }
+        if !self.seen.insert(id) {
+            return Err(broken("range cycle or duplicate reachability"));
+        }
+        let current = node(ws, self.owner, id)?;
+        if current.parent != parent
+            || current.leaf.kind() != self.kind
+            || current.summary.kind() != self.kind
+            || current.height == 0
+            || current.height >= 64
+        {
+            return Err(broken("range parent/kind/height mismatch"));
+        }
+        let Some((first, last)) = span(current.summary)? else {
+            return Err(broken("empty node summary"));
+        };
+        if !(first <= current.key.at && current.key.at <= last) {
+            return Err(broken("range leaf outside summary span"));
+        }
+        if self.window.contains(first) && self.window.contains(last) {
+            return Ok(current.summary);
+        }
+        let below = match self.window.lower {
+            TimeBound::Unbounded => false,
+            TimeBound::Included(at) => last < at,
+            TimeBound::Excluded(at) => last <= at,
+        };
+        let above = match self.window.upper {
+            TimeBound::Unbounded => false,
+            TimeBound::Included(at) => first > at,
+            TimeBound::Excluded(at) => first >= at,
+        };
+        if below || above {
+            return Ok(Aggregate::empty(self.kind));
+        }
+        // Skip sides excluded by the boundary point itself. Equal timestamps
+        // stay together even when their UUID ties straddle several subtrees.
+        let left_possible = match self.window.lower {
+            TimeBound::Unbounded => true,
+            TimeBound::Included(at) => at <= current.key.at,
+            TimeBound::Excluded(at) => at < current.key.at,
+        };
+        let right_possible = match self.window.upper {
+            TimeBound::Unbounded => true,
+            TimeBound::Included(at) => current.key.at <= at,
+            TimeBound::Excluded(at) => current.key.at < at,
+        };
+        let mut result = if left_possible {
+            self.visit(ws, current.left, Some(id), depth + 1)?
+        } else {
+            Aggregate::empty(self.kind)
+        };
+        if self.window.contains(current.key.at) {
+            result = result.combine(Aggregate::leaf(current.key.at, current.leaf))?;
+        }
+        if right_possible {
+            result = result.combine(self.visit(ws, current.right, Some(id), depth + 1)?)?;
+        }
+        Ok(result)
+    }
+}
+
+/// Fold complete timestamp groups in source order. Canonically covered subtrees
+/// contribute their cached aggregate; boundary leaves preserve non-invertible
+/// prefix and complete-time extrema without subtracting two prefix summaries.
+pub fn range<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
+    owner: Address,
+    window: TimeRange,
+) -> Result<Aggregate> {
+    let header = root(ws, owner)?;
+    if header.summary.kind() != header.kind || header.height >= 64 {
+        return Err(broken("range root kind/height"));
+    }
+    let bounds = span(header.summary)?;
+    if header.head.is_none() != bounds.is_none() || header.head.is_none() != (header.height == 0) {
+        return Err(broken("range root population"));
+    }
+    if window.is_empty() {
+        return Ok(Aggregate::empty(header.kind));
+    }
+    let Some((first, last)) = bounds else {
+        return Ok(Aggregate::empty(header.kind));
+    };
+    if window.contains(first) && window.contains(last) {
+        return Ok(header.summary);
+    }
+    RangeFold {
+        owner,
+        window,
+        kind: header.kind,
+        seen: BTreeSet::new(),
+    }
+    .visit(ws, header.head, None, 0)
 }

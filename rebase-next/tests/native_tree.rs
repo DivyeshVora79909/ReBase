@@ -2,6 +2,7 @@ use rebase_semantic_proof::{
     algebra::Summary,
     native_codec::{self, Address, Key, Stored},
     native_slice::{Result, Workspace},
+    time_range::{TimeBound, TimeRange},
     tree::{self, Aggregate, FullKey, Kind, Leaf, Node, QuoteSummary, Root},
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -321,5 +322,376 @@ fn strict_prefix_matches_authored_scan_at_equal_times_and_extremes() -> Result<(
         tree::prefix(&mut ws, owner, Some(1)).unwrap_err().code,
         "corrupt_state"
     );
+    Ok(())
+}
+
+fn literal_range(kind: Kind, leaves: &Leaves, window: TimeRange) -> Aggregate {
+    // Deliberately spell out both predicates: do not reuse range membership or
+    // the writer's Aggregate::combine when deriving expected summaries.
+    let mut selected: Vec<_> = leaves
+        .iter()
+        .filter(|(_, (at, _))| {
+            let lower = match window.lower {
+                TimeBound::Unbounded => true,
+                TimeBound::Included(bound) => bound <= *at,
+                TimeBound::Excluded(bound) => bound < *at,
+            };
+            let upper = match window.upper {
+                TimeBound::Unbounded => true,
+                TimeBound::Included(bound) => *at <= bound,
+                TimeBound::Excluded(bound) => *at < bound,
+            };
+            lower && upper
+        })
+        .map(|(id, (at, leaf))| {
+            (
+                FullKey {
+                    at: *at,
+                    id: id.id,
+                    slot: id.slot,
+                },
+                *leaf,
+            )
+        })
+        .collect();
+    selected.sort_by_key(|(key, _)| *key);
+    scanned(kind, &selected)
+}
+
+#[test]
+fn ranges_match_literal_subsets_complete_groups_and_extreme_bounds() -> Result<()> {
+    use TimeBound::{Excluded, Included, Unbounded};
+    for kind in [Kind::Financial, Kind::Quote] {
+        let owner = addr(1000, if kind == Kind::Quote { 1 } else { 2 });
+        let mut store = initial(owner, kind);
+        let mut expected = Leaves::new();
+        let values = [
+            (0, -8),
+            (i64::MAX, 7),
+            (i64::MIN, 10),
+            (-20, -3),
+            (0, 8),
+            (20, -9),
+            (0, 0),
+            (i64::MAX, -2),
+            (i64::MIN, -4),
+            (21, 5),
+        ];
+        for (i, (at, amount)) in values.into_iter().enumerate() {
+            if kind == Kind::Quote && expected.values().any(|(time, _)| *time == at) {
+                continue;
+            }
+            let id = addr(i as u128 + 1, 1);
+            let value = (
+                at,
+                if kind == Kind::Quote {
+                    Leaf::Quote(i as u16 + 1)
+                } else {
+                    Leaf::Financial(amount)
+                },
+            );
+            apply(&mut store, owner, id, Some(value));
+            expected.insert(id, value);
+        }
+        let mut bounds = vec![Unbounded];
+        for at in [i64::MIN, i64::MIN + 1, -21, -20, -1, 0, 1, 20, 21, i64::MAX] {
+            bounds.extend([Included(at), Excluded(at)]);
+        }
+        for removed in [None, Some(addr(1, 1)), Some(addr(3, 1))] {
+            if let Some(id) = removed {
+                apply(&mut store, owner, id, None);
+                expected.remove(&id);
+            }
+            check(&store, owner, &expected);
+            for &lower in &bounds {
+                for &upper in &bounds {
+                    let window = TimeRange { lower, upper };
+                    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 200);
+                    assert_eq!(
+                        tree::range(&mut ws, owner, window)?,
+                        literal_range(kind, &expected, window),
+                        "{kind:?}: {window:?}"
+                    );
+                }
+            }
+        }
+        // Empty roots and reversed/discrete-empty intervals return their own
+        // summary kind without pretending an absent group is financial zero.
+        let empty = initial(owner, kind);
+        for window in [
+            TimeRange::ALL,
+            TimeRange {
+                lower: Excluded(0),
+                upper: Excluded(1),
+            },
+            TimeRange {
+                lower: Included(1),
+                upper: Included(0),
+            },
+        ] {
+            let mut ws = Workspace::new(|key: &[u8]| Ok(empty.get(key).cloned()), 1);
+            assert_eq!(tree::range(&mut ws, owner, window)?, Aggregate::empty(kind));
+            assert_eq!(ws.work.node_visits, 0);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn range_extrema_are_rebased_folds_not_differences_of_prefix_minima() -> Result<()> {
+    use TimeBound::{Excluded, Included};
+    let owner = addr(1000, 2);
+    let mut store = initial(owner, Kind::Financial);
+    let mut expected = Leaves::new();
+    // The excluded prefix bottoms out at -100, then recovers. The window has
+    // total -2, min prefix -7, and complete-time minimum -2 because -7/+5 share
+    // one timestamp. Neither prefix minimum difference reconstructs the window.
+    for (number, (at, amount)) in [(0, -100), (1, 100), (2, -7), (2, 5)]
+        .into_iter()
+        .enumerate()
+    {
+        let id = addr(number as u128 + 1, 1);
+        let value = (at, Leaf::Financial(amount));
+        apply(&mut store, owner, id, Some(value));
+        expected.insert(id, value);
+    }
+    let window = TimeRange {
+        lower: Excluded(1),
+        upper: Included(2),
+    };
+    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
+    let Aggregate::Financial(value) = tree::range(&mut ws, owner, window)? else {
+        panic!("financial range")
+    };
+    assert_eq!(
+        Aggregate::Financial(value),
+        literal_range(Kind::Financial, &expected, window)
+    );
+    assert_eq!(
+        (value.sum, value.min_prefix, value.complete_min()),
+        (-2, -7, -2)
+    );
+    let Aggregate::Financial(before) =
+        literal_range(Kind::Financial, &expected, TimeRange::through(1))
+    else {
+        panic!()
+    };
+    let Aggregate::Financial(through) =
+        literal_range(Kind::Financial, &expected, TimeRange::through(2))
+    else {
+        panic!()
+    };
+    assert_ne!(value.min_prefix, through.min_prefix - before.min_prefix);
+    assert_ne!(
+        value.complete_min(),
+        through.complete_min() - before.complete_min()
+    );
+    Ok(())
+}
+
+#[test]
+fn range_prunes_many_positions_under_a_population_independent_budget() -> Result<()> {
+    use TimeBound::{Excluded, Included};
+    let owner = addr(1000, 2);
+    let mut store = initial(owner, Kind::Financial);
+    let mut expected = Leaves::new();
+    for number in 0..511 {
+        let id = addr(number + 1, 1);
+        let value = (
+            number as i64 - 255,
+            Leaf::Financial(number as i128 % 11 - 5),
+        );
+        apply(&mut store, owner, id, Some(value));
+        expected.insert(id, value);
+    }
+    check(&store, owner, &expected);
+    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 1);
+    assert_eq!(
+        tree::range(&mut ws, owner, TimeRange::ALL)?,
+        literal_range(Kind::Financial, &expected, TimeRange::ALL)
+    );
+    assert_eq!((ws.work.key_loads, ws.work.node_visits), (1, 0));
+    for position in (-256..=256).step_by(8) {
+        for window in [
+            TimeRange {
+                lower: Included(position),
+                upper: Included(position),
+            },
+            TimeRange {
+                lower: Excluded(position),
+                upper: Included(position + 3),
+            },
+            TimeRange {
+                lower: Included(-200),
+                upper: Excluded(position),
+            },
+        ] {
+            // A 511-row scan cannot fit 128 charged loads/visits. The result
+            // includes every summary field, so sum-only prefix subtraction also
+            // cannot satisfy this comparison.
+            let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 128);
+            let height = tree::root(&mut ws, owner)?.height;
+            assert_eq!(
+                tree::range(&mut ws, owner, window)?,
+                literal_range(Kind::Financial, &expected, window)
+            );
+            assert!(
+                ws.work.node_visits <= 4 * u64::from(height) + 2,
+                "{window:?}: {:?}",
+                ws.work
+            );
+        }
+    }
+    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 1);
+    assert_eq!(
+        tree::range(
+            &mut ws,
+            owner,
+            TimeRange {
+                lower: Included(0),
+                upper: Included(0)
+            }
+        )
+        .unwrap_err()
+        .code,
+        "work_limit"
+    );
+    Ok(())
+}
+
+#[test]
+fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
+    use TimeBound::{Included, Unbounded};
+    let owner = addr(1000, 2);
+    let mut store = initial(owner, Kind::Financial);
+    // Insert the compensating tail before the second positive leaf so every
+    // intermediate AVL subtree also has a representable exact summary.
+    for (number, (at, amount)) in [
+        (0, -i128::MAX),
+        (1, i128::MAX),
+        (3, -i128::MAX),
+        (2, i128::MAX),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        apply(
+            &mut store,
+            owner,
+            addr(number as u128 + 1, 1),
+            Some((at, Leaf::Financial(amount))),
+        );
+    }
+    let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
+    assert_eq!(
+        tree::range(
+            &mut ws,
+            owner,
+            TimeRange {
+                lower: Included(1),
+                upper: Included(2)
+            }
+        )
+        .unwrap_err()
+        .code,
+        "overflow"
+    );
+
+    // Mutation controls retain otherwise valid summaries so rejection depends
+    // on the links/kinds actually reached by a partial range traversal.
+    for corruption in 0..4 {
+        let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
+        let head = tree::root(&mut ws, owner)?.head.unwrap();
+        let mut damaged = tree::node(&mut ws, owner, head)?;
+        let upper = Included(damaged.key.at);
+        match corruption {
+            0 => damaged.parent = Some(head),
+            1 => damaged.left = Some(head),
+            2 => damaged.root = addr(9999, 2),
+            3 => {
+                damaged.leaf = Leaf::Quote(1);
+                damaged.summary = Aggregate::Quote(QuoteSummary {
+                    count: 1,
+                    first: Some(damaged.key.at),
+                    last: Some(damaged.key.at),
+                });
+            }
+            _ => unreachable!(),
+        }
+        ws.put(Key::Node(head), Some(Stored::Node(damaged)))?;
+        assert_eq!(
+            tree::range(
+                &mut ws,
+                owner,
+                TimeRange {
+                    lower: Unbounded,
+                    upper
+                }
+            )
+            .unwrap_err()
+            .code,
+            "corrupt_state"
+        );
+    }
+    // A malformed long chain must stop before recursive descent can grow with
+    // the corrupt store's population. Its cached spans deliberately force a
+    // boundary search rather than the covered-subtree shortcut.
+    let mut malformed = initial(owner, Kind::Financial);
+    let summary = Aggregate::Financial(Summary {
+        count: 2,
+        first: Some(0),
+        last: Some(100),
+        ..Summary::default()
+    });
+    let header = Root {
+        head: Some(addr(1, 1)),
+        first: Some(addr(1, 1)),
+        last: Some(addr(65, 1)),
+        height: 1,
+        summary,
+        ..Root::empty(Kind::Financial, 0)
+    };
+    let key = Key::Root(owner);
+    malformed.insert(
+        key.encode(),
+        native_codec::encode(&key, &Stored::Root(header))?,
+    );
+    for number in 1..=65 {
+        let id = addr(number, 1);
+        let key = Key::Node(id);
+        let node = Node {
+            root: owner,
+            key: FullKey {
+                at: 0,
+                id: id.id,
+                slot: id.slot,
+            },
+            leaf: Leaf::Financial(0),
+            parent: (number > 1).then(|| addr(number - 1, 1)),
+            left: None,
+            right: (number < 65).then(|| addr(number + 1, 1)),
+            prev: None,
+            next: None,
+            height: 1,
+            summary,
+        };
+        malformed.insert(
+            key.encode(),
+            native_codec::encode(&key, &Stored::Node(node))?,
+        );
+    }
+    let mut ws = Workspace::new(|key: &[u8]| Ok(malformed.get(key).cloned()), 200);
+    let error = tree::range(
+        &mut ws,
+        owner,
+        TimeRange {
+            lower: Included(50),
+            upper: Included(50),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(error.code, "corrupt_state");
+    assert_eq!(error.detail, "range path depth");
+    assert_eq!(ws.work.node_visits, 64);
     Ok(())
 }

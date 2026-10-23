@@ -93,9 +93,10 @@ trusted operator tool and has no network RPC counterpart.
 
 ## Data identity and upgrades
 
-Release 0.6.0 uses store format `rebase-store-4` and native codec
-`native-slice-kv-4`. All three compiled models use those formats, with distinct model
-identities. One store holds one selected compiled model.
+The last verified deployment bundle, 0.6.0, uses store format
+`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.7.0 source
+uses `rebase-store-5` and `native-slice-kv-5`. One store holds one selected
+compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
 behavior contract revision. Transport formatting and dependency patch bytes do
 not define a data model. Maintainers must bump the affected `Binding::BEHAVIOR`
@@ -105,22 +106,26 @@ Shared semantic changes require bumping every affected binding. Structural/schem
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-Calculation behavior is `rebase-calculation-contract-4`; equipment behavior is
-`equipment-reservations-3`. Their declared population limits are 4,096 public
-sources, 8,192 active private outputs and 16,384 retained role reservations per
-model. The behavior revisions cover the expanded envelope. Ordered reverse-route
-nodes have a new private layout, so retaining a prior behavior string would not
-make an old store compatible. Backup remains capped at 64 MiB, and the active
-receipt window remains 1,024 operations.
-Invoicing behavior is `invoice-assessments-2`, with 64 public sources, 256 active
-outputs and 512 retained roles. Its settlement declarations change the invoicing
-model identity from 0.5; calculation/equipment identities are unchanged.
+In 0.7.0 source, calculation behavior is `rebase-calculation-contract-5`,
+equipment behavior is `equipment-reservations-4`, and invoicing behavior is
+`invoice-assessments-3`. The typed read ranges and augmented reverse-route node
+layout change native storage, and every compiled model identity changed. The
+source rejects 0.6.0 format-4 stores; it does not migrate them. Keep the
+verified 0.6.0 binary and its backups together for those stores. The 0.6.0
+bundle remains the last verified deployment; format-5 source is not release
+acceptance evidence.
 
-Format 2 and 3 stores and their backups intentionally reject. The runtime
-header is checked before native metadata decoding, so an old store reports a
-model/format mismatch rather than being reinterpreted. There is no silent format
-3 migration, automatic reset or cross-model restore. A compatible format 4
-backup restores only with its matching compiled model and behavior identity.
+The calculation/equipment declared limits remain 4,096 public sources, 8,192
+active private outputs and 16,384 retained role reservations per model.
+Invoicing remains 64 public sources, 256 active outputs and 512 retained roles.
+Backup remains capped at 64 MiB, and the active receipt window remains 1,024
+operations.
+
+Format 2, 3 and 4 stores and their backups intentionally reject in 0.7.0. The
+runtime header is checked before native metadata decoding, so an old store
+reports a model/format mismatch rather than being reinterpreted. There is no
+silent migration, automatic reset or cross-model restore. Restore a backup only
+with its matching binary, compiled model and behavior identity.
 
 A read-only identity check rejects a clean incompatible store without changing
 even redb's maintenance bytes. The writable handle rechecks identity as well.

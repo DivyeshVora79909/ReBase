@@ -14,6 +14,7 @@ use crate::{
     model::API_VERSION,
     native_codec::{self, Address, decimal, uuid_text},
     native_slice::{Attempt, Error, Result},
+    time_range::TimeRange,
     tree::{self, Aggregate},
 };
 
@@ -125,6 +126,9 @@ pub enum RootRead {
     Before {
         #[serde(with = "decimal")]
         at: i64,
+    },
+    Range {
+        range: TimeRange,
     },
     Latest {
         #[serde(with = "decimal")]
@@ -390,6 +394,7 @@ impl<B: Binding> Store<B> {
         let kind = match request.read {
             RootRead::Summary => "summary",
             RootRead::Before { .. } => "before",
+            RootRead::Range { .. } => "range",
             RootRead::Latest { .. } => "latest",
         };
         if !declaration.reads.contains(&kind) {
@@ -409,6 +414,13 @@ impl<B: Binding> Store<B> {
             },
             RootRead::Before { at } => {
                 json!({"sum":tree::prefix(&mut ws,address,Some(at))?.to_string()})
+            }
+            RootRead::Range { range } => {
+                let Aggregate::Financial(s) = tree::range(&mut ws, address, range)? else {
+                    return Err(Error::new("unsupported_query", "financial range required"));
+                };
+                json!({"count":s.count,"sum":s.sum.to_string(),"complete_min":s.complete_min().to_string(),
+                    "first":s.first.map(|t|t.to_string()),"last":s.last.map(|t|t.to_string())})
             }
             RootRead::Latest { at } => match tree::latest(&mut ws, address, at)? {
                 Some((id, rate)) => {

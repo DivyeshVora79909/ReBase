@@ -3,6 +3,7 @@ use rebase_semantic_proof::{
     native_codec::{self, Address, Key, Stored},
     native_slice::Workspace,
     routes::{self, Endpoint, Order, Route},
+    time_range::TimeRange,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -13,6 +14,13 @@ type Bytes = BTreeMap<Vec<u8>, Vec<u8>>;
 type Expected = BTreeMap<Address, (Route, Endpoint)>;
 fn addr(n: u128, slot: u16) -> Address {
     Address::new(Uuid::from_u128(n), slot)
+}
+fn range(endpoint: Endpoint) -> TimeRange {
+    match endpoint {
+        Endpoint::Time(at) => TimeRange::before(at),
+        Endpoint::Through(at) => TimeRange::through(at),
+        Endpoint::All => TimeRange::ALL,
+    }
 }
 fn flush(bytes: &mut Bytes, batch: BTreeMap<Vec<u8>, Option<Vec<u8>>>) {
     for (key, value) in batch {
@@ -50,6 +58,7 @@ fn check(bytes: &Bytes, expected: &Expected, owners: &[Route]) {
             panic!("registration type");
         };
         assert_eq!((n.route, n.key.endpoint), expected[&id]);
+        assert_eq!(n.range, range(expected[&id].1));
         assert_eq!(n.key.member, id);
         assert_eq!(route, n.route);
         assert!(lower.is_none_or(|v| v < n.key) && upper.is_none_or(|v| n.key < v));
@@ -73,6 +82,7 @@ fn check(bytes: &Bytes, expected: &Expected, owners: &[Route]) {
             expected.values().filter(|(r, _)| *r == route).count()
         );
         assert_eq!(count, h.len as usize);
+        assert_eq!(h.bounded, 0);
         seen.insert(route.key());
     }
     assert_eq!(seen, all.keys().cloned().collect());
@@ -132,7 +142,7 @@ fn ordered_routes_preserve_old_and_new_memberships_through_rotations_and_moves()
         let id = addr(1 + (i * 53 % 96), 31);
         let endpoint = endpoints[(i % 6) as usize];
         let mut ws = Workspace::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 50_000);
-        routes::change(&mut ws, &owners[0].key(), id, endpoint, true).unwrap();
+        routes::change(&mut ws, &owners[0].key(), id, range(endpoint), true).unwrap();
         let batch = ws.finish().unwrap();
         drop(ws);
         flush(&mut bytes, batch);
@@ -144,10 +154,10 @@ fn ordered_routes_preserve_old_and_new_memberships_through_rotations_and_moves()
         let old = expected.clone();
         let (route, endpoint) = expected.remove(&id).unwrap();
         let mut ws = Workspace::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 50_000);
-        routes::change(&mut ws, &route.key(), id, endpoint, false).unwrap();
+        routes::change(&mut ws, &route.key(), id, range(endpoint), false).unwrap();
         if i % 2 == 0 {
             let next = endpoints[((i + 3) % 6) as usize];
-            routes::change(&mut ws, &owners[1].key(), id, next, true).unwrap();
+            routes::change(&mut ws, &owners[1].key(), id, range(next), true).unwrap();
             expected.insert(id, (owners[1], next));
         }
         for route in owners {
@@ -190,7 +200,7 @@ fn ordered_routes_preserve_old_and_new_memberships_through_rotations_and_moves()
             &mut ws,
             &owners[1].key(),
             addr(500, 31),
-            Endpoint::All,
+            TimeRange::ALL,
             true
         )
         .unwrap_err()
@@ -218,7 +228,7 @@ fn endpoint_rewrites_keep_original_snapshot_and_exact_endpoint_bounds() {
     for i in 0..18 {
         let id = addr(i + 1, 31);
         let endpoint = endpoints[i as usize % endpoints.len()];
-        routes::change(&mut ws, &route.key(), id, endpoint, true).unwrap();
+        routes::change(&mut ws, &route.key(), id, range(endpoint), true).unwrap();
         expected.insert(id, (route, endpoint));
     }
     let batch = ws.finish().unwrap();
@@ -235,8 +245,8 @@ fn endpoint_rewrites_keep_original_snapshot_and_exact_endpoint_bounds() {
     ] {
         let id = addr(1, 31);
         let (_, previous) = expected[&id];
-        routes::change(&mut ws, &route.key(), id, previous, false).unwrap();
-        routes::change(&mut ws, &route.key(), id, next, true).unwrap();
+        routes::change(&mut ws, &route.key(), id, range(previous), false).unwrap();
+        routes::change(&mut ws, &route.key(), id, range(next), true).unwrap();
         expected.insert(id, (route, next));
     }
     let bounds: Vec<_> = std::iter::once(Bound::Unbounded)
@@ -285,7 +295,7 @@ fn every_route_kind_drains_and_reuses_deleted_registration_identities() {
             let id = addr(1 + (i * 17 % 24), 31);
             let route = owners[(i as usize + pass) % owners.len()];
             let mut ws = Workspace::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 10_000);
-            routes::change(&mut ws, &route.key(), id, Endpoint::All, true).unwrap();
+            routes::change(&mut ws, &route.key(), id, TimeRange::ALL, true).unwrap();
             let batch = ws.finish().unwrap();
             drop(ws);
             flush(&mut bytes, batch);
@@ -296,7 +306,7 @@ fn every_route_kind_drains_and_reuses_deleted_registration_identities() {
             let id = addr(1 + (i * 13 % 24), 31);
             let (route, endpoint) = expected.remove(&id).unwrap();
             let mut ws = Workspace::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 10_000);
-            routes::change(&mut ws, &route.key(), id, endpoint, false).unwrap();
+            routes::change(&mut ws, &route.key(), id, range(endpoint), false).unwrap();
             let mut selected = BTreeSet::new();
             routes::collect(&mut ws, &route.key(), &mut selected).unwrap();
             let mut oracle: BTreeSet<_> = expected
@@ -324,7 +334,7 @@ fn narrow_selection_loads_only_a_balanced_path_at_gate_population() {
     for i in 0..4096 {
         let id = addr(i + 1, 31);
         let endpoint = Endpoint::Time(i as i64);
-        routes::change(&mut ws, &route.key(), id, endpoint, true).unwrap();
+        routes::change(&mut ws, &route.key(), id, range(endpoint), true).unwrap();
         expected.insert(id, (route, endpoint));
     }
     let batch = ws.finish().unwrap();
@@ -361,7 +371,7 @@ fn selection_rejects_dangling_cross_route_and_cyclic_links() {
             &mut ws,
             &route.key(),
             addr(i, 31),
-            Endpoint::Time(i as i64),
+            TimeRange::before(i as i64),
             true,
         )
         .unwrap();

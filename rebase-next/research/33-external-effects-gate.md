@@ -219,10 +219,10 @@ identities, and rejects orphan/duplicate rows.
 Update complete inventory checks and raw observation in `local.rs`, offline
 backup/restore/reset/archive in `lifecycle.rs`, and binding integrity checks.
 Receipt archiving cannot delete effect/inbox evidence or change provider keys.
-Allocate the next format after G4b: **expected store 6 /native codec 5 /effect
-codec 1**. G4b owns store/native codec 5 and its model behavior changes; G5 adds
-effect tables/headers and therefore owns the next store format. Native codec 5
-stays unchanged only if G5 leaves native KV keys/values unchanged. Bump every
+Allocate the next format after G4c: **expected store 7 /native codec 6 /effect
+codec 1**. G4b owns store/native codec 5, and G4c owns store/native codec 6;
+G5 adds effect tables/headers and therefore owns the next store format. Native
+codec 6 stays unchanged only if G5 leaves native KV keys/values unchanged. Bump every
 affected binding behavior contract for actual G5 calculation/domain semantics;
 a new effect-demo binding has its own behavior/version. Recheck unaffected
 models' identities rather than assuming they changed. Catalog/cancellation

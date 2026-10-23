@@ -1,0 +1,1661 @@
+{
+  "format": "rebase-g4b-reactive-windows-1",
+  "date": "2026-10-23",
+  "status": "accepted source checkpoint; no new deployment bundle claimed",
+  "base_commit": "41be2e3f35c1f3d95a298f4df184aa8f3697a9de",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.276,
+      "log": "target/g4b-fmt.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.999,
+      "log": "target/g4b-clippy.log"
+    },
+    {
+      "name": "debug-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 30.194,
+      "log": "target/g4b-debug-tests.log",
+      "tests_passed": 99
+    },
+    {
+      "name": "release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 146.434,
+      "log": "target/g4b-release-tests.log",
+      "tests_passed": 99
+    },
+    {
+      "name": "client",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.683,
+      "log": "target/g4b-client.log"
+    },
+    {
+      "name": "capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.091,
+      "log": "target/g4b-capacity-controls.log"
+    },
+    {
+      "name": "foundation",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.92,
+      "log": "target/g4b-foundation.log"
+    },
+    {
+      "name": "foundation-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-283107-1792731805333613756/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.447,
+      "log": "target/g4b-foundation-independent.log"
+    },
+    {
+      "name": "causal",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice",
+        "--",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.752,
+      "log": "target/g4b-causal.log"
+    },
+    {
+      "name": "causal-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-283145-1792731810764572537/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.503,
+      "log": "target/g4b-causal-independent.log"
+    },
+    {
+      "name": "local",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.415,
+      "log": "target/g4b-local.log"
+    },
+    {
+      "name": "local-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/local-prototype/run-283152-1792731815559153479/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.136,
+      "log": "target/g4b-local-independent.log"
+    },
+    {
+      "name": "release-binary",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.086,
+      "log": "target/g4b-release-binary.log"
+    },
+    {
+      "name": "calculation-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.006,
+      "log": "target/g4b-calculation-identity.log"
+    },
+    {
+      "name": "equipment-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.004,
+      "log": "target/g4b-equipment-identity.log"
+    },
+    {
+      "name": "invoicing-oracle-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_invoicing.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.101,
+      "log": "target/g4b-invoicing-oracle-controls.log"
+    },
+    {
+      "name": "invoicing-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "invoicing",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.007,
+      "log": "target/g4b-invoicing-identity.log"
+    },
+    {
+      "name": "invoicing-http",
+      "command": [
+        "python3",
+        "-B",
+        "tools/invoicing.py",
+        "--binary",
+        "target/verification-build/release/rebase-next",
+        "--out",
+        "target/g4b-accepted-http"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.148,
+      "log": "target/g4b-invoicing-http.log"
+    }
+  ],
+  "independent": {
+    "foundation": {
+      "status": "passed",
+      "cases": 68,
+      "operations": 93
+    },
+    "causal": {
+      "status": "passed",
+      "cases": 39,
+      "operations": 55
+    },
+    "local": {
+      "status": "passed",
+      "cases": 9,
+      "operations": 14
+    }
+  },
+  "logical_window_oracle": {
+    "cases": 1434,
+    "format": "rebase-reactive-window-oracle-1",
+    "literal_controls": 19,
+    "native_verified": false,
+    "negative_controls": 5
+  },
+  "native_window_scope": {
+    "native_scenarios": 4,
+    "pairwise_graphs": 512,
+    "tree_subset_cases": 2646,
+    "disjoint_window_index_records": 4096,
+    "disjoint_query_work_budget": 256,
+    "selector_visit_ceiling": 32,
+    "loaded_key_ceiling": 33,
+    "native_source_checks": "Every committed window state uses independent pairwise final edges, literal source sums and complete Snapshot::finish inventory/structure checks."
+  },
+  "identities": {
+    "calculation": {
+      "model": "f1ccb357e4c61c0305d4801b8c553e12f7d16fa9d52a6e469d2990fa84e93f84",
+      "store_format": "rebase-store-5",
+      "version": "0.7.0"
+    },
+    "equipment": {
+      "model": "2fd5164bb9f60ea4e4c32882769f180830707eba55047e2bdb7a4cd651d4cda2",
+      "store_format": "rebase-store-5",
+      "version": "0.7.0"
+    },
+    "invoicing": {
+      "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+      "store_format": "rebase-store-5",
+      "version": "0.7.0"
+    }
+  },
+  "binary": {
+    "path": "target/g4b-accepted/rebase-next",
+    "sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e"
+  },
+  "http": {
+    "status": "passed",
+    "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+    "public_sources": 64,
+    "baseline_gross": "11555",
+    "corrected_gross": "9244",
+    "operations": [
+      {
+        "name": "baseline",
+        "commands": 6,
+        "result": "committed"
+      },
+      {
+        "name": "credit-and-reassess",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "historical-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-price",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "parent-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-rate",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "net-rule-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-kind",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "zero-reassessment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-00",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-01",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-02",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-03",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-04",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-05",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-06",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-07",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-08",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-09",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-10",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-11",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-12",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-13",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-14",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-15",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-16",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-17",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-18",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-19",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-20",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-21",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-22",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-23",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-24",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-25",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-26",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-27",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-28",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-29",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-30",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-31",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-32",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-33",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-34",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-35",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-36",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-37",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-38",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "source-stress-39",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "restore-literal-scenario",
+        "commands": 3,
+        "result": "committed"
+      },
+      {
+        "name": "remove-correction",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "fully-paid",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "paid-credit-without-refund",
+        "commands": 3,
+        "result": "invariant"
+      },
+      {
+        "name": "late-refund-final-zero",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "credit-refund-reassess",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "positive-reassessment-claims",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "restore-negative-claims",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "retired-producer-identity",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "partial-settlement",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "second-payment",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "linked-capacity-despite-positive-cash",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "combine-payments",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "split-same-time-refunds",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "combine-refunds",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "other-treasuries",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "treasury-name",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "currency-mismatch",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "refund-parent-mismatch",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "immutable-payment-treasury",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "immutable-refund-payment",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "immutable-treasury-currency",
+        "commands": 1,
+        "result": "invalid_input"
+      },
+      {
+        "name": "private-directional-output",
+        "commands": 1,
+        "result": "forbidden"
+      },
+      {
+        "name": "delete-refunded-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "delete-used-treasury",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "payment-before-issue",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "refund-before-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "excess-payment",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "insufficient-refund",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-00",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-01",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-02",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-03",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-04",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-05",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-06",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-07",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-08",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-09",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-10",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-11",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-12",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-13",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-14",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-15",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-16",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-17",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-18",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-19",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-20",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-21",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "settlement-stress-22",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "settlement-stress-23",
+        "commands": 4,
+        "result": "invariant"
+      },
+      {
+        "name": "restore-settled-literal",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "duplicate-time",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "overcredit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "early-credit",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "inexact-rule",
+        "commands": 1,
+        "result": "inexact"
+      },
+      {
+        "name": "overflow-price",
+        "commands": 1,
+        "result": "overflow"
+      },
+      {
+        "name": "missing-rule",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "fill-source-envelope",
+        "commands": 50,
+        "result": "committed"
+      },
+      {
+        "name": "source-overflow",
+        "commands": 1,
+        "result": "state_limit"
+      }
+    ],
+    "stress_seed": 20261022,
+    "stress_batches": 40,
+    "settlement": {
+      "gross": "9244",
+      "paid": "9244",
+      "balance": "0",
+      "receivable": "13866",
+      "payable": "13866",
+      "cash": "9244",
+      "refund_capacity": "9244"
+    },
+    "settlement_stress_seed": 20261023,
+    "settlement_stress_batches": 24,
+    "settlement_stress_results": {
+      "committed": 11,
+      "invariant": 13
+    },
+    "stable_directional_roles": true,
+    "logical_bytewise_rollback": true,
+    "integrity": {
+      "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+      "nodes": 40,
+      "receipts": 75,
+      "records": 89,
+      "revision": "75",
+      "roots": 313,
+      "rows": 816,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "c952d286-4e64-408e-97a6-e2abf99bdf1b"
+    },
+    "reopen": true,
+    "crash_recovery": true,
+    "restore": true,
+    "binary_sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e"
+  },
+  "capacity": {
+    "status": "passed",
+    "binary_sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e",
+    "probe_sha256": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "host": {
+      "system": "Linux",
+      "machine": "x86_64",
+      "kernel": "6.18.55"
+    },
+    "engine_work_budget": 200000,
+    "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+    "runs": [
+      {
+        "model": "equipment",
+        "public_sources": 4096,
+        "active_reservations": 4092,
+        "measurements": {
+          "after_all_reads": {
+            "latency_ms": 3.108,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 1,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 10628,
+              "evaluations": 0,
+              "final_dirty_keys": 17,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 45,
+              "loaded_bytes": 25172,
+              "node_visits": 156,
+              "reader_checks": 2,
+              "rotations": 0,
+              "route_entries": 24,
+              "scheduler_visits": 0,
+              "selector_visits": 24,
+              "staged_patches": 40,
+              "work_units": 293
+            }
+          },
+          "last_read": {
+            "latency_ms": 3.701,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 1,
+              "causal_evaluations": 1,
+              "command_visits": 1,
+              "dependency_checks": 9,
+              "dependency_edges": 3,
+              "detached_outputs": 2,
+              "encoded_bytes": 13795,
+              "evaluations": 0,
+              "final_dirty_keys": 24,
+              "graph_nodes": 3,
+              "inventory_visits": 0,
+              "key_loads": 54,
+              "loaded_bytes": 27430,
+              "node_visits": 625,
+              "reader_checks": 4,
+              "rotations": 5,
+              "route_entries": 24,
+              "scheduler_visits": 6,
+              "selector_visits": 24,
+              "staged_patches": 167,
+              "work_units": 920
+            }
+          },
+          "fanout_128": {
+            "latency_ms": 37.139,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 128,
+              "causal_evaluations": 128,
+              "command_visits": 1,
+              "dependency_checks": 1922,
+              "dependency_edges": 638,
+              "detached_outputs": 256,
+              "encoded_bytes": 337520,
+              "evaluations": 0,
+              "final_dirty_keys": 771,
+              "graph_nodes": 384,
+              "inventory_visits": 0,
+              "key_loads": 1443,
+              "loaded_bytes": 449407,
+              "node_visits": 55809,
+              "reader_checks": 256,
+              "rotations": 625,
+              "route_entries": 274,
+              "scheduler_visits": 1022,
+              "selector_visits": 274,
+              "staged_patches": 15452,
+              "work_units": 77475
+            }
+          },
+          "full_fanout": {
+            "status": "work_limit",
+            "affected_producers": 4092,
+            "logical_bytewise_rollback": true,
+            "receipt_absent": true,
+            "latency_ms": 189.622,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification"
+          },
+          "remove_after": {
+            "latency_ms": 3.524,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 1,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 10102,
+              "evaluations": 0,
+              "final_dirty_keys": 21,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 74,
+              "loaded_bytes": 36041,
+              "node_visits": 69,
+              "reader_checks": 0,
+              "rotations": 0,
+              "route_entries": 94,
+              "scheduler_visits": 0,
+              "selector_visits": 24,
+              "staged_patches": 25,
+              "work_units": 288
+            }
+          },
+          "retarget_empty": {
+            "latency_ms": 3.98,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 1,
+              "causal_evaluations": 1,
+              "command_visits": 1,
+              "dependency_checks": 10,
+              "dependency_edges": 3,
+              "detached_outputs": 2,
+              "encoded_bytes": 17643,
+              "evaluations": 0,
+              "final_dirty_keys": 39,
+              "graph_nodes": 3,
+              "inventory_visits": 0,
+              "key_loads": 143,
+              "loaded_bytes": 61715,
+              "node_visits": 180,
+              "reader_checks": 2,
+              "rotations": 1,
+              "route_entries": 296,
+              "scheduler_visits": 6,
+              "selector_visits": 24,
+              "staged_patches": 93,
+              "work_units": 761
+            }
+          },
+          "deactivate": {
+            "latency_ms": 2.945,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 1,
+              "causal_evaluations": 1,
+              "command_visits": 1,
+              "dependency_checks": 2,
+              "dependency_edges": 0,
+              "detached_outputs": 2,
+              "encoded_bytes": 1176,
+              "evaluations": 0,
+              "final_dirty_keys": 18,
+              "graph_nodes": 1,
+              "inventory_visits": 0,
+              "key_loads": 25,
+              "loaded_bytes": 6168,
+              "node_visits": 13,
+              "reader_checks": 2,
+              "rotations": 0,
+              "route_entries": 14,
+              "scheduler_visits": 1,
+              "selector_visits": 1,
+              "staged_patches": 31,
+              "work_units": 91
+            }
+          },
+          "reactivate": {
+            "latency_ms": 2.848,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 1,
+              "causal_evaluations": 1,
+              "command_visits": 1,
+              "dependency_checks": 8,
+              "dependency_edges": 3,
+              "detached_outputs": 0,
+              "encoded_bytes": 5292,
+              "evaluations": 0,
+              "final_dirty_keys": 18,
+              "graph_nodes": 3,
+              "inventory_visits": 0,
+              "key_loads": 25,
+              "loaded_bytes": 2052,
+              "node_visits": 15,
+              "reader_checks": 2,
+              "rotations": 0,
+              "route_entries": 17,
+              "scheduler_visits": 6,
+              "selector_visits": 1,
+              "staged_patches": 33,
+              "work_units": 114
+            }
+          },
+          "retarget_back": {
+            "latency_ms": 3.916,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 1,
+              "causal_evaluations": 1,
+              "command_visits": 1,
+              "dependency_checks": 10,
+              "dependency_edges": 3,
+              "detached_outputs": 2,
+              "encoded_bytes": 17704,
+              "evaluations": 0,
+              "final_dirty_keys": 39,
+              "graph_nodes": 3,
+              "inventory_visits": 0,
+              "key_loads": 143,
+              "loaded_bytes": 61652,
+              "node_visits": 228,
+              "reader_checks": 2,
+              "rotations": 1,
+              "route_entries": 294,
+              "scheduler_visits": 6,
+              "selector_visits": 24,
+              "staged_patches": 89,
+              "work_units": 803
+            }
+          }
+        },
+        "rejections": {
+          "invariant": true,
+          "stale_version": true,
+          "authorization": true,
+          "commands_65": true,
+          "returning_33": true,
+          "overflow": true,
+          "logical_bytewise_rollback": true
+        },
+        "integrity": {
+          "model": "2fd5164bb9f60ea4e4c32882769f180830707eba55047e2bdb7a4cd651d4cda2",
+          "nodes": 8187,
+          "receipts": 139,
+          "records": 12280,
+          "revision": "140",
+          "roots": 1,
+          "rows": 77765,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "fe6f4309-6277-4384-bc8d-ccf9c4177ec5"
+        },
+        "process": {
+          "available": true,
+          "rss_kib": 124844,
+          "peak_rss_kib": 128072,
+          "threads": 4,
+          "open_fds": 11
+        },
+        "graceful_restart": true,
+        "acknowledged_process_crash": true,
+        "replay": true,
+        "verified_restore_service": true,
+        "backup_bytes": 48597861,
+        "store_bytes": 46141440,
+        "role_identity_reuse": true
+      },
+      {
+        "model": "calculation",
+        "public_sources": 4096,
+        "active_subscribers": 4088,
+        "measurements": {
+          "after_all_reads": {
+            "latency_ms": 2.501,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 0,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 0,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 1411,
+              "evaluations": 0,
+              "final_dirty_keys": 4,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 21,
+              "loaded_bytes": 8058,
+              "node_visits": 11,
+              "reader_checks": 1,
+              "rotations": 0,
+              "route_entries": 24,
+              "scheduler_visits": 0,
+              "selector_visits": 24,
+              "staged_patches": 5,
+              "work_units": 87
+            }
+          },
+          "last_read": {
+            "latency_ms": 2.962,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 1,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 1,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 10828,
+              "evaluations": 1,
+              "final_dirty_keys": 19,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 51,
+              "loaded_bytes": 25516,
+              "node_visits": 70,
+              "reader_checks": 4,
+              "rotations": 0,
+              "route_entries": 24,
+              "scheduler_visits": 0,
+              "selector_visits": 24,
+              "staged_patches": 23,
+              "work_units": 198
+            }
+          },
+          "quote_interval_128": {
+            "latency_ms": 11.506,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 128,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 127,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 183809,
+              "evaluations": 128,
+              "final_dirty_keys": 394,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 678,
+              "loaded_bytes": 329947,
+              "node_visits": 7539,
+              "reader_checks": 382,
+              "rotations": 2,
+              "route_entries": 296,
+              "scheduler_visits": 0,
+              "selector_visits": 296,
+              "staged_patches": 2063,
+              "work_units": 11382
+            }
+          },
+          "full_fanout": {
+            "status": "work_limit",
+            "affected_producers": 4088,
+            "logical_bytewise_rollback": true,
+            "receipt_absent": true,
+            "latency_ms": 97.185,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification"
+          },
+          "retarget_fallback": {
+            "latency_ms": 3.623,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 1,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 1,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 12359,
+              "evaluations": 1,
+              "final_dirty_keys": 26,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 83,
+              "loaded_bytes": 37389,
+              "node_visits": 60,
+              "reader_checks": 3,
+              "rotations": 0,
+              "route_entries": 108,
+              "scheduler_visits": 0,
+              "selector_visits": 0,
+              "staged_patches": 32,
+              "work_units": 288
+            }
+          },
+          "retarget_back": {
+            "latency_ms": 3.244,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 1,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 1,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 12395,
+              "evaluations": 1,
+              "final_dirty_keys": 26,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 85,
+              "loaded_bytes": 38499,
+              "node_visits": 62,
+              "reader_checks": 3,
+              "rotations": 0,
+              "route_entries": 112,
+              "scheduler_visits": 0,
+              "selector_visits": 0,
+              "staged_patches": 32,
+              "work_units": 296
+            }
+          },
+          "before_first_quote": {
+            "latency_ms": 4.109,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 1,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 4,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 40055,
+              "evaluations": 1,
+              "final_dirty_keys": 67,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 142,
+              "loaded_bytes": 80116,
+              "node_visits": 276,
+              "reader_checks": 3,
+              "rotations": 0,
+              "route_entries": 111,
+              "scheduler_visits": 0,
+              "selector_visits": 0,
+              "staged_patches": 92,
+              "work_units": 629
+            }
+          },
+          "inclusive_quote": {
+            "latency_ms": 3.337,
+            "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+            "work": {
+              "allocations": 0,
+              "candidates": 1,
+              "causal_candidates": 0,
+              "causal_evaluations": 0,
+              "command_visits": 1,
+              "dependency_checks": 4,
+              "dependency_edges": 0,
+              "detached_outputs": 0,
+              "encoded_bytes": 19754,
+              "evaluations": 1,
+              "final_dirty_keys": 32,
+              "graph_nodes": 0,
+              "inventory_visits": 0,
+              "key_loads": 88,
+              "loaded_bytes": 47460,
+              "node_visits": 286,
+              "reader_checks": 3,
+              "rotations": 0,
+              "route_entries": 116,
+              "scheduler_visits": 0,
+              "selector_visits": 0,
+              "staged_patches": 103,
+              "work_units": 601
+            }
+          }
+        },
+        "rejections": {
+          "invariant": true,
+          "stale_version": true,
+          "authorization": true,
+          "commands_65": true,
+          "returning_33": true,
+          "overflow": true,
+          "logical_bytewise_rollback": true
+        },
+        "integrity": {
+          "model": "f1ccb357e4c61c0305d4801b8c553e12f7d16fa9d52a6e469d2990fa84e93f84",
+          "nodes": 8179,
+          "receipts": 135,
+          "records": 4096,
+          "revision": "136",
+          "roots": 4,
+          "rows": 44999,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "c9f848e2-d2ae-42f1-aad3-73ddc93173e2"
+        },
+        "process": {
+          "available": true,
+          "rss_kib": 95608,
+          "peak_rss_kib": 95608,
+          "threads": 4,
+          "open_fds": 11
+        },
+        "graceful_restart": true,
+        "acknowledged_process_crash": true,
+        "replay": true,
+        "verified_restore_service": true,
+        "backup_bytes": 38116057,
+        "store_bytes": 46141440,
+        "role_identity_reuse": false
+      }
+    ],
+    "elapsed_seconds": 51.386,
+    "fanout_boundary": {
+      "calculation": {
+        "largest_observed_commit": 128,
+        "smallest_observed_work_limit": 4088
+      },
+      "equipment": {
+        "largest_observed_commit": 128,
+        "smallest_observed_work_limit": 4092
+      }
+    },
+    "fanout_boundary_scope": "Observed brackets for these authored workloads; no exact capacity cutoff or universal cascade capacity claimed"
+  },
+  "compatibility": [
+    {
+      "model": "calculation",
+      "source": "target/g4a-compatibility/calculation.redb",
+      "copy": "target/g4b-compatibility/calculation-format4.redb",
+      "sha256_before_rejection": "393dcae70f898ba1ec6a119323014ab595686ee5f6f63dcad7a199ec5ea472ef",
+      "new_command": [
+        "target/verification-build/release/rebase-next",
+        "check",
+        "target/g4b-compatibility/calculation-format4.redb"
+      ],
+      "new_exit_code": 1,
+      "new_stderr": "model_mismatch: runtime format differs",
+      "physical_bytes_unchanged": true,
+      "matching_old_binary_check": {
+        "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+        "nodes": 8179,
+        "receipts": 135,
+        "records": 4096,
+        "revision": "136",
+        "roots": 4,
+        "rows": 44999,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "0f6c5090-dfc6-4ff3-a72b-e6f9b69b9041"
+      },
+      "final_binary_sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e"
+    },
+    {
+      "model": "equipment",
+      "source": "target/g4a-compatibility/equipment.redb",
+      "copy": "target/g4b-compatibility/equipment-format4.redb",
+      "sha256_before_rejection": "de74afba3917d8b9c657edabe3ae8f4b4b4f7a77f4fe93b2b63ffbdaff021462",
+      "new_command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "check",
+        "target/g4b-compatibility/equipment-format4.redb"
+      ],
+      "new_exit_code": 1,
+      "new_stderr": "model_mismatch: runtime format differs",
+      "physical_bytes_unchanged": true,
+      "matching_old_binary_check": {
+        "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+        "nodes": 8187,
+        "receipts": 139,
+        "records": 12280,
+        "revision": "140",
+        "roots": 1,
+        "rows": 77765,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "3950d6dc-16b1-415b-82d4-c3f59be3447b"
+      },
+      "final_binary_sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e"
+    },
+    {
+      "model": "invoicing",
+      "source": "target/g4a-final-http/app.redb",
+      "copy": "target/g4b-compatibility/invoicing-format4.redb",
+      "sha256_before_rejection": "d23978b1ca01987c77b9166a9832a4bbe9405dc442a0e499faef57c785feaa40",
+      "new_command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "invoicing",
+        "check",
+        "target/g4b-compatibility/invoicing-format4.redb"
+      ],
+      "new_exit_code": 1,
+      "new_stderr": "model_mismatch: runtime format differs",
+      "physical_bytes_unchanged": true,
+      "matching_old_binary_check": {
+        "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+        "nodes": 40,
+        "receipts": 75,
+        "records": 89,
+        "revision": "75",
+        "roots": 313,
+        "rows": 816,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "f8eff76f-75da-471b-b2d1-654c140abfa0"
+      },
+      "final_binary_sha256": "0ac88e3c3c35bf863f517ed27d00aeace01f1ae8ed4b4616b9db7e7987ba875e"
+    }
+  ],
+  "trial": {
+    "checks": "target/g4b-trial-checks.json",
+    "capacity": "target/g4b-capacity/result.json",
+    "binary": "target/g4b-trial-binary",
+    "sha256": "c19293b17b76ef31109302bc9d7dea7f07e94ddc67c7f97450706c09e98fa66e",
+    "reason": "Preserved full-summary-fold trial; final scalar prefix reads explicitly retain tree::prefix. Trial results are separate from final acceptance."
+  },
+  "source_fingerprints": {
+    "AGENTS.md": "029b8f574457f659c391b4594e054f8701174faf8a9635b7658f898d8ec23316",
+    "CONTEXT.md": "c3c23dea441a193b0f2f46b5aaaa68c4b14b0a0bfd4d77ceb0578809eef3ebe8",
+    "Cargo.lock": "896a613f8929ade3834fe84dd3e4d6f0dbcc23ba98d7ea17a47857bdb1ef3e35",
+    "Cargo.toml": "c358773a0c255e56a39d2e6b374ef8e9cd2936e453dc3c6fc84f17ae2b11bbab",
+    "README.md": "3d8ce3586fb73399a3ca5c91f5a44faa8fd1cc823d44c9f812b786dfa4bb30a3",
+    "docs/compiled-models.md": "5736b60aff0113bee434dff2551d6a9507af3c3e1ab0bbd8b3f01314729e801a",
+    "docs/deployment.md": "b8edf388316f935012d2d8b7b25d10a22b6a93123ea8e5fb5d7a700240facbd1",
+    "docs/invoicing.md": "e7bab07d960cc119124b96fca8469fbcedbb323dc051ee5d7145c4f0e1d5d804",
+    "docs/reactive-windows.md": "574095583f045a8f3c270acaa7ac5999fda396e6e132601ca8a2583aea6506de",
+    "docs/storage.md": "af45ae68bb43f3b5b40d89fbaf0750f9e206279176054decd0ce316683980913",
+    "research/32-reactive-windows.md": "deff493e51175012ce2f650e3279fd7eff94dfd6a9c542918069b1a63978456a",
+    "research/34-native-index-extension.md": "98f11d99afb5d3e1f8175d2a4010d9eee8958791960b184bf533113713d5723d",
+    "research/experiments/local_prototype.py": "9bdc0600a15d32c0c7028f0c3b21b74856667be590fedf9c9322d7636cf521aa",
+    "research/experiments/native_slice.py": "ddfc91193b42e3d2050553d4162e5830b9423e3ac57f904b78fea1e9ad2b7813",
+    "src/causal.rs": "afddd6606532f972d9d07e5c3fb130370823cfc5435a8a5d5e3ddbe1ef1b471e",
+    "src/dependency.rs": "960dc5f2d7219545f14ed4fb772205ffc8dd68e19aa7a8e93397c425fc44c859",
+    "src/integrity.rs": "ef24546f4aeff98cb822e2878b821425c610ad3986c9e5e13477e8b8114d08fc",
+    "src/lib.rs": "b6b7cc914315fb834784b13a8e2e37acd98d401ebcd2791246036bf307f98b09",
+    "src/local.rs": "2b77cd75eebf7ae001fd7f9a51936a487e9dd27a84c2b65b2f628ce17a493f36",
+    "src/model.rs": "46459b0a2ef884735e439f281043d4ae507ad4f2527c6fed089e3782f9a4b824",
+    "src/models/calculation_reactivity.rs": "ffda0b72c1c9ad1bf5cfe2880f16397645d57a695710626fe7fb984117fa671e",
+    "src/models/equipment.rs": "0d61f6b7b2f185d1bbd4b998d79ec8069eeb55133a9105c284167523ff637d60",
+    "src/models/invoicing.rs": "600e2c11f670c43e4cdae6b0f67b2d689879eb077d318900fa8d1e7535b044e0",
+    "src/models/invoicing_check.rs": "d80a689f3673c2754b8f7ae32a7349d61271b679d7de670e5e16d5d820661792",
+    "src/native_codec.rs": "b48e95e3c145d3fa5e65b0046d3fd1bb56233921c43fd3fd7789f7a825e47c89",
+    "src/native_slice.rs": "866a8bbdff4e6caa15df0c8a1ee530d705bd542381c193657244dce59356ac0f",
+    "src/parameter_tests.rs": "7e64799bd89d1635a9a85c4a77b684d3de141e1905e0bf1a8c93f527ac2925ae",
+    "src/query.rs": "dd3a33704456bde0cf31e274de66647c46d277b12f3d65f5a1b0410aa7e3ef27",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "baa4195e7409877d6bf577de32b0f60fdfaba6e4c20fd0af12b9c61b8d3b97e2",
+    "src/window_tests.rs": "04ac685cc30b407615cab399b2100de5bfee3bf394ac3ced39cafdffc80a583e",
+    "tests/exact_values.rs": "9a77355b7a7f2aa97ec7beefd9030c8e45f04a44295904dc8bd452ad88d0c4f3",
+    "tests/native_tree.rs": "061fe582d20f5fd8484ae61c69a656f69cbb16983abc6bf623151711c5200f47",
+    "tests/network_api.rs": "5b5260a29a7ce5a812739332e89e56b706f3c1115537a9fa372a44513d2d4626",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "research/30-capability-program.md": "d92cabe1f8e35dfb022ef395e944871690705a9c533c01e396fa31c0ae55c909",
+    "research/33-external-effects-gate.md": "b7a12b436079991a59cf5d2c89cba907e3649d351fe69431dec1eba587c05315"
+  },
+  "compiled_source_fingerprints": {
+    "Cargo.lock": "896a613f8929ade3834fe84dd3e4d6f0dbcc23ba98d7ea17a47857bdb1ef3e35",
+    "Cargo.toml": "c358773a0c255e56a39d2e6b374ef8e9cd2936e453dc3c6fc84f17ae2b11bbab",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "4b9d401d72ac5ba46d527acb1c0fa1657d8d93c34f0d6439e97441060731f2cc",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "ba01828c6681b67dbffc2d2ddaad88eab07ed513c2078df6a21cac813993edf7",
+    "src/binding.rs": "381a22c3a5f9426786dc265ccd235f851e209e2ab43328e96e79d9e0b1c3779d",
+    "src/causal.rs": "afddd6606532f972d9d07e5c3fb130370823cfc5435a8a5d5e3ddbe1ef1b471e",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "960dc5f2d7219545f14ed4fb772205ffc8dd68e19aa7a8e93397c425fc44c859",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "ef24546f4aeff98cb822e2878b821425c610ad3986c9e5e13477e8b8114d08fc",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "b6b7cc914315fb834784b13a8e2e37acd98d401ebcd2791246036bf307f98b09",
+    "src/lifecycle.rs": "024f5ce8db8df5aec381080fdfd3c7120dcb96f6dfe3421a23057c4b2fa03d1f",
+    "src/local.rs": "2b77cd75eebf7ae001fd7f9a51936a487e9dd27a84c2b65b2f628ce17a493f36",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "46459b0a2ef884735e439f281043d4ae507ad4f2527c6fed089e3782f9a4b824",
+    "src/models/calculation.rs": "b581f57eabc46d1af0e2074e42f191a747cdc32ab69a4ee4759dcbfedc45cffb",
+    "src/models/calculation_reactivity.rs": "ffda0b72c1c9ad1bf5cfe2880f16397645d57a695710626fe7fb984117fa671e",
+    "src/models/equipment.rs": "0d61f6b7b2f185d1bbd4b998d79ec8069eeb55133a9105c284167523ff637d60",
+    "src/models/invoicing.rs": "600e2c11f670c43e4cdae6b0f67b2d689879eb077d318900fa8d1e7535b044e0",
+    "src/models/invoicing_check.rs": "d80a689f3673c2754b8f7ae32a7349d61271b679d7de670e5e16d5d820661792",
+    "src/models/invoicing_fixtures.rs": "4e065ec36422f52781d22c92a015904d6036eb26b824cbb1691047f564386979",
+    "src/models/mod.rs": "9bd26495459dc4530410e936baea9ee77bd13da52cec95013abe8196cccd88e0",
+    "src/mutation.rs": "9fb421f27354c1bf0aa1dbb34d3059f3c793820720e7c1b02fe291a64befd58a",
+    "src/native_codec.rs": "b48e95e3c145d3fa5e65b0046d3fd1bb56233921c43fd3fd7789f7a825e47c89",
+    "src/native_slice.rs": "866a8bbdff4e6caa15df0c8a1ee530d705bd542381c193657244dce59356ac0f",
+    "src/parameter_tests.rs": "7e64799bd89d1635a9a85c4a77b684d3de141e1905e0bf1a8c93f527ac2925ae",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/query.rs": "dd3a33704456bde0cf31e274de66647c46d277b12f3d65f5a1b0410aa7e3ef27",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "f6edebbe940172161e594738c8c30826864232bac4a3bf8a7cc749a14ab21b71",
+    "src/security.rs": "9abf302d775aee8f19ad30a4fddf5713b011be26ff53b2834caba8b5585a1259",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "baa4195e7409877d6bf577de32b0f60fdfaba6e4c20fd0af12b9c61b8d3b97e2",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "04ac685cc30b407615cab399b2100de5bfee3bf394ac3ced39cafdffc80a583e",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "24c1220d33f0fc3a32c465d2dcd3ee8fb45db15f0e4d92b86f79e1ec9201bd59",
+    "tests/exact_values.rs": "9a77355b7a7f2aa97ec7beefd9030c8e45f04a44295904dc8bd452ad88d0c4f3",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "196d9949dac26c8f769145e13ac26d80db88aa38817db168511bb4a9d70c104f",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "061fe582d20f5fd8484ae61c69a656f69cbb16983abc6bf623151711c5200f47",
+    "tests/network_api.rs": "5b5260a29a7ce5a812739332e89e56b706f3c1115537a9fa372a44513d2d4626",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78"
+  },
+  "next": "G4c-a single native index-family representation; G4c-b real dimensioned summary. G5 lifecycle drafts are unreferenced and not provider acceptance."
+}

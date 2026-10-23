@@ -306,7 +306,7 @@ impl<B: Binding> Prepared<B> {
                         (*read, root.kind),
                         ("summary", _)
                             | ("latest", Kind::Quote)
-                            | ("before" | "sum", Kind::Financial)
+                            | ("before" | "sum" | "range", Kind::Financial)
                     )
                 }) {
                     return Err(model_error("unsupported published root read"));
@@ -785,8 +785,8 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
                 },
                 reads: match code {
                     2 => vec!["summary", "latest"],
-                    4 => vec!["summary", "before"],
-                    _ => vec!["summary"],
+                    4 => vec!["summary", "before", "range"],
+                    _ => vec!["summary", "range"],
                 },
                 invariant: if code == 4 {
                     Some("nonnegative complete-time prefixes")

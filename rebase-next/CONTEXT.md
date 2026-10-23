@@ -1,7 +1,15 @@
 # Compact context — 2026-10-23
 
-**Active: [capability program](research/30-capability-program.md), next gate
-[G4b exact windows](research/32-reactive-windows.md). G4a is accepted:** output-free
+**Active: [G4c native index extension](research/34-native-index-extension.md),
+within the [capability program](research/30-capability-program.md). G4b accepted:**
+source 0.7, store/codec 5, exact window reads, augmented reverse routes and final
+segment-cover dependencies. All 99 debug/optimized Rust tests, 116 independent
+cases, 111 invoicing HTTP mutations and both 4,096-source capacity/recovery
+workflows pass. Three old stores reject with physical bytes unchanged and still
+check with their retained 0.6 binary. [Evidence](research/evidence/2026-10-23-g4b-windows.json)
+pins final sources/build; the last packaged release remains 0.6.
+
+**G4a is accepted:** output-free
 validators, calculation-only readers and inactive-query fallback controls pass
 80 debug/optimized Rust tests, all 116 independent native/local cases and the
 111-mutation invoicing HTTP workflow. Production identities and store/codec 4
@@ -53,13 +61,18 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** integrate G4b typed ranges, interval registration caches,
-exact changed-point discovery and segment-cover final dependencies. Temporary
-unreferenced `window_routes.rs`/`window_dependency.rs` hold reviewed drafts;
-replace their existing modules rather than keep duplicate implementations.
-`time_range.rs`, `route_tests.rs` and the source-window oracle belong to G4b;
-the native window binding is being prepared. External G5 has a concrete
-[lifecycle gate](research/33-external-effects-gate.md), independent of core edits.
+**Exact next action:** G4c-a replaces the active tree representation with one
+compiled native index family, then G4c-b proves a useful new dimensioned-statistics
+model through the same mutation/tree/codec/checker/root API. The reviewed interface
+uses `Binding::Index`, native key/leaf/summary types and model-local index codes,
+with optional explicit time adapters. It must not leave parallel tree writers.
+Draft `index.rs`/`indexes/standard.rs` are being prepared; do not accept an unused
+helper as a new maintained aggregate. G4c will use store/codec 6 with explicit
+old-store rejection. Preserve the accepted G4b executable before rebuilding.
+External G5 has a concrete [lifecycle gate](research/33-external-effects-gate.md).
+Its unreferenced `effect_lifecycle.rs` draft is being prepared independently;
+native effect persistence, workers and providers remain unaccepted. Assign its
+store version after G4c (expected 7), not the earlier provisional number.
 The accepted bundle's
 [deployment commands](docs/deployment.md) remain valid. Full accounting, rational
 FX, external effects, distributed adapters, larger invoicing populations and

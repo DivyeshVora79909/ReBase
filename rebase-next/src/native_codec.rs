@@ -9,7 +9,7 @@ use crate::{
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-4";
+pub const CODEC: &str = "native-slice-kv-5";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -323,25 +323,23 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
         (Key::Query(a), StoredValue::Query(q)) => {
             a.slot > 0
                 && q.source.slot > 0
-                && q.lower == "negative_infinity"
                 && ((q.operation == "latest"
                     && q.phase == "calculate"
                     && q.channel == "rate"
-                    && matches!(q.upper, crate::native_slice::Bound::AfterTime(_)))
+                    && q.range.lower == crate::time_range::TimeBound::Unbounded
+                    && matches!(q.range.upper, crate::time_range::TimeBound::Included(_)))
                     || (q.operation == "sum"
                         && matches!(q.phase.as_str(), "calculate" | "validate")
                         && q.channel == "amount"
-                        && q.selected.is_none()
-                        && matches!(
-                            q.upper,
-                            crate::native_slice::Bound::BeforeTime(_)
-                                | crate::native_slice::Bound::All
-                        )))
+                        && q.selected.is_none()))
         }
         (Key::Incoming(_), StoredValue::Incoming(h))
         | (Key::Direct(_), StoredValue::Direct(h))
         | (Key::Subscribers(_), StoredValue::Subscribers(h)) => {
-            h.head.is_none() == h.is_empty() && h.head.is_none_or(|a| a.slot > 0)
+            h.head.is_none() == h.is_empty()
+                && h.head.is_none_or(|a| a.slot > 0)
+                && h.bounded <= h.len
+                && (matches!(key, Key::Subscribers(_)) || h.bounded == 0)
         }
         (
             Key::IncomingNode(a) | Key::DirectNode(a) | Key::SubscriberNode(a),
@@ -350,6 +348,7 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
             use crate::routes::{Endpoint, Route};
             a.slot > 0
                 && n.key.member == *a
+                && n.key.endpoint == crate::routes::endpoint(n.range)
                 && n.route.node_key(*a) == *key
                 && n.height > 0
                 && n.height < 64
@@ -358,8 +357,14 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
                 && (n.left.is_none() || n.left != n.right)
                 && match n.route {
                     Route::Subscribers(root) => root.slot > 0,
-                    _ => n.key.endpoint == Endpoint::All,
+                    _ => {
+                        n.key.endpoint == Endpoint::All
+                            && n.range == crate::time_range::TimeRange::ALL
+                    }
                 }
+                && (n.range.is_empty()
+                    || n.min_lower
+                        .is_some_and(|bound| bound.lower_cut() <= n.range.lower.lower_cut()))
         }
         (Key::Role(a), StoredValue::Role(_)) => a.slot > 0,
         (Key::Reserved(_), StoredValue::Reserved(a)) => a.slot > 0,

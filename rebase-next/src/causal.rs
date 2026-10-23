@@ -4,9 +4,10 @@ use crate::{
     model::{Prepared, Visibility},
     mutation::{check_counts, reconcile_member},
     native_codec::{Address, Key, Role, StoredValue},
-    native_slice::{Attempt, Bound, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
+    native_slice::{Attempt, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
     routes::{self, Endpoint, Route},
-    tree::{self, Kind, Leaf},
+    time_range::{TimeBound, TimeRange},
+    tree::{self, Aggregate, Kind, Leaf},
 };
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -14,7 +15,7 @@ use uuid::Uuid;
 pub struct Read {
     pub slot: u16,
     pub root: Address,
-    pub before: Option<i64>,
+    pub range: TimeRange,
     pub validate: bool,
 }
 #[derive(Clone, Copy, Debug)]
@@ -202,50 +203,44 @@ fn subscriptions<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     old: Option<&ModelRecord<B>>,
     shape: &ResolvedShape,
 ) -> Result<()> {
-    let mut before = BTreeSet::new();
+    let mut before = BTreeMap::new();
     if let Some(old) = old {
         for query in &model.contract(old.contract)?.queries {
             if let Some(value) = ws.original(&Key::Query(Address::new(id, query.slot)))? {
                 let StoredValue::Query(q) = value else {
                     return Err(Error::new("corrupt_state", "old query type"));
                 };
-                let endpoint = match q.upper {
-                    Bound::BeforeTime(at) => Endpoint::Time(at),
-                    Bound::All => Endpoint::All,
-                    _ => return Err(Error::new("corrupt_state", "old reactive query bound")),
-                };
-                before.insert((
-                    Key::Subscribers(q.source),
-                    Address::new(id, query.slot),
-                    endpoint,
-                ));
+                before.insert(
+                    (Key::Subscribers(q.source), Address::new(id, query.slot)),
+                    q.range,
+                );
             }
         }
     }
-    let after: BTreeSet<_> = shape
+    let after: BTreeMap<_, _> = shape
         .reads
         .iter()
         .map(|r| {
             (
-                Key::Subscribers(r.root),
-                Address::new(id, r.slot),
-                r.before.map_or(Endpoint::All, Endpoint::Time),
+                (Key::Subscribers(r.root), Address::new(id, r.slot)),
+                r.range,
             )
         })
         .collect();
-    for (key, member, endpoint) in before.difference(&after) {
-        routes::change(ws, key, *member, *endpoint, false)?;
+    for ((key, member), range) in &before {
+        if after.get(&(key.clone(), *member)) != Some(range) {
+            routes::change(ws, key, *member, *range, false)?;
+        }
     }
-    for (key, member, endpoint) in after.difference(&before) {
-        routes::change(ws, key, *member, *endpoint, true)?;
+    for ((key, member), range) in &after {
+        if before.get(&(key.clone(), *member)) != Some(range) {
+            routes::change(ws, key, *member, *range, true)?;
+        }
     }
     Ok(())
 }
-fn impact(roots: &mut BTreeMap<Address, i64>, root: Address, at: i64) {
-    roots
-        .entry(root)
-        .and_modify(|v| *v = (*v).min(at))
-        .or_insert(at);
+fn impact(roots: &mut BTreeMap<Address, BTreeSet<i64>>, root: Address, at: i64) {
+    roots.entry(root).or_default().insert(at);
 }
 fn incoming<B: Binding>(id: Uuid, r: Option<&ModelRecord<B>>) -> BTreeSet<(Key, Address)> {
     r.into_iter()
@@ -281,10 +276,10 @@ fn write_output<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     let before = incoming(id, old);
     let after = incoming(id, new.as_ref());
     for (k, a) in before.difference(&after) {
-        routes::change(ws, k, *a, Endpoint::All, false)?;
+        routes::change(ws, k, *a, TimeRange::ALL, false)?;
     }
     for (k, a) in after.difference(&before) {
-        routes::change(ws, k, *a, Endpoint::All, true)?;
+        routes::change(ws, k, *a, TimeRange::ALL, true)?;
     }
     if new.is_none() {
         if routes::header(ws, Route::Incoming(id), false)?.is_some_and(|h| !h.is_empty()) {
@@ -307,7 +302,21 @@ fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     id: Uuid,
     r: &Read,
 ) -> Result<i128> {
-    let result = tree::prefix(ws, r.root, r.before)?;
+    // Prefix sums need no non-invertible summary fold. Preserve their narrow
+    // balanced search path; general windows retain the ordered range fold.
+    let result = match (r.range.lower, r.range.upper) {
+        (TimeBound::Unbounded, TimeBound::Excluded(at)) => tree::prefix(ws, r.root, Some(at))?,
+        (TimeBound::Unbounded, TimeBound::Unbounded) => tree::prefix(ws, r.root, None)?,
+        _ => {
+            let Aggregate::Financial(summary) = tree::range(ws, r.root, r.range)? else {
+                return Err(Error::new(
+                    "corrupt_state",
+                    "sum query on nonfinancial root",
+                ));
+            };
+            summary.sum
+        }
+    };
     ws.put(
         Key::Query(Address::new(id, r.slot)),
         Some(StoredValue::Query(Query {
@@ -315,8 +324,7 @@ fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
             operation: "sum".into(),
             phase: if r.validate { "validate" } else { "calculate" }.into(),
             channel: "amount".into(),
-            lower: "negative_infinity".into(),
-            upper: r.before.map_or(Bound::All, Bound::BeforeTime),
+            range: r.range,
             selected: None,
             result,
         })),
@@ -347,33 +355,65 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             routes::collect(ws, &Key::Direct(c.id), &mut pending)?;
         }
     }
-    let mut visited: BTreeMap<Address, i64> = BTreeMap::new();
+    let mut visited_prefix: BTreeMap<Address, i64> = BTreeMap::new();
+    let mut prefix_impacts: BTreeMap<Address, BTreeSet<i64>> = BTreeMap::new();
+    let mut visited_points = BTreeSet::new();
     let mut plans: BTreeMap<Uuid, Plan<B>> = BTreeMap::new();
     loop {
-        while let Some((root, at)) = roots.pop_first() {
-            if visited.get(&root).is_some_and(|previous| *previous <= at) {
-                continue;
-            }
-            // Only the newly exposed interval is opened when an old/new output
-            // moves the earliest impact backwards. Changed producers/direct
-            // consumers are seeded even if their new read was already passed.
-            let upper = visited
-                .insert(root, at)
-                .map_or(std::ops::Bound::Unbounded, |previous| {
-                    std::ops::Bound::Included(Endpoint::Time(previous))
-                });
+        while let Some((root, mut points)) = roots.pop_first() {
+            ws.charge("dependency", points.len() as u64)?;
+            let mut prefix_only = true;
             for original in [true, false] {
-                pending.extend(
-                    routes::select(
-                        ws,
-                        &Key::Subscribers(root),
-                        std::ops::Bound::Excluded(Endpoint::Time(at)),
-                        upper,
-                        original,
-                    )?
-                    .into_iter()
-                    .map(|a| a.id),
-                );
+                prefix_only &= routes::header(ws, Route::Subscribers(root), original)?
+                    .is_none_or(|header| header.bounded == 0);
+            }
+            if prefix_only {
+                // Save the points as well as their minimum: later shape repair
+                // can introduce the first bounded reader in the staged index.
+                prefix_impacts.entry(root).or_default().extend(&points);
+                let Some(&at) = points.first() else { continue };
+                if visited_prefix
+                    .get(&root)
+                    .is_some_and(|previous| *previous <= at)
+                {
+                    continue;
+                }
+                // Reopen only the newly exposed suffix band. Through(at) sorts
+                // after Time(at), so equal-time inclusive readers are selected.
+                let upper = visited_prefix
+                    .insert(root, at)
+                    .map_or(std::ops::Bound::Unbounded, |previous| {
+                        std::ops::Bound::Included(Endpoint::Time(previous))
+                    });
+                for original in [true, false] {
+                    pending.extend(
+                        routes::select(
+                            ws,
+                            &Key::Subscribers(root),
+                            std::ops::Bound::Excluded(Endpoint::Time(at)),
+                            upper,
+                            original,
+                        )?
+                        .into_iter()
+                        .map(|address| address.id),
+                    );
+                }
+            } else {
+                if let Some(previous) = prefix_impacts.remove(&root) {
+                    points.extend(previous);
+                }
+                for at in points {
+                    if !visited_points.insert((root, at)) {
+                        continue;
+                    }
+                    for original in [true, false] {
+                        pending.extend(
+                            routes::stab(ws, &Key::Subscribers(root), at, original)?
+                                .into_iter()
+                                .map(|address| address.id),
+                        );
+                    }
+                }
             }
         }
         let Some(id) = pending.pop_first() else { break };
@@ -622,7 +662,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     for (id, p) in &plans {
         for r in p.shape.reads.iter().filter(|r| r.validate) {
             if read_query(ws, *id, r)? < 0 {
-                return Err(Error::new("invariant", "negative validation prefix"));
+                return Err(Error::new("invariant", "negative validation sum"));
             }
         }
     }
@@ -972,7 +1012,7 @@ mod tests {
             reads: vec![Read {
                 slot: 1,
                 root: Address::new(Uuid::from_u128(99), 2),
-                before: None,
+                range: TimeRange::ALL,
                 validate: false,
             }],
             emits: vec![],

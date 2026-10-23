@@ -1,6 +1,6 @@
 # G4b: exact reactive time windows
 
-**Prepared, 2026-10-23.** Follows [G4a](31-terminal-validation.md) in the
+**Accepted, 2026-10-23.** Follows [G4a](31-terminal-validation.md) in the
 [capability program](30-capability-program.md). Implement one shared window
 contract through tree reads, reverse selection, causal readiness, checking and
 ordinary developer interfaces. No arbitrary query language is introduced.
@@ -98,3 +98,45 @@ Run formatting/Clippy before debug/optimized suites and affected independent
 corpora. Add representative authenticated range reads, authority failures and
 recovery. Update the active handoff, commit/push acceptance, then continue G4c/G5
 using the program's next concrete observable boundary.
+
+## Executed checkpoint
+
+[Evidence](evidence/2026-10-23-g4b-windows.json) records **99 Rust tests in debug
+and optimized builds**, clean formatting/Clippy, all **116 independent
+native/local cases** and the **111-mutation /340-command** invoicing HTTP
+workflow. Rejections preserve complete logical application state and receipt
+absence; replay, crash/reopen and verified restore pass.
+
+Four native window scenarios derive expected final edges, values, outputs,
+queries and memberships solely from authored facts, then run complete inventory
+and structural checks. Separate controls compare compressed reachability with
+512 pairwise graphs, exercise 2,646 financial/quote subset summaries, and check
+augmented routes through seeded insert/rekey/delete/snapshot trials. A 4,096
+singleton-window route index answers zero/one matches within the fixed 256-work
+budget, at most 32 selector visits and 33 loaded keys. Those are measured test
+bounds, not a promise about every interval distribution.
+
+Both real-process **4,096-source** calculation/equipment workloads pass on the
+final optimized binary. Existing zero/one-reader selection remains 24 visits;
+the equipment 128-producer cascade commits in 77,475 work units. Full fanout
+still rejects atomically at the unchanged 200,000 budget. The observed brackets
+are 128 committed versus 4,088/4,092 rejected; they do not establish an exact
+cutoff. The source-window Python oracle passes 1,434 vectors /19 literal /5
+negative controls independently; these logical vectors are not advertised as
+1,434 native transactions.
+
+Source 0.7 uses store/codec **5**, calculation behavior **5**, equipment **4** and
+invoicing **3**. All three copied format-4 stores reject with physical file bytes
+unchanged and still pass their retained 0.6 binary. New identities are recorded
+in evidence. The last deployment bundle remains the accepted 0.6 artifact;
+this checkpoint does not rewrite its provenance or claim a new packaged release.
+
+One trial initially routed every scalar read through the full-summary fold.
+The final implementation retains the existing scalar prefix path while using
+ordered folds for general windows. Both trial and final observations remain
+under `target/`; the final evidence pins the final executable and source.
+
+Next: select the [native index extension](34-native-index-extension.md), port
+the active representation, then demonstrate a genuinely new maintained summary.
+The [G5 external-work plan](33-external-effects-gate.md) is prepared separately;
+native lifecycle drafts are not accepted provider support.

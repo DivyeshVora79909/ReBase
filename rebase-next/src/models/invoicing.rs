@@ -11,7 +11,8 @@ use crate::{
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
-    routes::{self, Endpoint},
+    routes,
+    time_range::TimeRange,
     tree::{self, Aggregate, Kind, Leaf},
     values::{Rational, Rounding},
 };
@@ -334,7 +335,7 @@ fn root(slot: u16, name: &'static str) -> RootDeclaration {
         slot,
         name,
         kind: Kind::Financial,
-        reads: vec!["summary", "before"],
+        reads: vec!["summary", "before", "range"],
         invariant: Some("nonnegative complete-time prefixes"),
     }
 }
@@ -642,14 +643,14 @@ fn declarations() -> Result<Vec<Contract>> {
     Ok(declarations)
 }
 
-pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address, Endpoint)> {
+pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
     let mut registrations = BTreeSet::new();
     if let Some(input) = input {
         for (target, _, slot) in input.references() {
-            registrations.insert((Key::Incoming(target), Address::new(id, slot), Endpoint::All));
+            registrations.insert((Key::Incoming(target), Address::new(id, slot)));
         }
         if let Input::Assessment { rule, .. } = input {
-            registrations.insert((Key::Direct(*rule), Address::new(id, 2), Endpoint::All));
+            registrations.insert((Key::Direct(*rule), Address::new(id, 2)));
         }
     }
     registrations
@@ -724,7 +725,7 @@ impl Binding for Invoicing {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "invoice-assessments";
-    const BEHAVIOR: &'static str = "invoice-assessments-2";
+    const BEHAVIOR: &'static str = "invoice-assessments-3";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -826,11 +827,11 @@ impl Binding for Invoicing {
             }
             let old = registrations(change.id, change.old.as_ref().map(|record| &record.input));
             let new = registrations(change.id, change.new.as_ref().map(|record| &record.input));
-            for (key, address, endpoint) in old.difference(&new) {
-                routes::change(ws, key, *address, *endpoint, false)?;
+            for (key, address) in old.difference(&new) {
+                routes::change(ws, key, *address, TimeRange::ALL, false)?;
             }
-            for (key, address, endpoint) in new.difference(&old) {
-                routes::change(ws, key, *address, *endpoint, true)?;
+            for (key, address) in new.difference(&old) {
+                routes::change(ws, key, *address, TimeRange::ALL, true)?;
             }
             let before =
                 authored_members(change.id, change.old.as_ref().map(|record| &record.input));
@@ -978,13 +979,13 @@ impl ReactiveBinding for Invoicing {
                             Read {
                                 slot,
                                 root: Address::new(invoice, root_slot),
-                                before: Some(at),
+                                range: TimeRange::before(at),
                                 validate: false,
                             },
                             Read {
                                 slot: 41,
                                 root: Address::new(rule, 19),
-                                before: Some(at),
+                                range: TimeRange::before(at),
                                 validate: false,
                             },
                         ],

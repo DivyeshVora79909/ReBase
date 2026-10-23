@@ -10,10 +10,9 @@ use crate::{
         RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{
-        Attempt, Bound, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result,
-    },
-    routes::{self, Endpoint},
+    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
+    routes,
+    time_range::TimeRange,
     tree::{Kind, Leaf},
     values::{Rational, Rounding},
 };
@@ -233,7 +232,7 @@ fn declarations() -> Vec<Contract> {
         slot: 7,
         name: "amounts",
         kind: Kind::Financial,
-        reads: vec!["summary", "sum"],
+        reads: vec!["summary", "sum", "range"],
         invariant: None,
     });
     let mut entry = contract(
@@ -394,7 +393,7 @@ impl Binding for ParentTax {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "test-parent-tax";
-    const BEHAVIOR: &'static str = "test-parent-tax-2";
+    const BEHAVIOR: &'static str = "test-parent-tax-3";
     fn declarations() -> Result<Vec<Contract>> {
         Ok(declarations())
     }
@@ -427,10 +426,10 @@ impl Binding for ParentTax {
             let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
             let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
             for (key, address) in old.difference(&new) {
-                routes::change(ws, key, *address, Endpoint::All, false)?;
+                routes::change(ws, key, *address, TimeRange::ALL, false)?;
             }
             for (key, address) in new.difference(&old) {
-                routes::change(ws, key, *address, Endpoint::All, true)?;
+                routes::change(ws, key, *address, TimeRange::ALL, true)?;
             }
             crate::mutation::reconcile_member(
                 ws,
@@ -472,7 +471,7 @@ impl ReactiveBinding for ParentTax {
                         vec![Read {
                             slot: 31,
                             root: Address::new(basis, 7),
-                            before: Some(before),
+                            range: TimeRange::before(before),
                             validate: true,
                         }]
                     } else {
@@ -490,7 +489,7 @@ impl ReactiveBinding for ParentTax {
                         vec![Read {
                             slot: 31,
                             root: Address::new(basis, 7),
-                            before: None,
+                            range: TimeRange::ALL,
                             validate: false,
                         }]
                     } else {
@@ -525,7 +524,7 @@ impl ReactiveBinding for ParentTax {
                 reads: vec![Read {
                     slot: 31,
                     root: Address::new(basis, 7),
-                    before: None,
+                    range: TimeRange::ALL,
                     validate: false,
                 }],
                 emits: vec![Emit {
@@ -667,8 +666,7 @@ fn check(store: &Store<ParentTax>) -> Result<Value> {
                     operation: "sum".into(),
                     phase: "calculate".into(),
                     channel: "amount".into(),
-                    lower: "negative_infinity".into(),
-                    upper: Bound::All,
+                    range: TimeRange::ALL,
                     selected: None,
                     result: basis_sum,
                 },
@@ -770,8 +768,7 @@ fn check(store: &Store<ParentTax>) -> Result<Value> {
                 operation: "sum".into(),
                 phase: if validate { "validate" } else { "calculate" }.into(),
                 channel: "amount".into(),
-                lower: "negative_infinity".into(),
-                upper: before.map_or(Bound::All, Bound::BeforeTime),
+                range: before.map_or(TimeRange::ALL, TimeRange::before),
                 selected: None,
                 result,
             },

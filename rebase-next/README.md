@@ -7,6 +7,9 @@ authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
 scripts. Calculation, equipment reservation and bounded invoicing share the engine,
 authority and tools. All implementation and dependencies stay inside this directory.
+This checkout's package source is 0.7.0 and includes exact reactive time windows.
+The last verified deployment bundle is 0.6.0; source capabilities do not imply
+that a release bundle has passed deployment acceptance.
 
 ```sh
 cd rebase-next
@@ -36,11 +39,13 @@ python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing
 | Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
 | Run invoice pricing, tax-on-tax, credits, payments and refunds | [Invoicing](docs/invoicing.md) |
 | Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
+| Use exact financial windows in reactive reads and public root reads | [Exact time windows](docs/reactive-windows.md) |
 | Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Current acceptance and remaining capability gates | [0.6 deployment result](research/29-deployment-result.md) |
+| Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
+| Current source capability gate | [G4b exact windows](research/32-reactive-windows.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -61,8 +66,9 @@ python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-n
 It checks source arithmetic, selective updates, fanout, rollback, replay,
 authorization, restart and verified restore through the real HTTP process.
 Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. Store/codec format 4 and the new model identities require a
-new store; format 3 has no implicit migration. See [upgrades](docs/storage.md#data-identity-and-upgrades).
+reject atomically. The 0.7.0 source uses store/codec format 5 and changed
+identities for all compiled models. It has no implicit migration from 0.6.0;
+keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with
 `rebase-next --model equipment <command>` or invoicing with

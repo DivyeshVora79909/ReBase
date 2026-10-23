@@ -12,9 +12,10 @@ use crate::{
     plan::{Field, evaluation_order},
     routes::{self, Endpoint},
     staging::Batch,
+    time_range::TimeRange,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-4";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-5";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -315,22 +316,13 @@ pub struct ModelRecord<B: Binding> {
 pub type Record = ModelRecord<Calculation>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Bound {
-    AfterTime(#[serde(with = "decimal")] i64),
-    BeforeTime(#[serde(with = "decimal")] i64),
-    All,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
     pub source: Address,
     pub operation: String,
     pub phase: String,
     pub channel: String,
-    pub lower: String,
-    pub upper: Bound,
+    pub range: TimeRange,
     pub selected: Option<Uuid>,
     #[serde(with = "decimal")]
     pub result: i128,
@@ -614,8 +606,8 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         }
         roots
     }
-    pub(crate) fn financial_impacts(&self) -> BTreeMap<Address, i64> {
-        let mut impacts = BTreeMap::new();
+    pub(crate) fn financial_impacts(&self) -> BTreeMap<Address, BTreeSet<i64>> {
+        let mut impacts = BTreeMap::<Address, BTreeSet<i64>>::new();
         for (key, entry) in &self.entries {
             if !matches!(key, Key::Node(_)) {
                 continue;
@@ -630,10 +622,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
             let new = logical(&entry.current);
             if old != new {
                 for (root, at, _) in [old, new].into_iter().flatten() {
-                    impacts
-                        .entry(root)
-                        .and_modify(|earliest: &mut i64| *earliest = (*earliest).min(at))
-                        .or_insert(at);
+                    impacts.entry(root).or_default().insert(at);
                 }
             }
         }
@@ -732,29 +721,33 @@ pub(crate) fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     Ok(())
 }
 
-pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address, Endpoint)> {
-    let mut entries = BTreeSet::new();
+pub(crate) fn registrations(
+    id: Uuid,
+    input: Option<&Input>,
+) -> BTreeMap<(Key, Address), TimeRange> {
+    let mut entries = BTreeMap::new();
     if let Some(input) = input {
         for (target, _, field) in input.references() {
-            entries.insert((
-                Key::Incoming(target),
-                Address::new(id, field),
-                Endpoint::All,
-            ));
+            entries.insert(
+                (Key::Incoming(target), Address::new(id, field)),
+                TimeRange::ALL,
+            );
         }
         if let Input::Posting {
             rule, curve, at, ..
         } = input
         {
-            entries.insert((Key::Direct(*rule), Address::new(id, 7), Endpoint::All));
-            entries.insert((
-                Key::Subscribers(Address::new(*curve, 1)),
-                Address::new(id, 1),
-                Endpoint::Time(*at),
-            ));
+            entries.insert((Key::Direct(*rule), Address::new(id, 7)), TimeRange::ALL);
+            entries.insert(
+                (
+                    Key::Subscribers(Address::new(*curve, 1)),
+                    Address::new(id, 1),
+                ),
+                TimeRange::through(*at),
+            );
         }
         if let Input::Adjustment { moment, .. } = input {
-            entries.insert((Key::Direct(*moment), Address::new(id, 6), Endpoint::All));
+            entries.insert((Key::Direct(*moment), Address::new(id, 6)), TimeRange::ALL);
         }
     }
     entries
@@ -981,11 +974,15 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
     for change in changes {
         let old = registrations(change.id, change.old.as_ref().map(|r| &r.input));
         let new = registrations(change.id, change.new.as_ref().map(|r| &r.input));
-        for (key, member, endpoint) in old.difference(&new) {
-            routes::change(ws, key, *member, *endpoint, false)?;
+        for ((key, member), range) in &old {
+            if new.get(&(key.clone(), *member)) != Some(range) {
+                routes::change(ws, key, *member, *range, false)?;
+            }
         }
-        for (key, member, endpoint) in new.difference(&old) {
-            routes::change(ws, key, *member, *endpoint, true)?;
+        for ((key, member), range) in &new {
+            if old.get(&(key.clone(), *member)) != Some(range) {
+                routes::change(ws, key, *member, *range, true)?;
+            }
         }
     }
     let mut candidates = BTreeSet::new();
@@ -1049,9 +1046,9 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
                 routes::select(
                     ws,
                     &Key::Subscribers(root),
-                    std::ops::Bound::Included(Endpoint::Time(from)),
+                    std::ops::Bound::Included(Endpoint::Through(from)),
                     until.map_or(std::ops::Bound::Unbounded, |at| {
-                        std::ops::Bound::Excluded(Endpoint::Time(at))
+                        std::ops::Bound::Excluded(Endpoint::Through(at))
                     }),
                     original,
                 )?
@@ -1096,8 +1093,7 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
                     operation: "latest".into(),
                     phase: "calculate".into(),
                     channel: "rate".into(),
-                    lower: "negative_infinity".into(),
-                    upper: Bound::AfterTime(at),
+                    range: TimeRange::through(at),
                     selected: selected.map(|(id, _)| id),
                     result: i128::from(rate),
                 })),

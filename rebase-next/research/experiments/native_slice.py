@@ -17,7 +17,7 @@ import uuid
 from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
-CODEC = "native-slice-kv-4"
+CODEC = "native-slice-kv-5"
 MAX_PUBLIC_SOURCES, MAX_OUTPUTS, MAX_RESERVATIONS = 4096, 8192, 16384
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
@@ -30,6 +30,7 @@ FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
 KINDS = {0: "meta", 1: "record", 2: "root", 3: "node", 4: "query",
          5: "incoming", 6: "direct", 7: "subscribers", 8: "role", 9: "reserved",
          10: "route_node", 11: "route_node", 12: "route_node"}
+UNBOUNDED = object()
 
 
 
@@ -226,7 +227,7 @@ class State:
                 derived = {"native_minor": str(native), "reporting_minor": str(reporting)}
                 self.rows[(4, rid, 1)] = {"source": address(fields["curve"], 1),
                     "operation": "latest", "phase": "calculate", "channel": "rate",
-                    "lower": "negative_infinity", "upper": {"after_time": fields["at"]},
+                    "range": {"lower": None, "upper": {"included": fields["at"]}},
                     "selected": selected[1] if selected else None, "result": str(rate)}
                 member(rid, 1, (fields["account"], 2), fields["at"], "financial", native)
                 member(rid, 2, (fields["subsidiary"], 3), fields["at"], "financial", reporting)
@@ -318,7 +319,8 @@ class State:
                     result = source_read(source, before)
                     if phase == "validate": check(result >= 0, "invariant")
                     self.rows[(4, rid, i + 1)] = {"source": address(source, 2), "operation": "sum", "phase": phase,
-                        "channel": "amount", "lower": "negative_infinity", "upper": "all" if before is None else {"before_time": str(before)}, "selected": None, "result": str(result)}
+                        "channel": "amount", "range": {"lower": None, "upper": None if before is None else {"excluded": str(before)}},
+                        "selected": None, "result": str(result)}
             value = {"contract": code, "tenant": self.tenant, "owner": self.actor,
                      "reader": self.actor, "version": str(self.revision),
                      "input": deepcopy(fields), "derived": derived_values[rid]}
@@ -462,21 +464,85 @@ def route_expectations(state):
         route = {"kind": KINDS[key[0]], "owner": address(*key[1:]) if key[0] == 7 else key[1]}
         for member in members:
             ident = aid(member)
+            time_range = {"lower": None, "upper": None}
             endpoint = {"kind": "all"}
             if key[0] == 7:
                 q = state.rows[(4, *ident)]
                 require(aid(q["source"]) == key[1:], "ORACLE_ROUTE", key)
-                if q["upper"] != "all":
-                    endpoint = {"kind": "time", "at": next(iter(q["upper"].values()))}
+                time_range = q["range"]
+                upper = time_range["upper"]
+                if upper is not None:
+                    kind, at = next(iter(upper.items()))
+                    endpoint = {"kind": "through" if kind == "included" else "time", "at": at}
             node = (key[0] + 5, *ident)
             require(node not in expected, "ORACLE_ROUTE", node)
-            expected[node] = {"route": route, "key": {"endpoint": endpoint, "member": member}}
+            expected[node] = {"route": route, "key": {"endpoint": endpoint, "member": member},
+                              "range": time_range}
     return expected
 
 
 def route_order(node):
     endpoint, member = node["key"]["endpoint"], aid(node["key"]["member"])
-    return (1, 0, member) if endpoint["kind"] == "all" else (0, int(endpoint["at"]), member)
+    if endpoint["kind"] == "all":
+        return (1, 0, 0, member)
+    side = 0 if endpoint["kind"] == "time" else 1
+    return (0, int(endpoint["at"]), side, member)
+
+
+def bound_order(bound):
+    if bound is UNBOUNDED:
+        return (0, 0, 0)
+    if bound is None:
+        return (2, 0, 0)
+    kind, at = next(iter(bound.items()))
+    return (1, int(at), 0 if kind == "included" else 1)
+
+
+def range_empty(time_range):
+    lower, upper = time_range["lower"], time_range["upper"]
+    if lower is None:
+        first = -(2**63)
+    else:
+        lower_kind, lower_at = next(iter(lower.items()))
+        first = int(lower_at) + (lower_kind == "excluded")
+    if upper is None:
+        last = 2**63 - 1
+    else:
+        upper_kind, upper_at = next(iter(upper.items()))
+        last = int(upper_at) - (upper_kind == "excluded")
+    return first > last
+
+
+def range_contains(time_range, at):
+    def lower_contains(bound):
+        if bound is None:
+            return True
+        kind, value = next(iter(bound.items()))
+        return at >= int(value) if kind == "included" else at > int(value)
+
+    def upper_contains(bound):
+        if bound is None:
+            return True
+        kind, value = next(iter(bound.items()))
+        return at <= int(value) if kind == "included" else at < int(value)
+
+    return lower_contains(time_range["lower"]) and upper_contains(time_range["upper"])
+
+
+def encoded_min_lower(bound):
+    if bound is None:
+        return None
+    return {"bound": None if bound is UNBOUNDED else bound}
+
+
+def represented_lower(time_range):
+    bound = time_range["lower"]
+    return UNBOUNDED if bound is None else bound
+
+
+def minimum_lower(candidates):
+    candidates = [bound for bound in candidates if bound is not None]
+    return min(candidates, key=bound_order) if candidates else None
 
 
 def verify_routes(state, rows, expected, tick):
@@ -486,13 +552,15 @@ def verify_routes(state, rows, expected, tick):
             continue
         header = rows[key]
         obligation = KINDS[key[0]].upper() + "_VALUE"
-        require(set(header) == {"head", "len"} and exact(header["len"], len(members)), obligation, key)
+        bounded = sum(1 for member in members if expected[(key[0] + 5, *aid(member))]["range"]["lower"] is not None)
+        require(set(header) == {"head", "len", "bounded"} and exact(header["len"], len(members))
+                and exact(header["bounded"], bounded), obligation, key)
         route = {"kind": KINDS[key[0]], "owner": address(*key[1:]) if key[0] == 7 else key[1]}
 
         def visit(link, lower, upper, depth):
             member = aid(link)
             if member is None:
-                return 0, 0
+                return 0, 0, None
             require(depth < 64, "ROUTE_DEPTH", key)
             node_key = (key[0] + 5, *member)
             require(node_key not in seen, "ROUTE_REVISIT", node_key)
@@ -500,17 +568,21 @@ def verify_routes(state, rows, expected, tick):
             tick("nodes", 1)
             require(node_key in expected and node_key in rows, "ROUTE_LINK", node_key)
             node = rows[node_key]
-            require(set(node) == {"route", "key", "left", "right", "height"}, "ROUTE_LAYOUT", node_key)
-            require(exact({k: node[k] for k in ("route", "key")}, expected[node_key]) and node["route"] == route,
+            require(set(node) == {"route", "key", "range", "min_lower", "left", "right", "height"}, "ROUTE_LAYOUT", node_key)
+            require(exact({k: node[k] for k in ("route", "key", "range")}, expected[node_key]) and node["route"] == route,
                     "ROUTE_NODE_VALUE", node_key)
             order = route_order(node)
             require((lower is None or lower < order) and (upper is None or order < upper), "ROUTE_ORDER", node_key)
-            lh, lc = visit(node["left"], lower, order, depth + 1)
-            rh, rc = visit(node["right"], order, upper, depth + 1)
+            lh, lc, lm = visit(node["left"], lower, order, depth + 1)
+            rh, rc, rm = visit(node["right"], order, upper, depth + 1)
             require(abs(lh - rh) <= 1 and exact(node["height"], 1 + max(lh, rh)), "ROUTE_BALANCE", node_key)
-            return 1 + max(lh, rh), lc + rc + 1
+            source_range = expected[node_key]["range"]
+            own = None if range_empty(source_range) else represented_lower(source_range)
+            expected_min = minimum_lower([own, lm, rm])
+            require(exact(node["min_lower"], encoded_min_lower(expected_min)), "ROUTE_MIN_LOWER", node_key)
+            return 1 + max(lh, rh), lc + rc + 1, expected_min
 
-        _, count = visit(header["head"], None, None, 0)
+        _, count, _ = visit(header["head"], None, None, 0)
         require(count == len(members), "ROUTE_REACHABILITY", key)
     require(seen == expected.keys(), "ROUTE_REACHABILITY", "complete selector inventory")
 
@@ -598,16 +670,20 @@ def synthetic(state, lower=False):
 
         def arrange_routes(nodes):
             if not nodes:
-                return None, 0
+                return None, 0, None
             mid = (len(nodes) - int(lower)) // 2
             current = nodes[mid]
-            left, lh = arrange_routes(nodes[:mid])
-            right, rh = arrange_routes(nodes[mid + 1:])
+            left, lh, lm = arrange_routes(nodes[:mid])
+            right, rh, rm = arrange_routes(nodes[mid + 1:])
             rows[current] = {**deepcopy(route_nodes[current]), "left": left, "right": right, "height": 1 + max(lh, rh)}
-            return address(*current[1:]), 1 + max(lh, rh)
+            own = None if range_empty(route_nodes[current]["range"]) else represented_lower(route_nodes[current]["range"])
+            min_lower = minimum_lower([own, lm, rm])
+            rows[current]["min_lower"] = encoded_min_lower(min_lower)
+            return address(*current[1:]), 1 + max(lh, rh), min_lower
 
-        head, _ = arrange_routes(ids)
-        rows[key] = {"head": head, "len": len(members)}
+        head, _, _ = arrange_routes(ids)
+        bounded = sum(1 for member in members if route_nodes[(key[0] + 5, *aid(member))]["range"]["lower"] is not None)
+        rows[key] = {"head": head, "len": len(members), "bounded": bounded}
     for root, info in state.roots.items():
         ids = sorted((n for n, e in state.entries.items() if aid(e["root"]) == root),
                      key=lambda n: ordered(state.entries[n]))
@@ -742,12 +818,14 @@ def corruption_controls(state, labels):
     reject("missing_reference_route", lambda r: r[(5, a)].clear(), "INCOMING_VALUE")
     reject("missing_selector_node", lambda r: r.pop((12, p, 1)), "INVENTORY")
     reject("wrong_selector_endpoint", lambda r: r[(12, p, 1)]["key"].update(endpoint={"kind": "all"}), "ROUTE_NODE_VALUE")
+    reject("wrong_selector_min_lower", lambda r: r[(12, p, 1)].update(min_lower=None), "ROUTE_MIN_LOWER")
     reject("wrong_selector_height", lambda r: r[(12, p, 1)].update(height=99), "ROUTE_BALANCE")
     reject("selector_cycle", lambda r: r[(12, p, 1)].update(left=address(p, 1)), "ROUTE_REVISIT")
     reject("wrong_selector_member", lambda r: r[(12, p, 1)]["key"].update(member=address(p, 2)), "ROUTE_NODE_VALUE")
     reject("cross_selector_route", lambda r: r[(12, p, 1)]["route"].update(owner=address(a, 2)), "ROUTE_NODE_VALUE")
     reject("disconnected_selector", lambda r: r[(12, labels["Q"], 1)].update(left=None, height=1), "ROUTE_REACHABILITY")
     reject("wrong_selector_count", lambda r: r[(7, c, 1)].update(len=1), "SUBSCRIBERS_VALUE")
+    reject("wrong_bounded_count", lambda r: r[(7, c, 1)].update(bounded=1), "SUBSCRIBERS_VALUE")
     reject("cross_selector_link", lambda r: r[(7, c, 1)].update(head=address(p, 2)), "ROUTE_LINK")
     reject("selector_order", lambda r: r[(12, labels["Q"], 1)].update(left=None, right=address(p, 1)), "ROUTE_ORDER")
 
@@ -767,7 +845,7 @@ def corruption_controls(state, labels):
         rows[(5, c)]["head"] = address(*keys[-1][1:])
     reject("selector_imbalance_with_exact_heights", unbalanced_selector, "ROUTE_BALANCE")
     reject("wrong_selected_quote", lambda r: r[(4, p, 1)].update(selected=None), "QUERY_VALUE")
-    reject("wrong_query_bound", lambda r: r[(4, p, 1)].update(upper={"after_time": "16"}), "QUERY_VALUE")
+    reject("wrong_query_bound", lambda r: r[(4, p, 1)]["range"].update(upper={"included": "16"}), "QUERY_VALUE")
     reject("wrong_summary", lambda r: r[(3, p, 1)]["summary"]["value"].update(sum="9"), "NODE_SUMMARY")
     reject("wrong_scalar_type", lambda r: r[(1, p)]["derived"].update(native_minor=8), "RECORD_VALUE")
     reject("wrong_parent", lambda r: r[(3, p, 1)].update(parent=address(p, 1)), "PARENT")
@@ -888,9 +966,8 @@ def selective_posting_control(fixtures):
             for key, query in source.rows.items():
                 if key[0] != 4 or source.records[key[1]]["contract"] not in (9, 10):
                     continue
-                bound = query["upper"]
-                if any(aid(query["source"]) == root and
-                       (bound == "all" or at < int(bound["before_time"]))
+                time_range = query["range"]
+                if any(aid(query["source"]) == root and range_contains(time_range, at)
                        for root, at in impacts):
                     newly.add(key[1])
         newly -= selected
@@ -914,7 +991,7 @@ def selective_posting_control(fixtures):
 def model_digest():
     # Explicit data/behavior contract, independent of build/dependency bytes.
     # Release evidence still fingerprints every executed source separately.
-    return hashlib.sha256(b"rebase-calculation-contract-4").hexdigest()
+    return hashlib.sha256(b"rebase-calculation-contract-5").hexdigest()
 
 
 def main():
