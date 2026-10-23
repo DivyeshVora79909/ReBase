@@ -185,12 +185,12 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.10.0 source uses store 7 /native codec 6 /effect codec 1 /API 2, calculation behavior
+The 0.11.0 source uses store 8 /native codec 6 /effect codec 2 /API 2, calculation behavior
 `rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
 and measurement behavior `dimensioned-measurements-1`. Invoicing now uses
-`invoice-assessments-5` for IssueShare. The four existing identities match 0.9.0;
-effect-demo owns `effect-demo-intent-1`. New effect tables and tagged receipts
-require new format-7 stores. There is no implicit migration from earlier stores.
+`invoice-assessments-5` for IssueShare. The four existing identities match 0.10.0;
+effect-demo owns `effect-demo-delivery-2`. Typed facts, leases and due sweeps
+require new format-8 stores. There is no implicit migration from earlier stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
 evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
@@ -227,3 +227,14 @@ for the concrete authoring contract and independent source-check obligations.
 The current `ReactiveBinding` scalar scheduler explicitly requires `Standard`.
 A custom root's `sum` field does not grant financial query semantics. Rich typed
 reactive results and alternate family scheduler adapters remain a later gate.
+
+
+## Typed external results
+
+Bindings without external actions set `type Outcome = ();`. The experimental
+[effect-demo](external-effects.md) binding supplies a typed `Outcome`, its public
+schema, pure frozen-request/outcome validation and a pure application command.
+`ActionDeclaration::application_fields` lists the mutable target fields that
+this command may update. Core validates those declarations and restricts both
+pre-binding and post-binding authorization before ordinary settlement. Provider
+I/O and configuration remain outside model calculation and transactions.

@@ -244,6 +244,7 @@ impl Binding for WordBinding {
     type Index = Words;
     type Input = Input;
     type Derived = <Calculation as Binding>::Derived;
+    type Outcome = ();
     const NAME: &'static str = "test-native-words";
     const BEHAVIOR: &'static str = "words-1";
     fn declarations() -> Result<Vec<Contract>> {

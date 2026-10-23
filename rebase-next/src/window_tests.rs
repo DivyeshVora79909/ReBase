@@ -316,6 +316,7 @@ impl Binding for WindowModel {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "test-reactive-windows";
     const BEHAVIOR: &'static str = "test-reactive-windows-1";
     fn declarations() -> Result<Vec<Contract>> {

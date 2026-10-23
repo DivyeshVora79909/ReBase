@@ -397,6 +397,7 @@ impl Binding for ParentTax {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "test-parent-tax";
     const BEHAVIOR: &'static str = "test-parent-tax-3";
     fn declarations() -> Result<Vec<Contract>> {

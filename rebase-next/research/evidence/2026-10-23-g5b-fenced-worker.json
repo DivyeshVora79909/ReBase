@@ -1,0 +1,476 @@
+{
+  "format": "rebase-g5b-evidence-1",
+  "date": "2026-10-23",
+  "status": "accepted",
+  "base_commit": "90813dcb6b8e6c0bf33892f0b01646c175cf56bc",
+  "binary": {
+    "path": "target/g5b-accepted/rebase-next",
+    "sha256": "66fe7e4582aebb499a35b58cc40ac4c2e62f196e232a87602ba2c84a785bd206",
+    "bytes": 27641568
+  },
+  "identity": {
+    "model": "1be09569fa1ffbc0b32dc1ef36eaffeb6d37426bb5f53af723670db90caf9417",
+    "store_format": "rebase-store-8",
+    "version": "0.11.0",
+    "behavior": "effect-demo-delivery-2",
+    "native_codec": "native-slice-kv-6",
+    "effect_codec": "rebase-effects-2",
+    "api": "rebase-local-api-2"
+  },
+  "verification": {
+    "distinct_rust_tests": 25,
+    "final_worker_tests": 12,
+    "shared_local_server_tests": 5,
+    "retained_prior_effect_controls": 8,
+    "named_tests": {
+      "effect_tests::action_metadata_is_checked_and_advertised_only_for_effect_models": "ok",
+      "effect_tests::current_account_authority_controls_creation_cancel_status_and_receipt_disclosure": "ok",
+      "effect_tests::immutable_input_expiry_and_allocation_failures_leave_no_intent_or_receipt": "ok",
+      "effect_tests::intent_and_cancel_roll_back_after_actual_writes_and_share_receipts": "ok",
+      "effect_tests::corrupt_effect_inventory_rejects_complete_check_and_restore_without_publication": "ok",
+      "effects::tests::due_key_preserves_full_signed_time_and_uuid_order": "ok",
+      "effects::tests::schedule_defaults_and_twenty_four_hour_boundaries_are_exact": "ok",
+      "effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart": "ok",
+      "effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation": "ok",
+      "effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts": "ok",
+      "effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence": "ok",
+      "effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers": "ok",
+      "effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider": "ok",
+      "effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table": "ok",
+      "effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate": "ok",
+      "effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission": "ok",
+      "effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates": "ok",
+      "effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption": "ok",
+      "effect_tests::real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset": "ok",
+      "effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked": "ok",
+      "local::tests::active_model_context_and_table_inventory_are_checked_before_use": "ok",
+      "local::tests::old_store_format_is_rejected_before_decoding_legacy_meta": "ok",
+      "local::tests::secured_physical_aborts_include_authority_and_reader_tables": "ok",
+      "local::tests::partial_writes_and_receipt_writes_abort_all_application_tables": "ok",
+      "server::tests::deadline_keeps_admission_until_the_real_transaction_finishes": "ok"
+    },
+    "logs": [
+      "target/g5b-effect-tests.log",
+      "target/g5b-application-tests.log",
+      "target/g5b-final-worker-tests.log",
+      "target/g5b-shared-tests.log"
+    ],
+    "format_and_clippy": "target/g5b-final-clippy.log",
+    "scope": "Affected native controls and optimized HTTP workflow. Passed earlier effect controls were retained; no population or full optimized suite was repeated.",
+    "development_findings": [
+      "Restricted application must support the shared engine pre-bind and post-bind authorization calls.",
+      "The existing physical-write abort hook is one-based.",
+      "HTTP probe holds must be scoped to an execution; the first seven passing HTTP cases preceded a harness hold failure. The corrected workflow reused the same executable."
+    ]
+  },
+  "build": {
+    "command": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--locked",
+      "--release",
+      "--bin",
+      "rebase-next"
+    ],
+    "returncode": 0,
+    "duration_seconds": 375.832,
+    "jobs": 2,
+    "incremental": false,
+    "cache": "target/g4b-retained-b377b21/build"
+  },
+  "http_report": "target/g5b-worker-http-2/result.json",
+  "http_duration_seconds": 27.275,
+  "http_counts": {
+    "record_mutations": 18,
+    "commands": 34,
+    "commits": 17,
+    "rejections": 1,
+    "scenarios": 16,
+    "cancellations": 2,
+    "process_kills": 4
+  },
+  "http": {
+    "status": "passed",
+    "model": "1be09569fa1ffbc0b32dc1ef36eaffeb6d37426bb5f53af723670db90caf9417",
+    "binary_sha256": "66fe7e4582aebb499a35b58cc40ac4c2e62f196e232a87602ba2c84a785bd206",
+    "duration_seconds": 27.275,
+    "operations": [
+      {
+        "name": "account",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "negative-balance",
+        "commands": 1,
+        "result": "invariant"
+      },
+      {
+        "name": "literal-atomic-intent",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "blocked-application",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "spend-before-provider-result",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "authorized-repair",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "waiting",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "definitive-rejection",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "lost-response",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "permanent-rejection",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "cancel-before-start",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "cancel-after-remote-acceptance",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "crash-before_start",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "crash-after_start",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "crash-after_provider",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "crash-after_fact",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "three-due-calls",
+        "commands": 4,
+        "result": "committed"
+      },
+      {
+        "name": "transport-timeout",
+        "commands": 2,
+        "result": "committed"
+      }
+    ],
+    "cases": [
+      {
+        "name": "literal-12-10-7",
+        "execution": "6cca8889-f15b-4719-b34f-a107b89feda9",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "blocked-repair-apply-once",
+        "execution": "29ceb0c3-0f4f-4f89-bb5d-738cb36d2046",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1,
+        "repaired_balance": "5",
+        "final_balance": "2"
+      },
+      {
+        "name": "waiting-then-success",
+        "execution": "ed90aa5c-f2c2-4ba5-814c-405e43bbe2cb",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      },
+      {
+        "name": "definitive-nonacceptance-retry",
+        "execution": "e932df33-24c7-43b0-9c41-911fb52d9731",
+        "submissions": 2,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "lost-response-reconciles",
+        "execution": "97584d27-6328-4db7-8077-59514d3332e8",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      },
+      {
+        "name": "permanent-provider-rejection",
+        "execution": "12874ad4-928a-48b1-ac7e-b524006c9678",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 0
+      },
+      {
+        "name": "cancel-before-start",
+        "execution": "c2d92b56-57d6-4817-9270-06bf50d1db62",
+        "submissions": 0,
+        "observations": 0,
+        "accepted": 0
+      },
+      {
+        "name": "cancelled-completion-reconciles",
+        "execution": "63ecdc2a-c862-48ef-929a-0bb278b3cc25",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      },
+      {
+        "name": "crash-before_start",
+        "execution": "4950f997-7527-463a-84ef-86a7ac32a7ee",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "crash-after_start",
+        "execution": "4803c2b4-569e-4d19-afec-a56afb2ced8c",
+        "submissions": 0,
+        "observations": 1,
+        "accepted": 0
+      },
+      {
+        "name": "crash-after_provider",
+        "execution": "eb5eeec0-0afb-48cd-8427-5c15a94190cb",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      },
+      {
+        "name": "crash-after_fact",
+        "execution": "487ab8fd-a2ca-42d2-88de-0c1906dd02fd",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "bounded-concurrent-call",
+        "execution": "dcbde20b-1d62-46f2-bb1f-bcbf44787ad1",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "bounded-concurrent-call",
+        "execution": "e463ec9d-53f4-489e-baad-23d8c4251184",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "bounded-concurrent-call",
+        "execution": "1e6788e6-fe36-42d2-a005-325d54d66496",
+        "submissions": 1,
+        "observations": 0,
+        "accepted": 1
+      },
+      {
+        "name": "transport-deadline-reconciles",
+        "execution": "8d46ff84-9f4e-49b3-b814-74fc1f20467c",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      }
+    ],
+    "integrity": {
+      "effects": {
+        "accounted_bytes": 38876,
+        "blocked": 0,
+        "dispatch_enabled": false,
+        "expired_leases": 0,
+        "facts": 16,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 1,
+        "retained": 16,
+        "uncertain": 1,
+        "unresolved": 1
+      },
+      "model": "1be09569fa1ffbc0b32dc1ef36eaffeb6d37426bb5f53af723670db90caf9417",
+      "nodes": 0,
+      "receipts": 19,
+      "records": 17,
+      "revision": "32",
+      "roots": 0,
+      "rows": 51,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "fd4ce48a-d38e-434c-9426-53c3bdef1061"
+    },
+    "real_process_crash_boundaries": 4,
+    "provider_contract": {
+      "execution": "4e00c98d-adab-40b3-b4fa-54332f230c39",
+      "duplicate_same_result": true,
+      "changed_content_rejected": true,
+      "empty_lookup": "inconclusive",
+      "submissions": 3,
+      "observations": 1,
+      "accepted": 1
+    },
+    "independent_provider_journal": "provider/journal.sqlite",
+    "restored_dispatch_rejected": true
+  },
+  "compatibility": {
+    "status": "passed",
+    "unchanged_models": {
+      "calculation": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "equipment": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+      "invoicing": "b638d3c94323fba73126eddda0ee6c812566d4fc5fd7bf1b6aa7f02eed9479f6",
+      "measurement": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0"
+    },
+    "old_effect_store_valid": "valid",
+    "old_store_rejection": "model_mismatch: runtime format differs",
+    "physical_sha256_unchanged": "f0ca5237880637ea9f1009c6841cf058d2bc439ba12a0b86382dd8007e064860",
+    "predecessor_binary_sha256": "b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334",
+    "identity": {
+      "model": "1be09569fa1ffbc0b32dc1ef36eaffeb6d37426bb5f53af723670db90caf9417",
+      "store_format": "rebase-store-8",
+      "version": "0.11.0"
+    }
+  },
+  "limits": {
+    "unresolved": 64,
+    "retained": 256,
+    "facts": 1024,
+    "inbox": 256,
+    "request_bytes": 1024,
+    "outcome_bytes": 2048,
+    "diagnostic_bytes": 256,
+    "encoded_effect_bytes": 8388608,
+    "due_turn_rows": 16,
+    "http_calls": 2,
+    "http_deadline_ms": 5000,
+    "lease_ms": 10000,
+    "max_lease_ms": 30000,
+    "renewals": 2,
+    "submission_claims": 3,
+    "automatic_observations": 6
+  },
+  "retained_artifacts": {
+    "predecessor": "target/g5a-accepted/rebase-next",
+    "original_http_attempt": "target/g5b-worker-http",
+    "accepted_http": "target/g5b-worker-http-2",
+    "full_fact_capacity": "native worker test creates/checks a 1024-fact store and verifies its backup bound"
+  },
+  "source_sha256": {
+    "Cargo.lock": "8d1c4df7055d44c78b281659043691b329e11af6c6ae97b48ada969f051d3f1f",
+    "Cargo.toml": "ddf21307e52432fb95ed73091d37e4c1f7d835d25eea4d57ace35fdc7d331f68",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "2e90d2a47dddf196814988b5c44ff79e74f936aed64b2a7764ce54bea6de0ff8",
+    "src/binding.rs": "7a3305b6a8590c38ce01c1aab02e52715cabd8384f630e9b96bcb982115d820e",
+    "src/causal.rs": "ddb95d2062b9837d1a8bfd948219ec358f8fc1ed5e80a0b4c33e490096cc0a0c",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "9f1ce4a56e57e3514cb7c87ebe7a937490f66e67901f2306f659c907aaf938f2",
+    "src/effects.rs": "545b40d5335b5df1c01ff8d89cdde3008dbbd9bf8c7f7ae90e2d9aecf9abe00c",
+    "src/effects/application.rs": "2ee78ec8d5ee050902a2279262da4e5c92974f599d3a0d5f681d6cc1e8ba2fac",
+    "src/effects/fake.rs": "2704e6195ef9e0a1b6ecc90040d12642e20277e571169d7313018ab7058458c5",
+    "src/effects/state.rs": "e97e0ed34acd67739b7486bdfec3d7f95a74327c45786e6ab229e34a366809d8",
+    "src/effects/worker.rs": "3c65b431cee828859565e7c992c21fb7f4f38281246da81ee943ce45fb9f35f7",
+    "src/effects/worker_tests.rs": "094298306d530664dafa6f33594e4df040c19054a36e62b3a3fd4a52cdd38b61",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "a10881121d4d8b72111fb5ecfab4e1f8d252f742a0fb93dc5e0b241c3ed5b899",
+    "src/index_tests.rs": "52e4868da6a7f2e0665f7394f9bca23fa55aef67eaf3d138d3bb2c4f532bbce6",
+    "src/indexes/measurement.rs": "b2b862b970309eabb72375b5463f1356650503659ff47a127be8db57d9b63cd0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "97a0accf6bff565c589bada097aa5adc9b4bd1683de3751c8154b637f8983ee1",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "029f4761c1f99482dc554a30a17f028d05cb1624a6af01f034ce8ac342ce6ad2",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "41f4230d0ae76aa5c2e8aab193f6a6ca128a8a505ffa5b7256428d837107fe99",
+    "src/lifecycle.rs": "2f4f410e9c9ece3e71941658f1e7f4e1a762cf239109b9790d8bbcb3ad263c14",
+    "src/local.rs": "1853ab3adb4e09713141d6b946464706fd86fd7c58481e0b769a71806451cd71",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "2628a699957cfb3445faeebf2b950a5ead58703dd14de4a3650c73eb2949bae6",
+    "src/models/calculation.rs": "dd1c1d61a9f355f1714ac0beded5b5f82191285720c083b9cfcad3a338b1009d",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "317c948892241580e8865ad73dbf5e04204aa61ee4a5754605bdb9bd002d17cc",
+    "src/models/equipment.rs": "5aaf270eb1fd365fa13b25896483b591a4e81095ee4f0d1abbc5778405a82e99",
+    "src/models/invoicing.rs": "115d21b92818e16ce4c6696a49bac57835525a8c03427c125da0746eb90f0f4d",
+    "src/models/invoicing_check.rs": "f3de0f615714e69712a43f6954064a3447f84f2b54400981dde541a1da307c9d",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "8282adadce90769fda697d4a66952fdda83392e2ded502e29a8c8893616f175d",
+    "src/models/mod.rs": "acda200f0c4e0e2031318f7b0984d60a3481508520f1c29aba9154e63a8159d3",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "b74caa5c9bbbaf131211d1f6123b921ecce02edf4402d02b8efc9c93bfae9786",
+    "src/native_slice.rs": "f0ca92adfc8156bb240b7b25630d440762855cec0577a9638dbfc7f7943fa00f",
+    "src/parameter_tests.rs": "8ca948e7a56d8ee3d4ee8310955eb9e350c7ebe4d373b8b4acd74aaa81bdda01",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "be56b48ad36e946fd6063899945ab0d700f67f9551ce168ee2ed4e2036067c9c",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "2464e5f4345457366ddcc5de0c9c732e4d34ef2863b0c59a2bbee42bcc667cc3",
+    "src/security.rs": "e48b249bf107b2999b06cf89e9ba4911c68a63192de9bd349f7270984a8023e6",
+    "src/server.rs": "218c86c7267645835823882bc4ed722afa1b7c102186792c6d33177a0f2eaa78",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "4fd97c8493936f041d753995c544e8dc2a10c0c7b96e423179c49fe25fde4b9d",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "f1f4b12d581e5df66ab5a5d239f8a9b0d3a14e6817efc1854515721a000dea96",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "70cb435be8d8a5e0fda05ecd6caf88c3d418360583a594c4f59291766d063257",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/measurement.rs": "8d26bceb636851028d82fa49345060b77416ab0daa4273c239e5b3bca8784649",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "e2356ce9b5f17af2cb50f9a76c6156f5c3c10d21850d5f099f0c2a7946ceb448",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/effects.py": "155bc4e65da7ce8b9932adb5457a7a1693bdffab4880e12dd4478fda864b2ff7",
+    "tools/effects_worker.py": "8330e50c9d99354faf500abcca7af95d376ae813b485486be652cb562adb7107",
+    "tools/fake_provider.py": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a",
+    "tools/invoicing.py": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b",
+    "tools/issue_shares.py": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1",
+    "tools/test_invoicing.py": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4"
+  },
+  "next": "G5c: bounded signed ingress, durable inbox, monotone consumption, restored reconciliation from a backup predating provider acceptance; keep restored activation disabled until acceptance."
+}

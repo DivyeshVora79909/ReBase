@@ -34,6 +34,28 @@ pub enum Input {
         not_after: Option<i64>,
     },
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProviderPhase {
+    Waiting,
+    Succeeded,
+    NotAccepted,
+    Failed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Outcome {
+    #[serde(with = "uuid_text")]
+    pub execution_id: Uuid,
+    pub account: String,
+    pub action: u16,
+    #[serde(with = "decimal")]
+    pub units: i128,
+    pub phase: ProviderPhase,
+    pub receipt: Option<String>,
+}
 impl NativeInput for Input {
     fn contract(&self) -> u16 {
         match self {
@@ -83,9 +105,10 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
 impl Binding for EffectDemo {
     type Input = Input;
     type Derived = ();
+    type Outcome = Outcome;
     type Index = Standard;
     const NAME: &'static str = "effect-demo";
-    const BEHAVIOR: &'static str = "effect-demo-intent-1";
+    const BEHAVIOR: &'static str = "effect-demo-delivery-2";
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
@@ -187,6 +210,7 @@ impl Binding for EffectDemo {
             reference_slot: 1,
             target_contract: 101,
             provider_account: "fake-account-1",
+            application_fields: vec!["balance"],
         })
     }
     fn effect_template(input: &Input) -> Result<Option<Template>> {
@@ -203,6 +227,69 @@ impl Binding for EffectDemo {
             }),
             _ => None,
         })
+    }
+    fn effect_outcome(
+        request: &Input,
+        execution: Uuid,
+        outcome: &Outcome,
+    ) -> Result<crate::effects::Disposition> {
+        let Input::Dispatch { units, .. } = request else {
+            return Err(Error::new("invalid_input", "provider request type"));
+        };
+        let has_receipt = outcome.receipt.as_ref().is_some_and(|text| {
+            Uuid::parse_str(text).is_ok_and(|id| !id.is_nil() && id.to_string() == *text)
+        });
+        if outcome.execution_id != execution
+            || outcome.account != "fake-account-1"
+            || outcome.action != 1
+            || outcome.units != *units
+            || has_receipt
+                != matches!(
+                    outcome.phase,
+                    ProviderPhase::Waiting | ProviderPhase::Succeeded
+                )
+            || (outcome.receipt.is_some() && !has_receipt)
+        {
+            return Err(Error::new("invalid_input", "provider outcome binding"));
+        }
+        Ok(match outcome.phase {
+            ProviderPhase::Waiting => crate::effects::Disposition::Waiting,
+            ProviderPhase::Succeeded => crate::effects::Disposition::Succeeded,
+            ProviderPhase::NotAccepted => crate::effects::Disposition::NotAccepted,
+            ProviderPhase::Failed => crate::effects::Disposition::Failed,
+        })
+    }
+    fn effect_application(
+        request: &Input,
+        outcome: &Outcome,
+        target: &crate::native_slice::ModelRecord<Self>,
+        id: Uuid,
+    ) -> Result<crate::native_slice::Command> {
+        let (Input::Dispatch { account, units, .. }, Input::Account { balance }) =
+            (request, &target.input)
+        else {
+            return Err(Error::new("invalid_input", "provider application target"));
+        };
+        if *account != id || outcome.phase != ProviderPhase::Succeeded || outcome.units != *units {
+            return Err(Error::new("invalid_input", "provider application binding"));
+        }
+        let balance = balance
+            .checked_sub(*units)
+            .ok_or_else(|| Error::new("overflow", "provider application balance"))?;
+        Ok(crate::native_slice::Command::Update {
+            id,
+            if_version: target.version,
+            set: BTreeMap::from([("balance".into(), json!(balance.to_string()))]),
+            unset: vec![],
+        })
+    }
+    fn effect_outcome_schema() -> Value {
+        let uuid = json!({"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"});
+        json!({"$schema":model::SCHEMA_DIALECT,"type":"object","additionalProperties":false,
+            "required":["execution_id","account","action","units","phase","receipt"],"properties":{
+                "execution_id":uuid,"account":{"const":"fake-account-1"},"action":{"const":1},
+                "units":{"type":"string","pattern":"^[1-9][0-9]*$","x-rebase-range":["1","1000000"]},
+                "phase":{"enum":["waiting","succeeded","not_accepted","failed"]},"receipt":{"anyOf":[uuid,{"type":"null"}]}}})
     }
     fn fixture_catalog() -> Value {
         json!([{"name":"atomic-intent","description":"Account 12 and immutable Dispatch 3; G5a dispatch is disabled"}])

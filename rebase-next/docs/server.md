@@ -112,3 +112,9 @@ shared with stdio. A second jsonrpsee parse/dispatch layer would add no operatio
 semantics to this API. JWT cryptography uses jsonwebtoken's AWS-LC provider. The
 alternative RustCrypto feature pulled unpatched `rsa` (RUSTSEC-2023-0071), even
 though this service only accepts Ed25519; it is absent from the selected graph.
+
+
+The optional `effects` configuration enables the experimental effect-demo worker
+with a pinned loopback fake-provider origin. Existing configurations omit it.
+See [external work](external-effects.md) for its limits, captured authority,
+shutdown/retry behavior and the G5b restored-activation restriction.

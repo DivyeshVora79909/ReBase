@@ -28,6 +28,8 @@ pub struct ServerConfig {
     pub identity: IdentityConfig,
     pub max_inflight: u16,
     pub request_timeout_seconds: u16,
+    #[serde(default)]
+    pub effects: Option<crate::effects::fake::Config>,
 }
 #[derive(Clone)]
 struct App<B: Binding> {
@@ -103,6 +105,9 @@ pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result
         ));
     }
     store.check_integrity()?;
+    if let Some(effects) = &config.effects {
+        effects.validate::<B>()?;
+    }
     if !(1..=64).contains(&config.max_inflight)
         || !(1..=120).contains(&config.request_timeout_seconds)
     {
@@ -125,7 +130,7 @@ pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result
 }
 
 pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<()> {
-    let routes = router(store, &config)?;
+    let routes = router(store.clone(), &config)?;
     let listener = TcpListener::bind(config.listen)
         .await
         .map_err(|e| Error::new("transport", e.to_string()))?;
@@ -135,10 +140,57 @@ pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Re
             .local_addr()
             .map_err(|e| Error::new("transport", e.to_string()))?
     );
-    axum::serve(listener, routes)
-        .with_graceful_shutdown(shutdown())
+    let (stop, mut stopped) = tokio::sync::watch::channel(false);
+    let signal_stop = stop.clone();
+    let signal = tokio::spawn(async move {
+        shutdown().await;
+        let _ = signal_stop.send(true);
+    });
+    let worker = if B::effect_action().is_some() {
+        let owner = store.clone();
+        let enabled = config.effects.is_some();
+        let activation = tokio::task::spawn_blocking(move || owner.activate_effect_worker(enabled))
+            .await
+            .map_err(|_| Error::new("internal", "worker activation task"))??;
+        config.effects.map(|effects| {
+            let owner = store.clone();
+            let receiver = stop.subscribe();
+            let failed = stop.clone();
+            tokio::spawn(async move {
+                let result = crate::effects::fake::run(owner, effects, activation, receiver).await;
+                if result.is_err() {
+                    let _ = failed.send(true);
+                }
+                result
+            })
+        })
+    } else {
+        None
+    };
+    let served = axum::serve(listener, routes)
+        .with_graceful_shutdown(async move {
+            while !*stopped.borrow() {
+                if stopped.changed().await.is_err() {
+                    break;
+                }
+            }
+        })
         .await
-        .map_err(|e| Error::new("transport", e.to_string()))
+        .map_err(|e| Error::new("transport", e.to_string()));
+    let _ = stop.send(true);
+    signal.abort();
+    let worker_result = match worker {
+        Some(worker) => worker
+            .await
+            .map_err(|_| Error::new("internal", "effect worker task"))?,
+        None => Ok(()),
+    };
+    if B::effect_action().is_some() {
+        tokio::task::spawn_blocking(move || store.activate_effect_worker(false))
+            .await
+            .map_err(|_| Error::new("internal", "worker shutdown task"))??;
+    }
+    served.and(worker_result)
 }
 async fn shutdown() {
     #[cfg(unix)]

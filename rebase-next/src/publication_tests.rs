@@ -384,6 +384,7 @@ impl<const MODE: u8> Binding for Fixture<MODE> {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "test-publications";
     const BEHAVIOR: &'static str = match MODE {
         0 => "publication-0",

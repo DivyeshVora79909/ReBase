@@ -4,8 +4,8 @@ The supported backend is one process owning one embedded redb file. Runtime
 writes, derived repairs, indexes, authority and receipts commit atomically.
 Network startup checks complete current-state integrity before listening.
 Operator commands below take the file lock; stop the HTTP process first.
-The [external-intent model](external-effects.md) also persists executions, due
-rows and reserved recovery capacity. Effect-bearing restores rotate activation,
+The [external-work model](external-effects.md) also persists executions, due
+rows, immutable provider facts and reserved recovery capacity. Effect-bearing restores rotate activation,
 remain quarantined and keep dispatch disabled. Receipt archives preserve effect
 evidence; reset rejects unresolved work.
 These examples use the default `calculation` model. For equipment or invoicing,
@@ -98,8 +98,8 @@ trusted operator tool and has no network RPC counterpart.
 ## Data identity and upgrades
 
 The last verified deployment bundle, 0.6.0, uses store format
-`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.10.0 source
-uses `rebase-store-7`, `native-slice-kv-6`, `rebase-effects-1` and API 2. One store holds one selected
+`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.11.0 source
+uses `rebase-store-8`, `native-slice-kv-6`, `rebase-effects-2` and API 2. One store holds one selected
 compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
 behavior contract revision. Transport formatting and dependency patch bytes do
@@ -110,12 +110,13 @@ Shared semantic changes require bumping every affected binding. Structural/schem
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-In 0.10.0 source, calculation behavior is `rebase-calculation-contract-6`,
+In 0.11.0 source, calculation behavior is `rebase-calculation-contract-6`,
 equipment behavior is `equipment-reservations-5`, and invoicing behavior is
 `invoice-assessments-5`. Measurement retains `dimensioned-measurements-1`.
-Effect-demo owns `effect-demo-intent-1`; its action declaration also participates
-in its model identity. The four existing model identities are unchanged from 0.9.
-Store format 7 adds checked effect tables and explicitly tagged operation receipts.
+Effect-demo owns `effect-demo-delivery-2`; its action and typed outcome schema
+also participate in its model identity. The four existing identities match 0.10.
+Store format 8 adds checked facts, leases, application state and bounded due
+sweeps. Format 7 introduced effect tables and tagged operation receipts.
 The 0.8 native index codes, generic keys and independent subtree spans required
 format 6. The 0.9 publication inputs reuse existing Direct route bytes and
 attempt-local values: only invoicing's model identity changes. Other 0.8 models
@@ -132,7 +133,7 @@ Measurement allows 64 public sources and no private outputs or reservations.
 Backup remains capped at 64 MiB, and the active receipt window remains 1,024
 operations.
 
-Format 2 through 6 stores and their backups intentionally reject in 0.10.0. The
+Format 2 through 7 stores and their backups intentionally reject in 0.11.0. The
 runtime header is checked before native metadata decoding, so an old store
 reports a model/format mismatch rather than being reinterpreted. There is no
 silent migration, automatic reset or cross-model restore. Restore a backup only

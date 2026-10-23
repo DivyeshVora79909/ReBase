@@ -482,6 +482,7 @@ fn measurement_corrupted_native_values_fail_check_startup_and_verified_restore()
         listen: "127.0.0.1:0".parse().unwrap(),
         max_inflight: 1,
         request_timeout_seconds: 5,
+        effects: None,
         identity: IdentityConfig {
             issuer: "measurement-test".into(),
             audience: "rebase-test".into(),

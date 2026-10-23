@@ -1,9 +1,11 @@
 # G5: bounded durable external work
 
-**G5a accepted, 2026-10-23; G5b/G5c remain unaccepted.** The
+**G5a/G5b accepted, 2026-10-23; G5c remains unaccepted.** The
 [G5a result](37-atomic-intent-implementation.md) and
 [evidence](evidence/2026-10-23-g5a-atomic-intent.json) establish atomic intent,
-status/cancellation and checked bounded storage with dispatch disabled. This is G5 of the
+status/cancellation and checked bounded storage. [G5b](38-fenced-worker-implementation.md)
+adds the verified fenced worker, independent fake provider and typed result application.
+Restored worker activation remains disabled pending G5c. This is G5 of the
 [capability program](30-capability-program.md), after the accepted 0.6 release.
 The small [lifecycle oracle](experiments/effect_lifecycle.py) has executed; its
 limited result is recorded below. No production provider, worker, durable inbox

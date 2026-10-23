@@ -1,14 +1,34 @@
 # Compact context — 2026-10-23
 
-**G5a accepted; next G5b fenced worker and independent fake provider.**
+**G5b accepted; next G5c durable ingress and restored reconciliation.**
+The [G5b result](research/38-fenced-worker-implementation.md) and
+[evidence](research/evidence/2026-10-23-g5b-fenced-worker.json) own source 0.11.0
+/store 8 /native codec 6 /effect codec 2 /API 2. Twenty-five affected Rust controls
+and sixteen optimized HTTP scenarios pass, including four process kills, separate
+provider-call/acceptance counts, blocked application/retry and the real timeout.
+The one optimized build took 375.832 seconds; the passing HTTP run took 27.275
+seconds. Earlier failed development/harness logs remain documented; do not rerun
+accepted campaigns just to replace them. There is no active build/worker.
+
+The binary is `target/g5b-accepted/rebase-next`, SHA-256
+`66fe7e4582aebb499a35b58cc40ac4c2e62f196e232a87602ba2c84a785bd206`.
+Reports: `target/g5b-checks.json`, `target/g5b-compatibility.json`,
+`target/g5b-worker-http-2/result.json`. The four earlier model identities remain
+unchanged; clean format-7 effect storage rejects without changed physical bytes.
+Read [G5c's entry](research/39-ingress-recovery-implementation.md) next. Keep
+restored worker activation disabled until the predating-backup reconciliation
+acceptance passes. Preserve the independent fake provider journal and all G5a
+artifacts; no live-provider, distributed or general production claim applies.
+
+**Historical G5a acceptance.**
 The [G5a result](research/37-atomic-intent-implementation.md) and
 [evidence](research/evidence/2026-10-23-g5a-atomic-intent.json) record source 0.10.0
 /store 7 /native codec 6 /effect codec 1 /API 2, atomic Account/Dispatch intent,
 status/cancel and complete storage inventory. All 24 affected Rust tests, eleven
 corrupt check/startup/restore controls and the optimized seven-mutation HTTP
 workflow pass. The four prior model identities remain unchanged; old format-6
-invoicing rejects with physical bytes unchanged. Provider dispatch stays disabled.
-Begin the [G5b implementation entry](research/38-fenced-worker-implementation.md).
+invoicing rejected with physical bytes unchanged. G5a kept provider dispatch
+disabled; the accepted G5b result above supersedes that delivery boundary.
 Use the
 existing debug cache `target/native-slice/build` and optimized cache
 `target/g4b-retained-b377b21/build`, one Cargo process at a time, two jobs.
@@ -16,7 +36,7 @@ G5a's optimized build took 222 seconds; its HTTP workflow took 1.732 seconds.
 Keep `target/g5a-accepted/rebase-next` and `target/g5a-effects-http/` intact.
 The binary SHA-256 is `b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334`.
 Reports are `target/g5a-checks.json` and `target/g5a-compatibility.json`.
-No G5b native code is implemented yet; G5b/G5c and later capability gates remain open.
+G5b is now accepted above; G5c and later capability gates remain open.
 
 G4c-a/b is published as `b72507c` on `main`. G4d-a source 0.9.0 adds typed
 publication inputs, final graph readiness and output-free IssueShare.
@@ -108,15 +128,12 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement [G5b](research/38-fenced-worker-implementation.md)
-on the accepted [G5a storage](research/37-atomic-intent-implementation.md).
-First add checked typed facts, lease/start/finish/reconciliation transitions,
-application state and bounded discovery. Then integrate one worker and the
-independent fake HTTP journal through the existing shared writer. The predecessor
-is now 0.10.0 /store 7 /native codec 6 /effect codec 1 /API 2. New private row
-formats require a new store/effect identity. Preserve the G5a binary/stores and
-keep restored dispatch disabled until G5c's reconciliation acceptance. Verify,
-commit and push coherent checkpoints on `main`; typed statistics/selection remain open.
+**Exact next action:** implement [G5c](research/39-ingress-recovery-implementation.md)
+on the accepted G5b lifecycle. Add bounded verified ingress/inbox, deduplicated
+monotone fact consumption and explicit reconciliation-only restored activation.
+Prove the snapshot predating remote acceptance, reset/old identity controls and
+full bounded backup. Use one Cargo owner, two jobs and the retained caches.
+Typed statistics/selection and G6-G8 remain open.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and

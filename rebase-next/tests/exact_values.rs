@@ -99,6 +99,7 @@ impl Binding for ExactEntries {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "test-exact-entries";
     const BEHAVIOR: &'static str = "test-exact-entries-1";
     fn engine() -> Result<Model> {
@@ -390,6 +391,7 @@ async fn exact_values_cross_native_binding_http_receipts_and_reopening() {
         },
         max_inflight: 4,
         request_timeout_seconds: 5,
+        effects: None,
     };
     let token = identity::issue(
         &cfg.identity,

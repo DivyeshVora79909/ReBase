@@ -798,6 +798,7 @@ impl Binding for Invoicing {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "invoice-assessments";
     const BEHAVIOR: &'static str = "invoice-assessments-5";
     fn declarations() -> Result<Vec<Contract>> {

@@ -317,7 +317,7 @@ fn real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset() {
         Store::<EffectDemo>::open(&restored_path, Arc::new(Prepared::load().unwrap())).unwrap();
     let after = restored.observe_for_verification().unwrap();
     for (name, rows) in before["tables"].as_object().unwrap() {
-        if name != "effect_runtime" {
+        if !["effect_runtime", "effect_executions", "effect_due"].contains(&name.as_str()) {
             assert_eq!(&after["tables"][name], rows);
         }
     }
@@ -678,11 +678,7 @@ fn corrupt_effect_inventory_rejects_complete_check_and_restore_without_publicati
                 false,
                 Some(("accounted_bytes", json!(4096))),
             ),
-            5 => (
-                "effect_runtime",
-                false,
-                Some(("dispatch_enabled", json!(true))),
-            ),
+            5 => ("effect_runtime", false, Some(("next_class", json!(4)))),
             6 => ("effect_facts", false, None),
             7 => ("effect_inbox", false, None),
             8 => ("operations", false, Some(("kind", json!("cancel")))),
@@ -747,6 +743,7 @@ fn corrupt_effect_inventory_rejects_complete_check_and_restore_without_publicati
             listen: "127.0.0.1:0".parse().unwrap(),
             max_inflight: 2,
             request_timeout_seconds: 5,
+            effects: None,
             identity: crate::identity::IdentityConfig {
                 issuer: "effect-test".into(),
                 audience: "effect-test".into(),

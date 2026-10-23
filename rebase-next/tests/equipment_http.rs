@@ -34,6 +34,7 @@ fn config() -> ServerConfig {
         },
         max_inflight: 4,
         request_timeout_seconds: 5,
+        effects: None,
     }
 }
 fn token(config: &ServerConfig, actor: Uuid) -> String {

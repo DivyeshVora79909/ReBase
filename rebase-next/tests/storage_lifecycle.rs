@@ -295,6 +295,7 @@ fn mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startu
         listen: "127.0.0.1:0".parse().unwrap(),
         max_inflight: 1,
         request_timeout_seconds: 5,
+        effects: None,
         identity: rebase_semantic_proof::identity::IdentityConfig {
             issuer: "https://review.example.test".into(),
             audience: "review".into(),

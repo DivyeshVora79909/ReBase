@@ -314,6 +314,7 @@ impl Binding for Equipment {
     type Index = Standard;
     type Input = Input;
     type Derived = Derived;
+    type Outcome = ();
     const NAME: &'static str = "equipment-reservations";
     const BEHAVIOR: &'static str = "equipment-reservations-5";
     fn declarations() -> Result<Vec<Contract>> {

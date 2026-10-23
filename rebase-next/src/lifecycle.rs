@@ -186,7 +186,7 @@ impl<B: Binding> Store<B> {
                 "reset store confirmation differs",
             ));
         }
-        crate::effects::reset_tables(&write)?;
+        crate::effects::reset_tables::<B>(&write)?;
         let mut graph = if self.secured {
             Some(crate::security::write_graph(&write)?.graph)
         } else {
@@ -335,7 +335,7 @@ pub fn restore<B: Binding>(
     // a corrupt backup into something that passes validation.
     let checked = restored.check_integrity()?;
     let write = restored.db.begin_write().map_err(local::storage)?;
-    let changed = crate::effects::quarantine_restore(&write)?;
+    let changed = crate::effects::quarantine_restore::<B>(&write)?;
     write.commit().map_err(local::storage)?;
     let checked = if changed {
         restored.check_integrity()?

@@ -546,6 +546,17 @@ impl<B: Binding> Prepared<B> {
                 || source.visibility != Visibility::Public
                 || target.visibility != Visibility::Public
                 || source.fields.iter().any(|f| f.mutable)
+                || action.application_fields.is_empty()
+                || action
+                    .application_fields
+                    .iter()
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != action.application_fields.len()
+                || action
+                    .application_fields
+                    .iter()
+                    .any(|name| !target.fields.iter().any(|f| f.name == *name && f.mutable))
                 || !source.references.iter().any(|r| {
                     r.slot == action.reference_slot
                         && !r.optional
@@ -554,6 +565,13 @@ impl<B: Binding> Prepared<B> {
             {
                 return Err(model_error("invalid immutable effect action declaration"));
             }
+            let schema = B::effect_outcome_schema();
+            self_contained(&schema)?;
+            jsonschema::options()
+                .with_draft(jsonschema::Draft::Draft202012)
+                .should_validate_formats(false)
+                .build(&schema)
+                .map_err(|e| model_error(e.to_string()))?;
         }
         let mut engine = B::engine()?;
         let core_identity = engine.identity.clone();
@@ -580,7 +598,8 @@ impl<B: Binding> Prepared<B> {
         }
         // An absent action preserves the existing model identity exactly.
         if let Some(action) = B::effect_action() {
-            let bytes = serde_json::to_vec(&action).map_err(|e| model_error(e.to_string()))?;
+            let bytes = serde_json::to_vec(&(action, B::effect_outcome_schema()))
+                .map_err(|e| model_error(e.to_string()))?;
             hash.update(b"rebase-effect-action-v1\0");
             hash.update((bytes.len() as u64).to_be_bytes());
             hash.update(bytes);
@@ -752,7 +771,7 @@ fn model_capabilities<B: Binding>() -> Value {
         "receipt":"required actor/store/generation context from session.describe; same operation ID/content replays; offline archive advances its fence",
         "not_observed":"receipt absence does not prove failure"});
     if let Some(action) = B::effect_action() {
-        catalog["effects"] = crate::effects::capabilities(&action);
+        catalog["effects"] = crate::effects::capabilities::<B>(&action);
     }
     catalog
 }

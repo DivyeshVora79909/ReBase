@@ -1,5 +1,11 @@
 //! Bounded immutable intent, committed by the ordinary domain transaction.
-//! G5a supports ready/cancelled only. There is no provider I/O or dispatch loop.
+//! Provider calls are owned by the worker and never occur in a transaction.
+mod application;
+pub mod fake;
+mod state;
+mod worker;
+#[cfg(test)]
+mod worker_tests;
 use crate::{
     access::{Action, Scope},
     binding::{Binding, NativeInput},
@@ -12,23 +18,27 @@ use crate::{
     native_slice::{Attempt, Command, Error, Meta, ModelRecord, Result},
 };
 use redb::{
-    ReadTransaction, ReadableTable, ReadableTableMetadata, TableDefinition, WriteTransaction,
+    ReadTransaction, ReadableDatabase, ReadableTable, ReadableTableMetadata, TableDefinition,
+    WriteTransaction,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+pub use state::Disposition;
+use state::{Application, Fact, Lease, Start, Sweep};
 use std::{
     collections::{BTreeMap, BTreeSet},
     time::{SystemTime, UNIX_EPOCH},
 };
 use uuid::Uuid;
 
-pub const CODEC: &str = "rebase-effects-1";
+pub const CODEC: &str = "rebase-effects-2";
 pub const MAX_UNRESOLVED: u16 = 64;
 pub const MAX_RETAINED: u16 = 256;
 pub const MAX_FACTS: usize = 1024;
 pub const MAX_INBOX: usize = 256;
 pub const MAX_REQUEST: usize = 1024;
+pub const MAX_OUTCOME: usize = 2048;
 pub const MAX_BYTES: u64 = 8 * 1024 * 1024;
 const HEADER_ALLOWANCE: u64 = 4096;
 const RESULT_RESERVE: u64 = 4096;
@@ -58,13 +68,15 @@ pub struct ActionDeclaration {
     pub reference_slot: u16,
     pub target_contract: u16,
     pub provider_account: &'static str,
+    pub application_fields: Vec<&'static str>,
 }
-pub(crate) fn capabilities(action: &ActionDeclaration) -> Value {
+pub(crate) fn capabilities<B: Binding>(action: &ActionDeclaration) -> Value {
     json!({"action":action,"request_contract":action.source_contract,"codec":CODEC,
         "creation":"records.mutate creates an immutable Dispatch and returns executions",
         "status":{"method":"effects.status","params":["model","execution_id"],"visibility":"current target Account read"},
         "cancel":{"method":"effects.cancel","params":["model","context","operation_id","execution_id","if_revision"],"authority":"current target Update and requester or administrator"},
-        "phases":["ready","cancelled"],"dispatch_enabled":false,
+        "outcome":B::effect_outcome_schema(),
+        "phases":["ready","waiting","uncertain","succeeded","failed","cancelled"],"dispatch_enabled":false,
         "limits":{"unresolved":MAX_UNRESOLVED,"retained":MAX_RETAINED,"request_bytes":MAX_REQUEST,"private_bytes":MAX_BYTES},
         "restore":"effect-bearing stores receive a fresh disabled, quarantined activation"})
 }
@@ -78,6 +90,10 @@ pub struct Template {
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
     Ready,
+    Waiting,
+    Uncertain,
+    Succeeded,
+    Failed,
     Cancelled,
 }
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -85,6 +101,7 @@ pub enum Phase {
 pub enum Cancellation {
     Requested,
     Expired,
+    Revoked,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,6 +114,9 @@ pub(crate) struct Runtime {
     pub retained: u16,
     pub unresolved: u16,
     pub reserved_facts: u16,
+    pub facts: u16,
+    pub next_class: u8,
+    pub sweeps: [Sweep; 4],
     pub accounted_bytes: u64,
 }
 impl Runtime {
@@ -109,19 +129,29 @@ impl Runtime {
             retained: 0,
             unresolved: 0,
             reserved_facts: 0,
+            facts: 0,
+            next_class: 0,
+            sweeps: Default::default(),
             accounted_bytes: HEADER_ALLOWANCE,
         }
     }
     fn validate(&self) -> Result<()> {
+        for (class, sweep) in self.sweeps.iter().enumerate() {
+            sweep.validate(class as u8)?;
+        }
         ensure(
-            self.codec == CODEC && !self.activation.is_nil() && !self.dispatch_enabled,
+            self.codec == CODEC
+                && !self.activation.is_nil()
+                && !(self.quarantined && self.dispatch_enabled),
             "effect runtime identity/activation",
         )?;
         ensure(
             self.unresolved <= MAX_UNRESOLVED
                 && self.retained <= MAX_RETAINED
                 && self.unresolved <= self.retained
-                && self.reserved_facts == self.unresolved
+                && self.reserved_facts <= self.unresolved
+                && usize::from(self.facts) + usize::from(self.reserved_facts) <= MAX_FACTS
+                && self.next_class < 4
                 && self.accounted_bytes <= MAX_BYTES
                 && self.accounted_bytes >= HEADER_ALLOWANCE
                 && (HEADER.len() + local::encode(self)?.len()) as u64 <= HEADER_ALLOWANCE,
@@ -165,6 +195,19 @@ pub(crate) struct Execution<B: Binding> {
     pub revision: u64,
     pub phase: Phase,
     pub cancellation: Option<Cancellation>,
+    pub attempts: u8,
+    pub observations: u8,
+    #[serde(with = "decimal")]
+    pub next_at: i64,
+    pub lease: Option<Lease>,
+    pub started: Option<Start>,
+    pub last_fact: Option<String>,
+    pub terminal_fact: Option<String>,
+    pub application: Application,
+    pub reservation: bool,
+    pub quarantined: bool,
+    pub conflict: bool,
+    pub diagnostic: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -273,21 +316,107 @@ pub(crate) fn runtime_write(write: &WriteTransaction) -> Result<Runtime> {
     result.validate()?;
     Ok(result)
 }
+fn runtime_read(read: &ReadTransaction) -> Result<Runtime> {
+    let table = read.open_table(EFFECT_RUNTIME).map_err(local::storage)?;
+    ensure(
+        table.len().map_err(local::storage)? == 1,
+        "effect runtime inventory",
+    )?;
+    let bytes = table
+        .get(HEADER)
+        .map_err(local::storage)?
+        .ok_or_else(|| local::corrupt("missing effect runtime"))?;
+    let runtime: Runtime = local::decode(bytes.value())?;
+    runtime.validate()?;
+    Ok(runtime)
+}
+fn load_execution<B: Binding>(write: &WriteTransaction, id: Uuid) -> Result<Execution<B>> {
+    let table = write.open_table(EXECUTIONS).map_err(local::storage)?;
+    let bytes = table
+        .get(id.as_bytes().as_slice())
+        .map_err(local::storage)?
+        .ok_or_else(|| Error::new("not_found", "execution unavailable"))?;
+    let row: Execution<B> = local::decode(bytes.value())?;
+    ensure(
+        row.id == id && local::encode(&row)? == bytes.value(),
+        "canonical execution",
+    )?;
+    Ok(row)
+}
+/// All lifecycle changes share exact index/counter publication and one CAS.
+fn replace_execution<B: Binding>(
+    write: &WriteTransaction,
+    runtime: &mut Runtime,
+    before: &Execution<B>,
+    row: &Execution<B>,
+    abort: Option<usize>,
+) -> Result<()> {
+    ensure(before.same_intent(row), "immutable execution changed")?;
+    ensure(
+        row.revision > before.revision,
+        "execution revision did not advance",
+    )?;
+    ensure(
+        local::encode(&load_execution::<B>(write, row.id)?)? == local::encode(before)?,
+        "execution CAS",
+    )?;
+    row.validate_state(runtime)?;
+    runtime.unresolved = runtime
+        .unresolved
+        .checked_sub(u16::from(before.unresolved()))
+        .and_then(|n| n.checked_add(u16::from(row.unresolved())))
+        .ok_or_else(|| local::corrupt("effect unresolved count"))?;
+    runtime.reserved_facts = runtime
+        .reserved_facts
+        .checked_sub(u16::from(before.reservation))
+        .and_then(|n| n.checked_add(u16::from(row.reservation)))
+        .ok_or_else(|| local::corrupt("effect reservation count"))?;
+    runtime.accounted_bytes = runtime
+        .accounted_bytes
+        .checked_sub(before.accounted_bytes()?)
+        .and_then(|n| n.checked_add(row.accounted_bytes().ok()?))
+        .ok_or_else(|| local::corrupt("effect byte accounting"))?;
+    if runtime.unresolved > MAX_UNRESOLVED
+        || usize::from(runtime.facts) + usize::from(runtime.reserved_facts) > MAX_FACTS
+        || runtime.accounted_bytes > MAX_BYTES
+    {
+        return Err(Error::new("state_limit", "effect recovery capacity"));
+    }
+    {
+        let mut due = write.open_table(DUE).map_err(local::storage)?;
+        if let Some(key) = before.due() {
+            ensure(
+                due.remove(key.as_slice())
+                    .map_err(local::storage)?
+                    .is_some(),
+                "previous effect due row missing",
+            )?;
+        }
+        if let Some(key) = row.due() {
+            due.insert(key.as_slice(), b"".as_slice())
+                .map_err(local::storage)?;
+        }
+    }
+    injected(abort, usize::MAX - 2)?;
+    write
+        .open_table(EXECUTIONS)
+        .map_err(local::storage)?
+        .insert(row.id.as_bytes().as_slice(), local::encode(row)?.as_slice())
+        .map_err(local::storage)?;
+    injected(abort, usize::MAX - 1)?;
+    write_runtime(write, runtime)?;
+    injected(abort, usize::MAX - 3)
+}
 pub(crate) fn create_tables(write: &WriteTransaction) -> Result<()> {
     for (table, _) in TABLES {
         write.open_table(table).map_err(local::storage)?;
     }
     write_runtime(write, &Runtime::fresh())
 }
-pub(crate) fn reset_tables(write: &WriteTransaction) -> Result<()> {
+pub(crate) fn reset_tables<B: Binding>(write: &WriteTransaction) -> Result<()> {
     let old = runtime_write(write)?;
-    if old.unresolved != 0
-        || write
-            .open_table(FACTS)
-            .map_err(local::storage)?
-            .len()
-            .map_err(local::storage)?
-            != 0
+    if old.dispatch_enabled
+        || old.unresolved != 0
         || write
             .open_table(INBOX)
             .map_err(local::storage)?
@@ -300,17 +429,58 @@ pub(crate) fn reset_tables(write: &WriteTransaction) -> Result<()> {
             "unresolved external work prevents reset",
         ));
     }
+    for row in write
+        .open_table(FACTS)
+        .map_err(local::storage)?
+        .iter()
+        .map_err(local::storage)?
+    {
+        let (_, value) = row.map_err(local::storage)?;
+        let fact: state::Fact<B> = local::decode(value.value())?;
+        if fact.disposition == Disposition::Succeeded && fact.applied_revision.is_none() {
+            return Err(Error::new(
+                "invariant",
+                "unapplied provider fact prevents reset",
+            ));
+        }
+    }
     for (table, _) in TABLES {
         write.delete_table(table).map_err(local::storage)?;
     }
     create_tables(write)
 }
-pub(crate) fn quarantine_restore(write: &WriteTransaction) -> Result<bool> {
+pub(crate) fn quarantine_restore<B: Binding>(write: &WriteTransaction) -> Result<bool> {
     let mut runtime = runtime_write(write)?;
     if runtime.retained > 0 {
         runtime.activation = Uuid::new_v4();
         runtime.dispatch_enabled = false;
         runtime.quarantined = true;
+        runtime.sweeps = Default::default();
+        let rows = write
+            .open_table(EXECUTIONS)
+            .map_err(local::storage)?
+            .iter()
+            .map_err(local::storage)?
+            .map(|v| {
+                let (_, v) = v.map_err(local::storage)?;
+                local::decode::<Execution<B>>(v.value())
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let now = now_millis()?;
+        for before in rows {
+            if !before.unresolved() {
+                continue;
+            }
+            let mut row = before.clone();
+            row.quarantined = true;
+            row.lease = None;
+            row.next_at = now;
+            if row.phase == Phase::Ready && row.started.is_some() {
+                row.phase = Phase::Uncertain;
+            }
+            row.advance()?;
+            replace_execution(write, &mut runtime, &before, &row, None)?;
+        }
         write_runtime(write, &runtime)?;
         return Ok(true);
     }
@@ -430,9 +600,13 @@ pub(crate) fn prepare<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
             return Err(Error::new("request_limit", "effect request bytes"));
         }
         let (execute_at, not_after) = schedule(&template, now)?;
-        if runtime.retained >= MAX_RETAINED || runtime.unresolved >= MAX_UNRESOLVED {
+        if runtime.retained >= MAX_RETAINED
+            || runtime.unresolved >= MAX_UNRESOLVED
+            || usize::from(runtime.facts) + usize::from(runtime.reserved_facts) >= MAX_FACTS
+        {
             return Err(Error::new("state_limit", "effect retention capacity"));
         }
+        ws.charge("allocate", 1)?;
         let execution_id = allocate()?;
         if execution_id.is_nil()
             || execution_id == *id
@@ -472,13 +646,25 @@ pub(crate) fn prepare<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
             revision: 1,
             phase: Phase::Ready,
             cancellation: None,
+            attempts: 0,
+            observations: 0,
+            next_at: execute_at,
+            lease: None,
+            started: None,
+            last_fact: None,
+            terminal_fact: None,
+            application: Application::None,
+            reservation: true,
+            quarantined: runtime.quarantined,
+            conflict: false,
+            diagnostic: None,
         };
         runtime.retained += 1;
         runtime.unresolved += 1;
         runtime.reserved_facts += 1;
         runtime.accounted_bytes = runtime
             .accounted_bytes
-            .checked_add(row_bytes(&row)? + 24 + RESULT_RESERVE)
+            .checked_add(row.accounted_bytes()?)
             .ok_or_else(|| Error::new("overflow", "effect bytes"))?;
         if runtime.accounted_bytes > MAX_BYTES {
             return Err(Error::new("state_limit", "effect private byte capacity"));
@@ -509,7 +695,12 @@ pub(crate) fn publish<B: Binding>(
         write
             .open_table(DUE)
             .map_err(local::storage)?
-            .insert(due_key(row.execute_at, row.id).as_slice(), b"".as_slice())
+            .insert(
+                row.due()
+                    .ok_or_else(|| local::corrupt("new intent due"))?
+                    .as_slice(),
+                b"".as_slice(),
+            )
             .map_err(local::storage)?;
         injected(abort_after, usize::MAX - 2)?;
     }
@@ -542,6 +733,7 @@ impl<B: Binding> Store<B> {
             return Ok(Value::Null);
         };
         let row: Execution<B> = local::decode(bytes.value())?;
+        let runtime = runtime_read(&read)?;
         let table = read.open_table(KV).map_err(local::storage)?;
         let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
@@ -555,10 +747,28 @@ impl<B: Binding> Store<B> {
         if ws.record(row.target)?.is_none_or(|r| !scope.can_read(&r)) {
             return Ok(Value::Null);
         }
+        let outcome = row
+            .terminal_fact
+            .as_ref()
+            .or(row.last_fact.as_ref())
+            .map(|digest| {
+                let facts = read.open_table(FACTS).map_err(local::storage)?;
+                let value = facts
+                    .get(state::fact_key(row.id, digest)?.as_slice())
+                    .map_err(local::storage)?
+                    .ok_or_else(|| local::corrupt("linked effect fact missing"))?;
+                let fact: Fact<B> = local::decode(value.value())?;
+                serde_json::to_value(fact.outcome).map_err(local::storage)
+            })
+            .transpose()?;
         Ok(
             json!({"execution_id":row.id,"source":row.source,"target":row.target,"revision":row.revision.to_string(),
             "phase":row.phase,"request":row.request,"created_at":row.created_at.to_string(),"execute_at":row.execute_at.to_string(),
-            "not_after":row.not_after.to_string(),"cancellation":row.cancellation,"provider_key":format!("{}/{}",row.id,row.action),"dispatch_enabled":false}),
+            "not_after":row.not_after.to_string(),"cancellation":row.cancellation,"provider_key":format!("{}/{}",row.id,row.action),
+            "dispatch_enabled":runtime.dispatch_enabled,"application":row.application,"outcome":outcome,
+            "attempts":row.attempts,"observations":row.observations,"next_eligible":row.next_at.to_string(),
+            "running":row.lease.as_ref().is_some_and(|l| l.expires_at > now_millis().unwrap_or(i64::MAX)),
+            "quarantined":row.quarantined,"conflict":row.conflict,"diagnostic":row.diagnostic}),
         )
     }
     pub fn cancel_effect(&self, request: &Cancel) -> Result<Value> {
@@ -648,48 +858,20 @@ impl<B: Binding> Store<B> {
                 return Err(Error::new("stale_version", "execution revision differs"));
             }
             let mut runtime = runtime_write(&write)?;
-            let old_bytes = row_bytes(&row)?;
-            if row.phase == Phase::Ready {
-                row.phase = Phase::Cancelled;
+            let before = row.clone();
+            if matches!(row.phase, Phase::Ready | Phase::Waiting | Phase::Uncertain) {
                 row.cancellation = Some(Cancellation::Requested);
-                row.revision = row
-                    .revision
-                    .checked_add(1)
-                    .ok_or_else(|| Error::new("revision_exhausted", "execution revision"))?;
-                runtime.unresolved = runtime
-                    .unresolved
-                    .checked_sub(1)
-                    .ok_or_else(|| local::corrupt("effect unresolved underflow"))?;
-                runtime.reserved_facts = runtime
-                    .reserved_facts
-                    .checked_sub(1)
-                    .ok_or_else(|| local::corrupt("effect reservation underflow"))?;
-                runtime.accounted_bytes = runtime
-                    .accounted_bytes
-                    .checked_sub(old_bytes + 24 + RESULT_RESERVE)
-                    .and_then(|n| n.checked_add(row_bytes(&row).ok()?))
-                    .ok_or_else(|| local::corrupt("effect cancellation bytes"))?;
-                ensure(
-                    write
-                        .open_table(DUE)
-                        .map_err(local::storage)?
-                        .remove(due_key(row.execute_at, row.id).as_slice())
-                        .map_err(local::storage)?
-                        .is_some(),
-                    "cancelled effect due row missing",
-                )?;
-                injected(abort_after, usize::MAX - 2)?;
-                write
-                    .open_table(EXECUTIONS)
-                    .map_err(local::storage)?
-                    .insert(
-                        row.id.as_bytes().as_slice(),
-                        local::encode(&row)?.as_slice(),
-                    )
-                    .map_err(local::storage)?;
-                injected(abort_after, usize::MAX - 1)?;
-                write_runtime(&write, &runtime)?;
-                injected(abort_after, usize::MAX - 3)?;
+                row.lease = None;
+                // A restored prestart image also cannot establish nonexecution.
+                if row.started.is_none() && row.phase == Phase::Ready && !row.quarantined {
+                    row.phase = Phase::Cancelled;
+                    row.reservation = false;
+                } else {
+                    row.phase = Phase::Uncertain;
+                    row.next_at = now_millis()?;
+                }
+                row.advance()?;
+                replace_execution(&write, &mut runtime, &before, &row, abort_after)?;
             }
             meta.revision = meta
                 .revision
@@ -755,21 +937,16 @@ pub(crate) fn check<B: Binding>(
             .value(),
     )?;
     runtime.validate()?;
-    // Future native writers must establish their own typed inventory before these admit rows.
     ensure(
-        read.open_table(FACTS)
+        read.open_table(INBOX)
             .map_err(local::storage)?
             .len()
             .map_err(local::storage)?
-            == 0
-            && read
-                .open_table(INBOX)
-                .map_err(local::storage)?
-                .len()
-                .map_err(local::storage)?
-                == 0,
-        "G5a has no provider fact/inbox writers",
+            == 0,
+        "G5b has no inbox writer",
     )?;
+    let mut executions = BTreeMap::new();
+    let mut reserved = 0;
     let mut due = BTreeMap::new();
     let mut origins = BTreeSet::new();
     let mut retained = 0;
@@ -871,19 +1048,76 @@ pub(crate) fn check<B: Binding>(
                 .is_some_and(|r| r.contract == action.target_contract && r.tenant == meta.tenant),
             "retained effect target",
         )?;
+        row.validate_state(&runtime)?;
+        bytes += row.accounted_bytes()?;
+        unresolved += u16::from(row.unresolved());
+        reserved += u16::from(row.reservation);
+        if let Some(key) = row.due() {
+            due.insert(key, Vec::<u8>::new());
+        }
+        executions.insert(row.id, row);
+    }
+    let mut facts = BTreeMap::new();
+    for item in read
+        .open_table(FACTS)
+        .map_err(local::storage)?
+        .iter()
+        .map_err(local::storage)?
+    {
+        let (key, value) = item.map_err(local::storage)?;
+        ensure(facts.len() < MAX_FACTS, "provider fact population")?;
+        let fact: Fact<B> = local::decode(value.value())?;
+        let row = executions
+            .get(&fact.execution)
+            .ok_or_else(|| local::corrupt("orphan provider fact"))?;
         ensure(
-            row.revision > 0
-                && match row.phase {
-                    Phase::Ready => row.cancellation.is_none() && row.revision == 1,
-                    Phase::Cancelled => row.cancellation.is_some() && row.revision == 2,
-                },
-            "effect phase/revision",
+            local::encode(&fact)? == value.value()
+                && fact.codec == CODEC
+                && state::fact_key(fact.execution, &fact.digest)? == key.value()
+                && fact.digest == state::outcome_digest::<B>(&fact.outcome)?
+                && fact.request_hash == row.request_hash
+                && fact.observed_at >= row.created_at
+                && local::encode(&fact.outcome)?.len() <= MAX_OUTCOME
+                && B::effect_outcome(&row.request, row.id, &fact.outcome)? == fact.disposition,
+            "provider fact binding/hash",
         )?;
-        bytes += key.value().len() as u64 + value.value().len() as u64;
-        if row.phase == Phase::Ready {
-            unresolved += 1;
-            due.insert(due_key(row.execute_at, row.id), Vec::<u8>::new());
-            bytes += 24 + RESULT_RESERVE;
+        if let Some(revision) = fact.applied_revision {
+            ensure(
+                revision > 0
+                    && revision <= meta.revision
+                    && fact.disposition == Disposition::Succeeded
+                    && row.terminal_fact.as_ref() == Some(&fact.digest)
+                    && row.application == Application::Applied,
+                "fact application revision/binding",
+            )?;
+        }
+        bytes += (key.value().len() + value.value().len()) as u64;
+        facts.insert((fact.execution, fact.digest.clone()), fact);
+    }
+    for row in executions.values() {
+        for digest in row.last_fact.iter().chain(row.terminal_fact.iter()) {
+            ensure(
+                facts.contains_key(&(row.id, digest.clone())),
+                "execution fact link",
+            )?;
+        }
+        if let Some(digest) = &row.terminal_fact {
+            let fact = &facts[&(row.id, digest.clone())];
+            ensure(
+                match row.phase {
+                    Phase::Succeeded => {
+                        fact.disposition == Disposition::Succeeded
+                            && (fact.applied_revision.is_some()
+                                == (row.application == Application::Applied))
+                    }
+                    Phase::Failed => matches!(
+                        fact.disposition,
+                        Disposition::Failed | Disposition::NotAccepted
+                    ),
+                    _ => false,
+                },
+                "terminal provider fact/application",
+            )?;
         }
     }
     let due_table = read.open_table(DUE).map_err(local::storage)?;
@@ -903,12 +1137,27 @@ pub(crate) fn check<B: Binding>(
     ensure(
         runtime.retained == retained
             && runtime.unresolved == unresolved
-            && runtime.reserved_facts == unresolved
+            && runtime.reserved_facts == reserved
+            && usize::from(runtime.facts) == facts.len()
             && runtime.accounted_bytes == bytes,
         "effect counts/reserved bytes",
     )?;
+    let now = now_millis()?;
+    let oldest_eligible_age = executions
+        .values()
+        .filter_map(|row| row.due())
+        .filter_map(|key| {
+            let at = (u64::from_be_bytes(key[1..9].try_into().ok()?) ^ (1u64 << 63)) as i64;
+            (at <= now).then(|| now.saturating_sub(at))
+        })
+        .max();
     Ok(
-        json!({"retained":retained,"unresolved":unresolved,"reserved_facts":unresolved,"accounted_bytes":bytes,"dispatch_enabled":false,"quarantined":runtime.quarantined}),
+        json!({"retained":retained,"unresolved":unresolved,"reserved_facts":reserved,"facts":facts.len(),
+            "accounted_bytes":bytes,"dispatch_enabled":runtime.dispatch_enabled,"quarantined":runtime.quarantined,
+            "oldest_eligible_age_ms":oldest_eligible_age.map(|age|age.to_string()),
+            "expired_leases":executions.values().filter(|r|r.lease.as_ref().is_some_and(|l|l.expires_at<=now)).count(),
+            "blocked":executions.values().filter(|r|r.application==Application::Blocked).count(),
+            "uncertain":executions.values().filter(|r|r.phase==Phase::Uncertain).count()}),
     )
 }
 
@@ -956,9 +1205,9 @@ pub(crate) fn check_receipt<B: Binding>(
             ensure(
                 row.id == result.execution_id
                     && row.target == result.target
-                    && result.execution_revision == 2
+                    && result.execution_revision > 0
                     && row.revision >= result.execution_revision
-                    && result.phase == Phase::Cancelled,
+                    && result.phase != Phase::Ready,
                 "receipt cancellation binding",
             )?;
         }

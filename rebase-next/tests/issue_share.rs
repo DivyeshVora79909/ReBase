@@ -445,6 +445,7 @@ fn issue_share_checker_rejects_stale_publications_and_missing_or_orphan_direct_r
         listen: "127.0.0.1:0".parse().unwrap(),
         max_inflight: 1,
         request_timeout_seconds: 5,
+        effects: None,
         identity: IdentityConfig {
             issuer: "issue-share-test".into(),
             audience: "rebase-test".into(),

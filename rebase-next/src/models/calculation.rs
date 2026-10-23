@@ -36,6 +36,7 @@ impl Binding for Calculation {
     type Index = crate::indexes::standard::Standard;
     type Input = Input;
     type Derived = Calculated;
+    type Outcome = ();
     const NAME: &'static str = "rebase-next-local";
     const BEHAVIOR: &'static str = crate::native_slice::BEHAVIOR_CONTRACT;
     fn declarations() -> Result<Vec<Contract>> {

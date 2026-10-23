@@ -109,6 +109,18 @@ fn run_model<B: Binding>(args: &[String]) -> Result<(), Box<dyn Error>> {
         ["reset", path, "--expect-store", store] => {
             Store::<B>::open(path, model)?.reset(identity(store)?)?
         }
+        [
+            "effects",
+            "retry",
+            path,
+            execution,
+            "--if-revision",
+            revision,
+        ] => {
+            let store = Store::<B>::open(path, model)?;
+            store.check_integrity()?;
+            store.retry_effect(identity(execution)?, revision.parse()?)?
+        }
         ["model", "developer"] => model.developer_catalog(),
         ["model", "view"] => {
             println!("{}", inspector::render(&model, None, &[])?);

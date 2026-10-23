@@ -187,6 +187,7 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
 impl Binding for Measurement {
     type Input = Input;
     type Derived = ();
+    type Outcome = ();
     type Index = Statistics;
     const NAME: &'static str = "dimensioned-measurements";
     const BEHAVIOR: &'static str = "dimensioned-measurements-1";

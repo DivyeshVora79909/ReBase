@@ -53,6 +53,7 @@ pub trait Binding: Copy + Clone + Debug + Eq + Send + Sync + 'static {
     type Index: crate::index::NativeIndex;
     type Input: NativeInput;
     type Derived: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type Outcome: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
     const NAME: &'static str;
     const BEHAVIOR: &'static str;
     fn declarations() -> Result<Vec<Contract>>;
@@ -77,6 +78,30 @@ pub trait Binding: Copy + Clone + Debug + Eq + Send + Sync + 'static {
     }
     fn effect_template(_input: &Self::Input) -> Result<Option<crate::effects::Template>> {
         Ok(None)
+    }
+    fn effect_outcome(
+        _request: &Self::Input,
+        _execution: Uuid,
+        _outcome: &Self::Outcome,
+    ) -> Result<crate::effects::Disposition> {
+        Err(crate::native_slice::Error::new(
+            "unsupported_query",
+            "model has no provider outcome",
+        ))
+    }
+    fn effect_application(
+        _request: &Self::Input,
+        _outcome: &Self::Outcome,
+        _target: &crate::native_slice::ModelRecord<Self>,
+        _id: Uuid,
+    ) -> Result<crate::native_slice::Command> {
+        Err(crate::native_slice::Error::new(
+            "unsupported_query",
+            "model has no provider application",
+        ))
+    }
+    fn effect_outcome_schema() -> Value {
+        Value::Null
     }
     fn fixture_catalog() -> Value {
         serde_json::json!([])

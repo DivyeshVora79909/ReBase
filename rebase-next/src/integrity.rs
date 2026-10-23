@@ -1294,6 +1294,7 @@ mod tests {
             },
             max_inflight: 1,
             request_timeout_seconds: 5,
+            effects: None,
         };
         assert_eq!(
             server::router(store.clone(), &config).unwrap_err().code,
