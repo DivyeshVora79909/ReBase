@@ -381,4 +381,3 @@ def _check_model_compatibility(source, model):
     if source.get("model") != model:
         raise ValueError(
             f"Exploration artifact model {source.get('model')!r} does not match fresh Quantity model {model!r}")
-

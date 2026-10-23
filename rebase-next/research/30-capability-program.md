@@ -22,11 +22,11 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 
 ## Capability map and dependency order
 
-**Current execution boundary (latest user change, 2026-10-23):** G4d-c and G5
-are accepted within their bounds. Prepare **V1**, the self-explaining workshop
-verification suite, before broader accounting. This run is documentation only;
-the next assigned implementation agent executes V1.1–V1.5. G6 accounting, G7,
-G8 and frontend remain deferred. Keep historical gate identities and evidence.
+**Current execution boundary (2026-10-23):** G4/G5 and the bounded V1 workshop
+are accepted. [V1 execution and limits](44-workshop-verification-result.md) owns
+current verification; its earlier plan remains historical preparation. The
+assigned V1 goal is complete. G6 accounting, G7, G8 and frontend remain deferred
+until separately selected; keep their gate identities and evidence.
 
 | Gate | Observable power | Preparation and acceptance boundary |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ G8 and frontend remain deferred. Keep historical gate identities and evidence.
 | G4c | Maintain a genuinely new summary/key contract | Accepted: [native index extension](34-native-index-extension.md), one active tree and dimensioned measurement statistics |
 | G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md), [G4d-b typed reports](41-native-query-consumer-result.md) and [G4d-c authored selection](42-authored-selection-result.md) accepted |
 | G5 | Reliable external work | [G5a intent](37-atomic-intent-implementation.md), [G5b worker/application](38-fenced-worker-implementation.md) and [G5c inbox/recovery](39-ingress-recovery-implementation.md) accepted for the fixed fake provider |
-| V1 | Self-explaining example verification suite | **Prepared next:** [workshop plan](43-example-verification-suite.md), small non-accounting scenarios, independent source expectations, bounded exploration, replay and a capability map; not implemented |
+| V1 | Self-explaining example verification suite | **Accepted:** [workshop result](44-workshop-verification-result.md), four non-accounting chapters, independent expectations, bounded exploration, replay and all 15 current capability rows |
 | G6 | Representative accounting power | **Deferred until separately selected:** dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns; existing bounded invoicing remains a regression example |
 | G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
 | G8 | Workload and deployment acceptance | Extended workloads, recovery and release package with explicit limits rather than unlimited production claims |
@@ -100,9 +100,8 @@ without another prompt. Keep `CONTEXT.md` current for switching agents.
 
 G4a, G4b, G4c, G4d-a/b/c and G5a-G5c are accepted. The
 [G4d-c result](42-authored-selection-result.md) closes the previous selected scope.
-The latest instruction prepares [V1](43-example-verification-suite.md) through
-documentation only. Stop after that preparation; when implementation is assigned,
-start V1.1 and continue through V1.5. Do not begin G6–G8 or frontend.
+V1.1–V1.5 are now [accepted](44-workshop-verification-result.md). Stop after
+this goal; do not begin G6–G8 or frontend without a separately selected goal.
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
 fake-provider execution, durable signed ingress and restored reconciliation are

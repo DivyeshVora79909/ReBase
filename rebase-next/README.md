@@ -8,9 +8,11 @@ stateless Python client and model-driven fixtures make it directly usable from
 scripts. Calculation, equipment reservation, sensor measurement and bounded
 external work share the engine, authority and tools. Existing bounded invoicing
 remains available. All implementation and dependencies stay inside this directory.
-This checkout's package source is 0.14.0 and includes native index families,
+This checkout's package source is 0.15.0 and includes native index families,
 reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
 work with signed events and reconciliation after restore.
+A [self-explaining workshop](docs/workshop.md) adds independent checks, bounded
+exploration and replay across four small examples.
 The last verified deployment bundle is 0.6.0; source capabilities do not imply
 that a release bundle has passed deployment acceptance.
 
@@ -51,8 +53,8 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
-| Current source capability gate | [G4d-c authored selection](research/42-authored-selection-result.md) |
-| Planned self-explaining verification examples (design only) | [Example-suite plan](research/43-example-verification-suite.md) |
+| Current source verification | [V1 workshop result](research/44-workshop-verification-result.md) |
+| Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -64,13 +66,11 @@ sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,
 not a claim of general production capacity.
 
-The self-explaining verification example suite is a planned developer tool, not
-an implemented command. It will walk through, check, explore and replay authored
-examples against native checks and independent source oracles. Existing
-calculation, equipment, measurement and effect-demo models remain separate
-fixtures; they do not form one cross-store transaction. Broader accounting work
-is future scope. The bounded invoice example remains an optional existing
-regression workflow.
+The [workshop](docs/workshop.md) now walks through, checks, explores and replays
+non-accounting examples with independent source expectations and native/process
+controls. Equipment, measurement, quantity and effect-demo remain separate
+stores. Broader accounting is deferred; bounded invoicing remains an existing
+regression workflow. See the [result and limits](research/44-workshop-verification-result.md).
 
 The population probe runs both models at 64, 256, 1,024 and 4,096 public sources:
 
@@ -81,7 +81,7 @@ python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-n
 It checks source arithmetic, selective updates, fanout, rollback, replay,
 authorization, restart and verified restore through the real HTTP process.
 Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. The 0.14.0 source uses store format 9 /native codec 6 /
+reject atomically. The 0.15.0 source uses store format 9 /native codec 6 /
 effect codec 3 /API 3. Calculation, equipment, invoicing and effect-demo identities
 match 0.13.0; measurement's selection behavior has a new identity. There is no implicit migration from earlier formats;
 keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).

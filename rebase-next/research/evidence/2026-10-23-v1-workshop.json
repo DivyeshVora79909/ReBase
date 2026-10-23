@@ -1,0 +1,1391 @@
+{
+  "binary": {
+    "bytes": 30274512,
+    "retained": "target/v1-accepted/rebase-next",
+    "sha256": "c95506944448c16d955485429f54cb689dbe616583364306083812228d8c8634"
+  },
+  "capabilities": {
+    "V-C01": {
+      "native_harnesses": [
+        "exact_values",
+        "model_contract",
+        "quantity",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C02": {
+      "native_harnesses": [
+        "equipment",
+        "measurement",
+        "quantity"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C03": {
+      "native_harnesses": [
+        "native_tree",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C04": {
+      "native_harnesses": [
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C05": {
+      "native_harnesses": [
+        "equipment",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C06": {
+      "native_harnesses": [
+        "lib",
+        "routes"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C07": {
+      "native_harnesses": [
+        "quantity",
+        "workshop_exhaustive",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C08": {
+      "native_harnesses": [
+        "equipment",
+        "measurement",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C09": {
+      "native_harnesses": [
+        "measurement"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C10": {
+      "native_harnesses": [
+        "measurement",
+        "lib"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C11": {
+      "native_harnesses": [
+        "access_control",
+        "equipment_http",
+        "network_api"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C12": {
+      "native_harnesses": [
+        "local_api",
+        "semantics"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    },
+    "V-C13": {
+      "native_harnesses": [
+        "local_api",
+        "network_api",
+        "storage_lifecycle"
+      ],
+      "process_evidence": [
+        "worker",
+        "ingress"
+      ],
+      "status": "passed-current"
+    },
+    "V-C14": {
+      "native_harnesses": [
+        "lib",
+        "storage_lifecycle"
+      ],
+      "process_evidence": [
+        "worker",
+        "ingress"
+      ],
+      "status": "passed-current"
+    },
+    "V-C15": {
+      "native_harnesses": [
+        "lib",
+        "storage_lifecycle",
+        "native_tree"
+      ],
+      "process_evidence": [],
+      "status": "passed-current"
+    }
+  },
+  "checkpoint": "V1.1-V1.5",
+  "compatibility": {
+    "comparison": "complete public catalogs and model identities before/after terminal publication-target extension",
+    "status": "passed",
+    "unchanged_models": {
+      "calculation": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "effect-demo": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "equipment": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+      "invoicing": "b638d3c94323fba73126eddda0ee6c812566d4fc5fd7bf1b6aa7f02eed9479f6",
+      "measurement": "32d95742102bfcb62fff89e0871f90a2c08cc97cf344c7665a2704cb9569871b"
+    }
+  },
+  "date": "2026-10-23",
+  "deferred": [
+    "G6 broader accounting",
+    "G7 distributed storage/conformance",
+    "G8 workload/release expansion",
+    "frontend",
+    "live-provider integration",
+    "managed statistics emissions",
+    "selected-parent publications/winner-dependent topology",
+    "arbitrary query planning",
+    "unbounded scale"
+  ],
+  "documentation": {
+    "documents": [
+      "AGENTS.md",
+      "CONTEXT.md",
+      "README.md",
+      "docs/workshop.md",
+      "docs/developer-tools.md",
+      "docs/compiled-models.md",
+      "research/05-feasibility.md",
+      "research/30-capability-program.md",
+      "research/43-example-verification-suite.md",
+      "research/44-workshop-verification-result.md"
+    ],
+    "missing": [],
+    "relative_file_links_checked": 226
+  },
+  "exploration": {
+    "accepted": 16,
+    "attempted": 32,
+    "checked": 32,
+    "classified_invalid": 0,
+    "coverage": {
+      "blocked_delete": 4,
+      "cycle": 4,
+      "inexact": 4,
+      "noop": 4,
+      "replay": 4,
+      "retarget": 4,
+      "scale_factor": 4,
+      "source_update": 4
+    },
+    "profile": {
+      "action_alphabet": [
+        "source_update",
+        "scale_factor",
+        "retarget",
+        "cycle",
+        "blocked_delete",
+        "inexact",
+        "noop",
+        "replay"
+      ],
+      "alphabet_exhaustive": false,
+      "case": "quantity",
+      "coverage_note": "Seeded instantiated sequences only; native checks are not executed by this mode.",
+      "model": "quantity",
+      "seed": 20261023,
+      "steps": 32
+    },
+    "rejected": 12,
+    "status": "passed",
+    "truncated": false
+  },
+  "finite_profile": {
+    "accepted_transitions": 129,
+    "alphabet": [
+      "Source=0",
+      "Source=6",
+      "Source=12",
+      "Source=2 (inexact)",
+      "delete referenced Source",
+      "retarget left Scale to Join (feedback)"
+    ],
+    "classified_invalid": 0,
+    "depth": 3,
+    "prefixes_including_empty": 259,
+    "rejected_transitions": 129,
+    "scope": "One real Store; authored state restored between branches, fresh operation intents and versions, retained receipts. Serial finite profile only.",
+    "transitions": 258,
+    "truncated": false
+  },
+  "implementation_commits": [
+    "cba8e0a",
+    "6e323c1"
+  ],
+  "logical_replay": {
+    "actions": 32,
+    "exact_byte_resume": "Only same-target repeated plans executed; no original request was attached to a fresh target.",
+    "report": "target/v1-replay/result.json",
+    "status": "passed"
+  },
+  "native": {
+    "failed": 0,
+    "harnesses": {
+      "access_control": {
+        "duration_seconds": 0.096,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 3,
+        "sha256": "c5f4872c19b6cb3e2010ac0a868fd9907666c37d29a9e6652228adbabd6052b7",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "direct_group_access_inherits_grants_without_granting_siblings",
+            "status": "ok"
+          },
+          {
+            "name": "prepared_scopes_match_independent_path_search_and_preserve_diamonds",
+            "status": "ok"
+          },
+          {
+            "name": "real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts",
+            "status": "ok"
+          }
+        ]
+      },
+      "equipment": {
+        "duration_seconds": 0.216,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 2,
+        "sha256": "e769663b890ad6efd62aaeebf7364fd1f59642295ce141485d1bd693d305bf7d",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "independent_equipment_model_reuses_mutation_receipts_queries_and_storage",
+            "status": "ok"
+          },
+          {
+            "name": "sparse_equipment_contracts_are_closed_and_native_bound",
+            "status": "ok"
+          }
+        ]
+      },
+      "equipment_http": {
+        "duration_seconds": 0.079,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 1,
+        "sha256": "fe9dec3483b6b3639a5a48bb4c57340e4a94a16fc4871e9a62b84cf914190463",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "equipment_uses_shared_http_authority_receipts_and_sparse_queries",
+            "status": "ok"
+          }
+        ]
+      },
+      "exact_values": {
+        "duration_seconds": 0.099,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 1,
+        "sha256": "557bb42bc0f3a903ca9690bfd122f5bf55ae3db953fe1f6617f865f8b677f350",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "exact_values_cross_native_binding_http_receipts_and_reopening",
+            "status": "ok"
+          }
+        ]
+      },
+      "lib": {
+        "duration_seconds": 28.662,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 86,
+        "sha256": "ff9c56d18c53893fc8b0348aa6419f6cc924eaaa1df0f280b970ca9079a33c63",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "causal::tests::resolved_query_cannot_substitute_an_unauthored_account",
+            "status": "ok"
+          },
+          {
+            "name": "causal::tests::selective_closure_matches_source_arithmetic_through_repeated_topology_edits",
+            "status": "ok"
+          },
+          {
+            "name": "dependency::tests::dense_prefix_dependencies_keep_the_existing_linear_gate_path",
+            "status": "ok"
+          },
+          {
+            "name": "dependency::tests::final_moves_reverse_edges_without_union_cycles_or_excluded_prefix_feedback",
+            "status": "ok"
+          },
+          {
+            "name": "dependency::tests::inclusive_bounds_consume_whole_equal_time_groups_and_extreme_timestamps",
+            "status": "ok"
+          },
+          {
+            "name": "dependency::tests::sparse_windows_use_linear_graph_space_and_enforce_build_and_schedule_budgets",
+            "status": "ok"
+          },
+          {
+            "name": "dependency::tests::window_gates_match_independent_pairwise_reachability_and_cycles",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::action_metadata_is_checked_and_advertised_only_for_effect_models",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::corrupt_effect_inventory_rejects_complete_check_and_restore_without_publication",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::current_account_authority_controls_creation_cancel_status_and_receipt_disclosure",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::immutable_input_expiry_and_allocation_failures_leave_no_intent_or_receipt",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::intent_and_cancel_roll_back_after_actual_writes_and_share_receipts",
+            "status": "ok"
+          },
+          {
+            "name": "effect_tests::real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset",
+            "status": "ok"
+          },
+          {
+            "name": "effects::tests::due_key_preserves_full_signed_time_and_uuid_order",
+            "status": "ok"
+          },
+          {
+            "name": "effects::tests::schedule_defaults_and_twenty_four_hour_boundaries_are_exact",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::archive_retains_inbox_and_clean_reset_rejects_old_receipts_claims_and_hints",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::authentication_covers_exact_bytes_identity_skew_and_bounded_typed_json",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::complete_capacity_retains_a_blocked_event_advances_sweeps_and_fits_backup",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::durable_ack_dedup_and_consumed_fact_rollback_cover_actual_writes",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::inbox_inventory_and_compiled_action_mismatch_reject_check_and_restore",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::ingress::prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates",
+            "status": "ok"
+          },
+          {
+            "name": "effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption",
+            "status": "ok"
+          },
+          {
+            "name": "fixtures::tests::fixtures_remap_declared_references_and_reject_invalid_inventories",
+            "status": "ok"
+          },
+          {
+            "name": "index_tests::index_codes_and_time_keys_are_strict_native_values",
+            "status": "ok"
+          },
+          {
+            "name": "index_tests::native_financial_algebra_matches_complete_time_source_scans",
+            "status": "ok"
+          },
+          {
+            "name": "index_tests::native_query_port_preserves_standard_scalar_wire_and_rejects_statistics",
+            "status": "ok"
+          },
+          {
+            "name": "index_tests::one_native_tree_supports_noncopy_nontime_values",
+            "status": "ok"
+          },
+          {
+            "name": "inspector::tests::data_is_text_in_the_offline_artifact",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::canonical_orphan_root_returns_corruption_at_check_startup_and_restore",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::corrupt_data_chain_is_rejected_before_unbounded_recursion",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::model_population_limits_are_checked_inside_codec_envelope",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::selector_checker_recomputes_empty_identity_minimum_and_bounded_count_from_sources",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::selector_checker_rejects_wrong_order_imbalance_and_disconnected_nodes",
+            "status": "ok"
+          },
+          {
+            "name": "integrity::tests::source_inventory_and_structure_reject_corruption_without_writer_replay",
+            "status": "ok"
+          },
+          {
+            "name": "json::tests::nested_duplicate_keys_trailing_documents_and_oversize_input_reject",
+            "status": "ok"
+          },
+          {
+            "name": "local::tests::active_model_context_and_table_inventory_are_checked_before_use",
+            "status": "ok"
+          },
+          {
+            "name": "local::tests::old_store_format_is_rejected_before_decoding_legacy_meta",
+            "status": "ok"
+          },
+          {
+            "name": "local::tests::partial_writes_and_receipt_writes_abort_all_application_tables",
+            "status": "ok"
+          },
+          {
+            "name": "local::tests::secured_physical_aborts_include_authority_and_reader_tables",
+            "status": "ok"
+          },
+          {
+            "name": "model::tests::bundled_preparation_exports_public_schemas_without_private_roles",
+            "status": "ok"
+          },
+          {
+            "name": "model::tests::preparation_rejects_ambiguous_or_inconsistent_declarations",
+            "status": "ok"
+          },
+          {
+            "name": "models::invoicing_check::tests::independent_invoicing_checker_rejects_numeric_and_structural_corruption",
+            "status": "ok"
+          },
+          {
+            "name": "native_slice::tests::prepared_calculation_and_exact_bindings",
+            "status": "ok"
+          },
+          {
+            "name": "native_slice::tests::typed_workspace_retains_old_images_and_coalesces_current_state",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::calculation_only_reader_recomputes_fallback_when_its_query_is_inactive",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::inherited_parameters_react_retarget_and_survive_replay_and_reopening",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::rejected_parent_changes_leave_all_tables_revision_and_receipts_unchanged",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::terminal_only_reader_tracks_strict_bounds_roots_activation_and_deletion",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders",
+            "status": "ok"
+          },
+          {
+            "name": "parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::aggregate_change_reaches_publication_diamond_chain_and_deduplicated_routes",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::final_publication_and_financial_graph_matches_plain_enumerated_orders",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::final_reversal_retargets_in_both_command_orders_and_equal_values_keep_edges",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::malformed_resolved_slots_targets_native_type_and_tenant_are_atomic",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::prepared_publication_contract_rejects_unresolved_and_incompatible_declarations",
+            "status": "ok"
+          },
+          {
+            "name": "publication_tests::self_direct_mixed_cycles_and_overflow_roll_back_every_table_and_receipt",
+            "status": "ok"
+          },
+          {
+            "name": "route_tests::bounded_stabbing_prunes_both_sides_at_gate_population",
+            "status": "ok"
+          },
+          {
+            "name": "route_tests::empty_identity_minimum_cache_extremes_and_exact_remove_are_preserved",
+            "status": "ok"
+          },
+          {
+            "name": "route_tests::through_endpoints_interleave_and_only_subscribers_accept_windows",
+            "status": "ok"
+          },
+          {
+            "name": "route_tests::window_routes_match_literal_sources_after_rotations_rekeys_and_old_new_moves",
+            "status": "ok"
+          },
+          {
+            "name": "server::tests::deadline_keeps_admission_until_the_real_transaction_finishes",
+            "status": "ok"
+          },
+          {
+            "name": "time_range::tests::closed_open_and_extreme_membership_matches_literal_predicates",
+            "status": "ok"
+          },
+          {
+            "name": "time_range::tests::wire_is_canonical_closed_and_preserves_empty_window_identity",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::intermediate_overflow_is_distinct_from_final_overflow",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::reduction_and_canonical_wire_preserve_native_boundaries",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::schema_exports_the_wire_contract_and_rounding_names",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::tax_fx_and_rounding_location_are_model_choices",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::ties_and_directed_rounding_are_explicit_for_both_signs",
+            "status": "ok"
+          },
+          {
+            "name": "values::tests::wire_rejects_noncanonical_or_unbounded_values",
+            "status": "ok"
+          },
+          {
+            "name": "window_tests::terminal_windows_validate_final_managed_repairs_in_both_command_orders",
+            "status": "ok"
+          },
+          {
+            "name": "window_tests::windows_accept_edge_reversal_even_when_old_new_union_is_cyclic",
+            "status": "ok"
+          },
+          {
+            "name": "window_tests::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting",
+            "status": "ok"
+          },
+          {
+            "name": "window_tests::windows_reject_zero_feedback_and_preserve_activation_and_phase_identity",
+            "status": "ok"
+          }
+        ]
+      },
+      "local_api": {
+        "duration_seconds": 0.372,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 5,
+        "sha256": "662ff807db221d920465fb2494477a717a7751826404c7b026e78e9762ea334e",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "budgeted_reads_distinguish_empty_pages_unknown_and_exhaustion",
+            "status": "ok"
+          },
+          {
+            "name": "cursors_bind_query_store_revision_and_survive_unchanged_reopen",
+            "status": "ok"
+          },
+          {
+            "name": "exact_mutations_publish_settled_values_and_durable_replay_receipts",
+            "status": "ok"
+          },
+          {
+            "name": "framing_and_request_rejections_cannot_execute_hidden_mutations",
+            "status": "ok"
+          },
+          {
+            "name": "private_identity_and_fixture_paths_are_not_public_operations",
+            "status": "ok"
+          }
+        ]
+      },
+      "measurement": {
+        "duration_seconds": 3.431,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 14,
+        "sha256": "b775ad09e410b665b3b1e2fe5549736515462d65c2aa59b05ca2d8693cfd371d",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "full_population_replacement_accepts_both_command_orders",
+            "status": "ok"
+          },
+          {
+            "name": "latest_observation_final_retarget_unit_repairs_and_budget_are_atomic",
+            "status": "ok"
+          },
+          {
+            "name": "latest_observation_native_selection_uses_complete_member_slot_ties",
+            "status": "ok"
+          },
+          {
+            "name": "latest_observation_query_variants_are_closed_and_report_bytes_are_preserved",
+            "status": "ok"
+          },
+          {
+            "name": "latest_observation_tracks_absence_ties_nonwinners_and_every_changed_root",
+            "status": "ok"
+          },
+          {
+            "name": "measurement_algebra_matches_literal_scan_for_every_short_parenthesization",
+            "status": "ok"
+          },
+          {
+            "name": "measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks",
+            "status": "ok"
+          },
+          {
+            "name": "measurement_schemas_and_native_objects_are_closed_and_exact",
+            "status": "ok"
+          },
+          {
+            "name": "measurements_use_native_members_windows_final_unit_repairs_replay_and_lifecycle",
+            "status": "ok"
+          },
+          {
+            "name": "observation_report_and_native_corruptions_fail_check_startup_and_verified_restore",
+            "status": "ok"
+          },
+          {
+            "name": "observation_report_budget_failure_discards_staged_queries_and_all_tables",
+            "status": "ok"
+          },
+          {
+            "name": "observation_report_query_contract_and_native_result_are_checked",
+            "status": "ok"
+          },
+          {
+            "name": "observation_reports_keep_exact_empty_and_equal_result_dependencies",
+            "status": "ok"
+          },
+          {
+            "name": "observation_reports_retarget_and_repair_units_in_both_orders_with_complete_rollback",
+            "status": "ok"
+          }
+        ]
+      },
+      "model_contract": {
+        "duration_seconds": 0.053,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 1,
+        "sha256": "b3bca8c1461bad2e2fcfac5258bf4bf3f1f99fd726c39e7cf85d82fcf829fd5c",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "authored_fixture_bindings_agree_with_prepared_schemas",
+            "status": "ok"
+          }
+        ]
+      },
+      "native_tree": {
+        "duration_seconds": 1.371,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 7,
+        "sha256": "7be69937e06e219352712a064cd075fff684014a5fc173059d452979f86b6190",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "all_rotation_directions_and_intrusive_deletions_match_source_scans",
+            "status": "ok"
+          },
+          {
+            "name": "equal_time_complete_boundaries_and_latest_extremes",
+            "status": "ok"
+          },
+          {
+            "name": "range_extrema_are_rebased_folds_not_differences_of_prefix_minima",
+            "status": "ok"
+          },
+          {
+            "name": "range_prunes_many_positions_under_a_population_independent_budget",
+            "status": "ok"
+          },
+          {
+            "name": "range_rejects_overflow_and_corrupt_traversed_links",
+            "status": "ok"
+          },
+          {
+            "name": "ranges_match_literal_subsets_complete_groups_and_extreme_bounds",
+            "status": "ok"
+          },
+          {
+            "name": "strict_prefix_matches_authored_scan_at_equal_times_and_extremes",
+            "status": "ok"
+          }
+        ]
+      },
+      "network_api": {
+        "duration_seconds": 0.14,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 3,
+        "sha256": "d739acc14acacf73a606b946833f13c717d00df8abbf832d189719ae6e0a87d3",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "authenticated_ranges_preserve_complete_times_exact_bounds_and_reopen",
+            "status": "ok"
+          },
+          {
+            "name": "real_http_concurrency_receipts_revocation_and_reopen",
+            "status": "ok"
+          },
+          {
+            "name": "standard_credential_profile_rejects_wrong_context_signature_time_and_key",
+            "status": "ok"
+          }
+        ]
+      },
+      "quantity": {
+        "duration_seconds": 0.243,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 6,
+        "sha256": "0460b6f63b05cc6c1d259c0c70c100d8c7b54643658b59e97f6a947c6e2dc110",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "cas_replay_reopen_and_lifecycle_preserve_quantities",
+            "status": "ok"
+          },
+          {
+            "name": "exact_rounding_rejects_every_scale_atomically_and_zero_factor_does_not_hide_cycle",
+            "status": "ok"
+          },
+          {
+            "name": "ready_publication_chain_diamond_repeat_slots_and_source_edit",
+            "status": "ok"
+          },
+          {
+            "name": "retargets_and_parent_edits_settle_final_state_in_either_order",
+            "status": "ok"
+          },
+          {
+            "name": "source_bounds_accept_signed_limits_and_reject_values_outside_them",
+            "status": "ok"
+          },
+          {
+            "name": "source_literal_rational_oracle_covers_signed_ties_large_values_and_bounds",
+            "status": "ok"
+          }
+        ]
+      },
+      "routes": {
+        "duration_seconds": 1.564,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 5,
+        "sha256": "fe6a822a4e5994faa717b02efe659a42fcbb974347760bebf098fca34d24ce6b",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "endpoint_rewrites_keep_original_snapshot_and_exact_endpoint_bounds",
+            "status": "ok"
+          },
+          {
+            "name": "every_route_kind_drains_and_reuses_deleted_registration_identities",
+            "status": "ok"
+          },
+          {
+            "name": "narrow_selection_loads_only_a_balanced_path_at_gate_population",
+            "status": "ok"
+          },
+          {
+            "name": "ordered_routes_preserve_old_and_new_memberships_through_rotations_and_moves",
+            "status": "ok"
+          },
+          {
+            "name": "selection_rejects_dangling_cross_route_and_cyclic_links",
+            "status": "ok"
+          }
+        ]
+      },
+      "semantics": {
+        "duration_seconds": 0.002,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 8,
+        "sha256": "30fe4b4a9750904cabf9c9bd446492bc7e70505fac0cdee4a36ab407dd46d4ee",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "complete_time_summary_matches_scan_at_every_split_and_grouping",
+            "status": "ok"
+          },
+          {
+            "name": "conflict_set_counterexample_requires_a_tracked_guard_read",
+            "status": "ok"
+          },
+          {
+            "name": "declaration_order_never_overrides_actual_field_dependencies",
+            "status": "ok"
+          },
+          {
+            "name": "exact_algebra_rejects_overflow_and_reversed_segments",
+            "status": "ok"
+          },
+          {
+            "name": "linear_guard_needs_a_shared_difference_measure_and_historical_extrema",
+            "status": "ok"
+          },
+          {
+            "name": "merge_preserves_authorized_order_ties_and_budgeted_existence",
+            "status": "ok"
+          },
+          {
+            "name": "point_overlay_coalesces_patches_preserves_absence_and_drops_no_ops",
+            "status": "ok"
+          },
+          {
+            "name": "scalar_reader_preserves_first_incomparable_choice_and_owner_fallback",
+            "status": "ok"
+          }
+        ]
+      },
+      "storage_lifecycle": {
+        "duration_seconds": 0.56,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 4,
+        "sha256": "cfc01fe12025561ad5323bbe016b30441334e453021e81f3af24002b571ddcd8",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "archived_receipts_fence_old_uncertain_requests_and_remain_reconcilable",
+            "status": "ok"
+          },
+          {
+            "name": "damaged_or_incomplete_backups_never_publish_a_destination",
+            "status": "ok"
+          },
+          {
+            "name": "mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startup",
+            "status": "ok"
+          },
+          {
+            "name": "verified_backup_restore_and_reset_preserve_or_atomically_replace_complete_state",
+            "status": "ok"
+          }
+        ]
+      },
+      "workshop_exhaustive": {
+        "duration_seconds": 6.948,
+        "failed": 0,
+        "ignored": 0,
+        "passed": 1,
+        "sha256": "9e7221166686c820389852c201d714b4bee24b853775a30e1b3979835d6b1102",
+        "status": "passed",
+        "test_cases": [
+          {
+            "name": "six_authored_actions_match_literal_oracle_through_depth_three",
+            "status": "ok"
+          }
+        ]
+      }
+    },
+    "ignored": 0,
+    "manifest": "target/v1-check/native-build/manifest.json",
+    "manifest_problems": [],
+    "passed": 147
+  },
+  "process": {
+    "ingress": {
+      "cases": [
+        {
+          "body_deadline_seconds": 2.001,
+          "name": "signature-skew-binding-and-body-limits",
+          "raw_limit": 8192
+        },
+        {
+          "conflicting_identity_status": 409,
+          "discarded_ack_duplicate": true,
+          "failed_write_status": 503,
+          "name": "commit-before-ack-conflict-and-failed-storage",
+          "unknown_execution_status": 404
+        },
+        {
+          "accepted": 1,
+          "balance": "9",
+          "name": "process-loss-after-inbox-and-out-of-order-consumption",
+          "observations": 2,
+          "process_kills": 1,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "final_balance": "2",
+          "name": "delayed-event-preserves-blocked-repair",
+          "observations": 2,
+          "submissions": 1
+        },
+        {
+          "backup_bytes": 515000,
+          "inbox": 256,
+          "name": "full-inbox-retry-backup-archive-and-reset-guard",
+          "overflow_status": 503,
+          "pending": 251
+        },
+        {
+          "accepted": 1,
+          "balance": "9",
+          "name": "backup-before-start-then-independent-acceptance",
+          "observations": 1,
+          "original_store": "restore-backend/app.redb",
+          "submissions": 1
+        },
+        {
+          "accepted": 0,
+          "name": "empty-lookup-remains-quarantined",
+          "observations": 1,
+          "submissions": 0
+        },
+        {
+          "name": "clean-reset-rejects-old-context-credential-and-webhook",
+          "old_webhook_status": 404,
+          "source_reused": true
+        }
+      ],
+      "duration_seconds": 11.509,
+      "status": "passed"
+    },
+    "worker": {
+      "cases": [
+        {
+          "accepted": 1,
+          "execution": "44158714-eeff-410e-8430-cbc0cb4cabfa",
+          "name": "literal-12-10-7",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "18df646f-83a0-4193-8008-a9129e7a1e50",
+          "final_balance": "2",
+          "name": "blocked-repair-apply-once",
+          "observations": 0,
+          "repaired_balance": "5",
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "136f1bf0-bdda-4d7b-b2fd-eea23fd8fea8",
+          "name": "waiting-then-success",
+          "observations": 1,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "61215136-016d-407e-82f6-b7d1a86a44b1",
+          "name": "definitive-nonacceptance-retry",
+          "observations": 0,
+          "submissions": 2
+        },
+        {
+          "accepted": 1,
+          "execution": "060db395-53f4-4895-a714-714222cb015d",
+          "name": "lost-response-reconciles",
+          "observations": 1,
+          "submissions": 1
+        },
+        {
+          "accepted": 0,
+          "execution": "0f0658a4-1ccf-4f36-bd12-2121bcf9305b",
+          "name": "permanent-provider-rejection",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 0,
+          "execution": "e6446c8b-f2ef-4918-bb80-2ae024573c30",
+          "name": "cancel-before-start",
+          "observations": 0,
+          "submissions": 0
+        },
+        {
+          "accepted": 1,
+          "execution": "2f2acd47-3fd2-4732-8e04-658e5649bb9b",
+          "name": "cancelled-completion-reconciles",
+          "observations": 1,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "74d724f7-93bd-45e9-9922-d573062f8925",
+          "name": "crash-before_start",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 0,
+          "execution": "b719b8f5-a8bc-4b00-a209-a15a98335f1c",
+          "name": "crash-after_start",
+          "observations": 1,
+          "submissions": 0
+        },
+        {
+          "accepted": 1,
+          "execution": "54009113-570a-418a-9e86-dd58119716d2",
+          "name": "crash-after_provider",
+          "observations": 1,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "066f0424-ea64-4dec-b922-f63e6f059645",
+          "name": "crash-after_fact",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "023ddb41-0d9e-4cc0-b9bc-73ab906dd021",
+          "name": "bounded-concurrent-call",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "236d32db-7064-443e-8d5e-51d85aba7d59",
+          "name": "bounded-concurrent-call",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "2678dd9b-7d87-44a8-9515-63ff759232cc",
+          "name": "bounded-concurrent-call",
+          "observations": 0,
+          "submissions": 1
+        },
+        {
+          "accepted": 1,
+          "execution": "d91b9e8e-3ac9-4419-b01c-c017dce5c7c6",
+          "name": "transport-deadline-reconciles",
+          "observations": 1,
+          "submissions": 1
+        }
+      ],
+      "duration_seconds": 46.842,
+      "status": "passed"
+    }
+  },
+  "python": {
+    "command": "python3 -B -m unittest discover -s tools -p 'test_verify*.py' -v",
+    "failed": 0,
+    "log": "target/v1-python-tests.log",
+    "passed": 20
+  },
+  "quality": {
+    "build_owner": "root",
+    "cache": "target/verification-build",
+    "clippy_all_targets": "passed",
+    "clippy_log": "target/v1-clippy.log",
+    "formatting": "passed",
+    "incremental": false,
+    "jobs": 2,
+    "new_dependencies": 0
+  },
+  "replaces_partial_commit": "924ace09f5cff3e9908853111c64190d25378da2",
+  "reports": {
+    "check": "target/v1-check/result.json",
+    "compatibility": "target/v1-model-compatibility.json",
+    "exploration": "target/v1-explore/exploration/artifact.json",
+    "native": "target/v1-check/native/native-checks.json",
+    "replay": "target/v1-replay/result.json",
+    "walk": "target/v1-walk/summary.md"
+  },
+  "scope": "Four separate model stores, no cross-store transaction. Bounded authored cases and fixed fake-provider journal; not full production, all possible designs, or distributed concurrency proof.",
+  "shrinking": {
+    "failure_kind": "injected.quantity",
+    "injected_defect": "Test-only wrong observation when fixture Source=6; engine and persisted state remain correct.",
+    "logical_replay_reproduced": true,
+    "minimized_actions": 1,
+    "minimizer_scope": "Finite action-span deletion, not scalar or distributed schedule shrinking.",
+    "original_actions": 9,
+    "regression": {
+      "kind": "source_update",
+      "seed": 5,
+      "target": "fixture.source",
+      "value": "6"
+    },
+    "report": "target/v1-shrink-probe/result.json",
+    "reproduction": "python3 -B research/experiments/workshop_shrink_probe.py --binary target/v1-accepted/rebase-next --out target/my-new-shrink-probe",
+    "status": "passed"
+  },
+  "source_fingerprints": {
+    "AGENTS.md": "2e1c8c095e8eded3f48bd41ce679bcb08b863e3414eb55f85f84b7c0769017b0",
+    "CONTEXT.md": "89ac115e8357a11576b128a1511bfb8b05742672d2e79f65a0d22185275d2306",
+    "Cargo.lock": "17cf204c539b86397841eaec07a7ccfed4ba4c886652ae38ac2aedae2eccbced",
+    "Cargo.toml": "8c93f8c6b8fdb8a6ec396203e6cbb798b24e4015ceed38178814a3aa8c267855",
+    "README.md": "3e8f25138b0e373efeb9a01c7a2fb6ff8f72f832c598ae4ef946ac48cde84c95",
+    "docs/compiled-models.md": "ad18969923fdb1fa191fed0a5eefbe400d65d3170e35a96fca54166521948e7d",
+    "docs/developer-tools.md": "f88db80435f433e99eb1ecc98c662036afad75e017fa6ac18194fec955f8d59c",
+    "docs/workshop.md": "d85eadfbd4737c9f74ae162b7283b37d113c228435cb960576049bc1472f08ee",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "research/05-feasibility.md": "425128aebd15f8912d610361e08ef01e5ce3fa6e4e7a2cecf3b6323e3ea99c72",
+    "research/30-capability-program.md": "fdba9824001c5ce2ef6ef058ff24596dee00390293e00e5531c92018de3c6dc2",
+    "research/43-example-verification-suite.md": "d3a8be68ea67155f813588bc71300b8ade272f2459cdd3481944241b543b40c7",
+    "research/44-workshop-verification-result.md": "63c6df0e34cf5448161ea6eb9c2f3e51b94767835bc57661895c95e7c6a12934",
+    "research/experiments/workshop_shrink_probe.py": "e6f166ca124b9c94c9a677cb861bb2ed68799d3bfefb19a88f8a39e17f78465d",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "fcf43954510e953870c2257ea37f1789135d99a1a4a446dddd349f0b8b4a7d0d",
+    "src/binding.rs": "7a3305b6a8590c38ce01c1aab02e52715cabd8384f630e9b96bcb982115d820e",
+    "src/causal.rs": "9466110030d9943fb736f8c43b804c0b5acf3b1d8f0aa51988643ecbd2336c9a",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "13b4db5bd691700a7ae278ebfdda4eed08b724492c9a0b5190c75596edff900d",
+    "src/effects.rs": "09605724497ed078069cded6745efbacf2f8f9e6388da9837089cd5caf294e30",
+    "src/effects/application.rs": "82c15370fc38c047f945d99671f32fccb2dbf708b42f7dc7f4c5c2f20ca12964",
+    "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+    "src/effects/inbox.rs": "ae11d7247ed43bdc53dbb325d356267d50af8a7168cd88aa88c8512b5aa2f621",
+    "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+    "src/effects/state.rs": "4c322471700ff24b785449f211d1346bce72c47ca460ed9a37f3f07ec44fefd1",
+    "src/effects/worker.rs": "52976d9fb73be7003a16fac2b85fc86e0ed7a6333b8652516be8930c2da93901",
+    "src/effects/worker_tests.rs": "7e6985156173b64bd0e95ccb63adac2986e774922c4c6251e5f5c2bde2966ea7",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+    "src/index_tests.rs": "18cf30f706b41605f3a3c9d4f3b77ae02f8df4e7c606ce6c990c856d62065fed",
+    "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "4ca4742c1cff26195a87bbab9afa06c1d7d740b3cdcf0bb7b0edebbcb3957e54",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "41f4230d0ae76aa5c2e8aab193f6a6ca128a8a505ffa5b7256428d837107fe99",
+    "src/lifecycle.rs": "2f4f410e9c9ece3e71941658f1e7f4e1a762cf239109b9790d8bbcb3ad263c14",
+    "src/local.rs": "28d5c9077696cc2e7a8fa26b1bd19088092d7b6b62a8b0856bcc3452cbad1c28",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "c735eb1955ee4aec65bcb8f6631c5f8a99875b73b2793bb16e847dd133645cb1",
+    "src/models/calculation.rs": "dd1c1d61a9f355f1714ac0beded5b5f82191285720c083b9cfcad3a338b1009d",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "75e732f03bc21829dc958f008ae0f6d26d59c546965b69b63b7e9b4d96c41f9d",
+    "src/models/equipment.rs": "5aaf270eb1fd365fa13b25896483b591a4e81095ee4f0d1abbc5778405a82e99",
+    "src/models/invoicing.rs": "115d21b92818e16ce4c6696a49bac57835525a8c03427c125da0746eb90f0f4d",
+    "src/models/invoicing_check.rs": "f3de0f615714e69712a43f6954064a3447f84f2b54400981dde541a1da307c9d",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "5eefa5c6adeafb01541c3ff74eef5eccce9fd6a6bf0b9d8d4d1d62e9bd984a3b",
+    "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+    "src/models/quantity.rs": "1eb42d9fe17a2342d96017c4fabe34dfda1d09cf49fcfa93054ddb9eedeb25c5",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "e8b005ddfb7d166e63b0a0e4f28ea62a17ccced89fcbc476eb25e76d9199ad84",
+    "src/native_slice.rs": "d5ed1d09f208637cc4dade5926617f0dfef3312fa3095e1a465a3b0558dccc4e",
+    "src/parameter_tests.rs": "8ca948e7a56d8ee3d4ee8310955eb9e350c7ebe4d373b8b4acd74aaa81bdda01",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "be56b48ad36e946fd6063899945ab0d700f67f9551ce168ee2ed4e2036067c9c",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "2464e5f4345457366ddcc5de0c9c732e4d34ef2863b0c59a2bbee42bcc667cc3",
+    "src/security.rs": "e48b249bf107b2999b06cf89e9ba4911c68a63192de9bd349f7270984a8023e6",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "b231b1cfada90ecc9a2d2f7b713805e7f17c6dec582b05f327a8f90d48c11744",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "f1f4b12d581e5df66ab5a5d239f8a9b0d3a14e6817efc1854515721a000dea96",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "70cb435be8d8a5e0fda05ecd6caf88c3d418360583a594c4f59291766d063257",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/measurement.rs": "192cbeda9ff500088962f1f7049920a279aa5f339bbdeb342abb0c51887aded3",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "e2356ce9b5f17af2cb50f9a76c6156f5c3c10d21850d5f099f0c2a7946ceb448",
+    "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/effects.py": "3c643761c2faf767492c2d1f0b2c58359b72f36945582f0a40b455c2718af59c",
+    "tools/effects_ingress.py": "e4078c90baa8aa3aa85f11f4289391a7129c256ffcbf3c917978a2c0d385f76e",
+    "tools/effects_worker.py": "6da7c246719da61bb03e95d2f02381312c912dd290db8184cf21d79d2e523c3c",
+    "tools/fake_provider.py": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a",
+    "tools/invoicing.py": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b",
+    "tools/issue_shares.py": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a",
+    "tools/observation_reports.py": "24f903554fa2dfa89a879a5534c614af222a19416a501b66f3455cfd6ed8d744",
+    "tools/observation_selection.py": "cd10ff95bc27f051c4a031cbbfa1872404ec333b708589100abf26034e3e3422",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1",
+    "tools/test_invoicing.py": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4",
+    "tools/test_verify_checks.py": "3b49b1a64cfa30a997327d4fdaeb97034564bde18a459bfaeb40b447752b66ed",
+    "tools/test_verify_explore.py": "8cfcd7eb66b08cf0643939ca0aa7736eff3949f44f7493828800f4a1b7ea82a7",
+    "tools/test_verify_walk.py": "f759adff26632abd97a5465751aa0e36921963bc57b5e7c70fcdca31a4e89f38",
+    "tools/verify.py": "d4baa7b1a2cad4e6d67ab7d16920ae876ed97a9f7571bcc8fd52e2ba19b3b3b7",
+    "tools/verify_cases.py": "f65f30f2c8884e8d5ecf218e726b9a2095d551cd099e44407df3d8eebf949fb7",
+    "tools/verify_checks.py": "0b244ffacebcedd900ff2f163a623c6b6155d01e9ebb1190eb2fb1d387e63c32",
+    "tools/verify_explore.py": "75358e0f9ada0a8ab1a7d3262819de28f8a42e7dd30ede63adaf26a30db8539a",
+    "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c",
+    "tools/verify_runtime.py": "b04feb924dbbb9b3ed50a13fa343f65380a8a3fec20ff8136e4a6487d013e3e0"
+  },
+  "status": "accepted",
+  "trials_and_corrections": [
+    "Partial Quantity failed preparation: terminal publication targets were not recognized as shared scheduler participants. Corrected compiler and both scheduling eligibility gates; existing five public catalogs unchanged.",
+    "New CAS test expected conflict; existing public contract is stale_version. Corrected test expectation.",
+    "Reviewed and corrected failure artifact cleanup, action-plan attribution, same-class shrink predicate, model-bound replay and misleading native coverage wording before accepted exploration.",
+    "Named-test parser updated after native execution to handle --nocapture line splitting; retained logs reparsed without rerunning passing native/process checks. Focused parser controls pass.",
+    "Two optimized builds: initial partial-model build, then rebuild after the justified shared-core fix. Native preparation reused one cache. Earlier failed attempts are not added to accepted counts."
+  ],
+  "versions": {
+    "api": "rebase-local-api-3",
+    "effect_codec": "rebase-effects-3",
+    "native_codec": "native-slice-kv-6",
+    "package": "0.15.0",
+    "quantity_behavior": "quantity-flow-1",
+    "store": "rebase-store-9"
+  },
+  "walk": {
+    "chapters": [
+      {
+        "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+        "name": "equipment",
+        "steps": 15
+      },
+      {
+        "model": "32d95742102bfcb62fff89e0871f90a2c08cc97cf344c7665a2704cb9569871b",
+        "name": "sensors",
+        "steps": 13
+      },
+      {
+        "model": "32dba86187506670f0df79bbf30e4a579e3c54ff86b7b3142438f0810a1061be",
+        "name": "quantities",
+        "steps": 12
+      },
+      {
+        "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+        "name": "service",
+        "steps": 2
+      }
+    ],
+    "commits": 36,
+    "duration_seconds": 8.442,
+    "explicit_mutations": 40,
+    "full_table_rollbacks": 4,
+    "report": "target/v1-walk/result.json",
+    "status": "passed",
+    "teaching_steps": 42
+  }
+}

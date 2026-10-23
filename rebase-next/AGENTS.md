@@ -5,15 +5,19 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**Active preparation: V1 self-explaining example verification suite.** The latest
-user instruction selects [the workshop plan](research/43-example-verification-suite.md)
-before broader accounting. This checkpoint is documentation only: V1 is prepared,
-not implemented or accepted. The next implementation assignment is V1.1–V1.5,
-using existing small models, ordinary APIs, independent source oracles, bounded
-exploration and explicit replay. Read that plan and the top of `CONTEXT.md`.
-Keep G6 accounting, G7 distributed storage, G8 release expansion and frontend
-deferred. Do not turn this planning task into runtime implementation or rewrite
-the accepted engine/evidence. The plan includes the next agent's execution goal.
+**V1 workshop verification is complete in source 0.15.0.** Read the
+[result and limits](research/44-workshop-verification-result.md),
+[workshop guide](docs/workshop.md), and top of `CONTEXT.md`.
+V1.1–V1.5 now have executable evidence: four ordinary HTTP chapters, independent
+source oracles and full rollback checks, 15 current capability rows, finite
+native exploration, seeded actions, logical replay and a real-HTTP injected-fault
+shrinking control. Do not restart accepted stages or treat finite tests as a
+proof of arbitrary designs. Keep one build owner and reuse matching artifacts.
+The V1 goal stops here. G6 accounting, G7 distributed storage, G8 release
+expansion and frontend remain deferred until separately selected. The historical
+[plan](research/43-example-verification-suite.md) retains its preparation scope;
+paper 44 owns execution acceptance. No new broad implementation is authorized
+by an unassigned continuation beyond this goal.
 
 **Current release: G3d/G3e complete, 0.6.0.** Read
 [deployment acceptance](research/29-deployment-result.md) and the
@@ -39,7 +43,7 @@ accepted in source 0.13.0, with unchanged store 9 /native codec 6 /effect codec 
 API 3 and measurement behavior 2. [G4d-c authored selection](research/42-authored-selection-result.md)
 is accepted in source 0.14.0, with the same shared formats and measurement
 behavior 3. G4 and G5 are complete within their declared bounds. The earlier
-stop after G5 is superseded only by the V1 verification preparation above;
+stop after G5 is superseded only by the V1 verification implementation above;
 broader accounting, distribution and release expansion remain deferred.
 Preserve earlier evidence and boundaries below.
 
@@ -57,8 +61,7 @@ Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
 Within the user's active scope, commit and push each verified checkpoint on the
-existing `main`. The current task stops after V1 documentation preparation;
-the next assigned implementation agent starts V1.1, not G6.
+existing `main`. The current V1 goal is complete; do not automatically start G6.
 Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.

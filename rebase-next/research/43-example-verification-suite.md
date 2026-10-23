@@ -1,6 +1,11 @@
 # V1: a self-explaining workshop verification suite
 
 **Prepared 2026-10-23 against `1fa0748`; documentation only, not implemented.**
+
+**Execution update:** V1.1–V1.5 are now accepted in the separate
+[workshop result](44-workshop-verification-result.md). The preparation claims
+and proposed commands below describe this packet at its original checkpoint.
+
 The latest user instruction selects this non-accounting verification goal before
 broader business applications. This packet prepares implementation by another
 agent. It changes no executable, model, package version, storage format or dated

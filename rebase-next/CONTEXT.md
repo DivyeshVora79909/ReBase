@@ -1,24 +1,40 @@
 # Compact context — 2026-10-23
 
-**Active next goal: V1 self-explaining non-accounting verification suite.**
-The latest user instruction selects [the workshop suite plan](research/43-example-verification-suite.md)
-before broader accounting. This is a documentation-only preparation checkpoint;
-V1 has not been implemented or executed. It supersedes the previous stop after
-G5 for this verification goal only. G6 accounting, G7 distributed storage, G8
-release expansion and frontend remain deferred. Keep their historical gate IDs.
+**V1.1–V1.5 complete: self-explaining non-accounting verification.**
+Read the [workshop result](research/44-workshop-verification-result.md),
+[evidence](research/evidence/2026-10-23-v1-workshop.json), and
+[run guide](docs/workshop.md). Source 0.15.0 adds a minimal Quantity binding and
+ordinary composable verification tools, with no new dependency or wire/store
+format. The five existing public catalogs and model identities remain unchanged.
 
-**Exact continuation:** when assigned implementation, complete V1.1–V1.5 from
-paper 43. Reuse equipment, measurement and fixed fake-provider scenarios; fill
-the non-accounting publication/quantity walkthrough gap with at most one small
-reference binding. Separate stores are not a cross-store transaction. One thin
-entry point must explain expected/observed actions and internal inventories,
-compare independent source models, explore bounded sequences and retain replayable
-minimized failures. No universal parser, new reactive engine or accounting port.
-Use one Cargo owner and justified affected checks; commit/push each tested
-checkpoint on existing `main`, and stop after V1 closeout. The copyable next-agent
-goal is at the end of paper 43. This planning turn changes no executable or model.
+**Accepted checkpoints:** `cba8e0a` fixes terminal publication targets and adds
+Source/Scale/Join; `6e323c1` adds V1 walkthroughs, checks, bounded exploration,
+replay and the injected-fault probe. These replace partial unverified `924ace0`
+as explicitly requested. The shared scheduler uses declared publication targets
+rather than fake queries/outputs to evaluate terminal Sources. Existing
+non-causal query parents still reject.
 
-**Accepted starting point:** G4a–G4d and G5a–G5c, source 0.14.0, remain accepted
+Four chapters pass 42 named teaching steps (40 explicit mutations, including
+four full-table rollback rejections, plus two service stories). All 15 capability
+rows pass 147 Rust tests across 15 native harnesses, plus 16 actual worker and
+eight signed-ingress/recovery process cases. The six-action/depth-three profile
+checks 258 transitions and all 259 prefixes including empty; its scope is that
+finite authored alphabet. A 32-action seeded Quantity run and fresh logical
+replay pass. A test-only wrong observation is detected, shrinks from nine actions
+to one, and reproduces in a fresh store. Twenty Python controls pass. This is
+bounded evidence, not unrestricted scale or all-program correctness.
+
+**Exact continuation:** the assigned V1 goal is complete; stop and report.
+G6 accounting, G7 distributed storage, G8 workload/release expansion and frontend
+remain deferred. Do not invent another gate or restart G4/G5. The last verified
+packaged release remains 0.6.0. Source 0.15 is not a new release bundle.
+Retained runtime: `target/v1-accepted/rebase-next`; current reports:
+`target/v1-check/result.json`, `target/v1-walk/summary.md`,
+`target/v1-explore/result.json`, `target/v1-replay/result.json`, and
+`target/v1-shrink-probe/result.json`. Credentials/databases stay private and
+untracked. The dated evidence records fingerprints and execution limitations.
+
+**Historical V1 starting point:** G4a–G4d and G5a–G5c, source 0.14.0, remain accepted
 within their documented bounds. Existing accounting examples and dated evidence
 are retained, not removed or expanded. The latest read-only audit matched all
 77 G4d-c source hashes and ran seven selection/twelve report oracle controls;
@@ -238,10 +254,10 @@ HTTPS fetch/push works in this cloud workspace. Keep checkpoint commits linear
 on `main`; compare current remote state before pushing and never force unrelated
 changes. Historical connector-era references remain under `refs/codex/checkpoints/`.
 
-**Exact next action:** this run finishes the [V1 preparation](research/43-example-verification-suite.md)
-and documentation checks only. The next assigned agent implements V1.1–V1.5
-using that paper's goal. G4d-c is already accepted; do not restart it. G6 broader
-accounting, G7 distribution and G8 release expansion remain deferred.
+**Current next action:** V1.1–V1.5 are accepted in the
+[workshop result](research/44-workshop-verification-result.md). The assigned goal
+stops here; G6 broader accounting, G7 distribution and G8 release expansion
+remain deferred. Earlier executable and acceptance notes below are historical.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and

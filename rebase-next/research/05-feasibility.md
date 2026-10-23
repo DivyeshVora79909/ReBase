@@ -1,13 +1,16 @@
 # Rust feasibility and stop boundary
 
-**Latest scope, 2026-10-23: verification before broader applications.**
-The [V1 workshop suite](43-example-verification-suite.md) is the selected next
-goal, prepared through documentation only. It reuses the accepted engine and
-small non-accounting examples to explain commands and compare independent source
-expectations, internal invariants, bounded exploration, failures and replay.
-V1 has no implementation or acceptance evidence yet. G6 accounting, G7 storage,
-G8 release expansion and frontend stay deferred. This supersedes the earlier
-stop only for the verification preparation; historical results below stay dated.
+**Latest scope, 2026-10-23: V1.1–V1.5 accepted in source 0.15.0.**
+The [workshop result](44-workshop-verification-result.md) records four ordinary
+HTTP chapters, independent expectations, 147 native tests, 24 process/provider
+cases, bounded exhaustive/seeded exploration and reproduced shrinking of an
+injected observation defect. The minimal Quantity binding uses shared causal
+settlement, including terminal publication targets. Existing five model
+catalogs and persisted formats remain unchanged. This extends the prepared
+[plan](43-example-verification-suite.md); it is bounded verification, not proof
+of all designs or unrestricted scale. The assigned goal is complete. G6
+accounting, G7 storage, G8 release expansion and frontend stay deferred.
+Historical results below retain their dates and scope.
 
 **G4d-b/c complete; requested stopping point, October 23:**
 [Native reports](41-native-query-consumer-result.md) and
@@ -18,7 +21,7 @@ codec 6 /effect codec 3 /API 3; only measurement's model identity changes from
 22-mutation optimized HTTP workflow, report wire preservation and five-model
 compatibility controls pass. G4 and G5 are accepted within their declared bounds.
 The user then requested stopping after G4d-c and closeout through G5.
-The later V1 preparation above is now selected; G6, G7 and G8 remain deferred.
+The later V1 verification above is now accepted; G6, G7 and G8 remain deferred.
 
 **G5 complete for the bounded fake adapter, October 23:**
 [G5c ingress/recovery](39-ingress-recovery-implementation.md) adds exact signed
