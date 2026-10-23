@@ -100,7 +100,7 @@ pub(crate) fn headers<B: Binding>(
     if model.contracts().any(|c| {
         c.references
             .iter()
-            .any(|r| r.targets.contains(&contract.code) && !r.direct_fields.is_empty())
+            .any(|r| r.targets.contains(&contract.code) && c.uses_direct(r.slot))
     }) {
         values.push((Key::Direct(id), StoredValue::Direct(Default::default())));
     }

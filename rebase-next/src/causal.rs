@@ -3,7 +3,7 @@ use crate::{
     binding::{Binding, NativeInput, headers},
     index::TimeKey,
     indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
-    model::{Prepared, Visibility},
+    model::{Prepared, PublicationSlot, Visibility},
     mutation::{check_counts, reconcile_member},
     native_codec::{Address, Key, Role, StoredValue},
     native_slice::{Attempt, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
@@ -27,10 +27,24 @@ pub struct Emit {
     pub root: Address,
     pub at: i64,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct PublicationRead {
+    pub slot: PublicationSlot,
+    pub parent: Uuid,
+}
+
+/// Values are projected only from ready parents, immediately before evaluation.
+/// They remain native attempt-local values, without Clone or Serde requirements.
+pub struct PublicationValue<V> {
+    pub slot: PublicationSlot,
+    pub value: V,
+}
 #[derive(Clone, Debug, Default)]
 pub struct ResolvedShape {
     pub reads: Vec<Read>,
     pub emits: Vec<Emit>,
+    pub publications: Vec<PublicationRead>,
 }
 /// Attempt-local authored inputs alongside the declared ordered-read topology.
 /// Parameters remain native model values; they are neither persisted nor used
@@ -42,9 +56,10 @@ pub struct Resolved<P> {
 }
 pub trait ReactiveBinding: Binding<Index = Standard> {
     /// Owned parameters from this source and its declared direct authored fields.
-    /// Resolving published derived fields or following undeclared reference chains
-    /// would require additional invalidation and causal contracts.
+    /// Published inputs are resolved as identities here and projected only after
+    /// their parent calculation is ready. Undeclared reference chains are invalid.
     type Parameters;
+    type Publication;
     /// All authored commands have been staged before resolution. Capture their
     /// final values here so evaluation needs no workspace or mutable parent copy.
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -53,11 +68,21 @@ pub trait ReactiveBinding: Binding<Index = Standard> {
         id: Uuid,
         record: &ModelRecord<Self>,
     ) -> Result<Resolved<Self::Parameters>>;
+    fn project_publication(
+        _parent: &ModelRecord<Self>,
+        _field_code: u16,
+    ) -> Result<Self::Publication> {
+        Err(Error::new(
+            "model",
+            "unsupported native publication projection",
+        ))
+    }
     fn evaluate(
         id: Uuid,
         record: &ModelRecord<Self>,
         shape: &ResolvedShape,
         parameters: &Self::Parameters,
+        publications: &[PublicationValue<Self::Publication>],
         values: &[i128],
     ) -> Result<(Self::Derived, BTreeMap<u16, i128>)>;
     fn output_input(producer: Uuid, emit: &Emit, amount: i128) -> Result<Self::Input>;
@@ -73,6 +98,57 @@ fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
 ) -> Result<()> {
     let contract = model.contract(record.contract)?;
     let references = record.input.references();
+    let mut publication_slots = BTreeSet::new();
+    for read in &shape.publications {
+        ws.charge("dependency", 1)?;
+        if read.slot.0 == 0 || !publication_slots.insert(read.slot) {
+            return Err(Error::new(
+                "model",
+                "duplicate or zero resolved publication slot",
+            ));
+        }
+        let declaration = contract
+            .publication_inputs
+            .iter()
+            .find(|input| input.slot == read.slot)
+            .ok_or_else(|| Error::new("model", "undeclared resolved publication input"))?;
+        let reference = contract
+            .references
+            .iter()
+            .find(|reference| reference.slot == declaration.reference_slot)
+            .ok_or_else(|| Error::new("model", "publication reference declaration"))?;
+        let mut matching = references
+            .iter()
+            .filter(|(_, _, slot)| *slot == reference.slot);
+        if matching.next().is_none_or(|(id, _, _)| *id != read.parent) || matching.next().is_some()
+        {
+            return Err(Error::new(
+                "model",
+                "resolved publication uses a different authored reference",
+            ));
+        }
+        let parent = ws
+            .record(read.parent)?
+            .ok_or_else(|| Error::new("unavailable_reference", "publication parent unavailable"))?;
+        if parent.tenant != context.tenant || !reference.targets.contains(&parent.contract) {
+            return Err(Error::new(
+                "unavailable_reference",
+                "publication parent type or tenant",
+            ));
+        }
+        let target = model.contract(parent.contract)?;
+        if !target.published.iter().any(|field| {
+            field.code == declaration.field_code && field.binding == declaration.binding
+        }) {
+            return Err(Error::new(
+                "model",
+                "resolved publication field or binding mismatch",
+            ));
+        }
+    }
+    if publication_slots.len() != contract.publication_inputs.len() {
+        return Err(Error::new("model", "missing resolved publication input"));
+    }
     let mut slots = BTreeSet::new();
     for read in &shape.reads {
         if read.slot == 0 || !slots.insert(read.slot) {
@@ -183,10 +259,10 @@ struct Plan<B: ReactiveBinding> {
     old_outputs: BTreeMap<u16, (Uuid, ModelRecord<B>)>,
     bindings: BTreeMap<u16, Uuid>,
 }
-// Quote/latest readers have their own settlement path. Only declared sum reads
-// and managed outputs belong to this scheduler, including terminal-only readers.
+// Quote/latest readers have their own settlement path. Explicit publication
+// consumers join sum readers and managed producers on this scheduler.
 fn uses_sum_scheduler(contract: &crate::model::Contract) -> bool {
-    !contract.outputs.is_empty() || contract.queries.iter().any(|q| q.operation == "sum")
+    contract.uses_causal_scheduler()
 }
 fn original<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
@@ -344,6 +420,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
 ) -> Result<()> {
     let mut pending = BTreeSet::new();
     let mut roots = ws.financial_impacts();
+    let mut discovered_publications = BTreeSet::new();
     for c in changes {
         if c.old
             .as_ref()
@@ -355,6 +432,13 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         }
         if c.old.as_ref().map(|r| &r.input) != c.new.as_ref().map(|r| &r.input) {
             routes::collect(ws, &Key::Direct(c.id), &mut pending)?;
+            if c.old
+                .iter()
+                .chain(c.new.iter())
+                .any(|record| model.has_publication_dependents(record.contract))
+            {
+                discovered_publications.insert(c.id);
+            }
         }
     }
     let mut visited_prefix: BTreeMap<Address, i64> = BTreeMap::new();
@@ -430,6 +514,12 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             .ok_or_else(|| Error::new("corrupt_state", "missing subscriber"))?;
         if !uses_sum_scheduler(model.contract(producer.contract)?) {
             continue;
+        }
+        if model.has_publication_dependents(producer.contract) && discovered_publications.insert(id)
+        {
+            // Discover the complete affected closure before comparing values or
+            // building the final graph. The route collector visits both images.
+            routes::collect(ws, &Key::Direct(id), &mut pending)?;
         }
         let (shape, parameters) = match &record {
             Some(r) => {
@@ -574,6 +664,10 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             }
         }
     }
+    let track_publication_readiness = plans
+        .values()
+        .any(|plan| !plan.shape.publications.is_empty());
+    let mut completed = BTreeSet::new();
     for id in order {
         let p = &plans[&id];
         let mut r = p.record.clone().unwrap();
@@ -584,12 +678,47 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         if contract.outputs.is_empty()
             && contract.calculations.is_empty()
             && contract.published.is_empty()
+            && contract.publication_inputs.is_empty()
             && !contract
                 .queries
                 .iter()
                 .any(|query| query.phase == "calculate")
         {
+            if track_publication_readiness {
+                completed.insert(id);
+            }
             continue;
+        }
+        let mut publications = Vec::with_capacity(p.shape.publications.len());
+        for read in &p.shape.publications {
+            ws.charge("dependency", 1)?;
+            if plans.contains_key(&read.parent) && !completed.contains(&read.parent) {
+                return Err(Error::new("internal", "publication parent is not ready"));
+            }
+            let declaration = contract
+                .publication_inputs
+                .iter()
+                .find(|input| input.slot == read.slot)
+                .ok_or_else(|| {
+                    Error::new("internal", "missing validated publication declaration")
+                })?;
+            // Plan.record predates evaluation and may retain the old derived
+            // value. Always fetch the completed parent's current workspace row.
+            let parent = ws.record(read.parent)?.ok_or_else(|| {
+                Error::new("unavailable_reference", "ready publication parent missing")
+            })?;
+            if parent.derived.is_none() || !B::valid_derived(&parent.input, parent.derived.as_ref())
+            {
+                return Err(Error::new(
+                    "corrupt_state",
+                    "ready publication parent has invalid derived value",
+                ));
+            }
+            ws.charge("dependency", 1)?;
+            publications.push(PublicationValue {
+                slot: read.slot,
+                value: B::project_publication(&parent, declaration.field_code)?,
+            });
         }
         let mut values = vec![];
         for read in p.shape.reads.iter().filter(|r| !r.validate) {
@@ -599,7 +728,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             .parameters
             .as_ref()
             .ok_or_else(|| Error::new("internal", "missing resolved parameters"))?;
-        let (derived, amounts) = B::evaluate(id, &r, &p.shape, parameters, &values)?;
+        let (derived, amounts) = B::evaluate(id, &r, &p.shape, parameters, &publications, &values)?;
         r.derived = Some(derived);
         ws.work.causal_evaluations += 1;
         ws.put(Key::Record(id), Some(StoredValue::Record(r.clone())))?;
@@ -665,6 +794,9 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
                         .map(|(root, at, leaf)| (root, TimeKey::new(at), leaf))?,
                 ),
             )?;
+        }
+        if track_publication_readiness {
+            completed.insert(id);
         }
     }
     for (id, p) in &plans {
@@ -1024,6 +1156,7 @@ mod tests {
                 validate: false,
             }],
             emits: vec![],
+            publications: vec![],
         };
         let mut ws = Attempt::new(|_| Ok(None), 10_000);
         let error = validate_shape(&mut ws, &model, context, &record, &shape).unwrap_err();

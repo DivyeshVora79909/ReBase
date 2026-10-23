@@ -1,4 +1,4 @@
-//! Final producer reachability for complete-timestamp sum windows.
+//! Final producer reachability for sum windows and direct published values.
 //! Prefix gates retain the linear-edge path for lower-unbounded reads. Bounded
 //! windows depend on canonical segment-cover gates, never on excluded prefixes.
 use crate::{
@@ -49,6 +49,19 @@ impl Graph {
             producers: shapes.iter().map(|(id, _)| *id).collect(),
         };
         charge("graph", shapes.len() as u64)?;
+        let publication_parents: BTreeMap<_, _> = if shapes
+            .iter()
+            .any(|(_, shape)| !shape.publications.is_empty())
+        {
+            charge("dependency", shapes.len() as u64)?;
+            shapes
+                .iter()
+                .enumerate()
+                .map(|(index, (id, _))| (*id, index))
+                .collect()
+        } else {
+            BTreeMap::new()
+        };
         let mut roots: BTreeMap<Address, BTreeMap<i64, BTreeSet<usize>>> = BTreeMap::new();
         let mut bounded = BTreeSet::new();
         for (producer, (_, shape)) in shapes.iter().enumerate() {
@@ -111,6 +124,12 @@ impl Graph {
             );
         }
         for (consumer, (_, shape)) in shapes.iter().enumerate() {
+            for read in &shape.publications {
+                charge("dependency", 1)?;
+                if let Some(&parent) = publication_parents.get(&read.parent) {
+                    graph.edge(parent, consumer, charge)?;
+                }
+            }
             for read in shape.reads.iter().filter(|read| !read.validate) {
                 charge("dependency", 1)?;
                 if read.range.is_empty() {
@@ -310,6 +329,7 @@ mod tests {
                     root,
                     at,
                 }],
+                publications: vec![],
             },
         )
     }
@@ -446,6 +466,7 @@ mod tests {
                             validate: false,
                         }],
                         emits: vec![],
+                        publications: vec![],
                     },
                 ));
                 check(&shapes).unwrap();

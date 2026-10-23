@@ -12,6 +12,7 @@ use crate::{
 use std::collections::BTreeMap;
 use uuid::Uuid;
 impl ReactiveBinding for Calculation {
+    type Publication = ();
     type Parameters = ();
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws: &mut Workspace<L>,
@@ -94,6 +95,7 @@ impl ReactiveBinding for Calculation {
         record: &Record,
         shape: &ResolvedShape,
         _parameters: &Self::Parameters,
+        _publications: &[crate::causal::PublicationValue<Self::Publication>],
         values: &[i128],
     ) -> Result<(Calculated, BTreeMap<u16, i128>)> {
         let (derived, amount) = match &record.input {

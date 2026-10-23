@@ -1,5 +1,15 @@
 # Rust feasibility and stop boundary
 
+**G4d-a accepted, October 23:** [declared published values](36-value-dependencies-gate.md)
+add output-free IssueShare through the existing scheduler. Source 0.9.0 retains
+store/codec 6; invoicing behavior becomes 5, other model identities are unchanged.
+The 71 affected native tests, 11 independent oracle controls and 11-mutation
+optimized HTTP workflow pass, including final-graph propagation, rollback,
+materialized authority and recovery. Prior stores for the other three models
+pass complete checks; old invoicing rejects without changing bytes. Full
+optimized/population campaigns were not repeated. G5a atomic intent is next;
+typed statistics consumers, selection and actual external services remain open.
+
 **G4c accepted, October 23:** [native index families](34-native-index-extension.md)
 drive one shared AVL and a fourth compiled model, dimensioned measurement.
 Source 0.8.0 / store+codec 6 passes 109 debug/optimized Rust tests, 116 independent

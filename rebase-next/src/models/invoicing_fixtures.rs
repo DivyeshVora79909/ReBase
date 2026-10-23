@@ -13,11 +13,38 @@ pub fn catalog() -> Value {
         {"name":"invoice","description":"Fractional line pricing, base tax and tax-on-tax","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"},
         {"name":"invoice-credit","description":"The same invoice with a linked monetary credit and later cumulative tax corrections","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"},
         {"name":"invoice-paid","description":"The initial invoice fully paid into a matching treasury","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"},
-        {"name":"invoice-refund","description":"A fully paid invoice, linked credit/refund and later tax corrections; final balance zero","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"}
+        {"name":"invoice-refund","description":"A fully paid invoice, linked credit/refund and later tax corrections; final balance zero","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"},
+        {"name":"issue-share","description":"One-third of an Issue's settled published amount; no share outputs or history roots","source":"src/models/invoicing_fixtures.rs","identity":"UUIDv5(namespace, fixture-name/record-label)","execution":"one ordinary records.mutate operation"}
     ])
 }
 
 pub fn plan(model: &Prepared<Invoicing>, name: &str, namespace: Uuid) -> Result<Value> {
+    if name == "issue-share" {
+        let ids: BTreeMap<_, _> = ["Invoice", "Issue", "Share"]
+            .into_iter()
+            .map(|label| {
+                (
+                    label,
+                    Uuid::new_v5(&namespace, format!("{name}/{label}").as_bytes()),
+                )
+            })
+            .collect();
+        let commands = vec![
+            json!({"op":"create","id":ids["Invoice"],"contract":101,"fields":{"currency":1}}),
+            json!({"op":"create","id":ids["Issue"],"contract":211,"fields":{"invoice":ids["Invoice"],"at":"0","quantity":{"numerator":"3","denominator":"2"},"unit_price_minor":"10001","rounding":"half_even"}}),
+            json!({"op":"create","id":ids["Share"],"contract":821,"fields":{"issue":ids["Issue"],"ratio":{"numerator":"1","denominator":"3"},"rounding":"half_even"}}),
+        ];
+        for command in &commands {
+            model.validate(
+                command["contract"].as_u64().unwrap() as u16,
+                &command["fields"],
+            )?;
+        }
+        return Ok(
+            json!({"model":model.identity(),"commands":commands,"returning":[ids["Issue"],ids["Share"]],
+            "fixture":{"name":name,"namespace":namespace,"ids":ids,"expected":{"issue_minor":"15002","basis_minor":"15002","amount_minor":"5001"}}}),
+        );
+    }
     if !matches!(
         name,
         "invoice" | "invoice-credit" | "invoice-paid" | "invoice-refund"

@@ -36,6 +36,9 @@ pub mod values;
 mod parameter_tests;
 
 #[cfg(test)]
+mod publication_tests;
+
+#[cfg(test)]
 mod route_tests;
 #[cfg(test)]
 mod window_tests;

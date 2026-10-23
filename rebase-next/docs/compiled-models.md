@@ -35,7 +35,7 @@ Rust traits, without adding variants to another model's input enum:
 | --- | --- |
 | `NativeInput` | Bind a contract code and canonical JSON to native values; validate native bounds; enumerate typed references and managed producer/role identity. |
 | `Binding` | Supply closed schemas and explicit declarations, model name and behavior revision, limits, published-field shape, model settlement/checking functions and optional fixture recipes. |
-| `ReactiveBinding` | Resolve declared query/output shape and model-owned parameters, evaluate them with query values, construct managed output inputs and identify their tree memberships. |
+| `ReactiveBinding` | Resolve declared shape and authored parameters, project ready parent publications, evaluate native publication/query values, and construct managed contributions. |
 
 `Prepared::<B>::load()` validates declaration identities, closed schemas, field
 agreement, local calculation order, reference targets, roots, memberships,
@@ -69,10 +69,28 @@ no Serde schema, stored copy, global cache or `Default` value for deleted record
 Creating new reference targets still requires parents before children during
 command staging. Final-graph calculation does not imply arbitrary creation order.
 
-This seam does not make published parent calculations or undeclared reference
-chains safe inputs. They need additional dependency contracts. Keep database
-handles and hidden reads out of parameters/evaluation. Model hooks remain trusted
-Rust code; the interface does not enforce purity against malicious code.
+Keep published parent calculations out of authored parameters: a parent may
+still be pending during resolution. Declare them through `Contract.publication_inputs`:
+each `PublicationInput` names its own `PublicationSlot`, an authored reference
+slot, a published field code and its native binding. Preparation checks the field
+against every allowed reference target. `resolve` returns the pinned parent UUID
+in `ResolvedShape.publications`; every declared slot is mandatory, including when
+the formula multiplies it by zero.
+
+`ReactiveBinding::Publication` is a model-owned native type without Clone or Serde
+requirements. `project_publication(parent, field_code)` receives the ready parent's
+current record. The engine passes slot-tagged `PublicationValue` entries into
+`evaluate` between authored parameters and ordered query values. Invoicing uses
+`Publication::IssueAmount(i128)` for IssueShare. One Direct registration per
+reference covers both authored and published inputs; `Contract::uses_direct`
+identifies that union. Publication edges participate in the same final graph as
+financial reads, and original/staged routes only discover affected work.
+
+Only declared parents using the shared causal scheduler are supported here.
+Publication values cannot choose references, output activation or query bounds.
+Undeclared reference chains and hidden reads remain unsupported. Keep database
+handles out of evaluation. Model hooks remain trusted Rust code; the interface
+does not enforce purity against malicious code.
 
 `Store::<B>` supplies the shared adapter. The engine stages source commands,
 checks schema and CAS versions, enforces current authority, and creates declared
@@ -160,10 +178,12 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.8.0 source uses store/native codec format 6, calculation behavior
+The 0.9.0 source retains store/native codec format 6, calculation behavior
 `rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
-and invoicing behavior `invoice-assessments-4`. Every model identity changed;
-there is no implicit migration from the verified 0.6.0 bundle's format 4 stores.
+and measurement behavior `dimensioned-measurements-1`. Invoicing now uses
+`invoice-assessments-5` for IssueShare. Models without publication inputs retain
+their 0.8 identities; the invoicing model requires a new matching store.
+There is no implicit migration from the verified 0.6.0 bundle's format 4 stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
 evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
 

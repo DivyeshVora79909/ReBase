@@ -2,7 +2,7 @@
 
 This guide documents the **last verified 0.6.0 bundle**, whose results are
 recorded in the [0.6 release report](../research/29-deployment-result.md). The
-0.8.0 source checkout adds native index families and dimensioned measurements and uses incompatible
+0.9.0 source checkout adds native index families and dimensioned measurements and uses incompatible
 store/native codec format 6. Use the source from the recorded 0.6.0 commit when
 reproducing this bundle; do not treat a package built from the current checkout
 as the verified 0.6.0 artifact. See [exact time windows](reactive-windows.md)

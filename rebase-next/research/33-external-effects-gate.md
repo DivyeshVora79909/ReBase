@@ -377,9 +377,10 @@ Restore/check the full bounded store and demonstrate that receipt archiving does
 not erase effect evidence. Verify compiled action-version mismatch rejection.
 
 For every checkpoint preserve independent expectations, concrete source/build
-fingerprints and current limits. Run formatting/Clippy before debug/optimized
-Rust tests, relevant existing independent native/local checks and the changed
-real-process workflow. Native execution, durable atomicity, authentication,
+fingerprints and current limits. Run formatting/Clippy, affected native controls
+and the changed optimized real-process workflow with one build owner. Repeat an
+existing population or full optimized Rust campaign only when a changed contract
+requires it; accepted evidence remains dated. Native execution, durable atomicity, authentication,
 crash recovery and capacity remain unaccepted until those checkpoints execute.
 No frontend or production/distributed/exactly-once claim is implied.
 

@@ -42,6 +42,20 @@ pub struct PublishedField {
     pub binding: &'static str,
 }
 
+/// Attempt-local publication inputs have their own slot namespace. They do not
+/// allocate stored query rows or reuse membership/output-role addresses.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(transparent)]
+pub struct PublicationSlot(pub u16);
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PublicationInput {
+    pub slot: PublicationSlot,
+    pub reference_slot: u16,
+    pub field_code: u16,
+    pub binding: &'static str,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Reference {
     pub slot: u16,
@@ -112,6 +126,8 @@ pub struct Contract {
     pub schema: Value,
     pub fields: Vec<InputField>,
     pub published: Vec<PublishedField>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub publication_inputs: Vec<PublicationInput>,
     pub references: Vec<Reference>,
     pub roots: Vec<RootDeclaration>,
     pub memberships: Vec<Membership>,
@@ -124,6 +140,25 @@ pub struct Contract {
     pub behavior_source: &'static str,
 }
 
+impl Contract {
+    /// One reverse registration covers all authored and published values read
+    /// through a reference. Several publication inputs do not duplicate it.
+    pub fn uses_direct(&self, reference_slot: u16) -> bool {
+        self.references.iter().any(|reference| {
+            reference.slot == reference_slot && !reference.direct_fields.is_empty()
+        }) || self
+            .publication_inputs
+            .iter()
+            .any(|input| input.reference_slot == reference_slot)
+    }
+
+    pub(crate) fn uses_causal_scheduler(&self) -> bool {
+        !self.outputs.is_empty()
+            || !self.publication_inputs.is_empty()
+            || self.queries.iter().any(|query| query.operation == "sum")
+    }
+}
+
 pub type PreparedModel = Prepared<BindingCalculation>;
 
 pub struct Prepared<B: Binding> {
@@ -132,6 +167,7 @@ pub struct Prepared<B: Binding> {
     core_identity: String,
     contracts: BTreeMap<u16, Contract>,
     indexes: Vec<IndexDescriptor>,
+    publication_targets: BTreeSet<u16>,
     validators: BTreeMap<u16, jsonschema::Validator>,
     field_validators: BTreeMap<(u16, &'static str), jsonschema::Validator>,
 }
@@ -319,6 +355,10 @@ impl<B: Binding> Prepared<B> {
             unique(contract.memberships.iter().map(|m| m.slot), "member slots")?;
             unique(contract.queries.iter().map(|q| q.slot), "query slots")?;
             unique(contract.outputs.iter().map(|o| o.role), "output roles")?;
+            unique(
+                contract.publication_inputs.iter().map(|input| input.slot.0),
+                "publication input slots",
+            )?;
             let locals: Vec<_> = contract
                 .calculations
                 .iter()
@@ -354,6 +394,7 @@ impl<B: Binding> Prepared<B> {
             }
         }
         let contracts: BTreeMap<_, _> = declarations.into_iter().map(|c| (c.code, c)).collect();
+        let mut publication_targets = BTreeSet::new();
         for contract in contracts.values() {
             let published_shape = B::published_shape(contract.code);
             if contract
@@ -391,6 +432,47 @@ impl<B: Binding> Prepared<B> {
                     {
                         return Err(model_error("unresolved direct field"));
                     }
+                }
+            }
+            if !contract.publication_inputs.is_empty()
+                && contract
+                    .queries
+                    .iter()
+                    .any(|query| query.operation != "sum")
+            {
+                return Err(model_error(
+                    "publication consumers must use shared causal settlement",
+                ));
+            }
+            for input in &contract.publication_inputs {
+                let reference = contract
+                    .references
+                    .iter()
+                    .find(|reference| reference.slot == input.reference_slot)
+                    .ok_or_else(|| model_error("unresolved publication reference"))?;
+                if reference.optional || input.field_code == 0 || input.binding.is_empty() {
+                    return Err(model_error(
+                        "publication inputs require a mandatory typed reference",
+                    ));
+                }
+                for code in &reference.targets {
+                    let target = &contracts[code];
+                    let field = target
+                        .published
+                        .iter()
+                        .find(|field| field.code == input.field_code)
+                        .ok_or_else(|| model_error("unresolved published input field"))?;
+                    if field.binding != input.binding {
+                        return Err(model_error("publication input binding mismatch"));
+                    }
+                    if !target.uses_causal_scheduler()
+                        || target.queries.iter().any(|query| query.operation != "sum")
+                    {
+                        return Err(model_error(
+                            "publication parent must use shared causal settlement",
+                        ));
+                    }
+                    publication_targets.insert(*code);
                 }
             }
             let resolve = |code, slot| -> Result<&RootDeclaration> {
@@ -480,6 +562,7 @@ impl<B: Binding> Prepared<B> {
             core_identity,
             contracts,
             indexes,
+            publication_targets,
             validators,
             field_validators,
         })
@@ -499,6 +582,10 @@ impl<B: Binding> Prepared<B> {
         self.contracts
             .get(&code)
             .ok_or_else(|| Error::new("invalid_input", "unknown contract"))
+    }
+
+    pub(crate) fn has_publication_dependents(&self, code: u16) -> bool {
+        self.publication_targets.contains(&code)
     }
 
     pub fn public_contract(&self, code: u16) -> Result<&Contract> {
@@ -827,6 +914,7 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
                 })
                 .collect(),
             published: vec![],
+            publication_inputs: vec![],
             references: vec![],
             roots: vec![],
             memberships: vec![],

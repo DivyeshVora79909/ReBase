@@ -1,6 +1,31 @@
 # G4d: declared published values, then typed query consumers
 
-**Prepared 2026-10-23; implementation and acceptance remain open.** This paper
+**G4d-a accepted 2026-10-23, source 0.9.0 / store+codec 6.** The
+[dated evidence](evidence/2026-10-23-g4d-published-values.json) records typed
+declarations, shared graph/readiness and IssueShare. Invoicing behavior is 5;
+calculation, equipment and measurement keep their G4c identities. Their retained
+stores pass complete checks, including both 4,096-source stores. The G4c invoicing
+store rejects under the new identity with physical bytes unchanged.
+
+The 58 library tests, nine existing invoicing tests and four new IssueShare tests
+pass. Six publication controls cover source-derived diamonds/chains, final edge
+reversal, mixed cycles, strict slots/native values, and charged budget rejection
+with complete rollback. Thirteen small graph cases compare plain adjacency
+orders. Five corrupt derived/Direct images reject in check/startup/restore.
+The optimized HTTP workflow passes 11 mutations /19 commands (eight commits,
+three complete rollbacks), Fraction expectations, materialized-record authority,
+replay and crash/reopen/restore. Parent-only and detached-parent changes select
+two and one calculations; a parent with eight consumers selects nine, using
+173, 233 and 386 work units respectively. These are bounded examples, not a
+new capacity limit.
+
+Validation was scoped to changed behavior: no full optimized Rust suite or
+population mutation campaign was repeated. Two initial share assertions expected
+an internal type tag in public records; the corrected four-test suite passes.
+The six publication controls were rerun after adding one budget-exhaustion
+injection. Earlier successful library/invoicing results remain retained.
+Next is G5a atomic intent. Typed statistics and selection below remain unaccepted.
+This paper
 narrows [G4d](30-capability-program.md) against the current
 [native index port](34-native-index-extension.md),
 [`causal.rs`](../src/causal.rs), [`dependency.rs`](../src/dependency.rs) and
@@ -86,8 +111,10 @@ be a separately declared direct input.
 
 ## Declaration, native value and persistence contract
 
-Introduce an explicit publication-input declaration with a source-local input
-slot, authored reference slot, target contract and published field code. Resolve
+The implemented publication-input declaration names a source-local input
+slot, authored reference slot, published field code and native binding. Target
+contracts come from the reference's existing allowed targets; no duplicate
+target list is stored. Preparation checks every allowed target. Resolve
 only that reference's target identity before graph construction. Validate the
 slot/code/type and target contract, tenant, existence and reference policy through
 the ordinary prepared model and mutation path.

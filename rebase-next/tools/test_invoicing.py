@@ -43,6 +43,28 @@ def refund_scenario():
 
 
 class SourceOracleTests(unittest.TestCase):
+    def test_share_uses_authored_parent_in_any_source_order(self):
+        facts = scenario()
+        facts["issue"]["fields"]["unit_price_minor"] = "10001"
+        share = source(821, issue="issue", ratio={"numerator":"1", "denominator":"3"}, rounding="half_even")
+        facts = {"share":share, **facts}
+        result = expected(facts)
+        self.assertEqual(result["derived"]["share"], {"basis_minor":"15002", "amount_minor":"5001"})
+        facts["issue"]["fields"]["quantity"] = {"numerator":"2", "denominator":"1"}
+        self.assertEqual(expected(facts)["derived"]["share"], {"basis_minor":"20002", "amount_minor":"6667"})
+        facts["share"]["fields"]["ratio"] = {"numerator":"0", "denominator":"1"}
+        self.assertEqual(expected(facts)["derived"]["share"], {"basis_minor":"20002", "amount_minor":"0"})
+        facts["share"]["fields"]["issue"] = "invoice"
+        with self.assertRaises(RuntimeError):
+            expected(facts)
+
+    def test_share_inexact_and_outside_ratio_reject(self):
+        for numerator, denominator, mode in [("1", "2", "exact"), ("2", "1", "half_even"), ("-1", "1", "half_even")]:
+            facts = scenario()
+            facts["share"] = source(821, issue="issue", ratio={"numerator":numerator, "denominator":denominator}, rounding=mode)
+            with self.assertRaises(RuntimeError):
+                expected(facts)
+
     def test_literal_tax_on_tax_and_later_corrections(self):
         facts = scenario()
         first = expected(facts)

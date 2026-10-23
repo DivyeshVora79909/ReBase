@@ -3,6 +3,7 @@
 //! an expected amount. The exact scalar primitive has a separate Fraction oracle.
 use super::invoicing::{Derived, Input, Invoicing, TaxKind};
 use crate::{
+    binding::NativeInput,
     indexes::standard::Leaf,
     integrity::{Members, Snapshot, require},
     local::Store,
@@ -114,6 +115,27 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
     let mut unique_dates = BTreeSet::new();
 
     for (&id, record) in &snapshot.records {
+        // Independently derive the single parent-level registration from the
+        // authored reference and declarations, not the mutation's route helper.
+        let declaration = store.model().contract(record.contract)?;
+        for (target, _, slot) in record.input.references() {
+            let reference = declaration
+                .references
+                .iter()
+                .find(|r| r.slot == slot)
+                .ok_or_else(|| corrupt("undeclared invoicing source reference"))?;
+            if !reference.direct_fields.is_empty()
+                || declaration
+                    .publication_inputs
+                    .iter()
+                    .any(|input| input.reference_slot == slot)
+            {
+                routes
+                    .entry(Key::Direct(target))
+                    .or_default()
+                    .insert(Address::new(id, slot));
+            }
+        }
         match record.input {
             Input::Invoice { .. } => {
                 for slot in [7, 13, 21, 23, 29, 31] {
@@ -158,6 +180,38 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
                         (at, amount_minor),
                     )?;
                 }
+            }
+            Input::IssueShare {
+                issue,
+                ratio,
+                rounding,
+            } => {
+                let Some(parent) = snapshot.records.get(&issue) else {
+                    return Err(corrupt("missing IssueShare parent"));
+                };
+                let Input::Issue {
+                    quantity,
+                    unit_price_minor,
+                    rounding: parent_rounding,
+                    ..
+                } = parent.input
+                else {
+                    return Err(corrupt("IssueShare parent contract"));
+                };
+                let basis_minor = quantity
+                    .apply(unit_price_minor, parent_rounding)
+                    .map_err(|_| corrupt("IssueShare source parent cannot be quantized"))?;
+                let amount_minor = ratio
+                    .apply(basis_minor, rounding)
+                    .map_err(|_| corrupt("IssueShare source ratio cannot be quantized"))?;
+                require(
+                    record.derived
+                        == Some(Derived::IssueShare {
+                            basis_minor,
+                            amount_minor,
+                        }),
+                    "source-derived IssueShare publication",
+                )?;
             }
             Input::Credit {
                 invoice,
@@ -257,10 +311,6 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
                     "same-time assessment of the same rule",
                 )?;
                 assessments.push((at, id));
-                routes
-                    .entry(Key::Direct(rule))
-                    .or_default()
-                    .insert(Address::new(id, 2));
             }
             _ => {}
         }

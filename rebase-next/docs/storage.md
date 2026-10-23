@@ -94,7 +94,7 @@ trusted operator tool and has no network RPC counterpart.
 ## Data identity and upgrades
 
 The last verified deployment bundle, 0.6.0, uses store format
-`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.8.0 source
+`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.9.0 source
 uses `rebase-store-6` and `native-slice-kv-6`. One store holds one selected
 compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
@@ -106,11 +106,14 @@ Shared semantic changes require bumping every affected binding. Structural/schem
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-In 0.8.0 source, calculation behavior is `rebase-calculation-contract-6`,
+In 0.9.0 source, calculation behavior is `rebase-calculation-contract-6`,
 equipment behavior is `equipment-reservations-5`, and invoicing behavior is
-`invoice-assessments-4`. The model-local index codes, generic native keys and independent subtree spans
-change format 5. The typed read ranges and augmented reverse-route node
-layout introduced in 0.7.0 remains in use. The source rejects older stores,
+`invoice-assessments-5`. Measurement retains `dimensioned-measurements-1`.
+The 0.8 native index codes, generic keys and independent subtree spans required
+format 6. The 0.9 publication inputs reuse existing Direct route bytes and
+attempt-local values: only invoicing's model identity changes. Other 0.8 models
+retain their identities. The typed read ranges and augmented reverse-route node
+layout introduced in 0.7.0 remain in use. The source rejects older formats,
 including 0.7.0 format 5 and 0.6.0 format 4, without migrating them. Keep each
 matching binary and its backups together. The 0.6.0 bundle remains the last
 verified deployment; source checkpoint acceptance does not certify a new bundle.
@@ -122,7 +125,7 @@ Measurement allows 64 public sources and no private outputs or reservations.
 Backup remains capped at 64 MiB, and the active receipt window remains 1,024
 operations.
 
-Format 2, 3, 4 and 5 stores and their backups intentionally reject in 0.8.0. The
+Format 2, 3, 4 and 5 stores and their backups intentionally reject in 0.9.0. The
 runtime header is checked before native metadata decoding, so an old store
 reports a model/format mismatch rather than being reinterpreted. There is no
 silent migration, automatic reset or cross-model restore. Restore a backup only

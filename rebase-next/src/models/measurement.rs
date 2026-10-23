@@ -119,6 +119,7 @@ fn declarations() -> Result<Vec<Contract>> {
             roots: vec![],
             memberships: vec![],
             queries: vec![],
+            publication_inputs: vec![],
             outputs: vec![],
             calculations: vec![],
             calculation_order: vec![],

@@ -15,8 +15,9 @@ crash recovery and failed-restore isolation. The subsequent
 [G4b reactive windows](research/32-reactive-windows.md) and
 [G4c native indexes](research/34-native-index-extension.md) are accepted source
 checkpoints. Source 0.8.0 / store+codec 6 adds the shared native-family tree and
-dimensioned measurement model. Continue [G4d-a published values](research/36-value-dependencies-gate.md),
-then G5a atomic intent. Prepare external contracts alongside core work with explicit atomic
+dimensioned measurement model. [G4d-a published values](research/36-value-dependencies-gate.md)
+is also accepted in source 0.9.0, with unchanged store/codec 6 and invoicing
+behavior 5. Continue G5a atomic intent. Prepare external contracts alongside core work with explicit atomic
 integration. Preserve earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
@@ -82,6 +83,12 @@ to the original repository are permitted; runtime imports from it are not.
 Test an unresolved semantic boundary with a small independent oracle. Stop once
 the necessary fact is established. Reusing a known algorithm does not require a
 new broad benchmark or duplicating an entire existing acceptance suite.
+Use one build owner and a shared Cargo cache per profile. Run affected native
+controls and an optimized product workflow when they establish the changed
+obligation; a fresh full optimized suite or population campaign is not mandatory
+for each gate. Preserve passed evidence and rerun only the checks affected by a
+subsequent change or failure. The user explicitly requested this discipline after
+repeated compilation dominated checkpoint time.
 Read `research/04-implementation.md` and the active research gate before expanding
 scope. For docs-only changes, verify links and relevant fingerprints; unchanged
 dated proof evidence does not require another database or Rust suite run.

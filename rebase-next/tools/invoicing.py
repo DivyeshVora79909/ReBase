@@ -93,6 +93,10 @@ def expected(facts):
             assessments.append((int(f["at"]), identity, f))
         elif code == 601:
             histories[identity, 37]
+        elif code == 821:
+            # Defer shares until every authored Issue has been inspected. The
+            # expectation below recomputes its basis from source fields.
+            pass
         elif code in (701, 809):
             invoice, treasury = facts[f["invoice"]], facts[f["treasury"]]
             require(invoice["contract"] == 101 and treasury["contract"] == 601
@@ -117,6 +121,19 @@ def expected(facts):
                 histories[owner, slot].append((at, delta))
         else:
             raise RuntimeError("Unknown authored contract")
+
+    for identity, record in facts.items():
+        if record["contract"] != 821:
+            continue
+        f = record["fields"]
+        parent = facts.get(f["issue"])
+        require(parent is not None and parent["contract"] == 211, "Share Issue type")
+        share = ratio(f["ratio"])
+        require(0 <= share <= 1, "Share ratio bound")
+        issue = parent["fields"]
+        basis = quantize(ratio(issue["quantity"]) * int(issue["unit_price_minor"]), issue["rounding"])
+        derived[identity] = {"basis_minor": str(basis),
+                             "amount_minor": str(quantize(basis * share, f["rounding"]))}
 
     for at, identity, f in sorted(assessments):
         rule = facts[f["rule"]]["fields"]
@@ -215,7 +232,7 @@ def run(binary, destination):
         backend.start()
         public = backend.call("model.describe", {})
         model = public["model"]
-        require({c["code"] for c in public["contracts"]} == {101, 211, 307, 401, 509, 601, 701, 809},
+        require({c["code"] for c in public["contracts"]} == {101, 211, 307, 401, 509, 601, 701, 809, 821},
                 "Private contracts leaked or public contracts missing")
         namespace = str(uuid.UUID(int=20261022))
         draft = backend.cli("fixture", "plan", "invoice", "--namespace", namespace)

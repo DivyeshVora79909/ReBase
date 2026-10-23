@@ -7,7 +7,7 @@ authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
 scripts. Calculation, equipment reservation and bounded invoicing share the engine,
 authority and tools. All implementation and dependencies stay inside this directory.
-This checkout's package source is 0.8.0 and includes native index families and dimensioned measurement statistics.
+This checkout's package source is 0.9.0 and includes native index families, dimensioned measurements and declared published-parent values.
 The last verified deployment bundle is 0.6.0; source capabilities do not imply
 that a release bundle has passed deployment acceptance.
 
@@ -46,7 +46,7 @@ python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
-| Current source capability gate | [G4c native indexes](research/34-native-index-extension.md) |
+| Current source capability gate | [G4d-a published values](research/36-value-dependencies-gate.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -67,8 +67,8 @@ python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-n
 It checks source arithmetic, selective updates, fanout, rollback, replay,
 authorization, restart and verified restore through the real HTTP process.
 Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. The 0.8.0 source uses store/codec format 6 and changed
-identities for all compiled models. It has no implicit migration from 0.6.0;
+reject atomically. The 0.9.0 source retains store/codec format 6 and changes
+the invoicing identity for IssueShare; other model identities match 0.8.0. It has no implicit migration from 0.6.0;
 keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with

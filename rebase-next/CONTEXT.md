@@ -1,6 +1,21 @@
 # Compact context — 2026-10-23
 
-**G4c-a/b accepted; next: G4d-a declared published-parent values.**
+**G4d-a accepted; next: G5a atomic external-work intent.**
+G4c-a/b is published as `b72507c` on `main`. G4d-a source 0.9.0 adds typed
+publication inputs, final graph readiness and output-free IssueShare.
+[Evidence](research/evidence/2026-10-23-g4d-published-values.json) records 71
+affected native tests, 11 Fraction oracle controls and 11 optimized HTTP mutations
+(eight commits, three complete rollbacks), with authority/replay/crash/restore.
+Store/native codec stay 6; invoicing behavior is 5. Other bindings retain their
+0.8 identities and their stores pass complete checks. Old invoicing rejects
+without byte changes. The last verified deployment bundle remains 0.6.0.
+
+The user requested tighter time/resource use. One owner runs compilation; reuse
+Cargo caches and passed checks. G4c's broad optimized suite took nine minutes;
+do not repeat it or the 4,096-source campaign for this narrower change. G4d-a uses
+affected native controls, an optimized HTTP workflow and identity/open checks.
+
+**G4c-a/b accepted:**
 The [native-index result](research/34-native-index-extension.md) and
 [evidence](research/evidence/2026-10-23-g4c-native-indexes.json) record source 0.8.0 /
 store+codec 6: one AVL over `Binding::Index`, explicit Standard financial/quote
@@ -76,19 +91,28 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement [G4d-a](research/36-value-dependencies-gate.md):
-output-free invoicing `IssueShare` consumes its Issue's settled published amount.
-Prepare typed declarations, reuse Direct registrations, discover downstream
-consumers before evaluation, add final parent-to-consumer graph edges and project
-fresh workspace values immediately before evaluation. Preserve the documented
-materialized-record authority policy. Retain the G4c binary and populated stores
-before changing identities; verify, commit and push each coherent checkpoint.
-Typed statistics consumers and selection remain subsequent gates.
+**Exact next action:** implement [G5a](research/33-external-effects-gate.md) through
+the [reviewed shared transaction seams](research/35-external-integration-review.md).
+Start with the concrete effect-demo Account/Dispatch model and immutable intent
+written atomically before the existing receipt/commit. No separate enqueue or
+alternate domain writer. G5a also owns complete effect inventory, status/cancel,
+bounded retention and disabled restored dispatch; provider delivery remains G5b.
+The actual predecessor is 0.9.0 /store+native codec 6 /API 1, so the proposed G5
+store 7 /native codec 6 /effect codec 1 /API 2 assignment is still available.
+Preserve current binaries/stores before the format change. Verify, commit and
+push coherent checkpoints on `main`; typed statistics and selection remain open.
+
+G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
+`target/g4d-checks.json`, `target/g4d-shares-http/result.json` and
+`target/g4d-compatibility.json`. The initial combined native run contains two
+test-assertion failures (internal type tag expected in public values); retain its
+passed 58 library/nine invoicing results and the final six-publication/four-share
+reruns. Do not rerun successful campaigns just to replace that history.
 
 G4c's final binary is `target/g4c-accepted/rebase-next`. Its final check manifest,
 HTTP reports and compatibility result are located by the dated evidence. The
 `build/` directory inside `target/g4b-retained-b377b21/` was reused as a Cargo
-cache and now contains 0.8 executables; only the binary directly under that
+cache and now contains newer executables; only the binary directly under that
 retained directory is the G4b baseline. No cloud partial code was used.
 
 G5 has a concrete [lifecycle gate](research/33-external-effects-gate.md) and

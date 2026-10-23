@@ -175,6 +175,7 @@ fn contract(
         roots: vec![],
         memberships: vec![],
         queries: vec![],
+        publication_inputs: vec![],
         outputs: vec![],
         calculations: vec![],
         calculation_order: vec![],
@@ -366,6 +367,7 @@ impl Binding for WindowModel {
     }
 }
 impl ReactiveBinding for WindowModel {
+    type Publication = ();
     type Parameters = ();
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         _ws: &mut Attempt<L, Self>,
@@ -388,6 +390,7 @@ impl ReactiveBinding for WindowModel {
         };
         Ok(Resolved {
             shape: ResolvedShape {
+                publications: vec![],
                 reads: if active {
                     vec![Read {
                         slot: if validate { 32 } else { 31 },
@@ -417,6 +420,7 @@ impl ReactiveBinding for WindowModel {
         record: &ModelRecord<Self>,
         shape: &ResolvedShape,
         _parameters: &(),
+        _publications: &[crate::causal::PublicationValue<Self::Publication>],
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
         let Input::Reader { offset, factor, .. } = record.input else {

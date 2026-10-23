@@ -3,13 +3,15 @@
 //! or external money transfers are invented by the model.
 use crate::{
     binding::{Binding, Limits, NativeInput},
-    causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    causal::{
+        Emit, PublicationRead, PublicationValue, ReactiveBinding, Read, Resolved, ResolvedShape,
+    },
     index::TimeKey,
     indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
     local::Store,
     model::{
-        self, Contract, InputField, Membership, OutputRole, Prepared, PublishedField,
-        QueryDeclaration, Reference, RootDeclaration, Visibility,
+        self, Contract, InputField, Membership, OutputRole, Prepared, PublicationInput,
+        PublicationSlot, PublishedField, QueryDeclaration, Reference, RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
@@ -100,6 +102,12 @@ pub enum Input {
         #[serde(with = "decimal")]
         amount_minor: i128,
     },
+    IssueShare {
+        #[serde(with = "uuid_text")]
+        issue: Uuid,
+        ratio: Rational,
+        rounding: Rounding,
+    },
     Output {
         #[serde(with = "uuid_text")]
         producer: Uuid,
@@ -130,6 +138,17 @@ pub enum Derived {
         #[serde(with = "decimal")]
         delta_minor: i128,
     },
+    IssueShare {
+        #[serde(with = "decimal")]
+        basis_minor: i128,
+        #[serde(with = "decimal")]
+        amount_minor: i128,
+    },
+}
+
+/// Native attempt-local value from the declared ready Issue publication.
+pub enum Publication {
+    IssueAmount(i128),
 }
 
 struct OutputSpec {
@@ -226,6 +245,7 @@ impl NativeInput for Input {
             Self::Treasury { .. } => 601,
             Self::Payment { .. } => 701,
             Self::Refund { .. } => 809,
+            Self::IssueShare { .. } => 821,
             Self::Output { role, .. } => output_contract(*role).unwrap_or(0),
         }
     }
@@ -245,6 +265,9 @@ impl NativeInput for Input {
             | Self::Refund { amount_minor, .. } => *amount_minor > 0,
             Self::TaxRule { rate, .. } => rate.numerator() >= 0,
             Self::Assessment { .. } => true,
+            Self::IssueShare { ratio, .. } => {
+                ratio.numerator() >= 0 && ratio.numerator() <= ratio.denominator()
+            }
             Self::Output { role, .. } => output_contract(*role).is_ok(),
         };
         if valid {
@@ -286,6 +309,7 @@ impl NativeInput for Input {
                 payment,
                 ..
             } => vec![(*invoice, 101, 1), (*treasury, 601, 2), (*payment, 701, 3)],
+            Self::IssueShare { issue, .. } => vec![(*issue, 211, 1)],
             Self::Output {
                 producer,
                 role,
@@ -438,6 +462,12 @@ fn declarations() -> Result<Vec<Contract>> {
             json!({"invoice":uuid,"treasury":uuid,"payment":uuid,"at":time,"amount_minor":integer_schema(true)}),
             vec!["invoice", "treasury", "payment", "at", "amount_minor"],
         ),
+        (
+            821,
+            "IssueShare",
+            json!({"issue":uuid,"ratio":nonnegative_rational_schema(),"rounding":Rounding::schema()}),
+            vec!["issue", "ratio", "rounding"],
+        ),
     ];
     for spec in OUTPUTS {
         contracts.push((spec.contract, spec.name,
@@ -460,14 +490,16 @@ fn declarations() -> Result<Vec<Contract>> {
                 .map(|(index, &name)| InputField {
                     code: index as u16 + 1,
                     name,
-                    mutable: code < 900
-                        && !matches!(
-                            name,
-                            "currency" | "invoice" | "issue" | "rule" | "treasury" | "payment"
-                        ),
+                    mutable: code == 821
+                        || (code < 900
+                            && !matches!(
+                                name,
+                                "currency" | "invoice" | "issue" | "rule" | "treasury" | "payment"
+                            )),
                 })
                 .collect(),
             published: vec![],
+            publication_inputs: vec![],
             references: vec![],
             roots: vec![],
             memberships: vec![],
@@ -628,6 +660,40 @@ fn declarations() -> Result<Vec<Contract>> {
                     "payment.invoice equals invoice; payment.treasury equals treasury; nonnegative chronological payment refund capacity",
                 ];
             }
+            821 => {
+                let mut issue = reference(1, "issue", vec![211], vec![]);
+                issue.reader = true;
+                c.references.push(issue);
+                c.publication_inputs.push(PublicationInput {
+                    slot: PublicationSlot(1),
+                    reference_slot: 1,
+                    field_code: 101,
+                    binding: "i128",
+                });
+                c.published = [(101, "basis_minor"), (102, "amount_minor")]
+                    .into_iter()
+                    .map(|(code, name)| PublishedField {
+                        code,
+                        name,
+                        binding: "i128",
+                    })
+                    .collect();
+                c.calculations = vec![
+                    model::Calculation {
+                        name: "basis_minor",
+                        inputs: vec![],
+                        expression: "publication[1].IssueAmount",
+                    },
+                    model::Calculation {
+                        name: "amount_minor",
+                        inputs: vec!["basis_minor"],
+                        expression: "ratio.apply(basis_minor,rounding)",
+                    },
+                ];
+                c.rules = vec![
+                    "0 <= ratio <= 1; consumes the ready Issue amount; calculates a proposed share without posting or allocating it",
+                ];
+            }
             _ => {
                 let spec = OUTPUTS.iter().find(|s| s.contract == code).unwrap();
                 let role = spec.role;
@@ -645,17 +711,22 @@ fn declarations() -> Result<Vec<Contract>> {
     Ok(declarations)
 }
 
-pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
+fn registrations(
+    model: &Prepared<Invoicing>,
+    id: Uuid,
+    input: Option<&Input>,
+) -> Result<BTreeSet<(Key, Address)>> {
     let mut registrations = BTreeSet::new();
     if let Some(input) = input {
+        let contract = model.contract(input.contract())?;
         for (target, _, slot) in input.references() {
             registrations.insert((Key::Incoming(target), Address::new(id, slot)));
-        }
-        if let Input::Assessment { rule, .. } = input {
-            registrations.insert((Key::Direct(*rule), Address::new(id, 2)));
+            if contract.uses_direct(slot) {
+                registrations.insert((Key::Direct(target), Address::new(id, slot)));
+            }
         }
     }
-    registrations
+    Ok(registrations)
 }
 fn authored_members(id: Uuid, input: Option<&Input>) -> BTreeMap<u16, (Address, TimeKey, Leaf)> {
     let (at, entries) = match input {
@@ -728,7 +799,7 @@ impl Binding for Invoicing {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "invoice-assessments";
-    const BEHAVIOR: &'static str = "invoice-assessments-4";
+    const BEHAVIOR: &'static str = "invoice-assessments-5";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -748,7 +819,11 @@ impl Binding for Invoicing {
             (input, derived),
             (Input::Issue { .. }, Some(Derived::Issue { .. }))
                 | (Input::Assessment { .. }, Some(Derived::Assessment { .. }))
-        ) || (!matches!(input, Input::Issue { .. } | Input::Assessment { .. }) && derived.is_none())
+                | (Input::IssueShare { .. }, Some(Derived::IssueShare { .. }))
+        ) || (!matches!(
+            input,
+            Input::Issue { .. } | Input::Assessment { .. } | Input::IssueShare { .. }
+        ) && derived.is_none())
     }
     fn published_shape(code: u16) -> Value {
         match code {
@@ -756,6 +831,7 @@ impl Binding for Invoicing {
             509 => {
                 json!({"kind":"assessment","basis_minor":"0","prior_minor":"0","assessed_minor":"0","delta_minor":"0"})
             }
+            821 => json!({"kind":"issue_share","basis_minor":"0","amount_minor":"0"}),
             _ => Value::Null,
         }
     }
@@ -828,8 +904,16 @@ impl Binding for Invoicing {
                     ));
                 }
             }
-            let old = registrations(change.id, change.old.as_ref().map(|record| &record.input));
-            let new = registrations(change.id, change.new.as_ref().map(|record| &record.input));
+            let old = registrations(
+                model,
+                change.id,
+                change.old.as_ref().map(|record| &record.input),
+            )?;
+            let new = registrations(
+                model,
+                change.id,
+                change.new.as_ref().map(|record| &record.input),
+            )?;
             for (key, address) in old.difference(&new) {
                 routes::change(ws, key, *address, TimeRange::ALL, false)?;
             }
@@ -903,6 +987,7 @@ impl Binding for Invoicing {
 /// Authored rule fields captured once from the declared direct parent.
 pub enum Parameters {
     Issue,
+    IssueShare,
     Assessment {
         kind: TaxKind,
         rate: Rational,
@@ -911,6 +996,7 @@ pub enum Parameters {
 }
 impl ReactiveBinding for Invoicing {
     type Parameters = Parameters;
+    type Publication = Publication;
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws: &mut Attempt<L, Self>,
         context: Context,
@@ -920,6 +1006,7 @@ impl ReactiveBinding for Invoicing {
         match record.input {
             Input::Issue { invoice, at, .. } => Ok(Resolved {
                 shape: ResolvedShape {
+                    publications: vec![],
                     reads: vec![],
                     emits: vec![
                         Emit {
@@ -978,6 +1065,7 @@ impl ReactiveBinding for Invoicing {
                 };
                 Ok(Resolved {
                     shape: ResolvedShape {
+                        publications: vec![],
                         reads: vec![
                             Read {
                                 slot,
@@ -1032,9 +1120,31 @@ impl ReactiveBinding for Invoicing {
                     },
                 })
             }
+            Input::IssueShare { issue, .. } => Ok(Resolved {
+                shape: ResolvedShape {
+                    reads: vec![],
+                    emits: vec![],
+                    publications: vec![PublicationRead {
+                        slot: PublicationSlot(1),
+                        parent: issue,
+                    }],
+                },
+                parameters: Parameters::IssueShare,
+            }),
             _ => Err(Error::new(
                 "corrupt_state",
                 "nonreactive invoicing contract",
+            )),
+        }
+    }
+    fn project_publication(parent: &ModelRecord<Self>, field_code: u16) -> Result<Publication> {
+        match (&parent.input, &parent.derived, parent.contract, field_code) {
+            (Input::Issue { .. }, Some(Derived::Issue { amount_minor }), 211, 101) => {
+                Ok(Publication::IssueAmount(*amount_minor))
+            }
+            _ => Err(Error::new(
+                "corrupt_state",
+                "ready Issue amount publication unavailable",
             )),
         }
     }
@@ -1043,9 +1153,37 @@ impl ReactiveBinding for Invoicing {
         record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
         parameters: &Self::Parameters,
+        publications: &[PublicationValue<Publication>],
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
         match (&record.input, parameters) {
+            (
+                Input::IssueShare {
+                    ratio, rounding, ..
+                },
+                Parameters::IssueShare,
+            ) => {
+                let [
+                    PublicationValue {
+                        slot: PublicationSlot(1),
+                        value: Publication::IssueAmount(basis_minor),
+                    },
+                ] = publications
+                else {
+                    return Err(Error::new(
+                        "internal",
+                        "IssueShare needs its declared Issue amount",
+                    ));
+                };
+                let amount_minor = ratio.apply(*basis_minor, *rounding)?;
+                Ok((
+                    Derived::IssueShare {
+                        basis_minor: *basis_minor,
+                        amount_minor,
+                    },
+                    BTreeMap::new(),
+                ))
+            }
             (
                 Input::Issue {
                     quantity,

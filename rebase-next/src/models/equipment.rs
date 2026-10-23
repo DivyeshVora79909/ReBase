@@ -209,6 +209,7 @@ fn declarations() -> Result<Vec<Contract>> {
             roots: vec![],
             memberships: vec![],
             queries: vec![],
+            publication_inputs: vec![],
             outputs: vec![],
             calculations: vec![],
             calculation_order: vec![],
@@ -405,6 +406,7 @@ impl Binding for Equipment {
     }
 }
 impl ReactiveBinding for Equipment {
+    type Publication = ();
     type Parameters = ();
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         _ws: &mut Attempt<L, Self>,
@@ -430,6 +432,7 @@ impl ReactiveBinding for Equipment {
         }
         Ok(Resolved {
             shape: ResolvedShape {
+                publications: vec![],
                 reads: vec![Read {
                     slot: 31,
                     root: Address::new(pool, 7),
@@ -459,6 +462,7 @@ impl ReactiveBinding for Equipment {
         record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
         _parameters: &Self::Parameters,
+        _publications: &[crate::causal::PublicationValue<Self::Publication>],
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
         let Input::Reservation {

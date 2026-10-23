@@ -43,6 +43,7 @@ another independent invoice; applying the saved mutation again replays its recei
 | `601` Treasury | Immutable `currency`, mutable `name` (1–80 characters). Owns cash history 37. |
 | `701` Payment | `invoice`, `treasury`, `at`, positive integer-string `amount_minor`. Owns remaining linked refund capacity at root 41. |
 | `809` Refund | `invoice`, `treasury`, original `payment`, `at`, positive integer-string `amount_minor`. Returns part or all of that payment. |
+| `821` IssueShare | Mutable `issue`, canonical `ratio` between zero and one, and `rounding`. Publishes `basis_minor` and `amount_minor` from the Issue's settled amount. |
 
 All times are canonical `i64` integer strings; amounts use `i128` integer strings.
 The [exact-value API](exact-values.md) defines fractions and rounding. For example,
@@ -50,12 +51,39 @@ quantity `{"numerator":"3","denominator":"2"}` times price `"6670"` gives
 `"10005"` minor units. A Credit is a monetary correction, not a formula for
 returning fractional quantities or repricing remaining goods.
 
-All invoice/issue/rule/treasury/payment references are immutable. Credit must name
+Existing invoice/issue/rule/treasury/payment references are immutable; IssueShare's
+new `issue` reference permits retargeting. Credit must name
 its Issue's Invoice; Assessment must name its Rule's Invoice. Payment requires
 matching invoice/treasury currencies. Refund must name its original payment's
 invoice and treasury. Other declared mutable fields use the normal complete-value updates and
 CAS versions. No child stores a copied rate. G3b resolves the parent's authored
 rate/kind/rounding into an attempt-local parameter bundle for pure evaluation.
+
+## Published Issue shares
+
+The `issue-share` fixture creates an Invoice, Issue and IssueShare. Quantity
+`3/2` at price `10001` with half-even rounding publishes Issue amount `15002`.
+Its one-third share publishes basis `15002`, amount `5001`. Changing only the
+Issue quantity to `2` publishes `20002` and updates the share to `6667` in the
+same transaction. The scheduler waits for the Issue before reading its value.
+
+IssueShare has no tree, managed output or copied query result. Its value proposes
+a share; it does not post a credit or enforce allocation conservation. A zero
+ratio retains the dependency. Retargeting repairs the reference route; deleting
+an Issue with a surviving share rejects. Both records remain within the existing
+64-public-source envelope.
+
+```sh
+rebase-next --model invoicing fixture plan issue-share \
+  --namespace 00000000-0000-4000-8000-000000000100 > share-draft.json
+python3 -B tools/issue_shares.py --binary target/release/rebase-next --out target/share-workflow
+```
+
+Creating or retargeting a share requires current read access to its new Issue.
+An already materialized share follows its own Read permission and reader route;
+revoking Issue Read alone does not redact it. Revoking Share Read removes it from
+ordinary reads/pages and receipt disclosure. Internal recalculation through an
+unchanged reference keeps the existing engine-authority policy.
 
 ## Calculation and history
 
@@ -179,8 +207,8 @@ the mutation algorithm.
 [The G3d/G3e gate](../research/28-settlement-refund-gate.md) owns settlement and
 deployment acceptance; [G3c](../research/27-invoicing-gate.md) retains dated pricing
 evidence. The last verified package 0.6 uses invoicing behavior
-`invoice-assessments-2` and format 4. Current 0.8.0 source adds exact financial
-range reads, uses behavior `invoice-assessments-4` and format 6, and requires a
+`invoice-assessments-2` and format 4. Current 0.9.0 source adds exact financial
+range reads, uses behavior `invoice-assessments-5` and format 6, and requires a
 new store. Keep the 0.6 binary with its stores and backups. The [window guide](reactive-windows.md)
 describes the public root read and range semantics; see [upgrades](storage.md#data-identity-and-upgrades).
 

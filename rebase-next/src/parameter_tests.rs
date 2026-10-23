@@ -205,6 +205,7 @@ fn contract(
         roots: vec![],
         memberships: vec![],
         queries: vec![],
+        publication_inputs: vec![],
         outputs: vec![],
         calculations: vec![],
         calculation_order: vec![],
@@ -456,6 +457,7 @@ enum Parameters {
     ReadOnly,
 }
 impl ReactiveBinding for ParentTax {
+    type Publication = ();
     type Parameters = Parameters;
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws: &mut Attempt<L, Self>,
@@ -471,6 +473,7 @@ impl ReactiveBinding for ParentTax {
         {
             return Ok(Resolved {
                 shape: ResolvedShape {
+                    publications: vec![],
                     reads: if active {
                         vec![Read {
                             slot: 31,
@@ -489,6 +492,7 @@ impl ReactiveBinding for ParentTax {
         if let Input::Probe { basis, active } = record.input {
             return Ok(Resolved {
                 shape: ResolvedShape {
+                    publications: vec![],
                     reads: if active {
                         vec![Read {
                             slot: 31,
@@ -525,6 +529,7 @@ impl ReactiveBinding for ParentTax {
         };
         Ok(Resolved {
             shape: ResolvedShape {
+                publications: vec![],
                 reads: vec![Read {
                     slot: 31,
                     root: Address::new(basis, 7),
@@ -546,6 +551,7 @@ impl ReactiveBinding for ParentTax {
         record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
         parameters: &Parameters,
+        _publications: &[crate::causal::PublicationValue<Self::Publication>],
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
         assert!(
