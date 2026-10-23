@@ -1,10 +1,14 @@
 # G5: bounded durable external work
 
-**Prepared, 2026-10-23; native implementation unaccepted.** This is G5 of the
+**G5a accepted, 2026-10-23; G5b/G5c remain unaccepted.** The
+[G5a result](37-atomic-intent-implementation.md) and
+[evidence](evidence/2026-10-23-g5a-atomic-intent.json) establish atomic intent,
+status/cancellation and checked bounded storage with dispatch disabled. This is G5 of the
 [capability program](30-capability-program.md), after the accepted 0.6 release.
 The small [lifecycle oracle](experiments/effect_lifecycle.py) has executed; its
 limited result is recorded below. No production provider, worker, durable inbox
-or effect-storage implementation is supplied by that experiment.
+or effect-storage implementation is supplied by that experiment; G5a's separate
+native evidence now establishes its stated storage scope.
 
 ## Meaning and selected scope
 

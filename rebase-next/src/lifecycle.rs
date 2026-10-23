@@ -186,6 +186,7 @@ impl<B: Binding> Store<B> {
                 "reset store confirmation differs",
             ));
         }
+        crate::effects::reset_tables(&write)?;
         let mut graph = if self.secured {
             Some(crate::security::write_graph(&write)?.graph)
         } else {
@@ -268,21 +269,7 @@ pub fn restore<B: Binding>(
     }
     let image: Observation = serde_json::from_value(backup.payload).map_err(local::storage)?;
     let secured = image.tables.contains_key("authority");
-    let expected: BTreeSet<_> = if secured {
-        vec![
-            "authority",
-            "local_runtime",
-            "native_kv",
-            "operations",
-            "public_records",
-            "reader_records",
-        ]
-    } else {
-        vec!["local_runtime", "native_kv", "operations", "public_records"]
-    }
-    .into_iter()
-    .map(str::to_owned)
-    .collect();
+    let expected: BTreeSet<_> = local::table_names(secured).into_iter().collect();
     if !image.complete
         || image.tables.keys().cloned().collect::<BTreeSet<_>>() != expected
         || image.format
@@ -303,7 +290,10 @@ pub fn restore<B: Binding>(
         .create_file(file)
         .map_err(local::storage)?;
     let write = db.begin_write().map_err(local::storage)?;
-    for def in [KV, RECEIPTS, RUNTIME, AUTHORITY] {
+    for def in [KV, RECEIPTS, RUNTIME, AUTHORITY]
+        .into_iter()
+        .chain(crate::effects::TABLES.iter().map(|(def, _)| *def))
+    {
         let Some(rows) = image.tables.get(def.name()) else {
             continue;
         };
@@ -341,7 +331,17 @@ pub fn restore<B: Binding>(
     write.commit().map_err(local::storage)?;
     drop(db);
     let restored = Store::open(&temp.0, model)?;
+    // Validate the supplied image before changing its activation. Never repair
+    // a corrupt backup into something that passes validation.
     let checked = restored.check_integrity()?;
+    let write = restored.db.begin_write().map_err(local::storage)?;
+    let changed = crate::effects::quarantine_restore(&write)?;
+    write.commit().map_err(local::storage)?;
+    let checked = if changed {
+        restored.check_integrity()?
+    } else {
+        checked
+    };
     drop(restored);
     publish(&temp, destination)?;
     Ok(json!({"status":"restored","path":destination,"integrity":checked}))

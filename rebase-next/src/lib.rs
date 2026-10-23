@@ -6,6 +6,7 @@ pub mod binding;
 pub mod causal;
 pub mod demo;
 mod dependency;
+pub mod effects;
 pub mod fixtures;
 pub mod identity;
 pub mod index;
@@ -45,3 +46,6 @@ mod window_tests;
 
 #[cfg(test)]
 mod index_tests;
+
+#[cfg(test)]
+mod effect_tests;

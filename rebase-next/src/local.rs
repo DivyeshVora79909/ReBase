@@ -25,7 +25,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-store-6";
+pub const STORE_FORMAT: &str = "rebase-store-7";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
@@ -135,11 +135,48 @@ pub struct CommittedValue<B: Binding> {
     #[serde(with = "decimal")]
     pub revision: u64,
     pub records: Vec<ReturnedValue<B>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub executions: Vec<crate::effects::Created>,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ReceiptKind {
+    Records,
+    Cancel,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged, bound(serialize = "", deserialize = ""))]
+pub(crate) enum ReceiptResult<B: Binding> {
+    Records(CommittedValue<B>),
+    Cancel(crate::effects::CancelledValue),
+}
+impl<B: Binding> ReceiptResult<B> {
+    pub(crate) fn kind(&self) -> ReceiptKind {
+        match self {
+            Self::Records(_) => ReceiptKind::Records,
+            Self::Cancel(_) => ReceiptKind::Cancel,
+        }
+    }
+    pub(crate) fn operation_id(&self) -> Uuid {
+        match self {
+            Self::Records(r) => r.operation_id,
+            Self::Cancel(r) => r.operation_id,
+        }
+    }
+    pub(crate) fn revision(&self) -> u64 {
+        match self {
+            Self::Records(r) => r.revision,
+            Self::Cancel(r) => r.revision,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
 pub(crate) struct ReceiptValue<B: Binding> {
+    pub(crate) kind: ReceiptKind,
     pub(crate) context: String,
     pub(crate) model: String,
     #[serde(with = "uuid_text")]
@@ -147,7 +184,7 @@ pub(crate) struct ReceiptValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub(crate) actor: Uuid,
     pub(crate) request_hash: String,
-    pub(crate) result: CommittedValue<B>,
+    pub(crate) result: ReceiptResult<B>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -226,6 +263,7 @@ impl<B: Binding> Store<B> {
                 .map_err(storage)?;
             write.open_table(PUBLIC).map_err(storage)?;
             write.open_table(RECEIPTS).map_err(storage)?;
+            crate::effects::create_tables(&write)?;
             let header = RuntimeHeader::fresh();
             write
                 .open_table(RUNTIME)
@@ -254,8 +292,8 @@ impl<B: Binding> Store<B> {
         match ReadOnlyDatabase::open(path.as_ref()) {
             Ok(preview) => {
                 let read = preview.begin_read().map_err(storage)?;
-                check_tables(&read)?;
                 read_header(&read)?;
+                check_tables(&read)?;
                 check_model_identity(&read_meta(&read)?, model.identity())?;
             }
             Err(DatabaseError::RepairAborted) => {}
@@ -397,7 +435,7 @@ impl<B: Binding> Store<B> {
         self.mutate_inner(request, allocate, None)
     }
 
-    fn mutate_inner(
+    pub(crate) fn mutate_inner(
         &self,
         request: &Mutation,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
@@ -411,20 +449,11 @@ impl<B: Binding> Store<B> {
                 "returning requires at most 32 unique IDs",
             ));
         }
-        let normalized = encode(&serde_json::to_value(request).map_err(storage)?)?;
-        if normalized.len() > crate::json::MAX_REQUEST_BYTES {
-            return Err(Error::new("request_limit", "normalized request byte limit"));
-        }
-        let mut hash = Sha256::new();
-        hash.update(b"rebase-local-operation-v1\0");
-        hash.update(self.context.tenant.as_bytes());
-        hash.update(self.context.actor.as_bytes());
-        hash.update(&normalized);
-        let request_hash = native_codec::hex(&hash.finalize());
+        let request_hash = self.request_hash("records.mutate", request)?;
         let write = self.db.begin_write().map_err(storage)?;
         let scope = self.write_authority(&write)?;
         let mut header: RuntimeHeader;
-        let (batch, result, work) = {
+        let (batch, result, disclosed, intents, work) = {
             let table = write.open_table(KV).map_err(storage)?;
             let mut ws = Attempt::<_, B>::new(
                 |key: &[u8]| {
@@ -462,13 +491,13 @@ impl<B: Binding> Store<B> {
             {
                 let receipt: ReceiptValue<B> = decode(bytes.value())?;
                 self.check_receipt(&receipt, request.operation_id, &header)?;
-                if receipt.request_hash != request_hash {
+                if receipt.kind != ReceiptKind::Records || receipt.request_hash != request_hash {
                     return Err(Error::new(
                         "operation_conflict",
                         "operation ID bound to different request",
                     ));
                 }
-                let result = self.disclose(&scope, receipt.result, &mut ws)?;
+                let result = self.disclose_result(&scope, receipt.result, &mut ws)?;
                 return Ok(json!({"status":"committed","replayed":true,"result":result}));
             }
             if header.receipts >= MAX_RECEIPTS {
@@ -551,13 +580,61 @@ impl<B: Binding> Store<B> {
                     record: self.project(&scope, id, ws.record(id)?),
                 });
             }
-            let result = CommittedValue {
+            let intents = crate::effects::prepare(
+                &write,
+                &mut ws,
+                &self.model,
+                &scope,
+                &header,
+                request.operation_id,
+                &request.commands,
+                allocate,
+            )?;
+            let result = ReceiptResult::Records(CommittedValue {
                 operation_id: request.operation_id,
                 revision: settled.revision,
                 records,
-            };
-            (ws.finish()?, result, ws.work)
+                executions: intents.as_ref().map(|v| v.created()).unwrap_or_default(),
+            });
+            let disclosed = self.disclose_result(&scope, result.clone(), &mut ws)?;
+            (ws.finish()?, result, disclosed, intents, ws.work)
         };
+        self.publish_native(&write, &batch, abort_after)?;
+        crate::effects::publish(&write, intents, abort_after)?;
+        let receipt = ReceiptValue {
+            kind: ReceiptKind::Records,
+            context: request.context.clone(),
+            model: self.model.identity().into(),
+            tenant: self.context.tenant,
+            actor: self.context.actor,
+            request_hash,
+            result,
+        };
+        self.publish_receipt(&write, &mut header, &receipt)?;
+        if abort_after == Some(usize::MAX) {
+            return Err(Error::new(
+                "injected_abort",
+                "adapter check after receipt write",
+            ));
+        }
+        write
+            .commit()
+            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        eprintln!(
+            "{}",
+            json!({"event":"mutation_work","operation_id":request.operation_id,"work":work})
+        );
+        Ok(json!({"status":"committed","replayed":false,"result":disclosed}))
+    }
+
+    /// Publish the one engine attempt and its public/reader indexes in the
+    /// caller's transaction. Typed effect application uses this same writer.
+    pub(crate) fn publish_native(
+        &self,
+        write: &redb::WriteTransaction,
+        batch: &crate::staging::Batch,
+        abort_after: Option<usize>,
+    ) -> Result<()> {
         {
             let mut table = write.open_table(KV).map_err(storage)?;
             let mut index = write.open_table(PUBLIC).map_err(storage)?;
@@ -565,7 +642,7 @@ impl<B: Binding> Store<B> {
                 if let Key::Record(id) = Key::decode(key)? {
                     if self.secured {
                         crate::security::update_reader_index(
-                            &write,
+                            write,
                             &table,
                             &self.model,
                             id,
@@ -608,49 +685,50 @@ impl<B: Binding> Store<B> {
                 }
             }
         }
-        let receipt = ReceiptValue {
-            context: request.context.clone(),
-            model: self.model.identity().into(),
-            tenant: self.context.tenant,
-            actor: self.context.actor,
-            request_hash,
-            result: result.clone(),
-        };
+        Ok(())
+    }
+
+    pub(crate) fn publish_receipt(
+        &self,
+        write: &redb::WriteTransaction,
+        header: &mut RuntimeHeader,
+        receipt: &ReceiptValue<B>,
+    ) -> Result<()> {
         {
             write
                 .open_table(RECEIPTS)
                 .map_err(storage)?
                 .insert(
-                    self.receipt_key(request.operation_id).as_slice(),
-                    encode(&receipt)?.as_slice(),
+                    self.receipt_key(receipt.result.operation_id()).as_slice(),
+                    encode(receipt)?.as_slice(),
                 )
                 .map_err(storage)?;
             header.receipts += 1;
             write
                 .open_table(RUNTIME)
                 .map_err(storage)?
-                .insert(HEADER, encode(&header)?.as_slice())
+                .insert(HEADER, encode(header)?.as_slice())
                 .map_err(storage)?;
         }
-        if abort_after == Some(usize::MAX) {
-            return Err(Error::new(
-                "injected_abort",
-                "adapter check after receipt write",
-            ));
-        }
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
-        // Operator diagnostics only: private repair counts are not public RPC
-        // fields, receipt contents, or evidence of a commit before it succeeds.
-        eprintln!(
-            "{}",
-            json!({"event":"mutation_work","operation_id":request.operation_id,"work":work})
-        );
-        Ok(json!({"status":"committed","replayed":false,"result":result}))
+        Ok(())
     }
 
-    fn check_receipt(
+    pub(crate) fn request_hash<T: Serialize>(&self, method: &str, request: &T) -> Result<String> {
+        let normalized = encode(&serde_json::to_value(request).map_err(storage)?)?;
+        if normalized.len() > crate::json::MAX_REQUEST_BYTES {
+            return Err(Error::new("request_limit", "normalized request byte limit"));
+        }
+        let mut hash = Sha256::new();
+        hash.update(b"rebase-local-operation-v2\0");
+        hash.update(self.context.tenant.as_bytes());
+        hash.update(self.context.actor.as_bytes());
+        hash.update((method.len() as u64).to_be_bytes());
+        hash.update(method.as_bytes());
+        hash.update(normalized);
+        Ok(native_codec::hex(&hash.finalize()))
+    }
+
+    pub(crate) fn check_receipt(
         &self,
         receipt: &ReceiptValue<B>,
         id: Uuid,
@@ -659,7 +737,8 @@ impl<B: Binding> Store<B> {
         if receipt.model != self.model.identity()
             || receipt.tenant != self.context.tenant
             || receipt.actor != self.context.actor
-            || receipt.result.operation_id != id
+            || receipt.result.operation_id() != id
+            || receipt.kind != receipt.result.kind()
         {
             return Err(corrupt("receipt binding"));
         }
@@ -695,7 +774,7 @@ impl<B: Binding> Store<B> {
             },
             1000,
         );
-        let result = self.disclose(&scope, receipt.result, &mut ws)?;
+        let result = self.disclose_result(&scope, receipt.result, &mut ws)?;
         Ok(json!({"status":"committed","result":result}))
     }
 
@@ -748,6 +827,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
         (RUNTIME, 1),
         (RECEIPTS, usize::from(MAX_RECEIPTS)),
     ];
+    definitions.extend(crate::effects::TABLES);
     if secured {
         definitions.push((
             crate::security::AUTHORITY,
@@ -811,7 +891,7 @@ pub(crate) fn read_meta(read: &ReadTransaction) -> Result<Meta> {
     }
 }
 
-fn validate_header(header: &RuntimeHeader) -> Result<()> {
+pub(crate) fn validate_header(header: &RuntimeHeader) -> Result<()> {
     if header.format != STORE_FORMAT {
         return Err(Error::new("model_mismatch", "runtime format differs"));
     }
@@ -845,16 +925,8 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
         .map(|t| t.name().to_owned())
         .collect();
     names.sort();
-    if (names != ["local_runtime", "native_kv", "operations", "public_records"]
-        && names
-            != [
-                "authority",
-                "local_runtime",
-                "native_kv",
-                "operations",
-                "public_records",
-                "reader_records",
-            ])
+    let expected = table_names(names.iter().any(|name| name == "authority"));
+    if names != expected
         || read
             .list_multimap_tables()
             .map_err(storage)?
@@ -864,6 +936,16 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
         return Err(corrupt("unexpected local table inventory"));
     }
     Ok(())
+}
+
+pub(crate) fn table_names(secured: bool) -> Vec<String> {
+    let mut names = vec!["local_runtime", "native_kv", "operations", "public_records"];
+    names.extend(crate::effects::TABLES.iter().map(|(table, _)| table.name()));
+    if secured {
+        names.extend(["authority", "reader_records"]);
+    }
+    names.sort();
+    names.into_iter().map(str::to_owned).collect()
 }
 
 pub type PublicRecord = PublicRecordValue<Calculation>;
@@ -948,7 +1030,7 @@ mod tests {
         )
         .unwrap();
         let before = store.observe_for_verification().unwrap();
-        assert_eq!(before["tables"].as_object().unwrap().len(), 6);
+        assert_eq!(before["tables"].as_object().unwrap().len(), 11);
         let request: Mutation = serde_json::from_value(json!({"model":store.model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(3),
             "commands":[{"op":"create","id":Uuid::from_u128(4),"contract":7,"fields":{"at":"1"}}],"returning":[]})).unwrap();
         for abort in [2, usize::MAX] {

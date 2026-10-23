@@ -17,7 +17,10 @@ crash recovery and failed-restore isolation. The subsequent
 checkpoints. Source 0.8.0 / store+codec 6 adds the shared native-family tree and
 dimensioned measurement model. [G4d-a published values](research/36-value-dependencies-gate.md)
 is also accepted in source 0.9.0, with unchanged store/codec 6 and invoicing
-behavior 5. Continue G5a atomic intent. Prepare external contracts alongside core work with explicit atomic
+behavior 5. [G5a atomic intent](research/37-atomic-intent-implementation.md) is
+accepted in source 0.10.0 /store 7 /native codec 6 /effect codec 1 /API 2.
+Dispatch stays disabled. Continue G5b bounded worker and independent fake
+provider, then G5c durable ingress/restore reconciliation. Prepare external contracts alongside core work with explicit atomic
 integration. Preserve earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is

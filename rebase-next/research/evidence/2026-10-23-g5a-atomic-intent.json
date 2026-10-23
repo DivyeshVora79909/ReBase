@@ -1,0 +1,343 @@
+{
+  "format": "rebase-g5a-atomic-intent-1",
+  "date": "2026-10-23",
+  "status": "accepted source checkpoint; provider dispatch disabled; G5b/G5c and deployment unaccepted",
+  "base_commit": "73a9bc032a3d90f63aebc2d7d0859aae5169b25c",
+  "binary": {
+    "path": "target/g5a-accepted/rebase-next",
+    "sha256": "b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334"
+  },
+  "identity": {
+    "package": "0.10.0",
+    "store": "rebase-store-7",
+    "native_codec": "native-slice-kv-6",
+    "effect_codec": "rebase-effects-1",
+    "api": "rebase-local-api-2",
+    "effect_demo_model": "c05ccba953c9c8f0547bcfd9822cca79f54d9a86d6c14cb995f19d82c4fe51d7",
+    "effect_demo_behavior": "effect-demo-intent-1",
+    "action": {
+      "code": 1,
+      "version": "fake-units-1",
+      "provider_account": "fake-account-1"
+    }
+  },
+  "verification": {
+    "status": "passed",
+    "distinct_rust_tests": 24,
+    "effect_tests": 8,
+    "existing_receipt_authority_lifecycle_tests": 16,
+    "actual_write_abort_points": {
+      "intent": 5,
+      "cancellation": 4
+    },
+    "corrupt_check_startup_restore_controls": 11,
+    "corrupt_startup_scope": "The real network router constructor rejects before a listener can be published; no separate test-only checker.",
+    "capacity": "64 unresolved and 256 retained executions reached with actual writes; new-intent overflow is atomic and receipt replay still succeeds. The bounded execution fixture backs up under 64 MiB and restores quarantined. This is not a universal capacity/latency claim.",
+    "scope": "Affected native controls, all-target Clippy, one optimized executable and one real authenticated HTTP workflow. No full optimized Rust or accepted 4096-source campaign repeated.",
+    "passed_earlier_checks_retained": "Six initial effect tests passed before adding exact key/schedule and router-startup controls. All eight final effect tests pass. Sixteen existing tests remain valid: the subsequent receipt-origin epoch check only affects nonempty execution references."
+  },
+  "checks": {
+    "final-effect-tests": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--lib",
+        "effect"
+      ],
+      "exit_code": 0,
+      "log": "target/g5a-final-effect-tests.log",
+      "sha256": "107d2df7e05cbeaa69c99a375ef14a4afbec22e77b34cf6c6239999d8e971e6c",
+      "results": [
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 7.92s"
+      ]
+    },
+    "shared-tests": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--test",
+        "local_api",
+        "--test",
+        "access_control",
+        "--test",
+        "storage_lifecycle"
+      ],
+      "exit_code": 0,
+      "log": "target/g5a-shared-tests.log",
+      "sha256": "9cf1f154fe63dde639f3edb2458587b97ba89562840f3c9ceac0918d1e817228",
+      "results": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s"
+      ]
+    },
+    "local-tests": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--lib",
+        "local::tests"
+      ],
+      "exit_code": 0,
+      "log": "target/g5a-local-tests.log",
+      "sha256": "03a01a79d82df912bb2383fe060e6a364d039d2d0802c1fadc4cebcca5973b06",
+      "results": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.25s"
+      ]
+    },
+    "final-clippy": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "target/g5a-final-clippy.log",
+      "sha256": "d0caa93d4e3f9f1d90f39b8a2adb5cd2708f0618ca653e8e91b48c4500e4745f",
+      "results": []
+    },
+    "optimized-build": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "seconds": 222.002,
+      "log": "target/g5a-optimized-build.log",
+      "sha256": "8a82f8b0ac06e6428847060fd03c7cdb86e3060f1da5b81b57a43bf247b030b4"
+    },
+    "http": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/effects.py",
+        "--binary",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g5a-accepted/rebase-next",
+        "--out",
+        "target/g5a-effects-http"
+      ],
+      "exit_code": 0,
+      "seconds": 1.732,
+      "log": "target/g5a-http.log",
+      "sha256": "abc1871792d0f59cc50e6292ddcec2abf0d757ce7c242149c737029a6c5dd969"
+    }
+  },
+  "http": {
+    "status": "passed",
+    "model": "c05ccba953c9c8f0547bcfd9822cca79f54d9a86d6c14cb995f19d82c4fe51d7",
+    "api": "rebase-local-api-2",
+    "operations": [
+      {
+        "name": "account",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "rejected-domain",
+        "commands": 2,
+        "result": "invariant"
+      },
+      {
+        "name": "atomic-intent",
+        "commands": 2,
+        "result": "committed"
+      },
+      {
+        "name": "missing-update",
+        "commands": 1,
+        "result": "forbidden"
+      },
+      {
+        "name": "delete-source",
+        "commands": 1,
+        "result": "committed"
+      },
+      {
+        "name": "pinned-target",
+        "commands": 1,
+        "result": "unavailable_reference"
+      },
+      {
+        "name": "reuse-source",
+        "commands": 1,
+        "result": "committed"
+      }
+    ],
+    "literal": {
+      "initial_balance": "12",
+      "committed_balance": "10",
+      "requested_units": "3",
+      "provider_dispatch": false
+    },
+    "effect_states": [
+      "cancelled",
+      "ready"
+    ],
+    "shared_operation_namespace": true,
+    "current_target_disclosure": true,
+    "whole_table_rollback": true,
+    "crash_recovery": true,
+    "restore_quarantine": true,
+    "archive_preserves_effects": true,
+    "integrity": {
+      "effects": {
+        "accounted_bytes": 10039,
+        "dispatch_enabled": false,
+        "quarantined": false,
+        "reserved_facts": 1,
+        "retained": 2,
+        "unresolved": 1
+      },
+      "model": "c05ccba953c9c8f0547bcfd9822cca79f54d9a86d6c14cb995f19d82c4fe51d7",
+      "nodes": 0,
+      "receipts": 5,
+      "records": 2,
+      "revision": "10",
+      "roots": 0,
+      "rows": 6,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "5d5c3efa-6bb1-459a-9a8d-57316dff0326"
+    },
+    "binary_sha256": "b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334"
+  },
+  "http_counts": {
+    "record_mutations": 7,
+    "commands": 9,
+    "committed_mutations": 4,
+    "whole_table_rejected_mutations": 3,
+    "cancellations": 1,
+    "additional_rejected_conflict_group": 3
+  },
+  "compatibility": {
+    "status": "passed",
+    "unchanged_models": {
+      "calculation": {
+        "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+        "behavior": "rebase-calculation-contract-6",
+        "native_codec": "native-slice-kv-6"
+      },
+      "equipment": {
+        "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+        "behavior": "equipment-reservations-5",
+        "native_codec": "native-slice-kv-6"
+      },
+      "invoicing": {
+        "model": "b638d3c94323fba73126eddda0ee6c812566d4fc5fd7bf1b6aa7f02eed9479f6",
+        "behavior": "invoice-assessments-5",
+        "native_codec": "native-slice-kv-6"
+      },
+      "measurement": {
+        "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+        "behavior": "dimensioned-measurements-1",
+        "native_codec": "native-slice-kv-6"
+      }
+    },
+    "old_store_valid": "valid",
+    "old_store_rejection": "model_mismatch: runtime format differs",
+    "old_store_physical_sha256_unchanged": "eba5ef249760072e0aae8f0831777895a6fff1d1fab5097ff493240edabaf272",
+    "prior_binary_sha256": "3667ba13aba28778cc7351699865ac8c8f9ad2f7ece094035f47117fb634e1ec"
+  },
+  "limits": {
+    "accounts": 64,
+    "dispatch_sources": 256,
+    "public_sources_total": 320,
+    "unresolved_executions": 64,
+    "retained_executions": 256,
+    "reserved_result_bytes_per_unresolved": 4096,
+    "private_bytes": 8388608,
+    "request_bytes": 1024,
+    "facts_and_inbox_writers": "none; tables must be empty",
+    "receipts": 1024,
+    "mutation_work_units": 200000,
+    "backup_bytes": 67108864
+  },
+  "retained_artifacts": [
+    "target/g5a-accepted/rebase-next",
+    "target/g5a-checks.json",
+    "target/g5a-compatibility.json",
+    "target/g5a-effects-http/result.json",
+    "target/g5a-effects-http/recovery.backup.json",
+    "target/g5a-effects-http/receipt-archive.json",
+    "target/g5a-format6-invoicing.redb"
+  ],
+  "source_sha256": {
+    "Cargo.lock": "a1a564256caf6c29aa2f76e270ed6d99d9cdeabf94687a12dd1a7fad55124636",
+    "Cargo.toml": "e4021f8cb9c846059bdcdbb3a9f5dd3392bbba66bef88129a664046bd5a6845a",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "a08b40c2cdb63cbcfa9a664d377e7f204979030d1d7a0fe68f191d7c22cc9eaa",
+    "src/binding.rs": "9083a3786177b24f9b551641999a03590779871908532881cd39a54a06f8d252",
+    "src/causal.rs": "ddb95d2062b9837d1a8bfd948219ec358f8fc1ed5e80a0b4c33e490096cc0a0c",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "cac08399c8ce97f7da80bf946856b54891457037f26f032af0d82af625d57cce",
+    "src/effects.rs": "2faa084b982069a6fc10db6ff90dcf3978e241dc80a4392637c371838a5977a2",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "a10881121d4d8b72111fb5ecfab4e1f8d252f742a0fb93dc5e0b241c3ed5b899",
+    "src/index_tests.rs": "b461720fbe9122f9f12ec7ad9a7f6f7b9302c28124a0fd15cf3f8bc279ca6f4d",
+    "src/indexes/measurement.rs": "b2b862b970309eabb72375b5463f1356650503659ff47a127be8db57d9b63cd0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "97a0accf6bff565c589bada097aa5adc9b4bd1683de3751c8154b637f8983ee1",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "17b53d71cc0c2ae2b3fd60fe6115871cced4e26ba875249e18108d729d270a68",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "41f4230d0ae76aa5c2e8aab193f6a6ca128a8a505ffa5b7256428d837107fe99",
+    "src/lifecycle.rs": "029a3e597c2deb4be455f4bcb10845debb8e66664ed7a826f633ec8ff838e888",
+    "src/local.rs": "9fb1cefba41b2ca35337b2d915aec50229435555668dd6205f5e4e5b19225a39",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "3cafceef16776ca83ae18fad0a75c58c5191ef4f35943a45c84f676bae7a3e70",
+    "src/models/calculation.rs": "5581f73ec50237b0e3bae3de0cab4c986e31bd48f6db1c9b806cb2c3232bd22e",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "90ecc1d414027d8c58312a154d783f979fd4e3fcc5f66e8888a7708b6fbad748",
+    "src/models/equipment.rs": "ace609044887e22b4d298a5dcbf4ae1ec689b8b6e38abcafe59138b016415c17",
+    "src/models/invoicing.rs": "1a571955fc277c93c287c1428c2030334ef388c26ddde46b41e319532e3eda37",
+    "src/models/invoicing_check.rs": "f3de0f615714e69712a43f6954064a3447f84f2b54400981dde541a1da307c9d",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "837c35973c07321f8341b577fceb127858fb10512e1d489f4e1a27ebb71f64b3",
+    "src/models/mod.rs": "acda200f0c4e0e2031318f7b0984d60a3481508520f1c29aba9154e63a8159d3",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "b74caa5c9bbbaf131211d1f6123b921ecce02edf4402d02b8efc9c93bfae9786",
+    "src/native_slice.rs": "f0ca92adfc8156bb240b7b25630d440762855cec0577a9638dbfc7f7943fa00f",
+    "src/parameter_tests.rs": "f4d6784c59acf6d0a2b773695bb8e2b735f3d009fff97cc9bce96cbcd7a36e5b",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "a7c420c8c1282178394a8068705791f17ac86947bdced7dde87df93ae5ed26a4",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "2464e5f4345457366ddcc5de0c9c732e4d34ef2863b0c59a2bbee42bcc667cc3",
+    "src/security.rs": "e48b249bf107b2999b06cf89e9ba4911c68a63192de9bd349f7270984a8023e6",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "4fd97c8493936f041d753995c544e8dc2a10c0c7b96e423179c49fe25fde4b9d",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "af82b8da8952c3db98cbf3549eb989d76d6166eae4f5973c2c0d3e7bdc196d33",
+    "tools/effects.py": "155bc4e65da7ce8b9932adb5457a7a1693bdffab4880e12dd4478fda864b2ff7",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "research/33-external-effects-gate.md": "258dd2759caa2f0f9ad3898696a80c705e965445a06b627610f26df466afdb91",
+    "research/35-external-integration-review.md": "f2eb19635f426f57ccb5c97e5e0d34388753e1713d4f21e69db0d19ac2afff7d",
+    "research/37-atomic-intent-implementation.md": "7ce89905c55fe662dbbb19146a66708e75c75b1f99f50ba750018b3b335ab82c",
+    "docs/external-effects.md": "41c509ace6585494a3365c7b20e2eb76577d0f89627b668cbd16268e86a6b007"
+  },
+  "next": "G5b fenced worker, immutable typed provider facts, independent fake HTTP journal and restricted domain application; then G5c ingress and predating-snapshot restore reconciliation."
+}

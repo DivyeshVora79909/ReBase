@@ -72,6 +72,12 @@ pub trait Binding: Copy + Clone + Debug + Eq + Send + Sync + 'static {
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()>;
     fn check(store: &Store<Self>) -> Result<Value>;
+    fn effect_action() -> Option<crate::effects::ActionDeclaration> {
+        None
+    }
+    fn effect_template(_input: &Self::Input) -> Result<Option<crate::effects::Template>> {
+        Ok(None)
+    }
     fn fixture_catalog() -> Value {
         serde_json::json!([])
     }

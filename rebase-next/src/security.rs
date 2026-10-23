@@ -350,6 +350,40 @@ impl<B: Binding> Store<B> {
         Ok(result)
     }
 
+    pub(crate) fn disclose_result<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
+        &self,
+        scope: &Scope,
+        result: crate::local::ReceiptResult<B>,
+        ws: &mut Attempt<L, B>,
+    ) -> Result<Value> {
+        match result {
+            crate::local::ReceiptResult::Records(result) => {
+                let mut result = self.disclose(scope, result, ws)?;
+                let mut visible = vec![];
+                for execution in result.executions {
+                    if ws
+                        .record(execution.target)?
+                        .is_some_and(|r| scope.can_read(&r))
+                    {
+                        visible.push(execution);
+                    }
+                }
+                result.executions = visible;
+                serde_json::to_value(result).map_err(storage)
+            }
+            crate::local::ReceiptResult::Cancel(result) => {
+                if ws
+                    .record(result.target)?
+                    .is_some_and(|r| scope.can_read(&r))
+                {
+                    serde_json::to_value(result).map_err(storage)
+                } else {
+                    Ok(Value::Null)
+                }
+            }
+        }
+    }
+
     pub fn access_graph(&self, model: &str) -> Result<Value> {
         let (read, meta, _) = self.read(model)?;
         if !self.secured || !self.authority(&read)?.grants.admin {

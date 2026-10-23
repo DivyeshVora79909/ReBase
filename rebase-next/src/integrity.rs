@@ -7,7 +7,7 @@ use crate::{
     index::{IndexCode, NativeIndex, TimeKey},
     indexes::standard::{Aggregate, FINANCIAL, Leaf, QUOTE, QuoteSummary, Standard},
     local::{self, KV, PUBLIC, RECEIPTS},
-    local::{ReceiptValue, RuntimeHeader, Store},
+    local::{ReceiptResult, ReceiptValue, RuntimeHeader, Store},
     model::Visibility,
     native_codec::StoredValue,
     native_codec::{self, Address, Key, Stored},
@@ -778,6 +778,8 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             require(actual == *readers, "reader index inventory")?;
         }
         let receipts = read.open_table(RECEIPTS).map_err(local::storage)?;
+        let effects =
+            crate::effects::check(read, store.model(), meta, header, records, store.secured)?;
         let mut receipt_count = 0;
         for row in receipts.iter().map_err(local::storage)? {
             let (k, v) = row.map_err(local::storage)?;
@@ -798,57 +800,63 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                     .map_or(r.actor == meta.actor, |g| g.scopes.contains_key(&r.actor)),
                 "receipt actor identity",
             )?;
-            require(
-                r.result.records.len() <= 32
-                    && r.result
-                        .records
-                        .iter()
-                        .map(|r| r.id)
-                        .collect::<BTreeSet<_>>()
-                        .len()
-                        == r.result.records.len(),
-                "receipt return inventory",
-            )?;
-            for returned in &r.result.records {
-                if let Some(record) = &returned.record {
-                    require(
-                        record.id == returned.id
-                            && record.version > 0
-                            && record.version <= r.result.revision,
-                        "receipt record binding/version",
-                    )?;
-                    let contract = store.model.public_contract(record.contract)?;
-                    store.model.validate(
-                        record.contract,
-                        &serde_json::to_value(&record.input).map_err(local::storage)?,
-                    )?;
-                    let expected: BTreeSet<_> = contract.published.iter().map(|f| f.name).collect();
-                    let actual: BTreeSet<_> = record
-                        .derived
-                        .as_ref()
-                        .and_then(Value::as_object)
-                        .map(|m| m.keys().map(String::as_str).collect())
-                        .unwrap_or_default();
-                    require(
-                        expected == actual && (record.derived.is_none() == expected.is_empty()),
-                        "receipt public projection fields",
-                    )?;
+            require(r.kind == r.result.kind(), "receipt kind/result")?;
+            crate::effects::check_receipt(read, &r, header)?;
+            if let ReceiptResult::Records(result) = &r.result {
+                require(
+                    result.records.len() <= 32
+                        && result
+                            .records
+                            .iter()
+                            .map(|r| r.id)
+                            .collect::<BTreeSet<_>>()
+                            .len()
+                            == result.records.len(),
+                    "receipt return inventory",
+                )?;
+                for returned in &result.records {
+                    if let Some(record) = &returned.record {
+                        require(
+                            record.id == returned.id
+                                && record.version > 0
+                                && record.version <= result.revision,
+                            "receipt record binding/version",
+                        )?;
+                        let contract = store.model.public_contract(record.contract)?;
+                        store.model.validate(
+                            record.contract,
+                            &serde_json::to_value(&record.input).map_err(local::storage)?,
+                        )?;
+                        let expected: BTreeSet<_> =
+                            contract.published.iter().map(|f| f.name).collect();
+                        let actual: BTreeSet<_> = record
+                            .derived
+                            .as_ref()
+                            .and_then(Value::as_object)
+                            .map(|m| m.keys().map(String::as_str).collect())
+                            .unwrap_or_default();
+                        require(
+                            expected == actual && (record.derived.is_none() == expected.is_empty()),
+                            "receipt public projection fields",
+                        )?;
+                    }
                 }
             }
             let expected = if store.secured {
                 [
                     r.actor.as_bytes().as_slice(),
-                    r.result.operation_id.as_bytes().as_slice(),
+                    r.result.operation_id().as_bytes().as_slice(),
                 ]
                 .concat()
             } else {
-                r.result.operation_id.as_bytes().to_vec()
+                r.result.operation_id().as_bytes().to_vec()
             };
             require(
                 k.value() == expected
                     && r.model == meta.model
                     && r.tenant == meta.tenant
-                    && r.result.revision <= meta.revision
+                    && r.result.revision() > 0
+                    && r.result.revision() <= meta.revision
                     && r.request_hash.len() == 64
                     && local::unhex(&r.request_hash).is_ok(),
                 "receipt scope/shape",
@@ -857,7 +865,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         require(receipt_count == header.receipts, "receipt population")?;
         Ok(
             json!({"status":"valid","scope":"complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
-            "store":header.store_id,"model":meta.model,"revision":meta.revision.to_string(),"records":records.len(),"roots":roots.len(),"nodes":nodes.len(),"rows":all.len(),"receipts":receipt_count}),
+            "store":header.store_id,"model":meta.model,"revision":meta.revision.to_string(),"records":records.len(),"roots":roots.len(),"nodes":nodes.len(),"rows":all.len(),"receipts":receipt_count,"effects":effects}),
         )
     }
 }

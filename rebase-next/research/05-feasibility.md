@@ -1,5 +1,15 @@
 # Rust feasibility and stop boundary
 
+**G5a accepted, October 23:** [atomic external-work intent](37-atomic-intent-implementation.md)
+adds the bounded Account/Dispatch model, immutable execution storage, status and
+cancellation through the existing mutation/receipt transaction. Source 0.10.0
+uses store 7 /native codec 6 /effect codec 1 /API 2. All 24 affected Rust tests
+and the optimized HTTP workflow pass, including 64/256 execution limits,
+eleven corrupt inventories, current authority, whole-table aborts, source reuse,
+archive fencing and disabled quarantine restore. Existing model identities are
+unchanged; old stores reject without byte changes. G5b provider execution and
+G5c ingress/reconciliation remain unaccepted. No provider delivery is claimed.
+
 **G4d-a accepted, October 23:** [declared published values](36-value-dependencies-gate.md)
 add output-free IssueShare through the existing scheduler. Source 0.9.0 retains
 store/codec 6; invoicing behavior becomes 5, other model identities are unchanged.

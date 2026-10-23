@@ -1,6 +1,23 @@
 # Compact context — 2026-10-23
 
-**G4d-a accepted; next: G5a atomic external-work intent.**
+**G5a accepted; next G5b fenced worker and independent fake provider.**
+The [G5a result](research/37-atomic-intent-implementation.md) and
+[evidence](research/evidence/2026-10-23-g5a-atomic-intent.json) record source 0.10.0
+/store 7 /native codec 6 /effect codec 1 /API 2, atomic Account/Dispatch intent,
+status/cancel and complete storage inventory. All 24 affected Rust tests, eleven
+corrupt check/startup/restore controls and the optimized seven-mutation HTTP
+workflow pass. The four prior model identities remain unchanged; old format-6
+invoicing rejects with physical bytes unchanged. Provider dispatch stays disabled.
+Begin the [G5b implementation entry](research/38-fenced-worker-implementation.md).
+Use the
+existing debug cache `target/native-slice/build` and optimized cache
+`target/g4b-retained-b377b21/build`, one Cargo process at a time, two jobs.
+G5a's optimized build took 222 seconds; its HTTP workflow took 1.732 seconds.
+Keep `target/g5a-accepted/rebase-next` and `target/g5a-effects-http/` intact.
+The binary SHA-256 is `b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334`.
+Reports are `target/g5a-checks.json` and `target/g5a-compatibility.json`.
+No G5b native code is implemented yet; G5b/G5c and later capability gates remain open.
+
 G4c-a/b is published as `b72507c` on `main`. G4d-a source 0.9.0 adds typed
 publication inputs, final graph readiness and output-free IssueShare.
 [Evidence](research/evidence/2026-10-23-g4d-published-values.json) records 71
@@ -91,16 +108,15 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement [G5a](research/33-external-effects-gate.md) through
-the [reviewed shared transaction seams](research/35-external-integration-review.md).
-Start with the concrete effect-demo Account/Dispatch model and immutable intent
-written atomically before the existing receipt/commit. No separate enqueue or
-alternate domain writer. G5a also owns complete effect inventory, status/cancel,
-bounded retention and disabled restored dispatch; provider delivery remains G5b.
-The actual predecessor is 0.9.0 /store+native codec 6 /API 1, so the proposed G5
-store 7 /native codec 6 /effect codec 1 /API 2 assignment is still available.
-Preserve current binaries/stores before the format change. Verify, commit and
-push coherent checkpoints on `main`; typed statistics and selection remain open.
+**Exact next action:** implement [G5b](research/38-fenced-worker-implementation.md)
+on the accepted [G5a storage](research/37-atomic-intent-implementation.md).
+First add checked typed facts, lease/start/finish/reconciliation transitions,
+application state and bounded discovery. Then integrate one worker and the
+independent fake HTTP journal through the existing shared writer. The predecessor
+is now 0.10.0 /store 7 /native codec 6 /effect codec 1 /API 2. New private row
+formats require a new store/effect identity. Preserve the G5a binary/stores and
+keep restored dispatch disabled until G5c's reconciliation acceptance. Verify,
+commit and push coherent checkpoints on `main`; typed statistics/selection remain open.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and
@@ -117,11 +133,11 @@ retained directory is the G4b baseline. No cloud partial code was used.
 
 G5 has a concrete [lifecycle gate](research/33-external-effects-gate.md) and
 [current integration review](research/35-external-integration-review.md).
-There is no native effect draft to recover and no accepted provider support.
-Its atomic intent must share `local::mutate_inner`'s transaction; the proposed
-post-G4c store format is 7. Complete effect tables, immutable facts, bounded
-discovery, restricted application and restore quarantine together at the named
-subgates; never add a separately committed enqueue or alternate domain writer.
+Atomic intent now shares `local::mutate_inner`'s transaction in store format 7;
+there is no accepted provider support. `Store::publish_native` and tagged receipt
+publication are the shared transaction seams. Complete immutable facts, bounded
+discovery, restricted application and restore reconciliation at G5b/G5c; never
+add a separately committed enqueue or alternate domain writer.
 The accepted bundle's
 [deployment commands](docs/deployment.md) remain valid. Full accounting, rational
 FX, external effects, distributed adapters, larger invoicing populations and

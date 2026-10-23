@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub const MODEL_NAME: &str = "rebase-next-local";
-pub const API_VERSION: &str = "rebase-local-api-1";
+pub const API_VERSION: &str = "rebase-local-api-2";
 pub const SCHEMA_DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -532,6 +532,29 @@ impl<B: Binding> Prepared<B> {
                 }
             }
         }
+        if let Some(action) = B::effect_action() {
+            let source = contracts
+                .get(&action.source_contract)
+                .ok_or_else(|| model_error("unknown effect source contract"))?;
+            let target = contracts
+                .get(&action.target_contract)
+                .ok_or_else(|| model_error("unknown effect target contract"))?;
+            if action.code == 0
+                || [action.name, action.version, action.provider_account]
+                    .iter()
+                    .any(|v| v.is_empty() || v.len() > 128 || !v.is_ascii())
+                || source.visibility != Visibility::Public
+                || target.visibility != Visibility::Public
+                || source.fields.iter().any(|f| f.mutable)
+                || !source.references.iter().any(|r| {
+                    r.slot == action.reference_slot
+                        && !r.optional
+                        && r.targets == [action.target_contract]
+                })
+            {
+                return Err(model_error("invalid immutable effect action declaration"));
+            }
+        }
         let mut engine = B::engine()?;
         let core_identity = engine.identity.clone();
         let mut semantic =
@@ -552,6 +575,13 @@ impl<B: Binding> Prepared<B> {
             core_identity.as_bytes(),
             bytes.as_slice(),
         ] {
+            hash.update((bytes.len() as u64).to_be_bytes());
+            hash.update(bytes);
+        }
+        // An absent action preserves the existing model identity exactly.
+        if let Some(action) = B::effect_action() {
+            let bytes = serde_json::to_vec(&action).map_err(|e| model_error(e.to_string()))?;
+            hash.update(b"rebase-effect-action-v1\0");
             hash.update((bytes.len() as u64).to_be_bytes());
             hash.update(bytes);
         }
@@ -697,8 +727,22 @@ pub fn capabilities() -> Value {
 
 fn model_capabilities<B: Binding>() -> Value {
     let limits = B::limits();
-    json!({"methods":["model.describe","records.get","records.mutate","operations.status",
-        "records.page","records.exists","roots.read","session.describe","access.describe","access.replace"],
+    let mut methods = vec![
+        "model.describe",
+        "records.get",
+        "records.mutate",
+        "operations.status",
+        "records.page",
+        "records.exists",
+        "roots.read",
+        "session.describe",
+        "access.describe",
+        "access.replace",
+    ];
+    if B::effect_action().is_some() {
+        methods.extend(["effects.status", "effects.cancel"]);
+    }
+    let mut catalog = json!({"methods":methods,
         "transport":"JSON-RPC 2.0 over stdio or authenticated HTTP /rpc; string request IDs; no batches/notifications",
         "path":{"name":"records.by_id","order":"UUID ascending","filter":"optional public contract and one declared scalar authored-field equality"},
         "limits":{"commands":64,"public_records":limits.public_records,"outputs":limits.outputs,"reservations":limits.reservations,"per_contract":limits.per_contract,
@@ -706,7 +750,11 @@ fn model_capabilities<B: Binding>() -> Value {
         "cursor":"HMAC-SHA256; bound store/model/actor/query/revision; restart after any new mutation",
         "updates":"set replaces complete fields; unset must be empty in this model",
         "receipt":"required actor/store/generation context from session.describe; same operation ID/content replays; offline archive advances its fence",
-        "not_observed":"receipt absence does not prove failure"})
+        "not_observed":"receipt absence does not prove failure"});
+    if let Some(action) = B::effect_action() {
+        catalog["effects"] = crate::effects::capabilities(&action);
+    }
+    catalog
 }
 
 fn reference(

@@ -28,7 +28,7 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 | G4b | Reactive time windows with two, one or zero bounds | Accepted: [exact windows and final-graph scheduling](32-reactive-windows.md) |
 | G4c | Maintain a genuinely new summary/key contract | Accepted: [native index extension](34-native-index-extension.md), one active tree and dimensioned measurement statistics |
 | G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md) accepted; typed query consumers/selection remain separately scoped |
-| G5 | Reliable external work | Next: [G5a atomic immutable intent](33-external-effects-gate.md), followed by bounded due discovery, fenced execution, uncertainty/reconciliation and durable webhook inbox; deterministic fake provider first |
+| G5 | Reliable external work | [G5a atomic immutable intent](37-atomic-intent-implementation.md) accepted; next G5b bounded discovery/fenced worker and independent fake provider, followed by G5c durable inbox and restore reconciliation |
 | G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
 | G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
 | G8 | Workload and deployment acceptance | Extended workloads, recovery and release package with explicit limits rather than unlimited production claims |
@@ -91,8 +91,8 @@ Preserve complete state and receipt absence on rejected writes, replay, reopenin
 and model/store identity. Commit and push each coherent checkpoint, then continue
 without another prompt. Keep `CONTEXT.md` current for switching agents.
 
-G4a, G4b, G4c and G4d-a are accepted. Continue with G5a atomic intent.
+G4a, G4b, G4c, G4d-a and G5a are accepted. Continue with G5b worker/provider execution.
 The [external integration review](35-external-integration-review.md)
-prepares G5's shared transaction and recovery seams; no native external-service
-implementation is accepted. Later rows remain planned capabilities until their
+prepares G5's shared transaction and recovery seams. Atomic intent is accepted;
+provider execution is not. Later rows remain planned capabilities until their
 acceptance executes.

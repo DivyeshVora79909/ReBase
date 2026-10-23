@@ -3,6 +3,7 @@ use rebase_semantic_proof::{
     demo, identity, inspector, json, lifecycle,
     local::Store,
     model::{Prepared, PreparedModel},
+    models::effect_demo::EffectDemo,
     models::equipment::Equipment,
     models::invoicing::Invoicing,
     models::measurement::Measurement,
@@ -41,7 +42,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         || matches!(args.as_slice(), [option, _, help] if option == "--model" && help == "--help")
     {
         println!(
-            "ReBase Next backend\nSelect a compiled model with --model calculation|equipment|invoicing|measurement before the command (default calculation).\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next fixture list\n  rebase-next fixture plan <name> --namespace <uuid>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
+            "ReBase Next backend\nSelect a compiled model with --model calculation|equipment|invoicing|measurement|effect-demo before the command (default calculation).\n\n  rebase-next version\n  rebase-next check <store.redb>\n  rebase-next backup <store.redb> <new-backup.json>\n  rebase-next receipts archive <store.redb> <new-archive.json>\n  rebase-next restore <backup.json> <new-store.redb>\n  rebase-next reset <store.redb> --expect-store <uuid>\n  rebase-next model public\n  rebase-next model developer\n  rebase-next model view\n  rebase-next model explain <name|code>\n  rebase-next model validate <code> <input.json>\n  rebase-next fixture list\n  rebase-next fixture plan <name> --namespace <uuid>\n  rebase-next init <new.redb> --tenant <uuid> --actor <uuid>\n  rebase-next rpc <store.redb>\n  rebase-next serve <store.redb> --config <server.json>\n  rebase-next auth issue <server.json> <token-request.json> <private-key.pem>\n  rebase-next inspect <store.redb> [--html]\n  rebase-next demo <new-directory>"
         );
         return Ok(());
     }
@@ -75,8 +76,9 @@ fn run() -> Result<(), Box<dyn Error>> {
         "equipment" => run_model::<Equipment>(arguments),
         "invoicing" => run_model::<Invoicing>(arguments),
         "measurement" => run_model::<Measurement>(arguments),
+        "effect-demo" => run_model::<EffectDemo>(arguments),
         _ => Err(
-            "unknown compiled model; choose calculation, equipment, invoicing or measurement"
+            "unknown compiled model; choose calculation, equipment, invoicing, measurement or effect-demo"
                 .into(),
         ),
     }

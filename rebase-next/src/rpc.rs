@@ -49,6 +49,14 @@ struct Status {
     operation_id: Uuid,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EffectStatus {
+    model: String,
+    #[serde(with = "uuid_text")]
+    execution_id: Uuid,
+}
+
 fn bind<T: for<'de> Deserialize<'de>>(params: Value) -> Result<T> {
     serde_json::from_value(params)
         .map_err(|_| Error::new("invalid_input", "invalid operation params"))
@@ -90,6 +98,11 @@ fn dispatch<B: Binding>(store: &Store<B>, method: &str, params: Value) -> Result
             let p: Status = bind(params)?;
             store.operation_status(&p.model, &p.context, p.operation_id)
         }
+        "effects.status" if B::effect_action().is_some() => {
+            let p: EffectStatus = bind(params)?;
+            store.effect_status(&p.model, p.execution_id)
+        }
+        "effects.cancel" if B::effect_action().is_some() => store.cancel_effect(&bind(params)?),
         "records.page" => {
             let p: PageRequest = bind(params)?;
             serde_json::to_value(store.page(&p)?).map_err(|e| Error::new("internal", e.to_string()))

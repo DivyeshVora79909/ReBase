@@ -20,6 +20,13 @@ authored-parent parameters and explicit money memberships.
 Select `--model invoicing`; its initial source/output/retained envelope is
 64/256/512 rather than calculation/equipment's larger accepted workload profile.
 
+The [effect-demo model](external-effects.md) adds immutable Dispatch requests
+committed with Account changes. Optional `Binding::effect_action` and
+`effect_template` hooks declare and freeze the model-owned native input; the
+ordinary transaction publishes intent and receipt together. Preparation checks
+the action's immutable source and required typed target reference and hashes its
+versioned metadata. Models without an action keep their existing identities.
+
 `--model` must precede the command. Use the same selector for initialization,
 serving, checks, inspection, backup, restore and reset. There is no HTTP operation
 that switches a store's model. A model or codec mismatch rejects opening a store;
@@ -178,12 +185,12 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.9.0 source retains store/native codec format 6, calculation behavior
+The 0.10.0 source uses store 7 /native codec 6 /effect codec 1 /API 2, calculation behavior
 `rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
 and measurement behavior `dimensioned-measurements-1`. Invoicing now uses
-`invoice-assessments-5` for IssueShare. Models without publication inputs retain
-their 0.8 identities; the invoicing model requires a new matching store.
-There is no implicit migration from the verified 0.6.0 bundle's format 4 stores.
+`invoice-assessments-5` for IssueShare. The four existing identities match 0.9.0;
+effect-demo owns `effect-demo-intent-1`. New effect tables and tagged receipts
+require new format-7 stores. There is no implicit migration from earlier stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
 evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
