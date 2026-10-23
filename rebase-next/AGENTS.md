@@ -26,9 +26,12 @@ in source 0.12.0 /store 9 /native codec 6 /effect codec 3 /API 3. Signed inbox a
 reconciliation-only restored activation are verified.
 [G4d-b native query consumers](research/41-native-query-consumer-result.md) is
 accepted in source 0.13.0, with unchanged store 9 /native codec 6 /effect codec 3 /
-API 3 and measurement behavior 2. Continue
-[G4d-c authored selection](research/40-native-query-consumers.md). Preserve
-earlier evidence and capacity/model boundaries below.
+API 3 and measurement behavior 2. [G4d-c authored selection](research/42-authored-selection-result.md)
+is accepted in source 0.14.0, with the same shared formats and measurement
+behavior 3. G4 and G5 are complete within their declared bounds. The user
+explicitly requested stopping here on 2026-10-23: publish the checkpoint, then
+pause the broader capability goal. Do not prepare or implement G6, G7 or G8
+without a new user instruction. Preserve earlier evidence and boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
 complete through D6. Read [the release result](research/18-release-result.md),
@@ -43,9 +46,9 @@ the 200,000-unit mutation budget remains. Larger fanout can reject atomically.
 Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
-Continue autonomously through tested implementation checkpoints: commit and push
-each coherent checkpoint on the existing `main`, then start the next without
-waiting for another "continue". Keep the current gate and exact continuation at
+Within the user's active scope, commit and push each tested checkpoint on the
+existing `main`. The current stopping point is G4d-c; do not start another gate.
+Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
 Small composable ordinary APIs and one authoritative model are the design aim.

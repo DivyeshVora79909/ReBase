@@ -514,7 +514,6 @@ impl<B: Binding> Prepared<B> {
                 if !matches!(query.phase, "calculate" | "validate")
                     || !indexes.iter().any(|index| {
                         index.code == root.kind
-                            && index.reads.contains(&query.operation)
                             && B::Index::supports_query(
                                 root.kind,
                                 query.operation,

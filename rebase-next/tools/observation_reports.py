@@ -44,7 +44,7 @@ def expected(facts):
         require(1 <= fields["unit"] <= 65535, "Unit code bound")
         if row["contract"] == 101:
             continue
-        require(row["contract"] in (211, 307), "Known measurement contract")
+        require(row["contract"] in (211, 307, 419), "Known measurement contract")
         instrument = fields["instrument"]
         require(instrument in roots and facts[instrument]["fields"]["unit"] == fields["unit"],
                 "Authored parent dimension")
@@ -52,8 +52,10 @@ def expected(facts):
             at, value = int(fields["at"]), int(fields["value"])
             require(-(2**63) <= at < 2**63 and abs(value) <= 10**12, "Observation bounds")
             roots[instrument].append((at, value))
-        else:
+        elif row["contract"] == 307:
             require(abs(int(fields["threshold"])) <= 10**12, "Threshold bound")
+        else:
+            require(-(2**63) <= int(fields["at"]) < 2**63, "Selection time bound")
     derived = {}
     for key, row in facts.items():
         fields = row["fields"]
@@ -61,6 +63,19 @@ def expected(facts):
         if row["contract"] == 307:
             values = [value for at, value in roots[fields["instrument"]] if contains(at, fields["range"])]
             derived[key] = report(values, fields["unit"], int(fields["threshold"]))
+        elif row["contract"] == 419:
+            candidates = [(int(source["fields"]["at"]), uuid.UUID(identity).int, 17,
+                           identity, source["fields"])
+                          for identity, source in facts.items()
+                          if source["contract"] == 211
+                          and source["fields"]["instrument"] == fields["instrument"]
+                          and int(source["fields"]["at"]) <= int(fields["at"])]
+            selected = None
+            if candidates:
+                at, _, slot, identity, source = max(candidates, key=lambda row: row[:3])
+                selected = {"identity": identity, "member_slot": slot, "time": str(at),
+                            "unit": source["unit"], "value": str(int(source["value"]))}
+            derived[key] = {"selection": selected}
     return roots, derived
 
 
@@ -72,7 +87,7 @@ def verify(backend, model, facts):
         record = records[identity]
         require(record["contract"] == source["contract"] and record["input"] == source["fields"],
                 "Authored fields differ")
-        require(record["derived"] == derived[identity], f"Source-derived report differs: {identity}")
+        require(record["derived"] == derived[identity], f"Source-derived consumer differs: {identity}")
     for instrument, events in roots.items():
         values = [value for _, value in events]
         summary = {"count": len(values), "sum": str(sum(values)),

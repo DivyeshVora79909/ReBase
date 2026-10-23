@@ -1,13 +1,17 @@
 # G4d-b/c: native statistics and authored selection consumers
 
-**G4d-b accepted in source 0.13.0, 2026-10-23; G4d-c prepared next.**
+**G4d-b accepted in source 0.13.0; G4d-c accepted in 0.14.0, 2026-10-23.**
+The [authored-selection result](42-authored-selection-result.md) and
+[evidence](evidence/2026-10-23-g4dc-authored-selection.json) close this gate.
+The broader capability goal stops here at the user's request; G6–G8 are deferred.
 The [result](41-native-query-consumer-result.md) and
 [evidence](evidence/2026-10-23-g4db-native-query-consumers.json) record the typed
 report implementation, 38 Rust controls and optimized twenty-mutation HTTP run.
 The [capability program](30-capability-program.md) and the
 [published-value gate](36-value-dependencies-gate.md) retain the broader scope.
-Continue from the accepted G5c commit on `main`, preserving its executable and
-evidence. Do not reopen G4d-a publication semantics or G5's external lifecycle.
+The implementation follows accepted G5c and G4d-b on `main`, preserving their
+executables and evidence. G4d-a publication semantics and G5's external lifecycle
+retain their accepted boundaries.
 
 ## Selected next result
 
@@ -109,7 +113,6 @@ winner is insufficient. Use the same typed query persistence, common scheduler
 and original/final invalidation paths established by G4d-b. Authored members are
 the entire candidate universe in this gate; do not extend it implicitly.
 
-After these consumers, prepare G6's dated rational FX, sparse contributions and
-quantity returns against their concrete model contracts. G7 still requires a
-real distributed backend and actual conflict/unknown-commit schedules. G8 remains
-an explicit workload/release gate. None is accepted by this preparation paper.
+The user narrowed the execution scope on 2026-10-23: finish G4d-c and closeout
+through G5, then stop. Do not prepare or implement G6, G7 or G8 in this run.
+Their broader contracts remain planned capabilities, with no acceptance implied.

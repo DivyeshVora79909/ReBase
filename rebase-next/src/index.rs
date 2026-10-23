@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use crate::{
     algebra::Summary,
-    native_codec::decimal,
+    native_codec::{Address, decimal},
     native_slice::{Error, Query, Result},
 };
 
@@ -75,6 +75,15 @@ pub struct IndexDescriptor {
     pub quote: bool,
 }
 
+/// An attempt-local ordered occurrence. A family projects the selected native
+/// leaf into its query result; tree links and cached summaries stay private.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Selected<I: NativeIndex> {
+    pub member: Address,
+    pub key: I::Key,
+    pub leaf: I::Leaf,
+}
+
 /// Family implementations are trusted pure functions. Associativity, identity
 /// and bounded arithmetic on the admitted input domain need source-oracle tests.
 pub trait NativeIndex: Clone + Debug + Eq + Send + Sync + 'static {
@@ -133,6 +142,12 @@ pub trait NativeIndex: Clone + Debug + Eq + Send + Sync + 'static {
         _summary: &Self::Summary,
     ) -> Result<Self::QueryResult> {
         Err(unsupported("native summary query"))
+    }
+    fn selection_result(
+        _code: IndexCode,
+        _selected: Option<Selected<Self>>,
+    ) -> Result<Self::QueryResult> {
+        Err(unsupported("native selection query"))
     }
     /// The financial fast prefix and terminal floor are explicit capabilities;
     /// another family's statistics never become an amount by a numeric cast.

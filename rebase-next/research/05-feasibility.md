@@ -1,5 +1,16 @@
 # Rust feasibility and stop boundary
 
+**G4d-b/c complete; requested stopping point, October 23:**
+[Native reports](41-native-query-consumer-result.md) and
+[authored selection](42-authored-selection-result.md) use typed family-owned
+query results and the common scheduler. Source 0.14.0 retains store 9 /native
+codec 6 /effect codec 3 /API 3; only measurement's model identity changes from
+0.13. Twenty-six selected Rust controls (including 27 corruption cases), the
+22-mutation optimized HTTP workflow, report wire preservation and five-model
+compatibility controls pass. G4 and G5 are accepted within their declared bounds.
+The user explicitly requested stopping after G4d-c and closeout through G5.
+G6, G7 and G8 remain deferred; do not prepare or implement them in this run.
+
 **G5 complete for the bounded fake adapter, October 23:**
 [G5c ingress/recovery](39-ingress-recovery-implementation.md) adds exact signed
 webhooks, durable inbox/fact consumption and reconciliation-only restored stores.

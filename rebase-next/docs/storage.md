@@ -100,7 +100,7 @@ trusted operator tool and has no network RPC counterpart.
 ## Data identity and upgrades
 
 The last verified deployment bundle, 0.6.0, uses store format
-`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.13.0 source
+`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.14.0 source
 uses `rebase-store-9`, `native-slice-kv-6`, `rebase-effects-3` and API 3. One store holds one selected
 compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
@@ -112,14 +112,14 @@ Shared semantic changes require bumping every affected binding. Structural/schem
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-In 0.13.0 source, calculation behavior is `rebase-calculation-contract-6`,
+In 0.14.0 source, calculation behavior is `rebase-calculation-contract-6`,
 equipment behavior is `equipment-reservations-5`, and invoicing behavior is
-`invoice-assessments-5`. Measurement uses `dimensioned-measurements-2` for native
-ObservationReport queries and authored-unit dependencies.
+`invoice-assessments-5`. Measurement uses `dimensioned-measurements-3` for native
+ObservationReport and LatestObservation queries with authored-unit dependencies.
 Effect-demo owns `effect-demo-ingress-3`; its action and typed outcome schema
 also participate in its model identity. Calculation, equipment, invoicing and
-effect-demo identities match 0.12.0. Family-owned query results preserve existing
-Standard bytes; measurement's changed model identity rejects earlier measurement
+effect-demo identities match 0.13.0. Family-owned query results preserve existing
+Standard and report bytes; measurement's changed model identity rejects earlier measurement
 stores even though the shared store/codec versions remain unchanged.
 Store format 9 adds checked inbox rows and explicit worker modes. API 3 replaces
 the effect status boolean with `worker_mode`; the capability catalog declares
@@ -141,7 +141,7 @@ Measurement allows 64 public sources and no private outputs or reservations.
 Backup remains capped at 64 MiB, and the active receipt window remains 1,024
 operations.
 
-Format 2 through 8 stores and their backups intentionally reject in 0.13.0. The
+Format 2 through 8 stores and their backups intentionally reject in 0.14.0. The
 runtime header is checked before native metadata decoding, so an old store
 reports a model/format mismatch rather than being reinterpreted. There is no
 silent migration, automatic reset or cross-model restore. Restore a backup only

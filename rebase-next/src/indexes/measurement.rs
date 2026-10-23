@@ -1,8 +1,9 @@
 //! Bounded dimensioned statistics, independent of the financial/quote family.
 use crate::{
-    index::{IndexCode, IndexDescriptor, NativeIndex, SummaryRead, TimeKey},
-    native_codec::{decimal, optional_decimal},
+    index::{IndexCode, IndexDescriptor, NativeIndex, Selected, SummaryRead, TimeKey},
+    native_codec::{decimal, optional_decimal, uuid_text},
     native_slice::{Error, Result},
+    time_range::TimeBound,
 };
 use serde::{
     Deserialize, Deserializer, Serialize,
@@ -10,6 +11,7 @@ use serde::{
 };
 use serde_json::{Value, json};
 use std::{fmt, marker::PhantomData};
+use uuid::Uuid;
 
 pub const STATISTICS: IndexCode = IndexCode::new(7).expect("nonzero statistics code");
 pub const MAX_VALUE: i128 = 1_000_000_000_000;
@@ -104,6 +106,58 @@ impl<'de> Deserialize<'de> for Summary {
         })
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct SelectedObservation {
+    #[serde(with = "uuid_text")]
+    pub identity: Uuid,
+    pub member_slot: u16,
+    #[serde(with = "decimal")]
+    pub time: i64,
+    pub unit: u16,
+    #[serde(with = "decimal")]
+    pub value: i128,
+}
+
+impl<'de> Deserialize<'de> for SelectedObservation {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Wire {
+            #[serde(with = "uuid_text")]
+            identity: Uuid,
+            member_slot: u16,
+            #[serde(with = "decimal")]
+            time: i64,
+            unit: u16,
+            #[serde(with = "decimal")]
+            value: i128,
+        }
+        let wire: Wire = object(deserializer)?;
+        Ok(Self {
+            identity: wire.identity,
+            member_slot: wire.member_slot,
+            time: wire.time,
+            unit: wire.unit,
+            value: wire.value,
+        })
+    }
+}
+
+impl SelectedObservation {
+    pub fn valid(&self) -> bool {
+        self.member_slot > 0 && self.unit > 0 && (-MAX_VALUE..=MAX_VALUE).contains(&self.value)
+    }
+}
+
+/// Strict, disjoint native shapes. The summary case retains its existing bytes;
+/// operation/channel validation binds the variant, including absent selection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum QueryResult {
+    Summary(Summary),
+    Selection(Option<SelectedObservation>),
+}
 fn corrupt(detail: &str) -> Error {
     Error::new("corrupt_state", detail)
 }
@@ -139,15 +193,17 @@ impl NativeIndex for Statistics {
     type Key = TimeKey;
     type Leaf = Observation;
     type Summary = Summary;
-    type QueryResult = Summary;
+    type QueryResult = QueryResult;
     fn supports_query(code: IndexCode, operation: &str, phase: &str, channel: &str) -> bool {
         code == STATISTICS
-            && operation == "summary"
             && phase == "calculate"
-            && channel == "statistics"
+            && matches!(
+                (operation, channel),
+                ("summary", "statistics") | ("latest", "observation")
+            )
     }
     fn causal_query(operation: &str) -> bool {
-        operation == "summary"
+        matches!(operation, "summary" | "latest")
     }
     fn causal_index(code: IndexCode) -> bool {
         code == STATISTICS
@@ -155,18 +211,48 @@ impl NativeIndex for Statistics {
     fn validate_query(query: &crate::native_slice::Query<Self>) -> Result<()> {
         if !Self::supports_query(STATISTICS, &query.operation, &query.phase, &query.channel)
             || query.selected.is_some()
-            || query.result.dimension == Dimension::Mixed
         {
             return Err(corrupt("measurement query binding"));
         }
-        Self::validate_summary(STATISTICS, &query.result)
+        match (&query.result, query.operation.as_str()) {
+            (QueryResult::Summary(summary), "summary") if summary.dimension != Dimension::Mixed => {
+                Self::validate_summary(STATISTICS, summary)
+            }
+            (QueryResult::Selection(selected), "latest")
+                if query.range.lower == TimeBound::Unbounded
+                    && matches!(query.range.upper, TimeBound::Included(_))
+                    && selected
+                        .as_ref()
+                        .is_none_or(|value| value.valid() && query.range.contains(value.time)) =>
+            {
+                Ok(())
+            }
+            _ => Err(corrupt("measurement query variant or bound")),
+        }
     }
-    fn query_result(code: IndexCode, operation: &str, summary: &Summary) -> Result<Summary> {
+    fn query_result(code: IndexCode, operation: &str, summary: &Summary) -> Result<QueryResult> {
         if !Self::supports_query(code, operation, "calculate", "statistics") {
             return Err(corrupt("measurement summary query"));
         }
         Self::validate_summary(code, summary)?;
-        Ok(*summary)
+        Ok(QueryResult::Summary(*summary))
+    }
+    fn selection_result(code: IndexCode, selected: Option<Selected<Self>>) -> Result<QueryResult> {
+        kind(code)?;
+        let selected = selected
+            .map(|value| {
+                Self::validate_key(code, &value.key)?;
+                Self::validate_leaf(code, &value.leaf)?;
+                Ok(SelectedObservation {
+                    identity: value.member.id,
+                    member_slot: value.member.slot,
+                    time: value.key.get(),
+                    unit: value.leaf.unit,
+                    value: value.leaf.value,
+                })
+            })
+            .transpose()?;
+        Ok(QueryResult::Selection(selected))
     }
     fn descriptors() -> Vec<IndexDescriptor> {
         let projected = closed(

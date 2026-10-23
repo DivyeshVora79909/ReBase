@@ -46,6 +46,7 @@ that deployment acceptance has run.
 | Instrument | 101 | `{"unit":7}` |
 | Observation | 211 | `{"instrument":"<canonical UUID>","at":"10","unit":7,"value":"-2"}` |
 | ObservationReport | 307 | `{"instrument":"<canonical UUID>","range":{"lower":{"included":"0"},"upper":{"excluded":"20"}},"unit":7,"threshold":"5"}` |
+| LatestObservation | 419 | `{"instrument":"<canonical UUID>","at":"10","unit":7}` |
 
 All listed fields are mutable through version-checked updates. Unit codes are
 integers from 1 through 65535. Times are canonical signed i64 decimal strings;
@@ -56,10 +57,10 @@ reject. No unit conversion is implicit.
 An Instrument owns root slot 7, `observations`, using native index code 7. Each
 Observation joins it through membership slot 17. Observations reference an
 Instrument, and their reader follows the declared reference-owner policy.
-ObservationReport inherits its reader through the same reference and declares
-its direct dependency on the Instrument's authored unit. It has no root,
-membership or private output. Its limit is 64 total public records, including
-instruments, observations and reports. Existing models keep
+Both consumers inherit their reader through the same reference and declare
+their direct dependency on the Instrument's authored unit. They have no root,
+membership or private output. The limit is 64 total public records, including
+instruments, observations, reports and selectors. Existing models keep
 their separately declared limits and the same mutation work budget.
 
 The settled root must be empty or contain only observations whose unit equals
@@ -109,6 +110,45 @@ python3 -B tools/observation_reports.py --binary target/g4db-accepted/rebase-nex
   --out target/my-report-workflow
 ```
 
+## Latest authored observation
+
+LatestObservation publishes `{"selection":null}` if its Instrument has no
+Observation at or before `at`. Otherwise `selection` contains the authored
+occurrence's identity, member slot, time, unit and value:
+
+```json
+{"selection":{"identity":"00000000-0000-0000-0000-000000000015","member_slot":17,"time":"10","unit":7,"value":"12"}}
+```
+
+The greatest complete `(time, UUID, member slot)` wins. Every observation at the
+exact cutoff participates; ties never depend on insertion order. Equal values
+with different identities are different selections. The dependency covers all
+`(-infinity, at]`, including absence. Inserting a first candidate, rekeying,
+moving or deleting the winner, and changing nonwinners all use that declared
+window. A nonwinner edit can evaluate the selector while preserving its version
+when the complete selection is unchanged.
+
+Query slot 43 uses operation `latest`, channel `observation`, calculation phase
+and Instrument root 7. The shared predecessor traversal returns a native
+occurrence, which the family converts into its typed result. Public statistics
+root reads remain as listed below; this consumer does not add a quote adapter.
+Its own Read grant controls materialized results, including record pages and
+replay. Creating or retargeting it still requires authority to reference the
+Instrument. Unit checks, retargeting and joint repairs use the final batch state.
+
+```sh
+rebase-next --model measurement fixture plan latest-observation \
+  --namespace 00000000-0000-0000-0000-00000135295f
+python3 -B tools/observation_selection.py --binary target/g4dc-accepted/rebase-next \
+  --out target/my-selection-workflow
+```
+
+The fixture includes a report and equal-time candidates. The workflow compares
+both consumers against authored facts, then verifies authority, complete
+rollback, reopening, a process kill and restore. Candidate observations are
+authored records. Managed candidates and reads from a selected record's
+published fields remain separate capabilities.
+
 ## Read statistics
 
 Use the ordinary authenticated `roots.read` method:
@@ -154,11 +194,13 @@ capabilities. A family can use non-Copy keys or non-time ordering without adopti
 the financial value representation.
 
 `NativeIndex::QueryResult` owns persisted calculation values. Family methods
-validate operation/phase/channel, map native summaries to results and select
+validate operation/phase/channel, map native summaries or selected occurrences to results and select
 shared scheduler participation. `Query<Index>` and the complete storage checker
 use that same compiled type. Serialization hooks preserve Standard's existing
-decimal-string `i128` results. Measurement uses its native Summary directly;
-public JSON projections remain separate. The existing financial prefix path and
+decimal-string `i128` results. Measurement uses strict disjoint summary and
+optional-selection variants; summary bytes remain unchanged. Native query
+support is declared independently of the public root-read names. Public JSON
+projections remain separate. The existing financial prefix path and
 nonnegative terminal validation are explicit adapters. Generic managed statistics
 emissions are not supplied by this port.
 
@@ -178,9 +220,10 @@ literal scan, and run distinct valid AVL insertion orders through complete check
 The HTTP oracle uses Python integer arithmetic over authored facts, exact boundary
 filters, complete rollback snapshots and rehashed corrupted-backup controls.
 
-Current source uses store 9 /native codec 6 /effect codec 3 /API 3. The new report
-changes measurement's behavior to `dimensioned-measurements-2`; other model
-identities and existing Standard query bytes remain unchanged. Keep older stores with matching
+Source 0.14.0 uses store 9 /native codec 6 /effect codec 3 /API 3. Authored selection
+changes measurement's behavior to `dimensioned-measurements-3`; other model
+identities and existing Standard query bytes remain unchanged. Report summary
+and derived encodings are preserved. Keep older measurement stores with matching
 binaries; there is no implicit populated-store migration. See
 [storage identities and upgrades](storage.md#data-identity-and-upgrades).
 Behavior revisions cover algebra, ordering, projection and invariant semantics;

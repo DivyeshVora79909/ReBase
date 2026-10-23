@@ -1,6 +1,43 @@
 # Compact context — 2026-10-23
 
-**G4d-b is accepted after published G5c `b65be31`; next G4d-c authored selection.**
+**G4d-c complete; stop after G5 per the user's 2026-10-23 scope change.**
+G4a–G4d and G5a–G5c are accepted within their declared bounds. Publish this
+checkpoint on the existing `main`, then pause the broader capability goal.
+Do not prepare or implement G6, G7 or G8; resume only on a new user instruction.
+
+Read the [G4d-c result](research/42-authored-selection-result.md) and
+[evidence](research/evidence/2026-10-23-g4dc-authored-selection.json). Source
+0.14.0 adds typed LatestObservation (419), query slot 43, greatest complete
+`(time, UUID, member slot)` at/before `at`, and the full `(-infinity, at]`
+dependency even when absent. Authored Observation members are final before the
+shared scheduler evaluates. Managed candidates and selected-parent publications
+remain outside this gate. Store 9 /native codec 6 /effect codec 3 /API 3 stay
+unchanged. Measurement behavior 3 owns model
+`32d95742102bfcb62fff89e0871f90a2c08cc97cf344c7665a2704cb9569871b`.
+
+All 26 selected Rust controls pass, including 27 corrupt inventories. Seven
+selection and twelve report oracle controls pass. One optimized HTTP run passes
+22 mutations /49 commands (18 commits, four full-table rollbacks) in 2.260 seconds:
+zero/one/eight selection, both changed roots, authority, replay, reopen, one
+process kill and restore. Four unchanged model identities and complete tables
+match 0.13; old measurement rejects without changed physical bytes. Eight prior
+report query and derived encodings each remain byte-identical after one source
+recreation batch. Both absent and present selectors survive recovery.
+
+One native compilation took 98.441 seconds; native checks took 11.345 seconds.
+The single optimized build took 289.328 seconds. First Clippy and the focused
+test check passed; no source failures or repeated builds occurred. Only the
+root agent works, with one Cargo owner, two jobs, incremental off, debug cache
+`target/native-slice/build` and optimized cache `target/g4b-retained-b377b21/build`.
+No build, backend or provider process remains after acceptance.
+
+Retained executable: `target/g4dc-accepted/rebase-next`, 28,765,840 bytes,
+SHA-256 `46e6e52125cb263dda8a89858a1117f42a5ef963300f0ff71eb4292907485338`.
+Reports: `target/g4dc-checks.json`, `target/g4dc-compatibility.json`,
+`target/g4dc-selection-http/result.json`. Keep earlier binaries/evidence below.
+G5 remains bounded to the fixed fake provider; the last deployment bundle is 0.6.0.
+
+**Historical G4d-b, after published G5c `b65be31`.**
 Read [the result](research/41-native-query-consumer-result.md) and
 [evidence](research/evidence/2026-10-23-g4db-native-query-consumers.json), then the
 [G4d-c contract](research/40-native-query-consumers.md). Source 0.13.0 uses

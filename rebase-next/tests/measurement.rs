@@ -1,11 +1,14 @@
 use rebase_semantic_proof::{
     binding::Binding,
     index::{NativeIndex, TimeKey},
-    indexes::measurement::{Dimension, MAX_VALUE, Observation, STATISTICS, Statistics, Summary},
+    indexes::measurement::{
+        Dimension, MAX_VALUE, Observation, QueryResult, STATISTICS, SelectedObservation,
+        Statistics, Summary,
+    },
     lifecycle,
     local::{Mutation, Store},
     model::Prepared,
-    models::measurement::{Measurement, REPORT, REPORT_QUERY},
+    models::measurement::{Derived, LATEST, LATEST_QUERY, Measurement, REPORT, REPORT_QUERY},
     native_codec::{self, Address, Key, StoredValue},
     native_slice::Context,
 };
@@ -347,7 +350,7 @@ fn measurement_schemas_and_native_objects_are_closed_and_exact() {
     );
     assert!(Statistics::financial_summary(STATISTICS, &Summary::default()).is_err());
     let catalog = model.public_catalog();
-    assert_eq!(catalog["contracts"].as_array().unwrap().len(), 3);
+    assert_eq!(catalog["contracts"].as_array().unwrap().len(), 4);
 }
 
 #[test]
@@ -460,7 +463,12 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
     )
     .unwrap();
     let fixture = Measurement::fixture_plan(&model, "observation-report", id(40)).unwrap();
-    run(&store, fixture["commands"].clone());
+    let mut seed = fixture["commands"].as_array().unwrap().clone();
+    seed.extend([
+        json!({"op":"create","id":id(901),"contract":LATEST,"fields":{"instrument":fixture["fixture"]["ids"]["instrument"],"at":"10","unit":7}}),
+        json!({"op":"create","id":id(902),"contract":LATEST,"fields":{"instrument":fixture["fixture"]["ids"]["instrument"],"at":"-1","unit":7}}),
+    ]);
+    run(&store, json!(seed));
     let backup = dir.0.join("valid.json");
     store.backup(&backup).unwrap();
     let image: Value = serde_json::from_slice(&std::fs::read(&backup).unwrap()).unwrap();
@@ -513,6 +521,17 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
         "missing-query",
         "missing-route",
         "missing-direct",
+        "selection-identity",
+        "selection-time",
+        "selection-slot",
+        "selection-value",
+        "selection-absence",
+        "selection-variant",
+        "selection-binding",
+        "selection-bound",
+        "selection-derived",
+        "missing-selection-query",
+        "missing-empty-selection-route",
     ] {
         let key = match label {
             "key-variant" | "leaf-variant" => node_key.clone(),
@@ -523,6 +542,14 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
                 Key::SubscriberNode(Address::new(report, REPORT_QUERY))
             }
             "report-direct" | "missing-direct" => Key::DirectNode(Address::new(report, 1)),
+            "selection-derived" => Key::Record(id(901)),
+            "missing-selection-query" => Key::Query(Address::new(id(902), LATEST_QUERY)),
+            "missing-empty-selection-route" => {
+                Key::SubscriberNode(Address::new(id(902), LATEST_QUERY))
+            }
+            name if name.starts_with("selection-") => {
+                Key::Query(Address::new(id(901), LATEST_QUERY))
+            }
             _ => root_key.clone(),
         };
         let bytes = original(&key);
@@ -538,6 +565,13 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
                 | "report-derived"
                 | "report-route"
                 | "report-direct"
+                | "selection-identity"
+                | "selection-time"
+                | "selection-slot"
+                | "selection-value"
+                | "selection-absence"
+                | "selection-bound"
+                | "selection-derived"
         ) {
             match &mut stored {
                 StoredValue::Root(root) if label == "span" => {
@@ -547,8 +581,41 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
                 StoredValue::Query(query) if label == "report-bounds" => {
                     query.range.lower = rebase_semantic_proof::time_range::TimeBound::Included(1)
                 }
-                StoredValue::Query(query) => query.result.sum += 1,
-                StoredValue::Record(record) => record.derived.as_mut().unwrap().count += 1,
+                StoredValue::Query(query) if label == "report-cache" => {
+                    let QueryResult::Summary(summary) = &mut query.result else {
+                        panic!("report query variant")
+                    };
+                    summary.sum += 1;
+                }
+                StoredValue::Query(query) if label == "selection-bound" => {
+                    query.range.upper = rebase_semantic_proof::time_range::TimeBound::Included(11)
+                }
+                StoredValue::Query(query) if label == "selection-absence" => {
+                    query.result = QueryResult::Selection(None)
+                }
+                StoredValue::Query(query) => {
+                    let QueryResult::Selection(Some(value)) = &mut query.result else {
+                        panic!("selection query variant")
+                    };
+                    match label {
+                        "selection-identity" => {
+                            value.identity =
+                                Uuid::parse_str(fixture["fixture"]["ids"]["a"].as_str().unwrap())
+                                    .unwrap()
+                        }
+                        "selection-time" => value.time = 9,
+                        "selection-slot" => value.member_slot = 18,
+                        "selection-value" => value.value = 11,
+                        _ => unreachable!(),
+                    }
+                }
+                StoredValue::Record(record) => match record.derived.as_mut().unwrap() {
+                    Derived::Report { count, .. } => *count += 1,
+                    Derived::Latest {
+                        selection: Some(value),
+                    } => value.value = 11,
+                    _ => panic!("unexpected derived variant"),
+                },
                 StoredValue::RouteNode(node) => {
                     let other =
                         Uuid::parse_str(fixture["fixture"]["ids"]["other"].as_str().unwrap())
@@ -562,7 +629,13 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
                 _ => panic!("unexpected corrupt type"),
             }
             // Native local bounds hold; source-derived inventories must reject.
-            Some(native_codec::encode_for::<Measurement>(&key, &stored).unwrap())
+            let bytes = native_codec::encode_for::<Measurement>(&key, &stored).unwrap();
+            assert_eq!(
+                native_codec::decode_for::<Measurement>(&key, &bytes).unwrap(),
+                stored,
+                "locally valid semantic corruption {label}"
+            );
+            Some(bytes)
         } else {
             let mut wire: Value = serde_json::from_slice(&bytes).unwrap();
             match label {
@@ -576,6 +649,10 @@ fn observation_report_and_native_corruptions_fail_check_startup_and_verified_res
                     wire["data"]["result"] = json!({"kind":"financial","value":"17"})
                 }
                 "report-binding" => wire["data"]["channel"] = json!("amount"),
+                "selection-variant" => {
+                    wire["data"]["result"] = serde_json::to_value(Summary::default()).unwrap()
+                }
+                "selection-binding" => wire["data"]["channel"] = json!("rate"),
                 _ => unreachable!(),
             }
             Some(serde_json::to_vec(&wire).unwrap())
@@ -989,7 +1066,7 @@ fn observation_report_query_contract_and_native_result_are_checked() {
         channel: "statistics".into(),
         range: TimeRange::ALL,
         selected: None,
-        result: Summary::default(),
+        result: QueryResult::Summary(Summary::default()),
     };
     let value = StoredValue::<Measurement>::Query(query);
     let bytes = native_codec::encode_for::<Measurement>(&key, &value).unwrap();
@@ -1021,6 +1098,379 @@ fn observation_report_query_contract_and_native_result_are_checked() {
             "phase" => report.queries[0].phase = "validate",
             _ => unreachable!(),
         }
+        assert!(Prepared::<Measurement>::prepare(declarations).is_err());
+    }
+}
+
+fn selected(identity: Uuid, time: i64, unit: u16, value: i128) -> Value {
+    json!({"selection":{"identity":identity,"member_slot":17,"time":time.to_string(),"unit":unit,"value":value.to_string()}})
+}
+
+#[test]
+fn latest_observation_tracks_absence_ties_nonwinners_and_every_changed_root() {
+    let dir = Directory::new();
+    let model = Arc::new(Prepared::<Measurement>::load().unwrap());
+    let store = Store::create_secured(
+        dir.0.join("selection.redb"),
+        model.clone(),
+        Context {
+            tenant: id(1),
+            actor: id(2),
+        },
+    )
+    .unwrap();
+    run(
+        &store,
+        json!([
+            {"op":"create","id":id(10),"contract":101,"fields":{"unit":7}},
+            {"op":"create","id":id(11),"contract":101,"fields":{"unit":7}},
+            {"op":"create","id":id(30),"contract":LATEST,"fields":{"instrument":id(10),"at":"10","unit":7}},
+            {"op":"create","id":id(31),"contract":LATEST,"fields":{"instrument":id(11),"at":"10","unit":7}}
+        ]),
+    );
+    assert_eq!(report(&store, id(30)), json!({"selection":null}));
+    assert_eq!(
+        store.inspect().unwrap()["queries"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+    for member in [20, 21] {
+        run(
+            &store,
+            json!([{"op":"create","id":id(member),"contract":211,
+            "fields":{"instrument":id(10),"at":"10","unit":7,"value":"5"}}]),
+        );
+        assert_eq!(report(&store, id(30)), selected(id(member), 10, 7, 5));
+    }
+    // A same-value winner has a distinct identity; a nonwinner payload edit
+    // conservatively evaluates but must preserve the unchanged materialization.
+    let before = store.get(model.identity(), id(30)).unwrap().unwrap();
+    run(
+        &store,
+        json!([change(&store, id(20), json!({"value":"9"}))]),
+    );
+    assert_eq!(
+        store.get(model.identity(), id(30)).unwrap().unwrap(),
+        before
+    );
+    run(
+        &store,
+        json!([change(&store, id(20), json!({"instrument":id(11)}))]),
+    );
+    assert_eq!(report(&store, id(30)), selected(id(21), 10, 7, 5));
+    assert_eq!(report(&store, id(31)), selected(id(20), 10, 7, 9));
+    // One member moves out at its old time and into another root at a different
+    // time. Both windows must be invalidated, including a newly empty result.
+    run(
+        &store,
+        json!([change(
+            &store,
+            id(21),
+            json!({"instrument":id(11),"at":"9"})
+        )]),
+    );
+    assert_eq!(report(&store, id(30)), json!({"selection":null}));
+    assert_eq!(report(&store, id(31)), selected(id(20), 10, 7, 9));
+    run(&store, json!([delete(&store, id(20))]));
+    assert_eq!(report(&store, id(31)), selected(id(21), 9, 7, 5));
+    run(&store, json!([change(&store, id(31), json!({"at":"8"}))]));
+    assert_eq!(report(&store, id(31)), json!({"selection":null}));
+    run(
+        &store,
+        json!([change(&store, id(21), json!({"at":i64::MIN.to_string()}))]),
+    );
+    assert_eq!(report(&store, id(31)), selected(id(21), i64::MIN, 7, 5));
+    run(
+        &store,
+        json!([change(&store, id(31), json!({"at":i64::MIN.to_string()}))]),
+    );
+    assert_eq!(report(&store, id(31)), selected(id(21), i64::MIN, 7, 5));
+    run(
+        &store,
+        json!([
+            change(&store, id(21), json!({"at":i64::MAX.to_string()})),
+            change(&store, id(31), json!({"at":i64::MAX.to_string()}))
+        ]),
+    );
+    assert_eq!(report(&store, id(31)), selected(id(21), i64::MAX, 7, 5));
+    run(&store, json!([delete(&store, id(21))]));
+    assert_eq!(report(&store, id(31)), json!({"selection":null}));
+    reject_report(
+        &store,
+        json!([change(&store, id(11), json!({"unit":8}))]),
+        "invariant",
+    );
+    reject_report(
+        &store,
+        json!([delete(&store, id(11))]),
+        "unavailable_reference",
+    );
+    let query = &store.inspect().unwrap()["queries"][1]["descriptor"];
+    assert_eq!(query["operation"], "latest");
+    assert_eq!(
+        query["range"],
+        json!({"lower":null,"upper":{"included":i64::MAX.to_string()}})
+    );
+    assert!(query["result"].is_null());
+}
+
+#[test]
+fn latest_observation_final_retarget_unit_repairs_and_budget_are_atomic() {
+    use rebase_semantic_proof::{mutation, native_slice::Attempt};
+    use std::collections::BTreeMap;
+    let dir = Directory::new();
+    let model = Arc::new(Prepared::<Measurement>::load().unwrap());
+    let context = Context {
+        tenant: id(1),
+        actor: id(2),
+    };
+    for reverse in [false, true] {
+        let store = Store::create_secured(
+            dir.0.join(format!("selection-{reverse}.redb")),
+            model.clone(),
+            context,
+        )
+        .unwrap();
+        run(
+            &store,
+            json!([
+                {"op":"create","id":id(10),"contract":101,"fields":{"unit":7}},
+                {"op":"create","id":id(11),"contract":101,"fields":{"unit":8}},
+                {"op":"create","id":id(20),"contract":211,"fields":{"instrument":id(10),"at":"10","unit":7,"value":"5"}},
+                {"op":"create","id":id(30),"contract":LATEST,"fields":{"instrument":id(10),"at":"10","unit":7}}
+            ]),
+        );
+        let mut commands = vec![
+            change(&store, id(11), json!({"unit":9})),
+            change(&store, id(20), json!({"instrument":id(11),"unit":9})),
+            change(&store, id(30), json!({"instrument":id(11),"unit":9})),
+        ];
+        if reverse {
+            commands.reverse();
+        }
+        run(&store, json!(commands));
+        assert_eq!(report(&store, id(30)), selected(id(20), 10, 9, 5));
+        let detached = store.get(model.identity(), id(30)).unwrap().unwrap();
+        run(&store, json!([change(&store, id(10), json!({"unit":10}))]));
+        assert_eq!(
+            store.get(model.identity(), id(30)).unwrap().unwrap(),
+            detached
+        );
+        reject_report(
+            &store,
+            json!([
+                change(&store, id(20), json!({"at":"0","value":"-9"})),
+                change(&store, id(30), json!({"unit":8}))
+            ]),
+            "invariant",
+        );
+        reject_report(
+            &store,
+            json!([change(&store, id(30), json!({"instrument":id(20)}))]),
+            "unavailable_reference",
+        );
+        let attempt = request(
+            &store,
+            json!([change(&store, id(20), json!({"value":"-9"}))]),
+        );
+        let before = store.observe_for_verification().unwrap();
+        let bytes: BTreeMap<_, _> = before["tables"]["native_kv"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| {
+                (
+                    unhex(row["key"].as_str().unwrap()),
+                    unhex(row["value"].as_str().unwrap()),
+                )
+            })
+            .collect();
+        let mut ws =
+            Attempt::<_, Measurement>::new(|key: &[u8]| Ok(bytes.get(key).cloned()), 200_000);
+        mutation::settle_authorized(
+            &mut ws,
+            &model,
+            context,
+            &attempt.commands,
+            &mut || panic!("selection allocation"),
+            false,
+            &mut |_, _, _, _| Ok(()),
+        )
+        .unwrap();
+        assert_eq!(ws.work.causal_evaluations, 1);
+        let needed = ws.work.work_units;
+        let mut ws =
+            Attempt::<_, Measurement>::new(|key: &[u8]| Ok(bytes.get(key).cloned()), needed - 1);
+        assert_eq!(
+            mutation::settle_authorized(
+                &mut ws,
+                &model,
+                context,
+                &attempt.commands,
+                &mut || panic!("selection allocation"),
+                false,
+                &mut |_, _, _, _| Ok(())
+            )
+            .unwrap_err()
+            .code,
+            "work_limit"
+        );
+        assert!(ws.work.staged_patches > 0);
+        drop(ws);
+        assert_eq!(store.observe_for_verification().unwrap(), before);
+        assert_eq!(
+            store
+                .operation_status(model.identity(), &attempt.context, attempt.operation_id)
+                .unwrap()["status"],
+            "not_observed"
+        );
+    }
+}
+
+#[test]
+fn latest_observation_native_selection_uses_complete_member_slot_ties() {
+    use rebase_semantic_proof::{native_slice::Attempt, tree};
+    let mut ws = Attempt::<_, Measurement>::new(|_: &[u8]| Ok(None), 200_000);
+    let owner = Address::new(id(10), 7);
+    ws.put(
+        Key::Root(owner),
+        Some(StoredValue::Root(tree::Root::empty(STATISTICS, 0).unwrap())),
+    )
+    .unwrap();
+    assert!(
+        tree::last_at_or_before(&mut ws, owner, i64::MAX)
+            .unwrap()
+            .is_none()
+    );
+    // The tree can carry two membership slots from one identity. Production
+    // Observation declares only slot 17; this primitive control fixes the full tie.
+    for (member, slot, at, value) in [
+        (70, 18, 10, 13),
+        (80, 17, i64::MAX, 20),
+        (2, 1, i64::MIN, 1),
+        (71, 1, 10, 15),
+        (70, 17, 10, 12),
+    ] {
+        tree::insert(
+            &mut ws,
+            owner,
+            Address::new(id(member), slot),
+            TimeKey::new(at),
+            Observation { unit: 7, value },
+        )
+        .unwrap();
+    }
+    for (at, member, slot, value) in [
+        (i64::MIN, 2, 1, 1),
+        (9, 2, 1, 1),
+        (10, 71, 1, 15),
+        (i64::MAX, 80, 17, 20),
+    ] {
+        let selected = tree::last_at_or_before(&mut ws, owner, at)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            (selected.member, selected.leaf.value),
+            (Address::new(id(member), slot), value)
+        );
+    }
+    tree::remove(&mut ws, owner, Address::new(id(71), 1)).unwrap();
+    assert_eq!(
+        tree::last_at_or_before(&mut ws, owner, 10)
+            .unwrap()
+            .unwrap()
+            .member,
+        Address::new(id(70), 18)
+    );
+    tree::remove(&mut ws, owner, Address::new(id(70), 18)).unwrap();
+    assert_eq!(
+        tree::last_at_or_before(&mut ws, owner, 10)
+            .unwrap()
+            .unwrap()
+            .member,
+        Address::new(id(70), 17)
+    );
+}
+
+#[test]
+fn latest_observation_query_variants_are_closed_and_report_bytes_are_preserved() {
+    use rebase_semantic_proof::{native_slice::Query, time_range::TimeRange};
+    let summary = Summary::default();
+    assert_eq!(
+        serde_json::to_vec(&QueryResult::Summary(summary)).unwrap(),
+        serde_json::to_vec(&summary).unwrap()
+    );
+    let derived = Derived::Report {
+        count: 0,
+        min: None,
+        max: None,
+        unit: 7,
+        at_least_threshold: false,
+    };
+    assert_eq!(
+        serde_json::to_string(&derived).unwrap(),
+        r#"{"count":0,"min":null,"max":null,"unit":7,"at_least_threshold":false}"#
+    );
+    let value = SelectedObservation {
+        identity: id(20),
+        member_slot: 17,
+        time: 10,
+        unit: 7,
+        value: 5,
+    };
+    let query = Query::<Statistics> {
+        source: Address::new(id(10), 7),
+        operation: "latest".into(),
+        phase: "calculate".into(),
+        channel: "observation".into(),
+        range: TimeRange::through(10),
+        selected: None,
+        result: QueryResult::Selection(Some(value)),
+    };
+    let key = Key::Query(Address::new(id(30), LATEST_QUERY));
+    let stored = StoredValue::<Measurement>::Query(query.clone());
+    let bytes = native_codec::encode_for::<Measurement>(&key, &stored).unwrap();
+    assert_eq!(
+        native_codec::decode_for::<Measurement>(&key, &bytes).unwrap(),
+        stored
+    );
+    for wrong in [
+        json!("5"),
+        json!([id(20), 17, "10", 7, "5"]),
+        json!({"identity":id(20),"member_slot":17,"time":"10","unit":7,"value":"5","extra":0}),
+    ] {
+        assert!(serde_json::from_value::<QueryResult>(wrong).is_err());
+    }
+    for result in [
+        QueryResult::Summary(summary),
+        QueryResult::Selection(Some(SelectedObservation { time: 11, ..value })),
+        QueryResult::Selection(Some(SelectedObservation {
+            member_slot: 0,
+            ..value
+        })),
+    ] {
+        let mut invalid = query.clone();
+        invalid.result = result;
+        assert!(Statistics::validate_query(&invalid).is_err());
+    }
+    let model = Prepared::<Measurement>::load().unwrap();
+    assert!(
+        !model.contract(101).unwrap().roots[0]
+            .reads
+            .contains(&"latest")
+    );
+    assert!(!Statistics::supports_quote(STATISTICS));
+    for (phase, channel) in [("calculate", "rate"), ("validate", "observation")] {
+        let mut declarations = Measurement::declarations().unwrap();
+        let query = &mut declarations
+            .iter_mut()
+            .find(|c| c.code == LATEST)
+            .unwrap()
+            .queries[0];
+        query.phase = phase;
+        query.channel = channel;
         assert!(Prepared::<Measurement>::prepare(declarations).is_err());
     }
 }

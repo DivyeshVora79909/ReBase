@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     binding::Binding,
-    index::{IndexCode, KeyRange, NativeIndex},
+    index::{IndexCode, KeyRange, NativeIndex, Selected},
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Error, Result},
     time_range::{TimeBound, TimeRange},
@@ -504,20 +504,42 @@ pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
             "latest requires a quote root",
         ));
     }
+    last_at_or_before(ws, owner, at)?
+        .map(|selected| {
+            Ok((
+                selected.member.id,
+                B::Index::quote_leaf(header.kind, &selected.leaf)?,
+            ))
+        })
+        .transpose()
+}
+
+/// Greatest complete (business key, UUID, member slot) at or before a time.
+/// The upper cut includes every occurrence at that time, without UUID sentinels.
+pub fn last_at_or_before<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
+    owner: Address,
+    at: i64,
+) -> Result<Option<Selected<B::Index>>> {
+    let header = root(ws, owner)?;
     let key = B::Index::time_key(header.kind, at)?;
     let (mut cursor, mut parent, mut selected) = (header.head, None, None);
     let mut seen = BTreeSet::new();
     while let Some(id) = cursor {
         if seen.len() >= 64 || !seen.insert(id) {
-            return Err(broken("cyclic or overdeep quote search"));
+            return Err(broken("cyclic or overdeep selection search"));
         }
         let n = node(ws, owner, id)?;
         if n.parent != parent || n.kind != header.kind {
-            return Err(broken("quote parent/code mismatch"));
+            return Err(broken("selection parent/code mismatch"));
         }
         parent = Some(id);
         if n.key.value <= key {
-            selected = Some((id.id, B::Index::quote_leaf(header.kind, &n.leaf)?));
+            selected = Some(Selected {
+                member: id,
+                key: n.key.value,
+                leaf: n.leaf,
+            });
             cursor = n.right;
         } else {
             cursor = n.left;

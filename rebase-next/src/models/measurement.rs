@@ -4,8 +4,8 @@ use crate::{
     causal::{PublicationValue, ReactiveBinding, Read, Resolved, ResolvedShape},
     index::{IndexCode, TimeKey},
     indexes::measurement::{
-        Dimension, MAX_COUNT, MAX_VALUE, Observation, STATISTICS, Statistics, Summary, unit_schema,
-        value_schema,
+        Dimension, MAX_COUNT, MAX_VALUE, Observation, QueryResult, STATISTICS, SelectedObservation,
+        Statistics, Summary, unit_schema, value_schema,
     },
     local::Store,
     model::{
@@ -26,6 +26,8 @@ use uuid::Uuid;
 pub struct Measurement;
 pub const REPORT: u16 = 307;
 pub const REPORT_QUERY: u16 = 31;
+pub const LATEST: u16 = 419;
+pub const LATEST_QUERY: u16 = 43;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum Input {
@@ -49,18 +51,30 @@ pub enum Input {
         #[serde(with = "decimal")]
         threshold: i128,
     },
+    LatestObservation {
+        #[serde(with = "uuid_text")]
+        instrument: Uuid,
+        #[serde(with = "decimal")]
+        at: i64,
+        unit: u16,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Derived {
-    pub count: u64,
-    #[serde(with = "optional_decimal")]
-    pub min: Option<i128>,
-    #[serde(with = "optional_decimal")]
-    pub max: Option<i128>,
-    pub unit: u16,
-    pub at_least_threshold: bool,
+#[serde(untagged, deny_unknown_fields)]
+pub enum Derived {
+    Report {
+        count: u64,
+        #[serde(with = "optional_decimal")]
+        min: Option<i128>,
+        #[serde(with = "optional_decimal")]
+        max: Option<i128>,
+        unit: u16,
+        at_least_threshold: bool,
+    },
+    Latest {
+        selection: Option<SelectedObservation>,
+    },
 }
 fn invalid(detail: &str) -> Error {
     Error::new("invalid_input", detail)
@@ -71,11 +85,12 @@ impl NativeInput for Input {
             Self::Instrument { .. } => 101,
             Self::Observation { .. } => 211,
             Self::ObservationReport { .. } => REPORT,
+            Self::LatestObservation { .. } => LATEST,
         }
     }
     fn validate(&self) -> Result<()> {
         let valid = match self {
-            Self::Instrument { unit } => *unit > 0,
+            Self::Instrument { unit } | Self::LatestObservation { unit, .. } => *unit > 0,
             Self::Observation { unit, value, .. }
             | Self::ObservationReport {
                 unit,
@@ -102,7 +117,9 @@ impl NativeInput for Input {
     }
     fn references(&self) -> Vec<(Uuid, u16, u16)> {
         match self {
-            Self::Observation { instrument, .. } | Self::ObservationReport { instrument, .. } => {
+            Self::Observation { instrument, .. }
+            | Self::ObservationReport { instrument, .. }
+            | Self::LatestObservation { instrument, .. } => {
                 vec![(*instrument, 101, 1)]
             }
             _ => vec![],
@@ -134,6 +151,12 @@ fn declarations() -> Result<Vec<Contract>> {
                 (3, "unit"),
                 (4, "threshold"),
             ],
+        ),
+        (
+            LATEST,
+            "LatestObservation",
+            json!({"instrument":uuid,"at":crate::indexes::standard::time_schema(),"unit":unit_schema()}),
+            vec![(1, "instrument"), (2, "at"), (3, "unit")],
         ),
     ];
     let mut contracts = vec![];
@@ -183,7 +206,11 @@ fn declarations() -> Result<Vec<Contract>> {
                 field: "instrument",
                 targets: vec![101],
                 optional: false,
-                direct_fields: if code == REPORT { vec!["unit"] } else { vec![] },
+                direct_fields: if matches!(code, REPORT | LATEST) {
+                    vec!["unit"]
+                } else {
+                    vec![]
+                },
                 on_delete: "reject",
                 reader: true,
             });
@@ -197,7 +224,7 @@ fn declarations() -> Result<Vec<Contract>> {
                     key: "at",
                     value: "unit,value",
                 });
-            } else {
+            } else if code == REPORT {
                 c.queries.push(QueryDeclaration {
                     slot: REPORT_QUERY,
                     through: "instrument",
@@ -230,6 +257,29 @@ fn declarations() -> Result<Vec<Contract>> {
                 });
                 c.rules
                     .push("report unit equals instrument unit; empty window threshold is false");
+            } else {
+                c.queries.push(QueryDeclaration {
+                    slot: LATEST_QUERY,
+                    through: "instrument",
+                    root_contract: 101,
+                    root_slot: 7,
+                    operation: "latest",
+                    phase: "calculate",
+                    channel: "observation",
+                    bound: "at",
+                    fallback: None,
+                });
+                c.published.push(PublishedField {
+                    code: 11,
+                    name: "selection",
+                    binding: "option<observation_selection>",
+                });
+                c.calculations.push(Calculation {
+                    name: "selection",
+                    inputs: vec![],
+                    expression: "greatest authored (time, UUID, member slot) where time <= at",
+                });
+                c.rules.push("selection unit equals instrument unit; absence retains the complete search window");
             }
         }
         contracts.push(c);
@@ -260,7 +310,10 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
         .flat_map(NativeInput::references)
         .map(|(target, _, slot)| (Key::Incoming(target), Address::new(id, slot)))
         .collect();
-    if let Some(Input::ObservationReport { instrument, .. }) = input {
+    if let Some(
+        Input::ObservationReport { instrument, .. } | Input::LatestObservation { instrument, .. },
+    ) = input
+    {
         registrations.insert((Key::Direct(*instrument), Address::new(id, 1)));
     }
     registrations
@@ -271,7 +324,7 @@ impl Binding for Measurement {
     type Outcome = ();
     type Index = Statistics;
     const NAME: &'static str = "dimensioned-measurements";
-    const BEHAVIOR: &'static str = "dimensioned-measurements-2";
+    const BEHAVIOR: &'static str = "dimensioned-measurements-3";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -287,29 +340,49 @@ impl Binding for Measurement {
         }
     }
     fn valid_derived(input: &Input, derived: Option<&Derived>) -> bool {
-        let Input::ObservationReport {
-            unit, threshold, ..
-        } = input
-        else {
-            return derived.is_none();
-        };
-        let Some(value) = derived else { return false };
-        value.unit == *unit
-            && value.count <= MAX_COUNT
-            && if value.count == 0 {
-                value.min.is_none() && value.max.is_none() && !value.at_least_threshold
-            } else {
-                matches!((value.min, value.max), (Some(min), Some(max))
-                    if -MAX_VALUE <= min && min <= max && max <= MAX_VALUE
-                    && (value.count != 1 || min == max)
-                    && value.at_least_threshold == (min >= *threshold))
+        match (input, derived) {
+            (
+                Input::ObservationReport {
+                    unit: expected_unit,
+                    threshold,
+                    ..
+                },
+                Some(Derived::Report {
+                    count,
+                    min,
+                    max,
+                    unit,
+                    at_least_threshold,
+                }),
+            ) => {
+                unit == expected_unit
+                    && *count <= MAX_COUNT
+                    && if *count == 0 {
+                        min.is_none() && max.is_none() && !at_least_threshold
+                    } else {
+                        matches!((*min, *max), (Some(min), Some(max))
+                            if -MAX_VALUE <= min && min <= max && max <= MAX_VALUE
+                            && (*count != 1 || min == max)
+                            && *at_least_threshold == (min >= *threshold))
+                    }
             }
+            (Input::LatestObservation { at, unit, .. }, Some(Derived::Latest { selection })) => {
+                selection.as_ref().is_none_or(|value| {
+                    value.valid()
+                        && value.member_slot == 17
+                        && value.time <= *at
+                        && value.unit == *unit
+                })
+            }
+            (Input::Instrument { .. } | Input::Observation { .. }, None) => true,
+            _ => false,
+        }
     }
     fn published_shape(code: u16) -> Value {
-        if code == REPORT {
-            json!({"count":0,"min":null,"max":null,"unit":1,"at_least_threshold":false})
-        } else {
-            Value::Null
+        match code {
+            REPORT => json!({"count":0,"min":null,"max":null,"unit":1,"at_least_threshold":false}),
+            LATEST => json!({"selection":null}),
+            _ => Value::Null,
         }
     }
     fn settle_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -383,10 +456,14 @@ impl Binding for Measurement {
     fn fixture_catalog() -> Value {
         json!([
             {"name":"measurements","description":"Signed equal-time unit-7 observations and an empty instrument"},
-            {"name":"observation-report","description":"Typed count/extrema/threshold over authored observations in [0,20)"}
+            {"name":"observation-report","description":"Typed count/extrema/threshold over authored observations in [0,20)"},
+            {"name":"latest-observation","description":"Greatest complete authored observation at/before a date, including equal-time ties"}
         ])
     }
     fn fixture_plan(model: &Prepared<Self>, name: &str, namespace: Uuid) -> Result<Value> {
+        if name == "latest-observation" {
+            return selection_fixture(model, namespace);
+        }
         if name == "observation-report" {
             return report_fixture(model, namespace);
         }
@@ -422,7 +499,7 @@ impl Binding for Measurement {
 }
 
 impl ReactiveBinding for Measurement {
-    type Parameters = (u16, i128);
+    type Parameters = ();
     type Publication = ();
 
     fn resolve<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -431,71 +508,97 @@ impl ReactiveBinding for Measurement {
         _id: Uuid,
         record: &ModelRecord<Self>,
     ) -> Result<Resolved<Self::Parameters>> {
-        let Input::ObservationReport {
-            instrument,
-            range,
-            unit,
-            threshold,
-        } = record.input
-        else {
-            return Err(Error::new("model", "unsupported measurement calculator"));
+        let (instrument, range, unit, slot) = match record.input {
+            Input::ObservationReport {
+                instrument,
+                range,
+                unit,
+                ..
+            } => (instrument, range, unit, REPORT_QUERY),
+            Input::LatestObservation {
+                instrument,
+                at,
+                unit,
+            } => (instrument, TimeRange::through(at), unit, LATEST_QUERY),
+            _ => return Err(Error::new("model", "unsupported measurement calculator")),
         };
         ws.charge("dependency", 1)?;
-        let parent = ws
-            .record(instrument)?
-            .ok_or_else(|| Error::new("unavailable_reference", "report instrument missing"))?;
+        let parent = ws.record(instrument)?.ok_or_else(|| {
+            Error::new(
+                "unavailable_reference",
+                "measurement consumer instrument missing",
+            )
+        })?;
         if parent.tenant != context.tenant || !matches!(parent.input, Input::Instrument { .. }) {
             return Err(Error::new(
                 "unavailable_reference",
-                "report instrument type or tenant",
+                "measurement consumer instrument type or tenant",
             ));
         }
         if parent.input != (Input::Instrument { unit }) {
             return Err(Error::new(
                 "invariant",
-                "report unit must equal the instrument unit",
+                "measurement consumer unit must equal the instrument unit",
             ));
         }
         Ok(Resolved {
             shape: ResolvedShape {
                 reads: vec![Read {
-                    slot: REPORT_QUERY,
+                    slot,
                     root: Address::new(instrument, 7),
                     range,
                     validate: false,
                 }],
                 ..Default::default()
             },
-            parameters: (unit, threshold),
+            parameters: (),
         })
     }
 
     fn evaluate(
         _id: Uuid,
-        _record: &ModelRecord<Self>,
+        record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
-        &(unit, threshold): &Self::Parameters,
+        _parameters: &Self::Parameters,
         _publications: &[PublicationValue<Self::Publication>],
-        values: &[Summary],
+        values: &[QueryResult],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
-        let [summary] = values else {
-            return Err(Error::new("model", "report requires one statistics result"));
+        let derived = match (&record.input, values) {
+            (
+                Input::ObservationReport {
+                    unit, threshold, ..
+                },
+                [QueryResult::Summary(summary)],
+            ) => {
+                if summary.dimension != Dimension::Empty
+                    && summary.dimension != (Dimension::Unit { code: *unit })
+                {
+                    return Err(Error::new("invariant", "report observation dimensions"));
+                }
+                Derived::Report {
+                    count: summary.count,
+                    min: summary.min,
+                    max: summary.max,
+                    unit: *unit,
+                    at_least_threshold: summary.min.is_some_and(|min| min >= *threshold),
+                }
+            }
+            (Input::LatestObservation { unit, .. }, [QueryResult::Selection(selection)]) => {
+                if selection.as_ref().is_some_and(|value| value.unit != *unit) {
+                    return Err(Error::new("invariant", "selected observation dimension"));
+                }
+                Derived::Latest {
+                    selection: *selection,
+                }
+            }
+            _ => {
+                return Err(Error::new(
+                    "model",
+                    "measurement formula/query variant mismatch",
+                ));
+            }
         };
-        if summary.dimension != Dimension::Empty
-            && summary.dimension != (Dimension::Unit { code: unit })
-        {
-            return Err(Error::new("invariant", "report observation dimensions"));
-        }
-        Ok((
-            Derived {
-                count: summary.count,
-                min: summary.min,
-                max: summary.max,
-                unit,
-                at_least_threshold: summary.min.is_some_and(|min| min >= threshold),
-            },
-            BTreeMap::new(),
-        ))
+        Ok((derived, BTreeMap::new()))
     }
 }
 
@@ -527,6 +630,48 @@ fn report_fixture(model: &Prepared<Measurement>, namespace: Uuid) -> Result<Valu
         json!({"model":model.identity(),"fixture":{"name":"observation-report","namespace":namespace,"ids":ids,
         "expected":{"count":2,"min":"5","max":"12","unit":7,"at_least_threshold":true}},
         "commands":commands,"returning":[ids["report"]]}),
+    )
+}
+
+fn selection_fixture(model: &Prepared<Measurement>, namespace: Uuid) -> Result<Value> {
+    let ids: BTreeMap<_, _> = [
+        "instrument",
+        "other",
+        "early",
+        "tie_a",
+        "tie_b",
+        "report",
+        "latest",
+    ]
+    .into_iter()
+    .map(|name| {
+        (
+            name,
+            Uuid::new_v5(&namespace, format!("latest-observation/{name}").as_bytes()),
+        )
+    })
+    .collect();
+    let winner = ids["tie_a"].max(ids["tie_b"]);
+    let commands = json!([
+        {"op":"create","id":ids["instrument"],"contract":101,"fields":{"unit":7}},
+        {"op":"create","id":ids["other"],"contract":101,"fields":{"unit":7}},
+        {"op":"create","id":ids["early"],"contract":211,"fields":{"instrument":ids["instrument"],"at":"0","unit":7,"value":"5"}},
+        {"op":"create","id":ids["tie_a"],"contract":211,"fields":{"instrument":ids["instrument"],"at":"10","unit":7,"value":"12"}},
+        {"op":"create","id":ids["tie_b"],"contract":211,"fields":{"instrument":ids["instrument"],"at":"10","unit":7,"value":"12"}},
+        {"op":"create","id":ids["report"],"contract":REPORT,"fields":{"instrument":ids["instrument"],"range":{"lower":null,"upper":null},"unit":7,"threshold":"5"}},
+        {"op":"create","id":ids["latest"],"contract":LATEST,"fields":{"instrument":ids["instrument"],"at":"10","unit":7}}
+    ]);
+    for command in commands.as_array().expect("fixture commands") {
+        model.validate(
+            command["contract"].as_u64().expect("fixture code") as u16,
+            &command["fields"],
+        )?;
+    }
+    Ok(
+        json!({"model":model.identity(),"fixture":{"name":"latest-observation","namespace":namespace,"ids":ids,
+        "expected":{"selection":{"identity":winner,"member_slot":17,"time":"10","unit":7,"value":"12"},
+            "report":{"count":3,"min":"5","max":"12","unit":7,"at_least_threshold":true}}},
+        "commands":commands,"returning":[ids["latest"],ids["report"]]}),
     )
 }
 
@@ -568,7 +713,10 @@ fn check(store: &Store<Measurement>) -> Result<Value> {
     let mut routes = snapshot.routes.clone();
     let mut queries = BTreeMap::new();
     for (&id, record) in &snapshot.records {
-        if !matches!(record.input, Input::ObservationReport { .. }) {
+        if !matches!(
+            record.input,
+            Input::ObservationReport { .. } | Input::LatestObservation { .. }
+        ) {
             require(
                 record.derived.is_none(),
                 "nonreport measurement has derived fields",
@@ -599,74 +747,116 @@ fn check(store: &Store<Measurement>) -> Result<Value> {
         }
     }
     for (&id, record) in &snapshot.records {
-        if let Input::ObservationReport {
-            instrument,
-            range,
-            unit,
-            threshold,
-        } = record.input
-        {
-            require(
-                snapshot
-                    .records
-                    .get(&instrument)
-                    .is_some_and(|parent| parent.input == (Input::Instrument { unit })),
-                "source report dimension differs from instrument",
-            )?;
-            // Literal authored membership scan; no writer range predicate,
-            // maintained summary, evaluator or cached query supplies expectations.
-            let leaves: Vec<_> = members
-                .values()
-                .filter_map(|(root, key, leaf)| {
-                    let lower = match range.lower {
-                        TimeBound::Unbounded => true,
-                        TimeBound::Included(at) => key.get() >= at,
-                        TimeBound::Excluded(at) => key.get() > at,
-                    };
-                    let upper = match range.upper {
-                        TimeBound::Unbounded => true,
-                        TimeBound::Included(at) => key.get() <= at,
-                        TimeBound::Excluded(at) => key.get() < at,
-                    };
-                    (root.id == instrument && lower && upper).then_some((*key, *leaf))
-                })
-                .collect();
-            let summary = source_summary(STATISTICS, &leaves)?;
-            let expected = Derived {
-                count: leaves.len() as u64,
-                min: leaves.iter().map(|(_, leaf)| leaf.value).min(),
-                max: leaves.iter().map(|(_, leaf)| leaf.value).max(),
-                unit,
-                at_least_threshold: !leaves.is_empty()
-                    && leaves.iter().all(|(_, leaf)| leaf.value >= threshold),
-            };
-            require(
-                record.derived.as_ref() == Some(&expected),
-                "source-derived observation report",
-            )?;
-            routes
-                .entry(Key::Direct(instrument))
-                .or_default()
-                .insert(Address::new(id, 1));
-            let root = Address::new(instrument, 7);
-            let address = Address::new(id, REPORT_QUERY);
-            routes
-                .entry(Key::Subscribers(root))
-                .or_default()
-                .insert(address);
-            queries.insert(
-                address,
-                Query::<Statistics> {
-                    source: root,
-                    operation: "summary".into(),
-                    phase: "calculate".into(),
-                    channel: "statistics".into(),
+        let (instrument, unit, slot, range, operation, channel, result, expected) =
+            match record.input {
+                Input::ObservationReport {
+                    instrument,
                     range,
-                    selected: None,
-                    result: summary,
-                },
-            );
-        }
+                    unit,
+                    threshold,
+                } => {
+                    // Literal authored membership scan; no maintained cache,
+                    // evaluator or writer range predicate supplies expectations.
+                    let leaves: Vec<_> = members
+                        .values()
+                        .filter_map(|(root, key, leaf)| {
+                            let lower = match range.lower {
+                                TimeBound::Unbounded => true,
+                                TimeBound::Included(at) => key.get() >= at,
+                                TimeBound::Excluded(at) => key.get() > at,
+                            };
+                            let upper = match range.upper {
+                                TimeBound::Unbounded => true,
+                                TimeBound::Included(at) => key.get() <= at,
+                                TimeBound::Excluded(at) => key.get() < at,
+                            };
+                            (root.id == instrument && lower && upper).then_some((*key, *leaf))
+                        })
+                        .collect();
+                    let summary = source_summary(STATISTICS, &leaves)?;
+                    let expected = Derived::Report {
+                        count: leaves.len() as u64,
+                        min: leaves.iter().map(|(_, leaf)| leaf.value).min(),
+                        max: leaves.iter().map(|(_, leaf)| leaf.value).max(),
+                        unit,
+                        at_least_threshold: !leaves.is_empty()
+                            && leaves.iter().all(|(_, leaf)| leaf.value >= threshold),
+                    };
+                    (
+                        instrument,
+                        unit,
+                        REPORT_QUERY,
+                        range,
+                        "summary",
+                        "statistics",
+                        QueryResult::Summary(summary),
+                        expected,
+                    )
+                }
+                Input::LatestObservation {
+                    instrument,
+                    at,
+                    unit,
+                } => {
+                    // A plain maximum over authored occurrences, independent of
+                    // the writer's predecessor traversal and cached winning row.
+                    let selection = members
+                        .iter()
+                        .filter(|(_, (root, key, _))| root.id == instrument && key.get() <= at)
+                        .max_by_key(|(address, (_, key, _))| (key.get(), address.id, address.slot))
+                        .map(|(address, (_, key, leaf))| SelectedObservation {
+                            identity: address.id,
+                            member_slot: address.slot,
+                            time: key.get(),
+                            unit: leaf.unit,
+                            value: leaf.value,
+                        });
+                    (
+                        instrument,
+                        unit,
+                        LATEST_QUERY,
+                        TimeRange::through(at),
+                        "latest",
+                        "observation",
+                        QueryResult::Selection(selection),
+                        Derived::Latest { selection },
+                    )
+                }
+                _ => continue,
+            };
+        require(
+            snapshot
+                .records
+                .get(&instrument)
+                .is_some_and(|parent| parent.input == (Input::Instrument { unit })),
+            "source measurement consumer dimension differs from instrument",
+        )?;
+        require(
+            record.derived.as_ref() == Some(&expected),
+            "source-derived measurement consumer",
+        )?;
+        routes
+            .entry(Key::Direct(instrument))
+            .or_default()
+            .insert(Address::new(id, 1));
+        let root = Address::new(instrument, 7);
+        let address = Address::new(id, slot);
+        routes
+            .entry(Key::Subscribers(root))
+            .or_default()
+            .insert(address);
+        queries.insert(
+            address,
+            Query::<Statistics> {
+                source: root,
+                operation: operation.into(),
+                phase: "calculate".into(),
+                channel: channel.into(),
+                range,
+                selected: None,
+                result,
+            },
+        );
     }
     snapshot.finish_native(
         snapshot.expected_keys.clone(),

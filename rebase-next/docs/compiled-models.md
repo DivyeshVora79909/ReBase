@@ -185,10 +185,10 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.13.0 source uses store 9 /native codec 6 /effect codec 3 /API 3, calculation behavior
+The 0.14.0 source uses store 9 /native codec 6 /effect codec 3 /API 3, calculation behavior
 `rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
-and measurement behavior `dimensioned-measurements-2`. Invoicing uses
-`invoice-assessments-5` for IssueShare. Only measurement's identity changes from 0.12.0;
+and measurement behavior `dimensioned-measurements-3`. Invoicing uses
+`invoice-assessments-5` for IssueShare. Only measurement's identity changes from 0.13.0;
 effect-demo owns `effect-demo-ingress-3`. Checked inbox events and explicit
 worker modes require new format-9 stores. There is no implicit migration from earlier stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
@@ -227,7 +227,9 @@ for the concrete authoring contract and independent source-check obligations.
 `ReactiveBinding` receives `&[Index::QueryResult]` through the shared scheduler.
 Standard retains scalar `i128` results and the fast financial prefix path.
 Measurement's output-free ObservationReport consumes a native Summary, declaring
-its Instrument, exact range and direct authored-unit dependency. Its source
+its Instrument, exact range and direct authored-unit dependency. LatestObservation
+consumes an optional native selection from all authored observations at or before
+its exact cutoff, including a persistent dependency when absent. Its source
 checker reconstructs queries, routes and derived values without writer caches.
 A custom root's `sum` field does not grant financial query semantics. Managed
 output construction remains an explicit financial capability; authored-only

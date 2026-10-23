@@ -7,8 +7,8 @@ authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
 scripts. Calculation, equipment reservation and bounded invoicing share the engine,
 authority and tools. All implementation and dependencies stay inside this directory.
-This checkout's package source is 0.13.0 and includes native index families,
-reactive dimensioned reports, declared published-parent values and bounded fake-provider
+This checkout's package source is 0.14.0 and includes native index families,
+reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
 work with signed events and reconciliation after restore.
 The last verified deployment bundle is 0.6.0; source capabilities do not imply
 that a release bundle has passed deployment acceptance.
@@ -49,7 +49,7 @@ python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
-| Current source capability gate | [G4d-b native query consumers](research/40-native-query-consumers.md) |
+| Current source capability gate | [G4d-c authored selection](research/42-authored-selection-result.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -70,9 +70,9 @@ python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-n
 It checks source arithmetic, selective updates, fanout, rollback, replay,
 authorization, restart and verified restore through the real HTTP process.
 Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. The 0.13.0 source uses store format 9 /native codec 6 /
+reject atomically. The 0.14.0 source uses store format 9 /native codec 6 /
 effect codec 3 /API 3. Calculation, equipment, invoicing and effect-demo identities
-match 0.12.0; measurement's report behavior has a new identity. There is no implicit migration from earlier formats;
+match 0.13.0; measurement's selection behavior has a new identity. There is no implicit migration from earlier formats;
 keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with

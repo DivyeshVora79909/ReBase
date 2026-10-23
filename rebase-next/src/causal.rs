@@ -433,6 +433,9 @@ fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         ("sum", TimeBound::Unbounded, TimeBound::Unbounded) => {
             B::Index::financial_query_result(tree::prefix(ws, r.root, None)?)?
         }
+        ("latest", TimeBound::Unbounded, TimeBound::Included(at)) => {
+            B::Index::selection_result(kind, tree::last_at_or_before(ws, r.root, at)?)?
+        }
         _ => B::Index::query_result(
             kind,
             declaration.operation,
