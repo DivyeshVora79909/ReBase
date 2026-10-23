@@ -9,8 +9,10 @@ The release is suitable for bounded applications and developer harnesses within
 the limits below. General model loading, a full accounting model, external effects,
 distributed storage and a frontend remain separate capability gates.
 
-The [G3d/G3e checkpoint](../research/28-settlement-refund-gate.md) owns settlement
-and bundle acceptance. Calculation/equipment's larger population evidence remains
+The [0.6 release result](../research/29-deployment-result.md) records the verified
+bundle, exact source/artifact hashes, three-model workflows and recovery checks.
+The [G3d/G3e checkpoint](../research/28-settlement-refund-gate.md) owns their gate.
+Calculation/equipment's larger population evidence remains
 in the [G2 result](../research/24-population-scaling-result.md). Invoicing retains
 64 public sources/256 outputs/512 retained roles.
 

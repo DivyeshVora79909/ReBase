@@ -40,7 +40,7 @@ python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Current acceptance and remaining capability gates | [Settlement and deployment checkpoints](research/28-settlement-refund-gate.md) |
+| Current acceptance and remaining capability gates | [0.6 deployment result](research/29-deployment-result.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -80,7 +80,7 @@ python3 -B tools/test_client.py -v
 ```
 
 For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[current checkpoints](research/28-settlement-refund-gate.md). The research papers
+[current release result](research/29-deployment-result.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

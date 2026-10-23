@@ -5,12 +5,20 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
+**Current release: G3d/G3e complete, 0.6.0.** Read
+[deployment acceptance](research/29-deployment-result.md) and the
+[deployment guide](docs/deployment.md). The selected goal produced a verified
+bundle in this environment, with all three models, issuer/template checks,
+crash recovery and failed-restore isolation. No follow-on implementation gate is
+active. Further capability work enters a named bounded gate; preserve earlier
+evidence and the explicit capacity/model boundaries below.
+
 The deployable bounded backend and developer-tool goal, excluding frontend, is
 complete through D6. Read [the release result](research/18-release-result.md),
 [deployment guide](docs/deployment.md) and [checkpoints](research/17-deployable-backend.md).
 G1 accepts reusable compiled model execution; G2 subsequently accepts 0.4.0
 population and indexed reactive selection. Read
-[the current result](research/24-population-scaling-result.md) and
+[the population result](research/24-population-scaling-result.md) and
 [model authoring](docs/compiled-models.md). Both bundled models use the shared
 typed mutation, causal, storage, authority and tooling paths. The enforced
 envelope is 4,096 public sources /8,192 active outputs /16,384 retained roles;
@@ -29,7 +37,7 @@ G3a accepts [exact values](research/25-exact-values-gate.md), and G3b accepts
 source-derived native acceptance and rollback checks. G3c accepts
 [bounded invoicing](research/27-invoicing-gate.md), and G3d accepts
 [settlement and refund](research/28-settlement-refund-gate.md) on that binding.
-Continue with G3e: a verified 0.6 deployment bundle in this environment, using
+G3e accepts a verified 0.6 deployment bundle in this environment, using
 copied sources/tools and all three real HTTP workflows with recovery.
 Existing calculation/equipment bindings and
 persisted formats are unchanged; parameters do not add hidden reads,

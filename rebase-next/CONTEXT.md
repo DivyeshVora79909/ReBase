@@ -1,39 +1,50 @@
 # Compact context — 2026-10-23
 
-**Active goal: G3e, verify an end-to-end deployment bundle in this environment.**
-The user selected this destination; no external host or frontend is in scope.
-[G3d/G3e checkpoints](research/28-settlement-refund-gate.md) own the continuation.
-**G3d accepted:** package 0.6 implements Treasury, Payment, linked Refund,
-complete-time invoice balance and gross directional claims through explicit
-memberships. [Evidence](research/evidence/2026-10-23-g3d-settlement.json) records
-76 debug/optimized Rust tests, 18 Python controls, all 116 independent native/local
-cases and 111 HTTP mutations /340 commands (75 commits, 36 complete rollbacks).
-The resumed session reviewed the preserved changes on `53ff9e7`, pulled safely,
-and reran formatting, Clippy, optimized tests, Python controls and compatibility.
-The rebuilt binary matches the retained final HTTP/native evidence. The clean
-G3c store rejects with physical bytes unchanged; compatible binary/store remain
-under `target/g3c-retained-53ff9e7/`. Crashed files can require redb recovery first.
-New referenced parents precede children; deleted calculation producer UUIDs stay
-reserved. Those existing API constraints are tested and documented.
-G3d is committed and published as `54b1249`. The shell has no HTTPS Git credentials;
-the authenticated GitHub connector published the exact checked tree and updated
-`main` against its expected parent. Local `main` was aligned only after fetching
-and verifying identical trees; the original local commit remains at
-`refs/codex/checkpoints/g3d-before-connector`.
-**G3e build checkpoint verified:** `tools/package.py` exports committed sources outside Git,
-builds with the locked dependencies and reusable Cargo cache, and records exact
-source/model/platform identities in a normalized archive with checksums. The
-deployment guide now covers extracted three-model execution and host installation.
-[Packaging evidence](research/evidence/2026-10-23-g3e-package.json) proves exact
-Git source inventory, all 157 trial checksums, changed/missing-file rejection and
-a byte-identical G3d executable built outside Git.
-**Exact next action:** commit/publish the packaging tool/docs, then
-build that committed snapshot. Check extracted checksums and run the packaged
-calculation workflow (`--writes 0`), both 64-source capacity/recovery workflows,
-and invoicing settlement/recovery. Verify fresh issuer/template setup and failed
-restore isolation; record the release artifacts, platform and remaining limits.
-Commit/publish G3e acceptance and mark the deployment goal complete. No external
-host installation is required, and accepted G1/G2 populations need no repeat run.
+**Goal complete: G3d settlement/refund and G3e deployment bundle, 0.6.0.**
+The user selected a verified bundle in this environment. The
+[release result](research/29-deployment-result.md) and
+[evidence](research/evidence/2026-10-23-g3e-deployment.json) own current acceptance.
+No external host installation or frontend was in scope.
+
+**Deliverable:** `target/g3e-release/rebase-next-0.6.0-linux-x86_64.tar.gz`,
+7,726,619 bytes; SHA-256
+`e328c9da75eefaa4678f760e86707422a1b36a5bec5dc5e34231f23209c560f9`.
+It pins published source commit `305a7b8`; final acceptance is recorded afterward.
+Two exported-source builds outside Git produced identical archives/manifests and
+the G3d executable. All 157 source blobs and 159 payload checksums match; changed
+and missing file controls reject. The bundle includes source/tools/templates,
+with Linux x86_64/glibc 2.38+ requirements recorded in `BUNDLE.json`.
+
+**G3e verified:** extracted calculation fixture/replay/archive workflow, both
+64-source calculation/equipment arithmetic/rollback/crash/restore workflows,
+111 invoicing HTTP mutations /340 commands (75 commits, 36 complete rollbacks),
+18 Python controls, fresh issuer/template setup for all three models and nine
+failed-restore controls. Restored template services return the original values
+and receipts. Final source checksums pass and all owned servers are stopped.
+`target/g3e-release/extracted.json` locates the retained private disposable stores;
+reports/logs are preserved beside the archive.
+
+**G3d published as `54b1249`:** Treasury, Payment, linked Refund, complete-time
+invoice balance and gross directional claims. [Native evidence](research/evidence/2026-10-23-g3d-settlement.json)
+records 76 debug/optimized Rust tests, 116 independent native/local cases and clean
+formatting/Clippy. The G3c store rejects with physical bytes unchanged; its matching
+binary/store remain under `target/g3c-retained-53ff9e7/`. Crashed files can require
+allocator recovery first. New referenced parents precede children; deleted
+calculation producer UUIDs remain reserved. Calculation/equipment identities and
+store/codec 4 are unchanged; invoicing behavior is `invoice-assessments-2`.
+
+**Publication:** packaging is published as `305a7b8`. HTTPS Git fetch works but
+this shell has no push credentials. The authenticated GitHub connector can create
+the verified tree/commit and update `main` against its expected parent. Compare
+remote/local tree identities before aligning local `main`; local pre-connector
+commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
+
+**Exact next action:** use the [deployment commands](docs/deployment.md) to extract,
+check and run a new instance. No follow-on implementation gate is active. New
+capability work must enter a named bounded gate; full accounting, rational FX,
+external effects, distributed adapters, larger invoicing populations and frontend
+remain unaccepted. Do not repeat accepted stages or treat the bundle as a general
+production-capacity certification.
 
 **D1–D6, G1 and G2 complete: reusable compiled bounded backend and developer tools; no frontend.**
 **G3a accepted: exact values**, [gate/result](research/25-exact-values-gate.md).

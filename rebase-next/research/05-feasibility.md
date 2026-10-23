@@ -1,5 +1,13 @@
 # Rust feasibility and stop boundary
 
+**G3e accepted, October 23:** the [0.6 deployment bundle](29-deployment-result.md)
+builds from exported sources outside Git and runs all three compiled models with
+the extracted tools. Two builds produce identical archive/executable bytes on
+this host; all 159 payload checksums pass. Authenticated arithmetic, rollback,
+replay, crash/restore, fresh issuer/template setup and nine rejected restores
+pass. The selected local bundle goal is complete; deployment limits and future
+capability gates remain explicit in the result.
+
 **G3d accepted, October 23:** [settlement and linked refunds](28-settlement-refund-gate.md)
 extend the same invoicing binding with explicit cash memberships, per-payment
 refund capacity and complete-time balance/claim histories. All 76 Rust tests,

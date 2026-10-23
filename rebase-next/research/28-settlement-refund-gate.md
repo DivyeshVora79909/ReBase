@@ -1,6 +1,7 @@
 # G3d: settlement, linked refunds and directional claims
 
-**G3d accepted; G3e active, 2026-10-23.** This extends the accepted
+**G3d/G3e complete, 2026-10-23.** [Deployment acceptance](29-deployment-result.md)
+records the verified final bundle and continuation boundary. This extends the accepted
 [G3c](27-invoicing-gate.md) binding. The user has chosen this environment and a verified deployment bundle
 as the end-to-end destination. Work remains in `rebase-next/`, on `main`, with
 no frontend or external host installation.
@@ -11,7 +12,8 @@ no frontend or external host installation.
    fixtures and authenticated HTTP acceptance below; committed/published as `54b1249`.
 2. **G3e:** package the supported backend and tools, verify the extracted bundle
    through all three models and recovery, record platform/identity/limits and
-   exact deployment commands; commit and push the shared release continuation.
+   exact deployment commands; build checkpoint `305a7b8` and final release
+   acceptance complete this gate.
 
 This goal deploys a bounded application on the existing embedded backend. It
 does not silently add a distributed adapter, effects, a full accounting port,
@@ -140,7 +142,7 @@ the evidence: tests initially assumed arbitrary create ordering and reusable
 retired producer UUIDs; the first compatibility probe exposed writable redb
 maintenance changes before the read-only identity check was added.
 
-**Next: G3e.** Package binary/source/tools/templates with checksums and platform
+**Continuation at G3d acceptance: G3e.** Package binary/source/tools/templates with checksums and platform
 requirements, verify an extracted copy through all three models and recovery,
 then publish the release result and exact deployment commands. This checkpoint
 does not establish larger invoicing populations, full accounting parity,
@@ -164,9 +166,10 @@ excluded. The first trial caught an empty archive caused by invoking Git from
 the package subdirectory; exporting from the repository root fixed it, and the
 successful trial checks every source blob independently.
 
-This verifies the packaging tool against the already committed G3d source. After
-committing/publishing the tool and updated deployment instructions, build that
-new snapshot so the final bundle contains them too. Then verify the extracted
-calculation workflow, both 64-source model/recovery probes, invoicing settlement,
-template identity setup and failed-restore isolation. Publish final release
-evidence separately from the immutable bundle it certifies.
+The packaging tool and deployment instructions were published as `305a7b8`.
+The final bundle builds that snapshot and passes the extracted calculation
+workflow, both 64-source model/recovery probes, invoicing settlement, template
+identity setup and failed-restore isolation. Two builds produce identical bytes;
+all 159 final payload checksums pass. [Final acceptance](29-deployment-result.md)
+and its evidence are published separately from the immutable bundle they certify.
+The selected goal is complete; no follow-on implementation gate is active.
