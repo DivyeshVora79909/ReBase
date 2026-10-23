@@ -1,5 +1,14 @@
 # Rust feasibility and stop boundary
 
+**Latest scope, 2026-10-23: verification before broader applications.**
+The [V1 workshop suite](43-example-verification-suite.md) is the selected next
+goal, prepared through documentation only. It reuses the accepted engine and
+small non-accounting examples to explain commands and compare independent source
+expectations, internal invariants, bounded exploration, failures and replay.
+V1 has no implementation or acceptance evidence yet. G6 accounting, G7 storage,
+G8 release expansion and frontend stay deferred. This supersedes the earlier
+stop only for the verification preparation; historical results below stay dated.
+
 **G4d-b/c complete; requested stopping point, October 23:**
 [Native reports](41-native-query-consumer-result.md) and
 [authored selection](42-authored-selection-result.md) use typed family-owned
@@ -8,8 +17,8 @@ codec 6 /effect codec 3 /API 3; only measurement's model identity changes from
 0.13. Twenty-six selected Rust controls (including 27 corruption cases), the
 22-mutation optimized HTTP workflow, report wire preservation and five-model
 compatibility controls pass. G4 and G5 are accepted within their declared bounds.
-The user explicitly requested stopping after G4d-c and closeout through G5.
-G6, G7 and G8 remain deferred; do not prepare or implement them in this run.
+The user then requested stopping after G4d-c and closeout through G5.
+The later V1 preparation above is now selected; G6, G7 and G8 remain deferred.
 
 **G5 complete for the bounded fake adapter, October 23:**
 [G5c ingress/recovery](39-ingress-recovery-implementation.md) adds exact signed

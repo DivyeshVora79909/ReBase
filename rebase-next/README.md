@@ -5,8 +5,9 @@ One Rust executable provides exact connected calculations, private outputs,
 ordered aggregates and historical invariants, transactional DAG authority,
 authenticated JSON-RPC, replay receipts and verified storage recovery. A small
 stateless Python client and model-driven fixtures make it directly usable from
-scripts. Calculation, equipment reservation and bounded invoicing share the engine,
-authority and tools. All implementation and dependencies stay inside this directory.
+scripts. Calculation, equipment reservation, sensor measurement and bounded
+external work share the engine, authority and tools. Existing bounded invoicing
+remains available. All implementation and dependencies stay inside this directory.
 This checkout's package source is 0.14.0 and includes native index families,
 reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
 work with signed events and reconciliation after restore.
@@ -27,11 +28,12 @@ saved plans and `result.json`. Use a new output directory for each run.
 Packaged releases include `bin/rebase-next`; use `--binary bin/rebase-next`
 to run the harness without building Rust locally. The [deployment guide](docs/deployment.md#build-and-verify-a-release-bundle)
 shows how to build a committed source bundle and verify its extracted tools.
-For the paid/refunded invoicing workflow in an extracted bundle:
+For an existing non-accounting sensor-report and selection workflow using the
+current checkout's executable:
 
 ```sh
 mkdir -p target
-python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing-run
+python3 -B tools/observation_selection.py --binary target/native-slice/build/release/rebase-next --out target/my-sensor-run
 ```
 
 | Task | Guide |
@@ -50,6 +52,7 @@ python3 -B tools/invoicing.py --binary bin/rebase-next --out target/my-invoicing
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
 | Current source capability gate | [G4d-c authored selection](research/42-authored-selection-result.md) |
+| Planned self-explaining verification examples (design only) | [Example-suite plan](research/43-example-verification-suite.md) |
 
 The supported deployment is **one embedded redb process, one tenant and
 one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
@@ -60,6 +63,14 @@ frontend are separate future gates. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,
 not a claim of general production capacity.
+
+The self-explaining verification example suite is a planned developer tool, not
+an implemented command. It will walk through, check, explore and replay authored
+examples against native checks and independent source oracles. Existing
+calculation, equipment, measurement and effect-demo models remain separate
+fixtures; they do not form one cross-store transaction. Broader accounting work
+is future scope. The bounded invoice example remains an optional existing
+regression workflow.
 
 The population probe runs both models at 64, 256, 1,024 and 4,096 public sources:
 

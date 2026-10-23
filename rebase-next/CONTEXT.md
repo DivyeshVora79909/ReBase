@@ -1,9 +1,30 @@
 # Compact context — 2026-10-23
 
-**G4d-c complete; stop after G5 per the user's 2026-10-23 scope change.**
-G4a–G4d and G5a–G5c are accepted within their declared bounds. Publish this
-checkpoint on the existing `main`, then pause the broader capability goal.
-Do not prepare or implement G6, G7 or G8; resume only on a new user instruction.
+**Active next goal: V1 self-explaining non-accounting verification suite.**
+The latest user instruction selects [the workshop suite plan](research/43-example-verification-suite.md)
+before broader accounting. This is a documentation-only preparation checkpoint;
+V1 has not been implemented or executed. It supersedes the previous stop after
+G5 for this verification goal only. G6 accounting, G7 distributed storage, G8
+release expansion and frontend remain deferred. Keep their historical gate IDs.
+
+**Exact continuation:** when assigned implementation, complete V1.1–V1.5 from
+paper 43. Reuse equipment, measurement and fixed fake-provider scenarios; fill
+the non-accounting publication/quantity walkthrough gap with at most one small
+reference binding. Separate stores are not a cross-store transaction. One thin
+entry point must explain expected/observed actions and internal inventories,
+compare independent source models, explore bounded sequences and retain replayable
+minimized failures. No universal parser, new reactive engine or accounting port.
+Use one Cargo owner and justified affected checks; commit/push each tested
+checkpoint on existing `main`, and stop after V1 closeout. The copyable next-agent
+goal is at the end of paper 43. This planning turn changes no executable or model.
+
+**Accepted starting point:** G4a–G4d and G5a–G5c, source 0.14.0, remain accepted
+within their documented bounds. Existing accounting examples and dated evidence
+are retained, not removed or expanded. The latest read-only audit matched all
+77 G4d-c source hashes and ran seven selection/twelve report oracle controls;
+it did not rerun the Rust or HTTP campaigns and does not establish V1 acceptance.
+
+**Historical G4d-c closeout:**
 
 Read the [G4d-c result](research/42-authored-selection-result.md) and
 [evidence](research/evidence/2026-10-23-g4dc-authored-selection.json). Source
@@ -212,17 +233,15 @@ allocator recovery first. New referenced parents precede children; deleted
 calculation producer UUIDs remain reserved. Calculation/equipment identities and
 store/codec 4 are unchanged; invoicing behavior is `invoice-assessments-2`.
 
-**Publication:** packaging is published as `305a7b8`. HTTPS Git fetch works but
-this shell has no push credentials. The authenticated GitHub connector can create
-the verified tree/commit and update `main` against its expected parent. Compare
-remote/local tree identities before aligning local `main`; local pre-connector
-commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
+**Publication:** the historical package is published as `305a7b8`. Current Git
+HTTPS fetch/push works in this cloud workspace. Keep checkpoint commits linear
+on `main`; compare current remote state before pushing and never force unrelated
+changes. Historical connector-era references remain under `refs/codex/checkpoints/`.
 
-**Exact next action:** implement [G4d-c authored selection](research/40-native-query-consumers.md)
-from the accepted G4d-b checkpoint on `main`. Reuse family-owned query results,
-common scheduling and old/final invalidation. Preserve the report's accepted
-behavior and Standard scalar bytes. Keep source-only gate commits linear;
-G4d-c and G6-G8 remain open.
+**Exact next action:** this run finishes the [V1 preparation](research/43-example-verification-suite.md)
+and documentation checks only. The next assigned agent implements V1.1–V1.5
+using that paper's goal. G4d-c is already accepted; do not restart it. G6 broader
+accounting, G7 distribution and G8 release expansion remain deferred.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and

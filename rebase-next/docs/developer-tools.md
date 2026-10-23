@@ -7,6 +7,32 @@ The calculation and equipment compiled models use the same client and operator
 commands. Select equipment with a leading `--model equipment` on the backend
 CLI; the HTTP client learns the selected model identity from the server.
 
+## Planned verification example suite
+
+The self-explaining verification suite is a design goal, not an available tool.
+Its proposed single entry point is `tools/verify.py`, with `walk`, `check`,
+`explore` and `replay` modes. These names and the command shape are proposals;
+there is no runnable command yet. The design is recorded in the
+[example-suite plan](../research/43-example-verification-suite.md).
+
+The proposal uses authored examples to explain expected behavior, run native
+checks and compare results with independent source oracles. `walk` presents an
+example step by step, `check` verifies its expectations, `explore` varies
+selected inputs, and `replay` repeats a saved artifact. Case, seed and artifact
+selectors are proposed options. This suite would reuse the existing fixtures
+and ordinary tools; calculation, equipment, measurement and effect-demo remain
+separate models, not a cross-store transaction. Broader accounting work remains
+future scope, while the bounded invoice example stays available as an optional
+regression workflow.
+
+Proposed command shape (illustrative only; do not run):
+
+```text
+python3 -B tools/verify.py --binary <path> --out <fresh-dir> --mode walk|check|explore|replay
+```
+
+## Existing model and fixture tools
+
 The 0.6 [invoicing model](invoicing.md) uses the same tools with
 `--model invoicing` and repeatable `invoice`, `invoice-credit`, `invoice-paid`
 and `invoice-refund` fixtures. The

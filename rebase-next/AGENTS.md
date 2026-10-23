@@ -5,6 +5,16 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
+**Active preparation: V1 self-explaining example verification suite.** The latest
+user instruction selects [the workshop plan](research/43-example-verification-suite.md)
+before broader accounting. This checkpoint is documentation only: V1 is prepared,
+not implemented or accepted. The next implementation assignment is V1.1–V1.5,
+using existing small models, ordinary APIs, independent source oracles, bounded
+exploration and explicit replay. Read that plan and the top of `CONTEXT.md`.
+Keep G6 accounting, G7 distributed storage, G8 release expansion and frontend
+deferred. Do not turn this planning task into runtime implementation or rewrite
+the accepted engine/evidence. The plan includes the next agent's execution goal.
+
 **Current release: G3d/G3e complete, 0.6.0.** Read
 [deployment acceptance](research/29-deployment-result.md) and the
 [deployment guide](docs/deployment.md). The selected goal produced a verified
@@ -28,10 +38,10 @@ reconciliation-only restored activation are verified.
 accepted in source 0.13.0, with unchanged store 9 /native codec 6 /effect codec 3 /
 API 3 and measurement behavior 2. [G4d-c authored selection](research/42-authored-selection-result.md)
 is accepted in source 0.14.0, with the same shared formats and measurement
-behavior 3. G4 and G5 are complete within their declared bounds. The user
-explicitly requested stopping here on 2026-10-23: publish the checkpoint, then
-pause the broader capability goal. Do not prepare or implement G6, G7 or G8
-without a new user instruction. Preserve earlier evidence and boundaries below.
+behavior 3. G4 and G5 are complete within their declared bounds. The earlier
+stop after G5 is superseded only by the V1 verification preparation above;
+broader accounting, distribution and release expansion remain deferred.
+Preserve earlier evidence and boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
 complete through D6. Read [the release result](research/18-release-result.md),
@@ -46,8 +56,9 @@ the 200,000-unit mutation budget remains. Larger fanout can reject atomically.
 Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
-Within the user's active scope, commit and push each tested checkpoint on the
-existing `main`. The current stopping point is G4d-c; do not start another gate.
+Within the user's active scope, commit and push each verified checkpoint on the
+existing `main`. The current task stops after V1 documentation preparation;
+the next assigned implementation agent starts V1.1, not G6.
 Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
