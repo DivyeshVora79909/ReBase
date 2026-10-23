@@ -68,6 +68,52 @@ fn index_codes_and_time_keys_are_strict_native_values() {
     assert_eq!(wire["value"], i64::MAX.to_string());
 }
 
+#[test]
+fn native_query_port_preserves_standard_scalar_wire_and_rejects_statistics() {
+    use crate::native_slice::Query;
+    let key = Key::Query(Address::new(Uuid::from_u128(2), 3));
+    for (operation, channel, range, selected, result) in [
+        ("sum", "amount", TimeRange::ALL, None, i128::MIN),
+        (
+            "latest",
+            "rate",
+            TimeRange::through(17),
+            Some(Uuid::from_u128(3)),
+            7,
+        ),
+    ] {
+        let query = Query {
+            source: Address::new(Uuid::from_u128(1), 2),
+            operation: operation.into(),
+            phase: "calculate".into(),
+            channel: channel.into(),
+            range,
+            selected,
+            result,
+        };
+        let stored = StoredValue::<Calculation>::Query(query);
+        let bytes = native_codec::encode_for::<Calculation>(&key, &stored).unwrap();
+        let expected = format!(
+            "{{\"type\":\"query\",\"data\":{{\"source\":{{\"id\":\"{}\",\"slot\":2}},\"operation\":\"{operation}\",\"phase\":\"calculate\",\"channel\":\"{channel}\",\"range\":{},\"selected\":{},\"result\":\"{result}\"}}}}",
+            Uuid::from_u128(1),
+            serde_json::to_string(&range).unwrap(),
+            serde_json::to_string(&selected).unwrap()
+        );
+        assert_eq!(bytes, expected.as_bytes());
+        assert_eq!(
+            native_codec::decode_for::<Calculation>(&key, &bytes).unwrap(),
+            stored
+        );
+        let mut wrong: Value = serde_json::from_slice(&bytes).unwrap();
+        wrong["data"]["result"] =
+            json!({"count":0,"sum":"0","min":null,"max":null,"dimension":{"kind":"empty"}});
+        assert!(
+            native_codec::decode_for::<Calculation>(&key, &serde_json::to_vec(&wrong).unwrap())
+                .is_err()
+        );
+    }
+}
+
 fn financial_scan(source: &[(i64, i128)]) -> Summary {
     let (mut total, mut low, mut high) = (0, 0, 0);
     let mut boundaries = vec![];
@@ -172,6 +218,7 @@ struct Words;
 // This deliberately has no time, count, first, last or amount summary fields.
 // It is a bounded test family, not a public string/composite query API.
 impl NativeIndex for Words {
+    type QueryResult = ();
     type Key = String;
     type Leaf = String;
     type Summary = String;

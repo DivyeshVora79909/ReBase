@@ -23,8 +23,11 @@ accepted in source 0.10.0 /store 7 /native codec 6 /effect codec 1 /API 2.
 in source 0.11.0 /store 8 /native codec 6 /effect codec 2 /API 2.
 [G5c ingress/recovery](research/39-ingress-recovery-implementation.md) is accepted
 in source 0.12.0 /store 9 /native codec 6 /effect codec 3 /API 3. Signed inbox and
-reconciliation-only restored activation are verified. Continue
-[G4d-b native query consumers](research/40-native-query-consumers.md). Preserve
+reconciliation-only restored activation are verified.
+[G4d-b native query consumers](research/41-native-query-consumer-result.md) is
+accepted in source 0.13.0, with unchanged store 9 /native codec 6 /effect codec 3 /
+API 3 and measurement behavior 2. Continue
+[G4d-c authored selection](research/40-native-query-consumers.md). Preserve
 earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is

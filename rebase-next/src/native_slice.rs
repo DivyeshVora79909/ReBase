@@ -318,15 +318,19 @@ pub type Record = ModelRecord<Calculation>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Query {
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct Query<I: NativeIndex = crate::indexes::standard::Standard> {
     pub source: Address,
     pub operation: String,
     pub phase: String,
     pub channel: String,
     pub range: TimeRange,
     pub selected: Option<Uuid>,
-    #[serde(with = "decimal")]
-    pub result: i128,
+    #[serde(
+        serialize_with = "I::serialize_query_result",
+        deserialize_with = "I::deserialize_query_result"
+    )]
+    pub result: I::QueryResult,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -607,14 +611,14 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         }
         roots
     }
-    pub(crate) fn financial_impacts(&self) -> BTreeMap<Address, BTreeSet<i64>> {
+    pub(crate) fn causal_impacts(&self) -> BTreeMap<Address, BTreeSet<i64>> {
         let mut impacts = BTreeMap::<Address, BTreeSet<i64>>::new();
         for (key, entry) in &self.entries {
             if !matches!(key, Key::Node(_)) {
                 continue;
             }
             let logical = |v: &Option<StoredValue<B>>| match v {
-                Some(StoredValue::Node(n)) if B::Index::financial_leaf(n.kind, &n.leaf).is_ok() => {
+                Some(StoredValue::Node(n)) if B::Index::causal_index(n.kind) => {
                     B::Index::time(n.kind, &n.key.value)
                         .ok()
                         .map(|at| (n.root, at, n.leaf.clone()))

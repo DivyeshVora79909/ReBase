@@ -5,13 +5,13 @@
 
 use std::{fmt::Debug, ops::Bound};
 
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::{
     algebra::Summary,
     native_codec::decimal,
-    native_slice::{Error, Result},
+    native_slice::{Error, Query, Result},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -81,6 +81,7 @@ pub trait NativeIndex: Clone + Debug + Eq + Send + Sync + 'static {
     type Key: Ord + Clone + Debug + Serialize + DeserializeOwned + Send + Sync + 'static;
     type Leaf: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
     type Summary: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type QueryResult: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
 
     fn descriptors() -> Vec<IndexDescriptor>;
     fn descriptor(code: IndexCode) -> Result<IndexDescriptor> {
@@ -100,6 +101,47 @@ pub trait NativeIndex: Clone + Debug + Eq + Send + Sync + 'static {
         right: &Self::Summary,
     ) -> Result<Self::Summary>;
     fn project(code: IndexCode, read: SummaryRead, summary: &Self::Summary) -> Result<Value>;
+
+    /// A persisted formula value belongs to the compiled family. Public JSON
+    /// projections are not the native input to a calculation.
+    fn serialize_query_result<S: Serializer>(
+        value: &Self::QueryResult,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        value.serialize(serializer)
+    }
+    fn deserialize_query_result<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self::QueryResult, D::Error> {
+        Self::QueryResult::deserialize(deserializer)
+    }
+    fn supports_query(_code: IndexCode, _operation: &str, _phase: &str, _channel: &str) -> bool {
+        false
+    }
+    fn causal_query(_operation: &str) -> bool {
+        false
+    }
+    fn causal_index(_code: IndexCode) -> bool {
+        false
+    }
+    fn validate_query(_query: &Query<Self>) -> Result<()> {
+        Err(unsupported("native query result"))
+    }
+    fn query_result(
+        _code: IndexCode,
+        _operation: &str,
+        _summary: &Self::Summary,
+    ) -> Result<Self::QueryResult> {
+        Err(unsupported("native summary query"))
+    }
+    /// The financial fast prefix and terminal floor are explicit capabilities;
+    /// another family's statistics never become an amount by a numeric cast.
+    fn financial_query_result(_sum: i128) -> Result<Self::QueryResult> {
+        Err(unsupported("financial query result"))
+    }
+    fn validate_terminal(_result: &Self::QueryResult) -> Result<()> {
+        Err(unsupported("terminal query validation"))
+    }
 
     /// Optional business-key uniqueness. UUID/member-slot occurrence ties never
     /// establish business uniqueness by themselves.

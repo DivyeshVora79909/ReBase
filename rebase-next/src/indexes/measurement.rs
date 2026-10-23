@@ -139,6 +139,35 @@ impl NativeIndex for Statistics {
     type Key = TimeKey;
     type Leaf = Observation;
     type Summary = Summary;
+    type QueryResult = Summary;
+    fn supports_query(code: IndexCode, operation: &str, phase: &str, channel: &str) -> bool {
+        code == STATISTICS
+            && operation == "summary"
+            && phase == "calculate"
+            && channel == "statistics"
+    }
+    fn causal_query(operation: &str) -> bool {
+        operation == "summary"
+    }
+    fn causal_index(code: IndexCode) -> bool {
+        code == STATISTICS
+    }
+    fn validate_query(query: &crate::native_slice::Query<Self>) -> Result<()> {
+        if !Self::supports_query(STATISTICS, &query.operation, &query.phase, &query.channel)
+            || query.selected.is_some()
+            || query.result.dimension == Dimension::Mixed
+        {
+            return Err(corrupt("measurement query binding"));
+        }
+        Self::validate_summary(STATISTICS, &query.result)
+    }
+    fn query_result(code: IndexCode, operation: &str, summary: &Summary) -> Result<Summary> {
+        if !Self::supports_query(code, operation, "calculate", "statistics") {
+            return Err(corrupt("measurement summary query"));
+        }
+        Self::validate_summary(code, summary)?;
+        Ok(*summary)
+    }
     fn descriptors() -> Vec<IndexDescriptor> {
         let projected = closed(
             json!({"count":{"type":"integer","minimum":0,"maximum":MAX_COUNT},

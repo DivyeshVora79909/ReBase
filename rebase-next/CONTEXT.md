@@ -1,6 +1,37 @@
 # Compact context — 2026-10-23
 
-**G5c is accepted after published `f44339f`; next G4d-b native query consumers.**
+**G4d-b is accepted after published G5c `b65be31`; next G4d-c authored selection.**
+Read [the result](research/41-native-query-consumer-result.md) and
+[evidence](research/evidence/2026-10-23-g4db-native-query-consumers.json), then the
+[G4d-c contract](research/40-native-query-consumers.md). Source 0.13.0 uses
+family-owned `QueryResult`, typed persisted queries and common causal scheduling
+for output-free ObservationReport. Empty-window threshold is false. Store 9 /
+native codec 6 /effect codec 3 /API 3 are unchanged. Measurement behavior is 2,
+model `75c4b8643230b0a69dd6fe443d374e4e05d9c7387ab50cd7950b020b6549a418`.
+The four other model identities and their complete application tables match G5c;
+old measurement rejects without changed physical bytes.
+
+Thirty-eight selected Rust controls pass, including sixteen corruption cases.
+The single optimized HTTP run passes twenty mutations /36 commands (sixteen
+commits, four full-table rollbacks), with zero/one/eight selected reports,
+authority, replay, one process kill and restore. HTTP takes 2.143 seconds;
+the optimized build takes 296.743 seconds. First Clippy and native compilation
+pass; no source fixes or repeated builds were needed. A compatible-open physical
+byte assumption in the compatibility script was corrected to full application-
+table equality; incompatible rejection still requires physical equality.
+
+Retained binary: `target/g4db-accepted/rebase-next`, 28,634,848 bytes,
+SHA-256 `535a2cb4a0984fbbedd9fa302b96eaa64ed9bd4fdd5157e1fa1ee6bd26b3da48`.
+Reports: `target/g4db-checks.json`, `target/g4db-compatibility.json`,
+`target/g4db-reports-http/result.json`. Only the root agent works. No owned build,
+server or provider process remains. Use one Cargo owner, two jobs, incremental
+off, debug `target/native-slice/build`, optimized `target/g4b-retained-b377b21/build`.
+Preserve earlier executables and passed evidence; do not repeat their campaigns.
+G4d-c selects the greatest complete `(time, UUID, slot)` authored observation at
+or before `at`, with dependency on all `(-infinity, at]` even when absent. Do not
+silently treat statistics as quotes or claim managed-candidate readiness.
+
+**Historical G5c: published `b65be31`, following `f44339f`.**
 Read [the G5c result](research/39-ingress-recovery-implementation.md) and
 [evidence](research/evidence/2026-10-23-g5c-ingress-recovery.json), then the prepared
 [G4d-b/c gate](research/40-native-query-consumers.md). Source 0.12.0 owns store 9 /
@@ -150,11 +181,11 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement [G4d-b native query consumers](research/40-native-query-consumers.md)
-from this accepted G5c checkpoint on `main`. Add the output-free typed measurement
-report through common query persistence and scheduling; empty-window threshold
-is false. The same paper fixes the later authored-selection tie/absence policy.
-Keep source-only gate commits linear; G4d-c and G6-G8 remain open.
+**Exact next action:** implement [G4d-c authored selection](research/40-native-query-consumers.md)
+from the accepted G4d-b checkpoint on `main`. Reuse family-owned query results,
+common scheduling and old/final invalidation. Preserve the report's accepted
+behavior and Standard scalar bytes. Keep source-only gate commits linear;
+G4d-c and G6-G8 remain open.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and

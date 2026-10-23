@@ -256,7 +256,7 @@ pub enum StoredValue<B: Binding> {
     Record(ModelRecord<B>),
     Root(Root<B::Index>),
     Node(Node<B::Index>),
-    Query(Query),
+    Query(Query<B::Index>),
     Incoming(crate::routes::Header),
     Direct(crate::routes::Header),
     Subscribers(crate::routes::Header),
@@ -355,17 +355,7 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
                 && (n.left.is_none() || n.left != n.right)
         }
         (Key::Query(a), StoredValue::Query(q)) => {
-            a.slot > 0
-                && q.source.slot > 0
-                && ((q.operation == "latest"
-                    && q.phase == "calculate"
-                    && q.channel == "rate"
-                    && q.range.lower == crate::time_range::TimeBound::Unbounded
-                    && matches!(q.range.upper, crate::time_range::TimeBound::Included(_)))
-                    || (q.operation == "sum"
-                        && matches!(q.phase.as_str(), "calculate" | "validate")
-                        && q.channel == "amount"
-                        && q.selected.is_none()))
+            a.slot > 0 && q.source.slot > 0 && B::Index::validate_query(q).is_ok()
         }
         (Key::Incoming(_), StoredValue::Incoming(h))
         | (Key::Direct(_), StoredValue::Direct(h))

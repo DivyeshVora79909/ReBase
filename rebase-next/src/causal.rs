@@ -1,9 +1,9 @@
 //! Shared resolved-shape causal settlement for compiled model bindings.
 use crate::{
     binding::{Binding, NativeInput, headers},
-    index::TimeKey,
-    indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
-    model::{Prepared, PublicationSlot, Visibility},
+    index::{IndexCode, NativeIndex},
+    indexes::standard::FINANCIAL,
+    model::{Contract, Prepared, PublicationSlot, Visibility},
     mutation::{check_counts, reconcile_member},
     native_codec::{Address, Key, Role, StoredValue},
     native_slice::{Attempt, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
@@ -54,7 +54,7 @@ pub struct Resolved<P> {
     pub shape: ResolvedShape,
     pub parameters: P,
 }
-pub trait ReactiveBinding: Binding<Index = Standard> {
+pub trait ReactiveBinding: Binding {
     /// Owned parameters from this source and its declared direct authored fields.
     /// Published inputs are resolved as identities here and projected only after
     /// their parent calculation is ready. Undeclared reference chains are invalid.
@@ -83,10 +83,22 @@ pub trait ReactiveBinding: Binding<Index = Standard> {
         shape: &ResolvedShape,
         parameters: &Self::Parameters,
         publications: &[PublicationValue<Self::Publication>],
-        values: &[i128],
+        values: &[<Self::Index as NativeIndex>::QueryResult],
     ) -> Result<(Self::Derived, BTreeMap<u16, i128>)>;
-    fn output_input(producer: Uuid, emit: &Emit, amount: i128) -> Result<Self::Input>;
-    fn output_member(input: &Self::Input) -> Result<(Address, i64, Leaf)>;
+    fn output_input(_producer: Uuid, _emit: &Emit, _amount: i128) -> Result<Self::Input> {
+        Err(Error::new(
+            "model",
+            "binding has no managed financial outputs",
+        ))
+    }
+    fn output_member(
+        _input: &Self::Input,
+    ) -> Result<(Address, i64, <Self::Index as NativeIndex>::Leaf)> {
+        Err(Error::new(
+            "model",
+            "binding has no managed financial outputs",
+        ))
+    }
 }
 /// Check the authored topology before reserving identities or changing membership.
 fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
@@ -159,8 +171,14 @@ fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
             .iter()
             .find(|q| q.slot == read.slot)
             .ok_or_else(|| Error::new("model", "undeclared resolved query"))?;
-        if query.operation != "sum"
-            || query.channel != "amount"
+        let root = model
+            .contract(query.root_contract)?
+            .roots
+            .iter()
+            .find(|root| root.slot == query.root_slot)
+            .ok_or_else(|| Error::new("model", "missing query root declaration"))?;
+        if !B::Index::causal_query(query.operation)
+            || !B::Index::supports_query(root.kind, query.operation, query.phase, query.channel)
             || query.phase
                 != if read.validate {
                     "validate"
@@ -188,7 +206,14 @@ fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
                 "resolved query uses a different authored reference",
             ));
         }
-        validate_root(ws, model, context, read.root, query.root_contract)?;
+        validate_root(
+            ws,
+            model,
+            context,
+            read.root,
+            query.root_contract,
+            root.kind,
+        )?;
     }
     let mut roles = BTreeSet::new();
     for emit in &shape.emits {
@@ -212,7 +237,14 @@ fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         if member.root_slot != emit.root.slot || member.kind != FINANCIAL {
             return Err(Error::new("model", "resolved output membership mismatch"));
         }
-        validate_root(ws, model, context, emit.root, member.root_contract)?;
+        validate_root(
+            ws,
+            model,
+            context,
+            emit.root,
+            member.root_contract,
+            FINANCIAL,
+        )?;
     }
     Ok(())
 }
@@ -222,16 +254,17 @@ fn validate_root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     context: Context,
     address: Address,
     code: u16,
+    kind: IndexCode,
 ) -> Result<()> {
     if !model
         .contract(code)?
         .roots
         .iter()
-        .any(|r| r.slot == address.slot && r.kind == FINANCIAL)
+        .any(|r| r.slot == address.slot && r.kind == kind)
     {
         return Err(Error::new(
             "model",
-            "resolved root is not a declared financial root",
+            "resolved root kind differs from its declaration",
         ));
     }
     if ws
@@ -244,11 +277,8 @@ fn validate_root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         ));
     }
     match ws.get(&Key::Root(address))? {
-        Some(StoredValue::Root(root)) if root.kind == FINANCIAL => Ok(()),
-        _ => Err(Error::new(
-            "corrupt_state",
-            "resolved financial root missing",
-        )),
+        Some(StoredValue::Root(root)) if root.kind == kind => Ok(()),
+        _ => Err(Error::new("corrupt_state", "resolved native root missing")),
     }
 }
 struct Plan<B: ReactiveBinding> {
@@ -259,10 +289,10 @@ struct Plan<B: ReactiveBinding> {
     old_outputs: BTreeMap<u16, (Uuid, ModelRecord<B>)>,
     bindings: BTreeMap<u16, Uuid>,
 }
-// Quote/latest readers have their own settlement path. Explicit publication
-// consumers join sum readers and managed producers on this scheduler.
-fn uses_sum_scheduler(contract: &crate::model::Contract) -> bool {
-    contract.uses_causal_scheduler()
+// Standard quote readers retain their established settlement path. Native
+// family consumers and explicit publication consumers share this scheduler.
+fn uses_scheduler<B: Binding>(contract: &Contract) -> bool {
+    contract.uses_causal_scheduler::<B::Index>()
 }
 fn original<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
@@ -375,36 +405,50 @@ fn write_output<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     check_counts(model, meta)?;
     ws.put(Key::Record(id), new.map(StoredValue::Record))
 }
-fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding<Index = Standard>>(
+fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
+    model: &Prepared<B>,
+    contract: &Contract,
     id: Uuid,
     r: &Read,
-) -> Result<i128> {
+) -> Result<<B::Index as NativeIndex>::QueryResult> {
+    let declaration = contract
+        .queries
+        .iter()
+        .find(|query| query.slot == r.slot)
+        .ok_or_else(|| Error::new("model", "missing validated query declaration"))?;
+    let kind = model
+        .contract(declaration.root_contract)?
+        .roots
+        .iter()
+        .find(|root| root.slot == declaration.root_slot)
+        .ok_or_else(|| Error::new("model", "missing validated query root"))?
+        .kind;
     // Prefix sums need no non-invertible summary fold. Preserve their narrow
     // balanced search path; general windows retain the ordered range fold.
-    let result = match (r.range.lower, r.range.upper) {
-        (TimeBound::Unbounded, TimeBound::Excluded(at)) => tree::prefix(ws, r.root, Some(at))?,
-        (TimeBound::Unbounded, TimeBound::Unbounded) => tree::prefix(ws, r.root, None)?,
-        _ => {
-            let Aggregate::Financial(summary) = tree::range(ws, r.root, r.range)? else {
-                return Err(Error::new(
-                    "corrupt_state",
-                    "sum query on nonfinancial root",
-                ));
-            };
-            summary.sum
+    let result = match (declaration.operation, r.range.lower, r.range.upper) {
+        ("sum", TimeBound::Unbounded, TimeBound::Excluded(at)) => {
+            B::Index::financial_query_result(tree::prefix(ws, r.root, Some(at))?)?
         }
+        ("sum", TimeBound::Unbounded, TimeBound::Unbounded) => {
+            B::Index::financial_query_result(tree::prefix(ws, r.root, None)?)?
+        }
+        _ => B::Index::query_result(
+            kind,
+            declaration.operation,
+            &tree::range(ws, r.root, r.range)?,
+        )?,
     };
     ws.put(
         Key::Query(Address::new(id, r.slot)),
         Some(StoredValue::Query(Query {
             source: r.root,
-            operation: "sum".into(),
-            phase: if r.validate { "validate" } else { "calculate" }.into(),
-            channel: "amount".into(),
+            operation: declaration.operation.into(),
+            phase: declaration.phase.into(),
+            channel: declaration.channel.into(),
             range: r.range,
             selected: None,
-            result,
+            result: result.clone(),
         })),
     )?;
     Ok(result)
@@ -419,14 +463,14 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<()> {
     let mut pending = BTreeSet::new();
-    let mut roots = ws.financial_impacts();
+    let mut roots = ws.causal_impacts();
     let mut discovered_publications = BTreeSet::new();
     for c in changes {
         if c.old
             .as_ref()
             .into_iter()
             .chain(c.new.as_ref())
-            .any(|r| model.contract(r.contract).is_ok_and(uses_sum_scheduler))
+            .any(|r| model.contract(r.contract).is_ok_and(uses_scheduler::<B>))
         {
             pending.insert(c.id);
         }
@@ -512,7 +556,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             .as_ref()
             .or(old_record.as_ref())
             .ok_or_else(|| Error::new("corrupt_state", "missing subscriber"))?;
-        if !uses_sum_scheduler(model.contract(producer.contract)?) {
+        if !uses_scheduler::<B>(model.contract(producer.contract)?) {
             continue;
         }
         if model.has_publication_dependents(producer.contract) && discovered_publications.insert(id)
@@ -632,10 +676,9 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             reconcile_member(
                 ws,
                 Address::new(*id, slot),
-                Some(
-                    B::output_member(&old.input)
-                        .map(|(root, at, leaf)| (root, TimeKey::new(at), leaf))?,
-                ),
+                Some(B::output_member(&old.input).and_then(|(root, at, leaf)| {
+                    Ok((root, B::Index::time_key(FINANCIAL, at)?, leaf))
+                })?),
                 None,
             )?;
             ws.work.detached_outputs += 1;
@@ -722,7 +765,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         }
         let mut values = vec![];
         for read in p.shape.reads.iter().filter(|r| !r.validate) {
-            values.push(read_query(ws, id, read)?);
+            values.push(read_query(ws, model, contract, id, read)?);
         }
         let parameters = p
             .parameters
@@ -741,10 +784,12 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             input.validate()?;
             let fields = serde_json::to_value(&input)
                 .map_err(|error| Error::new("model", error.to_string()))?;
+            let (root, at, leaf) = B::output_member(&input)?;
             if input.contract() != e.contract
                 || model.validate(e.contract, &fields)? != input
                 || input.managed() != Some((id, e.role))
-                || B::output_member(&input)? != (e.root, e.at, Leaf::Financial(amount))
+                || (root, at) != (e.root, e.at)
+                || B::Index::financial_leaf(FINANCIAL, &leaf)? != amount
             {
                 return Err(Error::new(
                     "model",
@@ -789,10 +834,9 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
                 ws,
                 Address::new(output, member_slot(model, e.contract)?),
                 None,
-                Some(
-                    B::output_member(&new.input)
-                        .map(|(root, at, leaf)| (root, TimeKey::new(at), leaf))?,
-                ),
+                Some(B::output_member(&new.input).and_then(|(root, at, leaf)| {
+                    Ok((root, B::Index::time_key(FINANCIAL, at)?, leaf))
+                })?),
             )?;
         }
         if track_publication_readiness {
@@ -800,10 +844,10 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
         }
     }
     for (id, p) in &plans {
+        let Some(record) = &p.record else { continue };
+        let contract = model.contract(record.contract)?;
         for r in p.shape.reads.iter().filter(|r| r.validate) {
-            if read_query(ws, *id, r)? < 0 {
-                return Err(Error::new("invariant", "negative validation sum"));
-            }
+            B::Index::validate_terminal(&read_query(ws, model, contract, *id, r)?)?;
         }
     }
     Ok(())

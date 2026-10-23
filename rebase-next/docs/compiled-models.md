@@ -185,10 +185,10 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.12.0 source uses store 9 /native codec 6 /effect codec 3 /API 3, calculation behavior
+The 0.13.0 source uses store 9 /native codec 6 /effect codec 3 /API 3, calculation behavior
 `rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
-and measurement behavior `dimensioned-measurements-1`. Invoicing now uses
-`invoice-assessments-5` for IssueShare. The four existing identities match 0.11.0;
+and measurement behavior `dimensioned-measurements-2`. Invoicing uses
+`invoice-assessments-5` for IssueShare. Only measurement's identity changes from 0.12.0;
 effect-demo owns `effect-demo-ingress-3`. Checked inbox events and explicit
 worker modes require new format-9 stores. There is no implicit migration from earlier stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
@@ -217,16 +217,21 @@ plugin registry, distributed adapter, external delivery or frontend is included.
 
 ## Native index families
 
-A binding selects `type Index: NativeIndex`. Its codebook, native key/leaf/summary
+A binding selects `type Index: NativeIndex`. Its codebook, native key/leaf/summary/query-result
 types, algebra and read schemas feed the shared tree, codec and model catalog.
 Calculation, equipment and invoicing select `indexes::standard::Standard`;
 measurement selects its independent statistics family. Balancing, point storage,
 authority and receipts remain shared. Read [native indexes](native-indexes.md)
 for the concrete authoring contract and independent source-check obligations.
 
-The current `ReactiveBinding` scalar scheduler explicitly requires `Standard`.
-A custom root's `sum` field does not grant financial query semantics. Rich typed
-reactive results and alternate family scheduler adapters remain a later gate.
+`ReactiveBinding` receives `&[Index::QueryResult]` through the shared scheduler.
+Standard retains scalar `i128` results and the fast financial prefix path.
+Measurement's output-free ObservationReport consumes a native Summary, declaring
+its Instrument, exact range and direct authored-unit dependency. Its source
+checker reconstructs queries, routes and derived values without writer caches.
+A custom root's `sum` field does not grant financial query semantics. Managed
+output construction remains an explicit financial capability; authored-only
+statistics consumption does not establish generic managed-emission readiness.
 
 
 ## Typed external results

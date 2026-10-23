@@ -1,6 +1,9 @@
 # G4d-b/c: native statistics and authored selection consumers
 
-**Prepared during G5c final verification, 2026-10-23; not implemented or accepted.**
+**G4d-b accepted in source 0.13.0, 2026-10-23; G4d-c prepared next.**
+The [result](41-native-query-consumer-result.md) and
+[evidence](evidence/2026-10-23-g4db-native-query-consumers.json) record the typed
+report implementation, 38 Rust controls and optimized twenty-mutation HTTP run.
 The [capability program](30-capability-program.md) and the
 [published-value gate](36-value-dependencies-gate.md) retain the broader scope.
 Continue from the accepted G5c commit on `main`, preserving its executable and
@@ -33,7 +36,7 @@ Only authored Observation members enter this gate. They are final after ordinary
 staging. Managed statistical emissions, dependencies on a selected record's
 published fields and winner-dependent topology need separate readiness proofs.
 
-## Actual shared seams
+## Starting shared seams at G5c
 
 `NativeIndex` already owns typed keys, leaves and summaries. Its `project`
 method returns JSON for public root reads; that wire projection is not an
@@ -49,7 +52,7 @@ a dynamic field-path registry or create a second model-owned reactive loop.
 The common causal orchestration should schedule the new output-free consumer;
 financial emission/prefix operations must remain explicit capabilities.
 
-The prepared query declaration and persisted query identity must bind the
+The query declaration and persisted query identity must bind the
 source/slot, root/operation, exact bounds and native result contract. Decode,
 validation, complete observation, independent inventory and restore must use
 that same compiled type. Equal results retain query identity and registration.

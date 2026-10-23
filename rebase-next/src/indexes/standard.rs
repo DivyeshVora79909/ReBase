@@ -1,13 +1,14 @@
 //! Reusable financial-history and quote values for compiled native models.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Value, json};
 
 use crate::{
     algebra::Summary,
     index::{IndexCode, IndexDescriptor, NativeIndex, SummaryRead, TimeKey},
     native_codec::{decimal, optional_decimal, summary},
-    native_slice::{Error, Result},
+    native_slice::{Error, Query, Result},
+    time_range::TimeBound,
 };
 
 pub const FINANCIAL: IndexCode = IndexCode::new(1).expect("nonzero index code");
@@ -148,6 +149,60 @@ impl NativeIndex for Standard {
     type Key = TimeKey;
     type Leaf = Leaf;
     type Summary = Aggregate;
+    type QueryResult = i128;
+
+    fn serialize_query_result<S: Serializer>(
+        value: &i128,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        decimal::serialize(value, serializer)
+    }
+    fn deserialize_query_result<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<i128, D::Error> {
+        decimal::deserialize(deserializer)
+    }
+    fn supports_query(code: IndexCode, operation: &str, phase: &str, channel: &str) -> bool {
+        matches!(
+            (code, operation, phase, channel),
+            (FINANCIAL, "sum", "calculate" | "validate", "amount")
+                | (QUOTE, "latest", "calculate", "rate")
+        )
+    }
+    fn causal_query(operation: &str) -> bool {
+        operation == "sum"
+    }
+    fn causal_index(code: IndexCode) -> bool {
+        code == FINANCIAL
+    }
+    fn validate_query(query: &Query<Self>) -> Result<()> {
+        if (Self::supports_query(QUOTE, &query.operation, &query.phase, &query.channel)
+            && query.range.lower == TimeBound::Unbounded
+            && matches!(query.range.upper, TimeBound::Included(_)))
+            || (Self::supports_query(FINANCIAL, &query.operation, &query.phase, &query.channel)
+                && query.selected.is_none())
+        {
+            Ok(())
+        } else {
+            Err(broken("standard query binding"))
+        }
+    }
+    fn query_result(code: IndexCode, operation: &str, summary: &Aggregate) -> Result<i128> {
+        if operation != "sum" {
+            return Err(Error::new("unsupported_query", "financial sum required"));
+        }
+        Ok(Self::financial_summary(code, summary)?.sum)
+    }
+    fn financial_query_result(sum: i128) -> Result<i128> {
+        Ok(sum)
+    }
+    fn validate_terminal(result: &i128) -> Result<()> {
+        if *result < 0 {
+            Err(Error::new("invariant", "negative validation sum"))
+        } else {
+            Ok(())
+        }
+    }
 
     fn descriptors() -> Vec<IndexDescriptor> {
         let times = json!({"count":{"type":"integer","minimum":0},

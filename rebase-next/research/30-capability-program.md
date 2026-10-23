@@ -27,7 +27,7 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 | G4a | Validate a declared aggregate without a private output | Accepted: [terminal validation gate](31-terminal-validation.md) |
 | G4b | Reactive time windows with two, one or zero bounds | Accepted: [exact windows and final-graph scheduling](32-reactive-windows.md) |
 | G4c | Maintain a genuinely new summary/key contract | Accepted: [native index extension](34-native-index-extension.md), one active tree and dimensioned measurement statistics |
-| G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md) accepted; [typed query consumers/selection](40-native-query-consumers.md) prepared next |
+| G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md) and [G4d-b typed reports](41-native-query-consumer-result.md) accepted; [G4d-c authored selection](40-native-query-consumers.md) next |
 | G5 | Reliable external work | [G5a intent](37-atomic-intent-implementation.md), [G5b worker/application](38-fenced-worker-implementation.md) and [G5c inbox/recovery](39-ingress-recovery-implementation.md) accepted for the fixed fake provider |
 | G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
 | G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
@@ -91,8 +91,8 @@ Preserve complete state and receipt absence on rejected writes, replay, reopenin
 and model/store identity. Commit and push each coherent checkpoint, then continue
 without another prompt. Keep `CONTEXT.md` current for switching agents.
 
-G4a, G4b, G4c, G4d-a and G5a-G5c are accepted. Continue with
-[G4d-b native query consumers](40-native-query-consumers.md).
+G4a, G4b, G4c, G4d-a/b and G5a-G5c are accepted. Continue with
+[G4d-c authored selection](40-native-query-consumers.md).
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
 fake-provider execution, durable signed ingress and restored reconciliation are

@@ -2,7 +2,7 @@
 
 A compiled model selects one `Binding::Index` family. The shared linked AVL owns
 occurrence ordering, balancing, neighbours, subtree spans, work limits, revisions
-and storage. Each family supplies native keys, leaves, summaries, a stable index
+and storage. Each family supplies native keys, leaves, summaries, query results, a stable index
 codebook, checked summary operations and exact schemas. Financial and quote
 histories use `indexes::standard`; measurements use `indexes::measurement`.
 Both use the same mutation, codec, integrity, authority and lifecycle paths.
@@ -45,6 +45,7 @@ that deployment acceptance has run.
 | --- | --- | --- |
 | Instrument | 101 | `{"unit":7}` |
 | Observation | 211 | `{"instrument":"<canonical UUID>","at":"10","unit":7,"value":"-2"}` |
+| ObservationReport | 307 | `{"instrument":"<canonical UUID>","range":{"lower":{"included":"0"},"upper":{"excluded":"20"}},"unit":7,"threshold":"5"}` |
 
 All listed fields are mutable through version-checked updates. Unit codes are
 integers from 1 through 65535. Times are canonical signed i64 decimal strings;
@@ -55,8 +56,10 @@ reject. No unit conversion is implicit.
 An Instrument owns root slot 7, `observations`, using native index code 7. Each
 Observation joins it through membership slot 17. Observations reference an
 Instrument, and their reader follows the declared reference-owner policy.
-The model has no private outputs, formula queries or derived public fields.
-Its limit is 64 total public records, including instruments. Existing models keep
+ObservationReport inherits its reader through the same reference and declares
+its direct dependency on the Instrument's authored unit. It has no root,
+membership or private output. Its limit is 64 total public records, including
+instruments, observations and reports. Existing models keep
 their separately declared limits and the same mutation work budget.
 
 The settled root must be empty or contain only observations whose unit equals
@@ -66,6 +69,45 @@ command order. The intermediate summary records mixed dimensions; final-state
 validation accepts only the repaired result. Moving an observation repairs both
 roots. Deleting the last observation produces an empty root; deleting a referenced
 Instrument rejects unless the same batch removes or retargets its references.
+
+## Reactive observation reports
+
+An ObservationReport publishes count, minimum, maximum, unit and
+`at_least_threshold` over its exact authored window. For `5 @0`, `12 @10` and
+`-2 @20`, unit 7, window `[0,20)` and threshold 5, its ordinary record read has:
+
+```json
+{"count":2,"min":"5","max":"12","unit":7,"at_least_threshold":true}
+```
+
+Moving the last observation to time 15 changes this to count 3, minimum -2,
+maximum 12 and false. An empty window returns count 0, absent extrema and false,
+even for a negative threshold. The reported unit remains the authored unit;
+it must match the Instrument. Deleting all members or making an equal-result
+edit retains the query and its exact dependency window. Changing only an empty
+Instrument's unit can still reject because its report depends on that unit.
+Joint Instrument, observation and report repairs use the final batch state.
+
+The report declares query slot 31, operation `summary`, channel `statistics`,
+calculation phase, and Instrument root slot 7. The family supplies its strict
+native Summary to the shared scheduler. A literal source checker reconstructs
+the result and every direct/subscriber registration independently. Final authored
+observations are the candidate universe; managed statistical emissions and reads
+from selected records' published values are separate capabilities.
+
+The report's own Read grant governs its materialized value. Revoking Instrument
+Read does not redact an existing readable report. Creating or retargeting a report
+still requires the normal authority to reference the Instrument; revoking report
+Read hides it from record reads, pages and replay disclosure.
+
+The fixture and independent integer/HTTP workflow use ordinary APIs:
+
+```sh
+rebase-next --model measurement fixture plan observation-report \
+  --namespace 00000000-0000-0000-0000-00000135295f
+python3 -B tools/observation_reports.py --binary target/g4db-accepted/rebase-next \
+  --out target/my-report-workflow
+```
 
 ## Read statistics
 
@@ -111,6 +153,15 @@ into model identity. Optional time, financial and quote adapters declare actual
 capabilities. A family can use non-Copy keys or non-time ordering without adopting
 the financial value representation.
 
+`NativeIndex::QueryResult` owns persisted calculation values. Family methods
+validate operation/phase/channel, map native summaries to results and select
+shared scheduler participation. `Query<Index>` and the complete storage checker
+use that same compiled type. Serialization hooks preserve Standard's existing
+decimal-string `i128` results. Measurement uses its native Summary directly;
+public JSON projections remain separate. The existing financial prefix path and
+nonnegative terminal validation are explicit adapters. Generic managed statistics
+emissions are not supplied by this port.
+
 `FullKey<Key>` adds engine-owned UUID/member-slot occurrence ties to the business
 key. Root/node spans are separate structural metadata. Summary functions provide
 empty, singleton and checked associative combine operations; their bounded domain
@@ -127,13 +178,15 @@ literal scan, and run distinct valid AVL insertion orders through complete check
 The HTTP oracle uses Python integer arithmetic over authored facts, exact boundary
 filters, complete rollback snapshots and rehashed corrupted-backup controls.
 
-Native index persistence uses store/codec 6. Keep older stores with matching
+Current source uses store 9 /native codec 6 /effect codec 3 /API 3. The new report
+changes measurement's behavior to `dimensioned-measurements-2`; other model
+identities and existing Standard query bytes remain unchanged. Keep older stores with matching
 binaries; there is no implicit populated-store migration. See
 [storage identities and upgrades](storage.md#data-identity-and-upgrades).
 Behavior revisions cover algebra, ordering, projection and invariant semantics;
 descriptor hashes supplement that explicit contract.
 
 Variance, percentiles, rank/select, compound-prefix bounds, unit conversion and
-reactive consumption of statistics require separate capabilities. This gate does
+managed statistical emissions require separate capabilities. This gate does
 not establish arbitrary query-result scheduling, unrestricted population capacity
 or a new deployment bundle.

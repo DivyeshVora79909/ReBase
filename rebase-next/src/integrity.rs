@@ -220,7 +220,7 @@ impl<B: Binding> RouteWalk<'_, B> {
 fn check_routes<B: Binding>(
     all: &BTreeMap<Key, StoredValue<B>>,
     routes: &BTreeMap<Key, BTreeSet<Address>>,
-    queries: &BTreeMap<Address, Query>,
+    queries: &BTreeMap<Address, Query<B::Index>>,
 ) -> Result<BTreeSet<Key>> {
     use crate::routes::{Endpoint, Order, Route};
     let mut walk = RouteWalk {
@@ -656,7 +656,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         mut expected_keys: BTreeSet<Key>,
         members: NativeMembers<B::Index>,
         routes: BTreeMap<Key, BTreeSet<Address>>,
-        queries: BTreeMap<Address, Query>,
+        queries: BTreeMap<Address, Query<B::Index>>,
         aggregate: &SourceAggregate<B::Index>,
     ) -> Result<Value> {
         let Self {

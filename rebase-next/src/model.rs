@@ -152,10 +152,13 @@ impl Contract {
             .any(|input| input.reference_slot == reference_slot)
     }
 
-    pub(crate) fn uses_causal_scheduler(&self) -> bool {
+    pub(crate) fn uses_causal_scheduler<I: NativeIndex>(&self) -> bool {
         !self.outputs.is_empty()
             || !self.publication_inputs.is_empty()
-            || self.queries.iter().any(|query| query.operation == "sum")
+            || self
+                .queries
+                .iter()
+                .any(|query| I::causal_query(query.operation))
     }
 }
 
@@ -438,7 +441,7 @@ impl<B: Binding> Prepared<B> {
                 && contract
                     .queries
                     .iter()
-                    .any(|query| query.operation != "sum")
+                    .any(|query| !B::Index::causal_query(query.operation))
             {
                 return Err(model_error(
                     "publication consumers must use shared causal settlement",
@@ -465,8 +468,11 @@ impl<B: Binding> Prepared<B> {
                     if field.binding != input.binding {
                         return Err(model_error("publication input binding mismatch"));
                     }
-                    if !target.uses_causal_scheduler()
-                        || target.queries.iter().any(|query| query.operation != "sum")
+                    if !target.uses_causal_scheduler::<B::Index>()
+                        || target
+                            .queries
+                            .iter()
+                            .any(|query| !B::Index::causal_query(query.operation))
                     {
                         return Err(model_error(
                             "publication parent must use shared causal settlement",
@@ -509,11 +515,12 @@ impl<B: Binding> Prepared<B> {
                     || !indexes.iter().any(|index| {
                         index.code == root.kind
                             && index.reads.contains(&query.operation)
-                            && match (query.operation, query.channel) {
-                                ("sum", "amount") => index.financial,
-                                ("latest", "rate") => index.quote,
-                                _ => false,
-                            }
+                            && B::Index::supports_query(
+                                root.kind,
+                                query.operation,
+                                query.phase,
+                                query.channel,
+                            )
                     })
                 {
                     return Err(model_error("query/root operation mismatch"));
