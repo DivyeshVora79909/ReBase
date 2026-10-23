@@ -291,8 +291,8 @@ struct Plan<B: ReactiveBinding> {
 }
 // Standard quote readers retain their established settlement path. Native
 // family consumers and explicit publication consumers share this scheduler.
-fn uses_scheduler<B: Binding>(contract: &Contract) -> bool {
-    contract.uses_causal_scheduler::<B::Index>()
+fn uses_scheduler<B: Binding>(model: &Prepared<B>, contract: &Contract) -> bool {
+    contract.uses_causal_scheduler::<B::Index>() || model.has_publication_dependents(contract.code)
 }
 fn original<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
@@ -469,12 +469,11 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     let mut roots = ws.causal_impacts();
     let mut discovered_publications = BTreeSet::new();
     for c in changes {
-        if c.old
-            .as_ref()
-            .into_iter()
-            .chain(c.new.as_ref())
-            .any(|r| model.contract(r.contract).is_ok_and(uses_scheduler::<B>))
-        {
+        if c.old.as_ref().into_iter().chain(c.new.as_ref()).any(|r| {
+            model
+                .contract(r.contract)
+                .is_ok_and(|contract| uses_scheduler(model, contract))
+        }) {
             pending.insert(c.id);
         }
         if c.old.as_ref().map(|r| &r.input) != c.new.as_ref().map(|r| &r.input) {
@@ -559,7 +558,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             .as_ref()
             .or(old_record.as_ref())
             .ok_or_else(|| Error::new("corrupt_state", "missing subscriber"))?;
-        if !uses_scheduler::<B>(model.contract(producer.contract)?) {
+        if !uses_scheduler(model, model.contract(producer.contract)?) {
             continue;
         }
         if model.has_publication_dependents(producer.contract) && discovered_publications.insert(id)

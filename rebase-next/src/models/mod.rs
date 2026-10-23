@@ -8,3 +8,4 @@ mod invoicing_check;
 mod invoicing_fixtures;
 
 pub mod measurement;
+pub mod quantity;

@@ -468,11 +468,10 @@ impl<B: Binding> Prepared<B> {
                     if field.binding != input.binding {
                         return Err(model_error("publication input binding mismatch"));
                     }
-                    if !target.uses_causal_scheduler::<B::Index>()
-                        || target
-                            .queries
-                            .iter()
-                            .any(|query| !B::Index::causal_query(query.operation))
+                    if target
+                        .queries
+                        .iter()
+                        .any(|query| !B::Index::causal_query(query.operation))
                     {
                         return Err(model_error(
                             "publication parent must use shared causal settlement",
