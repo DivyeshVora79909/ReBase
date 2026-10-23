@@ -245,3 +245,17 @@ schema, pure frozen-request/outcome validation and a pure application command.
 this command may update. Core validates those declarations and restricts both
 pre-binding and post-binding authorization before ordinary settlement. Provider
 I/O and configuration remain outside model calculation and transactions.
+
+## Minimal ready-publication example
+
+Select `--model quantity` for the [workshop](workshop.md). Source (101) publishes
+an authored integer, Scale (205) applies an exact rational with explicit rounding,
+and Join (309) adds two ready parent quantities. `fixture plan quantities
+--namespace <uuid>` prepares Source 12, exact half/third scales and Join 10.
+Its limit is 16 public records with absolute published quantities at most
+`1000000000000000000`; it has no private outputs or custom index family.
+
+Publication target declarations put even terminal Sources into the existing
+shared scheduler. A parent must still use supported causal query operations.
+This adds no fake root/query or second writer, and changes no existing model
+catalog or persisted format. The model has behavior identity `quantity-flow-1`.

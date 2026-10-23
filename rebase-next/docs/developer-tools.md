@@ -7,29 +7,22 @@ The calculation and equipment compiled models use the same client and operator
 commands. Select equipment with a leading `--model equipment` on the backend
 CLI; the HTTP client learns the selected model identity from the server.
 
-## Planned verification example suite
+## Self-explaining verification workshop
 
-The self-explaining verification suite is a design goal, not an available tool.
-Its proposed single entry point is `tools/verify.py`, with `walk`, `check`,
-`explore` and `replay` modes. These names and the command shape are proposals;
-there is no runnable command yet. The design is recorded in the
-[example-suite plan](../research/43-example-verification-suite.md).
+The [workshop guide](workshop.md) documents `tools/verify.py`: `walk` explains
+four ordinary workflows, `check` adds current native and process evidence,
+`explore` runs bounded seeded Quantity sequences, and `replay` reconstructs a
+saved logical sequence in a fresh store. Each mode writes `result.json` and
+`summary.md` in a new private output directory. Expected source arithmetic is
+separate from engine observations; missing internal evidence stays incomplete.
 
-The proposal uses authored examples to explain expected behavior, run native
-checks and compare results with independent source oracles. `walk` presents an
-example step by step, `check` verifies its expectations, `explore` varies
-selected inputs, and `replay` repeats a saved artifact. Case, seed and artifact
-selectors are proposed options. This suite would reuse the existing fixtures
-and ordinary tools; calculation, equipment, measurement and effect-demo remain
-separate models, not a cross-store transaction. Broader accounting work remains
-future scope, while the bounded invoice example stays available as an optional
-regression workflow.
-
-Proposed command shape (illustrative only; do not run):
-
-```text
-python3 -B tools/verify.py --binary <path> --out <fresh-dir> --mode walk|check|explore|replay
+```sh
+python3 -B tools/verify.py --binary target/workshop-build/release/rebase-next --out target/my-workshop --mode walk
 ```
+
+Use the current source build described in the guide. Equipment, measurement,
+quantity and effect-demo each use their own store and the same production APIs;
+these are not cross-store transactions. Broader accounting remains deferred.
 
 ## Existing model and fixture tools
 

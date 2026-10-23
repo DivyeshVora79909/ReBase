@@ -88,7 +88,7 @@ class Journal:
                 "empty_lookup": "inconclusive", **self.counts(execution)}
 
 
-def run(binary, destination):
+def run(binary, destination, *, workshop_only=False):
     destination.mkdir(mode=0o700)
     provider = Journal(destination / "provider")
     backend = Backend(binary, destination / "backend", model="effect-demo")
@@ -189,6 +189,14 @@ def run(binary, destination):
         backend.start()
         applied(blocked, 2)
         record("blocked-repair-apply-once", blocked, 1, repaired_balance="5", final_balance="2")
+
+        if workshop_only:
+            backend.stop()
+            checked = backend.cli("check", backend.store)
+            return {"status": "passed", "model": model, "operations": operations,
+                    "cases": cases, "integrity": checked, "provider_contract": provider_contract,
+                    "independent_provider_journal": "provider/journal.sqlite",
+                    "duration_seconds": round(time.monotonic() - started_at, 3)}
 
         waiting = create("waiting", mode="waiting")
         release("before_start", waiting)
