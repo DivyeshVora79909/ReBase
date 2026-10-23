@@ -9,9 +9,11 @@ a task whose meaning is already recorded. Recheck current source when it matters
 [deployment acceptance](research/29-deployment-result.md) and the
 [deployment guide](docs/deployment.md). The selected goal produced a verified
 bundle in this environment, with all three models, issuer/template checks,
-crash recovery and failed-restore isolation. No follow-on implementation gate is
-active. Further capability work enters a named bounded gate; preserve earlier
-evidence and the explicit capacity/model boundaries below.
+crash recovery and failed-restore isolation. The subsequent
+[capability program](research/30-capability-program.md) is active: first
+[G4a terminal validation](research/31-terminal-validation.md), then G4b reactive
+windows. Prepare external contracts alongside core work with explicit atomic
+integration. Preserve earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
 complete through D6. Read [the release result](research/18-release-result.md),

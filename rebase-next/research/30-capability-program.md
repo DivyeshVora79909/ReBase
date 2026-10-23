@@ -1,0 +1,95 @@
+# Capability continuation after the 0.6 release
+
+**Active program, 2026-10-23.** The user authorizes preparation, implementation,
+verification and checkpoint commits on the existing `main`. The 0.6
+[deployment result](29-deployment-result.md) remains accepted and dated. This
+program preserves the original system's power, not its implementation or APIs.
+
+## Intent and engineering boundaries
+
+The available conversation and [source map](sources.md) establish the aim:
+small explicit functions, one authoritative model shared by runtime and tools,
+declared dependencies, exact calculations and predictable atomic publication.
+Developers compose ordinary APIs; no new parser, universal DSL, plugin registry,
+automatic read capture or separate workflow framework is required. Trusted Rust
+models can break older APIs. New persisted meaning still needs an explicit
+identity, complete checking and a defined incompatible-store response.
+
+Do not replay every historical transcript or rerun accepted campaigns without
+a changed obligation. Use current source and topic documents. Original ReBase
+supplies semantics and counterexamples; it is not a runtime dependency.
+All work and dependencies remain under `rebase-next/`. Frontend remains excluded.
+
+## Capability map and dependency order
+
+| Gate | Observable power | Preparation and acceptance boundary |
+| --- | --- | --- |
+| G4a | Validate a declared aggregate without a private output | [Terminal validation gate](31-terminal-validation.md); first implementation checkpoint |
+| G4b | Reactive time windows with two, one or zero bounds | Typed exact boundaries, old/new point discovery, augmented interval registrations, exact final-graph dependencies and independent source-window checks |
+| G4c | Maintain a genuinely new summary/key contract | Choose a useful index, then carry its algebra, leaf/key types, codec, checker, reads and model/tool descriptions end to end; an unused generic algebra helper does not satisfy this gate |
+| G4d | Additional declared value dependencies | Published-parent values, richer query results and selection operations need explicit invalidation/readiness contracts; no hidden or multihop reads |
+| G5 | Reliable external work | Atomic immutable intent, bounded due discovery, fenced claims/start/completion, uncertainty/reconciliation, cancellation and durable webhook inbox; start with a deterministic fake provider |
+| G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
+| G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
+| G8 | Workload and deployment acceptance | Extended workloads, recovery and release package with explicit limits rather than unlimited production claims |
+
+The table is the program, not a claim that every row is implementation-ready.
+Close the next gate's semantic questions before coding it. Concrete examples
+drive reusable primitives; avoid speculative scaffolding. G5 provider adapters
+can proceed alongside G4 in separate files after agreeing lifecycle interfaces.
+Atomic intent persistence and lifecycle operations require coordinated shared-core
+integration. Distributed work does not block local business calculations.
+
+Authentication protocols, audit retention, subscriptions, populated migrations
+and large imports/exports are additional product choices, not silently supplied
+by a KV adapter or the current JWT verifier. Bring them into a named gate when
+required. Reuse supported protocol libraries rather than implement cryptography.
+
+## Next boundary: reactive windows
+
+Preserve timestamp groups, exact `i64` extremes and identity for empty/zero
+queries. Use inclusive/exclusive/unbounded values without incrementing times or
+synthesizing UUID sentinels. Sum windows may use group arithmetic; non-invertible
+summaries require an ordered subtree fold.
+
+Two implementation traps are identified from current source:
+
+1. `Attempt::financial_impacts` and causal closure retain only the earliest time
+   per root. General windows must retain all distinct old/new changed times:
+   two disjoint windows can otherwise miss a change.
+2. Prefix-gate dependencies cannot represent a bounded window: excluded earlier
+   producers introduce false dependencies and false cycle failures. Preserve
+   the efficient unbounded-prefix path and use exact canonical segment covers
+   for bounded reads. Old/new routes discover work; the final graph determines
+   evaluation order and feedback rejection.
+
+Reuse the reverse AVL: upper endpoint ordering plus subtree minimum lower bound
+is the dual of a lower-ordered/max-upper interval tree. Independently check every
+augmentation and compare stabbing to literal membership. Charge work and report
+conservative bounds: a historical change may affect many consumers.
+
+## External-work preparation
+
+[Transactions](02-transactions-and-storage.md#7-external-work),
+[wireframes](07-contract-wireframes.md#8-external-work-and-future-capabilities)
+and the original [operations design](../../designs/rebase-system/operations.md)
+establish safety obligations, not current executable provider support. Complete
+types/transitions, authority, worker APIs, inventory and crash controls before G5.
+
+No irreversible provider call belongs inside an automatically retried mutation.
+An intent commits with business state; a queue wake is disposable. Execution
+identity and provider idempotency/reconciliation survive retries. An old backup
+can resurrect work already performed remotely: restored dispatch must be
+quarantined pending reconciliation, with a new worker activation fence and
+unchanged execution/provider idempotency identity.
+
+## Checkpoint discipline
+
+Record contracts, independent acceptance, source/build identities, limits and
+next action. Run formatting/Clippy before expensive optimized acceptance.
+Preserve complete state and receipt absence on rejected writes, replay, reopening
+and model/store identity. Commit and push each coherent checkpoint, then continue
+without another prompt. Keep `CONTEXT.md` current for switching agents.
+
+First implement and verify G4a, then close G4b's exact range/discovery/graph
+contract. Later rows remain planned capabilities until their acceptance executes.
