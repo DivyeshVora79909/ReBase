@@ -94,7 +94,7 @@ def run(binary, destination):
     backend = Backend(binary, destination / "backend", model="effect-demo")
     probes = destination / "probes"
     probes.mkdir()
-    backend.config["effects"] = {"endpoint": provider.endpoint, "probe_directory": str(probes)}
+    backend.config["effects"] = {"endpoint": provider.endpoint, "mode": "delivery", "probe_directory": str(probes)}
     backend.config_path.write_bytes(client._bytes(backend.config))
     cases, operations = [], []
     account = str(uuid.uuid4())

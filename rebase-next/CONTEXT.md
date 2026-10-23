@@ -1,24 +1,46 @@
 # Compact context — 2026-10-23
 
-**G5b accepted; next G5c durable ingress and restored reconciliation.**
-The [G5b result](research/38-fenced-worker-implementation.md) and
-[evidence](research/evidence/2026-10-23-g5b-fenced-worker.json) own source 0.11.0
-/store 8 /native codec 6 /effect codec 2 /API 2. Twenty-five affected Rust controls
-and sixteen optimized HTTP scenarios pass, including four process kills, separate
-provider-call/acceptance counts, blocked application/retry and the real timeout.
-The one optimized build took 375.832 seconds; the passing HTTP run took 27.275
-seconds. Earlier failed development/harness logs remain documented; do not rerun
-accepted campaigns just to replace them. There is no active build/worker.
+**G5c is accepted after published `f44339f`; next G4d-b native query consumers.**
+Read [the G5c result](research/39-ingress-recovery-implementation.md) and
+[evidence](research/evidence/2026-10-23-g5c-ingress-recovery.json), then the prepared
+[G4d-b/c gate](research/40-native-query-consumers.md). Source 0.12.0 owns store 9 /
+native codec 6 /effect codec 3 /API 3 and effect-demo behavior `effect-demo-ingress-3`.
+Its model is `6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f`.
+The four prior model identities are unchanged; a populated format-8 effect store
+rejects without changed physical bytes.
 
-The binary is `target/g5b-accepted/rebase-next`, SHA-256
+G5c accepts signed bounded ingress, durable deduplication, fact/inbox atomic
+consumption, monotone result handling and explicit disabled/delivery/reconcile
+modes. Restored stores permit reconciliation and Account repair, never new
+Dispatch creation or delivery until clean reset. The prestart-backup HTTP proof
+has one remote submission/acceptance and zero restored attempts; empty lookup
+stays quarantined. A ready/quarantined row after six lost reconciliation claims
+can safely retry observations without regaining submission permission.
+
+Twenty-seven effect and two shared Rust controls pass. Eight final optimized HTTP
+scenarios pass in 13.558 seconds, including one process kill, failed inbox writes,
+full 256-row inbox, archive/reset fences and delayed blocked-application repair.
+The combined native 256 execution /1,024 fact /256 x 8 KiB inbox backup is
+6,703,752 bytes. The final optimized build took 280.615 seconds. Final review
+required one narrow retry fix; successful earlier runs remain retained, and only
+affected native/HTTP checks were rerun. Do not repeat accepted campaigns.
+
+The retained binary is `target/g5c-accepted/rebase-next`, 28,428,808 bytes,
+SHA-256 `fa60b6e8f98fdcfa5dc6b3efae23a07312981433cab4924f5cf5eb8cde025872`.
+Reports: `target/g5c-checks.json`, `target/g5c-compatibility.json`,
+`target/g5c-bounds.json`, `target/g5c-final-ingress-http/result.json`.
+No build, backend or provider process is active. Use one Cargo owner, two jobs,
+`CARGO_INCREMENTAL=0`, `cargo +1.95.0`, debug `target/native-slice/build` and
+optimized `target/g4b-retained-b377b21/build`. Preserve the G5a/G5b executables.
+
+**Historical G5b acceptance.** Published `f44339f` owns source 0.11.0 /store 8 /
+native codec 6 /effect codec 2 /API 2. Its 25 affected Rust controls and sixteen
+optimized HTTP scenarios include four real process kills, blocked application,
+concurrency and actual transport timeout. [The result](research/38-fenced-worker-implementation.md)
+and [evidence](research/evidence/2026-10-23-g5b-fenced-worker.json) remain dated.
+`target/g5b-accepted/rebase-next` has SHA-256
 `66fe7e4582aebb499a35b58cc40ac4c2e62f196e232a87602ba2c84a785bd206`.
-Reports: `target/g5b-checks.json`, `target/g5b-compatibility.json`,
-`target/g5b-worker-http-2/result.json`. The four earlier model identities remain
-unchanged; clean format-7 effect storage rejects without changed physical bytes.
-Read [G5c's entry](research/39-ingress-recovery-implementation.md) next. Keep
-restored worker activation disabled until the predating-backup reconciliation
-acceptance passes. Preserve the independent fake provider journal and all G5a
-artifacts; no live-provider, distributed or general production claim applies.
+G5c supersedes its restored-activation restriction, retaining reconciliation only.
 
 **Historical G5a acceptance.**
 The [G5a result](research/37-atomic-intent-implementation.md) and
@@ -36,7 +58,7 @@ G5a's optimized build took 222 seconds; its HTTP workflow took 1.732 seconds.
 Keep `target/g5a-accepted/rebase-next` and `target/g5a-effects-http/` intact.
 The binary SHA-256 is `b543aa119740e8c81ceea5cacefb172a9bf518567e0b508ef62aea28b52eb334`.
 Reports are `target/g5a-checks.json` and `target/g5a-compatibility.json`.
-G5b is now accepted above; G5c and later capability gates remain open.
+G5a-G5c are accepted above; later capability gates remain open.
 
 G4c-a/b is published as `b72507c` on `main`. G4d-a source 0.9.0 adds typed
 publication inputs, final graph readiness and output-free IssueShare.
@@ -128,12 +150,11 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement [G5c](research/39-ingress-recovery-implementation.md)
-on the accepted G5b lifecycle. Add bounded verified ingress/inbox, deduplicated
-monotone fact consumption and explicit reconciliation-only restored activation.
-Prove the snapshot predating remote acceptance, reset/old identity controls and
-full bounded backup. Use one Cargo owner, two jobs and the retained caches.
-Typed statistics/selection and G6-G8 remain open.
+**Exact next action:** implement [G4d-b native query consumers](research/40-native-query-consumers.md)
+from this accepted G5c checkpoint on `main`. Add the output-free typed measurement
+report through common query persistence and scheduling; empty-window threshold
+is false. The same paper fixes the later authored-selection tie/absence policy.
+Keep source-only gate commits linear; G4d-c and G6-G8 remain open.
 
 G4d's final executable is `target/g4d-accepted/rebase-next`. Reports are
 `target/g4d-checks.json`, `target/g4d-shares-http/result.json` and

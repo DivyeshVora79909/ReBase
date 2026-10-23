@@ -1,0 +1,597 @@
+{
+  "status": "accepted",
+  "gate": "G5c",
+  "verified_at_utc": "2026-10-23T12:57:32.886977+00:00",
+  "source_parent": "f44339f88f70e193cf309160316c26266b210dbd",
+  "branch": "main",
+  "identity": {
+    "package": "0.12.0",
+    "store": "rebase-store-9",
+    "native_codec": "native-slice-kv-6",
+    "effects": "rebase-effects-3",
+    "api": "rebase-local-api-3",
+    "behavior": "effect-demo-ingress-3",
+    "action": "fake-units-1",
+    "provider_account": "fake-account-1",
+    "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f"
+  },
+  "binary": {
+    "path": "target/g5c-accepted/rebase-next",
+    "sha256": "fa60b6e8f98fdcfa5dc6b3efae23a07312981433cab4924f5cf5eb8cde025872",
+    "bytes": 28428808
+  },
+  "rust_tests": {
+    "effect_tests::action_metadata_is_checked_and_advertised_only_for_effect_models": "initial affected run",
+    "effect_tests::current_account_authority_controls_creation_cancel_status_and_receipt_disclosure": "initial affected run",
+    "effect_tests::immutable_input_expiry_and_allocation_failures_leave_no_intent_or_receipt": "initial affected run",
+    "effect_tests::intent_and_cancel_roll_back_after_actual_writes_and_share_receipts": "initial affected run",
+    "effect_tests::corrupt_effect_inventory_rejects_complete_check_and_restore_without_publication": "initial affected run",
+    "effects::tests::due_key_preserves_full_signed_time_and_uuid_order": "initial affected run",
+    "effects::tests::schedule_defaults_and_twenty_four_hour_boundaries_are_exact": "initial affected run",
+    "effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart": "initial affected run",
+    "effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation": "initial affected run",
+    "effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts": "initial affected run",
+    "effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence": "initial affected run",
+    "effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers": "initial affected run",
+    "effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider": "initial affected run",
+    "effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table": "initial affected run",
+    "effects::worker_tests::ingress::archive_retains_inbox_and_clean_reset_rejects_old_receipts_claims_and_hints": "initial affected run",
+    "effects::worker_tests::ingress::authentication_covers_exact_bytes_identity_skew_and_bounded_typed_json": "initial affected run",
+    "effect_tests::real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset": "initial affected run",
+    "effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions": "initial affected run",
+    "effects::worker_tests::ingress::durable_ack_dedup_and_consumed_fact_rollback_cover_actual_writes": "initial affected run",
+    "effects::worker_tests::ingress::inbox_inventory_and_compiled_action_mismatch_reject_check_and_restore": "initial affected run",
+    "effects::worker_tests::ingress::prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission": "reviewed quarantine retry",
+    "effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate": "initial affected run",
+    "effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked": "initial affected run",
+    "effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission": "reviewed shared repair",
+    "effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates": "initial affected run",
+    "effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption": "initial affected run",
+    "effects::worker_tests::ingress::complete_capacity_retains_a_blocked_event_advances_sweeps_and_fits_backup": "initial affected run",
+    "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders": "reviewed shared repair",
+    "window_tests::terminal_windows_validate_final_managed_repairs_in_both_command_orders": "reviewed shared repair"
+  },
+  "distinct_rust_controls": 29,
+  "effect_controls": 27,
+  "verification": {
+    "formatting": "passed",
+    "diff_check": "passed",
+    "clippy": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "duration_seconds": 21.747,
+      "jobs": 2,
+      "cache": "target/native-slice/build"
+    },
+    "initial_effect_controls": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--lib",
+        "effect",
+        "--",
+        "--test-threads=2"
+      ],
+      "returncode": 0,
+      "duration_seconds": 91.421,
+      "jobs": 2,
+      "cache": "target/native-slice/build"
+    },
+    "reviewed_retry": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--lib",
+        "prestart_restore",
+        "--",
+        "--test-threads=2"
+      ],
+      "returncode": 0,
+      "duration_seconds": 69.278,
+      "jobs": 2,
+      "cache": "target/native-slice/build"
+    },
+    "repair_controls": {
+      "command": [
+        "target/native-slice/build/debug/deps/rebase_semantic_proof-225b71ada2533958",
+        "repair",
+        "--test-threads=2"
+      ],
+      "returncode": 0,
+      "duration_seconds": 0.995
+    },
+    "build": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "returncode": 0,
+      "duration_seconds": 280.615,
+      "jobs": 2,
+      "incremental": false,
+      "cache": "target/g4b-retained-b377b21/build"
+    },
+    "http": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/effects_ingress.py",
+        "--binary",
+        "target/g4b-retained-b377b21/build/release/rebase-next",
+        "--out",
+        "target/g5c-final-ingress-http"
+      ],
+      "returncode": 0,
+      "duration_seconds": 14.115
+    }
+  },
+  "http": {
+    "status": "passed",
+    "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+    "binary_sha256": "fa60b6e8f98fdcfa5dc6b3efae23a07312981433cab4924f5cf5eb8cde025872",
+    "duration_seconds": 13.558,
+    "cases": [
+      {
+        "name": "signature-skew-binding-and-body-limits",
+        "raw_limit": 8192,
+        "body_deadline_seconds": 2.003
+      },
+      {
+        "name": "commit-before-ack-conflict-and-failed-storage",
+        "failed_write_status": 503,
+        "conflicting_identity_status": 409,
+        "unknown_execution_status": 404,
+        "discarded_ack_duplicate": true
+      },
+      {
+        "name": "process-loss-after-inbox-and-out-of-order-consumption",
+        "process_kills": 1,
+        "balance": "9",
+        "submissions": 1,
+        "observations": 2,
+        "accepted": 1
+      },
+      {
+        "name": "delayed-event-preserves-blocked-repair",
+        "final_balance": "2",
+        "submissions": 1,
+        "observations": 2,
+        "accepted": 1
+      },
+      {
+        "name": "full-inbox-retry-backup-archive-and-reset-guard",
+        "inbox": 256,
+        "pending": 251,
+        "backup_bytes": 515000,
+        "overflow_status": 503
+      },
+      {
+        "name": "backup-before-start-then-independent-acceptance",
+        "balance": "9",
+        "original_store": "restore-backend/app.redb",
+        "submissions": 1,
+        "observations": 1,
+        "accepted": 1
+      },
+      {
+        "name": "empty-lookup-remains-quarantined",
+        "submissions": 0,
+        "observations": 1,
+        "accepted": 0
+      },
+      {
+        "name": "clean-reset-rejects-old-context-credential-and-webhook",
+        "old_webhook_status": 404,
+        "source_reused": true
+      }
+    ],
+    "operations": [
+      {
+        "name": "account",
+        "commands": 1
+      },
+      {
+        "name": "webhook-intent",
+        "commands": 2
+      },
+      {
+        "name": "blocked-webhook-intent",
+        "commands": 2
+      },
+      {
+        "name": "repair-blocked-account",
+        "commands": 1
+      },
+      {
+        "name": "prestart-seed",
+        "commands": 3
+      },
+      {
+        "name": "source-reuse-after-reset",
+        "commands": 2
+      }
+    ],
+    "full_inbox_integrity": {
+      "effects": {
+        "accounted_bytes": 260037,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 4,
+        "inbox": 256,
+        "inbox_pending": 251,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 2,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "nodes": 0,
+      "receipts": 4,
+      "records": 3,
+      "revision": "6",
+      "roots": 0,
+      "rows": 9,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "d7c6a79a-e516-47dd-ba12-ed0940af256a"
+    },
+    "restored_integrity": {
+      "effects": {
+        "accounted_bytes": 11191,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 1,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": null,
+        "quarantined": true,
+        "reserved_facts": 1,
+        "retained": 2,
+        "uncertain": 1,
+        "unresolved": 1,
+        "worker_mode": "disabled"
+      },
+      "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "nodes": 0,
+      "receipts": 1,
+      "records": 3,
+      "revision": "2",
+      "roots": 0,
+      "rows": 9,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "08e9d14d-8675-4d35-a0b8-326969e7cdb9"
+    },
+    "reset_integrity": {
+      "effects": {
+        "accounted_bytes": 9340,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 0,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": "34",
+        "quarantined": false,
+        "reserved_facts": 1,
+        "retained": 1,
+        "uncertain": 0,
+        "unresolved": 1,
+        "worker_mode": "disabled"
+      },
+      "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "nodes": 0,
+      "receipts": 1,
+      "records": 2,
+      "revision": "1",
+      "roots": 0,
+      "rows": 6,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "8da657e8-a707-4276-a93d-96aeba04bdad"
+    },
+    "provider_journal": "provider/journal.sqlite",
+    "process_kills": 1
+  },
+  "combined_boundaries": {
+    "backup_bytes": 6703752,
+    "backup_sha256": "ecf16043202d2310d90abb01fb62cc6349c7862ceb088eba0c29b444cc755c31",
+    "integrity": {
+      "effects": {
+        "accounted_bytes": 3133729,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 1024,
+        "inbox": 256,
+        "inbox_pending": 1,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 256,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "reconcile"
+      },
+      "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "nodes": 0,
+      "receipts": 266,
+      "records": 2,
+      "revision": "267",
+      "roots": 0,
+      "rows": 6,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "daf7d0be-a2b5-438c-9fc0-b4289bebaa93"
+    },
+    "raw_bytes_per_event": 8192,
+    "restored_integrity": {
+      "effects": {
+        "accounted_bytes": 3133729,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 1024,
+        "inbox": 256,
+        "inbox_pending": 1,
+        "oldest_eligible_age_ms": null,
+        "quarantined": true,
+        "reserved_facts": 0,
+        "retained": 256,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+      "nodes": 0,
+      "receipts": 266,
+      "records": 2,
+      "revision": "267",
+      "roots": 0,
+      "rows": 6,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "daf7d0be-a2b5-438c-9fc0-b4289bebaa93"
+    },
+    "visited": 256
+  },
+  "compatibility": {
+    "models": {
+      "calculation": {
+        "before": {
+          "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+          "store_format": "rebase-store-8",
+          "version": "0.11.0"
+        },
+        "after": {
+          "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+          "store_format": "rebase-store-9",
+          "version": "0.12.0"
+        }
+      },
+      "equipment": {
+        "before": {
+          "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+          "store_format": "rebase-store-8",
+          "version": "0.11.0"
+        },
+        "after": {
+          "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+          "store_format": "rebase-store-9",
+          "version": "0.12.0"
+        }
+      },
+      "invoicing": {
+        "before": {
+          "model": "b638d3c94323fba73126eddda0ee6c812566d4fc5fd7bf1b6aa7f02eed9479f6",
+          "store_format": "rebase-store-8",
+          "version": "0.11.0"
+        },
+        "after": {
+          "model": "b638d3c94323fba73126eddda0ee6c812566d4fc5fd7bf1b6aa7f02eed9479f6",
+          "store_format": "rebase-store-9",
+          "version": "0.12.0"
+        }
+      },
+      "measurement": {
+        "before": {
+          "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+          "store_format": "rebase-store-8",
+          "version": "0.11.0"
+        },
+        "after": {
+          "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+          "store_format": "rebase-store-9",
+          "version": "0.12.0"
+        }
+      },
+      "effect-demo": {
+        "before": {
+          "model": "1be09569fa1ffbc0b32dc1ef36eaffeb6d37426bb5f53af723670db90caf9417",
+          "store_format": "rebase-store-8",
+          "version": "0.11.0"
+        },
+        "after": {
+          "model": "6114a52f4ad9d59fc067474e7c12a36d09ead2cafe09583ebc25fb150fd2047f",
+          "store_format": "rebase-store-9",
+          "version": "0.12.0"
+        }
+      }
+    },
+    "format8": {
+      "retained": 1,
+      "rejected": true,
+      "error": "model_mismatch: runtime format differs",
+      "physical_sha256_before": "c80c79552732bd16376bbd0809004ef8b97e502ae2525077390df77323319415",
+      "physical_sha256_after": "c80c79552732bd16376bbd0809004ef8b97e502ae2525077390df77323319415"
+    },
+    "binary": {
+      "path": "target/g5c-accepted/rebase-next",
+      "sha256": "fa60b6e8f98fdcfa5dc6b3efae23a07312981433cab4924f5cf5eb8cde025872",
+      "bytes": 28428808
+    }
+  },
+  "development_history": {
+    "initial_clippy": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "duration_seconds": 20.101,
+      "jobs": 2,
+      "incremental": false,
+      "cache": "target/native-slice/build"
+    },
+    "initial_build": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "returncode": 0,
+      "duration_seconds": 278.902,
+      "jobs": 2,
+      "incremental": false,
+      "cache": "target/g4b-retained-b377b21/build"
+    },
+    "initial_http_duration_seconds": 13.959,
+    "initial_binary": {
+      "path": "target/g5c-before-retry-review/rebase-next",
+      "sha256": "65ff524d03957a1be57f2561e04896ddd48be7de9e9ca34d385a2ae65fa3adbe",
+      "bytes": 28428744
+    },
+    "review_fix": "Permit observation retry for ready quarantined rows after repeated reconciliation ownership loss. Quarantine and submission budget are preserved. Reran the changed native control, three repair controls and the focused HTTP workflow. Other successful controls were retained."
+  },
+  "limits": {
+    "unresolved_executions": 64,
+    "retained_executions": 256,
+    "facts": 1024,
+    "inbox": 256,
+    "raw_webhook_bytes": 8192,
+    "effect_bytes": 8388608,
+    "backup_bytes": 67108864,
+    "visited_per_turn": 16,
+    "body_read_seconds": 2,
+    "signature_skew_ms": 300000
+  },
+  "source_sha256": {
+    "Cargo.toml": "5b14ab4591addb6e67e03ab0de15e04da7f17b164a948df6d57e83bc84e5fb2a",
+    "Cargo.lock": "a8b080fc55a0b6df8f3dc6b370cb2b3aa4a1b31d3394fc4bc1202c9bd3084dc4",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "2e90d2a47dddf196814988b5c44ff79e74f936aed64b2a7764ce54bea6de0ff8",
+    "src/binding.rs": "7a3305b6a8590c38ce01c1aab02e52715cabd8384f630e9b96bcb982115d820e",
+    "src/causal.rs": "ddb95d2062b9837d1a8bfd948219ec358f8fc1ed5e80a0b4c33e490096cc0a0c",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "13b4db5bd691700a7ae278ebfdda4eed08b724492c9a0b5190c75596edff900d",
+    "src/effects/application.rs": "82c15370fc38c047f945d99671f32fccb2dbf708b42f7dc7f4c5c2f20ca12964",
+    "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+    "src/effects/inbox.rs": "ae11d7247ed43bdc53dbb325d356267d50af8a7168cd88aa88c8512b5aa2f621",
+    "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+    "src/effects/state.rs": "4c322471700ff24b785449f211d1346bce72c47ca460ed9a37f3f07ec44fefd1",
+    "src/effects/worker.rs": "52976d9fb73be7003a16fac2b85fc86e0ed7a6333b8652516be8930c2da93901",
+    "src/effects/worker_tests.rs": "7e6985156173b64bd0e95ccb63adac2986e774922c4c6251e5f5c2bde2966ea7",
+    "src/effects.rs": "09605724497ed078069cded6745efbacf2f8f9e6388da9837089cd5caf294e30",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "a10881121d4d8b72111fb5ecfab4e1f8d252f742a0fb93dc5e0b241c3ed5b899",
+    "src/index_tests.rs": "52e4868da6a7f2e0665f7394f9bca23fa55aef67eaf3d138d3bb2c4f532bbce6",
+    "src/indexes/measurement.rs": "b2b862b970309eabb72375b5463f1356650503659ff47a127be8db57d9b63cd0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "97a0accf6bff565c589bada097aa5adc9b4bd1683de3751c8154b637f8983ee1",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "029f4761c1f99482dc554a30a17f028d05cb1624a6af01f034ce8ac342ce6ad2",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "41f4230d0ae76aa5c2e8aab193f6a6ca128a8a505ffa5b7256428d837107fe99",
+    "src/lifecycle.rs": "2f4f410e9c9ece3e71941658f1e7f4e1a762cf239109b9790d8bbcb3ad263c14",
+    "src/local.rs": "28d5c9077696cc2e7a8fa26b1bd19088092d7b6b62a8b0856bcc3452cbad1c28",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "c59ece31cc0684aac882e397beb080287ae79f79a6fe44c297e6cf1dbb0b298d",
+    "src/models/calculation.rs": "dd1c1d61a9f355f1714ac0beded5b5f82191285720c083b9cfcad3a338b1009d",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "75e732f03bc21829dc958f008ae0f6d26d59c546965b69b63b7e9b4d96c41f9d",
+    "src/models/equipment.rs": "5aaf270eb1fd365fa13b25896483b591a4e81095ee4f0d1abbc5778405a82e99",
+    "src/models/invoicing.rs": "115d21b92818e16ce4c6696a49bac57835525a8c03427c125da0746eb90f0f4d",
+    "src/models/invoicing_check.rs": "f3de0f615714e69712a43f6954064a3447f84f2b54400981dde541a1da307c9d",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "8282adadce90769fda697d4a66952fdda83392e2ded502e29a8c8893616f175d",
+    "src/models/mod.rs": "acda200f0c4e0e2031318f7b0984d60a3481508520f1c29aba9154e63a8159d3",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "b74caa5c9bbbaf131211d1f6123b921ecce02edf4402d02b8efc9c93bfae9786",
+    "src/native_slice.rs": "f0ca92adfc8156bb240b7b25630d440762855cec0577a9638dbfc7f7943fa00f",
+    "src/parameter_tests.rs": "8ca948e7a56d8ee3d4ee8310955eb9e350c7ebe4d373b8b4acd74aaa81bdda01",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "be56b48ad36e946fd6063899945ab0d700f67f9551ce168ee2ed4e2036067c9c",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "2464e5f4345457366ddcc5de0c9c732e4d34ef2863b0c59a2bbee42bcc667cc3",
+    "src/security.rs": "e48b249bf107b2999b06cf89e9ba4911c68a63192de9bd349f7270984a8023e6",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "4fd97c8493936f041d753995c544e8dc2a10c0c7b96e423179c49fe25fde4b9d",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "f1f4b12d581e5df66ab5a5d239f8a9b0d3a14e6817efc1854515721a000dea96",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "70cb435be8d8a5e0fda05ecd6caf88c3d418360583a594c4f59291766d063257",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/measurement.rs": "8d26bceb636851028d82fa49345060b77416ab0daa4273c239e5b3bca8784649",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "e2356ce9b5f17af2cb50f9a76c6156f5c3c10d21850d5f099f0c2a7946ceb448",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/effects.py": "3c643761c2faf767492c2d1f0b2c58359b72f36945582f0a40b455c2718af59c",
+    "tools/effects_ingress.py": "e4078c90baa8aa3aa85f11f4289391a7129c256ffcbf3c917978a2c0d385f76e",
+    "tools/effects_worker.py": "172e7a3f3a3453313e1aab4ac983e59042655c565127e7701febda8050d9c88a",
+    "tools/fake_provider.py": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a",
+    "tools/invoicing.py": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b",
+    "tools/issue_shares.py": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "a546dbe4ff96284004a1add3f4c624269655a37cb2bfe811d745e796bd5859f1",
+    "tools/test_invoicing.py": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4"
+  },
+  "remaining_scope": "G4d-b native statistics consumers and G4d-c authored selection are prepared in paper 40. G6-G8 remain open. No live-provider, distributed-clone, pruning, migration or exactly-once remote claim."
+}

@@ -2,6 +2,7 @@
 //! Provider calls are owned by the worker and never occur in a transaction.
 mod application;
 pub mod fake;
+pub(crate) mod inbox;
 mod state;
 mod worker;
 #[cfg(test)]
@@ -25,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 pub use state::Disposition;
+pub use state::WorkerMode;
 use state::{Application, Fact, Lease, Start, Sweep};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -32,13 +34,14 @@ use std::{
 };
 use uuid::Uuid;
 
-pub const CODEC: &str = "rebase-effects-2";
+pub const CODEC: &str = "rebase-effects-3";
 pub const MAX_UNRESOLVED: u16 = 64;
 pub const MAX_RETAINED: u16 = 256;
 pub const MAX_FACTS: usize = 1024;
 pub const MAX_INBOX: usize = 256;
 pub const MAX_REQUEST: usize = 1024;
 pub const MAX_OUTCOME: usize = 2048;
+pub const MAX_WEBHOOK: usize = 8192;
 pub const MAX_BYTES: u64 = 8 * 1024 * 1024;
 const HEADER_ALLOWANCE: u64 = 4096;
 const RESULT_RESERVE: u64 = 4096;
@@ -76,7 +79,8 @@ pub(crate) fn capabilities<B: Binding>(action: &ActionDeclaration) -> Value {
         "status":{"method":"effects.status","params":["model","execution_id"],"visibility":"current target Account read"},
         "cancel":{"method":"effects.cancel","params":["model","context","operation_id","execution_id","if_revision"],"authority":"current target Update and requester or administrator"},
         "outcome":B::effect_outcome_schema(),
-        "phases":["ready","waiting","uncertain","succeeded","failed","cancelled"],"dispatch_enabled":false,
+        "phases":["ready","waiting","uncertain","succeeded","failed","cancelled"],"default_worker_mode":"disabled",
+        "ingress":{"path":"/effects/fake","authentication":"HMAC SHA-256 over account/event/timestamp and exact bytes","raw_bytes":MAX_WEBHOOK},
         "limits":{"unresolved":MAX_UNRESOLVED,"retained":MAX_RETAINED,"request_bytes":MAX_REQUEST,"private_bytes":MAX_BYTES},
         "restore":"effect-bearing stores receive a fresh disabled, quarantined activation"})
 }
@@ -109,12 +113,16 @@ pub(crate) struct Runtime {
     pub codec: String,
     #[serde(with = "uuid_text")]
     pub activation: Uuid,
-    pub dispatch_enabled: bool,
+    pub mode: WorkerMode,
     pub quarantined: bool,
     pub retained: u16,
     pub unresolved: u16,
     pub reserved_facts: u16,
     pub facts: u16,
+    pub inbox: u16,
+    pub inbox_pending: u16,
+    pub inbox_cursor: Option<String>,
+    pub inbox_end: Option<String>,
     pub next_class: u8,
     pub sweeps: [Sweep; 4],
     pub accounted_bytes: u64,
@@ -124,12 +132,16 @@ impl Runtime {
         Self {
             codec: CODEC.into(),
             activation: Uuid::new_v4(),
-            dispatch_enabled: false,
+            mode: WorkerMode::Disabled,
             quarantined: false,
             retained: 0,
             unresolved: 0,
             reserved_facts: 0,
             facts: 0,
+            inbox: 0,
+            inbox_pending: 0,
+            inbox_cursor: None,
+            inbox_end: None,
             next_class: 0,
             sweeps: Default::default(),
             accounted_bytes: HEADER_ALLOWANCE,
@@ -142,7 +154,7 @@ impl Runtime {
         ensure(
             self.codec == CODEC
                 && !self.activation.is_nil()
-                && !(self.quarantined && self.dispatch_enabled),
+                && !(self.quarantined && self.mode == WorkerMode::Delivery),
             "effect runtime identity/activation",
         )?;
         ensure(
@@ -151,11 +163,27 @@ impl Runtime {
                 && self.unresolved <= self.retained
                 && self.reserved_facts <= self.unresolved
                 && usize::from(self.facts) + usize::from(self.reserved_facts) <= MAX_FACTS
+                && usize::from(self.inbox) <= MAX_INBOX
+                && self.inbox_pending <= self.inbox
                 && self.next_class < 4
                 && self.accounted_bytes <= MAX_BYTES
                 && self.accounted_bytes >= HEADER_ALLOWANCE
                 && (HEADER.len() + local::encode(self)?.len()) as u64 <= HEADER_ALLOWANCE,
             "effect runtime bounds",
+        )?;
+        ensure(
+            self.inbox_cursor.is_none() || self.inbox_end.is_some(),
+            "inbox cursor without end",
+        )?;
+        for key in self.inbox_cursor.iter().chain(self.inbox_end.iter()) {
+            inbox::validate_key(&local::unhex(key)?)?;
+        }
+        ensure(
+            self.inbox_cursor
+                .as_ref()
+                .zip(self.inbox_end.as_ref())
+                .is_none_or(|(cursor, end)| cursor <= end),
+            "inbox sweep order",
         )
     }
 }
@@ -415,15 +443,7 @@ pub(crate) fn create_tables(write: &WriteTransaction) -> Result<()> {
 }
 pub(crate) fn reset_tables<B: Binding>(write: &WriteTransaction) -> Result<()> {
     let old = runtime_write(write)?;
-    if old.dispatch_enabled
-        || old.unresolved != 0
-        || write
-            .open_table(INBOX)
-            .map_err(local::storage)?
-            .len()
-            .map_err(local::storage)?
-            != 0
-    {
+    if old.mode.active() || old.unresolved != 0 || old.inbox_pending != 0 {
         return Err(Error::new(
             "invariant",
             "unresolved external work prevents reset",
@@ -453,9 +473,11 @@ pub(crate) fn quarantine_restore<B: Binding>(write: &WriteTransaction) -> Result
     let mut runtime = runtime_write(write)?;
     if runtime.retained > 0 {
         runtime.activation = Uuid::new_v4();
-        runtime.dispatch_enabled = false;
+        runtime.mode = WorkerMode::Disabled;
         runtime.quarantined = true;
         runtime.sweeps = Default::default();
+        runtime.inbox_cursor = None;
+        runtime.inbox_end = None;
         let rows = write
             .open_table(EXECUTIONS)
             .map_err(local::storage)?
@@ -549,6 +571,12 @@ pub(crate) fn prepare<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         return Ok(None);
     }
     let mut runtime = runtime_write(write)?;
+    if runtime.quarantined {
+        return Err(Error::new(
+            "invalid_input",
+            "restored store permits reconciliation and domain repair only",
+        ));
+    }
     let now = now_millis()?;
     let mut rows = vec![];
     let mut generated = BTreeSet::new();
@@ -765,7 +793,7 @@ impl<B: Binding> Store<B> {
             json!({"execution_id":row.id,"source":row.source,"target":row.target,"revision":row.revision.to_string(),
             "phase":row.phase,"request":row.request,"created_at":row.created_at.to_string(),"execute_at":row.execute_at.to_string(),
             "not_after":row.not_after.to_string(),"cancellation":row.cancellation,"provider_key":format!("{}/{}",row.id,row.action),
-            "dispatch_enabled":runtime.dispatch_enabled,"application":row.application,"outcome":outcome,
+            "worker_mode":runtime.mode,"application":row.application,"outcome":outcome,
             "attempts":row.attempts,"observations":row.observations,"next_eligible":row.next_at.to_string(),
             "running":row.lease.as_ref().is_some_and(|l| l.expires_at > now_millis().unwrap_or(i64::MAX)),
             "quarantined":row.quarantined,"conflict":row.conflict,"diagnostic":row.diagnostic}),
@@ -937,14 +965,6 @@ pub(crate) fn check<B: Binding>(
             .value(),
     )?;
     runtime.validate()?;
-    ensure(
-        read.open_table(INBOX)
-            .map_err(local::storage)?
-            .len()
-            .map_err(local::storage)?
-            == 0,
-        "G5b has no inbox writer",
-    )?;
     let mut executions = BTreeMap::new();
     let mut reserved = 0;
     let mut due = BTreeMap::new();
@@ -1120,6 +1140,8 @@ pub(crate) fn check<B: Binding>(
             )?;
         }
     }
+    let (inbox_count, inbox_pending, inbox_bytes) = inbox::check(read, &executions, &facts)?;
+    bytes += inbox_bytes;
     let due_table = read.open_table(DUE).map_err(local::storage)?;
     ensure(
         due_table.len().map_err(local::storage)? <= u64::from(MAX_UNRESOLVED),
@@ -1139,6 +1161,8 @@ pub(crate) fn check<B: Binding>(
             && runtime.unresolved == unresolved
             && runtime.reserved_facts == reserved
             && usize::from(runtime.facts) == facts.len()
+            && runtime.inbox == inbox_count
+            && runtime.inbox_pending == inbox_pending
             && runtime.accounted_bytes == bytes,
         "effect counts/reserved bytes",
     )?;
@@ -1153,7 +1177,8 @@ pub(crate) fn check<B: Binding>(
         .max();
     Ok(
         json!({"retained":retained,"unresolved":unresolved,"reserved_facts":reserved,"facts":facts.len(),
-            "accounted_bytes":bytes,"dispatch_enabled":runtime.dispatch_enabled,"quarantined":runtime.quarantined,
+            "accounted_bytes":bytes,"worker_mode":runtime.mode,"quarantined":runtime.quarantined,
+            "inbox":inbox_count,"inbox_pending":inbox_pending,
             "oldest_eligible_age_ms":oldest_eligible_age.map(|age|age.to_string()),
             "expired_leases":executions.values().filter(|r|r.lease.as_ref().is_some_and(|l|l.expires_at<=now)).count(),
             "blocked":executions.values().filter(|r|r.application==Application::Blocked).count(),

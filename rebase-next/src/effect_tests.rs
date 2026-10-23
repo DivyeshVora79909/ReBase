@@ -175,7 +175,7 @@ fn intent_and_cancel_roll_back_after_actual_writes_and_share_receipts() {
     let status = store.effect_status(&request.model, id(500)).unwrap();
     assert_eq!(status["phase"], "ready");
     assert_eq!(status["request"]["units"], "3");
-    assert_eq!(status["dispatch_enabled"], false);
+    assert_eq!(status["worker_mode"], "disabled");
     assert_eq!(
         store.get(&request.model, id(10)).unwrap().unwrap().input,
         crate::models::effect_demo::Input::Account { balance: 10 }
@@ -783,7 +783,7 @@ fn corrupt_effect_inventory_rejects_complete_check_and_restore_without_publicati
 fn action_metadata_is_checked_and_advertised_only_for_effect_models() {
     let model = Prepared::<EffectDemo>::load().unwrap();
     let catalog = model.public_catalog();
-    assert_eq!(catalog["api"], "rebase-local-api-2");
+    assert_eq!(catalog["api"], "rebase-local-api-3");
     assert_eq!(
         catalog["capabilities"]["effects"]["limits"]["unresolved"],
         64

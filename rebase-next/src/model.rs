@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub const MODEL_NAME: &str = "rebase-next-local";
-pub const API_VERSION: &str = "rebase-local-api-2";
+pub const API_VERSION: &str = "rebase-local-api-3";
 pub const SCHEMA_DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]

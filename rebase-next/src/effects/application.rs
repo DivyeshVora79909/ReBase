@@ -53,7 +53,7 @@ impl<B: Binding> Store<B> {
         let before = load_execution::<B>(&write, candidate.execution)?;
         if candidate.class != WorkClass::Apply
             || runtime.activation != candidate.activation
-            || !runtime.dispatch_enabled
+            || !runtime.mode.active()
             || before.store != candidate.store
             || before.revision != candidate.revision
             || before.application != Application::Pending
@@ -206,7 +206,7 @@ impl<B: Binding> Store<B> {
         let now = now_millis()?;
         let scope = self.write_authority(&write)?;
         let mut runtime = runtime_write(&write)?;
-        if runtime.dispatch_enabled {
+        if runtime.mode.active() {
             return Err(Error::new(
                 "invalid_input",
                 "stop the effect worker before operator retry",
@@ -239,7 +239,10 @@ impl<B: Binding> Store<B> {
         let mut row = before.clone();
         if row.application == Application::Blocked && !row.conflict {
             row.application = Application::Pending;
-        } else if matches!(row.phase, Phase::Waiting | Phase::Uncertain) || row.conflict {
+        } else if matches!(row.phase, Phase::Waiting | Phase::Uncertain)
+            || row.phase == Phase::Ready && row.quarantined
+            || row.conflict
+        {
             row.observations = 0;
         } else {
             return Err(Error::new(

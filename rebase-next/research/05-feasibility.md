@@ -1,5 +1,18 @@
 # Rust feasibility and stop boundary
 
+**G5 complete for the bounded fake adapter, October 23:**
+[G5c ingress/recovery](39-ingress-recovery-implementation.md) adds exact signed
+webhooks, durable inbox/fact consumption and reconciliation-only restored stores.
+Twenty-nine distinct Rust controls and eight optimized HTTP scenarios pass,
+including a backup predating the one remote acceptance, unknown lookup,
+full-capacity inbox/backup, archive/reset fences and one additional process kill.
+Source 0.12 /store 9 /native codec 6 /effect codec 3 /API 3 retains the four prior
+model identities. The combined 256 execution /1,024 fact /256 x 8 KiB inbox backup
+is 6,703,752 bytes. [G5b](38-fenced-worker-implementation.md) retains its worker,
+application and four crash controls. Live providers, distributed storage and a
+new release bundle remain open. Continue [typed native query consumers](40-native-query-consumers.md).
+Earlier dated checkpoint notes below retain their scope at the time of acceptance.
+
 **G5a accepted, October 23:** [atomic external-work intent](37-atomic-intent-implementation.md)
 adds the bounded Account/Dispatch model, immutable execution storage, status and
 cancellation through the existing mutation/receipt transaction. Source 0.10.0

@@ -20,19 +20,23 @@ fn stale() -> Error {
 
 impl<B: Binding> Store<B> {
     /// Called only by the single server owner, before any provider tasks exist.
-    pub(crate) fn activate_effect_worker(&self, enabled: bool) -> Result<Uuid> {
+    pub(crate) fn activate_effect_worker(&self, mode: WorkerMode) -> Result<Uuid> {
         let write = self.db.begin_write().map_err(local::storage)?;
         let now = now_millis()?;
         let mut runtime = runtime_write(&write)?;
-        if enabled && (B::effect_action().is_none() || runtime.quarantined) {
+        if mode.active() && B::effect_action().is_none()
+            || mode == WorkerMode::Delivery && runtime.quarantined
+        {
             return Err(Error::new(
                 "invalid_input",
                 "worker activation unavailable for this store",
             ));
         }
         runtime.activation = Uuid::new_v4();
-        runtime.dispatch_enabled = enabled;
+        runtime.mode = mode;
         runtime.sweeps = Default::default();
+        runtime.inbox_cursor = None;
+        runtime.inbox_end = None;
         runtime.next_class = 0;
         let rows = write
             .open_table(EXECUTIONS)
@@ -75,8 +79,11 @@ impl<B: Binding> Store<B> {
         let write = self.db.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
-        if runtime.activation != activation || !runtime.dispatch_enabled {
+        if runtime.activation != activation || !runtime.mode.active() {
             return Err(stale());
+        }
+        if runtime.unresolved == 0 {
+            return Ok(vec![]);
         }
         let class = WorkClass::from_byte(runtime.next_class)?;
         runtime.next_class = (runtime.next_class + 1) % 4;
@@ -182,7 +189,7 @@ impl<B: Binding> Store<B> {
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, candidate.execution)?;
-        if !runtime.dispatch_enabled
+        if !runtime.mode.active()
             || runtime.activation != candidate.activation
             || before.store != candidate.store
             || before.revision != candidate.revision
@@ -205,6 +212,9 @@ impl<B: Binding> Store<B> {
             }
             row.next_at = backoff(now, row.attempts.max(row.observations))?;
         } else if candidate.class == WorkClass::Submit {
+            if runtime.mode != WorkerMode::Delivery {
+                return Ok(None);
+            }
             if row.started.is_some() || row.quarantined || row.cancellation.is_some() {
                 return Err(local::corrupt("unsafe submission candidate"));
             }
@@ -506,7 +516,6 @@ pub(super) fn record_fact<B: Binding>(
             .map_err(local::storage)?;
     }
     row.last_fact = Some(digest.clone());
-    row.diagnostic = None;
     let terminal = matches!(
         row.phase,
         Phase::Succeeded | Phase::Failed | Phase::Cancelled
@@ -520,6 +529,7 @@ pub(super) fn record_fact<B: Binding>(
             row.conflict = true;
         }
     } else {
+        row.diagnostic = None;
         match disposition {
             Disposition::Succeeded => {
                 row.phase = Phase::Succeeded;

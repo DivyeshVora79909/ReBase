@@ -9,6 +9,11 @@ use tokio::{sync::watch, task::JoinSet};
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub endpoint: String,
+    #[serde(default)]
+    pub mode: WorkerMode,
+    /// Raw HMAC secret bytes; never copied into the store or provider request.
+    #[serde(default)]
+    pub ingress_secret_file: Option<PathBuf>,
     /// Deterministic acceptance pauses, only for the experimental fake adapter.
     /// The directory must already exist. No request can select it.
     #[serde(default)]
@@ -37,6 +42,10 @@ impl Config {
             || url.query().is_some()
             || url.fragment().is_some()
             || url.path() != "/"
+            || self
+                .ingress_secret_file
+                .as_ref()
+                .is_some_and(|path| !path.is_absolute())
             || self
                 .probe_directory
                 .as_ref()
@@ -162,6 +171,7 @@ pub(crate) async fn run<B: Binding>(
         .build()
         .map_err(|_| Error::new("transport", "fake HTTP client"))?;
     let mut calls: JoinSet<Completed<B>> = JoinSet::new();
+    let mut inbox_turn = true;
     let mut interval = tokio::time::interval(Duration::from_millis(250));
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let result:Result<()>=async {
@@ -175,6 +185,22 @@ pub(crate) async fn run<B: Binding>(
                     finish(store.clone(),&config,completed,&mut stop).await?;
                 }
                 _=interval.tick()=> {
+                    let consume_inbox = inbox_turn;
+                    inbox_turn = !inbox_turn;
+                    if consume_inbox {
+                        let owner=store.clone();
+                        let keys=blocking(move ||owner.scan_effect_inbox(activation)).await?;
+                        for key in keys {
+                            if *stop.borrow() {break;}
+                            let owner=store.clone();
+                            match blocking(move ||owner.consume_effect_event(activation,&key,None,None)).await {
+                                Ok(_)=>{},
+                                Err(error) if matches!(error.code,"state_limit"|"stale_version")=>{},
+                                Err(error)=>return Err(error),
+                            }
+                        }
+                        continue;
+                    }
                     let owner=store.clone();
                     let candidates=blocking(move ||owner.scan_effects(activation)).await?;
                     for candidate in candidates {

@@ -51,7 +51,9 @@ impl Fixture {
             .unwrap()
     }
     fn begin(&self, e: Uuid) -> (Claim, i64) {
-        self.store.activate_effect_worker(true).unwrap();
+        self.store
+            .activate_effect_worker(WorkerMode::Delivery)
+            .unwrap();
         let now = row(&self.store, e).created_at + 1;
         let claimed = self
             .store
@@ -222,9 +224,13 @@ fn success_applies_once_and_blocked_fact_survives_repair_without_resubmission() 
     assert_eq!(row(&f.store, e).application, Application::Blocked);
     assert_eq!(f.store.check_integrity().unwrap()["effects"]["facts"], 1);
     set_balance(&f.store, 5);
-    f.store.activate_effect_worker(false).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Disabled)
+        .unwrap();
     f.store.retry_effect(e, row(&f.store, e).revision).unwrap();
-    f.store.activate_effect_worker(true).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     assert!(
         f.store
             .apply_effect(&candidate(&f.store, e, WorkClass::Apply))
@@ -303,7 +309,9 @@ fn fact_and_application_abort_after_real_writes_preserve_every_table() {
 fn duplicate_claims_revisions_activation_and_finite_renewal_fence_writers() {
     let f = Fixture::new();
     let e = f.seed(12);
-    f.store.activate_effect_worker(true).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     let now = row(&f.store, e).created_at + 1;
     let selected = candidate(&f.store, e, WorkClass::Submit);
     let claim = f
@@ -368,7 +376,9 @@ fn duplicate_claims_revisions_activation_and_finite_renewal_fence_writers() {
         )
         .unwrap()
         .unwrap();
-    f.store.activate_effect_worker(true).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     assert!(
         f.store
             .finish_effect_at(
@@ -388,7 +398,9 @@ fn captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts()
         let f = Fixture::new();
         let (session, mut graph) = requester(&f.store);
         let e = f.seed_as(&session, 12);
-        f.store.activate_effect_worker(true).unwrap();
+        f.store
+            .activate_effect_worker(WorkerMode::Delivery)
+            .unwrap();
         let now = row(&f.store, e).created_at + 1;
         let claim = (stage > 0).then(|| {
             f.store
@@ -451,7 +463,9 @@ fn cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation
     for after in [false, true] {
         let f = Fixture::new();
         let e = f.seed(12);
-        f.store.activate_effect_worker(true).unwrap();
+        f.store
+            .activate_effect_worker(WorkerMode::Delivery)
+            .unwrap();
         let now = row(&f.store, e).created_at + 1;
         let claim = f
             .store
@@ -508,7 +522,9 @@ fn cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation
 fn only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate() {
     let f = Fixture::new();
     let e = f.seed(12);
-    f.store.activate_effect_worker(true).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     for attempt in 1..=3 {
         let now = row(&f.store, e).next_at.max(row(&f.store, e).created_at) + 1;
         let claim = f
@@ -558,7 +574,9 @@ fn only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate() {
 fn expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider() {
     let f = Fixture::new();
     let e = f.seed(12);
-    f.store.activate_effect_worker(true).unwrap();
+    f.store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     for _ in 0..3 {
         let now = row(&f.store, e).next_at.max(row(&f.store, e).created_at) + 1;
         let claim = f
@@ -586,7 +604,9 @@ fn expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider() 
     for start in [false, true] {
         let f = Fixture::new();
         let e = f.seed(12);
-        f.store.activate_effect_worker(true).unwrap();
+        f.store
+            .activate_effect_worker(WorkerMode::Delivery)
+            .unwrap();
         let end = row(&f.store, e).not_after;
         if start {
             let claim = f
@@ -622,7 +642,10 @@ fn bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart
         &f.store,
         Value::Array((21..39).map(|n| dispatch(n, Some(at))).collect()),
     );
-    let activation = f.store.activate_effect_worker(true).unwrap();
+    let activation = f
+        .store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     let now = at + 1000;
     let mut seen = BTreeSet::new();
     for _ in 0..8 {
@@ -642,7 +665,10 @@ fn bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart
         );
     }
     assert!(seen.contains(&new));
-    let activation = f.store.activate_effect_worker(true).unwrap();
+    let activation = f
+        .store
+        .activate_effect_worker(WorkerMode::Delivery)
+        .unwrap();
     let mut restarted = BTreeSet::new();
     for _ in 0..8 {
         restarted.extend(
@@ -882,3 +908,6 @@ fn persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked()
     assert_eq!(claim.mode, Mode::Submit);
     f.store.check_integrity().unwrap();
 }
+
+#[path = "inbox_tests.rs"]
+mod ingress;

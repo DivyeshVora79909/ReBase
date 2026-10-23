@@ -11,7 +11,7 @@ use crate::{
 use axum::{
     Router,
     body::{Body, Bytes},
-    extract::{DefaultBodyLimit, State},
+    extract::{DefaultBodyLimit, Request, State},
     http::{HeaderMap, StatusCode, header},
     response::Response,
     routing::{get, post},
@@ -37,6 +37,8 @@ struct App<B: Binding> {
     verifier: Arc<Verifier>,
     permits: Arc<Semaphore>,
     timeout: Duration,
+    ingress: Option<Arc<crate::effects::inbox::Secret>>,
+    effect_probe_directory: Option<std::path::PathBuf>,
 }
 fn response(status: StatusCode, value: Value) -> Response {
     let bytes = serde_json::to_vec(&value).expect("JSON value serializes");
@@ -97,6 +99,97 @@ async fn call<B: Binding>(State(app): State<App<B>>, headers: HeaderMap, body: B
     }
 }
 
+async fn webhook<B: Binding>(State(app): State<App<B>>, request: Request) -> Response {
+    let Some(secret) = &app.ingress else {
+        return response(StatusCode::NOT_FOUND, json!({"error":"unavailable"}));
+    };
+    let (parts, body) = request.into_parts();
+    if parts
+        .headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .is_none_or(|h| h.split(';').next().unwrap_or("").trim() != "application/json")
+    {
+        return response(
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            json!({"error":"application/json required"}),
+        );
+    }
+    let permit = match app.permits.clone().try_acquire_owned() {
+        Ok(permit) => permit,
+        Err(_) => return response(StatusCode::TOO_MANY_REQUESTS, json!({"error":"busy"})),
+    };
+    let body = match tokio::time::timeout(
+        Duration::from_secs(2),
+        axum::body::to_bytes(body, crate::effects::MAX_WEBHOOK),
+    )
+    .await
+    {
+        Ok(Ok(bytes)) => bytes,
+        Ok(Err(_)) => {
+            return response(
+                StatusCode::PAYLOAD_TOO_LARGE,
+                json!({"error":"webhook body limit"}),
+            );
+        }
+        Err(_) => {
+            return response(
+                StatusCode::REQUEST_TIMEOUT,
+                json!({"error":"webhook body deadline"}),
+            );
+        }
+    };
+    let verified = (|| {
+        let header = |name| {
+            let mut values = parts.headers.get_all(name).iter();
+            let value = values.next().and_then(|h| h.to_str().ok());
+            value
+                .filter(|_| values.next().is_none())
+                .ok_or_else(|| Error::new("unauthenticated", "webhook headers"))
+        };
+        secret.verify::<B>(
+            header("x-fake-account")?,
+            header("x-fake-event")?,
+            header("x-fake-timestamp")?,
+            header("x-fake-signature")?,
+            &body,
+            crate::effects::now_millis()?,
+        )
+    })();
+    let event = match verified {
+        Ok(event) => event,
+        Err(error) => return webhook_error(error),
+    };
+    let abort = app
+        .effect_probe_directory
+        .as_ref()
+        .is_some_and(|path| path.join("inbox.abort").exists())
+        .then_some(usize::MAX - 6);
+    let work = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        app.store.accept_effect_event(event, abort)
+    });
+    match tokio::time::timeout(app.timeout, work).await {
+        Ok(Ok(Ok(value))) => response(StatusCode::OK, value),
+        Ok(Ok(Err(error))) => webhook_error(error),
+        _ => response(
+            StatusCode::SERVICE_UNAVAILABLE,
+            json!({"error":"outcome_unknown"}),
+        ),
+    }
+}
+fn webhook_error(error: Error) -> Response {
+    let status = match error.code {
+        "unauthenticated" => StatusCode::UNAUTHORIZED,
+        "invalid_input" | "parse_error" => StatusCode::BAD_REQUEST,
+        "request_limit" => StatusCode::PAYLOAD_TOO_LARGE,
+        "not_found" => StatusCode::NOT_FOUND,
+        "content_conflict" => StatusCode::CONFLICT,
+        _ => StatusCode::SERVICE_UNAVAILABLE,
+    };
+    response(status, json!({"error":error.code}))
+}
+
 pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result<Router> {
     if !store.secured {
         return Err(Error::new(
@@ -121,10 +214,21 @@ pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result
         verifier: Arc::new(Verifier::new(config.identity.clone())?),
         permits: Arc::new(Semaphore::new(usize::from(config.max_inflight))),
         timeout: Duration::from_secs(u64::from(config.request_timeout_seconds)),
+        ingress: config
+            .effects
+            .as_ref()
+            .and_then(|effects| effects.ingress_secret_file.as_ref())
+            .map(|path| crate::effects::inbox::Secret::load(path).map(Arc::new))
+            .transpose()?,
+        effect_probe_directory: config
+            .effects
+            .as_ref()
+            .and_then(|effects| effects.probe_directory.clone()),
     };
     Ok(Router::new()
         .route("/health", get(health))
         .route("/rpc", post(call::<B>))
+        .route("/effects/fake", post(webhook::<B>))
         .layer(DefaultBodyLimit::max(MAX_REQUEST_BYTES))
         .with_state(app))
 }
@@ -148,22 +252,29 @@ pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Re
     });
     let worker = if B::effect_action().is_some() {
         let owner = store.clone();
-        let enabled = config.effects.is_some();
-        let activation = tokio::task::spawn_blocking(move || owner.activate_effect_worker(enabled))
+        let mode = config
+            .effects
+            .as_ref()
+            .map_or(crate::effects::WorkerMode::Disabled, |effects| effects.mode);
+        let activation = tokio::task::spawn_blocking(move || owner.activate_effect_worker(mode))
             .await
             .map_err(|_| Error::new("internal", "worker activation task"))??;
-        config.effects.map(|effects| {
-            let owner = store.clone();
-            let receiver = stop.subscribe();
-            let failed = stop.clone();
-            tokio::spawn(async move {
-                let result = crate::effects::fake::run(owner, effects, activation, receiver).await;
-                if result.is_err() {
-                    let _ = failed.send(true);
-                }
-                result
+        config
+            .effects
+            .filter(|effects| effects.mode.active())
+            .map(|effects| {
+                let owner = store.clone();
+                let receiver = stop.subscribe();
+                let failed = stop.clone();
+                tokio::spawn(async move {
+                    let result =
+                        crate::effects::fake::run(owner, effects, activation, receiver).await;
+                    if result.is_err() {
+                        let _ = failed.send(true);
+                    }
+                    result
+                })
             })
-        })
     } else {
         None
     };
@@ -186,9 +297,11 @@ pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Re
         None => Ok(()),
     };
     if B::effect_action().is_some() {
-        tokio::task::spawn_blocking(move || store.activate_effect_worker(false))
-            .await
-            .map_err(|_| Error::new("internal", "worker shutdown task"))??;
+        tokio::task::spawn_blocking(move || {
+            store.activate_effect_worker(crate::effects::WorkerMode::Disabled)
+        })
+        .await
+        .map_err(|_| Error::new("internal", "worker shutdown task"))??;
     }
     served.and(worker_result)
 }
@@ -261,6 +374,8 @@ mod tests {
             verifier: Arc::new(Verifier::new(config).unwrap()),
             permits: Arc::new(Semaphore::new(1)),
             timeout: Duration::from_millis(2),
+            ingress: None,
+            effect_probe_directory: None,
         };
         let mut headers = HeaderMap::new();
         headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());

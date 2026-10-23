@@ -108,7 +108,7 @@ impl Binding for EffectDemo {
     type Outcome = Outcome;
     type Index = Standard;
     const NAME: &'static str = "effect-demo";
-    const BEHAVIOR: &'static str = "effect-demo-delivery-2";
+    const BEHAVIOR: &'static str = "effect-demo-ingress-3";
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
@@ -301,7 +301,7 @@ impl Binding for EffectDemo {
         let account = Uuid::new_v5(&namespace, b"effect-demo/account");
         let dispatch = Uuid::new_v5(&namespace, b"effect-demo/dispatch");
         Ok(
-            json!({"model":model.identity(),"fixture":{"name":name,"namespace":namespace,"ids":{"Account":account,"Dispatch":dispatch},"expected":{"balance":"12","units":"3","phase":"ready","dispatch_enabled":false}},
+            json!({"model":model.identity(),"fixture":{"name":name,"namespace":namespace,"ids":{"Account":account,"Dispatch":dispatch},"expected":{"balance":"12","units":"3","phase":"ready","worker_mode":"disabled"}},
             "commands":[{"op":"create","id":account,"contract":101,"fields":{"balance":"12"}},
             {"op":"create","id":dispatch,"contract":205,"fields":{"account":account,"units":"3","execute_at":null,"not_after":null}}],"returning":[account,dispatch]}),
         )

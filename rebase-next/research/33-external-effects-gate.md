@@ -1,16 +1,15 @@
 # G5: bounded durable external work
 
-**G5a/G5b accepted, 2026-10-23; G5c remains unaccepted.** The
-[G5a result](37-atomic-intent-implementation.md) and
-[evidence](evidence/2026-10-23-g5a-atomic-intent.json) establish atomic intent,
-status/cancellation and checked bounded storage. [G5b](38-fenced-worker-implementation.md)
-adds the verified fenced worker, independent fake provider and typed result application.
-Restored worker activation remains disabled pending G5c. This is G5 of the
-[capability program](30-capability-program.md), after the accepted 0.6 release.
-The small [lifecycle oracle](experiments/effect_lifecycle.py) has executed; its
-limited result is recorded below. No production provider, worker, durable inbox
-or effect-storage implementation is supplied by that experiment; G5a's separate
-native evidence now establishes its stated storage scope.
+**G5a-G5c accepted, 2026-10-23, through source 0.12.0.**
+[G5a](37-atomic-intent-implementation.md) establishes atomic intent and checked
+storage; [G5b](38-fenced-worker-implementation.md) adds the fenced worker and
+typed result application; [G5c](39-ingress-recovery-implementation.md) adds durable
+signed ingress and explicit restored reconciliation. The fixed fake provider is
+verified against an independent journal. Restored delivery stays prohibited.
+The [capability program](30-capability-program.md) remains active. The original
+[lifecycle oracle](experiments/effect_lifecycle.py) below is separate logical
+preparation evidence; it alone does not prove native durability or transport.
+The implementation results above own those executed claims and their limits.
 
 ## Meaning and selected scope
 

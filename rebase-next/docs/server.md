@@ -114,7 +114,10 @@ alternative RustCrypto feature pulled unpatched `rsa` (RUSTSEC-2023-0071), even
 though this service only accepts Ed25519; it is absent from the selected graph.
 
 
-The optional `effects` configuration enables the experimental effect-demo worker
-with a pinned loopback fake-provider origin. Existing configurations omit it.
-See [external work](external-effects.md) for its limits, captured authority,
-shutdown/retry behavior and the G5b restored-activation restriction.
+The optional `effects` configuration selects an explicit `disabled` (default),
+`delivery` or `reconcile` mode for the experimental effect-demo worker, with a
+pinned loopback fake-provider origin. `ingress_secret_file` separately enables
+the signed `/effects/fake` route, with an 8 KiB body limit and two-second read
+deadline. That route uses provider HMAC authentication; `/rpc` retains JWT
+authentication. See [external work](external-effects.md) for captured authority,
+durable ACKs, shutdown/retry behavior and reconciliation-only restored stores.

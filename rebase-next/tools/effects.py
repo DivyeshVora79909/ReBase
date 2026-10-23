@@ -18,8 +18,8 @@ def run(binary, destination):
         backend.start()
         catalog = backend.call("model.describe", {})
         model = catalog["model"]
-        require(catalog["api"] == "rebase-local-api-2" and
-                catalog["capabilities"]["effects"]["dispatch_enabled"] is False, "G5a catalog identity")
+        require(catalog["api"] == "rebase-local-api-3" and
+                catalog["capabilities"]["effects"]["default_worker_mode"] == "disabled", "G5a catalog identity")
         token = restricted_actor(backend, model)
         actor = client.call(backend.url, token, "session.describe", {})["actor"]
 
@@ -73,7 +73,7 @@ def run(binary, destination):
         require(ready["request"] == create_dispatch["fields"] and execution not in (account, dispatch), "Frozen execution identity/request")
         require(ready["created_at"] == ready["execute_at"] and int(ready["not_after"]) - int(ready["created_at"]) == 60000,
                 "Frozen default schedule")
-        require(ready["provider_key"] == execution + "/1" and ready["dispatch_enabled"] is False, "Disabled stable provider identity")
+        require(ready["provider_key"] == execution + "/1" and ready["worker_mode"] == "disabled", "Disabled stable provider identity")
 
         context = call("session.describe", {})["operation_context"]
         cancel = {"model": model, "context": context, "operation_id": str(uuid.uuid4()), "execution_id": execution, "if_revision": "1"}
@@ -120,10 +120,10 @@ def run(binary, destination):
         restored = backend.directory / "restored.redb"
         restored_result = backend.cli("restore", backup, restored)
         require(restored_result["integrity"]["effects"]["quarantined"] and
-                not restored_result["integrity"]["effects"]["dispatch_enabled"], "Restored dispatch was enabled")
+                restored_result["integrity"]["effects"]["worker_mode"] == "disabled", "Restored dispatch was enabled")
         backend.store = restored
         backend.start()
-        require(status(second)["phase"] == "ready" and status(second)["dispatch_enabled"] is False, "Restored intent changed or ran")
+        require(status(second)["phase"] == "ready" and status(second)["worker_mode"] == "disabled", "Restored intent changed or ran")
         require(client.execute(backend.url, token, reused_plan)["result"] == reused["result"], "Restored replay differs")
         after = snapshot(backend, "restored-state")
         for table, rows in before["tables"].items():

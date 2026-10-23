@@ -8,6 +8,20 @@ pub(crate) const MAX_LEASE_MS: i64 = 30_000;
 pub(crate) const MAX_ATTEMPTS: u8 = 3;
 pub(crate) const MAX_OBSERVATIONS: u8 = 6;
 
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkerMode {
+    #[default]
+    Disabled,
+    Delivery,
+    Reconcile,
+}
+impl WorkerMode {
+    pub(crate) fn active(self) -> bool {
+        self != Self::Disabled
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Disposition {
@@ -246,7 +260,8 @@ impl<B: Binding> Execution<B> {
             && self.id == claim.execution
             && self.revision == claim.revision
             && runtime.activation == claim.activation
-            && runtime.dispatch_enabled
+            && runtime.mode.active()
+            && (claim.mode == Mode::Reconcile || runtime.mode == WorkerMode::Delivery)
             && self.lease.as_ref().is_some_and(|l| {
                 l.activation == claim.activation
                     && l.token == claim.token
@@ -270,7 +285,7 @@ impl<B: Binding> Execution<B> {
             "effect result reservation",
         )?;
         ensure(
-            !runtime.quarantined || !self.unresolved() || self.quarantined,
+            !runtime.quarantined || !self.reservation || self.quarantined,
             "restore execution quarantine",
         )?;
         if let Some(lease) = &self.lease {
@@ -283,10 +298,11 @@ impl<B: Binding> Execution<B> {
                     && lease.renewals <= 2
                     && (lease.renewals != 0
                         || lease.expires_at.saturating_sub(lease.claimed_at) == LEASE_MS)
-                    && runtime.dispatch_enabled
+                    && runtime.mode.active()
                     && match lease.mode {
                         Mode::Submit => {
-                            self.phase == Phase::Ready
+                            runtime.mode == WorkerMode::Delivery
+                                && self.phase == Phase::Ready
                                 && !self.quarantined
                                 && self.cancellation.is_none()
                                 && self.attempts > 0

@@ -27,8 +27,8 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 | G4a | Validate a declared aggregate without a private output | Accepted: [terminal validation gate](31-terminal-validation.md) |
 | G4b | Reactive time windows with two, one or zero bounds | Accepted: [exact windows and final-graph scheduling](32-reactive-windows.md) |
 | G4c | Maintain a genuinely new summary/key contract | Accepted: [native index extension](34-native-index-extension.md), one active tree and dimensioned measurement statistics |
-| G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md) accepted; typed query consumers/selection remain separately scoped |
-| G5 | Reliable external work | [G5a intent](37-atomic-intent-implementation.md) and [G5b fenced worker/application](38-fenced-worker-implementation.md) accepted; next G5c durable inbox and restore reconciliation |
+| G4d | Additional declared value dependencies | [G4d-a published-parent values](36-value-dependencies-gate.md) accepted; [typed query consumers/selection](40-native-query-consumers.md) prepared next |
+| G5 | Reliable external work | [G5a intent](37-atomic-intent-implementation.md), [G5b worker/application](38-fenced-worker-implementation.md) and [G5c inbox/recovery](39-ingress-recovery-implementation.md) accepted for the fixed fake provider |
 | G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
 | G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
 | G8 | Workload and deployment acceptance | Extended workloads, recovery and release package with explicit limits rather than unlimited production claims |
@@ -73,8 +73,8 @@ conservative bounds: a historical change may affect many consumers.
 [Transactions](02-transactions-and-storage.md#7-external-work),
 [wireframes](07-contract-wireframes.md#8-external-work-and-future-capabilities)
 and the original [operations design](../../designs/rebase-system/operations.md)
-establish safety obligations, not current executable provider support. Complete
-types/transitions, authority, worker APIs, inventory and crash controls before G5.
+establish safety obligations. G5a-G5c now provide executable native evidence for
+the bounded fake adapter; live providers remain separately scoped.
 
 No irreversible provider call belongs inside an automatically retried mutation.
 An intent commits with business state; a queue wake is disposable. Execution
@@ -91,8 +91,9 @@ Preserve complete state and receipt absence on rejected writes, replay, reopenin
 and model/store identity. Commit and push each coherent checkpoint, then continue
 without another prompt. Keep `CONTEXT.md` current for switching agents.
 
-G4a, G4b, G4c, G4d-a, G5a and G5b are accepted. Continue with G5c ingress/recovery.
+G4a, G4b, G4c, G4d-a and G5a-G5c are accepted. Continue with
+[G4d-b native query consumers](40-native-query-consumers.md).
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
-fake-provider execution are accepted; durable ingress and restored reconciliation are not. Later rows remain planned capabilities until their
-acceptance executes.
+fake-provider execution, durable signed ingress and restored reconciliation are
+accepted. Later rows remain planned capabilities until their acceptance executes.
