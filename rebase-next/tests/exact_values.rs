@@ -3,6 +3,8 @@
 use rebase_semantic_proof::{
     binding::{Binding, NativeInput},
     identity::{self, IdentityConfig, TokenRequest},
+    index::TimeKey,
+    indexes::standard::{FINANCIAL, Leaf, Standard},
     local::Store,
     model::{
         self, Contract, InputField, Membership, Prepared, PublishedField, Reference,
@@ -14,7 +16,6 @@ use rebase_semantic_proof::{
     routes,
     server::{self, ServerConfig},
     time_range::TimeRange,
-    tree::{Kind, Leaf},
     values::{Rational, Rounding},
 };
 use serde::{Deserialize, Serialize};
@@ -95,6 +96,7 @@ fn integer_schema() -> Value {
 }
 
 impl Binding for ExactEntries {
+    type Index = Standard;
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "test-exact-entries";
@@ -149,7 +151,7 @@ impl Binding for ExactEntries {
                 contract.roots.push(RootDeclaration {
                     slot: 7,
                     name: "rounded_entries",
-                    kind: Kind::Financial,
+                    kind: FINANCIAL,
                     reads: vec!["summary", "before"],
                     invariant: None,
                 });
@@ -168,7 +170,7 @@ impl Binding for ExactEntries {
                     through: "bucket",
                     root_contract: 11,
                     root_slot: 7,
-                    kind: Kind::Financial,
+                    kind: FINANCIAL,
                     key: "at",
                     value: "rounded",
                 });
@@ -240,7 +242,7 @@ impl Binding for ExactEntries {
                         rounding,
                     }) => Ok(Some((
                         Address::new(*bucket, 7),
-                        *at,
+                        TimeKey(*at),
                         Leaf::Financial(rate.apply(*amount, *rounding)?),
                     ))),
                     _ => Ok(None),

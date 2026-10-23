@@ -1,11 +1,34 @@
-# G4c proposal: a native index family behind one maintained tree
+# G4c result: a native index family behind one maintained tree
 
-**Selected for preparation, 2026-10-23; implementation unaccepted.** The preceding
-[window gate](32-reactive-windows.md) supplies exact time windows, indexed
-discovery and final-graph settlement. This note proposes the next bounded gate
-in the [capability program](30-capability-program.md). It records design and
-acceptance obligations, not new executable support or a capacity certification.
-G4b is now accepted; G4c-a is the active next implementation checkpoint.
+**G4c-a/b accepted, 2026-10-23, source 0.8.0 / store+codec 6.** The
+[dated evidence](evidence/2026-10-23-g4c-native-indexes.json) records the active
+single-tree port and dimensioned measurement model. Work resumed from `b377b21`;
+the cloud partial changes were unavailable. The contract below retains the
+design rationale and acceptance obligations. This is a source checkpoint;
+the last accepted deployment bundle remains 0.6.0.
+
+All 109 Rust tests pass in debug/optimized builds, formatting and Clippy pass,
+and 68 foundation +39 causal +9 local cases pass independent source checks.
+The measurement HTTP workflow passes 33 mutations /105 commands (26 commits,
+7 complete rollbacks), reaches 64 sources and verifies authority, replay,
+crash/reopen/restore plus six corrupt-index restore controls. Invoicing passes
+111 mutations /340 commands. Measurement's full-capacity create/delete replacement
+works in both command orders; orphan Standard roots report corruption through
+check/startup/restore without panicking.
+
+Calculation and equipment HTTP workflows pass at 64 and 4,096 sources. At 4,096,
+zero/one-selection work matches G4b: equipment 24 selector visits, 45/54 key loads,
+293/920 work units; calculation 24 visits, 21/51 loads, 87/198 units. Native spans
+and envelopes increase stored/encoded bytes. Full fanout still rejects with
+`work_limit`, complete rollback and no receipt. Bounds are unchanged; timings
+from different hosts are not a performance comparison.
+
+Three populated format-5 stores reject with physical bytes unchanged and remain
+valid under the retained matching binary, rebuilt locally from `b377b21`.
+The original cloud executable is not claimed as retained evidence. Native family
+schemas/codes and behavior revisions bind prepared identity. The next selected
+step is [G4d-a published values](36-value-dependencies-gate.md); custom reactive
+statistics, selection and external effects remain unaccepted.
 
 ## Recommendation and the two concrete uses
 

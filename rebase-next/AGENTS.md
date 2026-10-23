@@ -12,9 +12,11 @@ bundle in this environment, with all three models, issuer/template checks,
 crash recovery and failed-restore isolation. The subsequent
 [capability program](research/30-capability-program.md) is active: first
 [G4a terminal validation](research/31-terminal-validation.md) and
-[G4b reactive windows](research/32-reactive-windows.md) are accepted. Continue
-[G4c native indexes](research/34-native-index-extension.md): one active generic
-tree representation, then an end-to-end new summary. Prepare external contracts alongside core work with explicit atomic
+[G4b reactive windows](research/32-reactive-windows.md) and
+[G4c native indexes](research/34-native-index-extension.md) are accepted source
+checkpoints. Source 0.8.0 / store+codec 6 adds the shared native-family tree and
+dimensioned measurement model. Continue [G4d-a published values](research/36-value-dependencies-gate.md),
+then G5a atomic intent. Prepare external contracts alongside core work with explicit atomic
 integration. Preserve earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is

@@ -1,6 +1,7 @@
 //! Fixed authored-key M1/M2/M4 experiment; not a public or distributed engine.
 
 use crate::binding::{Binding, Calculation};
+use crate::index::{NativeIndex, TimeKey};
 use crate::native_codec::StoredValue;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -15,7 +16,7 @@ use crate::{
     time_range::TimeRange,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-5";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-6";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -594,7 +595,7 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
             }
             if let Key::Node(_) = key {
                 let logical = |value: &Option<StoredValue<B>>| match value {
-                    Some(StoredValue::Node(n)) => Some((n.root, n.key, n.leaf)),
+                    Some(StoredValue::Node(n)) => Some((n.root, n.key.clone(), n.leaf.clone())),
                     _ => None,
                 };
                 let old = logical(&entry.original);
@@ -613,8 +614,10 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
                 continue;
             }
             let logical = |v: &Option<StoredValue<B>>| match v {
-                Some(StoredValue::Node(n)) if matches!(n.leaf, crate::tree::Leaf::Financial(_)) => {
-                    Some((n.root, n.key.at, n.leaf))
+                Some(StoredValue::Node(n)) if B::Index::financial_leaf(n.kind, &n.leaf).is_ok() => {
+                    B::Index::time(n.kind, &n.key.value)
+                        .ok()
+                        .map(|at| (n.root, at, n.leaf.clone()))
                 }
                 _ => None,
             };
@@ -777,7 +780,9 @@ fn quote_successor<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         ws.get(&key)?
     };
     match value {
-        Some(Stored::Node(v)) if v.root == n.root && v.key.at > n.key.at => Ok(Some(v.key.at)),
+        Some(Stored::Node(v)) if v.root == n.root && v.key.value.get() > n.key.value.get() => {
+            Ok(Some(v.key.value.get()))
+        }
         _ => Err(Error::new("corrupt_state", "quote successor")),
     }
 }
@@ -792,7 +797,7 @@ fn quote(input: Option<&Input>) -> Option<(Uuid, i64, u16)> {
 pub(crate) fn financial(
     record: Option<&Record>,
     slot: u16,
-) -> Result<Option<(Address, i64, crate::tree::Leaf)>> {
+) -> Result<Option<(Address, i64, crate::indexes::standard::Leaf)>> {
     let Some(record) = record else {
         return Ok(None);
     };
@@ -811,7 +816,7 @@ pub(crate) fn financial(
         return Ok((slot == 1).then_some((
             Address::new(account, 2),
             at,
-            crate::tree::Leaf::Financial(amount),
+            crate::indexes::standard::Leaf::Financial(amount),
         )));
     }
     let Input::Posting {
@@ -833,13 +838,13 @@ pub(crate) fn financial(
         (
             Address::new(account, 2),
             at,
-            crate::tree::Leaf::Financial(derived.native_minor),
+            crate::indexes::standard::Leaf::Financial(derived.native_minor),
         )
     } else {
         (
             Address::new(subsidiary, 3),
             at,
-            crate::tree::Leaf::Financial(derived.reporting_minor),
+            crate::indexes::standard::Leaf::Financial(derived.reporting_minor),
         )
     }))
 }
@@ -847,13 +852,13 @@ pub(crate) fn financial(
 pub(crate) fn reconcile_member<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
     ws: &mut Workspace<L>,
     id: Address,
-    old: Option<(Address, i64, crate::tree::Leaf)>,
-    new: Option<(Address, i64, crate::tree::Leaf)>,
+    old: Option<(Address, i64, crate::indexes::standard::Leaf)>,
+    new: Option<(Address, i64, crate::indexes::standard::Leaf)>,
 ) -> Result<()> {
     use crate::tree;
     match (old, ws.get(&Key::Node(id))?) {
         (Some((root, at, leaf)), Some(Stored::Node(n)))
-            if n.root == root && n.key.at == at && n.leaf == leaf => {}
+            if n.root == root && n.key.value.get() == at && n.leaf == leaf => {}
         (None, None) => {}
         _ => {
             return Err(Error::new(
@@ -875,7 +880,7 @@ pub(crate) fn reconcile_member<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
         tree::remove(ws, root, id)?;
     }
     if let Some((root, at, leaf)) = new {
-        tree::insert(ws, root, id, at, leaf)?;
+        tree::insert(ws, root, id, TimeKey::new(at), leaf)?;
     }
     Ok(())
 }
@@ -963,7 +968,8 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
     revision: u64,
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<()> {
-    use crate::tree::{self, Aggregate, Leaf};
+    use crate::indexes::standard::{Aggregate, Leaf};
+    use crate::tree;
     // Unit agreement is a calculation-model obligation, beyond shared typed
     // reference existence/tenant checks. Keep it at the model boundary.
     for change in changes {
@@ -1025,7 +1031,7 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
             if old.is_some_and(|(c, t, _)| (c, t) == (curve, at)) {
                 tree::revalue(ws, root, node, Leaf::Quote(rate))?;
             } else {
-                tree::insert(ws, root, node, at, Leaf::Quote(rate))?;
+                tree::insert(ws, root, node, TimeKey::new(at), Leaf::Quote(rate))?;
             }
         }
     }

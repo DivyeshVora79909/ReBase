@@ -25,7 +25,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-store-5";
+pub const STORE_FORMAT: &str = "rebase-store-6";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 

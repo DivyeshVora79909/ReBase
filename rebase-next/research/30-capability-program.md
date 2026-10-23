@@ -26,8 +26,8 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 | --- | --- | --- |
 | G4a | Validate a declared aggregate without a private output | Accepted: [terminal validation gate](31-terminal-validation.md) |
 | G4b | Reactive time windows with two, one or zero bounds | Accepted: [exact windows and final-graph scheduling](32-reactive-windows.md) |
-| G4c | Maintain a genuinely new summary/key contract | Active: [native index extension](34-native-index-extension.md); first port the active engine, then prove a new measurement summary end to end |
-| G4d | Additional declared value dependencies | Published-parent values, richer query results and selection operations need explicit invalidation/readiness contracts; no hidden or multihop reads |
+| G4c | Maintain a genuinely new summary/key contract | Accepted: [native index extension](34-native-index-extension.md), one active tree and dimensioned measurement statistics |
+| G4d | Additional declared value dependencies | Next: [G4d-a published-parent values](36-value-dependencies-gate.md), then separately scoped typed query consumers/selection; no hidden reads |
 | G5 | Reliable external work | Atomic immutable intent, bounded due discovery, fenced claims/start/completion, uncertainty/reconciliation, cancellation and durable webhook inbox; start with a deterministic fake provider |
 | G6 | Representative accounting power | Dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns through shared APIs; independent source expectations |
 | G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
@@ -45,7 +45,7 @@ and large imports/exports are additional product choices, not silently supplied
 by a KV adapter or the current JWT verifier. Bring them into a named gate when
 required. Reuse supported protocol libraries rather than implement cryptography.
 
-## Next boundary: reactive windows
+## Accepted window contract
 
 Preserve timestamp groups, exact `i64` extremes and identity for empty/zero
 queries. Use inclusive/exclusive/unbounded values without incrementing times or
@@ -91,6 +91,8 @@ Preserve complete state and receipt absence on rejected writes, replay, reopenin
 and model/store identity. Commit and push each coherent checkpoint, then continue
 without another prompt. Keep `CONTEXT.md` current for switching agents.
 
-G4a and G4b are accepted. Continue with G4c's active engine port and concrete
-measurement proof. Later rows remain planned capabilities until their acceptance
-executes.
+G4a, G4b and G4c are accepted. Continue with G4d-a's explicit published-parent
+consumption, then G5a atomic intent. The [external integration review](35-external-integration-review.md)
+prepares G5's shared transaction and recovery seams; no native external-service
+implementation is accepted. Later rows remain planned capabilities until their
+acceptance executes.

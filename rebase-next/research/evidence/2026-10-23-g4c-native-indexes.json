@@ -1,0 +1,2665 @@
+{
+  "format": "rebase-g4c-native-indexes-1",
+  "date": "2026-10-23",
+  "status": "accepted source checkpoint; no new deployment bundle claimed",
+  "base_commit": "b377b21c2bc1851948f92f3c6ce8ebfe96d56ca0",
+  "binary": {
+    "path": "target/g4c-accepted/rebase-next",
+    "sha256": "34aaa698480f08672d805624c15b30cd0cd50e4f366a63cb95042fb09051104a"
+  },
+  "models": {
+    "calculation": {
+      "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "store_format": "rebase-store-6",
+      "version": "0.8.0"
+    },
+    "equipment": {
+      "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+      "store_format": "rebase-store-6",
+      "version": "0.8.0"
+    },
+    "invoicing": {
+      "model": "accb33d6b74ed18a42b2b645509e408088fa4e97c03c5902489bd0fbb479a43e",
+      "store_format": "rebase-store-6",
+      "version": "0.8.0"
+    },
+    "measurement": {
+      "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+      "store_format": "rebase-store-6",
+      "version": "0.8.0"
+    }
+  },
+  "checks": {
+    "fmt": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.183,
+      "log": "target/g4c-final-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "clippy": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 15.06,
+      "log": "target/g4c-final-clippy.log",
+      "sha256": "20b2972788bcb91b9a8affc2dda224d18b493863d320f8e32a669bbe56e6de2f"
+    },
+    "debug-tests": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "seconds": 81.842,
+      "log": "target/g4c-final-debug-tests.log",
+      "sha256": "6d0159f75623b99704bbd2ef3471899bccf6ed8fd829e2ebc1897fd179adebdf",
+      "tests_passed": 109
+    },
+    "release-tests": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "seconds": 533.579,
+      "log": "target/g4c-final-release-tests.log",
+      "sha256": "ee0e0c0283d45a7375fb6aa8fa9b09adb4119e0f6e766c024ea51591ef2bc9da",
+      "tests_passed": 109
+    },
+    "release-build": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next",
+        "--examples"
+      ],
+      "exit_code": 0,
+      "seconds": 60.472,
+      "log": "target/g4c-final-release-build.log",
+      "sha256": "65d00a32b11d536e61782ad617ab307fb42c165c4b037ad5f212a57b9aedf331"
+    },
+    "foundation": {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/build/release/examples/native_slice"
+      ],
+      "exit_code": 0,
+      "seconds": 4.562,
+      "log": "target/g4c-final-foundation.log",
+      "sha256": "45d5e37c3ed09f323024387db6bc325a82741b3dca56c67ea933f2b9d008e25d"
+    },
+    "foundation-independent": {
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/native-slice/run-1673118-1792744405940408897/native-observations.json"
+      ],
+      "exit_code": 0,
+      "seconds": 1.958,
+      "log": "target/g4c-final-foundation-independent.log",
+      "sha256": "ba3a052022fa089d365abef4f76a44e99ffd2475b647e27a4d5222793b7e2709"
+    },
+    "causal": {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/build/release/examples/native_slice",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "seconds": 3.156,
+      "log": "target/g4c-final-causal.log",
+      "sha256": "15da1de0ddcf7cb700495d1b7734908a4bb147e5459ca2d631f8c4b4bd489b40"
+    },
+    "causal-independent": {
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/native-slice/run-1673344-1792744412462187415/native-observations.json",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "seconds": 1.941,
+      "log": "target/g4c-final-causal-independent.log",
+      "sha256": "b8458bc49fe50f76580e6e397bb082b65fb57fc1bfbbb65e7775a9694aaa39d4"
+    },
+    "local": {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/build/release/examples/local_acceptance"
+      ],
+      "exit_code": 0,
+      "seconds": 0.675,
+      "log": "target/g4c-final-local.log",
+      "sha256": "e45fdb77d18a7f6f42513463d923f8acf2151692e58936b883ee2378bbe09a3f"
+    },
+    "local-independent": {
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/local-prototype/run-1673450-1792744417575410356/local-observations.json"
+      ],
+      "exit_code": 0,
+      "seconds": 0.537,
+      "log": "target/g4c-final-local-independent.log",
+      "sha256": "267db6b5e3d6e007fda18e969f01f37bd6155cbefd6d39b372d228754cc16256"
+    },
+    "client-controls": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "seconds": 1.023,
+      "log": "target/g4c-final-client-controls.log",
+      "sha256": "a65eb7fd21b35cf9e32afa3babae1486fd7606a181786807d3d527797a29325b"
+    },
+    "capacity-controls": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "seconds": 0.258,
+      "log": "target/g4c-final-capacity-controls.log",
+      "sha256": "8470f08be19c9a42f3a2bbe2261d25bc9a7e6ab20124413356b7485c96471c30"
+    },
+    "invoicing-controls": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_invoicing.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "seconds": 0.312,
+      "log": "target/g4c-final-invoicing-controls.log",
+      "sha256": "fb65180b517ac8a15bd874b130c4c8aa51bd73ece8bb4f031f58b7f0811f6a2c"
+    }
+  },
+  "independent_cases": {
+    "foundation": 68,
+    "causal": 39,
+    "local": 9,
+    "total": 116
+  },
+  "http": {
+    "measurement": {
+      "status": "passed",
+      "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+      "public_sources": 64,
+      "operations": [
+        {
+          "name": "fixture",
+          "commands": 5,
+          "result": "committed"
+        },
+        {
+          "name": "mixed-dimension",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "owner-dimension",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "unit-repair-parent-True",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "unit-repair-parent-False",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "extreme-time-and-value",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "compatible-root-move",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "revalue",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "value-overflow",
+          "commands": 1,
+          "result": "invalid_input"
+        },
+        {
+          "name": "missing-instrument",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "delete-referenced-instrument",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "delete-to-empty",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "empty-owner-unit",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "incompatible-root-move",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "move-and-unit-repair",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-00",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-01",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-02",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-03",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-04",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-05",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-06",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-07",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-08",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-09",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-10",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-11",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-12",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-13",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-14",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-15",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "fill-source-envelope",
+          "commands": 61,
+          "result": "committed"
+        },
+        {
+          "name": "source-overflow",
+          "commands": 1,
+          "result": "state_limit"
+        }
+      ],
+      "stress_seed": 20261023,
+      "stress_batches": 16,
+      "logical_bytewise_rollback": true,
+      "authenticated_windows": true,
+      "authority_failure": true,
+      "reopen": true,
+      "crash_recovery": true,
+      "verified_restore": true,
+      "corrupt_restore_controls": [
+        "index-code",
+        "key-variant",
+        "leaf-variant",
+        "summary-variant",
+        "span",
+        "cache"
+      ],
+      "integrity": {
+        "model": "7b29cac932d28f37c5cf0ee7eb79e8e72c945ab3255fb99f874bebd87a151fa0",
+        "nodes": 62,
+        "receipts": 26,
+        "records": 64,
+        "revision": "27",
+        "roots": 2,
+        "rows": 255,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "582f631f-31a7-4d54-922a-d9520baf8bae"
+      },
+      "binary_sha256": "34aaa698480f08672d805624c15b30cd0cd50e4f366a63cb95042fb09051104a",
+      "mutations": 33,
+      "commands": 105,
+      "commits": 26,
+      "rollbacks": 7
+    },
+    "invoicing": {
+      "status": "passed",
+      "model": "accb33d6b74ed18a42b2b645509e408088fa4e97c03c5902489bd0fbb479a43e",
+      "public_sources": 64,
+      "baseline_gross": "11555",
+      "corrected_gross": "9244",
+      "operations": [
+        {
+          "name": "baseline",
+          "commands": 6,
+          "result": "committed"
+        },
+        {
+          "name": "credit-and-reassess",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "historical-price",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "restore-price",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "parent-rate",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "restore-rate",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "net-rule-kind",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "restore-kind",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "zero-reassessment",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-00",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-01",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-02",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-03",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-04",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-05",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-06",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-07",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-08",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-09",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-10",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-11",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-12",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-13",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-14",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-15",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-16",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-17",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-18",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-19",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-20",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-21",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-22",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-23",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-24",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-25",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-26",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-27",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-28",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-29",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-30",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-31",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-32",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-33",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-34",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-35",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-36",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-37",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-38",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "source-stress-39",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "restore-literal-scenario",
+          "commands": 3,
+          "result": "committed"
+        },
+        {
+          "name": "remove-correction",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "fully-paid",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "paid-credit-without-refund",
+          "commands": 3,
+          "result": "invariant"
+        },
+        {
+          "name": "late-refund-final-zero",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "credit-refund-reassess",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "positive-reassessment-claims",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "restore-negative-claims",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "retired-producer-identity",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "partial-settlement",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "second-payment",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "linked-capacity-despite-positive-cash",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "combine-payments",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "split-same-time-refunds",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "combine-refunds",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "other-treasuries",
+          "commands": 2,
+          "result": "committed"
+        },
+        {
+          "name": "treasury-name",
+          "commands": 1,
+          "result": "committed"
+        },
+        {
+          "name": "currency-mismatch",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "refund-parent-mismatch",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "immutable-payment-treasury",
+          "commands": 1,
+          "result": "invalid_input"
+        },
+        {
+          "name": "immutable-refund-payment",
+          "commands": 1,
+          "result": "invalid_input"
+        },
+        {
+          "name": "immutable-treasury-currency",
+          "commands": 1,
+          "result": "invalid_input"
+        },
+        {
+          "name": "private-directional-output",
+          "commands": 1,
+          "result": "forbidden"
+        },
+        {
+          "name": "delete-refunded-payment",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "delete-used-treasury",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "payment-before-issue",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "refund-before-payment",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "excess-payment",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "insufficient-refund",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-00",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-01",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-02",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-03",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-04",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-05",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-06",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-07",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-08",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-09",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-10",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-11",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-12",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-13",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-14",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-15",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-16",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-17",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-18",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-19",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-20",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-21",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "settlement-stress-22",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "settlement-stress-23",
+          "commands": 4,
+          "result": "invariant"
+        },
+        {
+          "name": "restore-settled-literal",
+          "commands": 4,
+          "result": "committed"
+        },
+        {
+          "name": "duplicate-time",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "overcredit",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "early-credit",
+          "commands": 1,
+          "result": "invariant"
+        },
+        {
+          "name": "inexact-rule",
+          "commands": 1,
+          "result": "inexact"
+        },
+        {
+          "name": "overflow-price",
+          "commands": 1,
+          "result": "overflow"
+        },
+        {
+          "name": "missing-rule",
+          "commands": 1,
+          "result": "unavailable_reference"
+        },
+        {
+          "name": "fill-source-envelope",
+          "commands": 50,
+          "result": "committed"
+        },
+        {
+          "name": "source-overflow",
+          "commands": 1,
+          "result": "state_limit"
+        }
+      ],
+      "stress_seed": 20261022,
+      "stress_batches": 40,
+      "settlement": {
+        "gross": "9244",
+        "paid": "9244",
+        "balance": "0",
+        "receivable": "13866",
+        "payable": "13866",
+        "cash": "9244",
+        "refund_capacity": "9244"
+      },
+      "settlement_stress_seed": 20261023,
+      "settlement_stress_batches": 24,
+      "settlement_stress_results": {
+        "committed": 11,
+        "invariant": 13
+      },
+      "stable_directional_roles": true,
+      "logical_bytewise_rollback": true,
+      "integrity": {
+        "model": "accb33d6b74ed18a42b2b645509e408088fa4e97c03c5902489bd0fbb479a43e",
+        "nodes": 40,
+        "receipts": 75,
+        "records": 89,
+        "revision": "75",
+        "roots": 313,
+        "rows": 816,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "d4e22022-0c62-4a4f-bfd2-91c4bea1436e"
+      },
+      "reopen": true,
+      "crash_recovery": true,
+      "restore": true,
+      "binary_sha256": "34aaa698480f08672d805624c15b30cd0cd50e4f366a63cb95042fb09051104a",
+      "mutations": 111,
+      "commands": 340,
+      "commits": 75,
+      "rollbacks": 36
+    },
+    "capacity": {
+      "status": "passed",
+      "binary_sha256": "34aaa698480f08672d805624c15b30cd0cd50e4f366a63cb95042fb09051104a",
+      "probe_sha256": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+      "host": {
+        "system": "Linux",
+        "machine": "x86_64",
+        "kernel": "7.0.0-34-generic"
+      },
+      "engine_work_budget": 200000,
+      "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+      "runs": [
+        {
+          "model": "equipment",
+          "public_sources": 64,
+          "active_reservations": 60,
+          "measurements": {
+            "after_all_reads": {
+              "latency_ms": 10.671,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 6759,
+                "evaluations": 0,
+                "final_dirty_keys": 11,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 27,
+                "loaded_bytes": 14639,
+                "node_visits": 90,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 12,
+                "scheduler_visits": 0,
+                "selector_visits": 12,
+                "staged_patches": 28,
+                "work_units": 173
+              }
+            },
+            "last_read": {
+              "latency_ms": 11.492,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 9,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 10036,
+                "evaluations": 0,
+                "final_dirty_keys": 18,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 36,
+                "loaded_bytes": 16923,
+                "node_visits": 415,
+                "reader_checks": 4,
+                "rotations": 5,
+                "route_entries": 12,
+                "scheduler_visits": 6,
+                "selector_visits": 12,
+                "staged_patches": 131,
+                "work_units": 632
+              }
+            },
+            "full_fanout": {
+              "status": "committed",
+              "affected_producers": 60,
+              "latency_ms": 39.82,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 60,
+                "causal_evaluations": 60,
+                "command_visits": 1,
+                "dependency_checks": 841,
+                "dependency_edges": 298,
+                "detached_outputs": 120,
+                "encoded_bytes": 163745,
+                "evaluations": 0,
+                "final_dirty_keys": 366,
+                "graph_nodes": 180,
+                "inventory_visits": 0,
+                "key_loads": 669,
+                "loaded_bytes": 208333,
+                "node_visits": 14336,
+                "reader_checks": 122,
+                "rotations": 189,
+                "route_entries": 120,
+                "scheduler_visits": 478,
+                "selector_visits": 120,
+                "staged_patches": 4662,
+                "work_units": 21827
+              }
+            },
+            "remove_after": {
+              "latency_ms": 12.114,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 6243,
+                "evaluations": 0,
+                "final_dirty_keys": 15,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 43,
+                "loaded_bytes": 20409,
+                "node_visits": 42,
+                "reader_checks": 0,
+                "rotations": 0,
+                "route_entries": 47,
+                "scheduler_visits": 0,
+                "selector_visits": 12,
+                "staged_patches": 19,
+                "work_units": 165
+              }
+            },
+            "retarget_empty": {
+              "latency_ms": 12.283,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 10,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 13339,
+                "evaluations": 0,
+                "final_dirty_keys": 31,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 81,
+                "loaded_bytes": 32970,
+                "node_visits": 128,
+                "reader_checks": 2,
+                "rotations": 2,
+                "route_entries": 165,
+                "scheduler_visits": 6,
+                "selector_visits": 12,
+                "staged_patches": 84,
+                "work_units": 495
+              }
+            },
+            "deactivate": {
+              "latency_ms": 13.259,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 2,
+                "dependency_edges": 0,
+                "detached_outputs": 2,
+                "encoded_bytes": 1167,
+                "evaluations": 0,
+                "final_dirty_keys": 18,
+                "graph_nodes": 1,
+                "inventory_visits": 0,
+                "key_loads": 25,
+                "loaded_bytes": 6244,
+                "node_visits": 13,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 14,
+                "scheduler_visits": 1,
+                "selector_visits": 1,
+                "staged_patches": 30,
+                "work_units": 90
+              }
+            },
+            "reactivate": {
+              "latency_ms": 12.332,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 8,
+                "dependency_edges": 3,
+                "detached_outputs": 0,
+                "encoded_bytes": 5375,
+                "evaluations": 0,
+                "final_dirty_keys": 18,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 25,
+                "loaded_bytes": 2041,
+                "node_visits": 15,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 19,
+                "scheduler_visits": 6,
+                "selector_visits": 1,
+                "staged_patches": 35,
+                "work_units": 118
+              }
+            },
+            "retarget_back": {
+              "latency_ms": 13.604,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 10,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 12745,
+                "evaluations": 0,
+                "final_dirty_keys": 30,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 81,
+                "loaded_bytes": 32927,
+                "node_visits": 144,
+                "reader_checks": 2,
+                "rotations": 1,
+                "route_entries": 169,
+                "scheduler_visits": 6,
+                "selector_visits": 12,
+                "staged_patches": 79,
+                "work_units": 510
+              }
+            }
+          },
+          "rejections": {
+            "invariant": true,
+            "stale_version": true,
+            "authorization": true,
+            "commands_65": true,
+            "returning_33": true,
+            "overflow": false,
+            "logical_bytewise_rollback": true
+          },
+          "integrity": {
+            "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+            "nodes": 123,
+            "receipts": 13,
+            "records": 184,
+            "revision": "14",
+            "roots": 1,
+            "rows": 1157,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "faa09408-2b04-409d-8738-344fc51c9786"
+          },
+          "process": {
+            "available": true,
+            "rss_kib": 19640,
+            "peak_rss_kib": 19640,
+            "threads": 4,
+            "open_fds": 11
+          },
+          "graceful_restart": true,
+          "acknowledged_process_crash": true,
+          "replay": true,
+          "verified_restore_service": true,
+          "backup_bytes": 746605,
+          "store_bytes": 1323008,
+          "role_identity_reuse": true
+        },
+        {
+          "model": "calculation",
+          "public_sources": 64,
+          "active_subscribers": 56,
+          "measurements": {
+            "after_all_reads": {
+              "latency_ms": 9.115,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 0,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 1469,
+                "evaluations": 0,
+                "final_dirty_keys": 4,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 15,
+                "loaded_bytes": 5455,
+                "node_visits": 11,
+                "reader_checks": 1,
+                "rotations": 0,
+                "route_entries": 12,
+                "scheduler_visits": 0,
+                "selector_visits": 12,
+                "staged_patches": 5,
+                "work_units": 57
+              }
+            },
+            "last_read": {
+              "latency_ms": 9.912,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 6928,
+                "evaluations": 1,
+                "final_dirty_keys": 13,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 33,
+                "loaded_bytes": 14950,
+                "node_visits": 40,
+                "reader_checks": 4,
+                "rotations": 0,
+                "route_entries": 12,
+                "scheduler_visits": 0,
+                "selector_visits": 12,
+                "staged_patches": 17,
+                "work_units": 120
+              }
+            },
+            "full_fanout": {
+              "status": "committed",
+              "affected_producers": 56,
+              "latency_ms": 20.473,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 56,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 112,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 104318,
+                "evaluations": 56,
+                "final_dirty_keys": 172,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 293,
+                "loaded_bytes": 140903,
+                "node_visits": 3122,
+                "reader_checks": 169,
+                "rotations": 0,
+                "route_entries": 224,
+                "scheduler_visits": 0,
+                "selector_visits": 224,
+                "staged_patches": 899,
+                "work_units": 5044
+              }
+            },
+            "retarget_fallback": {
+              "latency_ms": 11.003,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 8367,
+                "evaluations": 1,
+                "final_dirty_keys": 20,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 47,
+                "loaded_bytes": 19093,
+                "node_visits": 30,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 48,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 26,
+                "work_units": 156
+              }
+            },
+            "retarget_back": {
+              "latency_ms": 10.896,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 8407,
+                "evaluations": 1,
+                "final_dirty_keys": 20,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 49,
+                "loaded_bytes": 20301,
+                "node_visits": 32,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 52,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 26,
+                "work_units": 164
+              }
+            },
+            "before_first_quote": {
+              "latency_ms": 15.082,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 4,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 21528,
+                "evaluations": 1,
+                "final_dirty_keys": 37,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 70,
+                "loaded_bytes": 37395,
+                "node_visits": 144,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 51,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 62,
+                "work_units": 335
+              }
+            },
+            "inclusive_quote": {
+              "latency_ms": 13.104,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 4,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 12043,
+                "evaluations": 1,
+                "final_dirty_keys": 20,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 52,
+                "loaded_bytes": 26523,
+                "node_visits": 154,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 56,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 67,
+                "work_units": 337
+              }
+            }
+          },
+          "rejections": {
+            "invariant": true,
+            "stale_version": true,
+            "authorization": true,
+            "commands_65": true,
+            "returning_33": true,
+            "overflow": false,
+            "logical_bytewise_rollback": true
+          },
+          "integrity": {
+            "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+            "nodes": 115,
+            "receipts": 9,
+            "records": 64,
+            "revision": "10",
+            "roots": 4,
+            "rows": 647,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "c9dc3669-9b43-4e65-94b5-673856e50ef9"
+          },
+          "process": {
+            "available": true,
+            "rss_kib": 19188,
+            "peak_rss_kib": 19188,
+            "threads": 4,
+            "open_fds": 11
+          },
+          "graceful_restart": true,
+          "acknowledged_process_crash": true,
+          "replay": true,
+          "verified_restore_service": true,
+          "backup_bytes": 557621,
+          "store_bytes": 724992,
+          "role_identity_reuse": false
+        },
+        {
+          "model": "equipment",
+          "public_sources": 4096,
+          "active_reservations": 4092,
+          "measurements": {
+            "after_all_reads": {
+              "latency_ms": 11.24,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 11377,
+                "evaluations": 0,
+                "final_dirty_keys": 17,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 45,
+                "loaded_bytes": 26591,
+                "node_visits": 156,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 24,
+                "scheduler_visits": 0,
+                "selector_visits": 24,
+                "staged_patches": 40,
+                "work_units": 293
+              }
+            },
+            "last_read": {
+              "latency_ms": 12.924,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 9,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 14700,
+                "evaluations": 0,
+                "final_dirty_keys": 24,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 54,
+                "loaded_bytes": 28901,
+                "node_visits": 625,
+                "reader_checks": 4,
+                "rotations": 5,
+                "route_entries": 24,
+                "scheduler_visits": 6,
+                "selector_visits": 24,
+                "staged_patches": 167,
+                "work_units": 920
+              }
+            },
+            "fanout_128": {
+              "latency_ms": 101.478,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 128,
+                "causal_evaluations": 128,
+                "command_visits": 1,
+                "dependency_checks": 1922,
+                "dependency_edges": 638,
+                "detached_outputs": 256,
+                "encoded_bytes": 351066,
+                "evaluations": 0,
+                "final_dirty_keys": 771,
+                "graph_nodes": 384,
+                "inventory_visits": 0,
+                "key_loads": 1443,
+                "loaded_bytes": 463774,
+                "node_visits": 55809,
+                "reader_checks": 256,
+                "rotations": 625,
+                "route_entries": 274,
+                "scheduler_visits": 1022,
+                "selector_visits": 274,
+                "staged_patches": 15452,
+                "work_units": 77475
+              }
+            },
+            "full_fanout": {
+              "status": "work_limit",
+              "affected_producers": 4092,
+              "logical_bytewise_rollback": true,
+              "receipt_absent": true,
+              "latency_ms": 496.811,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification"
+            },
+            "remove_after": {
+              "latency_ms": 11.355,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 10799,
+                "evaluations": 0,
+                "final_dirty_keys": 21,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 74,
+                "loaded_bytes": 37408,
+                "node_visits": 69,
+                "reader_checks": 0,
+                "rotations": 0,
+                "route_entries": 94,
+                "scheduler_visits": 0,
+                "selector_visits": 24,
+                "staged_patches": 25,
+                "work_units": 288
+              }
+            },
+            "retarget_empty": {
+              "latency_ms": 15.243,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 10,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 17720,
+                "evaluations": 0,
+                "final_dirty_keys": 37,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 132,
+                "loaded_bytes": 58706,
+                "node_visits": 180,
+                "reader_checks": 2,
+                "rotations": 1,
+                "route_entries": 280,
+                "scheduler_visits": 6,
+                "selector_visits": 24,
+                "staged_patches": 94,
+                "work_units": 735
+              }
+            },
+            "deactivate": {
+              "latency_ms": 9.852,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 2,
+                "dependency_edges": 0,
+                "detached_outputs": 2,
+                "encoded_bytes": 1178,
+                "evaluations": 0,
+                "final_dirty_keys": 18,
+                "graph_nodes": 1,
+                "inventory_visits": 0,
+                "key_loads": 25,
+                "loaded_bytes": 6302,
+                "node_visits": 13,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 14,
+                "scheduler_visits": 1,
+                "selector_visits": 1,
+                "staged_patches": 30,
+                "work_units": 90
+              }
+            },
+            "reactivate": {
+              "latency_ms": 11.222,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 8,
+                "dependency_edges": 3,
+                "detached_outputs": 0,
+                "encoded_bytes": 5426,
+                "evaluations": 0,
+                "final_dirty_keys": 18,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 25,
+                "loaded_bytes": 2054,
+                "node_visits": 15,
+                "reader_checks": 2,
+                "rotations": 0,
+                "route_entries": 19,
+                "scheduler_visits": 6,
+                "selector_visits": 1,
+                "staged_patches": 35,
+                "work_units": 118
+              }
+            },
+            "retarget_back": {
+              "latency_ms": 11.958,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 1,
+                "causal_evaluations": 1,
+                "command_visits": 1,
+                "dependency_checks": 10,
+                "dependency_edges": 3,
+                "detached_outputs": 2,
+                "encoded_bytes": 17753,
+                "evaluations": 0,
+                "final_dirty_keys": 37,
+                "graph_nodes": 3,
+                "inventory_visits": 0,
+                "key_loads": 132,
+                "loaded_bytes": 58671,
+                "node_visits": 228,
+                "reader_checks": 2,
+                "rotations": 1,
+                "route_entries": 284,
+                "scheduler_visits": 6,
+                "selector_visits": 24,
+                "staged_patches": 92,
+                "work_units": 785
+              }
+            }
+          },
+          "rejections": {
+            "invariant": true,
+            "stale_version": true,
+            "authorization": true,
+            "commands_65": true,
+            "returning_33": true,
+            "overflow": true,
+            "logical_bytewise_rollback": true
+          },
+          "integrity": {
+            "model": "be621fea21203bd761e96313dd21585f2977c76427a91b26a1d63175d989b66b",
+            "nodes": 8187,
+            "receipts": 139,
+            "records": 12280,
+            "revision": "140",
+            "roots": 1,
+            "rows": 77765,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "fae947e1-44ac-4af8-8726-0f5ce4a83c5c"
+          },
+          "process": {
+            "available": true,
+            "rss_kib": 130220,
+            "peak_rss_kib": 132712,
+            "threads": 4,
+            "open_fds": 11
+          },
+          "graceful_restart": true,
+          "acknowledged_process_crash": true,
+          "replay": true,
+          "verified_restore_service": true,
+          "backup_bytes": 49427149,
+          "store_bytes": 46141440,
+          "role_identity_reuse": true
+        },
+        {
+          "model": "calculation",
+          "public_sources": 4096,
+          "active_subscribers": 4088,
+          "measurements": {
+            "after_all_reads": {
+              "latency_ms": 9.624,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 0,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 0,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 1493,
+                "evaluations": 0,
+                "final_dirty_keys": 4,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 21,
+                "loaded_bytes": 8232,
+                "node_visits": 11,
+                "reader_checks": 1,
+                "rotations": 0,
+                "route_entries": 24,
+                "scheduler_visits": 0,
+                "selector_visits": 24,
+                "staged_patches": 5,
+                "work_units": 87
+              }
+            },
+            "last_read": {
+              "latency_ms": 11.093,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 11553,
+                "evaluations": 1,
+                "final_dirty_keys": 19,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 51,
+                "loaded_bytes": 26904,
+                "node_visits": 70,
+                "reader_checks": 4,
+                "rotations": 0,
+                "route_entries": 24,
+                "scheduler_visits": 0,
+                "selector_visits": 24,
+                "staged_patches": 23,
+                "work_units": 198
+              }
+            },
+            "quote_interval_128": {
+              "latency_ms": 33.882,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 128,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 127,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 190930,
+                "evaluations": 128,
+                "final_dirty_keys": 394,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 678,
+                "loaded_bytes": 344283,
+                "node_visits": 7539,
+                "reader_checks": 382,
+                "rotations": 2,
+                "route_entries": 296,
+                "scheduler_visits": 0,
+                "selector_visits": 296,
+                "staged_patches": 2063,
+                "work_units": 11382
+              }
+            },
+            "full_fanout": {
+              "status": "work_limit",
+              "affected_producers": 4088,
+              "logical_bytewise_rollback": true,
+              "receipt_absent": true,
+              "latency_ms": 220.65,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification"
+            },
+            "retarget_fallback": {
+              "latency_ms": 17.474,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 13006,
+                "evaluations": 1,
+                "final_dirty_keys": 26,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 83,
+                "loaded_bytes": 38609,
+                "node_visits": 60,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 108,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 32,
+                "work_units": 288
+              }
+            },
+            "retarget_back": {
+              "latency_ms": 21.127,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 1,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 13042,
+                "evaluations": 1,
+                "final_dirty_keys": 26,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 85,
+                "loaded_bytes": 39843,
+                "node_visits": 62,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 112,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 32,
+                "work_units": 296
+              }
+            },
+            "before_first_quote": {
+              "latency_ms": 21.365,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 4,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 42371,
+                "evaluations": 1,
+                "final_dirty_keys": 67,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 142,
+                "loaded_bytes": 84460,
+                "node_visits": 276,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 111,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 92,
+                "work_units": 629
+              }
+            },
+            "inclusive_quote": {
+              "latency_ms": 16.37,
+              "timing_scope": "Client wall time for client.execute through the committed or rejected response, including destination session check; excludes plan preparation and rollback verification",
+              "work": {
+                "allocations": 0,
+                "candidates": 1,
+                "causal_candidates": 0,
+                "causal_evaluations": 0,
+                "command_visits": 1,
+                "dependency_checks": 4,
+                "dependency_edges": 0,
+                "detached_outputs": 0,
+                "encoded_bytes": 21002,
+                "evaluations": 1,
+                "final_dirty_keys": 32,
+                "graph_nodes": 0,
+                "inventory_visits": 0,
+                "key_loads": 88,
+                "loaded_bytes": 49922,
+                "node_visits": 286,
+                "reader_checks": 3,
+                "rotations": 0,
+                "route_entries": 116,
+                "scheduler_visits": 0,
+                "selector_visits": 0,
+                "staged_patches": 103,
+                "work_units": 601
+              }
+            }
+          },
+          "rejections": {
+            "invariant": true,
+            "stale_version": true,
+            "authorization": true,
+            "commands_65": true,
+            "returning_33": true,
+            "overflow": true,
+            "logical_bytewise_rollback": true
+          },
+          "integrity": {
+            "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+            "nodes": 8179,
+            "receipts": 135,
+            "records": 4096,
+            "revision": "136",
+            "roots": 4,
+            "rows": 44999,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "534e4276-c836-48d7-afb8-6a132717c7f4"
+          },
+          "process": {
+            "available": true,
+            "rss_kib": 98688,
+            "peak_rss_kib": 98688,
+            "threads": 4,
+            "open_fds": 11
+          },
+          "graceful_restart": true,
+          "acknowledged_process_crash": true,
+          "replay": true,
+          "verified_restore_service": true,
+          "backup_bytes": 38944565,
+          "store_bytes": 46141440,
+          "role_identity_reuse": false
+        }
+      ],
+      "elapsed_seconds": 182.243,
+      "fanout_boundary": {
+        "calculation": {
+          "largest_observed_commit": 128,
+          "smallest_observed_work_limit": 4088
+        },
+        "equipment": {
+          "largest_observed_commit": 128,
+          "smallest_observed_work_limit": 4092
+        }
+      },
+      "fanout_boundary_scope": "Observed brackets for these authored workloads; no exact capacity cutoff or universal cascade capacity claimed"
+    }
+  },
+  "compatibility": {
+    "baseline": {
+      "source_commit": "b377b21c2bc1851948f92f3c6ce8ebfe96d56ca0",
+      "provenance": "rebuilt locally from committed source export; not original cloud binary",
+      "binary": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/rebase-next",
+      "binary_sha256": "72c97c843ab8dec0a22a005edb28707ea2f55cffef4d77930d19de25af1b0c5b",
+      "stores": [
+        {
+          "model": "calculation",
+          "store": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/calculation.redb",
+          "check": {
+            "model": "f1ccb357e4c61c0305d4801b8c553e12f7d16fa9d52a6e469d2990fa84e93f84",
+            "nodes": 7,
+            "receipts": 1,
+            "records": 19,
+            "revision": "1",
+            "roots": 5,
+            "rows": 109,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "7450e503-f9f2-4575-94c4-314100c59ad9"
+          },
+          "sha256": "630b055d4e3f424ef27123122d2af74893c25cc42ed3ab7e728740d416f2dcef",
+          "identity": {
+            "model": "f1ccb357e4c61c0305d4801b8c553e12f7d16fa9d52a6e469d2990fa84e93f84",
+            "store_format": "rebase-store-5",
+            "version": "0.7.0"
+          },
+          "fixture_result": {
+            "replayed": false,
+            "result": {
+              "operation_id": "0aef630e-943e-426d-ae4f-5c5842366105",
+              "records": [
+                {
+                  "id": "8fc4e4db-770c-549d-8aad-9a88bce6a3b6",
+                  "record": {
+                    "contract": 9,
+                    "derived": {
+                      "at": "10",
+                      "before": "10",
+                      "delta": "10"
+                    },
+                    "id": "8fc4e4db-770c-549d-8aad-9a88bce6a3b6",
+                    "input": {
+                      "account": "0f1652f4-ebb5-59d8-b834-ea4dd1c97101",
+                      "moment": "2048f0e6-35fb-52ac-86b6-7acb0822ffab",
+                      "offset": "0",
+                      "post": true,
+                      "target": "20"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "9619bde6-5da4-5c93-be50-250fef71677a",
+                  "record": {
+                    "contract": 9,
+                    "derived": {
+                      "at": "20",
+                      "before": "20",
+                      "delta": "10"
+                    },
+                    "id": "9619bde6-5da4-5c93-be50-250fef71677a",
+                    "input": {
+                      "account": "0f1652f4-ebb5-59d8-b834-ea4dd1c97101",
+                      "moment": "11d5c45c-1f22-50bd-94af-669bbd51441b",
+                      "offset": "0",
+                      "post": true,
+                      "target": "30"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "a7286456-b13a-5252-83c4-5c9e851a0e5f",
+                  "record": {
+                    "contract": 10,
+                    "derived": {
+                      "value": "150"
+                    },
+                    "id": "a7286456-b13a-5252-83c4-5c9e851a0e5f",
+                    "input": {
+                      "account": "f6441cf1-a72a-5e0b-b048-17ead9f8ca6b",
+                      "at": "40",
+                      "factor": "1",
+                      "feedback": null,
+                      "sources": [
+                        "f555b97b-c67f-52ca-b1d8-2defb470171f",
+                        "8452d874-150c-5d9a-bc4c-0c6797cfa3b8"
+                      ]
+                    },
+                    "version": "1"
+                  }
+                }
+              ],
+              "revision": "1"
+            },
+            "status": "committed"
+          }
+        },
+        {
+          "model": "equipment",
+          "store": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/equipment.redb",
+          "check": {
+            "model": "2fd5164bb9f60ea4e4c32882769f180830707eba55047e2bdb7a4cd651d4cda2",
+            "nodes": 5,
+            "receipts": 1,
+            "records": 8,
+            "revision": "1",
+            "roots": 1,
+            "rows": 47,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "04b4d4d0-445f-498c-a860-e5bebbe6ca52"
+          },
+          "sha256": "f701c9da06bf0b20626b74efa6643aaf9236d3b1b0961dfda28e694a9e117514",
+          "identity": {
+            "model": "2fd5164bb9f60ea4e4c32882769f180830707eba55047e2bdb7a4cd651d4cda2",
+            "store_format": "rebase-store-5",
+            "version": "0.7.0"
+          },
+          "fixture_result": {
+            "replayed": false,
+            "result": {
+              "operation_id": "f826f738-3204-4c26-8a9e-a0b998adfbd8",
+              "records": [
+                {
+                  "id": "e94e92b7-c409-51d6-8afc-1b90b9eebc6e",
+                  "record": {
+                    "contract": 410,
+                    "derived": {
+                      "allocated": "8",
+                      "available_before": "10"
+                    },
+                    "id": "e94e92b7-c409-51d6-8afc-1b90b9eebc6e",
+                    "input": {
+                      "active": true,
+                      "ends": "30",
+                      "pool": "f56c3a51-669a-5b89-a15a-be9630e3fd81",
+                      "requested": "8",
+                      "starts": "10"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "39d8a9d5-beb3-509a-bcc1-d70b4b4cd4dd",
+                  "record": {
+                    "contract": 410,
+                    "derived": {
+                      "allocated": "2",
+                      "available_before": "2"
+                    },
+                    "id": "39d8a9d5-beb3-509a-bcc1-d70b4b4cd4dd",
+                    "input": {
+                      "active": true,
+                      "ends": "40",
+                      "pool": "f56c3a51-669a-5b89-a15a-be9630e3fd81",
+                      "requested": "7",
+                      "starts": "20"
+                    },
+                    "version": "1"
+                  }
+                }
+              ],
+              "revision": "1"
+            },
+            "status": "committed"
+          }
+        },
+        {
+          "model": "invoicing",
+          "store": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4b-retained-b377b21/invoicing.redb",
+          "check": {
+            "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+            "nodes": 15,
+            "receipts": 1,
+            "records": 21,
+            "revision": "1",
+            "roots": 9,
+            "rows": 150,
+            "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+            "status": "valid",
+            "store": "6a8e8624-d8fc-44f7-a1bd-8ed405c80a74"
+          },
+          "sha256": "0f779a2afbd798ab58c7e015918fe3fc077bc971b4dfbd75105930a778e5faad",
+          "identity": {
+            "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+            "store_format": "rebase-store-5",
+            "version": "0.7.0"
+          },
+          "fixture_result": {
+            "replayed": false,
+            "result": {
+              "operation_id": "e286dc09-db25-4ccc-b4bc-0242dce1ecb9",
+              "records": [
+                {
+                  "id": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                  "record": {
+                    "contract": 101,
+                    "derived": null,
+                    "id": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                    "input": {
+                      "currency": 1
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "3b98e47c-41d7-5944-a8a0-b84aec9e4280",
+                  "record": {
+                    "contract": 211,
+                    "derived": {
+                      "amount_minor": "10005"
+                    },
+                    "id": "3b98e47c-41d7-5944-a8a0-b84aec9e4280",
+                    "input": {
+                      "at": "0",
+                      "invoice": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                      "quantity": {
+                        "denominator": "2",
+                        "numerator": "3"
+                      },
+                      "rounding": "half_even",
+                      "unit_price_minor": "6670"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "ca092761-9806-510d-aa9f-1683af996f1c",
+                  "record": {
+                    "contract": 401,
+                    "derived": null,
+                    "id": "ca092761-9806-510d-aa9f-1683af996f1c",
+                    "input": {
+                      "invoice": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                      "kind": "base",
+                      "rate": {
+                        "denominator": "10",
+                        "numerator": "1"
+                      },
+                      "rounding": "half_even"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "1f09f244-d560-54f5-8387-b1cbe743e9e8",
+                  "record": {
+                    "contract": 401,
+                    "derived": null,
+                    "id": "1f09f244-d560-54f5-8387-b1cbe743e9e8",
+                    "input": {
+                      "invoice": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                      "kind": "net",
+                      "rate": {
+                        "denominator": "20",
+                        "numerator": "1"
+                      },
+                      "rounding": "half_even"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "b81849f6-c4c3-5b48-8dd0-6e689d0fc043",
+                  "record": {
+                    "contract": 509,
+                    "derived": {
+                      "assessed_minor": "1000",
+                      "basis_minor": "10005",
+                      "delta_minor": "1000",
+                      "prior_minor": "0"
+                    },
+                    "id": "b81849f6-c4c3-5b48-8dd0-6e689d0fc043",
+                    "input": {
+                      "at": "10",
+                      "invoice": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                      "rule": "ca092761-9806-510d-aa9f-1683af996f1c"
+                    },
+                    "version": "1"
+                  }
+                },
+                {
+                  "id": "a8ecd4bd-08eb-5c42-adbb-134a0438a794",
+                  "record": {
+                    "contract": 509,
+                    "derived": {
+                      "assessed_minor": "550",
+                      "basis_minor": "11005",
+                      "delta_minor": "550",
+                      "prior_minor": "0"
+                    },
+                    "id": "a8ecd4bd-08eb-5c42-adbb-134a0438a794",
+                    "input": {
+                      "at": "20",
+                      "invoice": "e9db64ed-1aeb-5b6e-bb4e-40dc5b656285",
+                      "rule": "1f09f244-d560-54f5-8387-b1cbe743e9e8"
+                    },
+                    "version": "1"
+                  }
+                }
+              ],
+              "revision": "1"
+            },
+            "status": "committed"
+          }
+        }
+      ]
+    },
+    "results": [
+      {
+        "model": "calculation",
+        "rejected": true,
+        "physical_bytes_unchanged": true,
+        "old_check": {
+          "model": "f1ccb357e4c61c0305d4801b8c553e12f7d16fa9d52a6e469d2990fa84e93f84",
+          "nodes": 7,
+          "receipts": 1,
+          "records": 19,
+          "revision": "1",
+          "roots": 5,
+          "rows": 109,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "7450e503-f9f2-4575-94c4-314100c59ad9"
+        },
+        "sha256": "630b055d4e3f424ef27123122d2af74893c25cc42ed3ab7e728740d416f2dcef",
+        "error": "model_mismatch: runtime format differs"
+      },
+      {
+        "model": "equipment",
+        "rejected": true,
+        "physical_bytes_unchanged": true,
+        "old_check": {
+          "model": "2fd5164bb9f60ea4e4c32882769f180830707eba55047e2bdb7a4cd651d4cda2",
+          "nodes": 5,
+          "receipts": 1,
+          "records": 8,
+          "revision": "1",
+          "roots": 1,
+          "rows": 47,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "04b4d4d0-445f-498c-a860-e5bebbe6ca52"
+        },
+        "sha256": "f701c9da06bf0b20626b74efa6643aaf9236d3b1b0961dfda28e694a9e117514",
+        "error": "model_mismatch: runtime format differs"
+      },
+      {
+        "model": "invoicing",
+        "rejected": true,
+        "physical_bytes_unchanged": true,
+        "old_check": {
+          "model": "7ae37bfcd37c02f0945eb51873179c625eb67bdaa1daeac3ab10b055e050c6dc",
+          "nodes": 15,
+          "receipts": 1,
+          "records": 21,
+          "revision": "1",
+          "roots": 9,
+          "rows": 150,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "6a8e8624-d8fc-44f7-a1bd-8ed405c80a74"
+        },
+        "sha256": "0f779a2afbd798ab58c7e015918fe3fc077bc971b4dfbd75105930a778e5faad",
+        "error": "model_mismatch: runtime format differs"
+      }
+    ],
+    "new_binary_sha256": "34aaa698480f08672d805624c15b30cd0cd50e4f366a63cb95042fb09051104a"
+  },
+  "freshness": {
+    "compiled_test_inputs_modified_after_debug_start": [],
+    "dependency_list": "target/g4b-retained-b377b21/build/release/rebase-next.d",
+    "baseline_note": "target/g4b-retained-b377b21/rebase-next is the 0.7 baseline rebuilt from b377b21; its build/ directory was reused as cache and contains new 0.8 executables"
+  },
+  "limits": {
+    "mutation_work_units": 200000,
+    "calculation_and_equipment": {
+      "public_sources": 4096,
+      "active_outputs": 8192,
+      "retained_roles": 16384
+    },
+    "invoicing": {
+      "public_sources": 64,
+      "active_outputs": 256,
+      "retained_roles": 512
+    },
+    "measurement": {
+      "public_sources": 64,
+      "active_outputs": 0,
+      "retained_roles": 0,
+      "absolute_value_max": 1000000000000
+    }
+  },
+  "scope": [
+    "One maintained AVL over model-owned native key/leaf/summary types; financial/quote capabilities remain explicit.",
+    "Measurement whole-root and exact-window count/sum/min/max/unit; final-state dimension validation.",
+    "Native capacity replacement in both command orders and orphan Standard root corruption controls.",
+    "64 and 4096 source HTTP runs only; unchanged budgets. Full 4096 fanout rejects with complete rollback and no receipt.",
+    "4096 zero/one selective work counters match G4b. Spans/envelopes increase bytes; cross-host timing is not performance acceptance.",
+    "Not accepted here: published-parent values, reactive statistics/selection, external effects, distributed storage, broader accounting, new release bundle."
+  ],
+  "next": "G4d-a IssueShare consumes its declared Issue published value; see research/36-value-dependencies-gate.md, then G5a atomic intent.",
+  "artifact_fingerprints": {
+    "target/g4c-measurement-http/result.json": "f52f30d2cda9c9a9005bdf1095de09480d7462de910798dff6dfd7cb344748d2",
+    "target/g4c-invoicing-http/result.json": "3b7b73cf1f8c14787d9765558700095569fb553b76c4ce5af1ac0281bb666a51",
+    "target/g4c-capacity-http/result.json": "adce3bfccb635b25331f359bb4463f719a67fcfebaa73ee31a644ce58d8a3cfc",
+    "target/g4c-final-checks.json": "a5d6fe41dde0099040a66abd785a39429cd18e8be00c8023d84140346c607534",
+    "target/g4c-compatibility.json": "356c42efe7f20d74ddb72e0280d7f3c4fde4d8ca5073adf4cc4238d168cbe613",
+    "target/g4c-verify.py": "305a09c671505fd025e0a3e4b6f17d4737958c55a0fc7bcdb28fffc306311ea8",
+    "target/g4b-retained-b377b21/build/release/rebase-next.d": "794de773a099049bbfb1be76d2e77c2bdeb9daed10be2316904da0720fb951ca"
+  },
+  "source_fingerprints": {
+    "AGENTS.md": "7168ad982454de4b58bd82db3d19bec1c1a70a8d1dea40255d6acb6907ca0b73",
+    "CONTEXT.md": "6f93c1eb7e5495fe1a53e389c191f5f5fd9eb1b263d10aadff3c13eabb803283",
+    "Cargo.lock": "475708d6e7aa51b62839a59b8a8fe913404d00b71cfa3ccd25dfc8f1211282f6",
+    "Cargo.toml": "7460209626be7fc197d52059e67a76b3e484f90c9d12bfffe51589a103c9f4b7",
+    "README.md": "b08d2b1ef98e37186a5e6bcb3eedc240d22f484da5e2b40016c9ef4ef6f943ed",
+    "docs/compiled-models.md": "bf1e2335e60f4f318541519356feb3c46362ad4298a701eed341c8088c5fba7e",
+    "docs/deployment.md": "084fed8596cebf7cd12d3b08b29fe9e6719ef0182273e1ee8c9587c5a53b4f60",
+    "docs/invoicing.md": "7cc9889d15efa90867808aa7c952f15cc6e8ec9bbbd69669d660ffb3b45e167a",
+    "docs/native-indexes.md": "eefda4150568bd2a2fd8338ce81bf56b6cd6b6a0e92a141976cb779e08526f64",
+    "docs/reactive-windows.md": "4952c01ecf8699eeada95cc7a22ecb78b021d73927a3b434b4a4d340de0d691c",
+    "docs/storage.md": "89b6473b92a71f6f69c5a03c34247a800b450670c54e92c1cb460ddd28311f86",
+    "research/05-feasibility.md": "d7b3f2471a4320e311bf8e43662e5bfd7302719628b3e339c34be0ed6f7991a0",
+    "research/30-capability-program.md": "51a753f91e475a0d9c03831229d71d5f666a47bb43bb8f51108383e579932f5c",
+    "research/34-native-index-extension.md": "f4f8a8c55647971263af724c454dc6553b17dae36ea73d9344436770be0211e3",
+    "research/35-external-integration-review.md": "f2eb19635f426f57ccb5c97e5e0d34388753e1713d4f21e69db0d19ac2afff7d",
+    "research/36-value-dependencies-gate.md": "c4dc24a7ed5c5ec9822cef88c1db84df341a071580b0bf5e7d5797d295c28885",
+    "research/experiments/local_prototype.py": "cc596e7e8ccad623f58c304694627911f0c7b5a73928856d324cee49950152a2",
+    "research/experiments/measurement.py": "0317f353d778a467e8c3210ad7896e245614713811637270b22a6d39df468d22",
+    "research/experiments/native_slice.py": "e1af06b56760cde9258b8d1a8289700bc1619c25c6e9c6748ccc9416d5fc6708",
+    "src/bin/rebase-next.rs": "63539a9823d59be7618496ea876cf37b654ece114dc18cd06e6aa4612d7be84f",
+    "src/binding.rs": "16cfb9f10d6df79bf39926b17a12e1ca8ae168b1313568d940c4a21fa7a2e383",
+    "src/causal.rs": "05373458310816c09b746e054ae46fe0b1b683ccd55035cc36864138f5e54d83",
+    "src/index.rs": "a10881121d4d8b72111fb5ecfab4e1f8d252f742a0fb93dc5e0b241c3ed5b899",
+    "src/index_tests.rs": "b461720fbe9122f9f12ec7ad9a7f6f7b9302c28124a0fd15cf3f8bc279ca6f4d",
+    "src/indexes/measurement.rs": "b2b862b970309eabb72375b5463f1356650503659ff47a127be8db57d9b63cd0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "97a0accf6bff565c589bada097aa5adc9b4bd1683de3751c8154b637f8983ee1",
+    "src/integrity.rs": "4715799af99c25ae164f6aa5cc714c69830b7c37859bf798e904de3117faa52f",
+    "src/lib.rs": "32d29ef6a93d2fb3052e830fc1fd6fa90786375c4f68a7caef9dca5b3da3388a",
+    "src/local.rs": "77778ec1ec9d4cf6857a5f3c862491d7978a8823c49bab5383f1e6a04d8bbb38",
+    "src/model.rs": "8054f5e3df21dcec00966597fe1f285843f5aa1aa9c6e0f8e9cdaf10280009bb",
+    "src/models/calculation.rs": "5581f73ec50237b0e3bae3de0cab4c986e31bd48f6db1c9b806cb2c3232bd22e",
+    "src/models/calculation_reactivity.rs": "959bfdbfc1e31ff41468d319b8805b06200ffafc020f10073f9ccee036aa153d",
+    "src/models/equipment.rs": "155ecc55c144e3e81a83a0c28f5bc13b55c46abc4c27535409e52b74852ac7f2",
+    "src/models/invoicing.rs": "9d41236d553f4a24a550a20ac54660c4873eccb197156f2e1aa2479ed0f66659",
+    "src/models/invoicing_check.rs": "64f3d3147042f6a2097ddb83b8e086444da1d1b3a7446e504f2a756ff4795551",
+    "src/models/measurement.rs": "9f0654c4db1421c3cf12e196b907bd8582a1c2bce0305a788efbdd32552cd357",
+    "src/models/mod.rs": "2f867e033eb3e2b0ecc28367d9f8f0d12163a29e4cae892f59331db40de444b0",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "b74caa5c9bbbaf131211d1f6123b921ecce02edf4402d02b8efc9c93bfae9786",
+    "src/native_slice.rs": "f0ca92adfc8156bb240b7b25630d440762855cec0577a9638dbfc7f7943fa00f",
+    "src/parameter_tests.rs": "60d7dd2f35c9faca9789a9c1eb4926aeb764dc8d3187de647780430eaf04bb41",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/tree.rs": "4fd97c8493936f041d753995c544e8dc2a10c0c7b96e423179c49fe25fde4b9d",
+    "src/window_tests.rs": "2305eb661eea7cb2f8be7837f8567ebaeedbf364dc004b505040cd66f8dac1f8",
+    "tests/exact_values.rs": "12f2d5ee15f93ba6b2d5a9cece914f697475c2c631eb3e351e49c98bd2a693c5",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/measurement.rs": "17299f5da8df7683efe1a07f3ffba16a87df81fe9dc7836062ab84c6dd6a9fee",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7"
+  },
+  "compiled_source_fingerprints": {
+    "Cargo.lock": "475708d6e7aa51b62839a59b8a8fe913404d00b71cfa3ccd25dfc8f1211282f6",
+    "Cargo.toml": "7460209626be7fc197d52059e67a76b3e484f90c9d12bfffe51589a103c9f4b7",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "4b9d401d72ac5ba46d527acb1c0fa1657d8d93c34f0d6439e97441060731f2cc",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "63539a9823d59be7618496ea876cf37b654ece114dc18cd06e6aa4612d7be84f",
+    "src/binding.rs": "16cfb9f10d6df79bf39926b17a12e1ca8ae168b1313568d940c4a21fa7a2e383",
+    "src/causal.rs": "05373458310816c09b746e054ae46fe0b1b683ccd55035cc36864138f5e54d83",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "960dc5f2d7219545f14ed4fb772205ffc8dd68e19aa7a8e93397c425fc44c859",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "a10881121d4d8b72111fb5ecfab4e1f8d252f742a0fb93dc5e0b241c3ed5b899",
+    "src/index_tests.rs": "b461720fbe9122f9f12ec7ad9a7f6f7b9302c28124a0fd15cf3f8bc279ca6f4d",
+    "src/indexes/measurement.rs": "b2b862b970309eabb72375b5463f1356650503659ff47a127be8db57d9b63cd0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "97a0accf6bff565c589bada097aa5adc9b4bd1683de3751c8154b637f8983ee1",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "4715799af99c25ae164f6aa5cc714c69830b7c37859bf798e904de3117faa52f",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "32d29ef6a93d2fb3052e830fc1fd6fa90786375c4f68a7caef9dca5b3da3388a",
+    "src/lifecycle.rs": "024f5ce8db8df5aec381080fdfd3c7120dcb96f6dfe3421a23057c4b2fa03d1f",
+    "src/local.rs": "77778ec1ec9d4cf6857a5f3c862491d7978a8823c49bab5383f1e6a04d8bbb38",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "8054f5e3df21dcec00966597fe1f285843f5aa1aa9c6e0f8e9cdaf10280009bb",
+    "src/models/calculation.rs": "5581f73ec50237b0e3bae3de0cab4c986e31bd48f6db1c9b806cb2c3232bd22e",
+    "src/models/calculation_reactivity.rs": "959bfdbfc1e31ff41468d319b8805b06200ffafc020f10073f9ccee036aa153d",
+    "src/models/equipment.rs": "155ecc55c144e3e81a83a0c28f5bc13b55c46abc4c27535409e52b74852ac7f2",
+    "src/models/invoicing.rs": "9d41236d553f4a24a550a20ac54660c4873eccb197156f2e1aa2479ed0f66659",
+    "src/models/invoicing_check.rs": "64f3d3147042f6a2097ddb83b8e086444da1d1b3a7446e504f2a756ff4795551",
+    "src/models/invoicing_fixtures.rs": "4e065ec36422f52781d22c92a015904d6036eb26b824cbb1691047f564386979",
+    "src/models/measurement.rs": "9f0654c4db1421c3cf12e196b907bd8582a1c2bce0305a788efbdd32552cd357",
+    "src/models/mod.rs": "2f867e033eb3e2b0ecc28367d9f8f0d12163a29e4cae892f59331db40de444b0",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "b74caa5c9bbbaf131211d1f6123b921ecce02edf4402d02b8efc9c93bfae9786",
+    "src/native_slice.rs": "f0ca92adfc8156bb240b7b25630d440762855cec0577a9638dbfc7f7943fa00f",
+    "src/parameter_tests.rs": "60d7dd2f35c9faca9789a9c1eb4926aeb764dc8d3187de647780430eaf04bb41",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "f6edebbe940172161e594738c8c30826864232bac4a3bf8a7cc749a14ab21b71",
+    "src/security.rs": "9abf302d775aee8f19ad30a4fddf5713b011be26ff53b2834caba8b5585a1259",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "4fd97c8493936f041d753995c544e8dc2a10c0c7b96e423179c49fe25fde4b9d",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "2305eb661eea7cb2f8be7837f8567ebaeedbf364dc004b505040cd66f8dac1f8",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "24c1220d33f0fc3a32c465d2dcd3ee8fb45db15f0e4d92b86f79e1ec9201bd59",
+    "tests/exact_values.rs": "12f2d5ee15f93ba6b2d5a9cece914f697475c2c631eb3e351e49c98bd2a693c5",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/measurement.rs": "17299f5da8df7683efe1a07f3ffba16a87df81fe9dc7836062ab84c6dd6a9fee",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7",
+    "tests/network_api.rs": "5b5260a29a7ce5a812739332e89e56b706f3c1115537a9fa372a44513d2d4626",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78"
+  }
+}

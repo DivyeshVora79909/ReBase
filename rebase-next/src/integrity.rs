@@ -4,6 +4,8 @@
 use crate::{
     algebra::Summary,
     binding::{Binding, Calculation, NativeInput},
+    index::{IndexCode, NativeIndex, TimeKey},
+    indexes::standard::{Aggregate, FINANCIAL, Leaf, QUOTE, QuoteSummary, Standard},
     local::{self, KV, PUBLIC, RECEIPTS},
     local::{ReceiptValue, RuntimeHeader, Store},
     model::Visibility,
@@ -13,7 +15,7 @@ use crate::{
     native_slice::{Error, Result},
     native_slice::{Meta, ModelRecord},
     time_range::{TimeBound, TimeRange},
-    tree::{Aggregate, FullKey, Kind, Leaf, Node, QuoteSummary},
+    tree::{FullKey, Node, Span},
 };
 use redb::ReadableTable;
 use serde_json::{Value, json};
@@ -21,6 +23,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 pub(crate) type Members = BTreeMap<Address, (Address, i64, Leaf)>;
+pub(crate) type NativeMembers<I> =
+    BTreeMap<Address, (Address, <I as NativeIndex>::Key, <I as NativeIndex>::Leaf)>;
+type SourceAggregate<I> = dyn Fn(
+    IndexCode,
+    &[(<I as NativeIndex>::Key, <I as NativeIndex>::Leaf)],
+) -> Result<<I as NativeIndex>::Summary>;
 pub(crate) fn require(condition: bool, what: &str) -> Result<()> {
     if condition {
         Ok(())
@@ -66,26 +74,50 @@ fn sum(values: impl IntoIterator<Item = i128>) -> Result<i128> {
             .ok_or_else(|| Error::new("corrupt_state", "summary arithmetic overflow"))
     })
 }
-fn aggregate(kind: Kind, leaves: &[(i64, Leaf)]) -> Result<Aggregate> {
-    match kind {
-        Kind::Quote => Ok(Aggregate::Quote(QuoteSummary {
+fn aggregate(kind: IndexCode, leaves: &[(TimeKey, Leaf)]) -> Result<Aggregate> {
+    let first = leaves.first().map(|v| v.0.get());
+    let last = leaves.last().map(|v| v.0.get());
+    if kind == QUOTE {
+        require(
+            leaves
+                .iter()
+                .all(|(_, leaf)| matches!(leaf, Leaf::Quote(_))),
+            "quote source leaves",
+        )?;
+        return Ok(Aggregate::Quote(QuoteSummary {
             count: leaves.len() as u64,
-            first: leaves.first().map(|v| v.0),
-            last: leaves.last().map(|v| v.0),
-        })),
-        Kind::Financial => {
-            let mut summary = Summary::default();
-            for &(at, leaf) in leaves {
-                let Leaf::Financial(value) = leaf else {
-                    return Err(Error::new("corrupt_state", "mixed leaves"));
-                };
-                summary = summary
-                    .combine(Summary::leaf(at, Some(value)))
-                    .map_err(|e| Error::new("corrupt_state", e))?;
-            }
-            Ok(Aggregate::Financial(summary))
+            first,
+            last,
+        }));
+    }
+    require(kind == FINANCIAL, "unknown standard source index")?;
+    // Literal record-prefix and complete-time arithmetic; never call the
+    // writer's singleton/combine or consume maintained caches for expectations.
+    let (mut total, mut min, mut max) = (0i128, 0i128, 0i128);
+    let mut boundaries = vec![];
+    for (i, (at, leaf)) in leaves.iter().enumerate() {
+        let Leaf::Financial(value) = leaf else {
+            return Err(local::corrupt("mixed source leaves"));
+        };
+        total = total
+            .checked_add(*value)
+            .ok_or_else(|| local::corrupt("source sum overflow"))?;
+        min = min.min(total);
+        max = max.max(total);
+        if i + 1 < leaves.len() && *at != leaves[i + 1].0 {
+            boundaries.push(total);
         }
     }
+    Ok(Aggregate::Financial(Summary {
+        count: leaves.len() as u64,
+        first,
+        last,
+        sum: total,
+        min_prefix: min,
+        max_prefix: max,
+        boundary_min: boundaries.iter().copied().min(),
+        boundary_max: boundaries.iter().copied().max(),
+    }))
 }
 
 // This walker derives exact registration identities and augmentation from source
@@ -245,18 +277,19 @@ fn check_routes<B: Binding>(
     Ok(walk.seen)
 }
 
-struct Walk<'a> {
-    nodes: &'a BTreeMap<Address, Node>,
-    members: &'a Members,
+struct Walk<'a, I: NativeIndex> {
+    nodes: &'a BTreeMap<Address, Node<I>>,
+    members: &'a NativeMembers<I>,
+    aggregate: &'a SourceAggregate<I>,
     seen: BTreeSet<Address>,
 }
-impl Walk<'_> {
+impl<I: NativeIndex> Walk<'_, I> {
     fn visit(
         &mut self,
         id: Option<Address>,
         parent: Option<Address>,
         root: Address,
-        kind: Kind,
+        kind: IndexCode,
         depth: u16,
     ) -> Result<(u16, Vec<Address>)> {
         let Some(id) = id else {
@@ -269,7 +302,7 @@ impl Walk<'_> {
             .get(&id)
             .ok_or_else(|| Error::new("corrupt_state", "missing linked node"))?;
         require(
-            node.parent == parent && node.root == root,
+            node.parent == parent && node.root == root && node.kind == kind,
             "node parent/root",
         )?;
         let expected = self
@@ -277,7 +310,7 @@ impl Walk<'_> {
             .get(&id)
             .ok_or_else(|| Error::new("corrupt_state", "extra node"))?;
         require(
-            *expected == (root, node.key.at, node.leaf)
+            *expected == (root, node.key.value.clone(), node.leaf.clone())
                 && node.key.id == id.id
                 && node.key.slot == id.slot,
             "source membership",
@@ -294,13 +327,21 @@ impl Walk<'_> {
         let leaves: Vec<_> = order
             .iter()
             .map(|id| {
-                let (_, at, leaf) = self.members[id];
-                (at, leaf)
+                let (_, at, leaf) = &self.members[id];
+                (at.clone(), leaf.clone())
             })
             .collect();
         require(
-            node.summary == aggregate(kind, &leaves)?,
+            node.summary == (self.aggregate)(kind, &leaves)?,
             "exact subtree summary",
+        )?;
+        require(
+            node.span
+                == Span {
+                    first: leaves.first().unwrap().0.clone(),
+                    last: leaves.last().unwrap().0.clone(),
+                },
+            "exact subtree span",
         )?;
         Ok((node.height, order))
     }
@@ -314,8 +355,8 @@ pub(crate) struct Snapshot<'a, B: Binding> {
     pub(crate) header: RuntimeHeader,
     pub(crate) all: BTreeMap<Key, StoredValue<B>>,
     pub(crate) records: BTreeMap<Uuid, ModelRecord<B>>,
-    pub(crate) roots: BTreeMap<Address, crate::tree::Root>,
-    pub(crate) nodes: BTreeMap<Address, Node>,
+    pub(crate) roots: BTreeMap<Address, crate::tree::Root<B::Index>>,
+    pub(crate) nodes: BTreeMap<Address, Node<B::Index>>,
     pub(crate) graph: Option<crate::access::PreparedGraph>,
     pub(crate) expected_keys: BTreeSet<Key>,
     pub(crate) routes: BTreeMap<Key, BTreeSet<Address>>,
@@ -576,10 +617,47 @@ impl<'a, B: Binding> Snapshot<'a, B> {
     }
     pub(crate) fn finish(
         &self,
-        mut expected_keys: BTreeSet<Key>,
+        expected_keys: BTreeSet<Key>,
         members: Members,
         routes: BTreeMap<Key, BTreeSet<Address>>,
         queries: BTreeMap<Address, Query>,
+    ) -> Result<Value>
+    where
+        B: Binding<Index = Standard>,
+    {
+        for (address, root) in &self.roots {
+            let owner = self
+                .records
+                .get(&address.id)
+                .ok_or_else(|| local::corrupt("root owner missing"))?;
+            let declaration = self
+                .store
+                .model()
+                .contract(owner.contract)?
+                .roots
+                .iter()
+                .find(|r| r.slot == address.slot)
+                .ok_or_else(|| local::corrupt("undeclared root"))?;
+            if declaration.invariant == Some("nonnegative complete-time prefixes") {
+                let Aggregate::Financial(summary) = root.summary else {
+                    return Err(local::corrupt("account kind"));
+                };
+                require(summary.complete_min() >= 0, "historical account floor")?;
+            }
+        }
+        let members = members
+            .into_iter()
+            .map(|(id, (root, at, leaf))| (id, (root, TimeKey::new(at), leaf)))
+            .collect();
+        self.finish_native(expected_keys, members, routes, queries, &aggregate)
+    }
+    pub(crate) fn finish_native(
+        &self,
+        mut expected_keys: BTreeSet<Key>,
+        members: NativeMembers<B::Index>,
+        routes: BTreeMap<Key, BTreeSet<Address>>,
+        queries: BTreeMap<Address, Query>,
+        aggregate: &SourceAggregate<B::Index>,
     ) -> Result<Value> {
         let Self {
             store,
@@ -608,6 +686,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         let mut walk = Walk {
             nodes,
             members: &members,
+            aggregate,
             seen: BTreeSet::new(),
         };
         for (&address, root) in roots {
@@ -615,9 +694,12 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 expected_keys.contains(&Key::Root(address)) && root.revision <= meta.revision,
                 "root inventory/version",
             )?;
+            let owner = records
+                .get(&address.id)
+                .ok_or_else(|| local::corrupt("root owner missing"))?;
             let declaration = store
                 .model()
-                .contract(records[&address.id].contract)?
+                .contract(owner.contract)?
                 .roots
                 .iter()
                 .find(|r| r.slot == address.slot)
@@ -638,26 +720,28 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                         && n.next == order.get(i + 1).copied(),
                     "neighbour links",
                 )?;
-                require(previous.is_none_or(|p: FullKey| p < n.key), "tree order")?;
-                previous = Some(n.key);
+                require(
+                    previous.is_none_or(|p: &FullKey<_>| p < &n.key),
+                    "tree order",
+                )?;
+                previous = Some(&n.key);
             }
             let leaves: Vec<_> = order
                 .iter()
                 .map(|id| {
-                    let (_, at, leaf) = members[id];
-                    (at, leaf)
+                    let (_, at, leaf) = &members[id];
+                    (at.clone(), leaf.clone())
                 })
                 .collect();
             require(
                 root.summary == aggregate(root.kind, &leaves)?,
                 "root summary",
             )?;
-            if declaration.invariant == Some("nonnegative complete-time prefixes") {
-                let Aggregate::Financial(s) = root.summary else {
-                    return Err(local::corrupt("account kind"));
-                };
-                require(s.complete_min() >= 0, "historical account floor")?;
-            }
+            let span = leaves.first().zip(leaves.last()).map(|(first, last)| Span {
+                first: first.0.clone(),
+                last: last.0.clone(),
+            });
+            require(root.span == span, "exact root span")?;
         }
         require(
             walk.seen == members.keys().copied().collect(),
@@ -1140,6 +1224,99 @@ mod tests {
     use redb::ReadableDatabase;
     use std::sync::Arc;
     #[test]
+    fn canonical_orphan_root_returns_corruption_at_check_startup_and_restore() {
+        use crate::{
+            identity::IdentityConfig,
+            native_slice::Context,
+            server::{self, ServerConfig},
+            tree::Root,
+        };
+        use sha2::{Digest, Sha256};
+
+        let directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target/integrity-tests")
+            .join(Uuid::new_v4().to_string());
+        std::fs::create_dir_all(&directory).unwrap();
+        let model = Arc::new(crate::model::PreparedModel::load().unwrap());
+        let store = Arc::new(
+            LocalStore::create_secured(
+                directory.join("orphan.redb"),
+                model.clone(),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+            )
+            .unwrap(),
+        );
+        store.check_integrity().unwrap();
+        let backup = directory.join("valid.json");
+        store.backup(&backup).unwrap();
+
+        // The row itself is canonical and well typed. Only the complete
+        // source inventory establishes that its owner does not exist.
+        let key = Key::Root(Address::new(Uuid::from_u128(1000), 2));
+        let value = native_codec::encode(
+            &key,
+            &Stored::Root(Root::<Standard>::empty(FINANCIAL, 0).unwrap()),
+        )
+        .unwrap();
+        let write = store.db.begin_write().unwrap();
+        write
+            .open_table(KV)
+            .unwrap()
+            .insert(key.encode().as_slice(), value.as_slice())
+            .unwrap();
+        write.commit().unwrap();
+        let before = store.observe_for_verification().unwrap();
+        let error = store.check_integrity().unwrap_err();
+        assert_eq!(error.code, "corrupt_state");
+        assert_eq!(error.detail, "root owner missing");
+        let config = ServerConfig {
+            listen: "127.0.0.1:0".parse().unwrap(),
+            identity: IdentityConfig {
+                issuer: "integrity-test".into(),
+                audience: "rebase-test".into(),
+                public_keys: [(
+                    "test".into(),
+                    include_str!("../tests/fixtures/test-ed25519-public.pem").into(),
+                )]
+                .into(),
+                max_token_seconds: 600,
+            },
+            max_inflight: 1,
+            request_timeout_seconds: 5,
+        };
+        assert_eq!(
+            server::router(store.clone(), &config).unwrap_err().code,
+            "corrupt_state"
+        );
+        assert_eq!(store.observe_for_verification().unwrap(), before);
+
+        let mut image: Value = serde_json::from_slice(&std::fs::read(backup).unwrap()).unwrap();
+        image["payload"]["tables"]["native_kv"]
+            .as_array_mut()
+            .unwrap()
+            .push(
+                json!({"key":native_codec::hex(&key.encode()),"value":native_codec::hex(&value)}),
+            );
+        image["sha256"] = json!(native_codec::hex(&Sha256::digest(
+            local::encode(&image["payload"]).unwrap()
+        )));
+        let invalid_backup = directory.join("orphan.json");
+        std::fs::write(&invalid_backup, serde_json::to_vec(&image).unwrap()).unwrap();
+        let destination = directory.join("rejected.redb");
+        assert_eq!(
+            crate::lifecycle::restore(&invalid_backup, &destination, model)
+                .unwrap_err()
+                .code,
+            "corrupt_state"
+        );
+        assert!(!destination.exists());
+        drop(store);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
     fn corrupt_data_chain_is_rejected_before_unbounded_recursion() {
         let root = Address::new(Uuid::from_u128(1000), 7);
         let ids: Vec<_> = (1..=256)
@@ -1150,13 +1327,18 @@ mod tests {
         for (i, &id) in ids.iter().enumerate() {
             let at = i as i64;
             let leaf = Leaf::Financial(1);
-            members.insert(id, (root, at, leaf));
+            members.insert(id, (root, TimeKey::new(at), leaf));
             nodes.insert(
                 id,
-                Node {
+                Node::<Standard> {
+                    kind: FINANCIAL,
+                    span: Span {
+                        first: TimeKey::new(at),
+                        last: TimeKey::new(at),
+                    },
                     root,
                     key: FullKey {
-                        at,
+                        value: TimeKey::new(at),
                         id: id.id,
                         slot: id.slot,
                     },
@@ -1174,10 +1356,11 @@ mod tests {
         let mut walk = Walk {
             nodes: &nodes,
             members: &members,
+            aggregate: &aggregate,
             seen: BTreeSet::new(),
         };
         let error = walk
-            .visit(Some(ids[0]), None, root, Kind::Financial, 0)
+            .visit(Some(ids[0]), None, root, FINANCIAL, 0)
             .unwrap_err();
         assert_eq!(error.code, "corrupt_state");
         assert_eq!(error.detail, "tree path depth");

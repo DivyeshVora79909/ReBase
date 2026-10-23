@@ -1,173 +1,82 @@
-//! Linked quote and financial index representation for the bounded native slice.
+//! One linked AVL over a compiled model's native key, leaf and summary.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::binding::Binding;
 use crate::{
-    algebra::Summary,
-    native_codec::{Address, decimal, optional_decimal, summary, uuid_text},
-};
-use crate::{
-    native_codec::{Key, StoredValue},
+    binding::Binding,
+    index::{IndexCode, KeyRange, NativeIndex},
+    native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Error, Result},
     time_range::{TimeBound, TimeRange},
 };
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, ops::Bound};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Kind {
-    Financial,
-    Quote,
-}
+type NativeKey<B> = <<B as Binding>::Index as NativeIndex>::Key;
+type NativeLeaf<B> = <<B as Binding>::Index as NativeIndex>::Leaf;
+type NativeSummary<B> = <<B as Binding>::Index as NativeIndex>::Summary;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct FullKey {
-    #[serde(with = "decimal")]
-    pub at: i64,
+pub struct FullKey<K> {
+    pub value: K,
     #[serde(with = "uuid_text")]
     pub id: Uuid,
     pub slot: u16,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    tag = "kind",
-    content = "value",
-    rename_all = "lowercase",
-    deny_unknown_fields
-)]
-pub enum Leaf {
-    Financial(#[serde(with = "decimal")] i128),
-    Quote(#[serde(with = "decimal")] u16),
-}
-
-impl Leaf {
-    pub fn kind(self) -> Kind {
-        match self {
-            Self::Financial(_) => Kind::Financial,
-            Self::Quote(_) => Kind::Quote,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Structural coverage is independent of the model's summary fields.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct QuoteSummary {
-    pub count: u64,
-    #[serde(with = "optional_decimal")]
-    pub first: Option<i64>,
-    #[serde(with = "optional_decimal")]
-    pub last: Option<i64>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    tag = "kind",
-    content = "value",
-    rename_all = "lowercase",
-    deny_unknown_fields
-)]
-pub enum Aggregate {
-    Financial(#[serde(with = "summary")] Summary),
-    Quote(QuoteSummary),
-}
-
-impl Aggregate {
-    pub fn kind(self) -> Kind {
-        match self {
-            Self::Financial(_) => Kind::Financial,
-            Self::Quote(_) => Kind::Quote,
-        }
-    }
-    pub fn empty(kind: Kind) -> Self {
-        match kind {
-            Kind::Financial => Self::Financial(Summary::default()),
-            Kind::Quote => Self::Quote(QuoteSummary::default()),
-        }
-    }
-    fn leaf(at: i64, leaf: Leaf) -> Self {
-        match leaf {
-            Leaf::Financial(amount) => Self::Financial(Summary::leaf(at, Some(amount))),
-            Leaf::Quote(_) => Self::Quote(QuoteSummary {
-                count: 1,
-                first: Some(at),
-                last: Some(at),
-            }),
-        }
-    }
-    fn combine(self, other: Self) -> Result<Self> {
-        match (self, other) {
-            (Self::Financial(a), Self::Financial(b)) => a
-                .combine(b)
-                .map(Self::Financial)
-                .map_err(|e| Error::new("overflow", e)),
-            (Self::Quote(a), Self::Quote(b)) => {
-                if a.count == 0 {
-                    return Ok(Self::Quote(b));
-                }
-                if b.count == 0 {
-                    return Ok(Self::Quote(a));
-                }
-                if a.last > b.first {
-                    return Err(broken("unordered quote segments"));
-                }
-                Ok(Self::Quote(QuoteSummary {
-                    count: a
-                        .count
-                        .checked_add(b.count)
-                        .ok_or_else(|| broken("quote count overflow"))?,
-                    first: a.first,
-                    last: b.last,
-                }))
-            }
-            _ => Err(broken("mixed summary kinds")),
-        }
-    }
+pub struct Span<K> {
+    pub first: K,
+    pub last: K,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Root {
-    pub kind: Kind,
+#[serde(deny_unknown_fields, bound = "")]
+pub struct Root<I: NativeIndex> {
+    pub kind: IndexCode,
     pub head: Option<Address>,
     pub first: Option<Address>,
     pub last: Option<Address>,
     pub height: u16,
-    pub summary: Aggregate,
+    pub span: Option<Span<I::Key>>,
+    pub summary: I::Summary,
     #[serde(with = "decimal")]
     pub revision: u64,
 }
 
-impl Root {
-    pub fn empty(kind: Kind, revision: u64) -> Self {
-        Self {
+impl<I: NativeIndex> Root<I> {
+    pub fn empty(kind: IndexCode, revision: u64) -> Result<Self> {
+        Ok(Self {
             kind,
             head: None,
             first: None,
             last: None,
             height: 0,
-            summary: Aggregate::empty(kind),
+            span: None,
+            summary: I::empty(kind)?,
             revision,
-        }
+        })
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Node {
+#[serde(deny_unknown_fields, bound = "")]
+pub struct Node<I: NativeIndex> {
+    pub kind: IndexCode,
     pub root: Address,
-    pub key: FullKey,
-    pub leaf: Leaf,
+    pub key: FullKey<I::Key>,
+    pub leaf: I::Leaf,
     pub parent: Option<Address>,
     pub left: Option<Address>,
     pub right: Option<Address>,
     pub prev: Option<Address>,
     pub next: Option<Address>,
     pub height: u16,
-    pub summary: Aggregate,
+    pub span: Span<I::Key>,
+    pub summary: I::Summary,
 }
 
 fn broken(detail: &str) -> Error {
@@ -177,7 +86,7 @@ fn broken(detail: &str) -> Error {
 pub fn root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     id: Address,
-) -> Result<Root> {
+) -> Result<Root<B::Index>> {
     match ws.get(&Key::Root(id))? {
         Some(StoredValue::Root(r)) => Ok(r),
         _ => Err(broken("missing root")),
@@ -188,7 +97,7 @@ pub fn node<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
-) -> Result<Node> {
+) -> Result<Node<B::Index>> {
     ws.charge("node", 1)?;
     match ws.get(&Key::Node(id))? {
         Some(StoredValue::Node(n)) if n.root == owner => Ok(n),
@@ -200,11 +109,17 @@ fn edit<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
-    change: impl FnOnce(&mut Node),
+    change: impl FnOnce(&mut Node<B::Index>),
 ) -> Result<()> {
     let mut current = node(ws, owner, id)?;
     change(&mut current);
     ws.put(Key::Node(id), Some(StoredValue::Node(current)))
+}
+
+struct Child<I: NativeIndex> {
+    height: u16,
+    summary: I::Summary,
+    span: Option<Span<I::Key>>,
 }
 
 fn child_info<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
@@ -212,16 +127,24 @@ fn child_info<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     owner: Address,
     parent: Address,
     child: Option<Address>,
-    kind: Kind,
-) -> Result<(u16, Aggregate)> {
+    kind: IndexCode,
+) -> Result<Child<B::Index>> {
     match child {
-        None => Ok((0, Aggregate::empty(kind))),
+        None => Ok(Child {
+            height: 0,
+            summary: B::Index::empty(kind)?,
+            span: None,
+        }),
         Some(id) => {
             let n = node(ws, owner, id)?;
-            if n.parent != Some(parent) || n.summary.kind() != kind {
+            if n.parent != Some(parent) || n.kind != kind {
                 return Err(broken("child parent/kind mismatch"));
             }
-            Ok((n.height, n.summary))
+            Ok(Child {
+                height: n.height,
+                summary: n.summary,
+                span: Some(n.span),
+            })
         }
     }
 }
@@ -232,21 +155,34 @@ fn refresh<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     id: Address,
 ) -> Result<i32> {
     let current = node(ws, owner, id)?;
-    let kind = current.leaf.kind();
-    let (lh, ls) = child_info(ws, owner, id, current.left, kind)?;
-    let (rh, rs) = child_info(ws, owner, id, current.right, kind)?;
-    let summary = ls
-        .combine(Aggregate::leaf(current.key.at, current.leaf))?
-        .combine(rs)?;
-    let height = lh
-        .max(rh)
+    let kind = current.kind;
+    let left = child_info(ws, owner, id, current.left, kind)?;
+    let right = child_info(ws, owner, id, current.right, kind)?;
+    let leaf = B::Index::singleton(kind, &current.key.value, &current.leaf)?;
+    let summary = B::Index::combine(
+        kind,
+        &B::Index::combine(kind, &left.summary, &leaf)?,
+        &right.summary,
+    )?;
+    let height = left
+        .height
+        .max(right.height)
         .checked_add(1)
         .ok_or_else(|| broken("height overflow"))?;
+    let span = Span {
+        first: left
+            .span
+            .map_or_else(|| current.key.value.clone(), |s| s.first),
+        last: right
+            .span
+            .map_or_else(|| current.key.value.clone(), |s| s.last),
+    };
     edit(ws, owner, id, |n| {
         n.height = height;
         n.summary = summary;
+        n.span = span;
     })?;
-    Ok(i32::from(lh) - i32::from(rh))
+    Ok(i32::from(left.height) - i32::from(right.height))
 }
 
 fn replace_parent_link<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
@@ -374,12 +310,14 @@ fn balance<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         }
         header.height = n.height;
         header.summary = n.summary;
+        header.span = Some(n.span);
     } else {
         if header.first.is_some() || header.last.is_some() {
             return Err(broken("nonempty endpoints for empty root"));
         }
         header.height = 0;
-        header.summary = Aggregate::empty(header.kind);
+        header.summary = B::Index::empty(header.kind)?;
+        header.span = None;
     }
     ws.put(Key::Root(owner), Some(StoredValue::Root(header)))
 }
@@ -388,18 +326,20 @@ pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
-    at: i64,
-    leaf: Leaf,
+    value: NativeKey<B>,
+    leaf: NativeLeaf<B>,
 ) -> Result<()> {
     let mut header = root(ws, owner)?;
-    if id.slot == 0 || owner.slot == 0 || header.kind != leaf.kind() {
+    B::Index::validate_key(header.kind, &value)?;
+    B::Index::validate_leaf(header.kind, &leaf)?;
+    if id.slot == 0 || owner.slot == 0 {
         return Err(broken("invalid member/root kind"));
     }
     if ws.get(&Key::Node(id))?.is_some() {
         return Err(broken("existing member identity"));
     }
     let key = FullKey {
-        at,
+        value,
         id: id.id,
         slot: id.slot,
     };
@@ -413,9 +353,10 @@ pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         if n.parent != parent {
             return Err(broken("search parent mismatch"));
         }
-        if header.kind == Kind::Quote && n.key.at == at {
-            return Err(Error::new("duplicate_time", "curve quote time"));
+        if n.kind != header.kind {
+            return Err(broken("search native code mismatch"));
         }
+        B::Index::check_insert(header.kind, &key.value, &n.key.value)?;
         if key == n.key {
             return Err(broken("duplicate full key"));
         }
@@ -431,16 +372,21 @@ pub fn insert<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws.put(
         Key::Node(id),
         Some(StoredValue::Node(Node {
+            kind: header.kind,
             root: owner,
-            key,
-            leaf,
+            key: key.clone(),
+            leaf: leaf.clone(),
             parent,
             left: None,
             right: None,
             prev: previous,
             next,
             height: 1,
-            summary: Aggregate::leaf(at, leaf),
+            span: Span {
+                first: key.value.clone(),
+                last: key.value.clone(),
+            },
+            summary: B::Index::singleton(header.kind, &key.value, &leaf)?,
         })),
     )?;
     if let Some(p) = parent {
@@ -472,12 +418,10 @@ pub fn revalue<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     id: Address,
-    leaf: Leaf,
+    leaf: NativeLeaf<B>,
 ) -> Result<()> {
     let n = node(ws, owner, id)?;
-    if n.leaf.kind() != leaf.kind() {
-        return Err(broken("revalue kind mismatch"));
-    }
+    B::Index::validate_leaf(n.kind, &leaf)?;
     if n.leaf == leaf {
         return Ok(());
     }
@@ -546,31 +490,34 @@ pub fn remove<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     balance(ws, owner, start)
 }
 
+/// Quote selection is an explicit family capability, separate from generic
+/// ordering and from any incidental numeric fields a native leaf may contain.
 pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     at: i64,
 ) -> Result<Option<(Uuid, u16)>> {
     let header = root(ws, owner)?;
-    if header.kind != Kind::Quote {
-        return Err(broken("latest requires a quote root"));
+    if !B::Index::supports_quote(header.kind) {
+        return Err(Error::new(
+            "unsupported_query",
+            "latest requires a quote root",
+        ));
     }
+    let key = B::Index::time_key(header.kind, at)?;
     let (mut cursor, mut parent, mut selected) = (header.head, None, None);
     let mut seen = BTreeSet::new();
     while let Some(id) = cursor {
-        if !seen.insert(id) {
-            return Err(broken("cyclic quote search"));
+        if seen.len() >= 64 || !seen.insert(id) {
+            return Err(broken("cyclic or overdeep quote search"));
         }
         let n = node(ws, owner, id)?;
-        if n.parent != parent {
-            return Err(broken("quote parent mismatch"));
+        if n.parent != parent || n.kind != header.kind {
+            return Err(broken("quote parent/code mismatch"));
         }
         parent = Some(id);
-        if n.key.at <= at {
-            let Leaf::Quote(rate) = n.leaf else {
-                return Err(broken("nonquote selection"));
-            };
-            selected = Some((id.id, rate));
+        if n.key.value <= key {
+            selected = Some((id.id, B::Index::quote_leaf(header.kind, &n.leaf)?));
             cursor = n.right;
         } else {
             cursor = n.left;
@@ -579,40 +526,38 @@ pub fn latest<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     Ok(selected)
 }
 
-/// Sum complete occurrences strictly before a timestamp. Equal-time members
-/// never depend on their UUID order; None means the whole settled root.
+/// The scalar financial prefix path visits only search-path leaves and cached
+/// left sums; it never calculates unused extrema by folding full summaries.
 pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
     before: Option<i64>,
 ) -> Result<i128> {
     let header = root(ws, owner)?;
-    let Aggregate::Financial(total) = header.summary else {
-        return Err(broken("prefix on quote root"));
-    };
+    let total = B::Index::financial_summary(header.kind, &header.summary)?;
     let Some(before) = before else {
         return Ok(total.sum);
     };
+    let boundary = B::Index::time_key(header.kind, before)?;
     let mut sum: i128 = 0;
     let mut cursor = header.head;
     let mut parent = None;
     let mut visited = BTreeSet::new();
     while let Some(id) = cursor {
-        if !visited.insert(id) {
-            return Err(broken("prefix cycle"));
+        if visited.len() >= 64 || !visited.insert(id) {
+            return Err(broken("cyclic or overdeep prefix search"));
         }
         let current = node(ws, owner, id)?;
-        if current.parent != parent {
-            return Err(broken("prefix parent mismatch"));
+        if current.parent != parent || current.kind != header.kind {
+            return Err(broken("prefix parent/code mismatch"));
         }
         parent = Some(id);
-        if current.key.at < before {
-            let left = child_info(ws, owner, id, current.left, Kind::Financial)?.1;
-            let (Aggregate::Financial(left), Leaf::Financial(leaf)) = (left, current.leaf) else {
-                return Err(broken("prefix kind"));
-            };
+        if current.key.value < boundary {
+            let left = child_info(ws, owner, id, current.left, header.kind)?;
+            let left = B::Index::financial_summary(header.kind, &left.summary)?.sum;
+            let leaf = B::Index::financial_leaf(header.kind, &current.leaf)?;
             sum = sum
-                .checked_add(left.sum)
+                .checked_add(left)
                 .and_then(|s| s.checked_add(leaf))
                 .ok_or_else(|| Error::new("overflow", "prefix sum"))?;
             cursor = current.right;
@@ -623,35 +568,28 @@ pub fn prefix<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     Ok(sum)
 }
 
-fn span(summary: Aggregate) -> Result<Option<(i64, i64)>> {
-    let (count, first, last) = match summary {
-        Aggregate::Financial(value) => (value.count, value.first, value.last),
-        Aggregate::Quote(value) => (value.count, value.first, value.last),
-    };
-    match (count, first, last) {
-        (0, None, None) => Ok(None),
-        (1.., Some(first), Some(last)) if first <= last => Ok(Some((first, last))),
-        _ => Err(broken("range summary span")),
-    }
-}
-
-struct RangeFold {
+struct RangeFold<'a, K> {
     owner: Address,
-    window: TimeRange,
-    kind: Kind,
+    window: &'a KeyRange<K>,
+    kind: IndexCode,
     seen: BTreeSet<Address>,
 }
 
-impl RangeFold {
-    fn visit<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+impl<K: Ord> RangeFold<'_, K> {
+    fn visit<L, B>(
         &mut self,
         ws: &mut Attempt<L, B>,
         id: Option<Address>,
         parent: Option<Address>,
         depth: u16,
-    ) -> Result<Aggregate> {
+    ) -> Result<NativeSummary<B>>
+    where
+        L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>,
+        B: Binding,
+        B::Index: NativeIndex<Key = K>,
+    {
         let Some(id) = id else {
-            return Ok(Aggregate::empty(self.kind));
+            return B::Index::empty(self.kind);
         };
         if depth >= 64 {
             return Err(broken("range path depth"));
@@ -661,84 +599,76 @@ impl RangeFold {
         }
         let current = node(ws, self.owner, id)?;
         if current.parent != parent
-            || current.leaf.kind() != self.kind
-            || current.summary.kind() != self.kind
+            || current.kind != self.kind
             || current.height == 0
             || current.height >= 64
         {
-            return Err(broken("range parent/kind/height mismatch"));
+            return Err(broken("range parent/code/height mismatch"));
         }
-        let Some((first, last)) = span(current.summary)? else {
-            return Err(broken("empty node summary"));
-        };
-        if !(first <= current.key.at && current.key.at <= last) {
-            return Err(broken("range leaf outside summary span"));
+        B::Index::validate_key(self.kind, &current.key.value)?;
+        B::Index::validate_leaf(self.kind, &current.leaf)?;
+        B::Index::validate_summary(self.kind, &current.summary)?;
+        let Span { first, last } = &current.span;
+        if !(first <= &current.key.value && &current.key.value <= last) {
+            return Err(broken("range leaf outside structural span"));
         }
+        B::Index::validate_key(self.kind, first)?;
+        B::Index::validate_key(self.kind, last)?;
         if self.window.contains(first) && self.window.contains(last) {
             return Ok(current.summary);
         }
-        let below = match self.window.lower {
-            TimeBound::Unbounded => false,
-            TimeBound::Included(at) => last < at,
-            TimeBound::Excluded(at) => last <= at,
-        };
-        let above = match self.window.upper {
-            TimeBound::Unbounded => false,
-            TimeBound::Included(at) => first > at,
-            TimeBound::Excluded(at) => first >= at,
-        };
-        if below || above {
-            return Ok(Aggregate::empty(self.kind));
+        if self.window.below(last) || self.window.above(first) {
+            return B::Index::empty(self.kind);
         }
-        // Skip sides excluded by the boundary point itself. Equal timestamps
-        // stay together even when their UUID ties straddle several subtrees.
-        let left_possible = match self.window.lower {
-            TimeBound::Unbounded => true,
-            TimeBound::Included(at) => at <= current.key.at,
-            TimeBound::Excluded(at) => at < current.key.at,
-        };
-        let right_possible = match self.window.upper {
-            TimeBound::Unbounded => true,
-            TimeBound::Included(at) => current.key.at <= at,
-            TimeBound::Excluded(at) => current.key.at < at,
-        };
+        // Complete business-key groups include all engine occurrence ties.
+        let left_possible = !self.window.below(&current.key.value);
+        let right_possible = !self.window.above(&current.key.value);
         let mut result = if left_possible {
             self.visit(ws, current.left, Some(id), depth + 1)?
         } else {
-            Aggregate::empty(self.kind)
+            B::Index::empty(self.kind)?
         };
-        if self.window.contains(current.key.at) {
-            result = result.combine(Aggregate::leaf(current.key.at, current.leaf))?;
+        if self.window.contains(&current.key.value) {
+            let leaf = B::Index::singleton(self.kind, &current.key.value, &current.leaf)?;
+            result = B::Index::combine(self.kind, &result, &leaf)?;
         }
         if right_possible {
-            result = result.combine(self.visit(ws, current.right, Some(id), depth + 1)?)?;
+            let right = self.visit(ws, current.right, Some(id), depth + 1)?;
+            result = B::Index::combine(self.kind, &result, &right)?;
         }
         Ok(result)
     }
 }
 
-/// Fold complete timestamp groups in source order. Canonically covered subtrees
-/// contribute their cached aggregate; boundary leaves preserve non-invertible
-/// prefix and complete-time extrema without subtracting two prefix summaries.
-pub fn range<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+/// Ordered canonical subtree coverage over native business keys. Summary
+/// algebra and the AVL never interpret a key as a timestamp.
+pub fn range_keys<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     owner: Address,
-    window: TimeRange,
-) -> Result<Aggregate> {
+    window: &KeyRange<NativeKey<B>>,
+) -> Result<NativeSummary<B>> {
     let header = root(ws, owner)?;
-    if header.summary.kind() != header.kind || header.height >= 64 {
-        return Err(broken("range root kind/height"));
+    B::Index::validate_summary(header.kind, &header.summary)?;
+    if header.height >= 64
+        || header.head.is_none() != header.span.is_none()
+        || header.head.is_none() != (header.height == 0)
+    {
+        return Err(broken("range root height/population"));
     }
-    let bounds = span(header.summary)?;
-    if header.head.is_none() != bounds.is_none() || header.head.is_none() != (header.height == 0) {
-        return Err(broken("range root population"));
-    }
-    if window.is_empty() {
-        return Ok(Aggregate::empty(header.kind));
-    }
-    let Some((first, last)) = bounds else {
-        return Ok(Aggregate::empty(header.kind));
+    let Some(Span { first, last }) = &header.span else {
+        if header.summary != B::Index::empty(header.kind)? {
+            return Err(broken("nonempty summary for empty root"));
+        }
+        return B::Index::empty(header.kind);
     };
+    B::Index::validate_key(header.kind, first)?;
+    B::Index::validate_key(header.kind, last)?;
+    if first > last {
+        return Err(broken("unordered root span"));
+    }
+    if window.is_empty() || window.below(last) || window.above(first) {
+        return B::Index::empty(header.kind);
+    }
     if window.contains(first) && window.contains(last) {
         return Ok(header.summary);
     }
@@ -749,4 +679,29 @@ pub fn range<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         seen: BTreeSet::new(),
     }
     .visit(ws, header.head, None, 0)
+}
+
+/// Exact time windows use the family's explicit monotonic time adapter. The
+/// native fold remains valid for unrelated key types without this adapter.
+pub fn range<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+    ws: &mut Attempt<L, B>,
+    owner: Address,
+    window: TimeRange,
+) -> Result<NativeSummary<B>> {
+    let code = root(ws, owner)?.kind;
+    let map = |bound| match bound {
+        TimeBound::Unbounded => Ok(Bound::Unbounded),
+        TimeBound::Included(at) => B::Index::time_key(code, at).map(Bound::Included),
+        TimeBound::Excluded(at) => B::Index::time_key(code, at).map(Bound::Excluded),
+    };
+    // Validate capability even for an unbounded or empty query.
+    B::Index::time_key(code, 0)?;
+    range_keys(
+        ws,
+        owner,
+        &KeyRange {
+            lower: map(window.lower)?,
+            upper: map(window.upper)?,
+        },
+    )
 }

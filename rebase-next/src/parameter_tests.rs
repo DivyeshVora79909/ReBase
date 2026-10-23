@@ -3,6 +3,8 @@
 use crate::{
     binding::{Binding, NativeInput},
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    index::TimeKey,
+    indexes::standard::{FINANCIAL, Leaf, Standard},
     integrity::{Snapshot, require},
     local::{Mutation, Store},
     model::{
@@ -13,7 +15,6 @@ use crate::{
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
     routes,
     time_range::TimeRange,
-    tree::{Kind, Leaf},
     values::{Rational, Rounding},
 };
 use serde::{Deserialize, Serialize};
@@ -231,7 +232,7 @@ fn declarations() -> Vec<Contract> {
     bucket.roots.push(RootDeclaration {
         slot: 7,
         name: "amounts",
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         reads: vec!["summary", "sum", "range"],
         invariant: None,
     });
@@ -247,7 +248,7 @@ fn declarations() -> Vec<Contract> {
         through: "bucket",
         root_contract: BUCKET,
         root_slot: 7,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         key: "at",
         value: "amount",
     });
@@ -320,7 +321,7 @@ fn declarations() -> Vec<Contract> {
         through: "bucket",
         root_contract: BUCKET,
         root_slot: 7,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         key: "at",
         value: "amount",
     });
@@ -381,15 +382,18 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
     }
     result
 }
-fn entry_member(input: Option<&Input>) -> Option<(Address, i64, Leaf)> {
+fn entry_member(input: Option<&Input>) -> Option<(Address, TimeKey, Leaf)> {
     match input {
-        Some(Input::Entry { bucket, at, amount }) => {
-            Some((Address::new(*bucket, 7), *at, Leaf::Financial(*amount)))
-        }
+        Some(Input::Entry { bucket, at, amount }) => Some((
+            Address::new(*bucket, 7),
+            TimeKey(*at),
+            Leaf::Financial(*amount),
+        )),
         _ => None,
     }
 }
 impl Binding for ParentTax {
+    type Index = Standard;
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "test-parent-tax";

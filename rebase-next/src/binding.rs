@@ -50,6 +50,7 @@ impl Default for Limits {
 }
 
 pub trait Binding: Copy + Clone + Debug + Eq + Send + Sync + 'static {
+    type Index: crate::index::NativeIndex;
     type Input: NativeInput;
     type Derived: Clone + Debug + Eq + Serialize + DeserializeOwned + Send + Sync + 'static;
     const NAME: &'static str;
@@ -107,7 +108,7 @@ pub(crate) fn headers<B: Binding>(
         let address = crate::native_codec::Address::new(id, root.slot);
         values.push((
             Key::Root(address),
-            StoredValue::Root(crate::tree::Root::empty(root.kind, revision)),
+            StoredValue::Root(crate::tree::Root::empty(root.kind, revision)?),
         ));
         if model.contracts().any(|c| {
             c.queries

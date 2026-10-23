@@ -4,6 +4,8 @@
 use crate::{
     binding::{Binding, NativeInput},
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    index::TimeKey,
+    indexes::standard::{FINANCIAL, Leaf, Standard},
     integrity::{Snapshot, require},
     local::{Mutation, Store},
     model::{
@@ -14,7 +16,6 @@ use crate::{
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
     routes,
     time_range::{TimeBound, TimeRange},
-    tree::{Kind, Leaf},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -195,7 +196,7 @@ fn declarations() -> Vec<Contract> {
     root.roots.push(RootDeclaration {
         slot: 7,
         name: "amounts",
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         reads: vec!["summary", "sum"],
         invariant: None,
     });
@@ -211,7 +212,7 @@ fn declarations() -> Vec<Contract> {
         through: "root",
         root_contract: ROOT,
         root_slot: 7,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         key: "at",
         value: "amount",
     });
@@ -287,7 +288,7 @@ fn declarations() -> Vec<Contract> {
         through: "target",
         root_contract: ROOT,
         root_slot: 7,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         key: "at",
         value: "amount",
     });
@@ -300,15 +301,18 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
         .map(|(target, _, slot)| (Key::Incoming(target), Address::new(id, slot)))
         .collect()
 }
-fn entry_member(input: Option<&Input>) -> Option<(Address, i64, Leaf)> {
+fn entry_member(input: Option<&Input>) -> Option<(Address, TimeKey, Leaf)> {
     match input {
-        Some(Input::Entry { root, at, amount }) => {
-            Some((Address::new(*root, 7), *at, Leaf::Financial(*amount)))
-        }
+        Some(Input::Entry { root, at, amount }) => Some((
+            Address::new(*root, 7),
+            TimeKey(*at),
+            Leaf::Financial(*amount),
+        )),
         _ => None,
     }
 }
 impl Binding for WindowModel {
+    type Index = Standard;
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "test-reactive-windows";

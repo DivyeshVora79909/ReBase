@@ -3,12 +3,12 @@
 //! an expected amount. The exact scalar primitive has a separate Fraction oracle.
 use super::invoicing::{Derived, Input, Invoicing, TaxKind};
 use crate::{
+    indexes::standard::Leaf,
     integrity::{Members, Snapshot, require},
     local::Store,
     native_codec::{Address, Key, StoredValue},
     native_slice::{Error, Query, Result},
     time_range::TimeRange,
-    tree::Leaf,
 };
 use num_bigint::BigInt;
 use num_traits::{Signed, ToPrimitive, Zero};
@@ -391,7 +391,6 @@ mod tests {
         binding::Binding,
         local::{KV, Mutation},
         model::Prepared,
-        native_codec,
         native_slice::Context,
     };
     use redb::ReadableDatabase;
@@ -486,7 +485,8 @@ mod tests {
             {
                 let mut table = write.open_table(KV).unwrap();
                 if let Some(bad) = bad {
-                    let bytes = native_codec::encode_for::<Invoicing>(&key, &bad).unwrap();
+                    // Corrupt persisted bytes directly; validating encoding may reject first.
+                    let bytes = serde_json::to_vec(&bad).unwrap();
                     table
                         .insert(key.encode().as_slice(), bytes.as_slice())
                         .unwrap();

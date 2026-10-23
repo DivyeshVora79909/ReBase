@@ -2,6 +2,8 @@
 use crate::{
     binding::{Binding, NativeInput},
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    index::TimeKey,
+    indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
     local::Store,
     model::{
         self, Contract, InputField, Membership, OutputRole, Prepared, PublishedField,
@@ -9,7 +11,7 @@ use crate::{
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
-    tree::{self, Aggregate, Kind, Leaf},
+    tree,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -218,7 +220,7 @@ fn declarations() -> Result<Vec<Contract>> {
             c.roots.push(RootDeclaration {
                 slot: 7,
                 name: "availability",
-                kind: Kind::Financial,
+                kind: FINANCIAL,
                 reads: vec!["summary", "before", "range"],
                 invariant: Some("nonnegative complete-time prefixes"),
             });
@@ -232,7 +234,7 @@ fn declarations() -> Result<Vec<Contract>> {
                 through: "pool",
                 root_contract: 101,
                 root_slot: 7,
-                kind: Kind::Financial,
+                kind: FINANCIAL,
                 key: "at",
                 value: "quantity",
             });
@@ -297,19 +299,22 @@ fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
     }
     set
 }
-fn delivery(input: Option<&Input>) -> Option<(Address, i64, Leaf)> {
+fn delivery(input: Option<&Input>) -> Option<(Address, TimeKey, Leaf)> {
     match input {
-        Some(Input::Delivery { pool, at, quantity }) => {
-            Some((Address::new(*pool, 7), *at, Leaf::Financial(*quantity)))
-        }
+        Some(Input::Delivery { pool, at, quantity }) => Some((
+            Address::new(*pool, 7),
+            TimeKey(*at),
+            Leaf::Financial(*quantity),
+        )),
         _ => None,
     }
 }
 impl Binding for Equipment {
+    type Index = Standard;
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "equipment-reservations";
-    const BEHAVIOR: &'static str = "equipment-reservations-4";
+    const BEHAVIOR: &'static str = "equipment-reservations-5";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }

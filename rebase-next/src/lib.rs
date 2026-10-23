@@ -8,6 +8,8 @@ pub mod demo;
 mod dependency;
 pub mod fixtures;
 pub mod identity;
+pub mod index;
+pub mod indexes;
 pub mod inspector;
 pub mod integrity;
 pub mod json;
@@ -37,3 +39,6 @@ mod parameter_tests;
 mod route_tests;
 #[cfg(test)]
 mod window_tests;
+
+#[cfg(test)]
+mod index_tests;

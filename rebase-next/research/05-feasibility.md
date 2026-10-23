@@ -1,5 +1,16 @@
 # Rust feasibility and stop boundary
 
+**G4c accepted, October 23:** [native index families](34-native-index-extension.md)
+drive one shared AVL and a fourth compiled model, dimensioned measurement.
+Source 0.8.0 / store+codec 6 passes 109 debug/optimized Rust tests, 116 independent
+native/local cases, 33 measurement and 111 invoicing HTTP mutations, and both
+calculation/equipment workflows at 64 and 4,096 sources. Complete rollback,
+authority, crash/reopen/restore, corrupt indexes and explicit format-5 rejection
+are verified. G4a output-free validation and G4b exact reactive windows remain
+accepted. Population/work limits are unchanged; the next gate is
+[G4d-a declared published values](36-value-dependencies-gate.md). No new deployment
+bundle, arbitrary native-summary reactivity or external service is claimed.
+
 **G3e accepted, October 23:** the [0.6 deployment bundle](29-deployment-result.md)
 builds from exported sources outside Git and runs all three compiled models with
 the extracted tools. Two builds produce identical archive/executable bytes on

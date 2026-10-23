@@ -3,7 +3,7 @@
 The 0.7.0 source adds exact financial time windows to causal reads and the
 authorized `roots.read` operation. The source tree is ahead of the last verified
 deployment bundle: that bundle is 0.6.0 and uses store/native codec format 4.
-The current source uses format 5; see [storage upgrades](storage.md#data-identity-and-upgrades)
+The current 0.8.0 source uses format 6; see [storage upgrades](storage.md#data-identity-and-upgrades)
 before opening a store.
 
 ## Wire form
@@ -99,11 +99,10 @@ typed query-result variants. Ordered query results remain exact `i128` sums.
 
 ## Store compatibility
 
-The 0.7.0 source uses `rebase-store-5` and `native-slice-kv-5`. Its behavior
-identities are `rebase-calculation-contract-5`,
-`equipment-reservations-4` and `invoice-assessments-3`. Range serialization and
-reverse-route caches change persisted structure, and every compiled model
-identity changes. There is no implicit migration from 0.6.0 stores. Preserve the
-matching 0.6.0 binary and backups for those stores; the verified 0.6.0 bundle
-remains the evidence for that deployment and is not evidence for the 0.7.0
-source.
+G4b introduced these semantics in source 0.7.0 / format 5. The current
+0.8.0 native-index extraction uses `rebase-store-6` and `native-slice-kv-6`,
+with `rebase-calculation-contract-6`, `equipment-reservations-5` and
+`invoice-assessments-4`. Generic native payloads and subtree spans change
+format 5; the earlier range semantics and reverse-route caches remain in use.
+There is no implicit migration from older stores. Preserve matching binaries
+and backups; the verified 0.6.0 bundle remains the last deployment artifact.

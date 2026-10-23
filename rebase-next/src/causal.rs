@@ -1,13 +1,15 @@
 //! Shared resolved-shape causal settlement for compiled model bindings.
 use crate::{
     binding::{Binding, NativeInput, headers},
+    index::TimeKey,
+    indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
     model::{Prepared, Visibility},
     mutation::{check_counts, reconcile_member},
     native_codec::{Address, Key, Role, StoredValue},
     native_slice::{Attempt, Context, Error, Meta, ModelChange, ModelRecord, Query, Result},
     routes::{self, Endpoint, Route},
     time_range::{TimeBound, TimeRange},
-    tree::{self, Aggregate, Kind, Leaf},
+    tree,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -38,7 +40,7 @@ pub struct Resolved<P> {
     pub shape: ResolvedShape,
     pub parameters: P,
 }
-pub trait ReactiveBinding: Binding {
+pub trait ReactiveBinding: Binding<Index = Standard> {
     /// Owned parameters from this source and its declared direct authored fields.
     /// Resolving published derived fields or following undeclared reference chains
     /// would require additional invalidation and causal contracts.
@@ -131,7 +133,7 @@ fn validate_shape<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         }
         member_slot(model, emit.contract)?;
         let member = &output.memberships[0];
-        if member.root_slot != emit.root.slot || member.kind != Kind::Financial {
+        if member.root_slot != emit.root.slot || member.kind != FINANCIAL {
             return Err(Error::new("model", "resolved output membership mismatch"));
         }
         validate_root(ws, model, context, emit.root, member.root_contract)?;
@@ -149,7 +151,7 @@ fn validate_root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         .contract(code)?
         .roots
         .iter()
-        .any(|r| r.slot == address.slot && r.kind == Kind::Financial)
+        .any(|r| r.slot == address.slot && r.kind == FINANCIAL)
     {
         return Err(Error::new(
             "model",
@@ -166,7 +168,7 @@ fn validate_root<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
         ));
     }
     match ws.get(&Key::Root(address))? {
-        Some(StoredValue::Root(root)) if root.kind == Kind::Financial => Ok(()),
+        Some(StoredValue::Root(root)) if root.kind == FINANCIAL => Ok(()),
         _ => Err(Error::new(
             "corrupt_state",
             "resolved financial root missing",
@@ -297,7 +299,7 @@ fn write_output<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     check_counts(model, meta)?;
     ws.put(Key::Record(id), new.map(StoredValue::Record))
 }
-fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
+fn read_query<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding<Index = Standard>>(
     ws: &mut Attempt<L, B>,
     id: Uuid,
     r: &Read,
@@ -540,7 +542,10 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             reconcile_member(
                 ws,
                 Address::new(*id, slot),
-                Some(B::output_member(&old.input)?),
+                Some(
+                    B::output_member(&old.input)
+                        .map(|(root, at, leaf)| (root, TimeKey::new(at), leaf))?,
+                ),
                 None,
             )?;
             ws.work.detached_outputs += 1;
@@ -655,7 +660,10 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
                 ws,
                 Address::new(output, member_slot(model, e.contract)?),
                 None,
-                Some(B::output_member(&new.input)?),
+                Some(
+                    B::output_member(&new.input)
+                        .map(|(root, at, leaf)| (root, TimeKey::new(at), leaf))?,
+                ),
             )?;
         }
     }

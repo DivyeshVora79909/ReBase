@@ -4,6 +4,8 @@
 use crate::{
     binding::{Binding, Limits, NativeInput},
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    index::TimeKey,
+    indexes::standard::{Aggregate, FINANCIAL, Leaf, Standard},
     local::Store,
     model::{
         self, Contract, InputField, Membership, OutputRole, Prepared, PublishedField,
@@ -13,7 +15,7 @@ use crate::{
     native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
     routes,
     time_range::TimeRange,
-    tree::{self, Aggregate, Kind, Leaf},
+    tree,
     values::{Rational, Rounding},
 };
 use serde::{Deserialize, Serialize};
@@ -334,7 +336,7 @@ fn root(slot: u16, name: &'static str) -> RootDeclaration {
     RootDeclaration {
         slot,
         name,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         reads: vec!["summary", "before", "range"],
         invariant: Some("nonnegative complete-time prefixes"),
     }
@@ -351,7 +353,7 @@ fn member(
         through,
         root_contract: target,
         root_slot,
-        kind: Kind::Financial,
+        kind: FINANCIAL,
         key: "at",
         value,
     }
@@ -655,7 +657,7 @@ pub(crate) fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, A
     }
     registrations
 }
-fn authored_members(id: Uuid, input: Option<&Input>) -> BTreeMap<u16, (Address, i64, Leaf)> {
+fn authored_members(id: Uuid, input: Option<&Input>) -> BTreeMap<u16, (Address, TimeKey, Leaf)> {
     let (at, entries) = match input {
         Some(Input::Credit {
             invoice,
@@ -707,7 +709,7 @@ fn authored_members(id: Uuid, input: Option<&Input>) -> BTreeMap<u16, (Address, 
     };
     entries
         .into_iter()
-        .map(|(slot, root, amount)| (slot, (root, at, Leaf::Financial(amount))))
+        .map(|(slot, root, amount)| (slot, (root, TimeKey(at), Leaf::Financial(amount))))
         .collect()
 }
 fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -722,10 +724,11 @@ fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
 }
 
 impl Binding for Invoicing {
+    type Index = Standard;
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "invoice-assessments";
-    const BEHAVIOR: &'static str = "invoice-assessments-3";
+    const BEHAVIOR: &'static str = "invoice-assessments-4";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -864,7 +867,7 @@ impl Binding for Invoicing {
                 let root = Address::new(*rule, 19);
                 let node = tree::node(ws, root, Address::new(binding.output, 19))?;
                 for adjacent in [node.prev, node.next].into_iter().flatten() {
-                    if tree::node(ws, root, adjacent)?.key.at == *at {
+                    if tree::node(ws, root, adjacent)?.key.value.0 == *at {
                         return Err(Error::new(
                             "invariant",
                             "assessment timestamps must be unique per rule",

@@ -1,13 +1,28 @@
 # Compact context — 2026-10-23
 
-**Active: [G4c native index extension](research/34-native-index-extension.md),
-within the [capability program](research/30-capability-program.md). G4b accepted:**
-source 0.7, store/codec 5, exact window reads, augmented reverse routes and final
-segment-cover dependencies. All 99 debug/optimized Rust tests, 116 independent
-cases, 111 invoicing HTTP mutations and both 4,096-source capacity/recovery
-workflows pass. Three old stores reject with physical bytes unchanged and still
-check with their retained 0.6 binary. [Evidence](research/evidence/2026-10-23-g4b-windows.json)
-pins final sources/build; the last packaged release remains 0.6.
+**G4c-a/b accepted; next: G4d-a declared published-parent values.**
+The [native-index result](research/34-native-index-extension.md) and
+[evidence](research/evidence/2026-10-23-g4c-native-indexes.json) record source 0.8.0 /
+store+codec 6: one AVL over `Binding::Index`, explicit Standard financial/quote
+capabilities and the independent dimensioned measurement family. All 109 Rust
+tests pass in debug/optimized builds, with formatting/Clippy, 116 independent
+native/local cases, 33 measurement HTTP mutations and 111 invoicing mutations.
+Calculation/equipment HTTP runs at 64 and 4,096 sources pass; full 4,096 fanout
+still rejects atomically at the unchanged 200,000-unit work limit. Final 4,096
+zero/one-selection counters match G4b; larger native envelopes increase bytes.
+Cross-host latency is not a performance conclusion. The last packaged release
+remains 0.6.0. All work stays on `main`; checkpoint commits remain linear.
+
+The original cloud G4b binaries/stores were absent. A local build from an exported
+`b377b21` tree is retained under `target/g4b-retained-b377b21/`, including three
+populated fixture stores and a provenance manifest. This is rebuilt local
+compatibility evidence, not the original cloud executable.
+
+**G4b accepted at `b377b21`:** source 0.7 / store+codec 5, exact time windows,
+augmented reverse routes and final segment-cover dependencies. Its dated
+[evidence](research/evidence/2026-10-23-g4b-windows.json) records 99 Rust tests,
+116 independent cases, invoicing and both 4,096-source HTTP workflows. Preserve
+those claims as evidence for that revision. The last packaged release remains 0.6.
 
 **G4a is accepted:** output-free
 validators, calculation-only readers and inactive-query fallback controls pass
@@ -61,18 +76,28 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** G4c-a replaces the active tree representation with one
-compiled native index family, then G4c-b proves a useful new dimensioned-statistics
-model through the same mutation/tree/codec/checker/root API. The reviewed interface
-uses `Binding::Index`, native key/leaf/summary types and model-local index codes,
-with optional explicit time adapters. It must not leave parallel tree writers.
-Draft `index.rs`/`indexes/standard.rs` are being prepared; do not accept an unused
-helper as a new maintained aggregate. G4c will use store/codec 6 with explicit
-old-store rejection. Preserve the accepted G4b executable before rebuilding.
-External G5 has a concrete [lifecycle gate](research/33-external-effects-gate.md).
-Its unreferenced `effect_lifecycle.rs` draft is being prepared independently;
-native effect persistence, workers and providers remain unaccepted. Assign its
-store version after G4c (expected 7), not the earlier provisional number.
+**Exact next action:** implement [G4d-a](research/36-value-dependencies-gate.md):
+output-free invoicing `IssueShare` consumes its Issue's settled published amount.
+Prepare typed declarations, reuse Direct registrations, discover downstream
+consumers before evaluation, add final parent-to-consumer graph edges and project
+fresh workspace values immediately before evaluation. Preserve the documented
+materialized-record authority policy. Retain the G4c binary and populated stores
+before changing identities; verify, commit and push each coherent checkpoint.
+Typed statistics consumers and selection remain subsequent gates.
+
+G4c's final binary is `target/g4c-accepted/rebase-next`. Its final check manifest,
+HTTP reports and compatibility result are located by the dated evidence. The
+`build/` directory inside `target/g4b-retained-b377b21/` was reused as a Cargo
+cache and now contains 0.8 executables; only the binary directly under that
+retained directory is the G4b baseline. No cloud partial code was used.
+
+G5 has a concrete [lifecycle gate](research/33-external-effects-gate.md) and
+[current integration review](research/35-external-integration-review.md).
+There is no native effect draft to recover and no accepted provider support.
+Its atomic intent must share `local::mutate_inner`'s transaction; the proposed
+post-G4c store format is 7. Complete effect tables, immutable facts, bounded
+discovery, restricted application and restore quarantine together at the named
+subgates; never add a separately committed enqueue or alternate domain writer.
 The accepted bundle's
 [deployment commands](docs/deployment.md) remain valid. Full accounting, rational
 FX, external effects, distributed adapters, larger invoicing populations and

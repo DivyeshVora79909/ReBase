@@ -17,7 +17,7 @@ import uuid
 from m6 import Failure, exact, require
 
 ROOT = Path(__file__).resolve().parents[2]
-CODEC = "native-slice-kv-5"
+CODEC = "native-slice-kv-6"
 MAX_PUBLIC_SOURCES, MAX_OUTPUTS, MAX_RESERVATIONS = 4096, 8192, 16384
 FIELDS = {1: ("c",), 2: ("native_unit", "reporting_unit"),
           3: ("curve", "at", "rate"), 4: ("native_unit",),
@@ -145,21 +145,21 @@ def validate_references(facts, code, fields):
 
 def ordered(entry):
     key = entry["key"]
-    return int(key["at"]), uuid.UUID(key["id"]).bytes, key["slot"]
+    return int(key["value"]), uuid.UUID(key["id"]).bytes, key["slot"]
 
 
 def scan(kind, entries):
     """Scan source leaves directly, including each complete-time boundary."""
     rows = sorted(entries, key=ordered)
-    result = {"count": len(rows), "first": rows[0]["key"]["at"] if rows else None,
-              "last": rows[-1]["key"]["at"] if rows else None}
+    result = {"count": len(rows), "first": rows[0]["key"]["value"] if rows else None,
+              "last": rows[-1]["key"]["value"] if rows else None}
     if kind == "quote":
         return {"kind": kind, "value": result}
     running, prefixes, completed = 0, [0], []
     for i, row in enumerate(rows):
         running += int(row["leaf"]["value"])
         prefixes.append(running)
-        if i + 1 == len(rows) or row["key"]["at"] != rows[i + 1]["key"]["at"]:
+        if i + 1 == len(rows) or row["key"]["value"] != rows[i + 1]["key"]["value"]:
             completed.append(running)
     internal = completed[:-1]
     result.update(sum=str(running), min_prefix=str(min(prefixes)), max_prefix=str(max(prefixes)),
@@ -204,7 +204,7 @@ class State:
 
         def member(rid, slot, root, at, kind, amount):
             self.entries[(rid, slot)] = {"root": address(*root),
-                "key": {"at": at, "id": rid, "slot": slot},
+                "key": {"value": at, "id": rid, "slot": slot},
                 "leaf": {"kind": kind, "value": str(amount)}}
 
         derived_values, emits, times = {}, {}, {}
@@ -257,7 +257,7 @@ class State:
 
         def source_read(account, before=None):
             total = sum(int(e["leaf"]["value"]) for e in authored_entries
-                        if aid(e["root"]) == (account, 2) and (before is None or int(e["key"]["at"]) < before))
+                        if aid(e["root"]) == (account, 2) and (before is None or int(e["key"]["value"]) < before))
             for (producer, _), (root, at, zero) in sorted(emits.items()):
                 if root == account and (before is None or at < before):
                     amount = calculate(producer)  # Even a zero output retains this dependency.
@@ -614,8 +614,8 @@ def verify(state, raw, *, complete, budget=10000):
 
     for root, expected in state.roots.items():
         header = rows[(2, *root)]
-        require(set(header) == {"kind", "head", "first", "last", "height", "summary", "revision"}, "LAYOUT", root)
-        require(header["kind"] == expected["kind"] and exact(header["revision"], expected["revision"]), "ROOT_VALUE", root)
+        require(set(header) == {"kind", "head", "first", "last", "height", "span", "summary", "revision"}, "LAYOUT", root)
+        require(header["kind"] == {"financial":1,"quote":2}[expected["kind"]] and exact(header["revision"], expected["revision"]), "ROOT_VALUE", root)
         ordered_ids = sorted((n for n, e in state.entries.items() if aid(e["root"]) == root),
                              key=lambda n: ordered(state.entries[n]))
 
@@ -628,8 +628,9 @@ def verify(state, raw, *, complete, budget=10000):
             require((3, *node_id) in rows, "DANGLING_LINK", node_id)
             visited.add(node_id)
             node = rows[(3, *node_id)]
-            require(set(node) == {"root", "key", "leaf", "parent", "left", "right", "prev", "next", "height", "summary"}, "LAYOUT", node_id)
+            require(set(node) == {"kind", "root", "key", "leaf", "parent", "left", "right", "prev", "next", "height", "span", "summary"}, "LAYOUT", node_id)
             require(exact({k: node[k] for k in ("root", "key", "leaf")}, state.entries[node_id]), "NODE_PAYLOAD", node_id)
+            require(node["kind"] == header["kind"], "NODE_KIND", node_id)
             require(aid(node["root"]) == root, "WRONG_ROOT", node_id)
             require(aid(node["parent"]) == parent, "PARENT", node_id)
             key = ordered(node)
@@ -640,7 +641,9 @@ def verify(state, raw, *, complete, budget=10000):
             height = 1 + max(lh, rh)
             require(exact(node["height"], height), "HEIGHT", node_id)
             ids = left + [node_id] + right
-            require(exact(node["summary"], rescan(header["kind"], ids)), "NODE_SUMMARY", node_id)
+            require(exact(node["span"], {"first":state.entries[ids[0]]["key"]["value"],
+                    "last":state.entries[ids[-1]]["key"]["value"]}), "NODE_SPAN", node_id)
+            require(exact(node["summary"], rescan(expected["kind"], ids)), "NODE_SUMMARY", node_id)
             return height, ids
 
         height, actual_ids = visit(header["head"], None, None, None)
@@ -648,7 +651,10 @@ def verify(state, raw, *, complete, budget=10000):
         require(exact(header["height"], height), "ROOT_HEIGHT", root)
         require(aid(header["first"]) == (ordered_ids[0] if ordered_ids else None) and
                 aid(header["last"]) == (ordered_ids[-1] if ordered_ids else None), "ROOT_ENDPOINT", root)
-        require(exact(header["summary"], rescan(header["kind"], ordered_ids)), "ROOT_SUMMARY", root)
+        require(exact(header["summary"], rescan(expected["kind"], ordered_ids)), "ROOT_SUMMARY", root)
+        span = {"first":state.entries[ordered_ids[0]]["key"]["value"],
+                "last":state.entries[ordered_ids[-1]]["key"]["value"]} if ordered_ids else None
+        require(exact(header["span"], span), "ROOT_SPAN", root)
         for i, node_id in enumerate(ordered_ids):
             node = rows[(3, *node_id)]
             require(aid(node["prev"]) == (ordered_ids[i - 1] if i else None) and
@@ -696,7 +702,8 @@ def synthetic(state, lower=False):
             link = address(*current)
             left, lh = arrange(nodes[:mid], link)
             right, rh = arrange(nodes[mid + 1:], link)
-            rows[(3, *current)] = {**deepcopy(state.entries[current]), "parent": parent,
+            rows[(3, *current)] = {**deepcopy(state.entries[current]), "kind":{"financial":1,"quote":2}[info["kind"]],
+                "span":{"first":state.entries[nodes[0]]["key"]["value"],"last":state.entries[nodes[-1]]["key"]["value"]}, "parent": parent,
                 "left": left, "right": right, "prev": None, "next": None,
                 "height": 1 + max(lh, rh),
                 "summary": scan(info["kind"], [state.entries[n] for n in nodes])}
@@ -706,7 +713,8 @@ def synthetic(state, lower=False):
         for i, node in enumerate(ids):
             rows[(3, *node)].update(prev=address(*ids[i - 1]) if i else None,
                 next=address(*ids[i + 1]) if i + 1 < len(ids) else None)
-        rows[(2, *root)] = {"kind": info["kind"], "head": head,
+        rows[(2, *root)] = {"kind": {"financial":1,"quote":2}[info["kind"]], "head": head,
+            "span":{"first":state.entries[ids[0]]["key"]["value"],"last":state.entries[ids[-1]]["key"]["value"]} if ids else None,
             "first": address(*ids[0]) if ids else None, "last": address(*ids[-1]) if ids else None,
             "height": height, "summary": deepcopy(info["summary"]), "revision": info["revision"]}
     return raw_rows(rows)
@@ -847,6 +855,9 @@ def corruption_controls(state, labels):
     reject("wrong_selected_quote", lambda r: r[(4, p, 1)].update(selected=None), "QUERY_VALUE")
     reject("wrong_query_bound", lambda r: r[(4, p, 1)]["range"].update(upper={"included": "16"}), "QUERY_VALUE")
     reject("wrong_summary", lambda r: r[(3, p, 1)]["summary"]["value"].update(sum="9"), "NODE_SUMMARY")
+    reject("wrong_native_index_code", lambda r: r[(3, p, 1)].update(kind=2), "NODE_KIND")
+    reject("wrong_native_node_span", lambda r: r[(3, p, 1)]["span"].update(first="-999"), "NODE_SPAN")
+    reject("wrong_native_root_span", lambda r: r[(2, a, 2)]["span"].update(first="-999"), "ROOT_SPAN")
     reject("wrong_scalar_type", lambda r: r[(1, p)]["derived"].update(native_minor=8), "RECORD_VALUE")
     reject("wrong_parent", lambda r: r[(3, p, 1)].update(parent=address(p, 1)), "PARENT")
     reject("wrong_endpoint", lambda r: r[(2, a, 2)].update(first=None), "ROOT_ENDPOINT")
@@ -958,7 +969,7 @@ def selective_posting_control(fixtures):
         for source in states:
             if member in source.entries and source.records[member[0]]["contract"] != 12:
                 entry = source.entries[member]
-                impacts.add((aid(entry["root"]), int(entry["key"]["at"])))
+                impacts.add((aid(entry["root"]), int(entry["key"]["value"])))
     selected = set()
     while True:
         newly = set()
@@ -978,7 +989,7 @@ def selective_posting_control(fixtures):
             for member, entry in source.entries.items():
                 record = source.records[member[0]]
                 if record["contract"] == 12 and record["input"]["producer"] in newly:
-                    impacts.add((aid(entry["root"]), int(entry["key"]["at"])))
+                    impacts.add((aid(entry["root"]), int(entry["key"]["value"])))
     # W changes at 15; P's strict bound is 10 and Q's is 20. Whole-root
     # consumers L/R and their diamond consumer J remain selected even when
     # their final output amounts happen to be unchanged.
@@ -991,7 +1002,7 @@ def selective_posting_control(fixtures):
 def model_digest():
     # Explicit data/behavior contract, independent of build/dependency bytes.
     # Release evidence still fingerprints every executed source separately.
-    return hashlib.sha256(b"rebase-calculation-contract-5").hexdigest()
+    return hashlib.sha256(b"rebase-calculation-contract-6").hexdigest()
 
 
 def main():

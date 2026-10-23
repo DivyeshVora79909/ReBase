@@ -1,6 +1,7 @@
 //! One strict point-key/value codec for the bounded native experiment.
 
 use crate::binding::{Binding, Calculation, NativeInput};
+use crate::index::NativeIndex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -9,7 +10,7 @@ use crate::{
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-5";
+pub const CODEC: &str = "native-slice-kv-6";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -253,8 +254,8 @@ impl Key {
 pub enum StoredValue<B: Binding> {
     Meta(Meta),
     Record(ModelRecord<B>),
-    Root(Root),
-    Node(Node),
+    Root(Root<B::Index>),
+    Node(Node<B::Index>),
     Query(Query),
     Incoming(crate::routes::Header),
     Direct(crate::routes::Header),
@@ -312,13 +313,46 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
                 && r.input.managed().is_none_or(|(_, role)| role > 0)
                 && B::valid_derived(&r.input, r.derived.as_ref())
         }
-        (Key::Root(a), StoredValue::Root(r)) => a.slot > 0 && r.summary.kind() == r.kind,
+        (Key::Root(a), StoredValue::Root(r)) => {
+            a.slot > 0
+                && B::Index::validate_summary(r.kind, &r.summary).is_ok()
+                && r.height < 64
+                && r.head.is_none() == (r.height == 0)
+                && r.head.is_none() == r.first.is_none()
+                && r.head.is_none() == r.last.is_none()
+                && r.head.is_none() == r.span.is_none()
+                && r.head
+                    .into_iter()
+                    .chain(r.first)
+                    .chain(r.last)
+                    .all(|a| a.slot > 0)
+                && r.span.as_ref().is_none_or(|span| {
+                    span.first <= span.last
+                        && B::Index::validate_key(r.kind, &span.first).is_ok()
+                        && B::Index::validate_key(r.kind, &span.last).is_ok()
+                })
+                && (r.head.is_some()
+                    || B::Index::empty(r.kind).is_ok_and(|empty| empty == r.summary))
+        }
         (Key::Node(a), StoredValue::Node(n)) => {
             a.slot > 0
                 && n.root.slot > 0
                 && n.key.id == a.id
                 && n.key.slot == a.slot
-                && n.summary.kind() == n.leaf.kind()
+                && B::Index::validate_key(n.kind, &n.key.value).is_ok()
+                && B::Index::validate_leaf(n.kind, &n.leaf).is_ok()
+                && B::Index::validate_summary(n.kind, &n.summary).is_ok()
+                && n.height > 0
+                && n.height < 64
+                && n.span.first <= n.key.value
+                && n.key.value <= n.span.last
+                && B::Index::validate_key(n.kind, &n.span.first).is_ok()
+                && B::Index::validate_key(n.kind, &n.span.last).is_ok()
+                && [n.parent, n.left, n.right, n.prev, n.next]
+                    .into_iter()
+                    .flatten()
+                    .all(|id| id.slot > 0 && id != *a)
+                && (n.left.is_none() || n.left != n.right)
         }
         (Key::Query(a), StoredValue::Query(q)) => {
             a.slot > 0

@@ -160,9 +160,9 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.7.0 source uses store/native codec format 5, calculation behavior
-`rebase-calculation-contract-5`, equipment behavior `equipment-reservations-4`
-and invoicing behavior `invoice-assessments-3`. Every model identity changed;
+The 0.8.0 source uses store/native codec format 6, calculation behavior
+`rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
+and invoicing behavior `invoice-assessments-4`. Every model identity changed;
 there is no implicit migration from the verified 0.6.0 bundle's format 4 stores.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
 evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
@@ -187,3 +187,16 @@ retries and status checks. It never refreshes an uncertain operation across a
 reset or archive fence. The filesystem stdio/operator interface remains separate
 from authenticated HTTP. No arbitrary JSON behavior loader, scripting runtime,
 plugin registry, distributed adapter, external delivery or frontend is included.
+
+## Native index families
+
+A binding selects `type Index: NativeIndex`. Its codebook, native key/leaf/summary
+types, algebra and read schemas feed the shared tree, codec and model catalog.
+Calculation, equipment and invoicing select `indexes::standard::Standard`;
+measurement selects its independent statistics family. Balancing, point storage,
+authority and receipts remain shared. Read [native indexes](native-indexes.md)
+for the concrete authoring contract and independent source-check obligations.
+
+The current `ReactiveBinding` scalar scheduler explicitly requires `Standard`.
+A custom root's `sum` field does not grant financial query semantics. Rich typed
+reactive results and alternate family scheduler adapters remain a later gate.

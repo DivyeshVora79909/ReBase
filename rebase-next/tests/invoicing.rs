@@ -804,7 +804,7 @@ fn self_membership_resolves_only_a_declared_root_of_its_own_contract() {
                 member.root_slot = 23;
             }
             1 => member.root_slot = 99,
-            _ => member.kind = rebase_semantic_proof::tree::Kind::Quote,
+            _ => member.kind = rebase_semantic_proof::indexes::standard::QUOTE,
         }
         assert!(Prepared::<Invoicing>::prepare(declarations).is_err());
     }

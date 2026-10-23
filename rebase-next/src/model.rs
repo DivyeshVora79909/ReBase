@@ -9,10 +9,11 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     binding::{Binding, Calculation as BindingCalculation, NativeInput},
+    index::{IndexCode, IndexDescriptor, NativeIndex},
+    indexes::standard::{FINANCIAL, QUOTE},
     native_codec,
     native_slice::{Error, Model, Result},
     plan::{Field, evaluation_order},
-    tree::Kind,
 };
 
 pub const MODEL_NAME: &str = "rebase-next-local";
@@ -56,7 +57,7 @@ pub struct Reference {
 pub struct RootDeclaration {
     pub slot: u16,
     pub name: &'static str,
-    pub kind: Kind,
+    pub kind: IndexCode,
     pub reads: Vec<&'static str>,
     pub invariant: Option<&'static str>,
 }
@@ -67,7 +68,7 @@ pub struct Membership {
     pub through: &'static str,
     pub root_contract: u16,
     pub root_slot: u16,
-    pub kind: Kind,
+    pub kind: IndexCode,
     pub key: &'static str,
     pub value: &'static str,
 }
@@ -130,6 +131,7 @@ pub struct Prepared<B: Binding> {
     engine: Model,
     core_identity: String,
     contracts: BTreeMap<u16, Contract>,
+    indexes: Vec<IndexDescriptor>,
     validators: BTreeMap<u16, jsonschema::Validator>,
     field_validators: BTreeMap<(u16, &'static str), jsonschema::Validator>,
 }
@@ -183,6 +185,67 @@ impl<B: Binding> Prepared<B> {
     /// validates metadata; it does not load executable code from a document.
     pub fn prepare(mut declarations: Vec<Contract>) -> Result<Self> {
         unique(declarations.iter().map(|c| c.code), "contracts")?;
+        let indexes = B::Index::descriptors();
+        unique(indexes.iter().map(|i| i.code.get()), "index codes")?;
+        let mut index_names = BTreeSet::new();
+        for index in &indexes {
+            if index.name.is_empty()
+                || !index_names.insert(index.name)
+                || index.reads.is_empty()
+                || index.reads.iter().collect::<BTreeSet<_>>().len() != index.reads.len()
+                || index
+                    .reads
+                    .iter()
+                    .any(|read| !matches!(*read, "summary" | "before" | "range" | "latest" | "sum"))
+                || (index.reads.iter().any(|read| *read != "summary") && !index.time)
+                || (index.financial && !index.time)
+                || (index.quote && !index.time)
+                || index.quote != B::Index::supports_quote(index.code)
+                || (index.reads.contains(&"sum") && !index.financial)
+                || (index.reads.contains(&"latest") && !index.quote)
+            {
+                return Err(model_error("invalid native index descriptor"));
+            }
+            let empty = B::Index::empty(index.code).map_err(|e| model_error(e.detail))?;
+            B::Index::validate_summary(index.code, &empty).map_err(|e| model_error(e.detail))?;
+            if index.time {
+                for at in [i64::MIN, 0, i64::MAX] {
+                    let key =
+                        B::Index::time_key(index.code, at).map_err(|e| model_error(e.detail))?;
+                    B::Index::validate_key(index.code, &key).map_err(|e| model_error(e.detail))?;
+                    if B::Index::time(index.code, &key).map_err(|e| model_error(e.detail))? != at {
+                        return Err(model_error("native time adapter disagreement"));
+                    }
+                }
+            }
+            if index.financial {
+                B::Index::financial_summary(index.code, &empty)
+                    .map_err(|e| model_error(e.detail))?;
+            }
+            let results = index
+                .result_schemas
+                .as_object()
+                .ok_or_else(|| model_error("native result schemas must be an operation map"))?;
+            if index.reads.iter().any(|read| !results.contains_key(*read))
+                || results
+                    .keys()
+                    .any(|read| !index.reads.contains(&read.as_str()))
+            {
+                return Err(model_error("native read/result schema disagreement"));
+            }
+            for schema in [&index.key_schema, &index.leaf_schema, &index.summary_schema]
+                .into_iter()
+                .chain(results.values())
+            {
+                self_contained(schema)?;
+                jsonschema::options()
+                    .with_draft(jsonschema::Draft::Draft202012)
+                    .should_validate_formats(false)
+                    .build(schema)
+                    .map_err(|error| model_error(error.to_string()))?;
+            }
+        }
+
         let limits = B::limits();
         if limits.public_records == 0
             || limits.public_records > crate::binding::MAX_PUBLIC_RECORDS
@@ -301,14 +364,13 @@ impl<B: Binding> Prepared<B> {
                 return Err(model_error("unknown published field"));
             }
             for root in &contract.roots {
-                if root.reads.iter().any(|read| {
-                    !matches!(
-                        (*read, root.kind),
-                        ("summary", _)
-                            | ("latest", Kind::Quote)
-                            | ("before" | "sum" | "range", Kind::Financial)
-                    )
-                }) {
+                let index = indexes
+                    .iter()
+                    .find(|index| index.code == root.kind)
+                    .ok_or_else(|| model_error("unknown root index code"))?;
+                if root.reads.iter().any(|read| !index.reads.contains(read))
+                    || root.reads.iter().collect::<BTreeSet<_>>().len() != root.reads.len()
+                {
                     return Err(model_error("unsupported published root read"));
                 }
             }
@@ -362,10 +424,15 @@ impl<B: Binding> Prepared<B> {
                 }
                 let root = resolve(query.root_contract, query.root_slot)?;
                 if !matches!(query.phase, "calculate" | "validate")
-                    || !matches!(
-                        (query.operation, query.channel, root.kind),
-                        ("sum", "amount", Kind::Financial) | ("latest", "rate", Kind::Quote)
-                    )
+                    || !indexes.iter().any(|index| {
+                        index.code == root.kind
+                            && index.reads.contains(&query.operation)
+                            && match (query.operation, query.channel) {
+                                ("sum", "amount") => index.financial,
+                                ("latest", "rate") => index.quote,
+                                _ => false,
+                            }
+                    })
                 {
                     return Err(model_error("query/root operation mismatch"));
                 }
@@ -392,6 +459,8 @@ impl<B: Binding> Prepared<B> {
             map.remove("schema_source");
             map.remove("behavior_source");
         }
+        let semantic =
+            serde_json::to_value((semantic, &indexes)).map_err(|e| model_error(e.to_string()))?;
         let bytes = serde_json::to_vec(&semantic).map_err(|e| model_error(e.to_string()))?;
         let mut hash = Sha256::new();
         hash.update(b"rebase-next-local-model-v1\0");
@@ -410,6 +479,7 @@ impl<B: Binding> Prepared<B> {
             engine,
             core_identity,
             contracts,
+            indexes,
             validators,
             field_validators,
         })
@@ -507,6 +577,7 @@ impl<B: Binding> Prepared<B> {
             "codec":self.engine.codec,"schema_dialect":SCHEMA_DIALECT,
             "schema_formats":"disabled; canonical UUIDs use patterns and native binding",
             "exact_values":"canonical decimal strings plus native range binding",
+            "indexes":self.indexes.iter().filter(|i| self.contracts.values().any(|c| c.visibility == Visibility::Public && c.roots.iter().any(|r| r.kind == i.code))).collect::<Vec<_>>(),
             "contracts":contracts,"capabilities":model_capabilities::<B>()})
     }
 
@@ -514,6 +585,7 @@ impl<B: Binding> Prepared<B> {
         json!({"name":B::NAME,"model":self.identity(),"core_identity":self.core_identity,
             "behavior_contract":B::BEHAVIOR,
             "api":API_VERSION,"codec":self.engine.codec,
+            "indexes":self.indexes,
             "contracts":self.contracts.values().collect::<Vec<_>>(),
             "capabilities":model_capabilities::<B>(),"authority":"local actor or transaction-scoped tenant principal DAG; separate owner and reader",
             "identity_policy":"retained private reservations; retired producers cannot be reused",
@@ -576,7 +648,7 @@ fn member(
     through: &'static str,
     root_contract: u16,
     root_slot: u16,
-    kind: Kind,
+    kind: IndexCode,
     value: &'static str,
 ) -> Membership {
     Membership {
@@ -778,11 +850,7 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
                     _ => 3,
                 },
                 name: if code == 2 { "quotes" } else { "history" },
-                kind: if code == 2 {
-                    Kind::Quote
-                } else {
-                    Kind::Financial
-                },
+                kind: if code == 2 { QUOTE } else { FINANCIAL },
                 reads: match code {
                     2 => vec!["summary", "latest"],
                     4 => vec!["summary", "before", "range"],
@@ -796,8 +864,7 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
             }),
             3 => {
                 c.references.push(reference(1, "curve", &[2], false, &[]));
-                c.memberships
-                    .push(member(3, "curve", 2, 1, Kind::Quote, "rate"));
+                c.memberships.push(member(3, "curve", 2, 1, QUOTE, "rate"));
                 c.rules.push("unique quote timestamp per curve");
             }
             6 => {
@@ -808,8 +875,8 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
                     reference(6, "subsidiary", &[5], false, &[]),
                 ];
                 c.memberships = vec![
-                    member(1, "account", 4, 2, Kind::Financial, "native_minor"),
-                    member(2, "subsidiary", 5, 3, Kind::Financial, "reporting_minor"),
+                    member(1, "account", 4, 2, FINANCIAL, "native_minor"),
+                    member(2, "subsidiary", 5, 3, FINANCIAL, "reporting_minor"),
                 ];
                 c.queries.push(QueryDeclaration {
                     slot: 1,
@@ -846,7 +913,7 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
             8 => {
                 c.references.push(reference(1, "account", &[4], false, &[]));
                 c.memberships
-                    .push(member(1, "account", 4, 2, Kind::Financial, "amount"));
+                    .push(member(1, "account", 4, 2, FINANCIAL, "amount"));
             }
             9 => {
                 c.references = vec![
@@ -966,7 +1033,7 @@ pub(crate) fn declarations() -> Result<Vec<Contract>> {
                     reference(2, "account", &[4], false, &[]),
                 ];
                 c.memberships
-                    .push(member(1, "account", 4, 2, Kind::Financial, "amount"));
+                    .push(member(1, "account", 4, 2, FINANCIAL, "amount"));
             }
             _ => {}
         }
@@ -1043,13 +1110,13 @@ mod tests {
 
     #[test]
     fn preparation_rejects_ambiguous_or_inconsistent_declarations() {
-        for corrupt in 0..10 {
+        for corrupt in 0..11 {
             let mut d = declarations().unwrap();
             match corrupt {
                 0 => d[1].code = 1,
                 1 => d[5].fields[1].code = 1,
                 2 => d[2].references[0].targets = vec![99],
-                3 => d[5].memberships[0].kind = Kind::Quote,
+                3 => d[5].memberships[0].kind = QUOTE,
                 4 => d[5].calculations[1].inputs = vec!["a_reporting"],
                 5 => d[8].queries[1].slot = 1,
                 6 => {
@@ -1057,7 +1124,8 @@ mod tests {
                 }
                 7 => d[5].memberships[0].through = "undeclared",
                 8 => d[5].published[0].name = "private_or_missing_field",
-                _ => d[3].roots[0].reads.push("latest"),
+                9 => d[3].roots[0].reads.push("latest"),
+                _ => d[3].roots[0].kind = IndexCode::new(9).unwrap(),
             }
             assert!(PreparedModel::prepare(d).is_err(), "control {corrupt}");
         }

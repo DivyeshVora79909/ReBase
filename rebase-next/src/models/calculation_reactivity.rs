@@ -2,12 +2,12 @@
 use crate::{
     binding::Calculation,
     causal::{Emit, ReactiveBinding, Read, Resolved, ResolvedShape},
+    indexes::standard::Leaf,
     native_codec::Address,
     native_slice::{
         Calculated, Context, Error, Input, Record, Result, Workspace, required, validate_references,
     },
     time_range::{TimeBound, TimeRange},
-    tree::Leaf,
 };
 use std::collections::BTreeMap;
 use uuid::Uuid;

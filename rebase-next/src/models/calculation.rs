@@ -33,6 +33,7 @@ impl NativeInput for Input {
 }
 
 impl Binding for Calculation {
+    type Index = crate::indexes::standard::Standard;
     type Input = Input;
     type Derived = Calculated;
     const NAME: &'static str = "rebase-next-local";

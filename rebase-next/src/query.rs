@@ -10,12 +10,13 @@ use sha2::Sha256;
 use uuid::Uuid;
 
 use crate::{
+    index::{NativeIndex, SummaryRead},
     local::{KV, PUBLIC, PublicRecordValue, RuntimeHeader, Store, corrupt, encode, storage, unhex},
     model::API_VERSION,
     native_codec::{self, Address, decimal, uuid_text},
     native_slice::{Attempt, Error, Result},
     time_range::TimeRange,
-    tree::{self, Aggregate},
+    tree,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -402,25 +403,22 @@ impl<B: Binding> Store<B> {
         }
         let address = Address::new(request.owner, request.slot);
         let root = tree::root(&mut ws, address)?;
+        if root.kind != declaration.kind {
+            return Err(corrupt("root index differs from declaration"));
+        }
         let value = match request.read {
-            RootRead::Summary => match root.summary {
-                Aggregate::Financial(s) => {
-                    json!({"count":s.count,"sum":s.sum.to_string(),"complete_min":s.complete_min().to_string(),
-                    "first":s.first.map(|t|t.to_string()),"last":s.last.map(|t|t.to_string())})
-                }
-                Aggregate::Quote(s) => {
-                    json!({"count":s.count,"first":s.first.map(|t|t.to_string()),"last":s.last.map(|t|t.to_string())})
-                }
-            },
+            RootRead::Summary => B::Index::project(root.kind, SummaryRead::Summary, &root.summary)?,
             RootRead::Before { at } => {
-                json!({"sum":tree::prefix(&mut ws,address,Some(at))?.to_string()})
+                if B::Index::descriptor(root.kind)?.financial {
+                    json!({"sum": tree::prefix(&mut ws, address, Some(at))?.to_string()})
+                } else {
+                    let summary = tree::range(&mut ws, address, TimeRange::before(at))?;
+                    B::Index::project(root.kind, SummaryRead::Before, &summary)?
+                }
             }
             RootRead::Range { range } => {
-                let Aggregate::Financial(s) = tree::range(&mut ws, address, range)? else {
-                    return Err(Error::new("unsupported_query", "financial range required"));
-                };
-                json!({"count":s.count,"sum":s.sum.to_string(),"complete_min":s.complete_min().to_string(),
-                    "first":s.first.map(|t|t.to_string()),"last":s.last.map(|t|t.to_string())})
+                let summary = tree::range(&mut ws, address, range)?;
+                B::Index::project(root.kind, SummaryRead::Range, &summary)?
             }
             RootRead::Latest { at } => match tree::latest(&mut ws, address, at)? {
                 Some((id, rate)) => {

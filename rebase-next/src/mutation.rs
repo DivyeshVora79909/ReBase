@@ -2,12 +2,13 @@
 //! different receipt, authority, CAS or transaction implementation.
 use crate::{
     binding::{self, Binding, NativeInput},
+    index::NativeIndex,
     model::{Prepared, Visibility},
     native_codec::{Address, Key, StoredValue},
     native_slice::{
         Attempt, Command, Context, Error, Meta, ModelChange, ModelRecord, Result, Settled,
     },
-    tree::{self, Leaf},
+    tree,
 };
 use std::collections::BTreeSet;
 use uuid::Uuid;
@@ -66,18 +67,27 @@ pub fn validate_references<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Bindin
     Ok(())
 }
 
+#[allow(clippy::type_complexity)]
 pub fn reconcile_member<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     id: Address,
-    old: Option<(Address, i64, Leaf)>,
-    new: Option<(Address, i64, Leaf)>,
+    old: Option<(
+        Address,
+        <B::Index as NativeIndex>::Key,
+        <B::Index as NativeIndex>::Leaf,
+    )>,
+    new: Option<(
+        Address,
+        <B::Index as NativeIndex>::Key,
+        <B::Index as NativeIndex>::Leaf,
+    )>,
 ) -> Result<()> {
     if old == new {
         return Ok(());
     }
     if let Some((root, at, leaf)) = old {
         let actual = tree::node(ws, root, id)?;
-        if actual.key.at != at || actual.leaf != leaf {
+        if actual.key.value != at || actual.leaf != leaf {
             return Err(Error::new(
                 "corrupt_state",
                 "old membership differs from source",

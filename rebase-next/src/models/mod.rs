@@ -5,3 +5,5 @@ pub mod equipment;
 pub mod invoicing;
 mod invoicing_check;
 mod invoicing_fixtures;
+
+pub mod measurement;

@@ -1,9 +1,11 @@
 use rebase_semantic_proof::{
     algebra::Summary,
+    index::{IndexCode, TimeKey},
+    indexes::standard::{Aggregate, FINANCIAL, Leaf, QUOTE, QuoteSummary, Standard},
     native_codec::{self, Address, Key, Stored},
     native_slice::{Result, Workspace},
     time_range::{TimeBound, TimeRange},
-    tree::{self, Aggregate, FullKey, Kind, Leaf, Node, QuoteSummary, Root},
+    tree::{self, FullKey, Node, Root, Span},
 };
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -15,10 +17,10 @@ fn addr(id: u128, slot: u16) -> Address {
     Address::new(Uuid::from_u128(id), slot)
 }
 
-fn scanned(kind: Kind, leaves: &[(FullKey, Leaf)]) -> Aggregate {
-    let first = leaves.first().map(|x| x.0.at);
-    let last = leaves.last().map(|x| x.0.at);
-    if kind == Kind::Quote {
+fn scanned(kind: IndexCode, leaves: &[(FullKey<TimeKey>, Leaf)]) -> Aggregate {
+    let first = leaves.first().map(|x| x.0.value.0);
+    let last = leaves.last().map(|x| x.0.value.0);
+    if kind == QUOTE {
         return Aggregate::Quote(QuoteSummary {
             count: leaves.len() as u64,
             first,
@@ -34,7 +36,7 @@ fn scanned(kind: Kind, leaves: &[(FullKey, Leaf)]) -> Aggregate {
         sum += amount;
         min = min.min(sum);
         max = max.max(sum);
-        if i + 1 < leaves.len() && key.at != leaves[i + 1].0.at {
+        if i + 1 < leaves.len() && key.value.0 != leaves[i + 1].0.value.0 {
             boundaries.push(sum);
         }
     }
@@ -73,20 +75,20 @@ fn check(store: &Bytes, owner: Address, expected: &Leaves) {
     );
     let header = header.unwrap();
     struct Walk<'a> {
-        nodes: &'a BTreeMap<Address, Node>,
+        nodes: &'a BTreeMap<Address, Node<Standard>>,
         expected: &'a Leaves,
         seen: BTreeSet<Address>,
         owner: Address,
-        kind: Kind,
+        kind: IndexCode,
     }
     impl Walk<'_> {
         fn visit(
             &mut self,
             id: Option<Address>,
             parent: Option<Address>,
-            low: Option<FullKey>,
-            high: Option<FullKey>,
-        ) -> (u16, Vec<(FullKey, Leaf)>) {
+            low: Option<FullKey<TimeKey>>,
+            high: Option<FullKey<TimeKey>>,
+        ) -> (u16, Vec<(FullKey<TimeKey>, Leaf)>) {
             let Some(id) = id else {
                 return (0, vec![]);
             };
@@ -94,7 +96,7 @@ fn check(store: &Bytes, owner: Address, expected: &Leaves) {
             let n = &self.nodes[&id];
             assert_eq!(n.root, self.owner);
             assert_eq!(n.parent, parent);
-            assert_eq!((n.key.at, n.leaf), self.expected[&id]);
+            assert_eq!((n.key.value.0, n.leaf), self.expected[&id]);
             assert_eq!(n.key.id, id.id);
             assert_eq!(n.key.slot, id.slot);
             assert!(low.is_none_or(|k| k < n.key) && high.is_none_or(|k| n.key < k));
@@ -105,6 +107,8 @@ fn check(store: &Bytes, owner: Address, expected: &Leaves) {
             left.push((n.key, n.leaf));
             left.extend(right);
             assert_eq!(n.summary, scanned(self.kind, &left));
+            assert_eq!(n.span.first, left.first().unwrap().0.value);
+            assert_eq!(n.span.last, left.last().unwrap().0.value);
             (n.height, left)
         }
     }
@@ -119,6 +123,13 @@ fn check(store: &Bytes, owner: Address, expected: &Leaves) {
     assert_eq!(walk.seen.len(), expected.len());
     assert_eq!(header.height, height);
     assert_eq!(header.summary, scanned(header.kind, &leaves));
+    assert_eq!(
+        header.span,
+        leaves.first().zip(leaves.last()).map(|(first, last)| Span {
+            first: first.0.value,
+            last: last.0.value,
+        })
+    );
     let ids: Vec<_> = leaves
         .iter()
         .map(|(key, _)| Address::new(key.id, key.slot))
@@ -131,11 +142,11 @@ fn check(store: &Bytes, owner: Address, expected: &Leaves) {
     }
 }
 
-fn initial(owner: Address, kind: Kind) -> Bytes {
+fn initial(owner: Address, kind: IndexCode) -> Bytes {
     let key = Key::Root(owner);
     [(
         key.encode(),
-        native_codec::encode(&key, &Stored::Root(Root::empty(kind, 0))).unwrap(),
+        native_codec::encode(&key, &Stored::Root(Root::empty(kind, 0).unwrap())).unwrap(),
     )]
     .into()
 }
@@ -143,7 +154,7 @@ fn initial(owner: Address, kind: Kind) -> Bytes {
 fn apply(store: &mut Bytes, owner: Address, id: Address, value: Option<(i64, Leaf)>) -> u64 {
     let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100000);
     match value {
-        Some((at, leaf)) => tree::insert(&mut ws, owner, id, at, leaf).unwrap(),
+        Some((at, leaf)) => tree::insert(&mut ws, owner, id, TimeKey(at), leaf).unwrap(),
         None => tree::remove(&mut ws, owner, id).unwrap(),
     }
     let batch = ws.finish().unwrap();
@@ -164,9 +175,9 @@ fn apply(store: &mut Bytes, owner: Address, id: Address, value: Option<(i64, Lea
 
 #[test]
 fn all_rotation_directions_and_intrusive_deletions_match_source_scans() {
-    for kind in [Kind::Financial, Kind::Quote] {
-        let owner = addr(1000, if kind == Kind::Quote { 1 } else { 2 });
-        let slot = if kind == Kind::Quote { 3 } else { 1 };
+    for kind in [FINANCIAL, QUOTE] {
+        let owner = addr(1000, if kind == QUOTE { 1 } else { 2 });
+        let slot = if kind == QUOTE { 3 } else { 1 };
         for times in [
             vec![3, 2, 1],
             vec![1, 2, 3],
@@ -180,7 +191,7 @@ fn all_rotation_directions_and_intrusive_deletions_match_source_scans() {
             let mut rotations = 0;
             for (i, &at) in times.iter().enumerate() {
                 let id = addr(i as u128 + 1, slot);
-                let leaf = if kind == Kind::Quote {
+                let leaf = if kind == QUOTE {
                     Leaf::Quote(3)
                 } else {
                     Leaf::Financial(i as i128 - 3)
@@ -208,7 +219,7 @@ fn all_rotation_directions_and_intrusive_deletions_match_source_scans() {
 #[test]
 fn equal_time_complete_boundaries_and_latest_extremes() -> Result<()> {
     let owner = addr(1000, 2);
-    let mut store = initial(owner, Kind::Financial);
+    let mut store = initial(owner, FINANCIAL);
     let mut expected = Leaves::new();
     for (id, amount) in [(addr(2, 1), 10), (addr(1, 1), -10), (addr(3, 1), 0)] {
         apply(
@@ -227,7 +238,7 @@ fn equal_time_complete_boundaries_and_latest_extremes() -> Result<()> {
     assert_eq!(summary.min_prefix, -10);
     assert_eq!(summary.complete_min(), 0);
     let owner = addr(1001, 1);
-    let mut store = initial(owner, Kind::Quote);
+    let mut store = initial(owner, QUOTE);
     apply(
         &mut store,
         owner,
@@ -250,9 +261,15 @@ fn equal_time_complete_boundaries_and_latest_extremes() -> Result<()> {
         Some((Uuid::from_u128(2), 3))
     );
     assert_eq!(
-        tree::insert(&mut ws, owner, addr(3, 3), i64::MAX, Leaf::Quote(2))
-            .unwrap_err()
-            .code,
+        tree::insert(
+            &mut ws,
+            owner,
+            addr(3, 3),
+            TimeKey(i64::MAX),
+            Leaf::Quote(2)
+        )
+        .unwrap_err()
+        .code,
         "duplicate_time"
     );
     Ok(())
@@ -261,7 +278,7 @@ fn equal_time_complete_boundaries_and_latest_extremes() -> Result<()> {
 #[test]
 fn strict_prefix_matches_authored_scan_at_equal_times_and_extremes() -> Result<()> {
     let owner = addr(1000, 2);
-    let mut store = initial(owner, Kind::Financial);
+    let mut store = initial(owner, FINANCIAL);
     let mut expected = Leaves::new();
     for (i, (at, amount)) in [
         (0, -4),
@@ -325,7 +342,7 @@ fn strict_prefix_matches_authored_scan_at_equal_times_and_extremes() -> Result<(
     Ok(())
 }
 
-fn literal_range(kind: Kind, leaves: &Leaves, window: TimeRange) -> Aggregate {
+fn literal_range(kind: IndexCode, leaves: &Leaves, window: TimeRange) -> Aggregate {
     // Deliberately spell out both predicates: do not reuse range membership or
     // the writer's Aggregate::combine when deriving expected summaries.
     let mut selected: Vec<_> = leaves
@@ -346,7 +363,7 @@ fn literal_range(kind: Kind, leaves: &Leaves, window: TimeRange) -> Aggregate {
         .map(|(id, (at, leaf))| {
             (
                 FullKey {
-                    at: *at,
+                    value: TimeKey(*at),
                     id: id.id,
                     slot: id.slot,
                 },
@@ -361,8 +378,8 @@ fn literal_range(kind: Kind, leaves: &Leaves, window: TimeRange) -> Aggregate {
 #[test]
 fn ranges_match_literal_subsets_complete_groups_and_extreme_bounds() -> Result<()> {
     use TimeBound::{Excluded, Included, Unbounded};
-    for kind in [Kind::Financial, Kind::Quote] {
-        let owner = addr(1000, if kind == Kind::Quote { 1 } else { 2 });
+    for kind in [FINANCIAL, QUOTE] {
+        let owner = addr(1000, if kind == QUOTE { 1 } else { 2 });
         let mut store = initial(owner, kind);
         let mut expected = Leaves::new();
         let values = [
@@ -378,13 +395,13 @@ fn ranges_match_literal_subsets_complete_groups_and_extreme_bounds() -> Result<(
             (21, 5),
         ];
         for (i, (at, amount)) in values.into_iter().enumerate() {
-            if kind == Kind::Quote && expected.values().any(|(time, _)| *time == at) {
+            if kind == QUOTE && expected.values().any(|(time, _)| *time == at) {
                 continue;
             }
             let id = addr(i as u128 + 1, 1);
             let value = (
                 at,
-                if kind == Kind::Quote {
+                if kind == QUOTE {
                     Leaf::Quote(i as u16 + 1)
                 } else {
                     Leaf::Financial(amount)
@@ -430,7 +447,10 @@ fn ranges_match_literal_subsets_complete_groups_and_extreme_bounds() -> Result<(
             },
         ] {
             let mut ws = Workspace::new(|key: &[u8]| Ok(empty.get(key).cloned()), 1);
-            assert_eq!(tree::range(&mut ws, owner, window)?, Aggregate::empty(kind));
+            assert_eq!(
+                tree::range(&mut ws, owner, window)?,
+                Aggregate::empty(kind)?
+            );
             assert_eq!(ws.work.node_visits, 0);
         }
     }
@@ -441,7 +461,7 @@ fn ranges_match_literal_subsets_complete_groups_and_extreme_bounds() -> Result<(
 fn range_extrema_are_rebased_folds_not_differences_of_prefix_minima() -> Result<()> {
     use TimeBound::{Excluded, Included};
     let owner = addr(1000, 2);
-    let mut store = initial(owner, Kind::Financial);
+    let mut store = initial(owner, FINANCIAL);
     let mut expected = Leaves::new();
     // The excluded prefix bottoms out at -100, then recovers. The window has
     // total -2, min prefix -7, and complete-time minimum -2 because -7/+5 share
@@ -465,19 +485,17 @@ fn range_extrema_are_rebased_folds_not_differences_of_prefix_minima() -> Result<
     };
     assert_eq!(
         Aggregate::Financial(value),
-        literal_range(Kind::Financial, &expected, window)
+        literal_range(FINANCIAL, &expected, window)
     );
     assert_eq!(
         (value.sum, value.min_prefix, value.complete_min()),
         (-2, -7, -2)
     );
-    let Aggregate::Financial(before) =
-        literal_range(Kind::Financial, &expected, TimeRange::through(1))
+    let Aggregate::Financial(before) = literal_range(FINANCIAL, &expected, TimeRange::through(1))
     else {
         panic!()
     };
-    let Aggregate::Financial(through) =
-        literal_range(Kind::Financial, &expected, TimeRange::through(2))
+    let Aggregate::Financial(through) = literal_range(FINANCIAL, &expected, TimeRange::through(2))
     else {
         panic!()
     };
@@ -493,7 +511,7 @@ fn range_extrema_are_rebased_folds_not_differences_of_prefix_minima() -> Result<
 fn range_prunes_many_positions_under_a_population_independent_budget() -> Result<()> {
     use TimeBound::{Excluded, Included};
     let owner = addr(1000, 2);
-    let mut store = initial(owner, Kind::Financial);
+    let mut store = initial(owner, FINANCIAL);
     let mut expected = Leaves::new();
     for number in 0..511 {
         let id = addr(number + 1, 1);
@@ -508,7 +526,7 @@ fn range_prunes_many_positions_under_a_population_independent_budget() -> Result
     let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 1);
     assert_eq!(
         tree::range(&mut ws, owner, TimeRange::ALL)?,
-        literal_range(Kind::Financial, &expected, TimeRange::ALL)
+        literal_range(FINANCIAL, &expected, TimeRange::ALL)
     );
     assert_eq!((ws.work.key_loads, ws.work.node_visits), (1, 0));
     for position in (-256..=256).step_by(8) {
@@ -533,7 +551,7 @@ fn range_prunes_many_positions_under_a_population_independent_budget() -> Result
             let height = tree::root(&mut ws, owner)?.height;
             assert_eq!(
                 tree::range(&mut ws, owner, window)?,
-                literal_range(Kind::Financial, &expected, window)
+                literal_range(FINANCIAL, &expected, window)
             );
             assert!(
                 ws.work.node_visits <= 4 * u64::from(height) + 2,
@@ -563,7 +581,7 @@ fn range_prunes_many_positions_under_a_population_independent_budget() -> Result
 fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
     use TimeBound::{Included, Unbounded};
     let owner = addr(1000, 2);
-    let mut store = initial(owner, Kind::Financial);
+    let mut store = initial(owner, FINANCIAL);
     // Insert the compensating tail before the second positive leaf so every
     // intermediate AVL subtree also has a representable exact summary.
     for (number, (at, amount)) in [
@@ -603,7 +621,7 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
         let mut ws = Workspace::new(|key: &[u8]| Ok(store.get(key).cloned()), 100);
         let head = tree::root(&mut ws, owner)?.head.unwrap();
         let mut damaged = tree::node(&mut ws, owner, head)?;
-        let upper = Included(damaged.key.at);
+        let upper = Included(damaged.key.value.0);
         match corruption {
             0 => damaged.parent = Some(head),
             1 => damaged.left = Some(head),
@@ -612,13 +630,21 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
                 damaged.leaf = Leaf::Quote(1);
                 damaged.summary = Aggregate::Quote(QuoteSummary {
                     count: 1,
-                    first: Some(damaged.key.at),
-                    last: Some(damaged.key.at),
+                    first: Some(damaged.key.value.0),
+                    last: Some(damaged.key.value.0),
                 });
             }
             _ => unreachable!(),
         }
-        ws.put(Key::Node(head), Some(Stored::Node(damaged)))?;
+        // Bypass the validating writer: this is a damaged persisted row,
+        // including envelopes that the new codec rejects before traversal.
+        drop(ws);
+        let mut corrupted = store.clone();
+        corrupted.insert(
+            Key::Node(head).encode(),
+            serde_json::to_vec(&Stored::Node(damaged)).unwrap(),
+        );
+        let mut ws = Workspace::new(|key: &[u8]| Ok(corrupted.get(key).cloned()), 100);
         assert_eq!(
             tree::range(
                 &mut ws,
@@ -636,11 +662,13 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
     // A malformed long chain must stop before recursive descent can grow with
     // the corrupt store's population. Its cached spans deliberately force a
     // boundary search rather than the covered-subtree shortcut.
-    let mut malformed = initial(owner, Kind::Financial);
+    let mut malformed = initial(owner, FINANCIAL);
     let summary = Aggregate::Financial(Summary {
         count: 2,
         first: Some(0),
         last: Some(100),
+        boundary_min: Some(0),
+        boundary_max: Some(0),
         ..Summary::default()
     });
     let header = Root {
@@ -648,8 +676,12 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
         first: Some(addr(1, 1)),
         last: Some(addr(65, 1)),
         height: 1,
+        span: Some(Span {
+            first: TimeKey(0),
+            last: TimeKey(100),
+        }),
         summary,
-        ..Root::empty(Kind::Financial, 0)
+        ..Root::empty(FINANCIAL, 0)?
     };
     let key = Key::Root(owner);
     malformed.insert(
@@ -660,9 +692,10 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
         let id = addr(number, 1);
         let key = Key::Node(id);
         let node = Node {
+            kind: FINANCIAL,
             root: owner,
             key: FullKey {
-                at: 0,
+                value: TimeKey(0),
                 id: id.id,
                 slot: id.slot,
             },
@@ -673,6 +706,10 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
             prev: None,
             next: None,
             height: 1,
+            span: Span {
+                first: TimeKey(0),
+                last: TimeKey(100),
+            },
             summary,
         };
         malformed.insert(
