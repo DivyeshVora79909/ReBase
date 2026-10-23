@@ -180,6 +180,11 @@ struct Plan<B: ReactiveBinding> {
     old_outputs: BTreeMap<u16, (Uuid, ModelRecord<B>)>,
     bindings: BTreeMap<u16, Uuid>,
 }
+// Quote/latest readers have their own settlement path. Only declared sum reads
+// and managed outputs belong to this scheduler, including terminal-only readers.
+fn uses_sum_scheduler(contract: &crate::model::Contract) -> bool {
+    !contract.outputs.is_empty() || contract.queries.iter().any(|q| q.operation == "sum")
+}
 fn original<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>(
     ws: &mut Attempt<L, B>,
     id: Uuid,
@@ -330,11 +335,12 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     let mut pending = BTreeSet::new();
     let mut roots = ws.financial_impacts();
     for c in changes {
-        if c.old.as_ref().into_iter().chain(c.new.as_ref()).any(|r| {
-            model
-                .contract(r.contract)
-                .is_ok_and(|c| !c.outputs.is_empty())
-        }) {
+        if c.old
+            .as_ref()
+            .into_iter()
+            .chain(c.new.as_ref())
+            .any(|r| model.contract(r.contract).is_ok_and(uses_sum_scheduler))
+        {
             pending.insert(c.id);
         }
         if c.old.as_ref().map(|r| &r.input) != c.new.as_ref().map(|r| &r.input) {
@@ -380,7 +386,7 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             .as_ref()
             .or(old_record.as_ref())
             .ok_or_else(|| Error::new("corrupt_state", "missing subscriber"))?;
-        if model.contract(producer.contract)?.outputs.is_empty() {
+        if !uses_sum_scheduler(model.contract(producer.contract)?) {
             continue;
         }
         let (shape, parameters) = match &record {
@@ -526,6 +532,20 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
     for id in order {
         let p = &plans[&id];
         let mut r = p.record.clone().unwrap();
+        // Terminal-only readers register and resolve like other subscribers,
+        // but have no formula or derived value. Declaration-level calculation
+        // semantics survive temporarily inactive reads and output shapes.
+        let contract = model.contract(r.contract)?;
+        if contract.outputs.is_empty()
+            && contract.calculations.is_empty()
+            && contract.published.is_empty()
+            && !contract
+                .queries
+                .iter()
+                .any(|query| query.phase == "calculate")
+        {
+            continue;
+        }
         let mut values = vec![];
         for read in p.shape.reads.iter().filter(|r| !r.validate) {
             values.push(read_query(ws, id, read)?);

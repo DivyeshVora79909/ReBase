@@ -11,8 +11,8 @@ a task whose meaning is already recorded. Recheck current source when it matters
 bundle in this environment, with all three models, issuer/template checks,
 crash recovery and failed-restore isolation. The subsequent
 [capability program](research/30-capability-program.md) is active: first
-[G4a terminal validation](research/31-terminal-validation.md), then G4b reactive
-windows. Prepare external contracts alongside core work with explicit atomic
+[G4a terminal validation](research/31-terminal-validation.md) is accepted; continue
+[G4b reactive windows](research/32-reactive-windows.md). Prepare external contracts alongside core work with explicit atomic
 integration. Preserve earlier evidence and capacity/model boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is

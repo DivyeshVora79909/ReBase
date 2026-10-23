@@ -1,0 +1,424 @@
+{
+  "format": "rebase-g4a-terminal-validation-1",
+  "date": "2026-10-23",
+  "status": "accepted",
+  "base_commit": "4866a3e06bfec6a4f12b575280ef478a586506d6",
+  "scope": "Output-free terminal sum validators, calculation-only readers and inactive-query fallback. No persisted format change.",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.244,
+      "log": "target/g4a-fmt.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.866,
+      "log": "target/g4a-clippy.log"
+    },
+    {
+      "name": "debug-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 27.909,
+      "log": "target/g4a-debug-tests.log",
+      "tests_passed": 80
+    },
+    {
+      "name": "release-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--release",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 137.319,
+      "log": "target/g4a-release-tests.log",
+      "tests_passed": 80
+    },
+    {
+      "name": "client",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_client.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.644,
+      "log": "target/g4a-client.log"
+    },
+    {
+      "name": "capacity-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_capacity.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.084,
+      "log": "target/g4a-capacity-controls.log"
+    },
+    {
+      "name": "foundation",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.622,
+      "log": "target/g4a-foundation.log"
+    },
+    {
+      "name": "foundation-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-276669-1792730522302689028/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.425,
+      "log": "target/g4a-foundation-independent.log"
+    },
+    {
+      "name": "causal",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "native_slice",
+        "--",
+        "--fixtures",
+        "research/fixtures/causal-slice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.515,
+      "log": "target/g4a-causal.log"
+    },
+    {
+      "name": "causal-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/native_slice.py",
+        "--fixtures",
+        "research/fixtures/causal-slice.json",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/native-slice/run-276710-1792730527475824990/native-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.471,
+      "log": "target/g4a-causal-independent.log"
+    },
+    {
+      "name": "local",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--example",
+        "local_acceptance"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.461,
+      "log": "target/g4a-local.log"
+    },
+    {
+      "name": "local-independent",
+      "command": [
+        "python3",
+        "-B",
+        "research/experiments/local_prototype.py",
+        "--actual",
+        "/workspace/ReBase/rebase-next/target/local-prototype/run-276717-1792730531988792489/local-observations.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.174,
+      "log": "target/g4a-local-independent.log"
+    },
+    {
+      "name": "release-binary",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "rebase-next"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.103,
+      "log": "target/g4a-release-binary.log"
+    },
+    {
+      "name": "calculation-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.006,
+      "log": "target/g4a-calculation-identity.log"
+    },
+    {
+      "name": "equipment-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "equipment",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.005,
+      "log": "target/g4a-equipment-identity.log"
+    },
+    {
+      "name": "invoicing-oracle-controls",
+      "command": [
+        "python3",
+        "-B",
+        "tools/test_invoicing.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.101,
+      "log": "target/g4a-invoicing-oracle-controls.log"
+    },
+    {
+      "name": "invoicing-identity",
+      "command": [
+        "target/verification-build/release/rebase-next",
+        "--model",
+        "invoicing",
+        "version"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.009,
+      "log": "target/g4a-invoicing-identity.log"
+    },
+    {
+      "name": "invoicing-http",
+      "command": [
+        "python3",
+        "-B",
+        "tools/invoicing.py",
+        "--binary",
+        "target/verification-build/release/rebase-next",
+        "--out",
+        "target/g4a-final-http"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.562,
+      "log": "target/g4a-invoicing-http.log"
+    }
+  ],
+  "independent": {
+    "foundation": {
+      "status": "passed",
+      "cases": 68,
+      "operations": 93
+    },
+    "causal": {
+      "status": "passed",
+      "cases": 39,
+      "operations": 55
+    },
+    "local": {
+      "status": "passed",
+      "cases": 9,
+      "operations": 14
+    }
+  },
+  "production_identities": {
+    "calculation": {
+      "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    },
+    "equipment": {
+      "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    },
+    "invoicing": {
+      "model": "7230c26cc5c85bd56db3ba67da1748e727aebee59d5aaaae1ce188d7da8d33be",
+      "store_format": "rebase-store-4",
+      "version": "0.6.0"
+    }
+  },
+  "compatibility": [
+    {
+      "model": "calculation",
+      "source": "target/g2c-final-capacity/calculation-4096/app.redb",
+      "copy": "target/g4a-compatibility/calculation.redb",
+      "command": [
+        "target/g4a-accepted/rebase-next",
+        "check",
+        "target/g4a-compatibility/calculation.redb"
+      ],
+      "result": {
+        "model": "4d5eb880ac2420897d4affd0211fb4b6ea6bfea5edbf9ad598bc4589b8be59ff",
+        "nodes": 8179,
+        "receipts": 135,
+        "records": 4096,
+        "revision": "136",
+        "roots": 4,
+        "rows": 44999,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "0f6c5090-dfc6-4ff3-a72b-e6f9b69b9041"
+      }
+    },
+    {
+      "model": "equipment",
+      "source": "target/g2c-final-capacity/equipment-4096/app.redb",
+      "copy": "target/g4a-compatibility/equipment.redb",
+      "command": [
+        "target/g4a-accepted/rebase-next",
+        "--model",
+        "equipment",
+        "check",
+        "target/g4a-compatibility/equipment.redb"
+      ],
+      "result": {
+        "model": "4ec3816f297bbf66bde48bf0643cd0b91f447fb93990e038c991e77746e152fd",
+        "nodes": 8187,
+        "receipts": 139,
+        "records": 12280,
+        "revision": "140",
+        "roots": 1,
+        "rows": 77765,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "3950d6dc-16b1-415b-82d4-c3f59be3447b"
+      }
+    }
+  ],
+  "http": {
+    "status": "passed",
+    "mutations": 111,
+    "commands": 340,
+    "commits": 75,
+    "rejections": 36,
+    "settlement": {
+      "gross": "9244",
+      "paid": "9244",
+      "balance": "0",
+      "receivable": "13866",
+      "payable": "13866",
+      "cash": "9244",
+      "refund_capacity": "9244"
+    },
+    "logical_bytewise_rollback": true,
+    "reopen": true,
+    "crash_recovery": true,
+    "restore": true,
+    "binary_sha256": "1b0a43f8d26d999e40ac4ab3bce27911adf768359058a9311de48da4a72ccb54"
+  },
+  "binary": {
+    "path": "target/g4a-accepted/rebase-next",
+    "sha256": "1b0a43f8d26d999e40ac4ab3bce27911adf768359058a9311de48da4a72ccb54"
+  },
+  "source_fingerprints": {
+    "src/causal.rs": "03c41acc65c4f6839a7682cf8769c3ecd981b9175cfcb0b48487f31e226330de",
+    "src/parameter_tests.rs": "f9f6b8baf550337db15ef45cfbe9cb56325d52a8651e78794c6179ce6a456b43",
+    "docs/compiled-models.md": "ad50269452462f30942952ff37efb6f46036673542435eea0fefd227ec10bbcc",
+    "research/31-terminal-validation.md": "d68b90a26bd84b753fb9fe7305e0da8755693508f87de022bce5de8e91fe547a",
+    "CONTEXT.md": "9ee7f9e6f48db1070a86c7258926b13f7afa5b1553a65b59d1c0ec909dec5096",
+    "AGENTS.md": "f189c9ab00cc4e8e7638baa4ef87e3db4e5793376c2fad7b08e2b4385ec3b7e3"
+  },
+  "compiled_source_fingerprints": {
+    "Cargo.lock": "a942308fada0bb6eabc41859c73677f3e199e52c11cdb6a404c48aa6bfe479dd",
+    "Cargo.toml": "7612374e70d2554d326c1e9f3bb9cf6b2216efbbc7a94b067dd234c2ce2f5fc3",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "4b9d401d72ac5ba46d527acb1c0fa1657d8d93c34f0d6439e97441060731f2cc",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "ba01828c6681b67dbffc2d2ddaad88eab07ed513c2078df6a21cac813993edf7",
+    "src/binding.rs": "381a22c3a5f9426786dc265ccd235f851e209e2ab43328e96e79d9e0b1c3779d",
+    "src/causal.rs": "03c41acc65c4f6839a7682cf8769c3ecd981b9175cfcb0b48487f31e226330de",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "8965332e594cd1309cb2cfb58acfaa75161c08ba8752abea20a968f8cc099f11",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "55d4aae0f4b5bcf0e7787071c84b54206f21e9494b7ac0f7268aa9c31e26306c",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "4f9f43e04cfb984b33d0805be18580a25978f7bba27e708175c291e21c4fd595",
+    "src/lifecycle.rs": "024f5ce8db8df5aec381080fdfd3c7120dcb96f6dfe3421a23057c4b2fa03d1f",
+    "src/local.rs": "d33961ab37f26012fc3afbf1643a4bf3957c2adc6f52577c77325c2c86d5af5e",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "4323bf3aa8faefcd537c2ffe291b6ccdb1c4fe22eb3f0c532b751263fa8ebb49",
+    "src/models/calculation.rs": "b581f57eabc46d1af0e2074e42f191a747cdc32ab69a4ee4759dcbfedc45cffb",
+    "src/models/calculation_reactivity.rs": "ed41677a2aef9f44fd80000305db7d54bbdfd7c35b9375f53d320b90240b3a95",
+    "src/models/equipment.rs": "4d4d6fd92d6337e41dca6a39c23b36274afd3180350636d3b2d87ba4aa311d1f",
+    "src/models/invoicing.rs": "22649b382ba0784aac3412336c00aca4fb5e43d6fd92705e3b005c904334b255",
+    "src/models/invoicing_check.rs": "43fb6a3b75c43323e9fd1367b4c7fbab07055134b19e55028ba130f25fbf97a6",
+    "src/models/invoicing_fixtures.rs": "4e065ec36422f52781d22c92a015904d6036eb26b824cbb1691047f564386979",
+    "src/models/mod.rs": "9bd26495459dc4530410e936baea9ee77bd13da52cec95013abe8196cccd88e0",
+    "src/mutation.rs": "9fb421f27354c1bf0aa1dbb34d3059f3c793820720e7c1b02fe291a64befd58a",
+    "src/native_codec.rs": "090924555cae38ac12dbdbc63ec8314193758b29cb48c5af6bca655eb9535820",
+    "src/native_slice.rs": "23702fb141ec82de37f18672d10db727a26e252f868af63c282515121ff4a649",
+    "src/parameter_tests.rs": "f9f6b8baf550337db15ef45cfbe9cb56325d52a8651e78794c6179ce6a456b43",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/query.rs": "9f65baee0e55dde5df7164edf03c566ed60cae0bea238c295ad10f2ffe7d0249",
+    "src/routes.rs": "0b49da7a70828f223ca4cfa2b4e7e7d6d567ed0110f8f7719b274b904ab6c517",
+    "src/rpc.rs": "f6edebbe940172161e594738c8c30826864232bac4a3bf8a7cc749a14ab21b71",
+    "src/security.rs": "9abf302d775aee8f19ad30a4fddf5713b011be26ff53b2834caba8b5585a1259",
+    "src/server.rs": "cf63367f9d13a1abc1aff20400f40089fb6eabedfde12628b295c7c77f0f9017",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/tree.rs": "f370fb3c897128bb87c04d690b47ec533167eb1f0efbc3b74369f9e6b2035b17",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "24c1220d33f0fc3a32c465d2dcd3ee8fb45db15f0e4d92b86f79e1ec9201bd59",
+    "tests/exact_values.rs": "0efcee4da7c8f4edbb866220db47c630259f055b9d387de56a060ea77426adb6",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "196d9949dac26c8f769145e13ac26d80db88aa38817db168511bb4a9d70c104f",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "1f32d0732061ddf684fee96db4a7724400d13663d1f0f5254ba5c07b14eebd0d",
+    "tests/network_api.rs": "9e4b7c9a4d068724aaef9617caf77176def87b5d1983cd4c5e62ed87f41ceb61",
+    "tests/routes.rs": "b42171ac54dde25a7535a4066723eee662bf184a6fd9bd562307063a2e05e31c",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "bb60e5ed96a26b6056bfcadd49f3e974a60838fbda13866eb0e2eb3f88093f78"
+  },
+  "next": "G4b exact reactive windows; temporary unreferenced drafts are not part of G4a executable acceptance."
+}

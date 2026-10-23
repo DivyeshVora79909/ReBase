@@ -1,6 +1,6 @@
 # G4a: terminal aggregate readers without managed outputs
 
-**Prepared, 2026-10-23.** First checkpoint of the
+**Accepted, 2026-10-23.** First checkpoint of the
 [capability program](30-capability-program.md).
 
 ## Gap and contract
@@ -52,3 +52,25 @@ Run focused controls, formatting, Clippy, debug/optimized Rust tests and relevan
 independent native/local acceptance. Record actual counts and fingerprints.
 This gate does not imply provider delivery, distributed storage, arbitrary
 aggregates or two-bound reactivity.
+
+## Executed result
+
+[Evidence](evidence/2026-10-23-g4a-validation.json) records **80 Rust tests in
+debug and optimized builds**, clean formatting/Clippy and all **116 independent
+native/local cases**. The real invoicing HTTP workflow passes **111 mutations /
+340 commands**, including 36 complete rollbacks, replay, crash recovery and
+verified restore. Copies of both accepted 4,096-source calculation/equipment
+stores pass complete checks; original stores are untouched. All three production
+model identities, store/codec 4 and package 0.6 remain unchanged.
+
+Four added native tests cover the gate's lifecycle and final-state controls.
+The guard's evaluator and reader-only allocator deliberately panic if invoked,
+proving validation does not manufacture calculations or private outputs. A
+calculation-only Probe proves the converse: temporarily disabling its query
+recomputes its explicit zero fallback and removes its old registration, rather
+than retaining stale derived state. All expected queries, values, members and
+registrations come from a complete source oracle before structural checking.
+
+The maintained core change is scheduler participation and a declaration-based
+terminal-only check; model-owned formulas and stored layouts remain intact.
+Next: [G4b exact windows](32-reactive-windows.md).

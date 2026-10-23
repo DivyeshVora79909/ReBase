@@ -30,6 +30,8 @@ const RULE: u16 = 11;
 const BUCKET: u16 = 20;
 const ENTRY: u16 = 30;
 const TAX: u16 = 40;
+const GUARD: u16 = 50;
+const PROBE: u16 = 60;
 const OUTPUT: u16 = 90;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -63,6 +65,18 @@ enum Input {
         #[serde(with = "decimal")]
         at: i64,
     },
+    Guard {
+        #[serde(with = "uuid_text")]
+        basis: Uuid,
+        #[serde(with = "decimal")]
+        before: i64,
+        active: bool,
+    },
+    Probe {
+        #[serde(with = "uuid_text")]
+        basis: Uuid,
+        active: bool,
+    },
     Output {
         #[serde(with = "uuid_text")]
         producer: Uuid,
@@ -92,6 +106,8 @@ impl NativeInput for Input {
             Self::Bucket { .. } => BUCKET,
             Self::Entry { .. } => ENTRY,
             Self::Tax { .. } => TAX,
+            Self::Guard { .. } => GUARD,
+            Self::Probe { .. } => PROBE,
             Self::Output { .. } => OUTPUT,
         }
     }
@@ -131,6 +147,7 @@ impl NativeInput for Input {
             } => {
                 vec![(*producer, TAX, 1), (*bucket, BUCKET, 2)]
             }
+            Self::Guard { basis, .. } | Self::Probe { basis, .. } => vec![(*basis, BUCKET, 1)],
             _ => vec![],
         }
     }
@@ -308,7 +325,49 @@ fn declarations() -> Vec<Contract> {
         key: "at",
         value: "amount",
     });
-    vec![rule, bucket, entry, tax, output]
+    let mut guard = contract(
+        GUARD,
+        "Guard",
+        &[(1, "basis"), (2, "before"), (3, "active")],
+        json!({"basis":uuid,"before":time,"active":{"type":"boolean"}}),
+    );
+    guard.references.push(reference(1, "basis", BUCKET));
+    guard.queries.push(model::QueryDeclaration {
+        slot: 31,
+        through: "basis",
+        root_contract: BUCKET,
+        root_slot: 7,
+        operation: "sum",
+        phase: "validate",
+        channel: "amount",
+        bound: "strictly before before, when active",
+        fallback: Some("0"),
+    });
+    let mut probe = contract(
+        PROBE,
+        "Probe",
+        &[(1, "basis"), (2, "active")],
+        json!({"basis":uuid,"active":{"type":"boolean"}}),
+    );
+    probe.references.push(reference(1, "basis", BUCKET));
+    probe.published = tax.published.clone();
+    probe.queries.push(model::QueryDeclaration {
+        slot: 31,
+        through: "basis",
+        root_contract: BUCKET,
+        root_slot: 7,
+        operation: "sum",
+        phase: "calculate",
+        channel: "amount",
+        bound: "all, when active",
+        fallback: Some("0"),
+    });
+    probe.calculations.push(model::Calculation {
+        name: "basis_sum",
+        inputs: vec![],
+        expression: "active ? query[31] : 0",
+    });
+    vec![rule, bucket, entry, tax, guard, probe, output]
 }
 
 fn registrations(id: Uuid, input: Option<&Input>) -> BTreeSet<(Key, Address)> {
@@ -335,7 +394,7 @@ impl Binding for ParentTax {
     type Input = Input;
     type Derived = Derived;
     const NAME: &'static str = "test-parent-tax";
-    const BEHAVIOR: &'static str = "test-parent-tax-1";
+    const BEHAVIOR: &'static str = "test-parent-tax-2";
     fn declarations() -> Result<Vec<Contract>> {
         Ok(declarations())
     }
@@ -343,11 +402,13 @@ impl Binding for ParentTax {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
     fn valid_derived(input: &Input, derived: Option<&Derived>) -> bool {
-        matches!((input, derived), (Input::Tax { .. }, Some(_)))
-            || (!matches!(input, Input::Tax { .. }) && derived.is_none())
+        matches!(
+            (input, derived),
+            (Input::Tax { .. } | Input::Probe { .. }, Some(_))
+        ) || (!matches!(input, Input::Tax { .. } | Input::Probe { .. }) && derived.is_none())
     }
     fn published_shape(code: u16) -> Value {
-        if code == TAX {
+        if matches!(code, TAX | PROBE) {
             json!({"basis_sum":"0","tax":"0"})
         } else {
             Value::Null
@@ -387,9 +448,9 @@ impl Binding for ParentTax {
 
 // Deliberately no Clone, Debug, Default, Eq or serialization implementation:
 // resolved parameters are an attempt-local native value, not persisted state.
-struct Parameters {
-    rate: Rational,
-    rounding: Rounding,
+enum Parameters {
+    Tax { rate: Rational, rounding: Rounding },
+    ReadOnly,
 }
 impl ReactiveBinding for ParentTax {
     type Parameters = Parameters;
@@ -399,6 +460,47 @@ impl ReactiveBinding for ParentTax {
         _id: Uuid,
         record: &ModelRecord<Self>,
     ) -> Result<Resolved<Parameters>> {
+        if let Input::Guard {
+            basis,
+            before,
+            active,
+        } = record.input
+        {
+            return Ok(Resolved {
+                shape: ResolvedShape {
+                    reads: if active {
+                        vec![Read {
+                            slot: 31,
+                            root: Address::new(basis, 7),
+                            before: Some(before),
+                            validate: true,
+                        }]
+                    } else {
+                        vec![]
+                    },
+                    emits: vec![],
+                },
+                parameters: Parameters::ReadOnly,
+            });
+        }
+        if let Input::Probe { basis, active } = record.input {
+            return Ok(Resolved {
+                shape: ResolvedShape {
+                    reads: if active {
+                        vec![Read {
+                            slot: 31,
+                            root: Address::new(basis, 7),
+                            before: None,
+                            validate: false,
+                        }]
+                    } else {
+                        vec![]
+                    },
+                    emits: vec![],
+                },
+                parameters: Parameters::ReadOnly,
+            });
+        }
         let Input::Tax {
             rule,
             basis,
@@ -433,21 +535,36 @@ impl ReactiveBinding for ParentTax {
                     at,
                 }],
             },
-            parameters: Parameters { rate, rounding },
+            parameters: Parameters::Tax { rate, rounding },
         })
     }
     fn evaluate(
         _id: Uuid,
-        _record: &ModelRecord<Self>,
+        record: &ModelRecord<Self>,
         _shape: &ResolvedShape,
         parameters: &Parameters,
         values: &[i128],
     ) -> Result<(Derived, BTreeMap<u16, i128>)> {
-        let basis_sum = *values
-            .first()
-            .ok_or_else(|| Error::new("internal", "missing basis sum"))?;
-        let tax = parameters.rate.apply(basis_sum, parameters.rounding)?;
-        Ok((Derived { basis_sum, tax }, BTreeMap::from([(11, tax)])))
+        assert!(
+            !matches!(record.input, Input::Guard { .. }),
+            "terminal validators must never enter the formula evaluator"
+        );
+        match parameters {
+            Parameters::Tax { rate, rounding } => {
+                let basis_sum = *values
+                    .first()
+                    .ok_or_else(|| Error::new("internal", "missing basis sum"))?;
+                let tax = rate.apply(basis_sum, *rounding)?;
+                Ok((Derived { basis_sum, tax }, BTreeMap::from([(11, tax)])))
+            }
+            Parameters::ReadOnly => Ok((
+                Derived {
+                    basis_sum: values.first().copied().unwrap_or(0),
+                    tax: 0,
+                },
+                BTreeMap::new(),
+            )),
+        }
     }
     fn output_input(producer: Uuid, emit: &Emit, amount: i128) -> Result<Input> {
         Ok(Input::Output {
@@ -588,6 +705,78 @@ fn check(store: &Store<ParentTax>) -> Result<Value> {
         actual == outputs,
         "complete source-derived tax output inventory",
     )?;
+    // Guard and probe expectations include source-derived managed emissions,
+    // never the actual private output records or maintained root summaries.
+    for (&id, record) in &snapshot.records {
+        let (basis, before, validate) = match record.input {
+            Input::Guard {
+                basis,
+                before,
+                active,
+            } => {
+                require(record.derived.is_none(), "guard has no derived value")?;
+                if !active {
+                    continue;
+                }
+                (basis, Some(before), true)
+            }
+            Input::Probe { basis, active } => {
+                if !active {
+                    require(
+                        record.derived
+                            == Some(Derived {
+                                basis_sum: 0,
+                                tax: 0,
+                            }),
+                        "inactive calculation reader recomputes its authored fallback",
+                    )?;
+                    continue;
+                }
+                (basis, None, false)
+            }
+            _ => continue,
+        };
+        let mut result = 0i128;
+        for (root, at, leaf) in members.values() {
+            if *root == Address::new(basis, 7) && before.is_none_or(|bound| *at < bound) {
+                let Leaf::Financial(amount) = leaf else {
+                    return Err(Error::new("corrupt_state", "test expected member kind"));
+                };
+                result = result
+                    .checked_add(*amount)
+                    .ok_or_else(|| Error::new("corrupt_state", "test reader sum"))?;
+            }
+        }
+        if validate {
+            require(result >= 0, "source-derived terminal nonnegative sum")?;
+        } else {
+            require(
+                record.derived
+                    == Some(Derived {
+                        basis_sum: result,
+                        tax: 0,
+                    }),
+                "source-derived calculation without outputs",
+            )?;
+        }
+        routes
+            .entry(Key::Subscribers(Address::new(basis, 7)))
+            .or_default()
+            .insert(Address::new(id, 31));
+        queries.insert(
+            Address::new(id, 31),
+            Query {
+                source: Address::new(basis, 7),
+                operation: "sum".into(),
+                phase: if validate { "validate" } else { "calculate" }.into(),
+                channel: "amount".into(),
+                lower: "negative_infinity".into(),
+                upper: before.map_or(Bound::All, Bound::BeforeTime),
+                selected: None,
+                result,
+            },
+        );
+    }
     snapshot.finish(keys, members, routes, queries)
 }
 
@@ -679,6 +868,384 @@ fn assert_tax(store: &Store<ParentTax>, basis: i128, tax: i128) {
     };
     assert_eq!(binding.output, id(100));
     store.check_integrity().unwrap();
+}
+
+fn commit_reader(store: &Store<ParentTax>, operation: u128, commands: Value) -> (Mutation, Value) {
+    let request = request(store, operation, commands);
+    let result = store
+        .mutate_with_ids(&request, &mut || {
+            panic!("readers without outputs must not allocate output identities")
+        })
+        .unwrap();
+    store.check_integrity().unwrap();
+    (request, result)
+}
+fn reject(store: &Store<ParentTax>, operation: u128, commands: Value, kind: &str) {
+    let before = store.observe_for_verification().unwrap();
+    let before_inspect = store.inspect().unwrap();
+    let request = request(store, operation, commands);
+    assert_eq!(store.mutate(&request).unwrap_err().code, kind);
+    assert_eq!(store.observe_for_verification().unwrap(), before);
+    assert_eq!(store.inspect().unwrap(), before_inspect);
+    assert_eq!(
+        store
+            .operation_status(
+                store.model().identity(),
+                &request.context,
+                request.operation_id
+            )
+            .unwrap()["status"],
+        "not_observed"
+    );
+    store.check_integrity().unwrap();
+}
+fn reader_query(store: &Store<ParentTax>, n: u128) -> Option<Query> {
+    match Snapshot::load(store)
+        .unwrap()
+        .all
+        .get(&Key::Query(Address::new(id(n), 31)))
+    {
+        Some(StoredValue::Query(query)) => Some(query.clone()),
+        None => None,
+        _ => panic!("reader query type"),
+    }
+}
+
+#[test]
+fn terminal_only_reader_tracks_strict_bounds_roots_activation_and_deletion() {
+    let directory = Directory::new();
+    let store = create(&directory);
+    seed(&store);
+    commit(
+        &store,
+        1300,
+        json!([
+            {"op":"create","id":id(22),"contract":BUCKET,"fields":{"unit":1}},
+            {"op":"create","id":id(31),"contract":ENTRY,"fields":{"bucket":id(22),"at":"5","amount":"-7"}}
+        ]),
+    );
+    reject(
+        &store,
+        1301,
+        json!([{"op":"create","id":id(51),"contract":GUARD,"fields":{"basis":id(22),"before":"6","active":true}}]),
+        "invariant",
+    );
+    commit_reader(
+        &store,
+        1302,
+        json!([{"op":"create","id":id(50),"contract":GUARD,"fields":{"basis":id(20),"before":"1","active":true}}]),
+    );
+    assert!(record(&store, 50).derived.is_none());
+    assert_eq!(reader_query(&store, 50).unwrap().result, 10005);
+    let guard = record(&store, 50);
+    // Equal-time contributions are outside a strict prefix, including changes
+    // that make the whole root negative. No root invariant protects this guard.
+    commit(
+        &store,
+        1303,
+        json!([{"op":"create","id":id(32),"contract":ENTRY,"fields":{"bucket":id(20),"at":"1","amount":"-20000"}}]),
+    );
+    assert_eq!(record(&store, 50), guard);
+    assert_eq!(reader_query(&store, 50).unwrap().result, 10005);
+    reject(
+        &store,
+        1304,
+        json!([update(&store, 50, json!({"before":"2"}))]),
+        "invariant",
+    );
+    commit_reader(
+        &store,
+        1305,
+        json!([update(&store, 50, json!({"basis":id(22),"before":"5"}))]),
+    );
+    assert_eq!(reader_query(&store, 50).unwrap().result, 0);
+    let guard = record(&store, 50);
+    commit(
+        &store,
+        1306,
+        json!([update(&store, 30, json!({"amount":"-10005"}))]),
+    );
+    assert_eq!(record(&store, 50), guard);
+    reject(
+        &store,
+        1307,
+        json!([update(&store, 50, json!({"before":"6"}))]),
+        "invariant",
+    );
+    commit_reader(
+        &store,
+        1308,
+        json!([update(&store, 50, json!({"active":false}))]),
+    );
+    assert!(reader_query(&store, 50).is_none());
+    commit(
+        &store,
+        1309,
+        json!([update(&store, 31, json!({"amount":"-9"}))]),
+    );
+    reject(
+        &store,
+        1310,
+        json!([update(&store, 50, json!({"active":true,"before":"6"}))]),
+        "invariant",
+    );
+    commit_reader(
+        &store,
+        1311,
+        json!([update(&store, 50, json!({"active":true,"before":"5"}))]),
+    );
+    assert_eq!(reader_query(&store, 50).unwrap().result, 0);
+    reject(
+        &store,
+        1312,
+        json!([update(&store, 31, json!({"at":"4"}))]),
+        "invariant",
+    );
+    let (last_request, last_result) = commit_reader(
+        &store,
+        1313,
+        json!([{"op":"delete","id":id(50),"if_version":record(&store,50).version.to_string()}]),
+    );
+    assert!(reader_query(&store, 50).is_none());
+    let before = store.observe_for_verification().unwrap();
+    let replay = store.mutate(&last_request).unwrap();
+    assert_eq!(replay["replayed"], true);
+    assert_eq!(replay["result"], last_result["result"]);
+    assert_eq!(store.observe_for_verification().unwrap(), before);
+    commit(&store, 1314, json!([update(&store, 31, json!({"at":"4"}))]));
+    let before = store.observe_for_verification().unwrap();
+    drop(store);
+    let reopened =
+        Store::<ParentTax>::open(directory.file(), Arc::new(Prepared::load().unwrap())).unwrap();
+    reopened.check_integrity().unwrap();
+    assert_eq!(reopened.observe_for_verification().unwrap(), before);
+    assert_eq!(
+        reopened.mutate(&last_request).unwrap()["result"],
+        last_result["result"]
+    );
+}
+
+#[test]
+fn terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders() {
+    let mut expected = None;
+    for reverse in [false, true] {
+        let directory = Directory::new();
+        let store = create(&directory);
+        seed(&store);
+        commit_reader(
+            &store,
+            1400,
+            json!([{"op":"create","id":id(50),"contract":GUARD,"fields":{"basis":id(20),"before":"1","active":true}}]),
+        );
+        reject(
+            &store,
+            1401,
+            json!([update(&store, 30, json!({"amount":"-1"}))]),
+            "invariant",
+        );
+        let negative = update(&store, 30, json!({"amount":"-1"}));
+        let repair = json!({"op":"create","id":id(31),"contract":ENTRY,"fields":{"bucket":id(20),"at":"0","amount":"2"}});
+        commit(
+            &store,
+            1402,
+            if reverse {
+                json!([repair, negative])
+            } else {
+                json!([negative, repair])
+            },
+        );
+        assert_eq!(reader_query(&store, 50).unwrap().result, 1);
+        let snapshot = Snapshot::load(&store).unwrap();
+        let logical: BTreeMap<_, _> = snapshot
+            .all
+            .iter()
+            .filter(|(key, _)| matches!(key, Key::Record(_) | Key::Query(_)))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        if let Some(expected) = &expected {
+            assert_eq!(&logical, expected);
+        } else {
+            expected = Some(logical);
+        }
+    }
+}
+
+#[test]
+fn calculation_only_reader_recomputes_fallback_when_its_query_is_inactive() {
+    let directory = Directory::new();
+    let store = create(&directory);
+    seed(&store);
+    commit_reader(
+        &store,
+        1450,
+        json!([{"op":"create","id":id(60),"contract":PROBE,"fields":{"basis":id(20),"active":false}}]),
+    );
+    assert!(reader_query(&store, 60).is_none());
+    assert_eq!(
+        record(&store, 60).derived,
+        Some(Derived {
+            basis_sum: 0,
+            tax: 0
+        })
+    );
+    commit_reader(
+        &store,
+        1451,
+        json!([update(&store, 60, json!({"active":true}))]),
+    );
+    assert_eq!(reader_query(&store, 60).unwrap().result, 10005);
+    assert_eq!(
+        record(&store, 60).derived,
+        Some(Derived {
+            basis_sum: 10005,
+            tax: 0
+        })
+    );
+    // Clearing the resolved read still runs the declared calculation with an
+    // empty input slice. Retaining the old derived value would be stale state.
+    let (last_request, last_result) = commit_reader(
+        &store,
+        1452,
+        json!([update(&store, 60, json!({"active":false}))]),
+    );
+    assert!(reader_query(&store, 60).is_none());
+    assert_eq!(
+        record(&store, 60).derived,
+        Some(Derived {
+            basis_sum: 0,
+            tax: 0
+        })
+    );
+    let inactive = record(&store, 60);
+    commit(
+        &store,
+        1453,
+        json!([update(&store, 30, json!({"amount":"10007"}))]),
+    );
+    assert_eq!(record(&store, 60), inactive);
+    let before = store.observe_for_verification().unwrap();
+    assert_eq!(
+        store.mutate(&last_request).unwrap()["result"],
+        last_result["result"]
+    );
+    assert_eq!(store.observe_for_verification().unwrap(), before);
+    commit_reader(
+        &store,
+        1454,
+        json!([update(&store, 60, json!({"active":true}))]),
+    );
+    assert_eq!(reader_query(&store, 60).unwrap().result, 10007);
+    assert_eq!(
+        record(&store, 60).derived,
+        Some(Derived {
+            basis_sum: 10007,
+            tax: 0
+        })
+    );
+}
+
+#[test]
+fn terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates() {
+    let mut expected = None;
+    for reverse in [false, true] {
+        let directory = Directory::new();
+        let store = create(&directory);
+        seed(&store);
+        commit(
+            &store,
+            1500,
+            json!([{"op":"create","id":id(31),"contract":ENTRY,"fields":{"bucket":id(21),"at":"0","amount":"-1000"}}]),
+        );
+        commit_reader(
+            &store,
+            1501,
+            json!([
+                {"op":"create","id":id(50),"contract":GUARD,"fields":{"basis":id(21),"before":"2","active":true}},
+                {"op":"create","id":id(60),"contract":PROBE,"fields":{"basis":id(21),"active":true}}
+            ]),
+        );
+        assert_eq!(reader_query(&store, 50).unwrap().result, 0);
+        assert_eq!(
+            record(&store, 60).derived,
+            Some(Derived {
+                basis_sum: 0,
+                tax: 0
+            })
+        );
+        let stale = update(&store, 50, json!({"before":"3"}));
+        commit_reader(
+            &store,
+            1502,
+            json!([update(&store, 50, json!({"before":"4"}))]),
+        );
+        reject(&store, 1503, json!([stale]), "stale_version");
+        reject(
+            &store,
+            1504,
+            json!([update(&store, 30, json!({"amount":"9985"}))]),
+            "invariant",
+        );
+        let producer = update(&store, 30, json!({"amount":"9985"}));
+        let repair = update(&store, 31, json!({"amount":"-998"}));
+        let (last_request, last_result) = commit(
+            &store,
+            1505,
+            if reverse {
+                json!([repair, producer])
+            } else {
+                json!([producer, repair])
+            },
+        );
+        assert_tax(&store, 9985, 998);
+        assert_eq!(reader_query(&store, 50).unwrap().result, 0);
+        assert_eq!(
+            record(&store, 60).derived,
+            Some(Derived {
+                basis_sum: 0,
+                tax: 0
+            })
+        );
+        let snapshot = Snapshot::load(&store).unwrap();
+        let logical: BTreeMap<_, _> = snapshot
+            .all
+            .iter()
+            .filter(|(key, _)| matches!(key, Key::Record(_) | Key::Query(_)))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        if let Some(expected) = &expected {
+            assert_eq!(&logical, expected);
+        } else {
+            expected = Some(logical);
+        }
+        drop(snapshot);
+        // A later producer edit must refresh the output-free calculation even
+        // if the validator remains valid and has no formula of its own.
+        commit(
+            &store,
+            1506,
+            json!([update(&store, 30, json!({"amount":"10005"}))]),
+        );
+        assert_eq!(reader_query(&store, 50).unwrap().result, 2);
+        assert_eq!(
+            record(&store, 60).derived,
+            Some(Derived {
+                basis_sum: 2,
+                tax: 0
+            })
+        );
+        let before = store.observe_for_verification().unwrap();
+        assert_eq!(
+            store.mutate(&last_request).unwrap()["result"],
+            last_result["result"]
+        );
+        assert_eq!(store.observe_for_verification().unwrap(), before);
+        drop(store);
+        let reopened =
+            Store::<ParentTax>::open(directory.file(), Arc::new(Prepared::load().unwrap()))
+                .unwrap();
+        reopened.check_integrity().unwrap();
+        assert_eq!(reopened.observe_for_verification().unwrap(), before);
+    }
 }
 
 #[test]

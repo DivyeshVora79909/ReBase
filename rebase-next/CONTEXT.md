@@ -1,7 +1,13 @@
 # Compact context — 2026-10-23
 
-**Active: [capability program](research/30-capability-program.md), first gate
-[G4a terminal validation](research/31-terminal-validation.md).** The user now
+**Active: [capability program](research/30-capability-program.md), next gate
+[G4b exact windows](research/32-reactive-windows.md). G4a is accepted:** output-free
+validators, calculation-only readers and inactive-query fallback controls pass
+80 debug/optimized Rust tests, all 116 independent native/local cases and the
+111-mutation invoicing HTTP workflow. Production identities and store/codec 4
+are unchanged; copies of both G2 4,096-source stores pass complete checks.
+[G4a evidence](research/evidence/2026-10-23-g4a-validation.json) retains execution.
+The user now
 authorizes preparing and implementing remaining capabilities through small,
 explicit APIs. G4a closes output-free aggregate validators; G4b adds exact
 reactive windows. Prepare external work alongside core development, then
@@ -47,8 +53,14 @@ the verified tree/commit and update `main` against its expected parent. Compare
 remote/local tree identities before aligning local `main`; local pre-connector
 commits remain under `refs/codex/checkpoints/`. Do not force unrelated changes.
 
-**Exact next action:** implement G4a scheduler participation and terminal checks,
-prove source-derived native controls, then continue G4b. The accepted bundle's
+**Exact next action:** integrate G4b typed ranges, interval registration caches,
+exact changed-point discovery and segment-cover final dependencies. Temporary
+unreferenced `window_routes.rs`/`window_dependency.rs` hold reviewed drafts;
+replace their existing modules rather than keep duplicate implementations.
+`time_range.rs`, `route_tests.rs` and the source-window oracle belong to G4b;
+the native window binding is being prepared. External G5 has a concrete
+[lifecycle gate](research/33-external-effects-gate.md), independent of core edits.
+The accepted bundle's
 [deployment commands](docs/deployment.md) remain valid. Full accounting, rational
 FX, external effects, distributed adapters, larger invoicing populations and
 frontend remain unaccepted until their gates execute. The existing bundle is

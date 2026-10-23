@@ -89,6 +89,14 @@ to private contracts. Owner and reader remain distinct. The model hooks are
 trusted compiled code with workspace access, not a sandbox for untrusted authors.
 They must preserve tenant, reference, routing and invariant obligations.
 
+A declared sum reader can validate without private outputs. Pure validators
+register ordinary dependencies and run after all final contributions settle;
+they need no dummy output or formula. Calculation-only readers can publish
+derived values without emissions. Whether a formula runs follows the contract's
+declarations, so disabling an active query still recomputes its explicit fallback.
+The current shared validation predicate is a nonnegative aggregate sum; this
+does not automatically provide arbitrary predicates or bounded time windows.
+
 Native monetary/rate calculations can compose the pure
 [`Rational` and `Rounding` primitives](exact-values.md). Their schema helpers
 come from the same native types used by binding; tools need no duplicate schemas.
