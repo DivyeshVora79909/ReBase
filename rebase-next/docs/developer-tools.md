@@ -24,6 +24,18 @@ Use the current source build described in the guide. Equipment, measurement,
 quantity and effect-demo each use their own store and the same production APIs;
 these are not cross-store transactions. Broader accounting remains deferred.
 
+## Prepared operational assurance goal
+
+[G8.0–G8.5](../research/52-workload-deployment-plan.md) specifies the next
+workload/deployment goal; it does not add an implemented command in this checkout.
+It reuses existing scenarios, clients and independent checks with small explicit
+workload/observer functions. Planned profiles cover default 300-second churn,
+bounded resource observations, overload, owned database outage/recovery and the
+extracted current release. Continuous-PID memory windows are separate from
+offline receipt/archive epochs. No new health API or general test DSL is needed.
+The plan contains checkpoint acceptance and a prompt for a fresh implementing
+agent; existing bounded population and artifact limits still apply.
+
 ## Existing model and fixture tools
 
 The 0.6 [invoicing model](invoicing.md) uses the same tools with

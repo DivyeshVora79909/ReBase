@@ -1,0 +1,75 @@
+{
+  "accepted_evidence": {
+    "baseline_documentation_fingerprints_checked": 8,
+    "method": "Compare working-tree source/tools to accepted G7.6 SHA-256 values; compare historical documentation to the baseline Git blobs.",
+    "mismatches": [],
+    "path": "research/evidence/2026-10-25-g76-storage-conformance.json",
+    "sha256": "b395ed8bea3fb610247d433fdc3e1097bb7deb7ad2811892a73dadc9d7198ecb",
+    "source_tool_fingerprints_checked": 139
+  },
+  "baseline_commit": "8e90a0c9e11868a719908e3ee53ef5e66abf4a45",
+  "baseline_source_version": "0.16.0",
+  "checkpoint": "G8 preparation",
+  "checkpoints_prepared": [
+    "G8.0 inputs/observations/preflight",
+    "G8.1 sustained churn/resources",
+    "G8.2 overload/backpressure",
+    "G8.3 database outage/recovery",
+    "G8.4 current release/configuration",
+    "G8.5 evidence/developer handoff"
+  ],
+  "continuation": "Delegate the implementation goal in research/52-workload-deployment-plan.md. Do not confuse this preparation with G8.0 acceptance.",
+  "date": "2026-10-25",
+  "default_measurement_seconds": 300,
+  "deferred": [
+    "G6 accounting",
+    "TiKV",
+    "frontend",
+    "live providers",
+    "migrations",
+    "million-record capacity",
+    "unprovided native commit-ack/replicated failover/disk-power fault infrastructure"
+  ],
+  "documentation_sha256": {
+    "AGENTS.md": "ea7f157cbbc25ff119c2705f1f60e48b22ad9e8d9a74f99480630597c0bd3136",
+    "CONTEXT.md": "70e7c45de841b536b2ab8bb1d26f4fc98a12b560d689ada7533bd41a01954d21",
+    "README.md": "d69a8bbd4e1eeb2c48cb9c427b88a5b4b6a2cdfb96aa385375ebaeb5842c60ec",
+    "docs/developer-tools.md": "b304a64e160106f61e314731743ea190706a9299deb19410897d15e5d0403a15",
+    "research/30-capability-program.md": "e61e3664d093df26eff8825e608c951c075a3076a3bc88fad77669bbaafa510d",
+    "research/52-workload-deployment-plan.md": "3b88e35d704220abfdc147b4dfd236a2d1c450f615883a05e182bf8ab38d0c19"
+  },
+  "executed_checks": [
+    {
+      "command": "python3 -B -m unittest discover -s tools -p test_harness.py -v",
+      "failed": 0,
+      "passed": 2,
+      "scope": "Independent archive-observation controls, including invalid/incomplete images."
+    },
+    {
+      "check": "changed documentation local links",
+      "files": 6,
+      "resolved_targets": 168,
+      "scope": "Filesystem targets only; external URLs and anchors excluded."
+    }
+  ],
+  "implemented_g8_checkpoints": 0,
+  "independent_plan_review": "Read-only reviewer approved scoped composition, epoch separation, pressure/fault boundaries and reuse discipline. No implementation verification implied.",
+  "not_executed": [
+    "Cargo or Rust campaigns",
+    "database/server startup",
+    "G8 churn/overload/outage profiles",
+    "release packaging/deployment",
+    "million-record expansion"
+  ],
+  "prior_paste_followup": {
+    "backup_helper_uses_plan_size_reader": false,
+    "method": "Source inspection; backup payload reads complete backup bytes, not client.read_json plan-size limit.",
+    "required_modules_present": [
+      "src/receipts.rs",
+      "src/storage/coordination_checks.rs",
+      "src/storage/lifecycle_checks.rs"
+    ]
+  },
+  "scope": "Documentation and handoff only. No G8 runtime profile or release acceptance executed.",
+  "status": "prepared-not-implemented"
+}

@@ -1,5 +1,34 @@
 # Compact context — 2026-10-25
 
+**Current: G8 preparation complete; implementation has not started.** The user
+requested the latest pull, verification and an optimal documented goal for a
+separate implementing agent. Pulled `8e90a0c` (G7.6), following G7.5 `86c61fe`.
+All 139 accepted source/tool fingerprints match; the three previously omitted
+modules are committed and the backup helper reads complete backup bytes rather
+than the 128 KiB plan reader. Two focused Python archive-oracle controls pass.
+No Rust, database, population or long-running campaign was rerun for this
+documentation-only task. Historical source/evidence are unchanged.
+
+**Exact next goal, when assigned:** implement G8.0–G8.5 from
+[the workload/deployment plan](research/52-workload-deployment-plan.md).
+It defines shared bounded inputs/observers, default 300-second seeded CRUD and
+continuous-PID memory windows, separate real receipt/archive cycles, overload/
+backpressure, owned database outage/recovery, extracted release and closeout.
+The plan includes delegation boundaries and a ready continuation prompt.
+No G8 checkpoint is yet implemented or accepted. Preparing the plan does not
+authorize starting its runtime implementation in this documentation turn.
+
+Preserve accepted G7. Reuse matching evidence and ordinary APIs; no health
+endpoint, configuration DSL, monitoring service or generic fixture engine.
+Keep queues, observations, artifacts and time explicit; no unknown operation is
+discarded or given a fresh context to hide its outcome. Current count/inventory/
+backup bounds still prevent flag-only million-record tests. G6, TiKV, frontend,
+live providers, million-record expansion and unprovided replicated/power-loss
+infrastructure remain deferred. Local checkpoint commits on main suffice; push
+normally when credentials are available. One Cargo owner for future source work.
+
+**Historical G7 closeout; accepted baseline for G8:**
+
 **G7 complete: G7.0–G7.6 accepted. No next gate is selected.** Read the
 [cross-adapter result](research/51-storage-conformance-result.md) and
 [evidence](research/evidence/2026-10-25-g76-storage-conformance.json).

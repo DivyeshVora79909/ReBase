@@ -57,6 +57,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
 | Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
+| Prepared operational assurance goal | [G8 checkpoints and delegation](research/52-workload-deployment-plan.md), not yet implemented |
 | Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
@@ -67,7 +68,8 @@ for the current verification boundaries. Calculation/equipment allow up to 4,096
 private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, a full accounting port, live-provider adapters and a frontend are separate
-future gates. TiKV, G6 and G8 remain deferred. Invoicing initially supports 64 public
+future gates. TiKV and G6 remain deferred; G8 preparation is documented and its
+implementation has not started. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,
 not a claim of general production capacity.
