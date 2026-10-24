@@ -12,7 +12,8 @@ This checkout's package source is 0.16.0 and includes native index families,
 reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
 work with signed events and reconciliation after restore. Shared storage now uses
 opaque mutation tokens, scoped query epochs and bounded receipt allocation slots;
-the [G7 plan](research/45-storage-adapter-plan.md) records checkpoint status.
+the [G7 result](research/51-storage-conformance-result.md) records accepted
+FoundationDB, redb and standalone SurrealKV conformance and its limits.
 A [self-explaining workshop](docs/workshop.md) adds independent checks, bounded
 exploration and replay across four small examples.
 The last verified deployment bundle is 0.6.0; source capabilities do not imply
@@ -55,8 +56,8 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
-| Active storage-adapter work | [G7 plan](research/45-storage-adapter-plan.md) · [Backend usage](docs/storage-backends.md) · [G7.5 result](research/50-scoped-coordination-result.md) |
-| Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
+| Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
+| Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
 The last packaged deployment uses **one embedded redb process, one tenant and

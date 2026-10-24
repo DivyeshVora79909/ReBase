@@ -1,0 +1,3910 @@
+{
+  "application": {
+    "redb": {
+      "backend": "redb",
+      "namespace": "rebase-g7-application-a0520667-2893-4ad2-b8e4-000c88a0c4e3",
+      "result": {
+        "application": {
+          "automatic_retries": false,
+          "case_count": 13,
+          "cases": [
+            "native-public-reader-abort",
+            "effect-execution-abort",
+            "effect-due-abort",
+            "effect-runtime-abort",
+            "operation-receipt-runtime-abort",
+            "effect-intent-atomic-publication-and-replay",
+            "stale-cas-preserves-complete-inventory",
+            "lost-response-original-id-reconciliation-no-duplicate",
+            "persistent-reopen-complete-tables-and-receipts",
+            "backend-restore-quarantine-and-populated-destination-isolation",
+            "quantity-publication-cascade-and-inexact-rollback",
+            "backup-restore-exact-complete-inventory",
+            "calculation-root-complete-time-invariant-rollback"
+          ],
+          "concurrent_application_schedules": false,
+          "limitations": [
+            "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+            "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+            "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+            "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "effects": {
+          "automatic_retries": false,
+          "case_count": 27,
+          "cases": [
+            "signed-inbox-row-abort",
+            "signed-inbox-runtime-abort",
+            "signed-inbox-durable-ack-precedes-fact-and-domain",
+            "signed-inbox-dedup-preserves-complete-inventory",
+            "signed-inbox-content-conflict-preserves-complete-inventory",
+            "inbox-consume-fact-abort",
+            "inbox-consume-row-abort",
+            "inbox-consume-due-abort",
+            "inbox-consume-execution-abort",
+            "inbox-consume-runtime-abort",
+            "inbox-consumption-fact-atomic-and-idempotent",
+            "inbox-consumption-fences-old-worker-claim",
+            "application-first-native-write-abort",
+            "application-native-public-reader-abort",
+            "application-fact-revision-abort",
+            "application-due-abort",
+            "application-execution-abort",
+            "application-runtime-abort",
+            "inbox-success-applies-domain-once-literal-balance-nine",
+            "worker-fact-abort",
+            "worker-fact-due-abort",
+            "worker-fact-execution-abort",
+            "worker-fact-runtime-abort",
+            "worker-success-fact-and-domain-publication-literal-balance-six",
+            "insufficient-balance-rejects-domain-with-durable-fact-unchanged",
+            "blocked-application-preserves-fact-and-literal-domain",
+            "persistent-reopen-nonempty-facts-inbox-and-domain"
+          ],
+          "limitations": [
+            "Signed fake events and typed provider outcomes run in-process; no HTTP provider transport or external delivery is certified.",
+            "Reopen checks persistent storage in this process; process restart and distributed network faults are separate controls."
+          ],
+          "literal_balances": [
+            12,
+            9,
+            6
+          ],
+          "persisted_facts": 3,
+          "persisted_inbox": 1,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "predicates": {
+          "automatic_retries": false,
+          "case_count": 9,
+          "cases": [
+            "authority-reader-index-write-abort",
+            "authority-repaired-native-record-write-abort",
+            "authority-graph-write-abort",
+            "authority-prepared-scope-write-abort",
+            "authority-reader-repair-commit-literal-inventory-and-stale-cas",
+            "authority-repair-persistent-reopen",
+            "reference-delete-reject-complete-inventory-and-no-receipt",
+            "reference-teardown-persistent-reopen",
+            "initialization-populated-rejection-complete-inventory-and-reopen"
+          ],
+          "concurrent_application_schedules": false,
+          "limitations": [
+            "The wrapper delegates actual adapter transactions; it injects no synthetic conflict result.",
+            "Creating/deleting attempts can still coordinate on exact Population capacity; G7.5's existing-record reference controls isolate dependency guards without that masking.",
+            "Concurrent controls use deterministic overlapping transactions; redb runs the sequential controls only.",
+            "Persistent reopen is in-process evidence, not process restart or distributed failover."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      }
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "namespace": "rebase-g7-application-3318c8e7-a170-4b2e-baa5-dc5335a6a61d",
+      "result": {
+        "application": {
+          "automatic_retries": false,
+          "case_count": 19,
+          "cases": [
+            "native-public-reader-abort",
+            "effect-execution-abort",
+            "effect-due-abort",
+            "effect-runtime-abort",
+            "operation-receipt-runtime-abort",
+            "effect-intent-atomic-publication-and-replay",
+            "stale-cas-preserves-complete-inventory",
+            "lost-response-original-id-reconciliation-no-duplicate",
+            "persistent-reopen-complete-tables-and-receipts",
+            "backend-restore-quarantine-and-populated-destination-isolation",
+            "quantity-publication-cascade-and-inexact-rollback",
+            "backup-restore-exact-complete-inventory",
+            "calculation-root-complete-time-invariant-rollback",
+            "same-root-invariant-commit-barrier",
+            "same-record-cas-commit-barrier-no-retry",
+            "absent-public-identity-commit-barrier",
+            "no-op-write-preserves-protected-point-read",
+            "reverse-reference-discovery-versus-delete-barrier",
+            "authority-revocation-barrier-and-snapshot-authorized-read"
+          ],
+          "concurrent_application_schedules": true,
+          "limitations": [
+            "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+            "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+            "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+            "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "effects": {
+          "automatic_retries": false,
+          "case_count": 27,
+          "cases": [
+            "signed-inbox-row-abort",
+            "signed-inbox-runtime-abort",
+            "signed-inbox-durable-ack-precedes-fact-and-domain",
+            "signed-inbox-dedup-preserves-complete-inventory",
+            "signed-inbox-content-conflict-preserves-complete-inventory",
+            "inbox-consume-fact-abort",
+            "inbox-consume-row-abort",
+            "inbox-consume-due-abort",
+            "inbox-consume-execution-abort",
+            "inbox-consume-runtime-abort",
+            "inbox-consumption-fact-atomic-and-idempotent",
+            "inbox-consumption-fences-old-worker-claim",
+            "application-first-native-write-abort",
+            "application-native-public-reader-abort",
+            "application-fact-revision-abort",
+            "application-due-abort",
+            "application-execution-abort",
+            "application-runtime-abort",
+            "inbox-success-applies-domain-once-literal-balance-nine",
+            "worker-fact-abort",
+            "worker-fact-due-abort",
+            "worker-fact-execution-abort",
+            "worker-fact-runtime-abort",
+            "worker-success-fact-and-domain-publication-literal-balance-six",
+            "insufficient-balance-rejects-domain-with-durable-fact-unchanged",
+            "blocked-application-preserves-fact-and-literal-domain",
+            "persistent-reopen-nonempty-facts-inbox-and-domain"
+          ],
+          "limitations": [
+            "Signed fake events and typed provider outcomes run in-process; no HTTP provider transport or external delivery is certified.",
+            "Reopen checks persistent storage in this process; process restart and distributed network faults are separate controls."
+          ],
+          "literal_balances": [
+            12,
+            9,
+            6
+          ],
+          "persisted_facts": 3,
+          "persisted_inbox": 1,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "predicates": {
+          "automatic_retries": false,
+          "case_count": 12,
+          "cases": [
+            "authority-reader-index-write-abort",
+            "authority-repaired-native-record-write-abort",
+            "authority-graph-write-abort",
+            "authority-prepared-scope-write-abort",
+            "authority-reader-repair-commit-literal-inventory-and-stale-cas",
+            "authority-repair-persistent-reopen",
+            "reference-delete-reject-complete-inventory-and-no-receipt",
+            "reference-teardown-persistent-reopen",
+            "reference-create-versus-parent-delete-barrier-and-reopen",
+            "reverse-discovery-versus-reference-create-barrier-and-reopen",
+            "concurrent-empty-catalog-initialization-barrier-no-retry",
+            "initialization-populated-rejection-complete-inventory-and-reopen"
+          ],
+          "concurrent_application_schedules": true,
+          "limitations": [
+            "The wrapper delegates actual adapter transactions; it injects no synthetic conflict result.",
+            "Creating/deleting attempts can still coordinate on exact Population capacity; G7.5's existing-record reference controls isolate dependency guards without that masking.",
+            "Concurrent controls use deterministic overlapping transactions; redb runs the sequential controls only.",
+            "Persistent reopen is in-process evidence, not process restart or distributed failover."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "g7_application": {
+      "bytes": 248645472,
+      "retained_path": "target/g75-accepted/g7_application",
+      "sha256": "b6fc31fac653a61b1ec283ccb44d039756b241819df2f1ffb0a8a59efe5c20fe",
+      "source_path": "target/verification-build/debug/examples/g7_application"
+    },
+    "g7_coordination": {
+      "bytes": 248653560,
+      "retained_path": "target/g75-accepted/g7_coordination",
+      "sha256": "a2b580b1f076dd9594129088f11054c3b3d829de1349ad35f2f6299929102835",
+      "source_path": "target/verification-build/debug/examples/g7_coordination"
+    },
+    "g7_storage": {
+      "bytes": 216436080,
+      "retained_path": "target/g75-accepted/g7_storage",
+      "sha256": "c17aef1259944f1814473142cf3965fefcd4523399b013a66c8725d801170b66",
+      "source_path": "target/verification-build/debug/examples/g7_storage"
+    },
+    "rebase-next": {
+      "bytes": 33730768,
+      "retained_path": "target/g75-accepted/rebase-next",
+      "sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "source_path": "target/verification-build/release/rebase-next"
+    }
+  },
+  "baseline_commit": "86c61fee6eda9268641a0a36cc36c12925067951",
+  "checkpoint": "G7.6",
+  "cleanup": {
+    "endpoint": "127.0.0.1:4500",
+    "listener_open": false,
+    "live_matching_processes": [],
+    "owned_fdb_stop": {
+      "command": [
+        "python3",
+        "-B",
+        "tools/fdb_cluster.py",
+        "stop"
+      ],
+      "exit_code": 0,
+      "output": "FoundationDB server stopped"
+    },
+    "zombie_matching_processes": []
+  },
+  "collector_correction": {
+    "action": "Validated all saved success reports and ran only the remaining redb HTTP command.",
+    "boundary": "After the successful SurrealKV HTTP subprocess: wrapper result holds a path, not a nested suite object.",
+    "error": "AttributeError: 'str' object has no attribute 'values'",
+    "failed_backend_cases": 0,
+    "successful_subprocesses_preserved": 8
+  },
+  "comparison": {
+    "application_equality": "Every backend compares all 13 application tables to its own accepted image after rollback, reopen/restart and restore. Fresh stores have independent UUID identities/tokens. The independent literal source expectations and supported named schedules match.",
+    "byte_image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+    "foundationdb_surrealkv_complete_byte_image_equal": true,
+    "optimistic_final_rows": 130,
+    "redb_final_image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+    "redb_serialized_final_rows": 116
+  },
+  "coordination": {
+    "redb": {
+      "backend": "redb",
+      "namespace": "rebase-g75-92f287e3-aa53-41ce-ba72-c8f98482ffb1",
+      "result": {
+        "coordination": {
+          "automatic_retries": false,
+          "case_count": 12,
+          "cases": [
+            "independent-populated-business-roots-distinct-readers-and-slots",
+            "complete-independent-write-sets-no-meta-population-or-header-write",
+            "original-id-replay-preserves-all-application-tables",
+            "scoped-cursor-survives-other-reader-other-contract-and-genuine-noop",
+            "same-reader-contract-change-invalidates-only-affected-cursor",
+            "same-root-existing-record-invariant-race-and-complete-rollback",
+            "delete-recreate-aba-rejects-original-token-with-complete-rollback",
+            "scoped-tokens-slots-and-business-state-persist-on-reopen",
+            "derived-only-publication-invalidates-reader-contract-cursor",
+            "reader-move-invalidates-old-and-new-partition-cursors",
+            "rejected-derived-change-preserves-cursors-and-complete-tables",
+            "authority-administration-invalidates-snapshot-cursors"
+          ],
+          "common_application_write_keys": [],
+          "common_surreal_guard_buckets": [],
+          "concurrent_application_schedules": false,
+          "genuine_noop": {
+            "application_reads": [
+              {
+                "key": "7300000000000000000000000000000003",
+                "table": "authority"
+              },
+              {
+                "key": "686561646572",
+                "table": "local_runtime"
+              },
+              {
+                "key": "00",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000064",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000066",
+                "table": "native_kv"
+              },
+              {
+                "key": "03000000000000000000000000000000660001",
+                "table": "native_kv"
+              },
+              {
+                "key": "0d",
+                "table": "native_kv"
+              },
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "application_writes": [
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "attempt": "genuine-noop",
+            "commit_us": 4263,
+            "outcome": "committed",
+            "scanned_tables": []
+          },
+          "independent_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000066",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-left",
+              "commit_us": 5052,
+              "outcome": "committed",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012d0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012f0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "060000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "070000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "0000000000000000000000000000012e",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000040008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-right",
+              "commit_us": 4176,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ],
+          "independent_balances": [
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "8"
+            },
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "7"
+            }
+          ],
+          "limitations": [
+            "The independent witness changes existing members of two invariant roots in different reader partitions; creates and new output reservations still coordinate on exact population capacity.",
+            "The write recorder delegates actual adapter transactions. SurrealKV adds its documented per-table hash guard keys; this witness selects disjoint buckets, while collisions and ranges can still cause conservative conflicts.",
+            "redb runs sequential controls because it serializes native writers. In-process reopen is not process or replicated-node failover.",
+            "One scoped reader/contract epoch still coordinates changes in that query partition. No throughput or general capacity claim is made."
+          ],
+          "receipt_hash_starts": [
+            537,
+            1022
+          ],
+          "reference_schedules": [],
+          "same_root_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000067",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "genuine-noop",
+              "commit_us": 3795,
+              "outcome": "committed",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000055f1",
+                  "table": "operations"
+                }
+              ],
+              "application_writes": [],
+              "attempt": "genuine-noop",
+              "commit_us": 0,
+              "outcome": "not_committed",
+              "scanned_tables": []
+            }
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ],
+          "tracked_noop_attempts": []
+        },
+        "lifecycle": {
+          "automatic_retries": false,
+          "case_count": 10,
+          "cases": [
+            "ordinary-operation-hash-collision-linear-probe-and-unchanged-domain",
+            "direct-valid-1023-receipt-fixture-complete-slot-bijection",
+            "final-slot-sequential-noop-commit",
+            "full-capacity-original-id-replay-unchanged-complete-tables",
+            "exact-capacity-new-operation-rejection-and-all-table-rollback",
+            "archive-atomic-clear-old-context-expiry-and-new-context-capacity",
+            "archive-digest-detects-authority-only-change",
+            "archive-digest-detects-real-effect-activation-change",
+            "current-complete-backup-archive-succeeds-after-rejected-races",
+            "authority-noop-preserves-complete-image-counter-and-cursor"
+          ],
+          "concurrent_schedules": false,
+          "limitations": [
+            "1023 retained receipts are a direct structurally validated fixture, not 1023 executed requests.",
+            "Final contenders, collisions, replay, quota rejection, authority, effect activation and archive use real Store paths.",
+            "Redb serializes writes and runs sequential lifecycle controls; overlapping commit barriers run only on optimistic adapters.",
+            "These are bounded correctness schedules, not throughput, replicated failover or native commit-ack fault injection."
+          ],
+          "receipt_capacity": 1024,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      },
+      "status": "passed"
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "namespace": "rebase-g75-798bfe2b-c9ba-4c38-988c-d9193322b0d7",
+      "result": {
+        "coordination": {
+          "automatic_retries": false,
+          "case_count": 15,
+          "cases": [
+            "independent-populated-business-roots-distinct-readers-and-slots",
+            "complete-independent-write-sets-no-meta-population-or-header-write",
+            "original-id-replay-preserves-all-application-tables",
+            "scoped-cursor-survives-other-reader-other-contract-and-genuine-noop",
+            "same-reader-contract-change-invalidates-only-affected-cursor",
+            "same-root-existing-record-invariant-race-and-complete-rollback",
+            "genuine-noop-tracked-read-versus-edit-commit-barrier",
+            "delete-recreate-aba-rejects-original-token-with-complete-rollback",
+            "scoped-tokens-slots-and-business-state-persist-on-reopen",
+            "derived-only-publication-invalidates-reader-contract-cursor",
+            "reader-move-invalidates-old-and-new-partition-cursors",
+            "rejected-derived-change-preserves-cursors-and-complete-tables",
+            "authority-administration-invalidates-snapshot-cursors",
+            "existing-source-discovery-versus-existing-reference-retarget-no-common-writes",
+            "existing-reference-parent-read-versus-source-change-no-common-writes"
+          ],
+          "common_application_write_keys": [],
+          "common_surreal_guard_buckets": [],
+          "concurrent_application_schedules": true,
+          "genuine_noop": {
+            "application_reads": [
+              {
+                "key": "7300000000000000000000000000000003",
+                "table": "authority"
+              },
+              {
+                "key": "686561646572",
+                "table": "local_runtime"
+              },
+              {
+                "key": "00",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000064",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000066",
+                "table": "native_kv"
+              },
+              {
+                "key": "03000000000000000000000000000000660001",
+                "table": "native_kv"
+              },
+              {
+                "key": "0d",
+                "table": "native_kv"
+              },
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "application_writes": [
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "attempt": "genuine-noop",
+            "commit_us": 3092,
+            "outcome": "committed",
+            "scanned_tables": []
+          },
+          "independent_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000066",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-left",
+              "commit_us": 5100,
+              "outcome": "committed",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012d0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012f0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "060000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "070000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "0000000000000000000000000000012e",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000040008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-right",
+              "commit_us": 4563,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ],
+          "independent_balances": [
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "8"
+            },
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "7"
+            }
+          ],
+          "limitations": [
+            "The independent witness changes existing members of two invariant roots in different reader partitions; creates and new output reservations still coordinate on exact population capacity.",
+            "The write recorder delegates actual adapter transactions. SurrealKV adds its documented per-table hash guard keys; this witness selects disjoint buckets, while collisions and ranges can still cause conservative conflicts.",
+            "redb runs sequential controls because it serializes native writers. In-process reopen is not process or replicated-node failover.",
+            "One scoped reader/contract epoch still coordinates changes in that query partition. No throughput or general capacity claim is made."
+          ],
+          "receipt_hash_starts": [
+            537,
+            1022
+          ],
+          "reference_schedules": [
+            {
+              "attempts": [
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00000000000000000000000000000014",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020065",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "empty-reverse-discovery-loser",
+                  "commit_us": 248,
+                  "outcome": "transaction_conflict",
+                  "scanned_tables": []
+                },
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0000000000000000000000000000001e",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "0000000000000000000000000000000200cd",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "retarget-winner",
+                  "commit_us": 3106,
+                  "outcome": "committed",
+                  "scanned_tables": []
+                }
+              ],
+              "common_application_writes": [],
+              "common_surreal_guard_buckets": [],
+              "expected_parent": "00000000-0000-0000-0000-000000000014",
+              "expected_scale": "9",
+              "expected_source": "18",
+              "family": "g75-reference-discovery",
+              "population_unchanged": true,
+              "protected_key": "0600000000000000000000000000000014"
+            },
+            {
+              "attempts": [
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0000000000000000000000000000001e",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "0000000000000000000000000000000200cd",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "parent-read-retarget-loser",
+                  "commit_us": 278,
+                  "outcome": "transaction_conflict",
+                  "scanned_tables": []
+                },
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00000000000000000000000000000014",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020065",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "source-change-winner",
+                  "commit_us": 3881,
+                  "outcome": "committed",
+                  "scanned_tables": []
+                }
+              ],
+              "common_application_writes": [],
+              "common_surreal_guard_buckets": [],
+              "expected_parent": "00000000-0000-0000-0000-00000000000a",
+              "expected_scale": "6",
+              "expected_source": "24",
+              "family": "g75-reference-parent-read",
+              "population_unchanged": true,
+              "protected_key": "0100000000000000000000000000000014"
+            }
+          ],
+          "same_root_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000055f1",
+                  "table": "operations"
+                },
+                {
+                  "key": "0036",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000055f1",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000066",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0036",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "same-root-loser",
+              "commit_us": 346,
+              "outcome": "transaction_conflict",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000067",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "same-root-winner",
+              "commit_us": 4260,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ],
+          "tracked_noop_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000004000000000000000000000000000059d9",
+                  "table": "operations"
+                },
+                {
+                  "key": "018a",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "00000000000000000000000000000004000000000000000000000000000059d9",
+                  "table": "operations"
+                },
+                {
+                  "key": "018a",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "tracked-noop-loser",
+              "commit_us": 269,
+              "outcome": "transaction_conflict",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012d0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012f0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "060000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "070000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000005bcd",
+                  "table": "operations"
+                },
+                {
+                  "key": "0011",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000005bcd",
+                  "table": "operations"
+                },
+                {
+                  "key": "0000000000000000000000000000012e",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000040008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0011",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "tracked-noop-edit-winner",
+              "commit_us": 4508,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ]
+        },
+        "lifecycle": {
+          "automatic_retries": false,
+          "case_count": 14,
+          "cases": [
+            "ordinary-operation-hash-collision-linear-probe-and-unchanged-domain",
+            "direct-valid-1023-receipt-fixture-complete-slot-bijection",
+            "final-slot-concurrent-noop-contenders-single-commit-complete-rollback",
+            "full-capacity-original-id-replay-unchanged-complete-tables",
+            "exact-capacity-new-operation-rejection-and-all-table-rollback",
+            "archive-atomic-clear-old-context-expiry-and-new-context-capacity",
+            "archive-commit-fences-stale-inflight-mutation-and-receipt",
+            "archive-digest-detects-authority-only-change",
+            "archive-digest-detects-real-effect-activation-change",
+            "archive-after-digest-authority-commit-conflict",
+            "archive-after-digest-effect-activation-commit-conflict",
+            "current-complete-backup-archive-succeeds-after-rejected-races",
+            "authority-noop-preserves-complete-image-counter-and-cursor",
+            "authority-noop-versus-replacement-real-commit-conflict"
+          ],
+          "concurrent_schedules": true,
+          "limitations": [
+            "1023 retained receipts are a direct structurally validated fixture, not 1023 executed requests.",
+            "Final contenders, collisions, replay, quota rejection, authority, effect activation and archive use real Store paths.",
+            "Redb serializes writes and runs sequential lifecycle controls; overlapping commit barriers run only on optimistic adapters.",
+            "These are bounded correctness schedules, not throughput, replicated failover or native commit-ack fault injection."
+          ],
+          "receipt_capacity": 1024,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      },
+      "status": "passed"
+    }
+  },
+  "date": "2026-10-25",
+  "documentation": {
+    "files": 8,
+    "local_link_targets": 200,
+    "method": "Resolve every local Markdown link target in changed guides/checkpoints; anchors and external URLs excluded.",
+    "sha256": {
+      "AGENTS.md": "0c4ba8ec927698ffbec64aaa1ff2a21482893b914eae7cd79b0800a40f887061",
+      "CONTEXT.md": "54e8a25fdf7a74a0dabf3675d8e2cb3a6c8405ea5d41a2e7ebe89d8c914d16e7",
+      "README.md": "360ff5efb9e497cbc93da9438cc8298b6b2afbe1b266c66f56db8649eb1f4688",
+      "docs/storage-backends.md": "8e65699babdfb8f6af415bca063e21abb050451e2598dd1758d5debcf53240f3",
+      "research/05-feasibility.md": "3d6adeabee921840f7611f71f80b07e20eeddd6520a5341fdfd7fdc31c554a05",
+      "research/30-capability-program.md": "3972babed65caa11cbbd396976b2d57d0c37d26f362b6aa857352550d43b8822",
+      "research/45-storage-adapter-plan.md": "db83e11a064feac74182322718336b07829cd51c72e93ab96dc5a255d87657e0",
+      "research/51-storage-conformance-result.md": "70fce07a8ea811f7afc85898475884d21692ce6e03563d7a91717c4c0c3ff9dd"
+    },
+    "status": "passed"
+  },
+  "execution_environment": {
+    "LD_LIBRARY_PATH": "target/g7-environment/root/usr/lib",
+    "cargo_builds": 0,
+    "cargo_owner": "root only",
+    "execution": "Nine sequential new subprocess runs with fresh targets; earlier successful campaigns retained."
+  },
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effects": "rebase-effects-4",
+    "native": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "git_delivery": {
+    "branch": "main",
+    "g75_commit": "86c61fee6eda9268641a0a36cc36c12925067951",
+    "mode": "Separate local checkpoint commits; user confirmed a push is not required after unavailable HTTPS credentials."
+  },
+  "http": {
+    "redb": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "redb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 3.821,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "roots": 5,
+        "rows": 64,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "998d13f9-dee5-46b3-bba0-093bd1b584c5"
+      },
+      "lifecycle": {
+        "archive_complete_state_preserved": true,
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "roots": 0,
+          "rows": 2,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "bfa65f47-4831-429f-9172-e07e47919e6d"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "5630e13a32733120691fbec26fb0249548e8ea383d667e9cc8cead60a1830327",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 13
+      },
+      "python": "3.12.8",
+      "race_outcomes": {
+        "committed": 8,
+        "invariant": 12,
+        "stale_version": 12
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 147.188,
+          "clients": 4,
+          "elapsed_seconds": 0.027176,
+          "latency": {
+            "count": 4,
+            "max_ms": 23.782,
+            "p50_ms": 21.688,
+            "p95_ms": 23.782
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "5de80c23-cd2b-4966-96f6-97fe7adb039c",
+            "5793527b-5cb7-46ec-a1ab-c1bbd44f9f3e",
+            "09699363-366d-4873-8fcf-e69081804939",
+            "62cc6d36-5827-4f02-aa49-e1cf39c8504b"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 173.521,
+          "clients": 4,
+          "elapsed_seconds": 0.023052,
+          "latency": {
+            "count": 4,
+            "max_ms": 20.528,
+            "p50_ms": 17.648,
+            "p95_ms": 20.528
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "7449b7dd-4e5a-479d-aa14-851dff141017",
+            "50a78df2-2966-43c2-9fca-0a42b08daf0e",
+            "271fbb7f-a4c9-4392-821f-0fadefcee04f",
+            "ba3f3504-d09e-4e04-a60b-d668f75da16a"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 192.003,
+          "clients": 4,
+          "elapsed_seconds": 0.020833,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.545,
+            "p50_ms": 16.385,
+            "p95_ms": 17.545
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "463c6e1a-6b54-4ef6-a396-4c1f7fece63e",
+            "90709ed6-80c7-4680-b252-751ac371210d",
+            "1d23f92a-f808-42fc-84bc-98036f13669b",
+            "0bdb4170-916b-4dfc-94b4-ff69dc803490"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 168.713,
+          "clients": 4,
+          "elapsed_seconds": 0.023709,
+          "latency": {
+            "count": 4,
+            "max_ms": 20.29,
+            "p50_ms": 17.87,
+            "p95_ms": 20.29
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "a68a7cfa-7d7a-4177-b559-35356f67221f",
+            "0c470f28-3b90-4d4a-a467-786fa5b01083",
+            "b790af3a-88ad-467f-b0e2-e1b245a52320",
+            "8ea169bc-f6df-43cd-af57-8468d49e49e8"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 174.564,
+          "clients": 4,
+          "elapsed_seconds": 0.022914,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.304,
+            "p50_ms": 15.497,
+            "p95_ms": 17.304
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "0581c0e3-5eff-447b-aab5-b1b660975c78",
+            "5df4cced-e88a-4e91-a29e-b8fcfc27df04",
+            "4b2e0474-c89a-4db7-a149-afcc00d37367",
+            "63c1b8f7-19f2-444a-babe-4bd1da7ac08b"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 178.82,
+          "clients": 4,
+          "elapsed_seconds": 0.022369,
+          "latency": {
+            "count": 4,
+            "max_ms": 19.16,
+            "p50_ms": 17.011,
+            "p95_ms": 19.16
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "438ad99d-8c9f-44a7-b40c-9794329cf2a7",
+            "1160ad74-6989-45de-acaa-78ac8edc8bc1",
+            "9d4e66c0-2e60-47f2-96ac-5cb14791a15d",
+            "4a423718-0f40-42a0-bda7-0f8f427ace43"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 163.415,
+          "clients": 4,
+          "elapsed_seconds": 0.024478,
+          "latency": {
+            "count": 4,
+            "max_ms": 21.95,
+            "p50_ms": 19.101,
+            "p95_ms": 21.95
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "119643fd-d300-4144-962e-c1efe8801fc9",
+            "02b1f94d-7347-4abc-bfbf-5feeb34a39a9",
+            "4753b8d2-4eff-4f08-a98e-eac7552db1a2",
+            "7d2e2eb4-187a-473e-a969-a325243682d6"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 153.843,
+          "clients": 4,
+          "elapsed_seconds": 0.026001,
+          "latency": {
+            "count": 4,
+            "max_ms": 22.949,
+            "p50_ms": 19.339,
+            "p95_ms": 22.949
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "d163dc5d-bf51-4ef8-9f07-db1342ee9e28",
+            "42470ea0-cffe-48fe-b24e-765cbbfb8750",
+            "898c71cd-37ae-4294-ba2d-e28aa12ba490",
+            "11e20812-4063-49cd-bf32-7b50a419c0ca"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Population/reservation quotas, shared readers/business roots and adapter guards still coordinate; native G7.5 schedules own the bounded disjoint-root claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "b9b6343c-13a7-4ff8-9ea4-3b62f8b59744",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "6bb37a27-69d1-42d4-b17e-f6ea6aca15a8",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    },
+    "surrealkv": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "surrealkv",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 4.194,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "roots": 5,
+        "rows": 64,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "2ddcad49-3569-42b7-b93e-88bc5cd45cc3"
+      },
+      "lifecycle": {
+        "archive_complete_state_preserved": true,
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "roots": 0,
+          "rows": 2,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "7c8b9e81-6063-47f0-ad34-fa7beedc4e1f"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "53acc515ecec745526e0559dfa161fb57bbf3cf5e3c44f17495d740abb7bd3e1",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 13
+      },
+      "python": "3.12.8",
+      "race_outcomes": {
+        "committed": 8,
+        "transaction_conflict": 24
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 209.375,
+          "clients": 4,
+          "elapsed_seconds": 0.019104,
+          "latency": {
+            "count": 4,
+            "max_ms": 15.197,
+            "p50_ms": 13.458,
+            "p95_ms": 15.197
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "cc5944fa-0468-4d40-8be4-7aea6898aeb6",
+            "2167f539-8eea-467d-ad4a-021539d305b1",
+            "75ece981-36e1-448b-8d2d-6ed5785b2695",
+            "d19ada4a-8c03-4c77-8e79-56c32e84f2f5"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 204.587,
+          "clients": 4,
+          "elapsed_seconds": 0.019552,
+          "latency": {
+            "count": 4,
+            "max_ms": 16.312,
+            "p50_ms": 13.411,
+            "p95_ms": 16.312
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "e1bc74ba-d173-41b5-9fc5-e8c7467cf933",
+            "ec7d87e5-bc45-482c-91fd-e127c963dbb8",
+            "cb7b727a-6fbe-4c0f-b52d-c8eb661f25dc",
+            "32bb53ad-c543-4798-a687-91dcc449d074"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 185.67,
+          "clients": 4,
+          "elapsed_seconds": 0.021544,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.819,
+            "p50_ms": 13.641,
+            "p95_ms": 17.819
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "8a238898-a244-4161-bfd8-1ae58a5255ab",
+            "c4c5d22b-5c01-4021-a7d9-39656adab466",
+            "d64e75dd-d66b-49c5-9fc7-41d136687a74",
+            "d2559fe8-46ef-49fe-a819-1a111210d0c1"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 161.429,
+          "clients": 4,
+          "elapsed_seconds": 0.024779,
+          "latency": {
+            "count": 4,
+            "max_ms": 20.379,
+            "p50_ms": 17.35,
+            "p95_ms": 20.379
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "485b6709-5668-455e-87c5-8bad24e1f598",
+            "588f607b-296a-46f5-8b6a-27f98ce40f43",
+            "65b8f74e-76bb-44a8-b7c2-dd9075abebae",
+            "5e2fe631-c4e6-4eee-8cb5-cd2147bfced0"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 168.441,
+          "clients": 4,
+          "elapsed_seconds": 0.023747,
+          "latency": {
+            "count": 4,
+            "max_ms": 16.881,
+            "p50_ms": 14.909,
+            "p95_ms": 16.881
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "a29b0a67-cf43-478b-ab58-fbdf2dbb9064",
+            "2b8be235-5e96-479b-9ff6-4fa5b21f2297",
+            "e5d694c3-cc27-454f-8df6-a8eb256f8c6a",
+            "86275bc6-63fc-4d2a-8cd8-cf21cb7c2449"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 195.003,
+          "clients": 4,
+          "elapsed_seconds": 0.020513,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.01,
+            "p50_ms": 13.542,
+            "p95_ms": 17.01
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "9797c11f-a20f-48b8-aa97-45af166b0ad1",
+            "39a6a459-35ec-4742-bcd9-99eee7509420",
+            "8a1e4e0a-0d48-433f-b721-d03843d981ff",
+            "5e60d4fd-75df-4757-bd4c-e0e1fd82c723"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 161.499,
+          "clients": 4,
+          "elapsed_seconds": 0.024768,
+          "latency": {
+            "count": 4,
+            "max_ms": 19.565,
+            "p50_ms": 12.984,
+            "p95_ms": 19.565
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "b4a71be9-e7ea-4023-9d2b-49c9bbf1e0b9",
+            "4535d04b-1328-4adb-a35c-e0497434f6aa",
+            "9ba1be4d-29dd-4e27-802e-35eb74eec748",
+            "f72ad2b6-e328-41fd-ba76-74aac375bcd8"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 157.002,
+          "clients": 4,
+          "elapsed_seconds": 0.025477,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.25,
+            "p50_ms": 15.324,
+            "p95_ms": 17.25
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "01b2b8f8-c5f5-467c-af01-26cc98d57b40",
+            "82b2f2e3-8265-4157-ad7f-35e61f007233",
+            "2231da4a-481e-4963-ac3d-30b6fc377141",
+            "b8414d28-dcd9-4920-8467-cd586519ebf2"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Population/reservation quotas, shared readers/business roots and adapter guards still coordinate; native G7.5 schedules own the bounded disjoint-root claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "170a49a0-5621-4e3a-b21e-2fd63f47b1b0",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "8eb50ee8-aff2-4e3c-bc05-0f09b75b6a02",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    }
+  },
+  "independent_review": "Read-only adapter review confirmed current protection, durability and runtime limits against pinned code; no source discrepancy found and no extra build/test campaign run.",
+  "limitations": [
+    "One local FoundationDB process/coordinator without replication.",
+    "Native DB commit-ack loss, replicated/server failure, disk/power loss and live provider delivery remain untested.",
+    "HTTP proxy response loss and application SIGKILL establish only their stated boundaries.",
+    "Population changes, shared roots/query partitions, receipt probing and effect-runtime quotas remain coordination points.",
+    "The 1023-receipt fixture is direct structural setup, not 1023 executed operations.",
+    "No migration, automatic retry policy, new deployment bundle or general capacity claim."
+  ],
+  "logs_sha256": {
+    "target/g76-cleanup.json": "c220996129d303dfa0258d99b888a9b2adc69c7ccc85a37bf993fc183c7a9ba6",
+    "target/g76-foundationdb-raw.json": "f534cf9e1bbbe8baa1994b7d551180eb520e3289b445343cefd7c294c5095084",
+    "target/g76-foundationdb-raw.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g76-redb-application.json": "a89c7895e68ac919671d27ad4cc5faf29be96efdd92250cc2e17a702268a66a2",
+    "target/g76-redb-application.log": "39ae94fbf9efc6d202b39b6e63f0482e03eead4bb96e90e5b45f2790f00fb712",
+    "target/g76-redb-coordination.json": "f228abd6262a52011e74f80485f78d773dd626471ed301db957fd04284748bec",
+    "target/g76-redb-coordination.log": "95821c6273ecaee52914c9ce548f6b5ab4fcbd28a7b811baa7605e2a0aae1cef",
+    "target/g76-redb-http.json": "5039443610fc7e43deb5d7a9806c34fb2779af441f059cc063912dc6f1bf1dd0",
+    "target/g76-redb-http.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g76-redb-http/result.json": "3bc246e671fb39b6c9211d06083707a6183aca3f128862823018eb7e57f7690c",
+    "target/g76-redb-raw.json": "484c5e542844b7c015000e516b7c27d733f4f804c6d984c0e0442f49f22d7061",
+    "target/g76-redb-raw.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g76-runs.json": "463993df83617e3b19c943a2759cdfd9fca4dfb96774b018ab660099625d3876",
+    "target/g76-surrealkv-application.json": "316d2f53494769b2897403398dc9c07a92361705389145dd3071152abab4d7c1",
+    "target/g76-surrealkv-application.log": "9f6d163ee5056cb1145ddfa30c344bf74656aaf5dbf9e9af52d0a6461c6983f9",
+    "target/g76-surrealkv-coordination.json": "f8c7b15846ee7134980306809ac937f9af83ab4e14948762823c21460ee2cb22",
+    "target/g76-surrealkv-coordination.log": "f04cecda112e4fb6ac87b1b2962642abb8bef58ea01293bd35915587579ccf65",
+    "target/g76-surrealkv-http.json": "5579fe654b80ad8d88c06e5557e21a6e9e948d5e70963c2a3e0ebf0873fb321f",
+    "target/g76-surrealkv-http.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g76-surrealkv-http/result.json": "c55e35050391c8b552fe076a3a725960b590da8cfd6063ed5839c9a3b963acd0",
+    "target/g76-surrealkv-raw.json": "427e9d02bd4acabd224d26bc6f41339da862015fca1deae0c53ec571887b813b",
+    "target/g76-surrealkv-raw.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "matrix": {
+    "foundationdb": {
+      "application_cases": {
+        "application": 19,
+        "effects": 27,
+        "predicates": 12
+      },
+      "application_coordination_http_reused_from_g75": true,
+      "byte_cases": 25,
+      "complete_application_tables": 13,
+      "coordination_cases": {
+        "coordination": 15,
+        "lifecycle": 14
+      },
+      "http_attempts": 32,
+      "http_race_outcomes": {
+        "committed": 8,
+        "transaction_conflict": 24
+      },
+      "http_workflow_seconds": 5.845,
+      "status": "passed"
+    },
+    "redb": {
+      "application_cases": {
+        "application": 13,
+        "effects": 27,
+        "predicates": 9
+      },
+      "application_coordination_http_reused_from_g75": false,
+      "byte_cases": 8,
+      "complete_application_tables": 13,
+      "coordination_cases": {
+        "coordination": 12,
+        "lifecycle": 10
+      },
+      "http_attempts": 32,
+      "http_race_outcomes": {
+        "committed": 8,
+        "invariant": 12,
+        "stale_version": 12
+      },
+      "http_workflow_seconds": 3.821,
+      "status": "passed"
+    },
+    "surrealkv": {
+      "application_cases": {
+        "application": 19,
+        "effects": 27,
+        "predicates": 12
+      },
+      "application_coordination_http_reused_from_g75": false,
+      "byte_cases": 21,
+      "complete_application_tables": 13,
+      "coordination_cases": {
+        "coordination": 15,
+        "lifecycle": 14
+      },
+      "http_attempts": 32,
+      "http_race_outcomes": {
+        "committed": 8,
+        "transaction_conflict": 24
+      },
+      "http_workflow_seconds": 4.194,
+      "status": "passed"
+    }
+  },
+  "new_subprocess_seconds": 21.574,
+  "previous_evidence": {
+    "path": "research/evidence/2026-10-25-g75-scoped-coordination.json",
+    "reuse_reason": "All 139 source/tool fingerprints and all four retained executable hashes match; only evidence and documentation changed in G7.6.",
+    "sha256": "d8229829fc680d0b92a9a655457af1bdd51e2fce7369c5257f5c44c6fac30392"
+  },
+  "raw": {
+    "foundationdb": {
+      "backend": "foundationdb",
+      "concurrency": "controlled optimistic interleavings; no automatic retry",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "limited-page-protects-far-later-range-edit",
+            "predicate": "complete requested range remains protected after first lazy page"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "table-delete-protects-far-later-edit",
+            "predicate": "entire table prefix read conflict before range clear"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "both_committed",
+            "name": "disjoint-points-both-commit",
+            "predicate": "disjoint exact keys; fixed keys occupy different SurrealKV guard buckets"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "absent-key-uniqueness",
+            "predicate": "tracked exact absence"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "empty-range-insertion-phantom",
+            "predicate": "tracked empty half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "range-deletion-phantom",
+            "predicate": "tracked populated half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "root-invariant",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "no-op-root-guard",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "facade-put-protects-prior-value",
+            "predicate": "put tracks old value; native blind-write semantics are not assumed"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reverse-discovery-reference-insertion",
+            "predicate": "tracked reverse-reference range before parent deletion"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reference-target-deletion",
+            "predicate": "tracked exact target before reference creation"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "write-authority-revocation",
+            "predicate": "tracked authority point through commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "snapshot_allowed",
+            "name": "snapshot-authorized-read-after-revocation",
+            "predicate": "read snapshot retains its authority facts"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "encoded-key-limit-aborts-staged-receipt",
+            "predicate": "physical namespace/table/key bytes count toward key limit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "value-limit-aborts-staged-receipt",
+            "predicate": "complete encoded value bytes"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "transaction-byte-limit-aborts-all-staged-writes",
+            "predicate": "coalesced writes plus native conflict ranges"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "native-conflict-range-byte-limit",
+            "predicate": "read values excluded; protected keys/ranges included by native estimate"
+          }
+        ],
+        "final_image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "final_rows": 130,
+        "optimistic_schedules": true,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-562aa1d8-0b8b-41bd-8fcc-45c3a7b471a7",
+      "reopen": {
+        "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "status": "passed"
+      },
+      "status": "passed"
+    },
+    "redb": {
+      "backend": "redb",
+      "concurrency": "serialized writer; optimistic conflict schedules do not apply",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          }
+        ],
+        "final_image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+        "final_rows": 116,
+        "optimistic_schedules": false,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-0ce45c93-df1b-45e3-8bc1-1c948bc0d3a7",
+      "reopen": {
+        "image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+        "status": "passed"
+      },
+      "status": "passed"
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "concurrency": "controlled optimistic interleavings; no automatic retry",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "limited-page-protects-far-later-range-edit",
+            "predicate": "complete requested range remains protected after first lazy page"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "table-delete-protects-far-later-edit",
+            "predicate": "entire table prefix read conflict before range clear"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "both_committed",
+            "name": "disjoint-points-both-commit",
+            "predicate": "disjoint exact keys; fixed keys occupy different SurrealKV guard buckets"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "absent-key-uniqueness",
+            "predicate": "tracked exact absence"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "empty-range-insertion-phantom",
+            "predicate": "tracked empty half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "range-deletion-phantom",
+            "predicate": "tracked populated half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "root-invariant",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "no-op-root-guard",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "facade-put-protects-prior-value",
+            "predicate": "put tracks old value; native blind-write semantics are not assumed"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reverse-discovery-reference-insertion",
+            "predicate": "tracked reverse-reference range before parent deletion"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reference-target-deletion",
+            "predicate": "tracked exact target before reference creation"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "write-authority-revocation",
+            "predicate": "tracked authority point through commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "snapshot_allowed",
+            "name": "snapshot-authorized-read-after-revocation",
+            "predicate": "read snapshot retains its authority facts"
+          }
+        ],
+        "final_image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "final_rows": 130,
+        "optimistic_schedules": true,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-895960ee-3cae-44a8-b2e9-dca7b70978a9",
+      "reopen": {
+        "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "status": "passed"
+      },
+      "status": "passed"
+    }
+  },
+  "reused_foundationdb": {
+    "json_pointers": {
+      "application": "/foundationdb/application",
+      "commands_and_times": "/foundationdb/application_and_http_runs",
+      "coordination": "/foundationdb/coordination",
+      "coordination_command": "/foundationdb/coordination_run",
+      "http": "/foundationdb/http"
+    },
+    "source_evidence": "research/evidence/2026-10-25-g75-scoped-coordination.json"
+  },
+  "reused_native_and_build_checks": {
+    "campaigns_repeated": [],
+    "json_pointers": [
+      "/native",
+      "/final_checks",
+      "/python_controls",
+      "/format_incompatibility"
+    ],
+    "native_distinct_passed": 153,
+    "source_evidence": "research/evidence/2026-10-25-g75-scoped-coordination.json"
+  },
+  "runs": [
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_coordination",
+        "surrealkv",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-surrealkv-coordination-data"
+      ],
+      "executable_sha256": "a2b580b1f076dd9594129088f11054c3b3d829de1349ad35f2f6299929102835",
+      "exit_code": 0,
+      "seconds": 3.732,
+      "stderr": "target/g76-surrealkv-coordination.log",
+      "stdout": "target/g76-surrealkv-coordination.json",
+      "step": "surrealkv-coordination"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_application",
+        "surrealkv",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-surrealkv-application-data"
+      ],
+      "executable_sha256": "b6fc31fac653a61b1ec283ccb44d039756b241819df2f1ffb0a8a59efe5c20fe",
+      "exit_code": 0,
+      "seconds": 3.026,
+      "stderr": "target/g76-surrealkv-application.log",
+      "stdout": "target/g76-surrealkv-application.json",
+      "step": "surrealkv-application"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_coordination",
+        "redb",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-redb-coordination-data"
+      ],
+      "executable_sha256": "a2b580b1f076dd9594129088f11054c3b3d829de1349ad35f2f6299929102835",
+      "exit_code": 0,
+      "seconds": 2.927,
+      "stderr": "target/g76-redb-coordination.log",
+      "stdout": "target/g76-redb-coordination.json",
+      "step": "redb-coordination"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_application",
+        "redb",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-redb-application-data"
+      ],
+      "executable_sha256": "b6fc31fac653a61b1ec283ccb44d039756b241819df2f1ffb0a8a59efe5c20fe",
+      "exit_code": 0,
+      "seconds": 2.275,
+      "stderr": "target/g76-redb-application.log",
+      "stdout": "target/g76-redb-application.json",
+      "step": "redb-application"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_storage",
+        "foundationdb",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/fdb.cluster"
+      ],
+      "executable_sha256": "c17aef1259944f1814473142cf3965fefcd4523399b013a66c8725d801170b66",
+      "exit_code": 0,
+      "seconds": 0.668,
+      "stderr": "target/g76-foundationdb-raw.log",
+      "stdout": "target/g76-foundationdb-raw.json",
+      "step": "foundationdb-raw"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_storage",
+        "surrealkv",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-surrealkv-raw-data"
+      ],
+      "executable_sha256": "c17aef1259944f1814473142cf3965fefcd4523399b013a66c8725d801170b66",
+      "exit_code": 0,
+      "seconds": 0.216,
+      "stderr": "target/g76-surrealkv-raw.log",
+      "stdout": "target/g76-surrealkv-raw.json",
+      "step": "surrealkv-raw"
+    },
+    {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/g7_storage",
+        "redb",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g76-redb-raw-data.redb"
+      ],
+      "executable_sha256": "c17aef1259944f1814473142cf3965fefcd4523399b013a66c8725d801170b66",
+      "exit_code": 0,
+      "seconds": 0.166,
+      "stderr": "target/g76-redb-raw.log",
+      "stdout": "target/g76-redb-raw.json",
+      "step": "redb-raw"
+    },
+    {
+      "command": [
+        "python3",
+        "-B",
+        "tools/g7_http.py",
+        "--binary",
+        "target/g75-accepted/rebase-next",
+        "--backend",
+        "surrealkv",
+        "--out",
+        "target/g76-surrealkv-http"
+      ],
+      "executable_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "exit_code": 0,
+      "seconds": 4.483,
+      "stderr": "target/g76-surrealkv-http.log",
+      "stdout": "target/g76-surrealkv-http.json",
+      "step": "surrealkv-http"
+    },
+    {
+      "command": [
+        "python3",
+        "-B",
+        "tools/g7_http.py",
+        "--binary",
+        "target/g75-accepted/rebase-next",
+        "--backend",
+        "redb",
+        "--out",
+        "target/g76-redb-http"
+      ],
+      "executable_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "exit_code": 0,
+      "seconds": 4.081,
+      "stderr": "target/g76-redb-http.log",
+      "stdout": "target/g76-redb-http.json",
+      "step": "redb-http"
+    }
+  ],
+  "source_changes_since_g75": [],
+  "source_sha256": {
+    "Cargo.lock": "ca79b248ddddae74112c0b49a69df18794ae81309e04b2477bd6fdbe1f9b8f1e",
+    "Cargo.toml": "077b38cf84b01e58c728aa67b74a2410a06306d452d4c13d53b4e95534bc29b7",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/g7_application.rs": "c44a97acd5c77ceb674e2068fe32f4664a1a01b8120e2141363a7f1831888258",
+    "examples/g7_coordination.rs": "9f402b64662c1e1b0efedd3c1d7a2c05f17fd653f0b57b9e0402ad48dafe3536",
+    "examples/g7_storage.rs": "c98fb776d3f334d793ce38f0d847c5aa71deea8ef441e21cada851970aaaac2c",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "b8cb6e8a0f597494ff6d185e2a5deb6fd54f889fde2ae811eb68ade2d19bde90",
+    "examples/storage_probe.rs": "304719ba8dd9656a735843987f0a8b5af246c56c404cac9144a171d89fd01440",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "ca48fd97c8660c95e8775cb4e5de32363b115644899d939498ede46adbc4ff16",
+    "src/binding.rs": "bc75f0ae6da662a76ea7a9d79267c657eeacff2216e85be13fc3c1515e2248a2",
+    "src/causal.rs": "443c211535e2ebf6c0d73d1223dc93d595ac20decee86e5ef7e88ee3ee921b39",
+    "src/demo.rs": "67e8f68d6dcd75d4327ccc1f4a168326c6932f66f057e70dae2ab939b6a23b64",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "3d4c0aea0251ca8ff0404855274001b4d85a92f66ccde9cf1ff3e117339fd58b",
+    "src/effects.rs": "95254b4da675899e1094be5095e1b7d868124b241fddc2dff2d63e8d621d9210",
+    "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+    "src/effects/conformance.rs": "ff53b80e39874f7e44b2d0a711c66903450eab35fa10b2317b8bdbc9a461aaef",
+    "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+    "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+    "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+    "src/effects/state.rs": "cb309a2996c3b2851aa0e50d41b2885da58d8ff0599c5cfb0a56f1d888113b53",
+    "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+    "src/effects/worker_tests.rs": "60874edc388f116cf16a545aee1adab7f56eb431931b44beab34215eac0f5bc4",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+    "src/index_tests.rs": "bd904203227983c8c2b77f73e2f29fe18c1b88302d4319c676e7d661005b5ccb",
+    "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+    "src/inspector.rs": "76a70b023678d329a642fba103501a5b445e181f1d7c958139f884195f29e4c1",
+    "src/integrity.rs": "1fc515ffb0c8102639c3b1e9ed1032531906950d2b00ab0ba8f8ca72085e457b",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "4f5edb65b55d73b1da9035cb849c6f9f729b21da9085df000685fac1e3deaa7a",
+    "src/lifecycle.rs": "694857d8c48869190622bd3abdde06733275809d553f8abfd55b94c4ab708194",
+    "src/local.rs": "64cd57ee6ae20e371eb503f49984f11ccf02455566461abb3e2a683853b0cb88",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "d02a9cdce08bafb50d63f0bcbd5dbbb0242c2ee0d0d2210957996a22d9aabd77",
+    "src/models/calculation.rs": "2e1af7dbd32b5a7a291c0d79926d93bd5b89b1101011c1ddd4abff76b021ac9e",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "7cec49ee3ce9d8723d8a8e0f67b6a8fc9d79d5f47bcdb2ea90feee6d86b2846d",
+    "src/models/equipment.rs": "48da4b90edb7891e15b8d60719b02c0ce5b456e387287b253f759200b96ea6f7",
+    "src/models/invoicing.rs": "2321e0c3415fa087ab6c76d4880b55fa92df01d479b794880ede6efff3f21f08",
+    "src/models/invoicing_check.rs": "d0b8f3054e1e6047a7f533ca862d39558628d62353d12b872621a47cea3650d4",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "1bac494627806021b562b99c9afbd9250a0c6e5b86af7bc4fbb9c8bf87901fc5",
+    "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+    "src/models/quantity.rs": "e303295e4460f970d15ce403a2d0f4294150a95491f5d722e93114cb3af03fd8",
+    "src/mutation.rs": "eb10bf1a99075deec1f19ba65f618e6df9d5ae2ae08d12dff0212beb240b1579",
+    "src/native_codec.rs": "25c6cfe9a3864fba78724151d27d5792540ab2b2d3a02d758a19fc6c805ec642",
+    "src/native_slice.rs": "ed20e699ae827ec28280fc500447267d0ca8882831adbd33e9967d2b6153bccd",
+    "src/parameter_tests.rs": "ad5d654ce2d5d80f158849cc5c60c4604bbe051614828ef0a66c33cd89481a20",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "d72080acbb9e9771fa71df24f5b3daa327fc7f586021a27b5e0cd012cefc0b2b",
+    "src/query.rs": "afb3cdacf9362795c4f72c01825c5aff999f25e93c30546ec3bf25df3ee05ddb",
+    "src/receipts.rs": "1f86d0614c1b00325bc4ed15ab3b2b18819efc0e25989ec72be88a7688b3437a",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "f59d7f3e70a3283da4ccafd774875ab7e81bfd3a1548273232b72270458eea7d",
+    "src/security.rs": "246eff3056c48e9214d0820cde673c82820bf9244d22b287d1031cef743529cb",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/storage.rs": "5e022b15f10d61817bcb464657edb6561f3e16fbef293c51f90238649e81cd02",
+    "src/storage/application_checks.rs": "ba41d9544e8f53a0e4b251fce001b3ba057895936ec4e60536d89290a0e5ab8a",
+    "src/storage/concurrency_checks.rs": "9529dded81cca8e02a600b47d7666422d37d13b4a73b5d49ce46ed0532047cb2",
+    "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+    "src/storage/coordination_checks.rs": "c59fc0b93c9cde59aeef9a86039e9681331e6e543c2832f0046456d06433da35",
+    "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+    "src/storage/lifecycle_checks.rs": "d77124da1f23c878e97a192bce80c962bd51b6738a5ef3e482e7b8b7738fb32f",
+    "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+    "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+    "src/storage/target.rs": "c4cb75d1071c3a3eb20e61946d64bb933cf9bd04fe5254fa7845f24a657a5c99",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "fbd413f710e5c4c5e4c0a4cbd751de05711f63bc0041ecad9abce1b90517de9c",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "93063b8395a4af6256330a725b601ffd9495fa37c0add4766b6cc19970b0ed4c",
+    "tests/access_control.rs": "78f6cf28d93a6641899ad0a44f7d1d871d99617325fb1b1d9ad4b3419fe5bc45",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "ce2c28030b79a2e9677fed9cc8ecf87cdfe8ea337e3c9f12a50b546909973548",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "22b8c70244f9c836a4629bbced6d1bc0e18e12a96c4acf44ea9908a4f6695d8c",
+    "tests/local_cli.rs": "f6619a37d459d9929251746ff3d955ff6821a11034eebc34899d169974feaa35",
+    "tests/measurement.rs": "3b763c4ff86b78065136171b3e5dcff028ab42126bba6b2edefb53601211768f",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "f9e9486836f639efc37c8e1a7754f587e976f547db7c374323b721a7162197a0",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "86e1a4ce5977ff0d45da035467773a44fe788ad0c65618194cac9e705364857e",
+    "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6",
+    "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/effects.py": "f377abddf8af9e69cb35e4732b0fa64bb43f9e65f4dd420a90a6a5bd26498141",
+    "tools/effects_ingress.py": "e4078c90baa8aa3aa85f11f4289391a7129c256ffcbf3c917978a2c0d385f76e",
+    "tools/effects_worker.py": "6da7c246719da61bb03e95d2f02381312c912dd290db8184cf21d79d2e523c3c",
+    "tools/fake_provider.py": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21",
+    "tools/fdb_cluster.py": "5c6ad0029fe549c6e7eadad5a0cea15b8bd4393372dcb4dab171d8aaf2b46925",
+    "tools/g7_http.py": "ba541614ed8ca2d48ca292fb4375bcebc0f0f45ca4ec233e399c11537581e81c",
+    "tools/g7_oracle.py": "548bf325c66325b53f3a5a3331b966df3fdf161a11664fca6ff55d5dbbb983dd",
+    "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+    "tools/invoicing.py": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b",
+    "tools/issue_shares.py": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a",
+    "tools/observation_reports.py": "24f903554fa2dfa89a879a5534c614af222a19416a501b66f3455cfd6ed8d744",
+    "tools/observation_selection.py": "cd10ff95bc27f051c4a031cbbfa1872404ec333b708589100abf26034e3e3422",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "35030f4371850d9946db4c17ed59af4d75252b33b858dfe31ceccc5dd9176afb",
+    "tools/test_harness.py": "b60675cf8223e21620523a4df8a44306c986c4cae6f6a170fe33d59e36ab260c",
+    "tools/test_invoicing.py": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4",
+    "tools/test_verify_checks.py": "3b49b1a64cfa30a997327d4fdaeb97034564bde18a459bfaeb40b447752b66ed",
+    "tools/test_verify_explore.py": "8cfcd7eb66b08cf0643939ca0aa7736eff3949f44f7493828800f4a1b7ea82a7",
+    "tools/test_verify_walk.py": "f759adff26632abd97a5465751aa0e36921963bc57b5e7c70fcdca31a4e89f38",
+    "tools/verify.py": "d4baa7b1a2cad4e6d67ab7d16920ae876ed97a9f7571bcc8fd52e2ba19b3b3b7",
+    "tools/verify_cases.py": "f65f30f2c8884e8d5ecf218e726b9a2095d551cd099e44407df3d8eebf949fb7",
+    "tools/verify_checks.py": "0b244ffacebcedd900ff2f163a623c6b6155d01e9ebb1190eb2fb1d387e63c32",
+    "tools/verify_explore.py": "75358e0f9ada0a8ab1a7d3262819de28f8a42e7dd30ede63adaf26a30db8539a",
+    "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c",
+    "tools/verify_runtime.py": "b04feb924dbbb9b3ed50a13fa343f65380a8a3fec20ff8136e4a6487d013e3e0"
+  },
+  "source_version": "0.16.0",
+  "status": "accepted",
+  "stop_boundary": {
+    "deferred": [
+      "TiKV",
+      "G6 accounting",
+      "G8 workload/release expansion",
+      "frontend"
+    ],
+    "g7": "complete",
+    "last_packaged_release": "0.6.0",
+    "next_gate": null
+  },
+  "supported_semantics": {
+    "embedded_limits": "No finite native limits advertised through the shared Limits fields; engine limits remain enforced and this is not unlimited-resource evidence.",
+    "foundationdb": {
+      "advertised_snapshot_lifetime_ms": 5000,
+      "client_server": "7.3.77",
+      "key_max_bytes": 10000,
+      "native_size": "Approximate transaction size includes conflict ranges before commit; oversized work aborts atomically.",
+      "range_protection": "Full requested range, including unseen suffix after a limited page.",
+      "rust_client": "0.11.0",
+      "timeout_ms": 4500,
+      "transaction_max_bytes": 10000000,
+      "value_max_bytes": 100000
+    },
+    "http_timeout": "Native work may continue; admission permit remains held through completion.",
+    "redb": {
+      "durability": "Default Immediate",
+      "optimistic_native_schedules": "Not applicable to serialized writer admission.",
+      "readers": "Stable read snapshots",
+      "version": "4.4.0",
+      "writers": "One blocking serialized writer"
+    },
+    "shared": [
+      "One snapshot, guarded values/absences, staged point/range overlay, atomic application tables and receipts.",
+      "Tracked facade writes protect prior values; model calculations/codecs remain engine-owned.",
+      "No automatic retries; unknown outcomes retain original operation ID and context."
+    ],
+    "surrealkv": {
+      "durability": "Immediate requests fsync",
+      "point_validation": "get_for_update optimistic validation at commit",
+      "range_guards": "256 per-table SHA256(key)[0] buckets; every write changes one and every table scan validates all.",
+      "remaining_conflicts": "Same-bucket collisions and all same-table writers after a scan may conservatively conflict.",
+      "runtime": "Retained runtime drives WAL; close tree before releasing runtime and directory lock.",
+      "version": "1.0.0"
+    }
+  },
+  "versions": {
+    "foundationdb": "0.11.0",
+    "foundationdb-sys": "0.11.0",
+    "foundationdb_client": "FoundationDB CLI 7.3 (v7.3.77)\nsource version 3ea44ce1d9003ad095e408039e1f755c319c4dfb\nprotocol fdb00b073000000",
+    "foundationdb_server": "FoundationDB 7.3 (v7.3.77)\nsource version 3ea44ce1d9003ad095e408039e1f755c319c4dfb\nprotocol fdb00b073000000",
+    "futures": "0.3.32",
+    "libfdb_c_sha256": "e4ad7fed7b7580bf5f7b38f0a4279d37e698f69d534182e5de0b8beeef6cd1b1",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+    "redb": "4.4.0",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "surrealkv": "1.0.0",
+    "tokio": "1.54.1"
+  }
+}

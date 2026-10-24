@@ -1,6 +1,6 @@
 # Rust feasibility and stop boundary
 
-**Latest scope, 2026-10-25: G7.0–G7.5 accepted in source 0.16.0.**
+**Latest scope, 2026-10-25: G7.0–G7.6 accepted in source 0.16.0.**
 The [storage plan](45-storage-adapter-plan.md) and
 [scoped coordination result](50-scoped-coordination-result.md) add real
 FoundationDB, redb and standalone SurrealKV adapters through one persistence
@@ -9,9 +9,12 @@ application write key, 29 FoundationDB coordination/lifecycle controls, 58
 application controls, 153 distinct native checks and optimized secured HTTP.
 Store 10 /native codec 7 /effect codec 4 /API 4 use UUID mutation tokens, scoped
 query epochs and receipt slots. Exact capacity, shared business roots/query
-partitions and effect counters still coordinate. G7.6 final cross-adapter
-acceptance is next. TiKV, G6, G8 and frontend remain deferred; no replicated
-failover, production capacity or new deployment bundle is claimed.
+partitions and effect counters still coordinate. The
+[final cross-adapter result](51-storage-conformance-result.md) accepts byte
+cases 25 /21 /8, application cases 58 /58 /49 and coordination/lifecycle cases
+29 /29 /22 on FoundationDB /SurrealKV /redb, plus complete thirteen-table secured
+HTTP recovery. G7 is complete. TiKV, G6, G8 and frontend remain deferred; no
+replicated failover, production capacity or new deployment bundle is claimed.
 
 **Historical scope, 2026-10-23: V1.1–V1.5 accepted in source 0.15.0.**
 The [workshop result](44-workshop-verification-result.md) records four ordinary

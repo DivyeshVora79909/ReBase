@@ -1,8 +1,9 @@
 # G7 distributed storage adapter plan
 
-**Status: G7.0–G7.5 accepted, 2026-10-25.** Read the
-[G7.5 coordination result and continuation](50-scoped-coordination-result.md).
-G7.6 is next; its cross-adapter controls must pass before final acceptance.
+**Status: G7.0–G7.6 accepted, 2026-10-25.** Read the
+[final cross-adapter result](51-storage-conformance-result.md) and
+[G7.5 coordination result](50-scoped-coordination-result.md).
+The selected G7 goal is complete; TiKV, G6, G8 and frontend remain deferred.
 Current source is 0.16.0 /store 10 /native codec 7 /effect codec 4 /API 4.
 The accepted starting point was source 0.15.0 and
 [V1 verification](44-workshop-verification-result.md). This plan changes no

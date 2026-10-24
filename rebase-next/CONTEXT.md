@@ -1,5 +1,39 @@
 # Compact context — 2026-10-25
 
+**G7 complete: G7.0–G7.6 accepted. No next gate is selected.** Read the
+[cross-adapter result](research/51-storage-conformance-result.md) and
+[evidence](research/evidence/2026-10-25-g76-storage-conformance.json).
+G7.5 is local commit `86c61fe`; G7.6 follows as a separate evidence/docs commit
+on existing `main`. The user confirmed that commits are enough after the HTTPS
+push lacked credentials. Keep TiKV, G6, G8 and frontend deferred.
+
+Current source/store/native/effect/API remain 0.16.0 /10 /7 /4 /4. G7.6 changes
+no source/tool file: all 139 G7.5 fingerprints match. Final byte cases pass
+25 FoundationDB /21 SurrealKV /8 redb; application/effect/predicate cases pass
+58 /58 /49; scoped coordination/lifecycle cases pass 29 /29 /22. Each adapter's
+optimized secured HTTP evidence has 32 attempts, eight commits and 24 expected
+rejections, with complete thirteen-table restart/restore, original-ID outcomes,
+archive preservation/expiry and reset. FoundationDB application/coordination/HTTP
+and all native/build evidence were reused from G7.5; remaining cases used the
+retained binaries. No Cargo rebuild, population or V1 campaign was repeated.
+
+FoundationDB 7.3.77 client/server with Rust binding 0.11.0, SurrealKV 1.0.0 and
+redb 4.4.0 are the accepted versions. The final result records exact protection,
+physical limits and conservative conflicts. Population changes, shared business
+roots/query partitions, receipt probing and effect quotas still coordinate.
+HTTP loss and application SIGKILL do not establish native commit-ack injection,
+replicated failover, disk/power-loss or production-capacity acceptance.
+
+**Stopped cleanly:** no application, FoundationDB or Cargo process remains;
+the helper's `127.0.0.1:4500` listener is closed. Runtime/probes are retained in
+`target/g75-accepted/`, with G7.6 reports in `target/g76-*`. Reuse matching
+artifacts and one Cargo owner for any future authorized source change. Optional
+FoundationDB-feature binaries need `target/g7-environment/root/usr/lib` on the
+runtime library path, including when selecting redb. The last packaged release
+remains 0.6.0; G7 is source acceptance, not a new deployment bundle.
+
+**Historical G7.5 checkpoint before final closeout:**
+
 **G7.0–G7.5 complete; next: G7.6 final cross-adapter closeout.**
 Continue on existing `main` and commit/push each verified checkpoint. Read
 [G7.5](research/50-scoped-coordination-result.md) and its

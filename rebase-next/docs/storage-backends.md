@@ -1,10 +1,11 @@
 # Selecting a transactional backend
 
 The same engine, model, authority, query and effect code can run over redb,
-FoundationDB or standalone SurrealKV. [G7.5](../research/50-scoped-coordination-result.md)
-accepts scoped coordination on real FoundationDB after the earlier application
-and HTTP checkpoints. G7.6 final cross-adapter acceptance remains open; these
-checks do not establish production capacity or replicated failover.
+FoundationDB or standalone SurrealKV. [G7.6](../research/51-storage-conformance-result.md)
+accepts the final byte, application, coordination and secured HTTP cases on all
+three adapters, using the [G7.5](../research/50-scoped-coordination-result.md)
+FoundationDB evidence. These checks do not establish production capacity or
+replicated failover.
 Current source is 0.16.0 with store format 10 /native codec 7 /effect codec 4 /
 API 4. Earlier-format stores and backups require their matching binaries;
 selection of another backend does not migrate them.
@@ -54,7 +55,8 @@ rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity
 rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity serve quantity-dev --config ./server.json
 ```
 
-The server uses the existing bounded blocking-worker admission. The storage
+The server uses the existing bounded blocking-worker admission. An HTTP timeout
+leaves native work running and retains its permit until completion. The storage
 adapter does not introduce automatic retries. RPC distinguishes
 `transaction_conflict`, `transaction_aborted`, `transaction_limit` and
 `outcome_unknown`. Keep a saved operation's original ID and context when its
@@ -91,9 +93,14 @@ transactions and records the absence of a shared written coordination key. This
 case does not measure unrestricted throughput or make creates, shared roots,
 same-partition queries or effect-runtime quotas independent. Business-root
 invariants retain their required guards. redb has one serialized writer;
-SurrealKV's hashed point guards and table range guards can cause conservative
-conflicts between logically separate operations. See [storage lifecycle](storage.md)
-for the precise token and retention contracts.
+SurrealKV uses `get_for_update` for optimistic validation at commit. Each write
+updates one of 256 per-table buckets selected by `SHA-256(key)[0]`; a scan
+validates all 256, including for an empty or limited result. Bucket collisions
+and other writes in a scanned table can cause conservative conflicts. Immediate
+durability requests fsync. Its retained WAL runtime closes the tree and releases
+the directory lock. redb retains its default Immediate durability and one
+blocking serialized writer. See [storage lifecycle](storage.md) for token and
+retention contracts.
 
 ## FoundationDB prerequisites and limits
 
@@ -115,9 +122,10 @@ lifetime. The adapter selects a 4,500 ms client timeout and checks the native
 approximate transaction size before commit. Namespace and conflict overhead
 count; a sparse application update can still rewrite complete encoded values.
 An oversized operation rejects atomically; no automatic transaction splitting
-is provided. Embedded engines still enforce the engine's declared work and
-population bounds. SurrealKV's table-wide range guards can conservatively
-conflict with unrelated writes; point guard buckets can also collide.
+is provided. FoundationDB protects the entire requested read range even when
+only its first page is returned. Embedded adapters advertise no finite native
+transaction limits through the common `Limits` structure; this is not a resource
+capacity guarantee. The engine's declared work and population bounds still apply.
 
 ## Recovery and verification
 

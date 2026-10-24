@@ -5,30 +5,29 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**Active goal: G7 FoundationDB-first storage adapters.** The user authorized
-implementation and checkpoint pushes on 2026-10-24. Read the
-[G7 contract and checkpoints](research/45-storage-adapter-plan.md) and the top of
-`CONTEXT.md`. Implement G7.0–G7.6 with one shared persistence boundary, then
-FoundationDB, redb and standalone SurrealKV adapters. TiKV, G6 accounting, G8
-workload/release expansion and frontend stay deferred. Commit and push each
-verified checkpoint on existing `main`; continue without another prompt.
-Use small delegated tasks with exact file ownership, one Cargo owner, cached
-artifacts and incremental off. Do not accept mock-only distributed evidence.
+**Selected G7 goal complete: G7.0–G7.6 accepted, 2026-10-25.** Read
+[the final result and stop boundary](research/51-storage-conformance-result.md)
+and the top of `CONTEXT.md`. FoundationDB, redb and standalone SurrealKV use
+one persistence boundary with executed application and recovery evidence.
+TiKV, G6 accounting, G8 workload/release expansion and frontend remain deferred;
+do not select a new gate automatically. The user confirmed that local commits
+on existing `main` are enough; G7.5/G7.6 do not require a push.
+For future authorized implementation, use small delegated tasks with exact file
+ownership, one Cargo owner, cached artifacts and incremental off. Preserve
+independent checks and do not accept mock-only distributed evidence.
 
-G7.0–G7.5 are accepted within their recorded bounds. Next is G7.6 final
-cross-adapter closeout. Read
-[the latest result/continuation](research/50-scoped-coordination-result.md).
-The disjoint existing-root witness has no common application write key;
-population changes, shared roots/query partitions and effect counters still
-coordinate. This is not a throughput or capacity claim. Current source/store/
-native/effect/API formats are 0.16.0 /10 /7 /4 /4, with no migration. Reuse the
-accepted G7.5 FoundationDB and native evidence; run the remaining adapter
-controls for G7.6 without restarting earlier campaigns. Preserve earlier evidence.
+[G7.5 scoped coordination](research/50-scoped-coordination-result.md) remains
+accepted. The disjoint existing-root witness has no common application write
+key; population changes, shared roots/query partitions and effect counters
+still coordinate. This is not a throughput or capacity claim. Current source/
+store/native/effect/API formats are 0.16.0 /10 /7 /4 /4, with no migration.
+Reuse accepted evidence without restarting earlier campaigns. The owned test
+servers are stopped and retained binaries are under `target/g75-accepted/`.
 
 V1.1–V1.5 remain accepted in source 0.15.0:
 [results](research/44-workshop-verification-result.md) and
-[guide](docs/workshop.md). Preserve historical source/evidence; adapter
-preparation and implementation are not yet backend acceptance.
+[guide](docs/workshop.md). Keep this historical source/evidence separate from
+the subsequently executed G7 adapter acceptance.
 
 **Current release: G3d/G3e complete, 0.6.0.** Read
 [deployment acceptance](research/29-deployment-result.md) and the
@@ -55,7 +54,7 @@ API 3 and measurement behavior 2. [G4d-c authored selection](research/42-authore
 is accepted in source 0.14.0, with the same shared formats and measurement
 behavior 3. G4 and G5 are complete within their declared bounds. The earlier
 stop after G5 is superseded only by the V1 verification implementation above;
-broader accounting and release expansion remain deferred; G7 is now selected above.
+broader accounting and release expansion remain deferred; G7 is accepted above.
 Preserve earlier evidence and boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
@@ -71,8 +70,8 @@ the 200,000-unit mutation budget remains. Larger fanout can reject atomically.
 Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
-Within the user's active scope, commit and push each verified checkpoint on the
-existing `main`. Continue the selected G7 goal; do not automatically start G6 or G8.
+Within the user's active scope, commit each verified checkpoint on existing
+`main`. G7 is complete; do not automatically start G6, G8, TiKV or frontend.
 Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
