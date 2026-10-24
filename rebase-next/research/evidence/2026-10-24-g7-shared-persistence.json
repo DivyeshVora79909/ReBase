@@ -1,0 +1,1472 @@
+{
+  "affected_native": {
+    "failed": 0,
+    "passed": 2
+  },
+  "application_conformance": {
+    "foundationdb": {
+      "backend": "foundationdb",
+      "namespace": "rebase-g7-application-9cf9eabb-e25d-4f5c-be21-ed5b669e1b4d",
+      "result": {
+        "automatic_retries": false,
+        "case_count": 19,
+        "cases": [
+          "native-public-reader-abort",
+          "effect-execution-abort",
+          "effect-due-abort",
+          "effect-runtime-abort",
+          "operation-receipt-runtime-abort",
+          "effect-intent-atomic-publication-and-replay",
+          "stale-cas-preserves-complete-inventory",
+          "lost-response-original-id-reconciliation-no-duplicate",
+          "persistent-reopen-complete-tables-and-receipts",
+          "backend-restore-quarantine-and-populated-destination-isolation",
+          "quantity-publication-cascade-and-inexact-rollback",
+          "backup-restore-exact-complete-inventory",
+          "calculation-root-complete-time-invariant-rollback",
+          "same-root-invariant-commit-barrier",
+          "same-record-cas-commit-barrier-no-retry",
+          "absent-public-identity-commit-barrier",
+          "no-op-write-preserves-protected-point-read",
+          "reverse-reference-discovery-versus-delete-barrier",
+          "authority-revocation-barrier-and-snapshot-authorized-read"
+        ],
+        "concurrent_application_schedules": true,
+        "limitations": [
+          "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+          "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+          "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+          "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+        ],
+        "status": "passed",
+        "table_inventory": [
+          "authority",
+          "effect_due",
+          "effect_executions",
+          "effect_facts",
+          "effect_inbox",
+          "effect_runtime",
+          "local_runtime",
+          "native_kv",
+          "operations",
+          "public_records",
+          "reader_records"
+        ]
+      }
+    },
+    "redb": {
+      "backend": "redb",
+      "namespace": "rebase-g7-application-ae309f4e-1d30-41bb-a952-e80445c83e2f",
+      "result": {
+        "automatic_retries": false,
+        "case_count": 13,
+        "cases": [
+          "native-public-reader-abort",
+          "effect-execution-abort",
+          "effect-due-abort",
+          "effect-runtime-abort",
+          "operation-receipt-runtime-abort",
+          "effect-intent-atomic-publication-and-replay",
+          "stale-cas-preserves-complete-inventory",
+          "lost-response-original-id-reconciliation-no-duplicate",
+          "persistent-reopen-complete-tables-and-receipts",
+          "backend-restore-quarantine-and-populated-destination-isolation",
+          "quantity-publication-cascade-and-inexact-rollback",
+          "backup-restore-exact-complete-inventory",
+          "calculation-root-complete-time-invariant-rollback"
+        ],
+        "concurrent_application_schedules": false,
+        "limitations": [
+          "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+          "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+          "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+          "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+        ],
+        "status": "passed",
+        "table_inventory": [
+          "authority",
+          "effect_due",
+          "effect_executions",
+          "effect_facts",
+          "effect_inbox",
+          "effect_runtime",
+          "local_runtime",
+          "native_kv",
+          "operations",
+          "public_records",
+          "reader_records"
+        ]
+      }
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "namespace": "rebase-g7-application-c6de171c-77df-4dd1-8100-4165ff20f1b6",
+      "result": {
+        "automatic_retries": false,
+        "case_count": 19,
+        "cases": [
+          "native-public-reader-abort",
+          "effect-execution-abort",
+          "effect-due-abort",
+          "effect-runtime-abort",
+          "operation-receipt-runtime-abort",
+          "effect-intent-atomic-publication-and-replay",
+          "stale-cas-preserves-complete-inventory",
+          "lost-response-original-id-reconciliation-no-duplicate",
+          "persistent-reopen-complete-tables-and-receipts",
+          "backend-restore-quarantine-and-populated-destination-isolation",
+          "quantity-publication-cascade-and-inexact-rollback",
+          "backup-restore-exact-complete-inventory",
+          "calculation-root-complete-time-invariant-rollback",
+          "same-root-invariant-commit-barrier",
+          "same-record-cas-commit-barrier-no-retry",
+          "absent-public-identity-commit-barrier",
+          "no-op-write-preserves-protected-point-read",
+          "reverse-reference-discovery-versus-delete-barrier",
+          "authority-revocation-barrier-and-snapshot-authorized-read"
+        ],
+        "concurrent_application_schedules": true,
+        "limitations": [
+          "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+          "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+          "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+          "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+        ],
+        "status": "passed",
+        "table_inventory": [
+          "authority",
+          "effect_due",
+          "effect_executions",
+          "effect_facts",
+          "effect_inbox",
+          "effect_runtime",
+          "local_runtime",
+          "native_kv",
+          "operations",
+          "public_records",
+          "reader_records"
+        ]
+      }
+    }
+  },
+  "baseline_commit": "3d1b9883b70a27cef589b18508379e8530418bae",
+  "checkpoint": "G7.2",
+  "clippy": "all targets, both optional adapters, warnings denied; passed",
+  "commands": [
+    "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/verification-build cargo +1.95.0 test --locked --all-targets --features foundationdb,surrealkv",
+    "cargo +1.95.0 clippy --locked --all-targets --features foundationdb,surrealkv -- -D warnings",
+    "cargo +1.95.0 test --locked --lib --features foundationdb,surrealkv storage::foundationdb::tests",
+    "target/verification-build/debug/examples/g7_storage <backend> <fresh destination|cluster>",
+    "target/verification-build/debug/examples/g7_application <backend> <fresh directory|cluster>",
+    "python3 tools/fdb_cluster.py stop/start/check",
+    "g7_storage <backend> <location> --verify-namespace <original namespace>",
+    "python3 tools/g7_oracle.py"
+  ],
+  "date": "2026-10-24",
+  "executable_sha256": {
+    "g7_application": "c6f803ade22803df87790961042e8e59b1759a48ad9a9c5c4849d59e61e76c53",
+    "g7_storage": "326962e2a451cd1411e85dafff0a1e0de882ea85389276ac3d2605cff23f9374"
+  },
+  "failed_trial_corrections": [
+    "Port required ReadableTable imports and forward last-row iteration for bounded effects sweeps.",
+    "FoundationDB options use generated i32 arguments.",
+    "Explicit entire requested range protection added for limited scans and table deletion.",
+    "Native FDB Iterator short batches with more=true must continue, not truncate facade pages.",
+    "Authority revocation control initially disabled sole administrator; final graph retains a second active user administrator under tenant root."
+  ],
+  "formats": {
+    "api": "rebase-local-api-3",
+    "effects": "rebase-effects-3",
+    "native": "native-slice-kv-6",
+    "store": "rebase-store-9"
+  },
+  "formatting": "passed",
+  "fresh_process_reopen_after_fdb_server_restart": {
+    "foundationdb": {
+      "backend": "foundationdb",
+      "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+      "namespace": "rebase-g7-conformance-80720e0e-cb10-477a-b571-50e4098e8aa1",
+      "status": "passed"
+    },
+    "redb": {
+      "backend": "redb",
+      "image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+      "namespace": "rebase-g7-conformance-e7318244-4195-422a-8de1-1e7309dfd100",
+      "status": "passed"
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+      "namespace": "rebase-g7-conformance-50036fcb-4594-4663-a7b7-1ea46257c6c4",
+      "status": "passed"
+    }
+  },
+  "independent_schedule_oracle": {
+    "cases": [
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "absent": "created",
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "absent-uniqueness",
+        "protection": "exact absent key"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "parent": "present"
+          },
+          "references": {
+            "child/1": "parent"
+          },
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "empty-range-insertion",
+        "protection": "half-open empty reverse range"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {},
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "range-deletion",
+        "protection": "half-open populated range"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 7
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "root-invariant",
+        "protection": "business-root tracked value"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 6
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "no-op-guard",
+        "protection": "read protection retained for unchanged writes"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 12
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "protected-put",
+        "protection": "put observes prior value"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {},
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "reference-target-deletion",
+        "protection": "exact referenced target"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "revoked"
+          },
+          "indexes": {},
+          "receipts": {
+            "winner-operation": "committed"
+          },
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "transaction_conflict",
+        "name": "authority-revocation",
+        "protection": "actor scope/credential state"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {},
+          "records": {
+            "parent": "present",
+            "root-a": "a",
+            "root-b": "b"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "both_committed",
+        "name": "disjoint-points",
+        "protection": "no shared protected fact"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "revoked"
+          },
+          "indexes": {},
+          "receipts": {},
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "snapshot_allowed",
+        "name": "snapshot-authorized-read",
+        "protection": "selected snapshot authority"
+      },
+      {
+        "expected_attempt_receipt": false,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {},
+          "records": {
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "aborted",
+        "name": "partial-write-abort",
+        "protection": "one atomic publication"
+      },
+      {
+        "expected_attempt_receipt": true,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "original-operation": "result"
+          },
+          "records": {
+            "accepted": "result",
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "outcome_unknown",
+        "name": "lost-commit-response",
+        "original_operation_id": "original-operation",
+        "replacement_operation_id": null
+      },
+      {
+        "expected_attempt_receipt": true,
+        "expected_complete_tables": {
+          "authority": {
+            "actor": "allowed"
+          },
+          "indexes": {},
+          "receipts": {
+            "original-operation": "result"
+          },
+          "records": {
+            "accepted": "result",
+            "parent": "present"
+          },
+          "references": {},
+          "roots": {
+            "balance": 10
+          }
+        },
+        "expected_outcome": "committed",
+        "name": "same-id-reconciliation",
+        "original_operation_id": "original-operation",
+        "replacement_operation_id": null
+      }
+    ],
+    "kind": "independent-specification-oracle",
+    "oracle_sha256": "7289c85812e64d252f6c6223300cd20dc7fe4fd837ab5ebd551542f6845386db",
+    "scope": "expected dictionary images only; real backend conformance must run separately",
+    "status": "passed",
+    "table_families": [
+      "records",
+      "indexes",
+      "receipts",
+      "roots",
+      "references",
+      "authority"
+    ]
+  },
+  "limits": {
+    "automatic_retries": false,
+    "foundationdb_physical_key_bytes": 10000,
+    "foundationdb_transaction_bytes": 10000000,
+    "foundationdb_value_bytes": 100000,
+    "selected_client_timeout_ms": 4500,
+    "server": "single local process/coordinator; not replicated fault-tolerance evidence"
+  },
+  "logs": {
+    "target/g7-application-native.log": "f5daa8f627cbbbb9db75fa14852ae2e528d2907018fe5690f4103742a9483af4",
+    "target/g7-clippy-final2.log": "b106370073c59a0c1c73fa81e25ea2227f4265d27a40eaa2200d60942dfd3f4d",
+    "target/g7-examples-build4.log": "806ae513d904e30a85155fc5f1bce68ab6113836063475137113415d85f14b03",
+    "target/g7-native-affected-final2.log": "1286e3527162818d38133d48b4c54cba160bba710102adb2eb85d1af47e83883",
+    "target/g7-restart-check.log": "bef946c76ccc3221ad5f991b349670e854ce62e4abe93a072f5b1252ebea9c4b",
+    "target/g7-restart-start.log": "8508c775c036bb910f182e43701bf361a10788cc8caac3627b8b952bc4ef0890",
+    "target/g7-restart-stop.log": "d0d80bef17cf77906a6bd23cb45bb7ea7ff25e005b2123615689bf24a567ce99",
+    "target/g7-storage-restart-build.log": "08b02531dcdab5ac646879d2ebbcb86328ab6520dc58b4694721ad61d1eeacd5"
+  },
+  "native": {
+    "failed": 0,
+    "harnesses": 26,
+    "ignored": 0,
+    "passed": 165,
+    "scope": "Full shared port; before final FDB range/pagination correction. Only affected adapter controls and examples rerun afterward."
+  },
+  "native_client_sha256": "e4ad7fed7b7580bf5f7b38f0a4279d37e698f69d534182e5de0b8beeef6cd1b1",
+  "raw_conformance": {
+    "foundationdb": {
+      "backend": "foundationdb",
+      "concurrency": "controlled optimistic interleavings; no automatic retry",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "limited-page-protects-far-later-range-edit",
+            "predicate": "complete requested range remains protected after first lazy page"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "table-delete-protects-far-later-edit",
+            "predicate": "entire table prefix read conflict before range clear"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "both_committed",
+            "name": "disjoint-points-both-commit",
+            "predicate": "disjoint exact keys; fixed keys occupy different SurrealKV guard buckets"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "absent-key-uniqueness",
+            "predicate": "tracked exact absence"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "empty-range-insertion-phantom",
+            "predicate": "tracked empty half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "range-deletion-phantom",
+            "predicate": "tracked populated half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "root-invariant",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "no-op-root-guard",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "facade-put-protects-prior-value",
+            "predicate": "put tracks old value; native blind-write semantics are not assumed"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reverse-discovery-reference-insertion",
+            "predicate": "tracked reverse-reference range before parent deletion"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reference-target-deletion",
+            "predicate": "tracked exact target before reference creation"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "write-authority-revocation",
+            "predicate": "tracked authority point through commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "snapshot_allowed",
+            "name": "snapshot-authorized-read-after-revocation",
+            "predicate": "read snapshot retains its authority facts"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "encoded-key-limit-aborts-staged-receipt",
+            "predicate": "physical namespace/table/key bytes count toward key limit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "value-limit-aborts-staged-receipt",
+            "predicate": "complete encoded value bytes"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "transaction-byte-limit-aborts-all-staged-writes",
+            "predicate": "coalesced writes plus native conflict ranges"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_limit",
+            "name": "native-conflict-range-byte-limit",
+            "predicate": "read values excluded; protected keys/ranges included by native estimate"
+          }
+        ],
+        "final_image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "final_rows": 130,
+        "optimistic_schedules": true,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-80720e0e-cb10-477a-b571-50e4098e8aa1",
+      "reopen": {
+        "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "status": "passed"
+      },
+      "status": "passed"
+    },
+    "redb": {
+      "backend": "redb",
+      "concurrency": "serialized writer; optimistic conflict schedules do not apply",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          }
+        ],
+        "final_image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+        "final_rows": 116,
+        "optimistic_schedules": false,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-e7318244-4195-422a-8de1-1e7309dfd100",
+      "reopen": {
+        "image_sha256": "24fb9fea4cb2468baa382d38258a122236e8496472a4a5fbf6e7ead6d7134105",
+        "status": "passed"
+      },
+      "status": "passed"
+    },
+    "surrealkv": {
+      "backend": "surrealkv",
+      "concurrency": "controlled optimistic interleavings; no automatic retry",
+      "conformance": {
+        "cases": [
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": true,
+            "expected_outcome": "committed",
+            "name": "atomic-publication-old-new-snapshots",
+            "predicate": "one snapshot across every table"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-1",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-2",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-3",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-4",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-5",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "aborted",
+            "name": "abort-after-table-family-6",
+            "predicate": "all staged tables share commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "committed",
+            "name": "paged-staged-range-insert-replace-delete",
+            "predicate": "half-open ordered range with over 64 results and over 64 tombstones"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "limited-page-protects-far-later-range-edit",
+            "predicate": "complete requested range remains protected after first lazy page"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "table-delete-protects-far-later-edit",
+            "predicate": "entire table prefix read conflict before range clear"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "both_committed",
+            "name": "disjoint-points-both-commit",
+            "predicate": "disjoint exact keys; fixed keys occupy different SurrealKV guard buckets"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "absent-key-uniqueness",
+            "predicate": "tracked exact absence"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "empty-range-insertion-phantom",
+            "predicate": "tracked empty half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "range-deletion-phantom",
+            "predicate": "tracked populated half-open range"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "root-invariant",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "no-op-root-guard",
+            "predicate": "tracked business-root value, including unchanged staged guard"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "facade-put-protects-prior-value",
+            "predicate": "put tracks old value; native blind-write semantics are not assumed"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reverse-discovery-reference-insertion",
+            "predicate": "tracked reverse-reference range before parent deletion"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "reference-target-deletion",
+            "predicate": "tracked exact target before reference creation"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "transaction_conflict",
+            "name": "write-authority-revocation",
+            "predicate": "tracked authority point through commit"
+          },
+          {
+            "complete_tables_checked": [
+              "conformance_data",
+              "conformance_index",
+              "conformance_receipts",
+              "conformance_roots",
+              "conformance_references",
+              "conformance_authority"
+            ],
+            "expected_attempt_receipt": false,
+            "expected_outcome": "snapshot_allowed",
+            "name": "snapshot-authorized-read-after-revocation",
+            "predicate": "read snapshot retains its authority facts"
+          }
+        ],
+        "final_image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "final_rows": 130,
+        "optimistic_schedules": true,
+        "scope": "byte-boundary schedules; engine/application integration is checked separately",
+        "status": "passed",
+        "tables": [
+          "conformance_data",
+          "conformance_index",
+          "conformance_receipts",
+          "conformance_roots",
+          "conformance_references",
+          "conformance_authority"
+        ]
+      },
+      "namespace": "rebase-g7-conformance-50036fcb-4594-4663-a7b7-1ea46257c6c4",
+      "reopen": {
+        "image_sha256": "e8cf3f75d8988e427495ebb088b112c99e1bb75df0c2059f9cd06c74b9aa40f0",
+        "status": "passed"
+      },
+      "status": "passed"
+    }
+  },
+  "scope": "Shared application persistence and byte contract accepted. Nonempty effect worker/inbox/application publication, final API/process workloads, scoped coordination and complete G7 closeout remain G7.3-G7.6. Future unexported drafts excluded from this snapshot.",
+  "source_sha256": {
+    "Cargo.lock": "90989b7a40b379ade024f333b4a33d1a0ecb279cbfa3fc11b0342d860d359e6c",
+    "Cargo.toml": "a519e2e88d11b1d4382e6519bbfb0cc68c0a683673f4f0b94db97c0a9ef0b0cd",
+    "examples/g7_application.rs": "50fbe111e022425b27c4e5cea7dc64c82b52e48b7bc78a3e94b4575ee40f809b",
+    "examples/g7_storage.rs": "c98fb776d3f334d793ce38f0d847c5aa71deea8ef441e21cada851970aaaac2c",
+    "rust-toolchain.toml": "7d21c66a15f41bad66b82ed06a289f5dc8a6e3751951d2696bbf20ce296f2b0f",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "fcf43954510e953870c2257ea37f1789135d99a1a4a446dddd349f0b8b4a7d0d",
+    "src/binding.rs": "7a3305b6a8590c38ce01c1aab02e52715cabd8384f630e9b96bcb982115d820e",
+    "src/causal.rs": "9466110030d9943fb736f8c43b804c0b5acf3b1d8f0aa51988643ecbd2336c9a",
+    "src/demo.rs": "704dcf2d2927051c7f6bc2a7803a519d98ab698cb4aa13cddf949dbfa192a013",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "3d9ace868690a0891c8ed76c9c3d167b917f204dd0a3fec2d5a9dd860aba3aca",
+    "src/effects.rs": "1d64e3c2d5e71ac1a4de166d4649d1f3521ca4a50a807af482ff28dfe584e2e1",
+    "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+    "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+    "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+    "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+    "src/effects/state.rs": "4c322471700ff24b785449f211d1346bce72c47ca460ed9a37f3f07ec44fefd1",
+    "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+    "src/effects/worker_tests.rs": "7e6985156173b64bd0e95ccb63adac2986e774922c4c6251e5f5c2bde2966ea7",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+    "src/index_tests.rs": "18cf30f706b41605f3a3c9d4f3b77ae02f8df4e7c606ce6c990c856d62065fed",
+    "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+    "src/inspector.rs": "c842e0d238cdd8d592447cc824915060491ada0052151270e40d9c7f6faf549f",
+    "src/integrity.rs": "dbc030da9e23c7d23e0b173c7561ea2a3a4a0829b67d25ca29b0b56b9ee8598c",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "e21070db2fc1f546de2446700ef1f3dc730b9c8321b74b5d7c56340dac07a595",
+    "src/lifecycle.rs": "ecd07838b57f3e3fee6943fefd865c036c3bc62e0f0bc6562717f0125bac5d05",
+    "src/local.rs": "4de6316ff383aa462549fc2972a5e93b458b26d6abea2e34da2ee6e3c789969b",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "c735eb1955ee4aec65bcb8f6631c5f8a99875b73b2793bb16e847dd133645cb1",
+    "src/models/calculation.rs": "dd1c1d61a9f355f1714ac0beded5b5f82191285720c083b9cfcad3a338b1009d",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "75e732f03bc21829dc958f008ae0f6d26d59c546965b69b63b7e9b4d96c41f9d",
+    "src/models/equipment.rs": "5aaf270eb1fd365fa13b25896483b591a4e81095ee4f0d1abbc5778405a82e99",
+    "src/models/invoicing.rs": "115d21b92818e16ce4c6696a49bac57835525a8c03427c125da0746eb90f0f4d",
+    "src/models/invoicing_check.rs": "d0b8f3054e1e6047a7f533ca862d39558628d62353d12b872621a47cea3650d4",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "5eefa5c6adeafb01541c3ff74eef5eccce9fd6a6bf0b9d8d4d1d62e9bd984a3b",
+    "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+    "src/models/quantity.rs": "1eb42d9fe17a2342d96017c4fabe34dfda1d09cf49fcfa93054ddb9eedeb25c5",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "e8b005ddfb7d166e63b0a0e4f28ea62a17ccced89fcbc476eb25e76d9199ad84",
+    "src/native_slice.rs": "d5ed1d09f208637cc4dade5926617f0dfef3312fa3095e1a465a3b0558dccc4e",
+    "src/parameter_tests.rs": "8ca948e7a56d8ee3d4ee8310955eb9e350c7ebe4d373b8b4acd74aaa81bdda01",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "be56b48ad36e946fd6063899945ab0d700f67f9551ce168ee2ed4e2036067c9c",
+    "src/query.rs": "19df0ee01e34ad87b47dedf390e89d3a1c8c4b40409f9ae8b85ab8af15741726",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "2464e5f4345457366ddcc5de0c9c732e4d34ef2863b0c59a2bbee42bcc667cc3",
+    "src/security.rs": "dd6f9bd2ab232c14d08e2d4346d633d6af2867cfe0ee11cd8194bb7620f5faa5",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/storage.rs": "3c3f4c860b265f1de4b9361a22ed99fa5b320e7327dc36366688250c0787fea5",
+    "src/storage/application_checks.rs": "07fe468fd66dddb6429fe409ef6fcaf1437785814b1eb47329f575f3ca0ba43f",
+    "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+    "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+    "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+    "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "b231b1cfada90ecc9a2d2f7b713805e7f17c6dec582b05f327a8f90d48c11744",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "f1f4b12d581e5df66ab5a5d239f8a9b0d3a14e6817efc1854515721a000dea96",
+    "tests/access_control.rs": "387a61881f07c762cdcf52dca2747df8fe243c5c72df0b8f2d39fd85fbdd5445",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "70cb435be8d8a5e0fda05ecd6caf88c3d418360583a594c4f59291766d063257",
+    "tests/fixtures/test-ed25519-private.pem": "c78f65d4af02abfb28f021dce7f9eb603cb6528e03939e303ea7d0ff8dffa334",
+    "tests/fixtures/test-ed25519-public.pem": "6969e1264369c7093452b3373eab1aca0d09d91e9c82c5821c90ddafca944898",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "efd354559ed985799978a9a04888a300088a4e165d50fef4c3c06e6721f0f163",
+    "tests/local_cli.rs": "71ea358cd25d866730b055d05b28fafbbf6c13f5b8f47422e8abf03ca84edad4",
+    "tests/measurement.rs": "192cbeda9ff500088962f1f7049920a279aa5f339bbdeb342abb0c51887aded3",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "11866093944d5cf40e06ce83d211511fa686fff06b677bb8b6201b50c71071a7",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "e2356ce9b5f17af2cb50f9a76c6156f5c3c10d21850d5f099f0c2a7946ceb448",
+    "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6",
+    "tools/fdb_cluster.py": "d81cbe428a7caf196785608a4fba174dddbf89c9e90e88fc269e942129c26d5b",
+    "tools/g7_oracle.py": "548bf325c66325b53f3a5a3331b966df3fdf161a11664fca6ff55d5dbbb983dd"
+  },
+  "source_version": "0.15.0",
+  "status": "accepted",
+  "versions": {
+    "foundationdb_rust": "0.11.0",
+    "foundationdb_server_client": "7.3.77",
+    "redb": "4.4.0",
+    "rust": "1.95.0",
+    "surrealkv": "1.0.0"
+  }
+}

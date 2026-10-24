@@ -7,6 +7,7 @@ mod state;
 mod worker;
 #[cfg(test)]
 mod worker_tests;
+use crate::storage::{ReadTransaction, ReadableTable, TableDefinition, WriteTransaction};
 use crate::{
     access::{Action, Scope},
     binding::{Binding, NativeInput},
@@ -17,10 +18,6 @@ use crate::{
     model::Prepared,
     native_codec::{self, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Command, Error, Meta, ModelRecord, Result},
-};
-use redb::{
-    ReadTransaction, ReadableDatabase, ReadableTable, ReadableTableMetadata, TableDefinition,
-    WriteTransaction,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -936,9 +933,7 @@ impl<B: Binding> Store<B> {
         };
         self.publish_receipt(&write, &mut header, &receipt)?;
         injected(abort_after, usize::MAX)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(json!({"status":"committed","replayed":false,"result":disclosed}))
     }
 }

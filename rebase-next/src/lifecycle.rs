@@ -1,5 +1,6 @@
 //! Offline/operator lifecycle. These operations are never public RPC methods.
 use crate::binding::Binding;
+use crate::storage::{Database, ReadableTable, WriteTransaction};
 use crate::{
     local::{self, HEADER, KV, PUBLIC, RECEIPTS, RUNTIME, RuntimeHeader, Store},
     model::Prepared,
@@ -7,7 +8,6 @@ use crate::{
     native_slice::{Error, Meta, Result},
     security::{AUTHORITY, READERS},
 };
-use redb::{Database, ReadableTable, TableHandle};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -158,9 +158,7 @@ impl<B: Binding> Store<B> {
             .map_err(local::storage)?
             .insert(HEADER, local::encode(&header)?.as_slice())
             .map_err(local::storage)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(
             json!({"status":"archived","backup":backup,"operation_epoch":header.operation_epoch.to_string()}),
         )
@@ -237,9 +235,7 @@ impl<B: Binding> Store<B> {
         if let Some(graph) = graph {
             crate::security::store_graph(&write, &graph.prepare()?)?;
         }
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(
             json!({"status":"reset","store":fresh.store_id,"credential_epochs_advanced":self.secured}),
         )
@@ -286,10 +282,62 @@ pub fn restore<B: Binding>(
     }
     let destination = destination.as_ref();
     let (temp, file) = new_temporary(destination)?;
-    let db = Database::builder()
+    let db = redb::Database::builder()
         .create_file(file)
         .map_err(local::storage)?;
+    let db = Database::from_redb(db);
     let write = db.begin_write().map_err(local::storage)?;
+    import_image(&write, &image)?;
+    write.commit().map_err(local::storage)?;
+    drop(db);
+    let restored = Store::open(&temp.0, model)?;
+    // Validate the supplied image before changing its activation. Never repair
+    // a corrupt backup into something that passes validation.
+    let checked = restored.check_integrity()?;
+    let write = restored.db.begin_write().map_err(local::storage)?;
+    let changed = crate::effects::quarantine_restore::<B>(&write)?;
+    write.commit().map_err(local::storage)?;
+    let checked = if changed {
+        restored.check_integrity()?
+    } else {
+        checked
+    };
+    drop(restored);
+    publish(&temp, destination)?;
+    Ok(json!({"status":"restored","path":destination,"integrity":checked}))
+}
+
+/// Restore a validated, quarantined image into a fresh transactional backend.
+/// Validation runs in a disposable redb store before the destination is opened
+/// for publication; the destination receives every application table at once.
+pub fn restore_to_backend<B: Binding>(
+    backup: impl AsRef<Path>,
+    db: Database,
+    model: Arc<Prepared<B>>,
+) -> Result<Value> {
+    let validation_path =
+        std::env::temp_dir().join(format!("rebase-restore-validation-{}.redb", Uuid::new_v4()));
+    restore(backup, &validation_path, model.clone())?;
+    // The existing restore publishes with create-only semantics. Own cleanup
+    // only after publication succeeds, so an existing destination is untouched.
+    let validation = Temporary(validation_path);
+    let quarantined = Store::open(&validation.0, model.clone())?;
+    let image: Observation =
+        serde_json::from_value(quarantined.observe_for_verification()?).map_err(local::storage)?;
+    drop(quarantined);
+
+    let write = db.begin_write().map_err(local::storage)?;
+    if write.list_tables()?.next().is_some() {
+        return Err(Error::new("storage_exists", "destination must be empty"));
+    }
+    import_image(&write, &image)?;
+    write.commit().map_err(local::storage)?;
+    let restored = Store::open_backend(db, model)?;
+    let checked = restored.check_integrity()?;
+    Ok(json!({"status":"restored","integrity":checked}))
+}
+
+fn import_image(write: &WriteTransaction, image: &Observation) -> Result<()> {
     for def in [KV, RECEIPTS, RUNTIME, AUTHORITY]
         .into_iter()
         .chain(crate::effects::TABLES.iter().map(|(def, _)| *def))
@@ -328,21 +376,5 @@ pub fn restore<B: Binding>(
             }
         }
     }
-    write.commit().map_err(local::storage)?;
-    drop(db);
-    let restored = Store::open(&temp.0, model)?;
-    // Validate the supplied image before changing its activation. Never repair
-    // a corrupt backup into something that passes validation.
-    let checked = restored.check_integrity()?;
-    let write = restored.db.begin_write().map_err(local::storage)?;
-    let changed = crate::effects::quarantine_restore::<B>(&write)?;
-    write.commit().map_err(local::storage)?;
-    let checked = if changed {
-        restored.check_integrity()?
-    } else {
-        checked
-    };
-    drop(restored);
-    publish(&temp, destination)?;
-    Ok(json!({"status":"restored","path":destination,"integrity":checked}))
+    Ok(())
 }

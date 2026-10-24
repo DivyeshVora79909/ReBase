@@ -8,6 +8,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+pub mod application_checks;
+pub mod conformance;
 #[cfg(feature = "foundationdb")]
 pub mod foundationdb;
 mod redb;
@@ -40,6 +42,9 @@ pub trait ReadView: Send {
         limit: usize,
     ) -> Result<Vec<Row>>;
     fn list_tables(&self) -> Result<Vec<String>>;
+    fn has_multimap_tables(&self) -> Result<bool> {
+        Ok(false)
+    }
     fn len(&self, table: &TableSpec) -> Result<u64> {
         let mut start = Bound::Unbounded;
         let mut count = 0;
@@ -60,7 +65,17 @@ pub trait WriteView: ReadView {
     fn remove(&mut self, table: &TableSpec, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn commit(self: Box<Self>) -> Result<()>;
 }
+#[derive(Clone, Copy, Debug, Default, serde::Serialize)]
+pub struct Limits {
+    pub max_key_bytes: Option<usize>,
+    pub max_value_bytes: Option<usize>,
+    pub max_transaction_bytes: Option<usize>,
+    pub transaction_lifetime_ms: Option<u64>,
+}
 pub trait Backend: Send + Sync {
+    fn limits(&self) -> Limits {
+        Limits::default()
+    }
     fn begin_read(&self) -> Result<Box<dyn ReadView>>;
     fn begin_write(&self) -> Result<Box<dyn WriteView>>;
 }
@@ -68,6 +83,16 @@ pub struct Database {
     backend: Box<dyn Backend>,
 }
 impl Database {
+    pub fn create(path: impl AsRef<std::path::Path>) -> Result<Self> {
+        ::redb::Database::create(path)
+            .map(Self::from_redb)
+            .map_err(|e| failure(e.to_string()))
+    }
+    pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self> {
+        ::redb::Database::open(path)
+            .map(Self::from_redb)
+            .map_err(|e| failure(e.to_string()))
+    }
     pub fn from_redb(db: ::redb::Database) -> Self {
         Self::new(redb::Redb(db))
     }
@@ -75,6 +100,9 @@ impl Database {
         Self {
             backend: Box::new(backend),
         }
+    }
+    pub fn limits(&self) -> Limits {
+        self.backend.limits()
     }
     pub fn begin_read(&self) -> Result<ReadTransaction> {
         Ok(ReadTransaction {
@@ -200,6 +228,12 @@ pub struct Table<K, V> {
     marker: PhantomData<(K, V)>,
 }
 impl ReadTransaction {
+    pub fn has_multimap_tables(&self) -> Result<bool> {
+        self.view
+            .lock()
+            .map_err(|_| failure("transaction lock poisoned"))?
+            .has_multimap_tables()
+    }
     pub fn from_redb(read: ::redb::ReadTransaction) -> Self {
         Self {
             view: Arc::new(Mutex::new(Box::new(redb::Read(read)))),
@@ -232,6 +266,15 @@ impl ReadTransaction {
     }
 }
 impl WriteTransaction {
+    pub fn list_tables(&self) -> Result<impl Iterator<Item = TableName>> {
+        Ok(self
+            .view
+            .lock()
+            .map_err(|_| failure("transaction lock poisoned"))?
+            .list_tables()?
+            .into_iter()
+            .map(TableName))
+    }
     pub fn open_table<K, V: Value>(&self, table: TableDefinition<'_, K, V>) -> Result<Table<K, V>> {
         let spec = table.spec();
         self.view

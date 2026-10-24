@@ -5,12 +5,20 @@
 //! automatic retry loop is used because the closure that produced its writes
 //! cannot safely be replayed here.
 
-use super::{Backend, ReadView, Result, Row, StorageError, TableSpec, ValueKind, WriteView};
-use foundationdb::{Database as FdbDatabase, KeySelector, RangeOption, Transaction};
+use super::{
+    Backend, Limits, ReadView, Result, Row, StorageError, TableSpec, ValueKind, WriteView,
+};
+use foundationdb::{
+    Database as FdbDatabase, KeySelector, RangeOption, Transaction,
+    options::{ConflictRangeType, TransactionOption},
+};
 use futures::executor::block_on;
-use std::{collections::BTreeMap, ops::Bound, sync::Arc};
+use std::{collections::BTreeMap, ops::Bound, sync::Arc, time::Instant};
 
 const MAX_MUTATION_BYTES: usize = 10_000_000;
+const MAX_KEY_BYTES: usize = 10_000;
+const MAX_VALUE_BYTES: usize = 100_000;
+const CLIENT_TIMEOUT_MS: u64 = 4500;
 const CATALOG: u8 = 1;
 const DATA: u8 = 2;
 
@@ -31,8 +39,16 @@ struct FdbBackend {
 }
 
 impl Backend for FdbBackend {
+    fn limits(&self) -> Limits {
+        Limits {
+            max_key_bytes: Some(MAX_KEY_BYTES),
+            max_value_bytes: Some(MAX_VALUE_BYTES),
+            max_transaction_bytes: Some(MAX_MUTATION_BYTES),
+            transaction_lifetime_ms: Some(5000),
+        }
+    }
     fn begin_read(&self) -> Result<Box<dyn ReadView>> {
-        let trx = self.db.create_trx().map_err(|e| fdb_error(e, "storage"))?;
+        let trx = transaction(&self.db)?;
         Ok(Box::new(FdbRead {
             trx,
             prefix: self.prefix.clone(),
@@ -40,7 +56,7 @@ impl Backend for FdbBackend {
     }
 
     fn begin_write(&self) -> Result<Box<dyn WriteView>> {
-        let trx = self.db.create_trx().map_err(|e| fdb_error(e, "storage"))?;
+        let trx = transaction(&self.db)?;
         Ok(Box::new(FdbWrite {
             trx,
             prefix: self.prefix.clone(),
@@ -48,6 +64,7 @@ impl Backend for FdbBackend {
             cleared: Vec::new(),
             catalog: BTreeMap::new(),
             bytes: 0,
+            started: Instant::now(),
         }))
     }
 }
@@ -63,6 +80,7 @@ struct FdbWrite {
     cleared: Vec<Vec<u8>>,
     catalog: BTreeMap<String, Option<ValueKind>>,
     bytes: usize,
+    started: Instant,
 }
 
 fn fail(code: &'static str, detail: impl Into<String>) -> StorageError {
@@ -70,12 +88,18 @@ fn fail(code: &'static str, detail: impl Into<String>) -> StorageError {
 }
 
 fn fdb_error(error: foundationdb::FdbError, fallback: &'static str) -> StorageError {
-    let code = if error.is_maybe_committed() {
+    // A timeout after commit is submitted may have committed. The same timeout
+    // during a read cannot have published application writes.
+    let code = if fallback == "outcome_unknown"
+        && (error.is_maybe_committed() || matches!(error.code(), 1031 | 1039))
+    {
         "outcome_unknown"
-    } else if error.code() == 2101 {
+    } else if matches!(error.code(), 1007 | 1031 | 2101 | 2102 | 2103) {
         "transaction_limit"
-    } else if error.code() == 1020 || error.is_retryable_not_committed() {
+    } else if error.code() == 1020 {
         "transaction_conflict"
+    } else if error.is_retryable_not_committed() {
+        "transaction_aborted"
     } else {
         fallback
     };
@@ -85,12 +109,49 @@ fn fdb_error(error: foundationdb::FdbError, fallback: &'static str) -> StorageEr
     )
 }
 
+fn transaction(db: &FdbDatabase) -> Result<Transaction> {
+    let trx = db.create_trx().map_err(|e| fdb_error(e, "storage"))?;
+    trx.set_option(TransactionOption::Timeout(CLIENT_TIMEOUT_MS as i32))
+        .map_err(|e| fdb_error(e, "storage"))?;
+    trx.set_option(TransactionOption::SizeLimit(MAX_MUTATION_BYTES as i32))
+        .map_err(|e| fdb_error(e, "storage"))?;
+    Ok(trx)
+}
+
+fn validate_key(key: &[u8]) -> Result<()> {
+    if key.len() > MAX_KEY_BYTES {
+        Err(fail(
+            "transaction_limit",
+            format!(
+                "encoded FoundationDB key is {} bytes; maximum is {MAX_KEY_BYTES}",
+                key.len()
+            ),
+        ))
+    } else {
+        Ok(())
+    }
+}
+fn validate_value(value: &[u8]) -> Result<()> {
+    if value.len() > MAX_VALUE_BYTES {
+        Err(fail(
+            "transaction_limit",
+            format!(
+                "FoundationDB value is {} bytes; maximum is {MAX_VALUE_BYTES}",
+                value.len()
+            ),
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 fn namespace_prefix(namespace: &[u8]) -> Result<Vec<u8>> {
     let len = u32::try_from(namespace.len()).map_err(|_| fail("storage", "namespace too long"))?;
     // FoundationDB reserves keys beginning with 0xff for system metadata.
     let mut out = b"\x01rebase-storage\0".to_vec();
     out.extend_from_slice(&len.to_be_bytes());
     out.extend_from_slice(namespace);
+    validate_key(&out)?;
     Ok(out)
 }
 
@@ -119,6 +180,7 @@ fn data_prefix(prefix: &[u8], table: &str) -> Result<Vec<u8>> {
     k.push(DATA);
     k.extend_from_slice(&len.to_be_bytes());
     k.extend_from_slice(name);
+    validate_key(&k)?;
     Ok(k)
 }
 fn catalog_key(prefix: &[u8], table: &str) -> Vec<u8> {
@@ -129,6 +191,7 @@ fn catalog_key(prefix: &[u8], table: &str) -> Vec<u8> {
 fn data_key(prefix: &[u8], table: &str, key: &[u8]) -> Result<Vec<u8>> {
     let mut k = data_prefix(prefix, table)?;
     k.extend_from_slice(key);
+    validate_key(&k)?;
     Ok(k)
 }
 fn kind_byte(kind: ValueKind) -> u8 {
@@ -146,6 +209,7 @@ fn byte_kind(byte: u8) -> Result<ValueKind> {
 }
 
 fn fetch(trx: &Transaction, key: &[u8], snapshot: bool) -> Result<Option<Vec<u8>>> {
+    validate_key(key)?;
     block_on(trx.get(key, snapshot))
         .map(|v| v.map(|b| b.as_ref().to_vec()))
         .map_err(|e| fdb_error(e, "storage"))
@@ -158,14 +222,42 @@ fn range_rows(
     limit: usize,
     snapshot: bool,
 ) -> Result<Vec<Row>> {
+    if limit == 0 {
+        return Ok(Vec::new());
+    }
     let mut option = RangeOption::from((begin, end));
     option.limit = Some(limit);
-    let values =
-        block_on(trx.get_range(&option, 1, snapshot)).map_err(|e| fdb_error(e, "storage"))?;
-    Ok(values
-        .into_iter()
-        .map(|kv| (kv.key().to_vec(), kv.value().to_vec()))
-        .collect())
+    let mut rows = Vec::new();
+    let mut iteration = 1;
+    loop {
+        let values = block_on(trx.get_range(&option, iteration, snapshot))
+            .map_err(|error| fdb_error(error, "storage"))?;
+        // Iterator streaming can return a short native batch while `more` is
+        // true. Fill the requested facade page before reporting exhaustion.
+        if values.is_empty() && values.more() {
+            return Err(fail(
+                "storage",
+                "FoundationDB range made no progress with more=true",
+            ));
+        }
+        let next = option.next_range(&values);
+        rows.extend(
+            values
+                .into_iter()
+                .map(|kv| (kv.key().to_vec(), kv.value().to_vec())),
+        );
+        if rows.len() > limit {
+            return Err(fail(
+                "storage",
+                "FoundationDB range exceeded requested row limit",
+            ));
+        }
+        let Some(next) = next else {
+            return Ok(rows);
+        };
+        option = next;
+        iteration += 1;
+    }
 }
 
 fn selector_start<'a>(bound: &'a Bound<Vec<u8>>, fallback: &'a [u8]) -> KeySelector<'a> {
@@ -206,6 +298,23 @@ fn scan_table(
         Bound::Unbounded => Bound::Unbounded,
     };
     let dp_end = successor(&dp);
+    // Native limited reads may protect only the portion covered by that page.
+    // The portable scan predicate is the complete requested half-open range.
+    let lower = match &start_key {
+        Bound::Included(key) => key.clone(),
+        Bound::Excluded(key) => [key.as_slice(), &[0]].concat(),
+        Bound::Unbounded => dp.clone(),
+    };
+    let upper = match &end_key {
+        Bound::Included(key) => [key.as_slice(), &[0]].concat(),
+        Bound::Excluded(key) => key.clone(),
+        Bound::Unbounded => dp_end.clone(),
+    };
+    if lower >= upper {
+        return Ok(Vec::new());
+    }
+    trx.add_conflict_range(&lower, &upper, ConflictRangeType::Read)
+        .map_err(|error| fdb_error(error, "storage"))?;
     let begin = selector_start(&start_key, &dp);
     let stop = selector_end(&end_key, &dp_end);
     let mut rows = range_rows(trx, begin, stop, limit, false)?;
@@ -287,12 +396,32 @@ impl FdbWrite {
         }
     }
     fn charge(&mut self, n: usize) -> Result<()> {
-        self.bytes = self.bytes.saturating_add(n);
-        if self.bytes > MAX_MUTATION_BYTES {
+        let next = self.bytes.saturating_add(n);
+        if next > MAX_MUTATION_BYTES {
             Err(fail("transaction_limit", "staged mutation budget exceeded"))
         } else {
+            self.bytes = next;
             Ok(())
         }
+    }
+    fn buffer(&mut self, key: Vec<u8>, value: Option<Vec<u8>>) -> Result<()> {
+        let previous = self
+            .writes
+            .get(&key)
+            .map_or(0, |value| key.len() + value.as_ref().map_or(0, Vec::len));
+        let next = self
+            .bytes
+            .saturating_sub(previous)
+            .saturating_add(key.len() + value.as_ref().map_or(0, Vec::len));
+        if next > MAX_MUTATION_BYTES {
+            return Err(fail(
+                "transaction_limit",
+                "coalesced staged mutation budget exceeded",
+            ));
+        }
+        self.bytes = next;
+        self.writes.insert(key, value);
+        Ok(())
     }
     fn read_overlay(&self, full_key: &[u8]) -> Option<Option<Vec<u8>>> {
         if let Some(value) = self.writes.get(full_key) {
@@ -454,7 +583,9 @@ impl WriteView for FdbWrite {
         if self.exists(table)? {
             return Ok(());
         }
-        self.charge(table.name.len() + 1)?;
+        let catalog = catalog_key(&self.prefix, &table.name);
+        validate_key(&catalog)?;
+        self.charge(catalog.len() + 1)?;
         self.catalog.insert(table.name.clone(), Some(table.value));
         Ok(())
     }
@@ -463,21 +594,26 @@ impl WriteView for FdbWrite {
             return Ok(false);
         }
         let dp = data_prefix(&self.prefix, &table.name)?;
-        // A non-snapshot range read records a conflict even when the table is empty.
-        let _ = range_rows(
-            &self.trx,
-            KeySelector::first_greater_or_equal(dp.as_slice()),
-            KeySelector::first_greater_or_equal(successor(&dp)),
-            1,
-            false,
-        )?;
+        // Protect every populated/absent key before atomic range clearing,
+        // including concurrent edits beyond the first native scan page.
+        self.trx
+            .add_conflict_range(&dp, &successor(&dp), ConflictRangeType::Read)
+            .map_err(|error| fdb_error(error, "storage"))?;
         self.cleared.push(dp.clone());
+        let removed_bytes = self
+            .writes
+            .iter()
+            .filter(|(key, _)| key.starts_with(&dp))
+            .map(|(key, value)| key.len() + value.as_ref().map_or(0, Vec::len))
+            .sum::<usize>();
+        self.bytes = self.bytes.saturating_sub(removed_bytes);
         self.writes.retain(|k, _| !k.starts_with(&dp));
         self.catalog.insert(table.name.clone(), None);
         self.charge(table.name.len() + 1)?;
         Ok(true)
     }
     fn put(&mut self, table: &TableSpec, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>> {
+        validate_value(value)?;
         if !self.exists(table)? {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
@@ -486,8 +622,7 @@ impl WriteView for FdbWrite {
             Some(value) => value,
             None => fetch(&self.trx, &full, false)?,
         };
-        self.charge(full.len() + value.len())?;
-        self.writes.insert(full, Some(value.to_vec()));
+        self.buffer(full, Some(value.to_vec()))?;
         Ok(old)
     }
     fn remove(&mut self, table: &TableSpec, key: &[u8]) -> Result<Option<Vec<u8>>> {
@@ -499,8 +634,7 @@ impl WriteView for FdbWrite {
             Some(value) => value,
             None => fetch(&self.trx, &full, false)?,
         };
-        self.charge(full.len())?;
-        self.writes.insert(full, None);
+        self.buffer(full, None)?;
         Ok(old)
     }
     fn commit(self: Box<Self>) -> Result<()> {
@@ -510,8 +644,15 @@ impl WriteView for FdbWrite {
             writes,
             cleared,
             catalog,
+            started,
             ..
         } = *self;
+        if started.elapsed().as_millis() >= u128::from(CLIENT_TIMEOUT_MS) {
+            return Err(fail(
+                "transaction_limit",
+                "FoundationDB adapter lifetime expired before commit submission",
+            ));
+        }
         for dp in cleared {
             trx.clear_range(&dp, &successor(&dp));
         }
@@ -538,5 +679,42 @@ impl WriteView for FdbWrite {
         block_on(trx.commit())
             .map(|_| ())
             .map_err(|e| fdb_error(e.into(), "outcome_unknown"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn definite_commit_abort_retains_conflict_or_limit_classification() {
+        assert_eq!(
+            fdb_error(foundationdb::FdbError::from_code(1020), "outcome_unknown").code,
+            "transaction_conflict"
+        );
+        for code in [1007, 2101, 2102, 2103] {
+            assert_eq!(
+                fdb_error(foundationdb::FdbError::from_code(code), "outcome_unknown").code,
+                "transaction_limit"
+            );
+        }
+        assert_eq!(
+            fdb_error(foundationdb::FdbError::from_code(1009), "outcome_unknown").code,
+            "transaction_aborted"
+        );
+    }
+
+    #[test]
+    fn timeout_is_definite_before_submission_and_uncertain_during_commit() {
+        assert_eq!(
+            fdb_error(foundationdb::FdbError::from_code(1031), "storage").code,
+            "transaction_limit"
+        );
+        for code in [1021, 1031, 1039] {
+            assert_eq!(
+                fdb_error(foundationdb::FdbError::from_code(code), "outcome_unknown").code,
+                "outcome_unknown"
+            );
+        }
     }
 }

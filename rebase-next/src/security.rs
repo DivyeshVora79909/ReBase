@@ -6,8 +6,8 @@ use std::{
     sync::Arc,
 };
 
+use crate::storage::{ReadTransaction, ReadableTable, TableDefinition, WriteTransaction};
 use hmac::{Hmac, Mac};
-use redb::{ReadTransaction, ReadableTable, TableDefinition, WriteTransaction};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::Sha256;
@@ -255,16 +255,7 @@ impl<B: Binding> Store<B> {
         model: Arc<Prepared<B>>,
         context: Context,
     ) -> Result<Self> {
-        let graph = Graph::bootstrap(context)?;
-        let mut store = Self::create(path, model, context)?;
-        let write = store.db.begin_write().map_err(storage)?;
-        store_graph(&write, &graph)?;
-        write.open_table(READERS).map_err(storage)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
-        store.secured = true;
-        Ok(store)
+        Self::create_backend_secured(Self::create_redb_database(path)?, model, context)
     }
 
     /// Trusted identity-adapter seam. Network code must verify a credential
@@ -511,9 +502,7 @@ impl<B: Binding> Store<B> {
         }
         drop(native);
         store_graph(&write, &graph)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit().map_err(storage)?;
         Ok(json!({"revision":meta.revision.to_string(),"changed":true}))
     }
 }

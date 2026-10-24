@@ -1,22 +1,26 @@
 # Compact context — 2026-10-23
 
-**Active: G7.2 shared application persistence; G7.0 and G7.1 complete.**
-The user authorized implementation and checkpoint pushes on 2026-10-24.
-Read [the active contract](research/45-storage-adapter-plan.md). The sequence is
-contract/runtime probes, shared transaction/version coordination, complete
-FoundationDB integration, redb, SurrealKV, and cross-backend closeout. All
-application spaces must commit atomically; no automatic transaction retries by
-default. Unknown commit outcome retains the original operation identity.
+**Active: G7.3 full predicate/application publication; G7.0–G7.2 complete.**
+The user resumed unrestricted G7 work on 2026-10-24; the earlier budget stop is
+superseded. Accepted baseline is `3d1b988`. Read [the contract](research/45-storage-adapter-plan.md)
+and [G7.2 result](research/47-storage-integration-result.md). All application
+persistence now uses the shared facade; raw suites pass FoundationDB 25 /
+SurrealKV 21 /redb 8, application suites 19 /19 /13, and the native port 165 tests.
+The final FDB adapter honors native partial pages and protects entire requested
+ranges. Fresh process reopen and FDB server restart preserve complete tables.
 
-**Exact continuation:** implement G7.2 shared application persistence and scoped
-version coordination. [G7.1 raw storage probes](research/46-storage-runtime-probe.md)
-passed on real FoundationDB 7.3.77 and SurrealKV 1.0.0, plus redb 4.4.0. Storage
-facades/adapters exist but Store/authority/query/effects still use the original
-redb paths; do not mistake probe acceptance for application integration.
-FoundationDB test runtime is live at 127.0.0.1:4500; cluster and lib are under
-`target/g7-environment`. Read the source/log fingerprints in G7.1 evidence.
-Root is the sole Cargo owner, two jobs, incremental off, existing cache
-`target/verification-build`. No automatic transaction retries.
+**Exact continuation:** finish G7.3 actual nonempty effect facts/inbox/application
+publication and authority repair/init/opposite reference-race controls. Drafts
+`src/effects/conformance.rs` and `src/storage/concurrency_checks.rs` are unaccepted,
+not exported or compiled. G7.4 CLI draft is retained in ignored
+`target/g7-cli-draft.rs`, with unaccepted `src/storage/target.rs` ready for export.
+Do not claim these drafts passed. G7.5 still must remove global Meta and receipt
+header writes; no independent-root application scale claim is accepted.
+Root is sole Cargo owner, two jobs, incremental off, cache
+`target/verification-build`. FoundationDB 7.3.77 is local at 127.0.0.1:4500, with
+cluster/native lib under `target/g7-environment`; set FDB_CLIENT_LIB_PATH and
+LD_LIBRARY_PATH to its lib directory. Runtime has been revalidated in this run.
+No automatic transaction retries; retain original ID/context for unknown outcomes.
 TiKV, G6 accounting, G8 execution and frontend remain deferred.
 
 **V1.1–V1.5 complete: self-explaining non-accounting verification.**

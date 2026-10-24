@@ -233,9 +233,7 @@ impl<B: Binding> Store<B> {
         injected(abort, usize::MAX - 6)?;
         write_runtime(&write, &runtime)?;
         injected(abort, usize::MAX - 7)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(json!({"status":"accepted","duplicate":false}))
     }
 
@@ -258,7 +256,7 @@ impl<B: Binding> Store<B> {
                 runtime.inbox_end = table
                     .iter()
                     .map_err(local::storage)?
-                    .next_back()
+                    .last()
                     .transpose()
                     .map_err(local::storage)?
                     .map(|(key, _)| native_codec::hex(key.value()));
@@ -291,9 +289,7 @@ impl<B: Binding> Store<B> {
             }
         }
         write_runtime(&write, &runtime)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(keys)
     }
 
@@ -352,9 +348,7 @@ impl<B: Binding> Store<B> {
             .map_err(local::storage)?;
         injected(abort, usize::MAX - 6)?;
         replace_execution(&write, &mut runtime, &before, &row, abort)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(true)
     }
 }

@@ -1,8 +1,8 @@
 # G7 distributed storage adapter plan
 
-**Status: G7 selected and implementation authorized, 2026-10-24.** G7.0
-records preparation; later rows require their stated executable evidence before
-acceptance. The accepted starting point remains source 0.15.0 and
+**Status: G7.0–G7.2 accepted, 2026-10-24.** Read the
+[G7.2 integration result](47-storage-integration-result.md). G7.3 is next;
+later rows require their stated executable evidence before acceptance. The accepted starting point remains source 0.15.0 and
 [V1 verification](44-workshop-verification-result.md). This plan changes no
 historical acceptance claims. FoundationDB is the first real distributed target;
 redb and standalone SurrealKV follow. TiKV remains deferred.

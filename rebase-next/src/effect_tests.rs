@@ -11,7 +11,7 @@ use crate::{
     native_slice::{Context, Error},
     security::ReplaceGraph,
 };
-use redb::{ReadableDatabase, TableDefinition};
+use redb::TableDefinition;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, path::PathBuf, sync::Arc};

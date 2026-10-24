@@ -1,12 +1,10 @@
-//! Embedded local adapter. Engine data, reader index and operation receipts share
-//! one redb write transaction. Public API entrypoints never enable fixture mode.
+//! Shared application persistence. Engine data, reader indexes and receipts share
+//! one adapter transaction. Public API entrypoints never enable fixture mode.
 
 use std::{collections::BTreeSet, fs::OpenOptions, path::Path, sync::Arc};
 
-use redb::{
-    Database, DatabaseError, ReadOnlyDatabase, ReadTransaction, ReadableDatabase, ReadableTable,
-    ReadableTableMetadata, TableDefinition, TableHandle,
-};
+use crate::storage::{Database, ReadTransaction, ReadableTable, TableDefinition};
+use redb::{DatabaseError, ReadOnlyDatabase, ReadableDatabase};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -29,7 +27,10 @@ pub const STORE_FORMAT: &str = "rebase-store-9";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
-pub(crate) fn storage(error: impl std::fmt::Display) -> Error {
+pub(crate) fn storage(error: impl std::fmt::Display + 'static) -> Error {
+    if let Some(error) = (&error as &dyn std::any::Any).downcast_ref::<Error>() {
+        return error.clone();
+    }
     Error::new("storage", error.to_string())
 }
 
@@ -231,11 +232,7 @@ impl<B: Binding> Store<B> {
     pub fn check_integrity(&self) -> Result<Value> {
         B::check(self)
     }
-    pub fn create(
-        path: impl AsRef<Path>,
-        model: Arc<Prepared<B>>,
-        context: Context,
-    ) -> Result<Self> {
+    pub(crate) fn create_redb_database(path: impl AsRef<Path>) -> Result<Database> {
         let mut options = OpenOptions::new();
         options.read(true).write(true).create_new(true);
         #[cfg(unix)]
@@ -244,8 +241,41 @@ impl<B: Binding> Store<B> {
             options.mode(0o600);
         }
         let file = options.open(path).map_err(storage)?;
-        let db = Database::builder().create_file(file).map_err(storage)?;
+        Ok(Database::from_redb(
+            redb::Database::builder()
+                .create_file(file)
+                .map_err(storage)?,
+        ))
+    }
+    pub fn create(
+        path: impl AsRef<Path>,
+        model: Arc<Prepared<B>>,
+        context: Context,
+    ) -> Result<Self> {
+        let db = Self::create_redb_database(path)?;
+        Self::create_backend(db, model, context)
+    }
+
+    pub fn create_backend(db: Database, model: Arc<Prepared<B>>, context: Context) -> Result<Self> {
+        Self::create_backend_inner(db, model, context, false)
+    }
+    pub fn create_backend_secured(
+        db: Database,
+        model: Arc<Prepared<B>>,
+        context: Context,
+    ) -> Result<Self> {
+        Self::create_backend_inner(db, model, context, true)
+    }
+    fn create_backend_inner(
+        db: Database,
+        model: Arc<Prepared<B>>,
+        context: Context,
+        secured: bool,
+    ) -> Result<Self> {
         let write = db.begin_write().map_err(storage)?;
+        if write.list_tables()?.next().is_some() {
+            return Err(Error::new("storage_exists", "destination must be empty"));
+        }
         {
             let mut table = write.open_table(KV).map_err(storage)?;
             let meta = Meta {
@@ -264,6 +294,10 @@ impl<B: Binding> Store<B> {
             write.open_table(PUBLIC).map_err(storage)?;
             write.open_table(RECEIPTS).map_err(storage)?;
             crate::effects::create_tables(&write)?;
+            if secured {
+                crate::security::store_graph(&write, &crate::access::Graph::bootstrap(context)?)?;
+                write.open_table(crate::security::READERS)?;
+            }
             let header = RuntimeHeader::fresh();
             write
                 .open_table(RUNTIME)
@@ -271,15 +305,13 @@ impl<B: Binding> Store<B> {
                 .insert(HEADER, encode(&header)?.as_slice())
                 .map_err(storage)?;
         }
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit().map_err(storage)?;
         Ok(Self {
             db: Arc::new(db),
             model,
             context,
             bootstrap_actor: context.actor,
-            secured: false,
+            secured,
             credential_epoch: None,
         })
     }
@@ -291,7 +323,7 @@ impl<B: Binding> Store<B> {
         // is possible; retain normal recovery and recheck identity afterwards.
         match ReadOnlyDatabase::open(path.as_ref()) {
             Ok(preview) => {
-                let read = preview.begin_read().map_err(storage)?;
+                let read = ReadTransaction::from_redb(preview.begin_read().map_err(storage)?);
                 read_header(&read)?;
                 check_tables(&read)?;
                 check_model_identity(&read_meta(&read)?, model.identity())?;
@@ -299,7 +331,11 @@ impl<B: Binding> Store<B> {
             Err(DatabaseError::RepairAborted) => {}
             Err(error) => return Err(storage(error)),
         }
-        let db = Database::open(path.as_ref()).map_err(storage)?;
+        let db = Database::open(path.as_ref())?;
+        Self::open_backend(db, model)
+    }
+
+    pub fn open_backend(db: Database, model: Arc<Prepared<B>>) -> Result<Self> {
         let read = db.begin_read().map_err(storage)?;
         check_tables(&read)?;
         let header = read_header(&read)?;
@@ -440,6 +476,17 @@ impl<B: Binding> Store<B> {
         request: &Mutation,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
         abort_after: Option<usize>,
+    ) -> Result<Value> {
+        self.mutate_controlled(request, allocate, abort_after, &mut || Ok(()), false)
+    }
+
+    pub(crate) fn mutate_controlled(
+        &self,
+        request: &Mutation,
+        allocate: &mut dyn FnMut() -> Result<Uuid>,
+        abort_after: Option<usize>,
+        before_commit: &mut dyn FnMut() -> Result<()>,
+        lose_response: bool,
     ) -> Result<Value> {
         if request.returning.len() > 32
             || request.returning.iter().collect::<BTreeSet<_>>().len() != request.returning.len()
@@ -617,9 +664,14 @@ impl<B: Binding> Store<B> {
                 "adapter check after receipt write",
             ));
         }
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        before_commit()?;
+        write.commit().map_err(storage)?;
+        if lose_response {
+            return Err(Error::new(
+                "outcome_unknown",
+                "injected loss of successful commit response; reconcile original operation ID",
+            ));
+        }
         eprintln!(
             "{}",
             json!({"event":"mutation_work","operation_id":request.operation_id,"work":work})
@@ -631,7 +683,7 @@ impl<B: Binding> Store<B> {
     /// caller's transaction. Typed effect application uses this same writer.
     pub(crate) fn publish_native(
         &self,
-        write: &redb::WriteTransaction,
+        write: &crate::storage::WriteTransaction,
         batch: &crate::staging::Batch,
         abort_after: Option<usize>,
     ) -> Result<()> {
@@ -690,7 +742,7 @@ impl<B: Binding> Store<B> {
 
     pub(crate) fn publish_receipt(
         &self,
-        write: &redb::WriteTransaction,
+        write: &crate::storage::WriteTransaction,
         header: &mut RuntimeHeader,
         receipt: &ReceiptValue<B>,
     ) -> Result<()> {
@@ -926,13 +978,7 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
         .collect();
     names.sort();
     let expected = table_names(names.iter().any(|name| name == "authority"));
-    if names != expected
-        || read
-            .list_multimap_tables()
-            .map_err(storage)?
-            .next()
-            .is_some()
-    {
+    if names != expected || read.has_multimap_tables()? {
         return Err(corrupt("unexpected local table inventory"));
     }
     Ok(())

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the ignored local FoundationDB 7.3.69 cluster in target/g7-environment."""
+"""Run the ignored local FoundationDB 7.3.77 cluster in target/g7-environment."""
 
 from __future__ import annotations
 

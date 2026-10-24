@@ -1,6 +1,7 @@
 //! Privileged complete-state checks. Expected memberships and scalar results
 //! come from source scans; actual tree links/caches are checked independently.
 //! No writer, rotation, query traversal or settlement function is called here.
+use crate::storage::ReadableTable;
 use crate::{
     algebra::Summary,
     binding::{Binding, Calculation, NativeInput},
@@ -17,7 +18,6 @@ use crate::{
     time_range::{TimeBound, TimeRange},
     tree::{FullKey, Node, Span},
 };
-use redb::ReadableTable;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -350,7 +350,7 @@ impl<I: NativeIndex> Walk<'_, I> {
 /// from `records`, then finish with the shared structural and authority checker.
 pub(crate) struct Snapshot<'a, B: Binding> {
     store: &'a Store<B>,
-    pub(crate) read: redb::ReadTransaction,
+    pub(crate) read: crate::storage::ReadTransaction,
     pub(crate) meta: Meta,
     pub(crate) header: RuntimeHeader,
     pub(crate) all: BTreeMap<Key, StoredValue<B>>,
@@ -1229,7 +1229,6 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
 mod tests {
     use super::*;
     use crate::local::LocalStore;
-    use redb::ReadableDatabase;
     use std::sync::Arc;
     #[test]
     fn canonical_orphan_root_returns_corruption_at_check_startup_and_restore() {

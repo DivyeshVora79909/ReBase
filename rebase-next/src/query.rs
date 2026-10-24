@@ -1,6 +1,7 @@
 //! Declared local reads and authenticated revision-bound resumptions.
 
 use crate::binding::Binding;
+use crate::storage::ReadableTable;
 use std::{cmp::Reverse, collections::BinaryHeap, ops::Bound};
 
 use hmac::{Hmac, Mac};
@@ -148,7 +149,7 @@ pub struct RootRequest {
 }
 
 fn next_candidate(
-    range: &mut redb::Range<'_, &'static [u8], u16>,
+    range: &mut crate::storage::Range<'_, &'static [u8], u16>,
     secured: bool,
 ) -> Result<Option<(Uuid, u16)>> {
     let Some(row) = range.next() else {

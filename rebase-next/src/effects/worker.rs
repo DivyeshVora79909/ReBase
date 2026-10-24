@@ -10,9 +10,7 @@ fn clock(supplied: Option<i64>) -> Result<i64> {
     supplied.map_or_else(now_millis, Ok)
 }
 fn commit(write: WriteTransaction) -> Result<()> {
-    write
-        .commit()
-        .map_err(|e| Error::new("outcome_unknown", e.to_string()))
+    write.commit()
 }
 fn stale() -> Error {
     Error::new("stale_version", "worker ownership changed or expired")
@@ -99,7 +97,7 @@ impl<B: Binding> Store<B> {
                 sweep.end = due
                     .range(start.as_slice()..=upper.as_slice())
                     .map_err(local::storage)?
-                    .next_back()
+                    .last()
                     .transpose()
                     .map_err(local::storage)?
                     .map(|(k, _)| native_codec::hex(k.value()));
@@ -313,6 +311,9 @@ impl<B: Binding> Store<B> {
             .map(|_| row.claim(runtime.activation))
             .transpose()?;
         if let Err(error) = commit(write) {
+            if error.code != "outcome_unknown" {
+                return Err(error);
+            }
             // A failed acknowledgement never itself authorizes a remote call.
             if let Some(claim) = &started
                 && self.confirm_effect_start(claim).is_ok()
@@ -428,6 +429,9 @@ impl<B: Binding> Store<B> {
         row.advance()?;
         replace_execution(&write, &mut runtime, &before, &row, abort)?;
         if let Err(error) = commit(write) {
+            if error.code != "outcome_unknown" {
+                return Err(error);
+            }
             // Inspect the committed row; never repeat provider I/O for a local
             // finish acknowledgement failure, even when no fact was available.
             let read = self.db.begin_read().map_err(local::storage)?;

@@ -33,9 +33,7 @@ impl<B: Binding> Store<B> {
                     row.diagnostic = Some(error.code.into());
                     row.advance()?;
                     replace_execution(&write, &mut runtime, &before, &row, None)?;
-                    write
-                        .commit()
-                        .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+                    write.commit()?;
                 }
                 Ok(false)
             }
@@ -186,6 +184,9 @@ impl<B: Binding> Store<B> {
         row.advance()?;
         replace_execution(&write, &mut runtime, &before, &row, abort)?;
         if let Err(error) = write.commit() {
+            if error.code != "outcome_unknown" {
+                return Err(error);
+            }
             let read = self.db.begin_read().map_err(local::storage)?;
             let table = read.open_table(FACTS).map_err(local::storage)?;
             if let Some(value) = table.get(key.as_slice()).map_err(local::storage)? {
@@ -194,7 +195,7 @@ impl<B: Binding> Store<B> {
                     return Ok(true);
                 }
             }
-            return Err(Error::new("outcome_unknown", error.to_string()));
+            return Err(error);
         }
         Ok(true)
     }
@@ -254,9 +255,7 @@ impl<B: Binding> Store<B> {
         row.diagnostic = None;
         row.advance()?;
         replace_execution(&write, &mut runtime, &before, &row, None)?;
-        write
-            .commit()
-            .map_err(|e| Error::new("outcome_unknown", e.to_string()))?;
+        write.commit()?;
         Ok(
             json!({"execution_id":id,"revision":row.revision.to_string(),"phase":row.phase,"application":row.application}),
         )

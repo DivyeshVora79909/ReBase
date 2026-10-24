@@ -20,6 +20,14 @@ impl Backend for Redb {
 macro_rules! readable {
     ($ty:ty) => {
         impl ReadView for $ty {
+            fn has_multimap_tables(&self) -> Result<bool> {
+                Ok(self
+                    .0
+                    .list_multimap_tables()
+                    .map_err(error)?
+                    .next()
+                    .is_some())
+            }
             fn table_exists(&self, spec: &TableSpec) -> Result<bool> {
                 Ok(self.list_tables()?.iter().any(|n| n == &spec.name))
             }

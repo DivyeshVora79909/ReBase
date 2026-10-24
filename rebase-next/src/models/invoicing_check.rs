@@ -437,13 +437,13 @@ pub(crate) fn check(store: &Store<Invoicing>) -> Result<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::ReadableTable;
     use crate::{
         binding::Binding,
         local::{KV, Mutation},
         model::Prepared,
         native_slice::Context,
     };
-    use redb::ReadableDatabase;
     use serde_json::json;
     use std::sync::Arc;
 
