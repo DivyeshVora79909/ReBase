@@ -137,6 +137,15 @@ pub(crate) fn failure(id: Value, kind: &str) -> Value {
         "unavailable_reference" => (-32000, "A required identity is unavailable"),
         "already_exists" => (-32000, "Record already exists"),
         "stale_version" => (-32000, "Record changed; refresh before editing"),
+        "transaction_conflict" => (
+            -32000,
+            "Concurrent protected state changed; attempt aborted",
+        ),
+        "transaction_aborted" => (-32000, "The storage attempt aborted; no automatic retry"),
+        "transaction_limit" => (
+            -32000,
+            "A storage key, value, size or lifetime limit was reached",
+        ),
         "model_mismatch" => (-32000, "Model or store format differs"),
         "invariant" => (-32000, "The settled state violates a declared rule"),
         "feedback" => (-32000, "The final calculation graph contains feedback"),
@@ -222,5 +231,30 @@ pub fn serve<B: Binding>(
         serde_json::to_writer(&mut output, &handle(store, &bytes))?;
         output.write_all(b"\n")?;
         output.flush()?;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn definite_storage_rejections_remain_distinct_from_uncertain_commit() {
+        for kind in [
+            "transaction_conflict",
+            "transaction_aborted",
+            "transaction_limit",
+        ] {
+            let reply = failure(json!("attempt"), kind);
+            assert_eq!(reply["error"]["code"], -32000);
+            assert_eq!(reply["error"]["data"]["kind"], kind);
+        }
+        let unknown = failure(json!("attempt"), "outcome_unknown");
+        assert_eq!(unknown["error"]["code"], -32001);
+        assert_eq!(unknown["error"]["data"]["kind"], "outcome_unknown");
+        assert_eq!(
+            failure(json!("attempt"), "private_backend_detail")["error"]["data"]["kind"],
+            "internal"
+        );
     }
 }

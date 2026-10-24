@@ -1,7 +1,7 @@
 # G7 distributed storage adapter plan
 
-**Status: G7.0–G7.3 accepted, 2026-10-24.** Read the
-[G7.3 publication result](48-storage-publication-result.md). G7.4 is next;
+**Status: G7.0–G7.4 accepted, 2026-10-24.** Read the
+[G7.4 API result and continuation](49-storage-api-result.md). G7.5 is next;
 later rows require their stated executable evidence before acceptance. The accepted starting point remains source 0.15.0 and
 [V1 verification](44-workshop-verification-result.md). This plan changes no
 historical acceptance claims. FoundationDB is the first real distributed target;

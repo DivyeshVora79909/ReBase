@@ -16,6 +16,7 @@ pub mod foundationdb;
 mod redb;
 #[cfg(feature = "surrealkv")]
 pub mod surrealkv;
+pub mod target;
 
 pub use crate::native_slice::{Error as StorageError, Result};
 fn failure(detail: impl Into<String>) -> StorageError {

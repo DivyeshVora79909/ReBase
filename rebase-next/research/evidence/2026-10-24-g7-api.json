@@ -1,0 +1,1078 @@
+{
+  "baseline_commit": "376074a018d9a2b243eca0a6830e2e56c8e32677",
+  "checkpoint": "G7.4",
+  "checks": {
+    "clippy": "cargo clippy --locked --all-targets --features foundationdb,surrealkv -- -D warnings passed",
+    "default_compilation": "cargo check --locked --all-targets passed",
+    "formatting": "cargo fmt --all passed",
+    "owned_runtime_lifecycle": {
+      "controls": [
+        "start-owned-server",
+        "real-native-cli-read-write",
+        "graceful-stop-detects-exited-orphan",
+        "repeated-stop-idempotent",
+        "owned-port-4500-not-listening"
+      ],
+      "native_commit_probe": "set/get/clear verified by fdbcli; no application namespace changed",
+      "status": "passed"
+    },
+    "prior_suites_rerun": false,
+    "rpc_native": {
+      "failed": 0,
+      "filter": "rpc::tests::definite_storage_rejections_remain_distinct_from_uncertain_commit",
+      "passed": 1
+    }
+  },
+  "cli": {
+    "cases": [
+      {
+        "arguments": [
+          "--backend",
+          "bad",
+          "version"
+        ],
+        "expected_rejection": "--backend requires",
+        "status": "passed"
+      },
+      {
+        "arguments": [
+          "--cluster-file",
+          "unused",
+          "--backend",
+          "redb",
+          "version"
+        ],
+        "expected_rejection": "--cluster-file is only valid",
+        "status": "passed"
+      },
+      {
+        "arguments": [
+          "--backend",
+          "surrealkv",
+          "check",
+          "target/g74-nonexistent-surreal"
+        ],
+        "expected_rejection": "database directory does not exist",
+        "status": "passed"
+      },
+      {
+        "name": "composable-leading-option-order",
+        "status": "passed"
+      }
+    ],
+    "status": "passed"
+  },
+  "date": "2026-10-24",
+  "executable_sha256": "ea7fd9f7b91af006e7d0c4238527b0ebc9fac32ea270ea1556203f5cced66816",
+  "failed_trial_corrections": [
+    "Removed unnecessary return statements under feature-gated adapter branches after Clippy.",
+    "One ad hoc CLI probe omitted the dynamic native-client library search path; rerun with the documented LD_LIBRARY_PATH passed. The application HTTP workflows already used it."
+  ],
+  "formats": {
+    "api": "rebase-local-api-3",
+    "effects": "rebase-effects-3",
+    "native": "native-slice-kv-6",
+    "store": "rebase-store-9"
+  },
+  "handoff": {
+    "active_application_servers": 0,
+    "active_owned_fdb_servers": 0,
+    "next": "G7.5 then G7.6; no partially implemented migration retained"
+  },
+  "http": {
+    "foundationdb": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "foundationdb",
+      "binary_sha256": "ea7fd9f7b91af006e7d0c4238527b0ebc9fac32ea270ea1556203f5cced66816",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 5.205,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "revision": "14",
+        "roots": 5,
+        "rows": 63,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "896ab62c-7b65-442e-90f7-358eb7706be7"
+      },
+      "lifecycle": {
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "revision": "0",
+          "roots": 0,
+          "rows": 1,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "ab9c2333-a2a7-468c-9ecf-cf3972084139"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "89a03c47256a5de37d980389f5a299efc2082438d05a56eadb8d8888a1083527",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 11
+      },
+      "python": "3.12.14",
+      "race_outcomes": {
+        "committed": 8,
+        "transaction_conflict": 24
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 213.701,
+          "clients": 4,
+          "elapsed_seconds": 0.018718,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.116,
+            "p50_ms": 15.994,
+            "p95_ms": 17.116
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "f8a7e426-5ef7-47e5-a1f0-c8ff8164d31c",
+            "c07cfe21-542d-40ad-ad8a-44a978d7b442",
+            "06acb848-ed38-46c2-8a47-09a3f94f74c8",
+            "93377c8f-3edd-4e9d-a15f-b071d3497b9d"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 194.275,
+          "clients": 4,
+          "elapsed_seconds": 0.020589,
+          "latency": {
+            "count": 4,
+            "max_ms": 19.033,
+            "p50_ms": 17.308,
+            "p95_ms": 19.033
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "f39126e4-6fee-4468-8c7f-bd7a7eaed96a",
+            "cb0fe3d2-7059-445f-89f5-bcdb50e16735",
+            "d4dfee46-1c4c-4f2b-9386-e7cd768d476c",
+            "865d8068-beef-4827-a5e8-1f09a5e69ea0"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 292.919,
+          "clients": 4,
+          "elapsed_seconds": 0.013656,
+          "latency": {
+            "count": 4,
+            "max_ms": 12.704,
+            "p50_ms": 10.99,
+            "p95_ms": 12.704
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "8d108511-9a05-4011-ba51-bd70b46802ae",
+            "e67d4fc7-ec28-4896-896e-916134f1c1cf",
+            "60c2b5d1-58f3-49bb-adaa-bf36ffad8635",
+            "9159041e-6ec6-4e0d-a3a8-f0768ee8073a"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 217.24,
+          "clients": 4,
+          "elapsed_seconds": 0.018413,
+          "latency": {
+            "count": 4,
+            "max_ms": 16.743,
+            "p50_ms": 15.641,
+            "p95_ms": 16.743
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "449f65a8-983d-485f-874f-0593086df698",
+            "7415814b-6952-4b2d-b97c-8e7015baa874",
+            "84b7cbba-97ea-45c1-b32d-45e1108c33a4",
+            "a263d2e1-9dfc-47f4-9480-9ddf8d5162a6"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 294.852,
+          "clients": 4,
+          "elapsed_seconds": 0.013566,
+          "latency": {
+            "count": 4,
+            "max_ms": 12.949,
+            "p50_ms": 11.017,
+            "p95_ms": 12.949
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "d9e45ff1-43df-4b88-86a1-1c9ce802857f",
+            "85ccbc83-08ea-458f-9bcf-0a71c94b06b2",
+            "e27bf1bb-7551-495b-ae0c-08cb694c1cef",
+            "96d35473-6f32-46a0-91ff-0dbcb316d49a"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 210.02,
+          "clients": 4,
+          "elapsed_seconds": 0.019046,
+          "latency": {
+            "count": 4,
+            "max_ms": 17.214,
+            "p50_ms": 15.154,
+            "p95_ms": 17.214
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "1bf041f7-a48a-4f4d-8722-841b1f5864c8",
+            "81078b90-d2e9-4270-be94-61ea1a3d5365",
+            "2b94a497-33b0-4794-bd0a-a08e55470b8f",
+            "a70f6681-4d49-44f8-8d28-e6c27a942a55"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 287.502,
+          "clients": 4,
+          "elapsed_seconds": 0.013913,
+          "latency": {
+            "count": 4,
+            "max_ms": 12.926,
+            "p50_ms": 11.916,
+            "p95_ms": 12.926
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "6c0f73fb-d08c-4447-8378-66b4e8181738",
+            "328435bb-87e4-4294-ace3-7da3295698c7",
+            "ac1226ff-2a68-4065-af69-21b98ce03596",
+            "4b556430-3177-458d-8b67-906c21371bea"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 200.082,
+          "clients": 4,
+          "elapsed_seconds": 0.019992,
+          "latency": {
+            "count": 4,
+            "max_ms": 18.103,
+            "p50_ms": 17.224,
+            "p95_ms": 18.103
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "263427d9-7cd4-42bb-8cd2-b25a90a84133",
+            "3ee4c0eb-7a11-4a58-9439-4be8ee96fc7a",
+            "14af286d-9942-4a0b-9c4f-df796eba68c0",
+            "628e8e15-2750-408f-ab3e-f92c1ed88312"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Global revision/receipt keys may cause conservative conflicts; no disjoint-root scale claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "107b2e4e-f21b-4752-81df-5f40daaeab8c",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "7fe4feed-6ec6-46d2-9664-65dd06efda0b",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    },
+    "redb": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "redb",
+      "binary_sha256": "ea7fd9f7b91af006e7d0c4238527b0ebc9fac32ea270ea1556203f5cced66816",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 3.396,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "revision": "14",
+        "roots": 5,
+        "rows": 63,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "fa7ead46-2afc-49f6-ac3e-7c6a5903b712"
+      },
+      "lifecycle": {
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "revision": "0",
+          "roots": 0,
+          "rows": 1,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "edc6091f-17fa-4056-aaaa-09003e18ef4c"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "2d5d5940fd2345dab12780a9ff0cb5fa7de71847dca757e31dda1c8c4763484e",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 11
+      },
+      "python": "3.12.14",
+      "race_outcomes": {
+        "committed": 8,
+        "invariant": 12,
+        "stale_version": 12
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 308.178,
+          "clients": 4,
+          "elapsed_seconds": 0.01298,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.845,
+            "p50_ms": 10.558,
+            "p95_ms": 10.845
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "5652c5fc-e3d2-446c-8c80-fcb24aa38146",
+            "71e5f5ef-0cb4-4c96-a05b-a81643309de6",
+            "0108dfaa-20ee-48e5-9bb0-7646d4122343",
+            "0dfb9455-edff-460d-b279-ff3e5f0ec998"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 273.561,
+          "clients": 4,
+          "elapsed_seconds": 0.014622,
+          "latency": {
+            "count": 4,
+            "max_ms": 13.387,
+            "p50_ms": 11.431,
+            "p95_ms": 13.387
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "8f064eeb-30e4-4a1d-9fba-8226244c2abe",
+            "db2e11af-8091-4d40-a74c-a4c053ed3f15",
+            "a3168c81-ab36-431c-9690-1ee92065a0b5",
+            "884cabcd-b843-4537-a0d7-8ff9087c9631"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 328.889,
+          "clients": 4,
+          "elapsed_seconds": 0.012162,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.854,
+            "p50_ms": 9.122,
+            "p95_ms": 10.854
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "1ade552d-cf98-4978-81cf-133183f15239",
+            "e7e0b590-8791-4cfa-a601-05cb13d596c2",
+            "7dd3402e-8540-4379-ad23-97fab51de36d",
+            "ce77cd94-bc93-47f6-9c8a-818789525cef"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 276.555,
+          "clients": 4,
+          "elapsed_seconds": 0.014464,
+          "latency": {
+            "count": 4,
+            "max_ms": 12.45,
+            "p50_ms": 10.767,
+            "p95_ms": 12.45
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "75d4c78f-601e-46ad-bb85-20200b55d878",
+            "7f5d4f05-ae23-4e2d-8cc4-57b1a9a8503d",
+            "39bbd258-ee29-41f9-a4bd-bb98e87afaf9",
+            "2247c1fb-aaaf-4aa4-8139-42d264b1d838"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 365.765,
+          "clients": 4,
+          "elapsed_seconds": 0.010936,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.222,
+            "p50_ms": 8.701,
+            "p95_ms": 10.222
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "251bd2bf-a227-4569-8cf2-9a08cb178693",
+            "25051434-8a1f-4f47-b1eb-22b900c71eed",
+            "5cf681bd-7de9-4cd0-8222-fa54361fdbcc",
+            "fe98428d-7f93-4a5d-b31c-0b7f6d4d2fc1"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 243.838,
+          "clients": 4,
+          "elapsed_seconds": 0.016404,
+          "latency": {
+            "count": 4,
+            "max_ms": 13.822,
+            "p50_ms": 11.967,
+            "p95_ms": 13.822
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "2d34c50b-917f-4f75-9cc5-9f80a2c49a63",
+            "7bc01491-3084-48c8-b867-075115b3032a",
+            "a0d8af21-4749-4a92-beb2-902df6dd103c",
+            "a6fca6e7-5e42-4c38-b531-3515412f6ed5"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 337.161,
+          "clients": 4,
+          "elapsed_seconds": 0.011864,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.835,
+            "p50_ms": 9.857,
+            "p95_ms": 10.835
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "707b221c-1d81-4657-bbc5-01a62dd618a9",
+            "367e8a77-c0f8-4537-af57-d32fe05dc4be",
+            "fba143db-fed1-4138-a916-32daba438fda",
+            "4c0897bb-6929-4692-b31e-d145a1e2425c"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 259.008,
+          "clients": 4,
+          "elapsed_seconds": 0.015444,
+          "latency": {
+            "count": 4,
+            "max_ms": 14.107,
+            "p50_ms": 12.049,
+            "p95_ms": 14.107
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "25311aff-817a-43df-b575-f50a4d6b219a",
+            "b7000dc7-d781-4c20-b83f-738aeb4093a3",
+            "fe3e178e-bc85-46e3-98b9-cab70b981bed",
+            "9f4fbf92-31db-423c-b158-7a3b363dfd59"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 3
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Global revision/receipt keys may cause conservative conflicts; no disjoint-root scale claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "d550c0cb-bcce-473c-a840-6e6296d14926",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "b03ff893-adb0-4c3e-aa2a-a632d73ae285",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    },
+    "surrealkv": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "surrealkv",
+      "binary_sha256": "ea7fd9f7b91af006e7d0c4238527b0ebc9fac32ea270ea1556203f5cced66816",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 3.664,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "revision": "14",
+        "roots": 5,
+        "rows": 63,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "c93aa613-74ff-4934-950c-919254da00cf"
+      },
+      "lifecycle": {
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "revision": "0",
+          "roots": 0,
+          "rows": 1,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "513b835d-ec44-47c4-846b-76d272b27b9a"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "c395a94e5c1d93586642673b2f71fefac825fd335a391cdd3abca5455daa4d69",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 11
+      },
+      "python": "3.12.14",
+      "race_outcomes": {
+        "committed": 8,
+        "invariant": 3,
+        "stale_version": 5,
+        "transaction_conflict": 16
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 330.941,
+          "clients": 4,
+          "elapsed_seconds": 0.012087,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.325,
+            "p50_ms": 9.653,
+            "p95_ms": 10.325
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "7c977382-60b1-486b-a877-e547605fa310",
+            "e6f203eb-ddcb-48c8-99ab-31ba0593bc02",
+            "a941172a-4e07-4c3c-ba59-9840b1ba3056",
+            "c1615c45-a0c9-4c7b-912c-f8afb9579ff2"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 283.661,
+          "clients": 4,
+          "elapsed_seconds": 0.014101,
+          "latency": {
+            "count": 4,
+            "max_ms": 13.05,
+            "p50_ms": 10.12,
+            "p95_ms": 13.05
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "593752b3-749d-463d-acac-5318fd70ef43",
+            "496b5f55-e273-40fe-aa7e-056ddb2209fc",
+            "86dcca21-2718-47c6-95d7-5cc70ecf6822",
+            "c0b44c3e-5647-4b7b-b6a7-1f2f94aa9971"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 356.586,
+          "clients": 4,
+          "elapsed_seconds": 0.011217,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.579,
+            "p50_ms": 8.772,
+            "p95_ms": 10.579
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "448876bf-4404-46e2-8833-4e41f480b66a",
+            "113987b4-eb01-4e2b-993d-9f2a59184237",
+            "9c0dcde6-fba8-4032-9450-ce896950a8cc",
+            "9edb791e-4572-42fa-9d9c-43363b34421c"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 277.556,
+          "clients": 4,
+          "elapsed_seconds": 0.014412,
+          "latency": {
+            "count": 4,
+            "max_ms": 13.586,
+            "p50_ms": 9.175,
+            "p95_ms": 13.586
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "63598c46-7a19-4fdb-94ac-9744d690424e",
+            "0c27dc1b-3dea-4c39-9cb3-25aacdb1ab24",
+            "8a154f2e-6283-42db-999b-96d3ffc86fe5",
+            "48ce1dbf-8bc5-4e03-9ea5-478e4bca4b94"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 1,
+            "transaction_conflict": 2
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 404.763,
+          "clients": 4,
+          "elapsed_seconds": 0.009882,
+          "latency": {
+            "count": 4,
+            "max_ms": 9.234,
+            "p50_ms": 7.549,
+            "p95_ms": 9.234
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "499b4468-bde7-4318-80e6-165c0b17643e",
+            "fd9dcb77-49ba-419f-a8b3-270a69bbcde3",
+            "9a110ef0-537e-487d-a275-7622d1a842ce",
+            "4ce74d1c-49ad-4039-adc5-92b557025846"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "stale_version": 2,
+            "transaction_conflict": 1
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 286.414,
+          "clients": 4,
+          "elapsed_seconds": 0.013966,
+          "latency": {
+            "count": 4,
+            "max_ms": 13.19,
+            "p50_ms": 12.645,
+            "p95_ms": 13.19
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "a7712406-36dd-452c-bcc4-a00581d37e25",
+            "52b4211e-0226-4fc0-a120-a437a7eef855",
+            "754afaa4-aa8c-4a76-83d3-da80575e91eb",
+            "6994da37-1632-4c27-b99c-74328d20ddca"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 1,
+            "transaction_conflict": 2
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 340.473,
+          "clients": 4,
+          "elapsed_seconds": 0.011748,
+          "latency": {
+            "count": 4,
+            "max_ms": 10.003,
+            "p50_ms": 8.908,
+            "p95_ms": 10.003
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "7d2f2918-03c0-4b3c-b27c-1b20116105aa",
+            "21345ce6-4e06-4a52-8613-7d31bb0a5374",
+            "d7fc9a95-c4c9-4865-b529-b6dda29076a3",
+            "77db6b55-f7ce-4873-90f2-228b5612d5be"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 310.602,
+          "clients": 4,
+          "elapsed_seconds": 0.012878,
+          "latency": {
+            "count": 4,
+            "max_ms": 11.94,
+            "p50_ms": 8.505,
+            "p95_ms": 11.94
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "41c51678-f519-488f-ab48-bb2ba967c0f8",
+            "cbb5ae18-3593-4b62-93a7-aec46323e2ed",
+            "64ee7f15-ea50-4c42-ae8c-b191d24cc16f",
+            "c34d3604-4f28-45ee-9017-6740d223a26c"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "invariant": 1,
+            "transaction_conflict": 2
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Global revision/receipt keys may cause conservative conflicts; no disjoint-root scale claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "2d3d0b98-7aa0-4ba3-8109-eeca53caa982",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "cb5d51ac-c5e9-4b18-beb2-0ae74ac5425c",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    }
+  },
+  "limitations": [
+    "Native database commit-acknowledgement fault injection is not certified by HTTP proxy response loss.",
+    "Controlled before-forward absence is not evidence that arbitrary receipt absence proves a submitted request aborted.",
+    "One local unreplicated FoundationDB process; no replicated node, power/disk-loss or production capacity claim.",
+    "Global Meta and receipt header coordination remains until G7.5."
+  ],
+  "logs_sha256": {
+    "target/g74-build.log": "f5e539833ebb646a22ebdb11aff5a74366ea50a26c71c8da7e851887e65c4cd4",
+    "target/g74-cli-checks.json": "81d73cfa94b85da7254d3aa032bfdf32182cfc2e44f2eaa31887da5d24e82744",
+    "target/g74-clippy.log": "876db30830674de1f1f87ad6f6be814d2926d63d33b4b81a338c2338d557f9c5",
+    "target/g74-default-check.log": "41b950b7f0d977070ceb1a8d7b2fb359bf6a22b0ecbaccb875badb6e62c47afc",
+    "target/g74-fdb-lifecycle.json": "464883e63857203f8d3d08ffe73460e0f507f98b346ce9687c22d15d29f94acf",
+    "target/g74-http-foundationdb.log": "dcc47f70acf8db2004733d05f38002592edf3dc23a5af8e9bf75dcaeeee60878",
+    "target/g74-http-foundationdb/result.json": "b93f719dfa874b9d037e57cb23e37382aff0f752f0add1ec00649cab0fc1ab57",
+    "target/g74-http-redb.log": "92e90772667c64ad8f2f825c63944653ccff9f5e65489facb48a951bc04cd95b",
+    "target/g74-http-redb/result.json": "733badb8348ed04015d6d3586303ed6b5ff146d7c5a8c4bb54bf4e16fa020c4f",
+    "target/g74-http-surrealkv.log": "a9d88c3f1d848022b07b3e30e1c205c42bf71153ad5275e50bbc25cf18cdeaf1",
+    "target/g74-http-surrealkv/result.json": "5938694ad59f9d1ec3b1730e616ae684ba25137cf3b105b4207d29190c1e229f",
+    "target/g74-rpc-tests.log": "76d70b10d1dad177ccdd6206920ae8e84bd87fbf2cdec2dc03acb74888197958"
+  },
+  "next": "G7.5 scoped coordination, then G7.6 final cross-adapter acceptance; user budget pause after clean commit.",
+  "review_findings": [
+    "New backend transaction rejection codes were masked as internal by RPC; added explicit conflict/abort/limit presentation and native control.",
+    "No further supported correctness issue found by independent read-only review of targets/CLI/proxy/runtime guard lifecycle.",
+    "Local FDB stop helper waited for zombie reaping after the server had exited. It now checks the owned command lifecycle and passed a real start/read/write/stop/repeated-stop/listener check."
+  ],
+  "source_sha256": {
+    "Cargo.lock": "90989b7a40b379ade024f333b4a33d1a0ecb279cbfa3fc11b0342d860d359e6c",
+    "Cargo.toml": "a519e2e88d11b1d4382e6519bbfb0cc68c0a683673f4f0b94db97c0a9ef0b0cd",
+    "examples/g7_application.rs": "c44a97acd5c77ceb674e2068fe32f4664a1a01b8120e2141363a7f1831888258",
+    "examples/g7_storage.rs": "c98fb776d3f334d793ce38f0d847c5aa71deea8ef441e21cada851970aaaac2c",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/bin/rebase-next.rs": "ca48fd97c8660c95e8775cb4e5de32363b115644899d939498ede46adbc4ff16",
+    "src/effects.rs": "67f69be5da28036faea2104705c6b351c3d079ea3042448d3b3bfea19d5a7b17",
+    "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+    "src/effects/conformance.rs": "ff53b80e39874f7e44b2d0a711c66903450eab35fa10b2317b8bdbc9a461aaef",
+    "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+    "src/effects/state.rs": "4c322471700ff24b785449f211d1346bce72c47ca460ed9a37f3f07ec44fefd1",
+    "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+    "src/lifecycle.rs": "ecd07838b57f3e3fee6943fefd865c036c3bc62e0f0bc6562717f0125bac5d05",
+    "src/local.rs": "4de6316ff383aa462549fc2972a5e93b458b26d6abea2e34da2ee6e3c789969b",
+    "src/models/effect_demo.rs": "75e732f03bc21829dc958f008ae0f6d26d59c546965b69b63b7e9b4d96c41f9d",
+    "src/models/quantity.rs": "1eb42d9fe17a2342d96017c4fabe34dfda1d09cf49fcfa93054ddb9eedeb25c5",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_codec.rs": "e8b005ddfb7d166e63b0a0e4f28ea62a17ccced89fcbc476eb25e76d9199ad84",
+    "src/native_slice.rs": "d5ed1d09f208637cc4dade5926617f0dfef3312fa3095e1a465a3b0558dccc4e",
+    "src/rpc.rs": "f59d7f3e70a3283da4ccafd774875ab7e81bfd3a1548273232b72270458eea7d",
+    "src/security.rs": "dd6f9bd2ab232c14d08e2d4346d633d6af2867cfe0ee11cd8194bb7620f5faa5",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/storage.rs": "238bf5a28618ab115d88917a66752928a3fddac679ba3b09fecf8c91977b4a7d",
+    "src/storage/application_checks.rs": "07fe468fd66dddb6429fe409ef6fcaf1437785814b1eb47329f575f3ca0ba43f",
+    "src/storage/concurrency_checks.rs": "87d7d5d94e13314ef033f79238f0b8605666497c9175098d909982d6b2323a72",
+    "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+    "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+    "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+    "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+    "src/storage/target.rs": "c4cb75d1071c3a3eb20e61946d64bb933cf9bd04fe5254fa7845f24a657a5c99",
+    "tools/capacity.py": "2984cedb7d163b54ef4215971ca3af868e2b6f9854b93df544b147e239933806",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/fdb_cluster.py": "5c6ad0029fe549c6e7eadad5a0cea15b8bd4393372dcb4dab171d8aaf2b46925",
+    "tools/g7_http.py": "5225deebba15d44164f0c8cc99406be5d6acbcfc18b8749c7bb4c6112f511629",
+    "tools/harness.py": "b38592b7e47c9d5869abca7f70d3f31c4d3feef64e11c36a77b9141a4a5b3f0a"
+  },
+  "source_version": "0.15.0",
+  "status": "accepted",
+  "versions": {
+    "foundationdb_rust": "0.11.0",
+    "foundationdb_server_client": "7.3.77",
+    "redb": "4.4.0",
+    "rust": "1.95.0",
+    "surrealkv": "1.0.0"
+  }
+}

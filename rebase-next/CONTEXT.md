@@ -1,29 +1,40 @@
 # Compact context — 2026-10-24
 
-**Active: G7.4 ordinary CLI/API outcomes; G7.0–G7.3 complete.**
+**Paused cleanly after G7.4; G7.0–G7.4 complete. Next: G7.5, then G7.6.**
 The user requested review of incoming `643c8f6` and continuation on existing
-`main`. All 90 G7.2 source fingerprints match; raw 25 /21 /8 and previous
-application 19 /19 /13 checks were reproduced on FoundationDB /SurrealKV /redb.
+`main`, with a clean checkpoint handoff for their remaining token budget.
+All 90 incoming G7.2 fingerprints match; its 54 raw /51 application checks were
+reproduced. G7.3 `376074a` adds real effect facts/inbox/application, authority
+repair aborts, both reference races and controlled initialization; expanded
+application checks pass 58 FoundationDB /58 SurrealKV /49 redb controls.
 Read [the contract](research/45-storage-adapter-plan.md),
-[G7.2](research/47-storage-integration-result.md) and
-[G7.3](research/48-storage-publication-result.md). G7.3 passes expanded
-application suites 58 /58 /49, including real nonempty facts/inbox/domain
-publication, authority repair aborts, both reference races and controlled
-initialization. Source formats and model semantics remain 0.15.0-compatible.
-The old overlapping unfinished local migration was discarded, as authorized.
+[G7.3](research/48-storage-publication-result.md) and
+[G7.4 plus exact continuation](research/49-storage-api-result.md).
 
-**Exact continuation:** verify G7.4 backend selection through the ordinary CLI
-and HTTP server; cover same-ID committed/absent reconciliation after controlled
-transport loss, client process restart and bounded client races. CLI/target/HTTP
-work in progress is not accepted by the G7.3 result. G7.5 still must remove
-global Meta and receipt header writes; no independent-root scale claim is
-accepted. G7.6 must publish shared cross-backend acceptance and operational docs.
-Root is sole Cargo owner, two jobs, incremental off, existing cache
-`target/verification-build`. FoundationDB 7.3.77 is local at 127.0.0.1:4500;
-cluster/native lib are under `target/g7-environment`. Set FDB_CLIENT_LIB_PATH
-and LD_LIBRARY_PATH to its lib directory. Stop the owned runtime at handoff.
-No automatic transaction retries; retain original ID/context for unknown outcomes.
-TiKV, G6 accounting, G8 execution and frontend remain deferred.
+G7.4 wires explicit backend selection through ordinary CLI/HTTP and fixes RPC
+presentation of confirmed storage conflict/abort/limit outcomes. All three real
+secured HTTP runs pass 32 competing attempts each, same-ID committed/absent
+HTTP-loss reconciliation, SIGKILL/restart with complete eleven-table equality,
+fresh restore, archive expiry and reset. Native commit-ack injection and
+replicated failover remain untested. Source/store/native/effect/API formats
+remain 0.15.0 /9 /6 /3 /3. Last packaged release remains 0.6.0.
+
+**Exact continuation:** implement and verify G7.5 scoped revision/receipt
+coordination, then G7.6 final cross-adapter acceptance. No partial G7.5 code is
+retained. Paper 49 records the reviewed token/population/cursor/receipt-slot
+proposal, ownership boundaries and required real schedules. Global Meta and
+receipt header writes still remain; no independent-root scale claim is accepted.
+The previous overlapping unfinished local migration was discarded as authorized.
+Do not restart accepted G7.0–G7.4 or blindly apply historical numeric fixtures.
+Commit/push verified checkpoints on existing `main`; no branches/stashes.
+
+One Cargo owner, two jobs, incremental off, cache `target/verification-build`.
+FoundationDB 7.3.77 cluster/client/server are under `target/g7-environment`;
+FDB_CLIENT_LIB_PATH and LD_LIBRARY_PATH point at its lib directory. The owned
+server is stopped at this handoff; restart with `python3 -B tools/fdb_cluster.py start`.
+Read [backend usage](docs/storage-backends.md). No automatic retries; retain the
+original operation ID and context for uncertain outcomes. TiKV, G6 accounting,
+G8 execution and frontend remain deferred.
 
 **V1.1–V1.5 complete: self-explaining non-accounting verification.**
 Read the [workshop result](research/44-workshop-verification-result.md),

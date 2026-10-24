@@ -36,11 +36,18 @@ def cli(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     )
 
 
+def is_server(pid: int) -> bool:
+    try:
+        cmdline = Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ")
+        return str(FDBSERVER).encode() in cmdline
+    except OSError:
+        return False
+
+
 def server_pid() -> int | None:
     try:
         pid = int(PIDFILE.read_text().strip())
-        cmdline = Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ")
-        if str(FDBSERVER).encode() in cmdline:
+        if is_server(pid):
             return pid
     except (OSError, ValueError):
         pass
@@ -91,10 +98,12 @@ def stop() -> None:
     os.kill(pid, signal.SIGTERM)
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            PIDFILE.unlink(missing_ok=True)
+        # An exited orphan can remain a zombie under a container's PID 1.
+        # kill(pid, 0) still succeeds then, but it is no longer our live server.
+        # Check the owned command rather than waiting for unrelated reaping.
+        if not is_server(pid):
+            if PIDFILE.exists() and PIDFILE.read_text().strip() == str(pid):
+                PIDFILE.unlink(missing_ok=True)
             print("FoundationDB server stopped")
             return
         time.sleep(0.2)
