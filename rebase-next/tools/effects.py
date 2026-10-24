@@ -18,7 +18,7 @@ def run(binary, destination):
         backend.start()
         catalog = backend.call("model.describe", {})
         model = catalog["model"]
-        require(catalog["api"] == "rebase-local-api-3" and
+        require(catalog["api"] == "rebase-local-api-4" and
                 catalog["capabilities"]["effects"]["default_worker_mode"] == "disabled", "G5a catalog identity")
         token = restricted_actor(backend, model)
         actor = client.call(backend.url, token, "session.describe", {})["actor"]
@@ -112,7 +112,10 @@ def run(binary, destination):
         require(status(second)["phase"] == "ready" and status(execution)["phase"] == "cancelled", "Crash recovery lost intent")
         require(client.execute(backend.url, token, reused_plan)["result"] == reused["result"], "Crash replay differs")
         before = snapshot(backend, "recovery")
-        require(len(before["tables"]) == 11, "Incomplete effect inventory")
+        require(set(before["tables"]) == {
+            "native_kv", "public_records", "reader_records", "authority", "operations",
+            "receipt_slots", "query_epochs", "local_runtime", "effect_executions",
+            "effect_due", "effect_facts", "effect_inbox", "effect_runtime"}, "Incomplete effect inventory")
         backend.stop()
         checked = backend.cli("check", backend.store)
         require(checked["effects"]["retained"] == 2 and checked["effects"]["unresolved"] == 1 and checked["effects"]["reserved_facts"] == 1, "Reconstructed effect counts")

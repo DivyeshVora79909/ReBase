@@ -89,19 +89,29 @@ fn binary_demo_offline_export_process_api_and_restart_are_usable_together() {
     let source = "00000000-0000-4000-8000-000000000060";
     let account = "00000000-0000-4000-8000-000000000030";
     let operation = Uuid::new_v4();
-    let context = rpc(
+    let current = rpc(
         &dir,
-        &[json!({"jsonrpc":"2.0","id":"session","method":"session.describe","params":{}})],
-    )[0]["result"]["operation_context"]
-        .clone();
+        &[
+            json!({"jsonrpc":"2.0","id":"session","method":"session.describe","params":{}}),
+            json!({"jsonrpc":"2.0","id":"record","method":"records.get","params":{"model":catalog["model"],"id":source}}),
+        ],
+    );
+    let context = current[0]["result"]["operation_context"].clone();
+    let version = current[1]["result"]["version"].clone();
+    assert!(Uuid::parse_str(version.as_str().unwrap()).is_ok());
     let update = json!({"jsonrpc":"2.0","id":"edit","method":"records.mutate","params":{
         "model":catalog["model"],"context":context,"operation_id":operation,"commands":[{"op":"update","id":source,
-        "if_version":"2","set":{"target":"25"},"unset":[]}],"returning":[source]}});
+        "if_version":version,"set":{"target":"25"},"unset":[]}],"returning":[source]}});
     let root = json!({"jsonrpc":"2.0","id":"root","method":"roots.read","params":{
         "model":catalog["model"],"owner":account,"slot":2,"read":{"kind":"summary"}}});
     let response = rpc(&dir, &[update.clone(), root.clone()]);
     assert_eq!(response.len(), 2);
-    assert_eq!(response[0]["result"]["result"]["revision"], "3");
+    assert_eq!(response[0]["result"]["status"], "committed");
+    assert_ne!(response[0]["result"]["result"]["revision"], version);
+    assert_eq!(
+        response[0]["result"]["result"]["revision"],
+        response[0]["result"]["result"]["records"][0]["record"]["version"]
+    );
     assert_eq!(
         response[0]["result"]["result"]["records"][0]["record"]["derived"]["delta"],
         "-5"

@@ -1,8 +1,10 @@
 # G7 distributed storage adapter plan
 
-**Status: G7.0–G7.4 accepted, 2026-10-24.** Read the
-[G7.4 API result and continuation](49-storage-api-result.md). G7.5 is next;
-later rows require their stated executable evidence before acceptance. The accepted starting point remains source 0.15.0 and
+**Status: G7.0–G7.5 accepted, 2026-10-25.** Read the
+[G7.5 coordination result and continuation](50-scoped-coordination-result.md).
+G7.6 is next; its cross-adapter controls must pass before final acceptance.
+Current source is 0.16.0 /store 10 /native codec 7 /effect codec 4 /API 4.
+The accepted starting point was source 0.15.0 and
 [V1 verification](44-workshop-verification-result.md). This plan changes no
 historical acceptance claims. FoundationDB is the first real distributed target;
 redb and standalone SurrealKV follow. TiKV remains deferred.
@@ -190,9 +192,9 @@ range or guard semantics.
 
 TiKV, G6 accounting expansion, G8 workload/release expansion, frontend,
 automatic retries, migration, arbitrary queries, and production-capacity claims
-are outside this plan. Redb remains the accepted embedded deployment until a
-separately accepted G7 result changes that statement. Preparation and this plan
-do not mean implementation started or any database was executed.
+are outside this plan. The last packaged deployment remains redb 0.6.0;
+the accepted G7 source checkpoints do not create a new deployment bundle.
+Only the linked executed checkpoint results establish adapter acceptance.
 
 Primary references to recheck when implementation is selected:
 

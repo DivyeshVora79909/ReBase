@@ -146,7 +146,11 @@ fn initial(owner: Address, kind: IndexCode) -> Bytes {
     let key = Key::Root(owner);
     [(
         key.encode(),
-        native_codec::encode(&key, &Stored::Root(Root::empty(kind, 0).unwrap())).unwrap(),
+        native_codec::encode(
+            &key,
+            &Stored::Root(Root::empty(kind, Uuid::new_v4()).unwrap()),
+        )
+        .unwrap(),
     )]
     .into()
 }
@@ -681,7 +685,7 @@ fn range_rejects_overflow_and_corrupt_traversed_links() -> Result<()> {
             last: TimeKey(100),
         }),
         summary,
-        ..Root::empty(FINANCIAL, 0)?
+        ..Root::empty(FINANCIAL, Uuid::new_v4())?
     };
     let key = Key::Root(owner);
     malformed.insert(

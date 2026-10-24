@@ -108,7 +108,7 @@ fn intent_and_cancel_roll_back_after_actual_writes_and_share_receipts() {
         ]),
     );
     let before = store.observe_for_verification().unwrap();
-    assert_eq!(before["tables"].as_object().unwrap().len(), 11);
+    assert_eq!(before["tables"].as_object().unwrap().len(), 13);
     let snapshot = store.db.begin_read().unwrap();
     for abort in [
         1,
@@ -783,7 +783,7 @@ fn corrupt_effect_inventory_rejects_complete_check_and_restore_without_publicati
 fn action_metadata_is_checked_and_advertised_only_for_effect_models() {
     let model = Prepared::<EffectDemo>::load().unwrap();
     let catalog = model.public_catalog();
-    assert_eq!(catalog["api"], "rebase-local-api-3");
+    assert_eq!(catalog["api"], "rebase-local-api-4");
     assert_eq!(
         catalog["capabilities"]["effects"]["limits"]["unresolved"],
         64

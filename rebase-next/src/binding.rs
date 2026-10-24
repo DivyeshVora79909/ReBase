@@ -4,7 +4,7 @@ use crate::{
     local::Store,
     model::{Contract, Prepared},
     native_codec::{Key, StoredValue},
-    native_slice::{Attempt, Context, Meta, Model, ModelChange, Result},
+    native_slice::{Attempt, Context, Model, ModelChange, Population, Result},
 };
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -68,8 +68,8 @@ pub trait Binding: Copy + Clone + Debug + Eq + Send + Sync + 'static {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()>;
     fn check(store: &Store<Self>) -> Result<Value>;
@@ -124,7 +124,7 @@ pub(crate) fn headers<B: Binding>(
     model: &Prepared<B>,
     id: Uuid,
     input: &B::Input,
-    revision: u64,
+    revision: Uuid,
 ) -> Result<Vec<(Key, StoredValue<B>)>> {
     let contract = model.contract(input.contract())?;
     let mut values = vec![(Key::Incoming(id), StoredValue::Incoming(Default::default()))];

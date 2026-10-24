@@ -1,7 +1,8 @@
 # Bounded external work
 
-Source 0.12 implements the experimental `effect-demo` worker against an independent
-local fake provider. Business changes and immutable intent commit together.
+The experimental `effect-demo` worker introduced in source 0.12 uses an independent
+local fake provider. Current source 0.16.0 retains that bounded workflow with
+the API 4 token and storage contracts below. Business changes and immutable intent commit together.
 Provider facts commit before a separate ordinary domain application. The
 [G5c checkpoint](../research/39-ingress-recovery-implementation.md) records signed
 ingress and recovery acceptance; [G5b](../research/38-fenced-worker-implementation.md)
@@ -124,7 +125,7 @@ success, erase a blocked diagnostic or repeat an applied result.
 ## Status, cancellation and retry
 
 `effects.status {model, execution_id}` returns safe request/outcome, source,
-target, revision, schedule, phase, application, budgets, diagnostic and provider
+target, numeric execution revision, schedule, phase, application, budgets, diagnostic and provider
 key to a current Account reader; unavailable rows return `null`. Remote phase
 and application are separate: `succeeded` can be `pending`, `blocked` or `applied`.
 Offline checks also report blocked/uncertain counts, expired leases and oldest
@@ -132,10 +133,13 @@ eligible age.
 
 `effects.cancel {model, context, operation_id, execution_id, if_revision}`
 requires current Account Update and requester or administrator authority.
-Revision is a canonical integer string. Before start, cancellation clears the
+The request's `if_revision` is a canonical integer string matching the ordered
+per-execution fence. It is distinct from a record's UUID `version`. Before start, cancellation clears the
 lease and becomes terminal. After start/acceptance it invalidates ownership and
 retains `uncertain` until reconciliation. Known terminal success/failure stays
-terminal. Cancellation provides no compensation.
+terminal. The committed cancellation result has an opaque UUID `revision` for its
+receipt and a separate numeric `execution_revision`. Cancellation no longer
+writes a global domain revision. It provides no compensation.
 
 Save exact cancellation parameters, including the original `session.describe`
 operation context, before sending. Replay and `operations.status` use that
@@ -168,11 +172,20 @@ the existing 200,000-unit engine budget, invariants and reader/index repair.
 Duplicate facts consume no second slot. Contradictory terminal facts remain
 conflict evidence and cannot overwrite applied success.
 
+Successful domain application writes a fresh UUID token to changed records/roots
+and the fact's `applied_revision` marker in one transaction. This application token
+has equality semantics; it is not ordered against other effects. Execution
+revisions, claim fences and inbox `consumed_revision` remain numeric. Shared
+effect-runtime capacity/scheduling state still coordinates effect work, so
+separate execution IDs do not imply independent writers.
+
 Integrity reconstructs fact links, due classes, counts and bytes and verifies
-frozen bindings, application revisions and action/model identity. Backup contains
+frozen bindings, nonnil application tokens and action/model identity. Backup contains
 all private tables within the existing 64 MiB envelope. A pending inbox row also
 reserves its consumption-marker bytes. Receipt archive preserves external
-evidence. Reset requires a stopped worker and rejects unresolved work, unapplied
+evidence. Archive compares the complete backup digest inside its protected cleanup
+transaction, including facts, inbox, authority and runtime changes, before clearing
+receipts/slots and advancing context expiry. Reset requires a stopped worker and rejects unresolved work, unapplied
 success facts or pending inbox events. Consumed retained events permit a clean
 reset; there is no pruning or abandonment override at capacity.
 
@@ -186,6 +199,8 @@ identities change on clean reset, so old contexts and execution events cannot
 attach to reused source IDs. No force-ready override, live-provider, distributed-clone or
 exactly-once remote-execution claim is made.
 
-Source 0.12 uses store format 9 /native codec 6 /effect codec 3 /API 3. The four
-existing model identities are unchanged; older stores require matching binaries.
-There is no implicit migration. See [storage](storage.md) for recovery procedures.
+Current source 0.16.0 uses store format 10 /native codec 7 /effect codec 4 /API 4
+and behavior `effect-demo-ingress-4`. Historically, source 0.12 used store 9 /
+native codec 6 /effect codec 3 /API 3 and left its four prior model identities
+unchanged. Old stores and archives require their matching binaries; there is no
+implicit migration. See [storage](storage.md) for recovery procedures.

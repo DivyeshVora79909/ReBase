@@ -6,18 +6,18 @@ use crate::{
     model::{Prepared, Visibility},
     native_codec::{Address, Key, StoredValue},
     native_slice::{
-        Attempt, Command, Context, Error, Meta, ModelChange, ModelRecord, Result, Settled,
+        Attempt, Command, Context, Error, ModelChange, ModelRecord, Population, Result, Settled,
     },
     tree,
 };
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
-pub fn check_counts<B: Binding>(model: &Prepared<B>, meta: &Meta) -> Result<()> {
+pub fn check_counts<B: Binding>(model: &Prepared<B>, population: &Population) -> Result<()> {
     let limits = B::limits();
     let mut public = 0u32;
     let mut private = 0u32;
-    for (&code, &count) in &meta.counts {
+    for (&code, &count) in &population.counts {
         let declaration = model.contract(code)?;
         if declaration.visibility == Visibility::Engine {
             private += u32::from(count)
@@ -34,7 +34,7 @@ pub fn check_counts<B: Binding>(model: &Prepared<B>, meta: &Meta) -> Result<()> 
     }
     if public > u32::from(limits.public_records)
         || private > u32::from(limits.outputs)
-        || meta.reserved > limits.reservations
+        || population.reserved > limits.reservations
     {
         return Err(Error::new("state_limit", "bounded model population"));
     }
@@ -116,7 +116,7 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
         Option<&ModelRecord<B>>,
     ) -> Result<()>,
 ) -> Result<Settled> {
-    let Some(StoredValue::Meta(mut meta)) = ws.get(&Key::Meta)? else {
+    let Some(StoredValue::Meta(meta)) = ws.get(&Key::Meta)? else {
         return Err(Error::new("corrupt_state", "missing model header"));
     };
     if meta.model != model.identity()
@@ -142,10 +142,13 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
             "one command per UUID; 1..64 commands",
         ));
     }
-    let revision = meta
-        .revision
-        .checked_add(1)
-        .ok_or_else(|| Error::new("revision_exhausted", "store counter exhausted"))?;
+    let Some(StoredValue::Population(original_population)) = ws.get(&Key::Population)? else {
+        return Err(Error::new("corrupt_state", "missing population counters"));
+    };
+    let mut population = original_population.clone();
+    // A token identifies the state produced by this attempt. It is never an
+    // ordered store sequence, and cannot repeat after delete/recreate.
+    let revision = Uuid::new_v4();
     let role_slots: BTreeSet<_> = model
         .contracts()
         .flat_map(|c| c.outputs.iter().map(|o| o.role))
@@ -188,7 +191,7 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
                 }
                 let input = model.validate(*contract, fields)?;
                 validate_references(ws, model, &input, context)?;
-                let count = meta.counts.entry(*contract).or_default();
+                let count = population.counts.entry(*contract).or_default();
                 *count = count
                     .checked_add(1)
                     .ok_or_else(|| Error::new("state_limit", "source count"))?;
@@ -235,7 +238,7 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
                     validate_references(ws, model, &next.input, context)?;
                     Some(next)
                 } else {
-                    let count = meta
+                    let count = population
                         .counts
                         .get_mut(&previous.contract)
                         .ok_or_else(|| Error::new("corrupt_state", "missing source count"))?;
@@ -250,7 +253,7 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
         ws.put(Key::Record(id), new.clone().map(StoredValue::Record))?;
         changes.push(ModelChange { id, old, new });
     }
-    check_counts(model, &meta)?;
+    check_counts(model, &population)?;
     for change in &changes {
         if let (None, Some(new)) = (&change.old, &change.new) {
             for (key, value) in binding::headers(model, change.id, &new.input, revision)? {
@@ -264,8 +267,16 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
             }
         }
     }
-    B::settle_changes(ws, model, context, &changes, &mut meta, revision, allocate)?;
-    check_counts(model, &meta)?;
+    B::settle_changes(
+        ws,
+        model,
+        context,
+        &changes,
+        &mut population,
+        revision,
+        allocate,
+    )?;
+    check_counts(model, &population)?;
     for change in &changes {
         if let Some(new) = ws.record(change.id)? {
             validate_references(ws, model, &new.input, context)?;
@@ -319,7 +330,147 @@ pub fn settle_authorized<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding>
             ws.put(Key::Record(id), Some(StoredValue::Record(current)))?;
         }
     }
-    meta.revision = revision;
-    ws.put(Key::Meta, Some(StoredValue::Meta(meta)))?;
+    if population != original_population {
+        ws.put(Key::Population, Some(StoredValue::Population(population)))?;
+    }
     Ok(Settled { revision })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        models::quantity::{Quantity, SOURCE},
+        native_codec,
+        native_slice::Meta,
+        staging::Batch,
+    };
+    use serde_json::json;
+    use std::collections::BTreeMap;
+    type Image = BTreeMap<Vec<u8>, Vec<u8>>;
+    type Applied = (Uuid, Batch, BTreeSet<Vec<u8>>);
+
+    // This native control checks state and read/write sets. The storage
+    // conformance schedules independently establish real commit conflicts.
+    #[test]
+    fn opaque_tokens_preserve_noops_and_reject_delete_recreate_aba() {
+        let model = Prepared::<Quantity>::load().unwrap();
+        let context = Context {
+            tenant: Uuid::from_u128(1),
+            actor: Uuid::from_u128(2),
+        };
+        let mut rows = BTreeMap::from([
+            (
+                Key::Meta.encode(),
+                native_codec::encode_for::<Quantity>(
+                    &Key::Meta,
+                    &StoredValue::Meta(Meta {
+                        model: model.identity().into(),
+                        codec: native_codec::CODEC.into(),
+                        tenant: context.tenant,
+                        actor: context.actor,
+                    }),
+                )
+                .unwrap(),
+            ),
+            (
+                Key::Population.encode(),
+                native_codec::encode_for::<Quantity>(
+                    &Key::Population,
+                    &StoredValue::Population(Population {
+                        counts: model.contracts().map(|c| (c.code, 0)).collect(),
+                        reserved: 0,
+                    }),
+                )
+                .unwrap(),
+            ),
+        ]);
+        let run = |rows: &mut Image, command: Command| -> Result<Applied> {
+            let mut reads = BTreeSet::new();
+            let mut ws = Attempt::<_, Quantity>::new(
+                |key: &[u8]| {
+                    reads.insert(key.to_vec());
+                    Ok(rows.get(key).cloned())
+                },
+                200_000,
+            );
+            let result = settle_authorized(
+                &mut ws,
+                &model,
+                context,
+                &[command],
+                &mut || Err(Error::new("unexpected_allocation", "source has no outputs")),
+                false,
+                &mut |_, _, _, _| Ok(()),
+            )?;
+            let batch = ws.finish()?;
+            drop(ws);
+            for (key, value) in &batch {
+                match value {
+                    Some(value) => {
+                        rows.insert(key.clone(), value.clone());
+                    }
+                    None => {
+                        rows.remove(key);
+                    }
+                }
+            }
+            Ok((result.revision, batch, reads))
+        };
+        let id = Uuid::from_u128(3);
+        let create = || Command::Create {
+            id,
+            contract: SOURCE,
+            fields: json!({"value":"1"}),
+        };
+        let update = |if_version, value| Command::Update {
+            id,
+            if_version,
+            set: BTreeMap::from([("value".into(), json!(value))]),
+            unset: vec![],
+        };
+        let (created, batch, _) = run(&mut rows, create()).unwrap();
+        assert!(!created.is_nil());
+        assert!(batch.contains_key(&Key::Population.encode()));
+        assert!(!batch.contains_key(&Key::Meta.encode()));
+
+        let before = rows.clone();
+        let (noop, batch, reads) = run(&mut rows, update(created, "1")).unwrap();
+        assert_ne!(noop, created);
+        assert!(batch.is_empty());
+        assert_eq!(rows, before);
+        assert!(reads.contains(&Key::Record(id).encode()));
+
+        let (changed, batch, _) = run(&mut rows, update(created, "2")).unwrap();
+        assert_ne!(changed, created);
+        assert!(!batch.contains_key(&Key::Meta.encode()));
+        assert!(!batch.contains_key(&Key::Population.encode()));
+        let StoredValue::Record(record) = native_codec::decode_for::<Quantity>(
+            &Key::Record(id),
+            &rows[&Key::Record(id).encode()],
+        )
+        .unwrap() else {
+            panic!("record missing")
+        };
+        assert_eq!(record.version, changed);
+        assert_eq!(record.derived.unwrap().quantity, 2);
+
+        run(
+            &mut rows,
+            Command::Delete {
+                id,
+                if_version: changed,
+            },
+        )
+        .unwrap();
+        let (recreated, _, _) = run(&mut rows, create()).unwrap();
+        assert_ne!(recreated, created);
+        assert_ne!(recreated, changed);
+        let before = rows.clone();
+        assert_eq!(
+            run(&mut rows, update(created, "3")).unwrap_err().code,
+            "stale_version"
+        );
+        assert_eq!(rows, before);
+    }
 }

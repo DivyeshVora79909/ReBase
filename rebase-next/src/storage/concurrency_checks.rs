@@ -614,9 +614,16 @@ pub fn run(factory: impl Fn(&str) -> Result<Database>, concurrent: bool) -> Resu
             && accepted["tables"]["public_records"] == json!([])
             && accepted["tables"]["reader_records"] == json!([])
             && accepted["tables"]["operations"] == json!([])
+            && accepted["tables"]["receipt_slots"] == json!([])
+            && accepted["tables"]["query_epochs"] == json!([])
+            && accepted["tables"]["native_kv"]
+                .as_array()
+                .is_some_and(|rows| {
+                    rows.len() == 2 && rows[0]["key"] == "00" && rows[1]["key"] == "0d"
+                })
             && accepted["tables"]["authority"]
                 .as_array()
-                .is_some_and(|rows| rows.len() == 3),
+                .is_some_and(|rows| rows.len() == 4),
         "initialization did not preserve its literal empty/bootstrap inventory",
     )?;
     reopened.check_integrity()?;
@@ -630,7 +637,7 @@ pub fn run(factory: impl Fn(&str) -> Result<Database>, concurrent: bool) -> Resu
         "table_inventory":local::table_names(true),
         "limitations":[
             "The wrapper delegates actual adapter transactions; it injects no synthetic conflict result.",
-            "Global native metadata and receipt coordination can conservatively mask predicate-specific application conflicts until G7.5.",
+            "Creating/deleting attempts can still coordinate on exact Population capacity; G7.5's existing-record reference controls isolate dependency guards without that masking.",
             "Concurrent controls use deterministic overlapping transactions; redb runs the sequential controls only.",
             "Persistent reopen is in-process evidence, not process restart or distributed failover."]}),
     )

@@ -15,13 +15,15 @@ verified checkpoint on existing `main`; continue without another prompt.
 Use small delegated tasks with exact file ownership, one Cargo owner, cached
 artifacts and incremental off. Do not accept mock-only distributed evidence.
 
-G7.0–G7.4 are now accepted within their recorded bounds. The user requested a
-clean budget handoff; next is G7.5 scoped revision/receipt coordination, then
-G7.6 final cross-adapter closeout. Read
-[the latest result/continuation](research/49-storage-api-result.md) before editing.
-Global Meta/receipt hot keys remain; do not claim independent-root scalability.
-No partial version migration is retained. The current source/store/native/effect/
-API formats remain 0.15.0 /9 /6 /3 /3. Preserve earlier evidence.
+G7.0–G7.5 are accepted within their recorded bounds. Next is G7.6 final
+cross-adapter closeout. Read
+[the latest result/continuation](research/50-scoped-coordination-result.md).
+The disjoint existing-root witness has no common application write key;
+population changes, shared roots/query partitions and effect counters still
+coordinate. This is not a throughput or capacity claim. Current source/store/
+native/effect/API formats are 0.16.0 /10 /7 /4 /4, with no migration. Reuse the
+accepted G7.5 FoundationDB and native evidence; run the remaining adapter
+controls for G7.6 without restarting earlier campaigns. Preserve earlier evidence.
 
 V1.1–V1.5 remain accepted in source 0.15.0:
 [results](research/44-workshop-verification-result.md) and

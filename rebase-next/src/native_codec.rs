@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    native_slice::{Error, Meta, ModelRecord, Query, Result},
+    native_slice::{Error, Meta, ModelRecord, Population, Query, Result},
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-6";
+pub const CODEC: &str = "native-slice-kv-7";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -88,6 +88,35 @@ pub mod uuid_text {
     }
 }
 
+pub mod optional_uuid_text {
+    use serde::{Deserialize, Deserializer, Serializer, de::Error};
+    use uuid::Uuid;
+
+    pub fn serialize<S: Serializer>(
+        value: &Option<Uuid>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match value {
+            Some(value) => serializer.serialize_some(&value.to_string()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<Uuid>, D::Error> {
+        Option::<String>::deserialize(deserializer)?
+            .map(|text| {
+                let value = Uuid::parse_str(&text).map_err(D::Error::custom)?;
+                if text != value.to_string() {
+                    return Err(D::Error::custom("noncanonical UUID"));
+                }
+                Ok(value)
+            })
+            .transpose()
+    }
+}
+
 pub mod summary {
     use super::{decimal, optional_decimal};
     use crate::algebra::Summary;
@@ -159,6 +188,7 @@ impl Address {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     Meta,
+    Population,
     Record(Uuid),
     Root(Address),
     Node(Address),
@@ -177,6 +207,7 @@ impl Key {
     pub fn encode(&self) -> Vec<u8> {
         let (tag, id, slot) = match self {
             Self::Meta => return vec![0],
+            Self::Population => return vec![13],
             Self::Record(id) => (1, *id, None),
             Self::Root(a) => (2, a.id, Some(a.slot)),
             Self::Node(a) => (3, a.id, Some(a.slot)),
@@ -202,6 +233,9 @@ impl Key {
         let bad = || Error::new("corrupt_state", "invalid point key");
         if bytes == [0] {
             return Ok(Self::Meta);
+        }
+        if bytes == [13] {
+            return Ok(Self::Population);
         }
         let tag = *bytes.first().ok_or_else(bad)?;
         let length = match tag {
@@ -253,6 +287,7 @@ impl Key {
 ))]
 pub enum StoredValue<B: Binding> {
     Meta(Meta),
+    Population(Population),
     Record(ModelRecord<B>),
     Root(Root<B::Index>),
     Node(Node<B::Index>),
@@ -298,16 +333,20 @@ pub fn decode_for<B: Binding>(key: &Key, bytes: &[u8]) -> Result<StoredValue<B>>
 
 fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
     let valid = match (key, value) {
-        (Key::Meta, StoredValue::Meta(meta)) => {
-            !meta.codec.is_empty()
-                && !meta.model.is_empty()
-                && meta.counts.keys().all(|code| *code > 0)
-                && meta.counts.values().map(|n| u64::from(*n)).sum::<u64>()
+        (Key::Meta, StoredValue::Meta(meta)) => !meta.codec.is_empty() && !meta.model.is_empty(),
+        (Key::Population, StoredValue::Population(population)) => {
+            population.counts.keys().all(|code| *code > 0)
+                && population
+                    .counts
+                    .values()
+                    .map(|n| u64::from(*n))
+                    .sum::<u64>()
                     <= crate::binding::MAX_NATIVE_RECORDS as u64
-                && meta.reserved <= crate::binding::MAX_RESERVATIONS
+                && population.reserved <= crate::binding::MAX_RESERVATIONS
         }
         (Key::Record(_), StoredValue::Record(r)) => {
             r.contract > 0
+                && !r.version.is_nil()
                 && r.contract == r.input.contract()
                 && r.input.validate().is_ok()
                 && r.input.managed().is_none_or(|(_, role)| role > 0)
@@ -315,6 +354,7 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
         }
         (Key::Root(a), StoredValue::Root(r)) => {
             a.slot > 0
+                && !r.revision.is_nil()
                 && B::Index::validate_summary(r.kind, &r.summary).is_ok()
                 && r.height < 64
                 && r.head.is_none() == (r.height == 0)

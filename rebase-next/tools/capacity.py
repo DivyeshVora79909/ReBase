@@ -348,12 +348,12 @@ def authored_equipment(original):
 
 def role_inventory(payload, expected):
     rows = payload["tables"]["native_kv"]
-    meta = json.loads(bytes.fromhex(next(row["value"] for row in rows if row["key"] == "00")))["data"]
+    population = json.loads(bytes.fromhex(next(row["value"] for row in rows if row["key"] == "0d")))["data"]
     roles = [json.loads(bytes.fromhex(row["value"]))["data"] for row in rows if row["key"][:2] == "08"]
     reservations = [row for row in rows if row["key"][:2] == "09"]
-    require(meta["reserved"] == len(roles) == len(reservations) == expected,
-            "Retained metadata, role inventory and reserved-key inventory disagree")
-    require(meta["counts"]["410"] == 4092 and meta["counts"]["900"] == 8184,
+    require(population["reserved"] == len(roles) == len(reservations) == expected,
+            "Retained population, role inventory and reserved-key inventory disagree")
+    require(population["counts"]["410"] == 4092 and population["counts"]["900"] == 8184,
             "Retained-role churn changed active source/output populations")
     require(sum(not role["retired"] for role in roles) == 8184,
             "Retained role retirement inventory differs from authored history")
@@ -438,7 +438,7 @@ def rejections(backend, model, facts, observed, key, invalid_fields, restricted)
     update = update_command(key, observed, invalid_fields)
     plans = []
     for label, kind, mutation in (("invariant", "invariant", update),
-        ("stale", "stale_version", {**update, "if_version": "0"})):
+        ("stale", "stale_version", {**update, "if_version": str(uuid.UUID(int=0))})):
         plan = backend.plan({"model": model, "commands": [mutation], "returning": []}, label)
         expect_error(kind, lambda: client.execute(backend.url, backend.token, plan))
         plans.append(plan)

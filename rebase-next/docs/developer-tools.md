@@ -48,11 +48,12 @@ in the recipe. It does not write a store or reserve an operation ID.
 
 The client binds a draft to an authenticated session once and saves the exact
 mutation before sending. A saved plan identifies endpoint, model, store, tenant,
-actor, original operation context and operation UUID, but contains no token.
+actor, original operation context and operation UUID, but contains no bearer credential.
 Application/status check the destination identity and retain the original
 request. Archive expiry is surfaced; it never obtains a replacement context for
-an uncertain old operation. Record versions are authored explicitly, and a
-conflict requires the developer to inspect current state and author a new intent.
+an uncertain old operation. Copy the current record's opaque UUID `version` into
+`if_version`; compare it only for equality. A conflict requires the developer to
+inspect current state and author a new intent.
 
 ## Use the tools
 
@@ -80,12 +81,16 @@ Use `call <method> [params.json]` for any ordinary RPC, including bounded pages,
 root reads and graph administration. It makes exactly one call; params default
 to `{}`. For a page, preserve `cursor`, `exhausted` and `visited`. For existence,
 preserve `unknown`. A client-side result limit must not imply full enumeration.
+Page/exists `revision` is a scoped SHA-256 digest, not a mutation counter.
+Cursors survive a true no-op or changes outside their reader/contract scope;
+selected public/derived changes, reader moves and actual authority graph changes
+require restarting the affected query. See the [query contract](local-prototype.md#query-and-publication-semantics).
 Drafts can also be authored directly:
 
 ```json
 {
   "model": "MODEL_FROM_PUBLIC_CATALOG",
-  "commands": [{"op":"update","id":"RECORD_UUID","if_version":"2","set":{"at":"30"},"unset":[]}],
+  "commands": [{"op":"update","id":"RECORD_UUID","if_version":"VERSION_UUID_FROM_RECORDS_GET","set":{"at":"30"},"unset":[]}],
   "returning": ["RECORD_UUID"]
 }
 ```
@@ -94,6 +99,11 @@ The model catalog supplies contracts, schemas, mutable fields, public roots and
 capabilities. Obtain the current record and its version with `records.get`,
 author a draft, then prepare and submit it. Command envelopes are checked again
 by the server; the client does not duplicate schema or calculation rules.
+API 4 mutation result `revision` is a fresh UUID, retained by replay; unchanged
+returned records can retain earlier tokens. There is no global mutation revision.
+Graph administration has its own numeric `revision`/`if_revision`, and effect
+executions retain ordered numeric fences. Do not substitute any of these fields
+for a record's CAS token.
 Both models declare 4,096 public sources, 8,192 active private outputs and 16,384
 retained output identity reservations. Each mutation remains limited to 64
 commands, 32 returning IDs and 200,000 charged engine work units. Populate larger
@@ -113,7 +123,7 @@ result = execute(url, token, plan)
 receipt = execute(url, token, plan, status=True)
 ```
 
-No function retains tokens, sessions, cursors or plans globally. `call` caps
+No function retains credentials, sessions, cursors or plans globally. `call` caps
 requests at 64 KiB and replies at 2 MiB, rejects duplicate/malformed responses,
 checks response IDs/framing, and never follows redirects. HTTP and transport
 failures surface explicitly; uncertain outcomes retain the caller's plan.
@@ -140,7 +150,10 @@ A real TLS peer verifies trusted-certificate and matching-hostname enforcement.
 Earlier native acceptance remains dated evidence. The [deployment workload](deployment.md)
 extends the same harness; omit `--writes 0` to fill the catalog's declared source
 maximum in batches of at most 64 commands and run its default 128 atomic moves.
-Its revision checks adapt to the number of fill batches.
+Its token checks require fresh committed identities and exact replay equality;
+receipt counts track the number of accepted operations. Archive checks preserve
+all domain, authority, query-epoch and effect tables while clearing receipt slots
+and advancing only original-context expiry.
 
 `capacity.py` defaults to both equipment and calculation at 64, 256, 1,024 and
 4,096 public sources. Use `--models equipment` or `--populations 64 256` to narrow
@@ -152,7 +165,9 @@ receipt; it does not increase the fixed 200,000-unit budget. The
 [population result](../research/24-population-scaling-result.md) records executed
 acceptance and observed boundary brackets.
 
-Release 0.4.0 changes store/codec formats to 4 and model identities to calculation
+Current source 0.16.0 uses store 10 /native codec 7 /effect codec 4 /API 4. These
+contracts require a fresh compatible store, with no migration of old tokens or
+plans. Historically, release 0.4.0 changed store/codec formats to 4 and model identities to calculation
 behavior `rebase-calculation-contract-4` or equipment behavior
 `equipment-reservations-3`, combined with the selected resolved declarations.
 Older saved plans remain bound to their original destination and context; they

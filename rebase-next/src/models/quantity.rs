@@ -10,7 +10,7 @@ use crate::{
         Reference, Visibility,
     },
     native_codec::{Address, Key, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
+    native_slice::{Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Result},
     routes,
     time_range::TimeRange,
     values::{Rational, Rounding},
@@ -174,7 +174,7 @@ impl Binding for Quantity {
     type Derived = Derived;
     type Outcome = ();
     const NAME: &'static str = "quantity";
-    const BEHAVIOR: &'static str = "quantity-flow-1";
+    const BEHAVIOR: &'static str = "quantity-flow-2";
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
@@ -204,8 +204,8 @@ impl Binding for Quantity {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
@@ -218,7 +218,7 @@ impl Binding for Quantity {
                 routes::change(ws, key, *address, TimeRange::ALL, true)?;
             }
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)
     }
     fn check(store: &Store<Self>) -> Result<Value> {
         check(store)

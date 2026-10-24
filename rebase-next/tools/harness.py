@@ -25,6 +25,41 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def opaque_token(value):
+    parsed = uuid.UUID(value)
+    require(str(parsed) == value and parsed.int != 0, "Expected a canonical nonnil mutation token")
+    return value
+
+
+def backup_image(backend, label):
+    """One complete observation while the owned application process is stopped."""
+    require(backend.process is None, "Stop the owned process before a backup observation")
+    path = backend.directory / f"{label}.backup.json"
+    backend.cli("backup", backend.store, path)
+    image = client.loads(path.read_bytes())["payload"]
+    require(image["complete"], "Incomplete application-table observation")
+    return image
+
+
+def check_archive(before, after):
+    """Independent cleanup expectation: clear slots/receipts and advance expiry only."""
+    require(before["complete"] and after["complete"]
+            and before["format"] == after["format"]
+            and set(before["tables"]) == set(after["tables"]), "Archive observation scope differs")
+    for name, rows in before["tables"].items():
+        if name not in ("operations", "receipt_slots", "local_runtime"):
+            require(after["tables"][name] == rows, f"Archive changed {name}")
+    require(after["tables"]["operations"] == [] and after["tables"]["receipt_slots"] == [],
+            "Archive retained receipts or allocation slots")
+    previous, current = before["tables"]["local_runtime"], after["tables"]["local_runtime"]
+    require(len(previous) == len(current) == 1 and previous[0]["key"] == current[0]["key"],
+            "Archive changed runtime inventory")
+    expected = client.loads(bytes.fromhex(previous[0]["value"]))
+    expected["operation_epoch"] = str(int(expected["operation_epoch"]) + 1)
+    require(client.loads(bytes.fromhex(current[0]["value"])) == expected,
+            "Archive changed identity or failed to advance original-context expiry")
+
+
 def write_private(path, data):
     with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as output:
         output.write(data)
@@ -156,7 +191,8 @@ def workflow(backend):
     seed = backend.plan(draft, "seed")
     require(backend.token not in json.dumps(seed), "Saved plan contains bearer token")
     seeded = client.execute(backend.url, backend.token, seed)
-    require(seeded["status"] == "committed" and seeded["result"]["revision"] == "1", "Fixture seed failed")
+    require(seeded["status"] == "committed", "Fixture seed failed")
+    seed_token = opaque_token(seeded["result"]["revision"])
     initial = {"A": "30", "Left": "60", "Right": "90", "Final": "150"}
     moved = {"A": "20", "Left": "40", "Right": "60", "Final": "100"}
     require(publications(backend, model, ids, slot) == initial, "Initial independent arithmetic mismatch")
@@ -168,6 +204,8 @@ def workflow(backend):
     move = backend.plan({"model": model, "commands": changes, "returning": [ids["P"], ids["Q"], ids["J"]]}, "move")
     applied = client.execute(backend.url, backend.token, move)
     require(applied["status"] == "committed", "Atomic move failed")
+    move_token = opaque_token(applied["result"]["revision"])
+    require(move_token != seed_token, "Changed mutation reused an earlier token")
     require(publications(backend, model, ids, slot) == moved, "Moved independent arithmetic mismatch")
     stale = backend.plan({"model": model, "commands": changes, "returning": []}, "stale")
     expect_error("stale_version", lambda: client.execute(backend.url, backend.token, stale))
@@ -179,15 +217,18 @@ def workflow(backend):
     other = backend.cli("fixture", "plan", "causal-diamond", "--namespace", str(uuid.uuid4()))
     require(set(ids.values()).isdisjoint(other["fixture"]["ids"].values()), "Separate fixture namespaces overlap")
     other_plan = backend.plan(other, "other-seed")
-    client.execute(backend.url, backend.token, other_plan)
+    other_result = client.execute(backend.url, backend.token, other_plan)
+    require(opaque_token(other_result["result"]["revision"]) not in (seed_token, move_token),
+            "Separate mutation reused an earlier token")
     require(publications(backend, model, other["fixture"]["ids"], slot) == initial, "Second fixture wrong")
     require(publications(backend, model, ids, slot) == moved, "Second fixture changed first")
     backend.stop()
     before = backend.cli("check", backend.store)
-    require(before["status"] == "valid" and before["revision"] == "3" and before["receipts"] == 3, "Unexpected state after failed requests")
+    require(before["status"] == "valid" and before["receipts"] == 3, "Unexpected state after failed requests")
+    before_replay = backup_image(backend, "before-replay")
     backend.start()
     replay = client.execute(backend.url, backend.token, client.read_json(backend.directory / "seed.plan.json"))
-    require(replay["replayed"] is True and replay["result"]["revision"] == "1"
+    require(replay["replayed"] is True and replay["result"]["revision"] == seed_token
             and replay["result"]["operation_id"] == seed["request"]["operation_id"]
             and all(r["record"] is None for r in replay["result"]["records"]),
             "Replay must retain the receipt and suppress outdated record projections")
@@ -198,6 +239,8 @@ def workflow(backend):
                                      "--token-file", backend.token_path, "status", backend.directory / "move.plan.json"))
     require(cli_status["result"] == applied["result"], "Client CLI status mismatch")
     backend.stop()
+    require(backup_image(backend, "after-replay") == before_replay,
+            "Restart, status or replay changed complete application tables")
     archive = backend.directory / "receipt-window.json"
     backend.cli("receipts", "archive", backend.store, archive)
     backend.start()
@@ -208,7 +251,9 @@ def workflow(backend):
     require(publications(backend, model, ids, slot) == moved, "Archive/rejection changed arithmetic")
     backend.stop()
     final = backend.cli("check", backend.store)
-    require(final["revision"] == "3" and final["receipts"] == 0, "Archive or expired replay changed state")
+    require(final["status"] == "valid" and final["receipts"] == 0, "Archive retained receipts")
+    require(client.loads(archive.read_bytes())["payload"] == before_replay, "Archive backed up a different state")
+    check_archive(before_replay, backup_image(backend, "after-archive"))
     return {"model": model, "initial": initial, "after_move": moved, "fixture_instances": 2,
             "committed_operations": 3, "rejections": 6, "restart_replay": True,
             "archive_fence": True, "integrity": final}
@@ -265,17 +310,23 @@ def workload(backend, writes, readers):
     # Keep every mutation within the same public 64-command envelope, even when
     # the supported population grows. Race only the final saved operation.
     batches = [extra_ids[i:i + 64] for i in range(0, len(extra_ids), 64)]
+    tokens = {record["version"] for record in population}
     for batch_number, batch in enumerate(batches):
         fill = backend.plan({"model": model, "commands": [
             {"op": "create", "id": identity, "contract": contracts["Moment"]["code"], "fields": {"at": "0"}}
             for identity in batch], "returning": []}, f"fill-{batch_number}")
         if batch_number + 1 < len(batches):
-            client.execute(backend.url, backend.token, fill)
-    filled_revision = 3 + len(batches)
+            result = client.execute(backend.url, backend.token, fill)
+            token = opaque_token(result["result"]["revision"])
+            require(token not in tokens, "New fill reused a mutation token")
+            tokens.add(token)
     with ThreadPoolExecutor(max_workers=8) as pool:
         duplicates = list(pool.map(lambda _: client.execute(backend.url, backend.token, fill), range(8)))
     require(sum(not r["replayed"] for r in duplicates) == 1
-            and all(r["result"]["revision"] == str(filled_revision) for r in duplicates), "Duplicate receipt applied more than once")
+            and all(r["result"] == duplicates[0]["result"] for r in duplicates), "Duplicate receipt applied more than once")
+    token = opaque_token(duplicates[0]["result"]["revision"])
+    require(token not in tokens, "Final fill reused a mutation token")
+    tokens.add(token)
     expected_ids = sorted([r["id"] for r in population] + extra_ids)
     full = scan(backend, model)
     require([r["id"] for r in full] == expected_ids, "Complete public pagination lost, duplicated or reordered sources")
@@ -339,9 +390,13 @@ def workload(backend, writes, readers):
                 begin = time.perf_counter()
                 last_result = client.execute(backend.url, backend.token, last)
                 write_times.append((time.perf_counter() - begin) * 1000)
-                require(last_result["result"]["revision"] == str(filled_revision + 2 + i), "Write/replay/rejection revision mismatch")
+                token = opaque_token(last_result["result"]["revision"])
+                require(token not in tokens, "New write reused an earlier mutation token")
+                tokens.add(token)
                 for label, returned in zip(("MP", "MQ"), last_result["result"]["records"]):
                     require(returned["record"] is not None, "Current authored result hidden from its owner")
+                    require(returned["record"]["version"] == token
+                            and token != versions[label], "Changed source did not receive its mutation token")
                     versions[label] = returned["record"]["version"]
         finally:
             done.set()
@@ -362,8 +417,8 @@ def workload(backend, writes, readers):
     require(replay["replayed"] and replay["result"] == last_result["result"], "Post-crash replay changed the outcome")
     backend.stop()
     final = backend.cli("check", backend.store)
-    require(final["status"] == "valid" and final["revision"] == str(writes + filled_revision + 1)
-            and final["records"] == limit + 10 and final["receipts"] == writes + len(batches) + 1, "Final complete integrity/count mismatch")
+    require(final["status"] == "valid" and final["records"] == limit + 10
+            and final["receipts"] == writes + len(batches) + 1, "Final complete integrity/count mismatch")
     backup, restored = backend.directory / "final-backup.json", backend.directory / "restored.redb"
     backend.cli("backup", backend.store, backup)
     backend.cli("restore", backup, restored)

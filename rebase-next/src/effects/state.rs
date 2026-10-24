@@ -1,7 +1,7 @@
 //! Checked persisted worker state. The transaction writer and checker use these
 //! same row types; provider I/O is outside this module.
 use super::*;
-use crate::native_codec::optional_decimal;
+use crate::native_codec::optional_uuid_text;
 
 pub(crate) const LEASE_MS: i64 = 10_000;
 pub(crate) const MAX_LEASE_MS: i64 = 30_000;
@@ -119,8 +119,8 @@ pub(crate) struct Fact<B: Binding> {
     pub outcome: B::Outcome,
     #[serde(with = "decimal")]
     pub observed_at: i64,
-    #[serde(with = "optional_decimal")]
-    pub applied_revision: Option<u64>,
+    #[serde(with = "optional_uuid_text")]
+    pub applied_revision: Option<Uuid>,
 }
 
 /// A capability passed only between trusted worker functions. Never an RPC DTO.

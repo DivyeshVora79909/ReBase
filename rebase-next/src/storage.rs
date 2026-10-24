@@ -11,8 +11,10 @@ use std::{
 pub mod application_checks;
 pub mod concurrency_checks;
 pub mod conformance;
+pub mod coordination_checks;
 #[cfg(feature = "foundationdb")]
 pub mod foundationdb;
+pub mod lifecycle_checks;
 mod redb;
 #[cfg(feature = "surrealkv")]
 pub mod surrealkv;

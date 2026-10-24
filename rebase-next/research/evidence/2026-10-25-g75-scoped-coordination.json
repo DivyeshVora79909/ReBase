@@ -1,0 +1,3283 @@
+{
+  "artifacts": {
+    "g7_application": {
+      "bytes": 248645472,
+      "retained_path": "target/g75-accepted/g7_application",
+      "sha256": "b6fc31fac653a61b1ec283ccb44d039756b241819df2f1ffb0a8a59efe5c20fe",
+      "source_path": "target/verification-build/debug/examples/g7_application"
+    },
+    "g7_coordination": {
+      "bytes": 248653560,
+      "retained_path": "target/g75-accepted/g7_coordination",
+      "sha256": "a2b580b1f076dd9594129088f11054c3b3d829de1349ad35f2f6299929102835",
+      "source_path": "target/verification-build/debug/examples/g7_coordination"
+    },
+    "g7_storage": {
+      "bytes": 216436080,
+      "retained_path": "target/g75-accepted/g7_storage",
+      "sha256": "c17aef1259944f1814473142cf3965fefcd4523399b013a66c8725d801170b66",
+      "source_path": "target/verification-build/debug/examples/g7_storage"
+    },
+    "rebase-next": {
+      "bytes": 33730768,
+      "retained_path": "target/g75-accepted/rebase-next",
+      "sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "source_path": "target/verification-build/release/rebase-next"
+    }
+  },
+  "baseline_commit": "9881593010f850e92d48c181771c043a50045f95",
+  "build_environment": {
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_TARGET_DIR": "target/verification-build",
+    "FDB_CLIENT_LIB_PATH": "target/g7-environment/root/usr/lib",
+    "LD_LIBRARY_PATH": "target/g7-environment/root/usr/lib",
+    "cargo_owner": "root only",
+    "optional_features": [
+      "foundationdb",
+      "surrealkv"
+    ]
+  },
+  "builds": {
+    "application_final": {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--features",
+        "foundationdb,surrealkv",
+        "--example",
+        "g7_application"
+      ],
+      "exit_code": 0,
+      "seconds": 45.517
+    },
+    "native": [
+      {
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "clippy",
+          "--locked",
+          "--all-targets",
+          "--features",
+          "foundationdb,surrealkv",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "seconds": 23.345,
+        "step": "clippy-3"
+      },
+      {
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "test",
+          "--locked",
+          "--no-run",
+          "--tests",
+          "--features",
+          "foundationdb,surrealkv",
+          "--message-format=json"
+        ],
+        "exit_code": 0,
+        "seconds": 137.091,
+        "step": "native-final"
+      }
+    ],
+    "optimized": {
+      "source_fingerprints": {
+        "Cargo.lock": "ca79b248ddddae74112c0b49a69df18794ae81309e04b2477bd6fdbe1f9b8f1e",
+        "Cargo.toml": "077b38cf84b01e58c728aa67b74a2410a06306d452d4c13d53b4e95534bc29b7",
+        "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+        "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+        "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+        "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+        "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+        "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+        "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+        "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+        "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+        "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+        "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+        "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+        "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+        "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+        "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+        "src/bin/rebase-next.rs": "ca48fd97c8660c95e8775cb4e5de32363b115644899d939498ede46adbc4ff16",
+        "src/binding.rs": "bc75f0ae6da662a76ea7a9d79267c657eeacff2216e85be13fc3c1515e2248a2",
+        "src/causal.rs": "443c211535e2ebf6c0d73d1223dc93d595ac20decee86e5ef7e88ee3ee921b39",
+        "src/demo.rs": "67e8f68d6dcd75d4327ccc1f4a168326c6932f66f057e70dae2ab939b6a23b64",
+        "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+        "src/effect_tests.rs": "3d4c0aea0251ca8ff0404855274001b4d85a92f66ccde9cf1ff3e117339fd58b",
+        "src/effects.rs": "95254b4da675899e1094be5095e1b7d868124b241fddc2dff2d63e8d621d9210",
+        "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+        "src/effects/conformance.rs": "ff53b80e39874f7e44b2d0a711c66903450eab35fa10b2317b8bdbc9a461aaef",
+        "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+        "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+        "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+        "src/effects/state.rs": "cb309a2996c3b2851aa0e50d41b2885da58d8ff0599c5cfb0a56f1d888113b53",
+        "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+        "src/effects/worker_tests.rs": "60874edc388f116cf16a545aee1adab7f56eb431931b44beab34215eac0f5bc4",
+        "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+        "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+        "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+        "src/index_tests.rs": "bd904203227983c8c2b77f73e2f29fe18c1b88302d4319c676e7d661005b5ccb",
+        "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+        "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+        "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+        "src/inspector.rs": "76a70b023678d329a642fba103501a5b445e181f1d7c958139f884195f29e4c1",
+        "src/integrity.rs": "1fc515ffb0c8102639c3b1e9ed1032531906950d2b00ab0ba8f8ca72085e457b",
+        "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+        "src/lib.rs": "4f5edb65b55d73b1da9035cb849c6f9f729b21da9085df000685fac1e3deaa7a",
+        "src/lifecycle.rs": "694857d8c48869190622bd3abdde06733275809d553f8abfd55b94c4ab708194",
+        "src/local.rs": "64cd57ee6ae20e371eb503f49984f11ccf02455566461abb3e2a683853b0cb88",
+        "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+        "src/model.rs": "d02a9cdce08bafb50d63f0bcbd5dbbb0242c2ee0d0d2210957996a22d9aabd77",
+        "src/models/calculation.rs": "2e1af7dbd32b5a7a291c0d79926d93bd5b89b1101011c1ddd4abff76b021ac9e",
+        "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+        "src/models/effect_demo.rs": "7cec49ee3ce9d8723d8a8e0f67b6a8fc9d79d5f47bcdb2ea90feee6d86b2846d",
+        "src/models/equipment.rs": "48da4b90edb7891e15b8d60719b02c0ce5b456e387287b253f759200b96ea6f7",
+        "src/models/invoicing.rs": "2321e0c3415fa087ab6c76d4880b55fa92df01d479b794880ede6efff3f21f08",
+        "src/models/invoicing_check.rs": "d0b8f3054e1e6047a7f533ca862d39558628d62353d12b872621a47cea3650d4",
+        "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+        "src/models/measurement.rs": "1bac494627806021b562b99c9afbd9250a0c6e5b86af7bc4fbb9c8bf87901fc5",
+        "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+        "src/models/quantity.rs": "e303295e4460f970d15ce403a2d0f4294150a95491f5d722e93114cb3af03fd8",
+        "src/mutation.rs": "eb10bf1a99075deec1f19ba65f618e6df9d5ae2ae08d12dff0212beb240b1579",
+        "src/native_codec.rs": "25c6cfe9a3864fba78724151d27d5792540ab2b2d3a02d758a19fc6c805ec642",
+        "src/native_slice.rs": "ed20e699ae827ec28280fc500447267d0ca8882831adbd33e9967d2b6153bccd",
+        "src/parameter_tests.rs": "ad5d654ce2d5d80f158849cc5c60c4604bbe051614828ef0a66c33cd89481a20",
+        "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+        "src/publication_tests.rs": "d72080acbb9e9771fa71df24f5b3daa327fc7f586021a27b5e0cd012cefc0b2b",
+        "src/query.rs": "afb3cdacf9362795c4f72c01825c5aff999f25e93c30546ec3bf25df3ee05ddb",
+        "src/receipts.rs": "1f86d0614c1b00325bc4ed15ab3b2b18819efc0e25989ec72be88a7688b3437a",
+        "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+        "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+        "src/rpc.rs": "f59d7f3e70a3283da4ccafd774875ab7e81bfd3a1548273232b72270458eea7d",
+        "src/security.rs": "246eff3056c48e9214d0820cde673c82820bf9244d22b287d1031cef743529cb",
+        "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+        "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+        "src/storage.rs": "5e022b15f10d61817bcb464657edb6561f3e16fbef293c51f90238649e81cd02",
+        "src/storage/application_checks.rs": "ba41d9544e8f53a0e4b251fce001b3ba057895936ec4e60536d89290a0e5ab8a",
+        "src/storage/concurrency_checks.rs": "87d7d5d94e13314ef033f79238f0b8605666497c9175098d909982d6b2323a72",
+        "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+        "src/storage/coordination_checks.rs": "c59fc0b93c9cde59aeef9a86039e9681331e6e543c2832f0046456d06433da35",
+        "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+        "src/storage/lifecycle_checks.rs": "d77124da1f23c878e97a192bce80c962bd51b6738a5ef3e482e7b8b7738fb32f",
+        "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+        "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+        "src/storage/target.rs": "c4cb75d1071c3a3eb20e61946d64bb933cf9bd04fe5254fa7845f24a657a5c99",
+        "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+        "src/tree.rs": "fbd413f710e5c4c5e4c0a4cbd751de05711f63bc0041ecad9abce1b90517de9c",
+        "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+        "src/window_tests.rs": "93063b8395a4af6256330a725b601ffd9495fa37c0add4766b6cc19970b0ed4c",
+        "tests/access_control.rs": "78f6cf28d93a6641899ad0a44f7d1d871d99617325fb1b1d9ad4b3419fe5bc45",
+        "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+        "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+        "tests/exact_values.rs": "ce2c28030b79a2e9677fed9cc8ecf87cdfe8ea337e3c9f12a50b546909973548",
+        "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+        "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+        "tests/local_api.rs": "22b8c70244f9c836a4629bbced6d1bc0e18e12a96c4acf44ea9908a4f6695d8c",
+        "tests/local_cli.rs": "f6619a37d459d9929251746ff3d955ff6821a11034eebc34899d169974feaa35",
+        "tests/measurement.rs": "3b763c4ff86b78065136171b3e5dcff028ab42126bba6b2edefb53601211768f",
+        "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+        "tests/native_tree.rs": "f9e9486836f639efc37c8e1a7754f587e976f547db7c374323b721a7162197a0",
+        "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+        "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+        "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+        "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+        "tests/storage_lifecycle.rs": "86e1a4ce5977ff0d45da035467773a44fe788ad0c65618194cac9e705364857e",
+        "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6"
+      },
+      "steps": [
+        {
+          "command": [
+            "cargo",
+            "+1.95.0",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ],
+          "exit_code": 0,
+          "seconds": 1.198,
+          "step": "fmt-final"
+        },
+        {
+          "command": [
+            "cargo",
+            "+1.95.0",
+            "clippy",
+            "--locked",
+            "--all-targets",
+            "--features",
+            "foundationdb,surrealkv",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "exit_code": 0,
+          "seconds": 22.414,
+          "step": "clippy-final"
+        },
+        {
+          "command": [
+            "cargo",
+            "+1.95.0",
+            "build",
+            "--locked",
+            "--release",
+            "--bin",
+            "rebase-next",
+            "--features",
+            "foundationdb,surrealkv"
+          ],
+          "exit_code": 0,
+          "seconds": 706.644,
+          "step": "optimized"
+        }
+      ]
+    }
+  },
+  "checkpoint": "G7.5",
+  "date": "2026-10-25",
+  "documentation": {
+    "files": [
+      "AGENTS.md",
+      "CONTEXT.md",
+      "README.md",
+      "docs/compiled-models.md",
+      "docs/deployment.md",
+      "docs/developer-tools.md",
+      "docs/external-effects.md",
+      "docs/invoicing.md",
+      "docs/local-prototype.md",
+      "docs/native-indexes.md",
+      "docs/reactive-windows.md",
+      "docs/storage-backends.md",
+      "docs/storage.md",
+      "research/05-feasibility.md",
+      "research/45-storage-adapter-plan.md",
+      "research/50-scoped-coordination-result.md"
+    ],
+    "local_link_targets": 241,
+    "method": "resolve every changed guide/checkpoint local Markdown link target; anchors and external URLs excluded",
+    "sha256": {
+      "AGENTS.md": "b1a50701c6bd22f320801cdd26a7a1a9d5fae54a4812b630682ea1d34f68c21b",
+      "CONTEXT.md": "4213d6e22dcd67201d6c9e5d841e65883fca6db00ac7ace1d8d6fb2b8ff7871a",
+      "README.md": "e6661199bd82207a2006de26caa39ed6a49c14da80ae3420f77164ce0ff7e5d6",
+      "docs/compiled-models.md": "8aa686750128685627b1cbe671b3f7503ff25ea7115bf638464b9d81c6599c42",
+      "docs/deployment.md": "f66accfdaddd0b284337f014718f3185f1f0c603e6f8895a2592179722192621",
+      "docs/developer-tools.md": "a661ba80bb5831a2129f6159d29ef57da2641836fe37918bc67f51670c753a6b",
+      "docs/external-effects.md": "0321cd1bb4a3127be3e3ea505b81f65f39d8105d670600cb08c24073aebeb5ca",
+      "docs/invoicing.md": "0c1c9f2c31984c93ec6ea18c32e4864ef6dbb8ede13f200cfd0a9e26690299f4",
+      "docs/local-prototype.md": "ca0c2a352d22d7f1ed782e1570b067cd7ff838da04305f6f82f65d461f271252",
+      "docs/native-indexes.md": "34fd055d1c895f9ec3b82c1022ae68ac37f9781532544b7d4591625f7fefa8ab",
+      "docs/reactive-windows.md": "0a0b7c3452fbdf0295cd9cc8ea24e31c89881912ef6c89b1235ff451b57ecad9",
+      "docs/storage-backends.md": "acee1e982dc48a7e5d934f789d3b094611fbc05937bd89f24c833f8d0032cf88",
+      "docs/storage.md": "ce6d5cb4b73b8b81824b23b89c34f19b33790281b9bedbdc05017a03127bf37c",
+      "research/05-feasibility.md": "bcc961b5bee49aa455e7067c2f29f6b35d588a3f8f0ed4c43cb35a4a5d4ecb4e",
+      "research/45-storage-adapter-plan.md": "61dac3266f41f93b35e4adaa679413e63a9f098904158cc9c506ff4f24b106cc",
+      "research/50-scoped-coordination-result.md": "2348031b7fe53d630ab4771ed9a492a1bb358ca275471fb470a0b2bf07e90083"
+    },
+    "status": "passed"
+  },
+  "environment": {
+    "foundationdb": "0.11.0",
+    "foundationdb-sys": "0.11.0",
+    "foundationdb_client": "FoundationDB CLI 7.3 (v7.3.77)\nsource version 3ea44ce1d9003ad095e408039e1f755c319c4dfb\nprotocol fdb00b073000000",
+    "foundationdb_server": "FoundationDB 7.3 (v7.3.77)\nsource version 3ea44ce1d9003ad095e408039e1f755c319c4dfb\nprotocol fdb00b073000000",
+    "futures": "0.3.32",
+    "libfdb_c_sha256": "e4ad7fed7b7580bf5f7b38f0a4279d37e698f69d534182e5de0b8beeef6cd1b1",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+    "redb": "4.4.0",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "surrealkv": "1.0.0",
+    "tokio": "1.54.1"
+  },
+  "failed_trial_corrections": [
+    {
+      "correction": "Test-only receipt corruption fixture used array slices before concat; later all-target Clippy passes.",
+      "log": "    Checking rebase-semantic-proof v0.16.0 (/home/divyeshvora/javascript/node/projects/ReBase/rebase-next)\nerror[E0599]: the method `concat` exists for array `[&[u8; 16]; 2]`, but its trait bounds were not satisfied\n    --> src/integrity.rs:1391:65\n     |\n1391 |                 Some([actor.as_bytes(), Uuid::nil().as_bytes()].concat()),\n     |                                                                 ^^^^^^ method cannot be called on `[&[u8; 16]; 2]` due to unsatisfied trait bounds\n     |\n     = note: the following trait bounds were not satisfied:\n             `[&[u8; 16]]: std::slice::Concat<_>`\n\nFor more information about this error, try `rustc --explain E0599`.\nerror: could not compile `rebase-semantic-proof` (lib test) due to 1 previous error\nwarning: build failed, waiting for other jobs to finish...\n",
+      "trial": "target/g75-clippy-1.log"
+    },
+    {
+      "correction": "Secured inventory expectation 11 to 13; three independent-store fixtures normalize token equality classes only, assert nonnil tokens and fresh result-token relationships, and retain authored/derived/query comparisons.",
+      "failed_cases": [
+        "local::tests::secured_physical_aborts_include_authority_and_reader_tables",
+        "parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders",
+        "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders",
+        "parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates"
+      ],
+      "rerun": "Only the four failed cases; the original 149 passes are retained.",
+      "trial": "target/g75-native-results.json"
+    },
+    {
+      "accepted_run": "target/g75-fdb-application-final.json",
+      "correction": "Initialization expected three authority rows before the new separate revision row; now expects four and exact empty-table plus Meta/Population inventories.",
+      "execution": {
+        "command": [
+          "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/examples/g7_application",
+          "foundationdb",
+          "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/fdb.cluster"
+        ],
+        "executable_sha256": "ee11f2638b92553a8cff3ee9a52abd68df313050c18eb05778770178e63e6a61",
+        "exit_code": 1,
+        "seconds": 4.66
+      },
+      "trial": "target/g75-fdb-application-run.json"
+    }
+  ],
+  "final_checks": [
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.295,
+      "step": "fmt"
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--features",
+        "foundationdb,surrealkv",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 22.769,
+      "step": "clippy"
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "check",
+        "--locked",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "seconds": 16.004,
+      "step": "default-check"
+    }
+  ],
+  "fingerprint_scope": {
+    "explanation": "The later concurrency_checks.rs change adjusts only the shared conformance initialization fixture. No production semantic change followed the accepted native runs. src/local.rs changed only its native table-count assertion; parameter_tests.rs contains the three fixture corrections. The final application probe was rebuilt and rerun; the optimized engine was not rebuilt unnecessarily. The shared application report retains an older conditional global-metadata caveat; the new G7.5 write-set witness establishes removal of those incidental writes.",
+    "since_optimized_build_start": [
+      "src/storage/concurrency_checks.rs"
+    ]
+  },
+  "format_incompatibility": {
+    "baseline": {
+      "model": "fe57ca986cd32234ab775ac37df4d26ecfbd3acd2a578ea1249f46d9f351938e",
+      "store_format": "rebase-store-9",
+      "version": "0.14.0"
+    },
+    "baseline_executable_sha256": "46e6e52125cb263dda8a89858a1117f42a5ef963300f0ff71eb4292907485338",
+    "commands": [
+      [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g4dc-accepted/rebase-next",
+        "demo",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-format9-compatibility"
+      ],
+      [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/rebase-next",
+        "check",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-format9-compatibility/demo.redb"
+      ]
+    ],
+    "current": {
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "store_format": "rebase-store-10",
+      "version": "0.16.0"
+    },
+    "old_populated_store_sha256": "dae3f57c472f895a950a953e8de957287490e939148649ad60b6bd99fbe4999e",
+    "rejected_with_identical_physical_bytes": true,
+    "rejection": "corrupt_state: unknown field `receipts`, expected one of `format`, `store_id`, `cursor_key`, `operation_epoch` at line 1 column 167",
+    "scope": "retained 0.14.0 calculation format9/native6/effect3 image; no historical rebuild or migration",
+    "status": "passed"
+  },
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effects": "rebase-effects-4",
+    "native": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "foundationdb": {
+    "application": {
+      "backend": "foundationdb",
+      "namespace": "rebase-g7-application-acd9d28d-f080-4340-971f-79d96af41860",
+      "result": {
+        "application": {
+          "automatic_retries": false,
+          "case_count": 19,
+          "cases": [
+            "native-public-reader-abort",
+            "effect-execution-abort",
+            "effect-due-abort",
+            "effect-runtime-abort",
+            "operation-receipt-runtime-abort",
+            "effect-intent-atomic-publication-and-replay",
+            "stale-cas-preserves-complete-inventory",
+            "lost-response-original-id-reconciliation-no-duplicate",
+            "persistent-reopen-complete-tables-and-receipts",
+            "backend-restore-quarantine-and-populated-destination-isolation",
+            "quantity-publication-cascade-and-inexact-rollback",
+            "backup-restore-exact-complete-inventory",
+            "calculation-root-complete-time-invariant-rollback",
+            "same-root-invariant-commit-barrier",
+            "same-record-cas-commit-barrier-no-retry",
+            "absent-public-identity-commit-barrier",
+            "no-op-write-preserves-protected-point-read",
+            "reverse-reference-discovery-versus-delete-barrier",
+            "authority-revocation-barrier-and-snapshot-authorized-read"
+          ],
+          "concurrent_application_schedules": true,
+          "limitations": [
+            "Commit barriers run overlapping real application transactions in a deterministic order; no distributed node/network fault is simulated.",
+            "Before scoped coordination is accepted, global metadata can conservatively cause application conflicts; these schedules alone do not establish disjoint-root throughput.",
+            "redb serialized writers use sequential application/rollback/recovery controls; overlapping optimistic schedules are inapplicable.",
+            "Effect intent/restore checks do not certify external provider delivery; worker/inbox/application boundaries require their own controls."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "effects": {
+          "automatic_retries": false,
+          "case_count": 27,
+          "cases": [
+            "signed-inbox-row-abort",
+            "signed-inbox-runtime-abort",
+            "signed-inbox-durable-ack-precedes-fact-and-domain",
+            "signed-inbox-dedup-preserves-complete-inventory",
+            "signed-inbox-content-conflict-preserves-complete-inventory",
+            "inbox-consume-fact-abort",
+            "inbox-consume-row-abort",
+            "inbox-consume-due-abort",
+            "inbox-consume-execution-abort",
+            "inbox-consume-runtime-abort",
+            "inbox-consumption-fact-atomic-and-idempotent",
+            "inbox-consumption-fences-old-worker-claim",
+            "application-first-native-write-abort",
+            "application-native-public-reader-abort",
+            "application-fact-revision-abort",
+            "application-due-abort",
+            "application-execution-abort",
+            "application-runtime-abort",
+            "inbox-success-applies-domain-once-literal-balance-nine",
+            "worker-fact-abort",
+            "worker-fact-due-abort",
+            "worker-fact-execution-abort",
+            "worker-fact-runtime-abort",
+            "worker-success-fact-and-domain-publication-literal-balance-six",
+            "insufficient-balance-rejects-domain-with-durable-fact-unchanged",
+            "blocked-application-preserves-fact-and-literal-domain",
+            "persistent-reopen-nonempty-facts-inbox-and-domain"
+          ],
+          "limitations": [
+            "Signed fake events and typed provider outcomes run in-process; no HTTP provider transport or external delivery is certified.",
+            "Reopen checks persistent storage in this process; process restart and distributed network faults are separate controls."
+          ],
+          "literal_balances": [
+            12,
+            9,
+            6
+          ],
+          "persisted_facts": 3,
+          "persisted_inbox": 1,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        },
+        "predicates": {
+          "automatic_retries": false,
+          "case_count": 12,
+          "cases": [
+            "authority-reader-index-write-abort",
+            "authority-repaired-native-record-write-abort",
+            "authority-graph-write-abort",
+            "authority-prepared-scope-write-abort",
+            "authority-reader-repair-commit-literal-inventory-and-stale-cas",
+            "authority-repair-persistent-reopen",
+            "reference-delete-reject-complete-inventory-and-no-receipt",
+            "reference-teardown-persistent-reopen",
+            "reference-create-versus-parent-delete-barrier-and-reopen",
+            "reverse-discovery-versus-reference-create-barrier-and-reopen",
+            "concurrent-empty-catalog-initialization-barrier-no-retry",
+            "initialization-populated-rejection-complete-inventory-and-reopen"
+          ],
+          "concurrent_application_schedules": true,
+          "limitations": [
+            "The wrapper delegates actual adapter transactions; it injects no synthetic conflict result.",
+            "Creating/deleting attempts can still coordinate on exact Population capacity; G7.5's existing-record reference controls isolate dependency guards without that masking.",
+            "Concurrent controls use deterministic overlapping transactions; redb runs the sequential controls only.",
+            "Persistent reopen is in-process evidence, not process restart or distributed failover."
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      }
+    },
+    "application_and_http_runs": [
+      {
+        "command": [
+          "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/examples/g7_application",
+          "foundationdb",
+          "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/fdb.cluster"
+        ],
+        "executable_sha256": "b6fc31fac653a61b1ec283ccb44d039756b241819df2f1ffb0a8a59efe5c20fe",
+        "exit_code": 0,
+        "seconds": 4.541,
+        "step": "application-final"
+      },
+      {
+        "command": [
+          "python3",
+          "-B",
+          "tools/g7_http.py",
+          "--binary",
+          "target/verification-build/release/rebase-next",
+          "--backend",
+          "foundationdb",
+          "--cluster-file",
+          "target/g7-environment/fdb.cluster",
+          "--out",
+          "target/g75-fdb-http"
+        ],
+        "exit_code": 0,
+        "seconds": 6.116,
+        "step": "http"
+      }
+    ],
+    "coordination": {
+      "backend": "foundationdb",
+      "namespace": "rebase-g75-0bb97468-5e80-4571-a1fc-e8bddc1ebb74",
+      "result": {
+        "coordination": {
+          "automatic_retries": false,
+          "case_count": 15,
+          "cases": [
+            "independent-populated-business-roots-distinct-readers-and-slots",
+            "complete-independent-write-sets-no-meta-population-or-header-write",
+            "original-id-replay-preserves-all-application-tables",
+            "scoped-cursor-survives-other-reader-other-contract-and-genuine-noop",
+            "same-reader-contract-change-invalidates-only-affected-cursor",
+            "same-root-existing-record-invariant-race-and-complete-rollback",
+            "genuine-noop-tracked-read-versus-edit-commit-barrier",
+            "delete-recreate-aba-rejects-original-token-with-complete-rollback",
+            "scoped-tokens-slots-and-business-state-persist-on-reopen",
+            "derived-only-publication-invalidates-reader-contract-cursor",
+            "reader-move-invalidates-old-and-new-partition-cursors",
+            "rejected-derived-change-preserves-cursors-and-complete-tables",
+            "authority-administration-invalidates-snapshot-cursors",
+            "existing-source-discovery-versus-existing-reference-retarget-no-common-writes",
+            "existing-reference-parent-read-versus-source-change-no-common-writes"
+          ],
+          "common_application_write_keys": [],
+          "common_surreal_guard_buckets": [],
+          "concurrent_application_schedules": true,
+          "genuine_noop": {
+            "application_reads": [
+              {
+                "key": "7300000000000000000000000000000003",
+                "table": "authority"
+              },
+              {
+                "key": "686561646572",
+                "table": "local_runtime"
+              },
+              {
+                "key": "00",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000064",
+                "table": "native_kv"
+              },
+              {
+                "key": "0100000000000000000000000000000066",
+                "table": "native_kv"
+              },
+              {
+                "key": "03000000000000000000000000000000660001",
+                "table": "native_kv"
+              },
+              {
+                "key": "0d",
+                "table": "native_kv"
+              },
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "application_writes": [
+              {
+                "key": "000000000000000000000000000000030000000000000000000000000000520a",
+                "table": "operations"
+              },
+              {
+                "key": "0322",
+                "table": "receipt_slots"
+              }
+            ],
+            "attempt": "genuine-noop",
+            "commit_us": 4168,
+            "outcome": "committed",
+            "scanned_tables": []
+          },
+          "independent_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000300000000000000000000000000002711",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000066",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0219",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-left",
+              "commit_us": 2389,
+              "outcome": "committed",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012d0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012f0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "060000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "070000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000004e21",
+                  "table": "operations"
+                },
+                {
+                  "key": "0000000000000000000000000000012e",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000040008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "03fe",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "independent-right",
+              "commit_us": 2748,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ],
+          "independent_balances": [
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "8"
+            },
+            {
+              "complete_min": "0",
+              "count": 3,
+              "first": "0",
+              "last": "2",
+              "sum": "7"
+            }
+          ],
+          "limitations": [
+            "The independent witness changes existing members of two invariant roots in different reader partitions; creates and new output reservations still coordinate on exact population capacity.",
+            "The write recorder delegates actual adapter transactions. SurrealKV adds its documented per-table hash guard keys; this witness selects disjoint buckets, while collisions and ranges can still cause conservative conflicts.",
+            "redb runs sequential controls because it serializes native writers. In-process reopen is not process or replicated-node failover.",
+            "One scoped reader/contract epoch still coordinates changes in that query partition. No throughput or general capacity claim is made."
+          ],
+          "receipt_hash_starts": [
+            537,
+            1022
+          ],
+          "reference_schedules": [
+            {
+              "attempts": [
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00000000000000000000000000000014",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020065",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "empty-reverse-discovery-loser",
+                  "commit_us": 3731,
+                  "outcome": "transaction_conflict",
+                  "scanned_tables": []
+                },
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0000000000000000000000000000001e",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "0000000000000000000000000000000200cd",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "retarget-winner",
+                  "commit_us": 4108,
+                  "outcome": "committed",
+                  "scanned_tables": []
+                }
+              ],
+              "common_application_writes": [],
+              "common_surreal_guard_buckets": [],
+              "expected_parent": "00000000-0000-0000-0000-000000000014",
+              "expected_scale": "9",
+              "expected_source": "18",
+              "family": "g75-reference-discovery",
+              "population_unchanged": true,
+              "protected_key": "0600000000000000000000000000000014"
+            },
+            {
+              "attempts": [
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "010000000000000000000000000000001e",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "050000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0500000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "060000000000000000000000000000000a",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0a0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0b0000000000000000000000000000001e0001",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a411",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0000000000000000000000000000001e",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "0000000000000000000000000000000200cd",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "00fb",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "parent-read-retarget-loser",
+                  "commit_us": 2729,
+                  "outcome": "transaction_conflict",
+                  "scanned_tables": []
+                },
+                {
+                  "application_reads": [
+                    {
+                      "key": "7300000000000000000000000000000002",
+                      "table": "authority"
+                    },
+                    {
+                      "key": "686561646572",
+                      "table": "local_runtime"
+                    },
+                    {
+                      "key": "00",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0600000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "0d",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "application_writes": [
+                    {
+                      "key": "0100000000000000000000000000000014",
+                      "table": "native_kv"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020000000000000000000000000000a029",
+                      "table": "operations"
+                    },
+                    {
+                      "key": "00000000000000000000000000000014",
+                      "table": "public_records"
+                    },
+                    {
+                      "key": "000000000000000000000000000000020065",
+                      "table": "query_epochs"
+                    },
+                    {
+                      "key": "0351",
+                      "table": "receipt_slots"
+                    }
+                  ],
+                  "attempt": "source-change-winner",
+                  "commit_us": 4285,
+                  "outcome": "committed",
+                  "scanned_tables": []
+                }
+              ],
+              "common_application_writes": [],
+              "common_surreal_guard_buckets": [],
+              "expected_parent": "00000000-0000-0000-0000-00000000000a",
+              "expected_scale": "6",
+              "expected_source": "24",
+              "family": "g75-reference-parent-read",
+              "population_unchanged": true,
+              "protected_key": "0100000000000000000000000000000014"
+            }
+          ],
+          "same_root_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000055f1",
+                  "table": "operations"
+                },
+                {
+                  "key": "0036",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000066",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000055f1",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000066",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0036",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "same-root-loser",
+              "commit_us": 3299,
+              "outcome": "transaction_conflict",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000003",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000064",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000650001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0600000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "07000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "0100000000000000000000000000000067",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "02000000000000000000000000000000640002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000660001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "03000000000000000000000000000000670001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000003000000000000000000000000000057e5",
+                  "table": "operations"
+                },
+                {
+                  "key": "00000000000000000000000000000067",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000030008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "02f5",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "same-root-winner",
+              "commit_us": 3353,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ],
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ],
+          "tracked_noop_attempts": [
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "00000000000000000000000000000004000000000000000000000000000059d9",
+                  "table": "operations"
+                },
+                {
+                  "key": "018a",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "00000000000000000000000000000004000000000000000000000000000059d9",
+                  "table": "operations"
+                },
+                {
+                  "key": "018a",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "tracked-noop-loser",
+              "commit_us": 3614,
+              "outcome": "transaction_conflict",
+              "scanned_tables": []
+            },
+            {
+              "application_reads": [
+                {
+                  "key": "7300000000000000000000000000000004",
+                  "table": "authority"
+                },
+                {
+                  "key": "686561646572",
+                  "table": "local_runtime"
+                },
+                {
+                  "key": "00",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012c",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012d0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012f0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "060000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "070000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0d",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000005bcd",
+                  "table": "operations"
+                },
+                {
+                  "key": "0011",
+                  "table": "receipt_slots"
+                }
+              ],
+              "application_writes": [
+                {
+                  "key": "010000000000000000000000000000012e",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "020000000000000000000000000000012c0002",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "030000000000000000000000000000012e0001",
+                  "table": "native_kv"
+                },
+                {
+                  "key": "0000000000000000000000000000000400000000000000000000000000005bcd",
+                  "table": "operations"
+                },
+                {
+                  "key": "0000000000000000000000000000012e",
+                  "table": "public_records"
+                },
+                {
+                  "key": "000000000000000000000000000000040008",
+                  "table": "query_epochs"
+                },
+                {
+                  "key": "0011",
+                  "table": "receipt_slots"
+                }
+              ],
+              "attempt": "tracked-noop-edit-winner",
+              "commit_us": 3407,
+              "outcome": "committed",
+              "scanned_tables": []
+            }
+          ]
+        },
+        "lifecycle": {
+          "automatic_retries": false,
+          "case_count": 14,
+          "cases": [
+            "ordinary-operation-hash-collision-linear-probe-and-unchanged-domain",
+            "direct-valid-1023-receipt-fixture-complete-slot-bijection",
+            "final-slot-concurrent-noop-contenders-single-commit-complete-rollback",
+            "full-capacity-original-id-replay-unchanged-complete-tables",
+            "exact-capacity-new-operation-rejection-and-all-table-rollback",
+            "archive-atomic-clear-old-context-expiry-and-new-context-capacity",
+            "archive-commit-fences-stale-inflight-mutation-and-receipt",
+            "archive-digest-detects-authority-only-change",
+            "archive-digest-detects-real-effect-activation-change",
+            "archive-after-digest-authority-commit-conflict",
+            "archive-after-digest-effect-activation-commit-conflict",
+            "current-complete-backup-archive-succeeds-after-rejected-races",
+            "authority-noop-preserves-complete-image-counter-and-cursor",
+            "authority-noop-versus-replacement-real-commit-conflict"
+          ],
+          "concurrent_schedules": true,
+          "limitations": [
+            "1023 retained receipts are a direct structurally validated fixture, not 1023 executed requests.",
+            "Final contenders, collisions, replay, quota rejection, authority, effect activation and archive use real Store paths.",
+            "Redb serializes writes and runs sequential lifecycle controls; overlapping commit barriers run only on optimistic adapters.",
+            "These are bounded correctness schedules, not throughput, replicated failover or native commit-ack fault injection."
+          ],
+          "receipt_capacity": 1024,
+          "status": "passed",
+          "table_inventory": [
+            "authority",
+            "effect_due",
+            "effect_executions",
+            "effect_facts",
+            "effect_inbox",
+            "effect_runtime",
+            "local_runtime",
+            "native_kv",
+            "operations",
+            "public_records",
+            "query_epochs",
+            "reader_records",
+            "receipt_slots"
+          ]
+        }
+      },
+      "status": "passed"
+    },
+    "coordination_run": {
+      "command": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/examples/g7_coordination",
+        "foundationdb",
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/fdb.cluster"
+      ],
+      "executable_sha256": "a2b580b1f076dd9594129088f11054c3b3d829de1349ad35f2f6299929102835",
+      "exit_code": 0,
+      "seconds": 6.691
+    },
+    "http": {
+      "accepted_ordinary_operations": 13,
+      "automatic_retries": false,
+      "backend": "foundationdb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "clients": 4,
+      "complete_rollback": true,
+      "elapsed_seconds": 5.845,
+      "integrity": {
+        "effects": {
+          "accounted_bytes": 4096,
+          "blocked": 0,
+          "expired_leases": 0,
+          "facts": 0,
+          "inbox": 0,
+          "inbox_pending": 0,
+          "oldest_eligible_age_ms": null,
+          "quarantined": false,
+          "reserved_facts": 0,
+          "retained": 0,
+          "uncertain": 0,
+          "unresolved": 0,
+          "worker_mode": "disabled"
+        },
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "nodes": 9,
+        "receipts": 14,
+        "records": 16,
+        "roots": 5,
+        "rows": 64,
+        "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+        "status": "valid",
+        "store": "4a0e05d1-aa66-443e-8f14-bcec60a3304f"
+      },
+      "lifecycle": {
+        "archive_complete_state_preserved": true,
+        "archive_original_context_expired": true,
+        "fresh_restore_all_tables_equal": true,
+        "reset_identity_changed": true,
+        "reset_integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+          "nodes": 0,
+          "receipts": 0,
+          "records": 0,
+          "roots": 0,
+          "rows": 2,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "c6ea2b7e-bca4-4600-aea7-77bb363e2f7a"
+        }
+      },
+      "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "process_restart": {
+        "all_tables_equal": true,
+        "image_sha256": "2f9a40557e12e3cb14ddec71915d85522bc2d553ded4eba5b727dc9a8d5b9448",
+        "same_id_status_replay": true,
+        "signal": "SIGKILL after acknowledged commits",
+        "table_count": 13
+      },
+      "python": "3.12.8",
+      "race_outcomes": {
+        "committed": 8,
+        "transaction_conflict": 24
+      },
+      "races": [
+        {
+          "attempts": 4,
+          "attempts_per_second": 150.173,
+          "clients": 4,
+          "elapsed_seconds": 0.026636,
+          "latency": {
+            "count": 4,
+            "max_ms": 24.648,
+            "p50_ms": 19.879,
+            "p95_ms": 24.648
+          },
+          "name": "same-record-cas-0",
+          "operation_ids": [
+            "f71a2e63-af7f-45e7-95c9-c9574407b760",
+            "f916fb9f-41ff-4057-806a-0186ce929f70",
+            "16e1a839-4dc1-4371-9104-89a08ac50881",
+            "40bb97db-bdc9-4c3b-8bf7-6aa2df546e6a"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 125.9,
+          "clients": 4,
+          "elapsed_seconds": 0.031771,
+          "latency": {
+            "count": 4,
+            "max_ms": 29.222,
+            "p50_ms": 26.04,
+            "p95_ms": 29.222
+          },
+          "name": "same-root-invariant-0",
+          "operation_ids": [
+            "ff4b315f-6a1d-4f33-9483-830aed6363fc",
+            "e9816e27-ab56-4a2e-9569-afa1beb38095",
+            "d83df59e-624e-402f-9df2-4f3cff4febf8",
+            "c217eac9-2440-4e90-ab47-4bcea3114421"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 148.66,
+          "clients": 4,
+          "elapsed_seconds": 0.026907,
+          "latency": {
+            "count": 4,
+            "max_ms": 24.475,
+            "p50_ms": 19.553,
+            "p95_ms": 24.475
+          },
+          "name": "same-record-cas-1",
+          "operation_ids": [
+            "66634be9-9be3-43e3-99b8-1b3ba1703c5e",
+            "149aae31-922b-42e0-8e4f-afdd0049e88c",
+            "886a2c43-199d-4139-b27f-b1d8a3228dae",
+            "4743c612-8a61-463b-997a-a743aebf13b5"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 132.759,
+          "clients": 4,
+          "elapsed_seconds": 0.03013,
+          "latency": {
+            "count": 4,
+            "max_ms": 27.104,
+            "p50_ms": 22.327,
+            "p95_ms": 27.104
+          },
+          "name": "same-root-invariant-1",
+          "operation_ids": [
+            "c092d75a-59a2-43a1-a6a6-0c809d454f25",
+            "dbdb2802-2306-4e0e-a765-d2d3e0963207",
+            "9733a27e-ef01-4bcd-92c1-c8f18d726499",
+            "565fa3be-bd4f-4b48-b8e4-069077e295f4"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 113.11,
+          "clients": 4,
+          "elapsed_seconds": 0.035364,
+          "latency": {
+            "count": 4,
+            "max_ms": 28.555,
+            "p50_ms": 26.625,
+            "p95_ms": 28.555
+          },
+          "name": "same-record-cas-2",
+          "operation_ids": [
+            "521a8b6f-22c8-49d3-9417-b268da1c1142",
+            "22f3d27f-ee54-40b6-870c-71165ec9bd4d",
+            "08da9810-f493-4c84-86a1-659fb15ca6a9",
+            "cd85fcbb-3fe6-4260-a8ce-8e7cbdc37ed9"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 124.149,
+          "clients": 4,
+          "elapsed_seconds": 0.032219,
+          "latency": {
+            "count": 4,
+            "max_ms": 29.869,
+            "p50_ms": 27.488,
+            "p95_ms": 29.869
+          },
+          "name": "same-root-invariant-2",
+          "operation_ids": [
+            "a5472e55-f87f-4ae9-9021-a412dda325d4",
+            "ed503d82-c6d5-4fa6-a8c5-de7fe6a93a47",
+            "df1d4acf-557b-4b1c-b2ff-301560992f6d",
+            "83522886-8a5b-441c-ad4e-2fc8f9d4285d"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 135.716,
+          "clients": 4,
+          "elapsed_seconds": 0.029473,
+          "latency": {
+            "count": 4,
+            "max_ms": 27.075,
+            "p50_ms": 23.03,
+            "p95_ms": 27.075
+          },
+          "name": "same-record-cas-3",
+          "operation_ids": [
+            "e298698e-a287-498b-a4b7-6b4606b69d0a",
+            "5a72ac18-7632-40d5-8377-6bff0e00f1c6",
+            "69ec0cba-1f7b-481a-afbf-3b7f7d2eb1f0",
+            "052b1b0d-a9e5-4eb4-aa3f-2e8bbd225c2b"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        },
+        {
+          "attempts": 4,
+          "attempts_per_second": 113.863,
+          "clients": 4,
+          "elapsed_seconds": 0.03513,
+          "latency": {
+            "count": 4,
+            "max_ms": 33.25,
+            "p50_ms": 29.986,
+            "p95_ms": 33.25
+          },
+          "name": "same-root-invariant-3",
+          "operation_ids": [
+            "73d7e916-720c-498f-8b1d-7fba745ebcde",
+            "9a23e2cb-7c59-4f0b-bf7d-7e89cb7c5fc6",
+            "b7ffd694-8b1d-4a56-bce2-4983a56e1836",
+            "c89e5116-ae50-44e4-9e82-d26da19268de"
+          ],
+          "outcomes": {
+            "committed": 1,
+            "transaction_conflict": 3
+          }
+        }
+      ],
+      "rejected_ordinary_operations": 25,
+      "remaining_fault_gaps": [
+        "No storage-native commit acknowledgement injection through ordinary RPC.",
+        "No database-server, replicated-node, disk or power-loss fault is injected.",
+        "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
+        "Population/reservation quotas, shared readers/business roots and adapter guards still coordinate; native G7.5 schedules own the bounded disjoint-root claim.",
+        "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."
+      ],
+      "request_response_faults": [
+        {
+          "boundary": "before_forward",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "3e8e1045-c644-42df-91fc-fa03b62f4c16",
+          "original_plan_unchanged": true,
+          "reconciled_status": "not_observed",
+          "replacement_operation_id": null,
+          "upstream_status": null
+        },
+        {
+          "boundary": "after_response",
+          "client_outcome": "outcome_unknown",
+          "discarded": 1,
+          "operation_id": "116f90fc-f68b-48d3-bbdb-898c9edc2c60",
+          "original_plan_unchanged": true,
+          "reconciled_status": "committed",
+          "replacement_operation_id": null,
+          "upstream_status": 200
+        }
+      ],
+      "rounds": 4,
+      "secured_identity": true,
+      "server_config": {
+        "max_inflight": 16,
+        "request_timeout_seconds": 15
+      },
+      "status": "passed"
+    }
+  },
+  "limitations": [
+    "One local FoundationDB 7.3.77 process/coordinator, no replication. Timings are local correctness measurements, not throughput or capacity.",
+    "Population changes, shared business roots, shared reader/contract partitions, receipt collisions and effect-runtime quotas still coordinate.",
+    "The 1023-receipt setup is a directly constructed structurally valid fixture, not 1023 executed operations.",
+    "HTTP proxy loss is not native database commit-acknowledgment fault injection. No replicated failover, disk or power-loss campaign.",
+    "redb serializes writers; SurrealKV has conservative hashed point and table-range guards. Their final source 0.16 cross-adapter acceptance is G7.6.",
+    "No migration, automatic retries, exactly-once external-effects guarantee or new deployment bundle. Last packaged release is 0.6.0."
+  ],
+  "logs_sha256": {
+    "target/g75-application-final-build.json": "0517c3b0557cbfd06675987c8e5cd78ca9aa7404752ea81eca69f3ec108671ea",
+    "target/g75-application-final-build.log": "356642341103e83196f70fdbd133ce53b24c613ff9c913fed64e5b093b70760b",
+    "target/g75-application-final-build.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-check-clippy.log": "e309016a6465aaba602462fbc2d8d7c77d172e138290c705046e325dabd1e191",
+    "target/g75-check-clippy.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-check-default-check.log": "0f41da794b935eaf0bdf374a44d0781f55710467a7a05b96509153f0d0f285b5",
+    "target/g75-check-default-check.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-check-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-check-fmt.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-clippy-1.log": "bbfdf0cf5736b61eb5c5bc3b8204956429bfc4affd740efbe9bb5acd0a88b6b5",
+    "target/g75-clippy-2.log": "2e0c0ff6b74ee0afa057ebd272c1d5d035126afac64743564a985b30aab56676",
+    "target/g75-clippy-3.log": "98629974886abcc2637ed672fc2b3b528f0692694ee77aca3b4c18ad097f78bd",
+    "target/g75-clippy-3.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-clippy-final.log": "4dd1549e65962683144feda23d7f4766dbd51730e476c734036c9f4900e0dc17",
+    "target/g75-clippy-final.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-corrected-0.log": "307ccad2e2a2f0dcfb09f1b1e31b01a36f24f0ca192d5e4db9029d94ca5a39ee",
+    "target/g75-corrected-1.log": "865e31787680bfee434f9410886e57d9c20fb9e8d14db97abea090650bfdbfce",
+    "target/g75-corrected-2.log": "3b2806ed5bd42cd1b2ba32e07c5fd3458878ac6ea7c4d210ed11fa79b5e81447",
+    "target/g75-corrected-3.log": "3200df979c3076909325f67008aa2706c8986bd9a7e93fd8c17471926169d5f4",
+    "target/g75-environment.json": "5c8e5283c375dfef2a466a7b787c3653b1f628c6902f0a4d55d9d8e2658e4b28",
+    "target/g75-fdb-application-final.json": "d42207c2e87bdda4325ec9ee17fb2956b4a0cb4d77dfc249d579b90c2b004bb2",
+    "target/g75-fdb-application-final.log": "1c214d3d5b332a0702a01c461cb2a3cc9a8ca17c3261f11fe4f4a3c4fa2d12b6",
+    "target/g75-fdb-application-run.json": "2e9542f1ef752bed55418aaadbf6bb75488d4637591624512547d6905c994852",
+    "target/g75-fdb-application.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-fdb-application.log": "3cd12578a3b8cf850ddc2f31ced89fb93eb85aa0be307bb7f37f6b69c2936923",
+    "target/g75-fdb-coordination-run.json": "d499d9d4b32f5f1ff5cebced4e4dd29960c40b86270b13dae6a0a9e18a13f86c",
+    "target/g75-fdb-coordination.json": "871d461549c524ab12d4850a3444ecc14bc8e8a7f48bffdaa30333b05d639253",
+    "target/g75-fdb-coordination.log": "2e4b8cf8d417d719d434280969a91859678a923abcb27ff3bc449228448078be",
+    "target/g75-fdb-final-runs.json": "11ff2ef0064e7e644e6df7ef04ca2fa456d8a60b9ecb106192e01c0587b2c59c",
+    "target/g75-fdb-http.json": "ea30b2854fcc6d3efe673cc554d230603d79ae545ba717c3c311838d905a61e5",
+    "target/g75-fdb-http.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-fdb-http/result.json": "3e82c560b896acbabd3e787575d8f8e0ca6fd49426a5344ce7ef9c66209f9885",
+    "target/g75-final-builds.json": "62b6e0f2716a0b845e9a79d9c80553cfa441ac8e6f031da05212729c1d0d8ae3",
+    "target/g75-final-checks.json": "60c67582708759e6ec076c1c4383178ef5e5c9772963f73f02955b3d3001abfd",
+    "target/g75-fmt-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-fmt-final.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-format-compatibility.json": "919121cca8be4546a9b92a56310b7653f5700ebe807c9e7eeecf5f81964b4193",
+    "target/g75-native-access_control.log": "8d652ca8c754eca97efe5e7cb6dc805dd92ba20bed32db3b7f9775b5a9428d29",
+    "target/g75-native-artifacts.json": "2b4d26484651f0c2418c291454db70235bf742642905a64c535f7e988d4e2f1c",
+    "target/g75-native-build.jsonl": "d6eb75eb40487a87b4600c02f58e691a7ea7291f71efffb99f59545274c60ad6",
+    "target/g75-native-build.log": "943ce0902acbc5fa823b9d2c27f67fd9908a4b587960f2c45f6c8484d97cba47",
+    "target/g75-native-corrected-results.json": "0bb0ffa06ce7799dbfeb3e9280fa29fc7ad5e24400aec48b677fdd66ae7095af",
+    "target/g75-native-corrections.log": "221f10e353e3799696acb7b10328b8a6ed7ce34a1c78881f20a21aac7cb46386",
+    "target/g75-native-corrections.stdout": "ad3e2c44400163c9f5e265067defe1f9b65622d8b003f26ca6401d666e2ced63",
+    "target/g75-native-equipment.log": "4101ca3577e0a2fedf2d732ab005d8e232a0cd5c9ab22956255d58324c093a16",
+    "target/g75-native-equipment_http.log": "9da032d6b3c8d733818274cd41572ba04277d58f73ef45b2517e459fafc352a3",
+    "target/g75-native-final.log": "09280f04c53545e1c6376bacf425ddb138667f491ef69668682c93e0f31c9667",
+    "target/g75-native-final.stdout": "52c6a95639de8de4ea0c3b6eb940f4a26c8bc35cd0c0bfafd862fcb4dc5ead0a",
+    "target/g75-native-invoicing.log": "d7896b95aba194a25419006419b555d1afe47ed03b194071bd3bbc4ac9a8c35d",
+    "target/g75-native-local_api.log": "671f8c04df9beb407cf44f6aea0f5206d8e9c2ee36975ed646cb960361f10dd6",
+    "target/g75-native-local_cli.log": "f30f23e0c159941bdc327bf446746962a45309bd127f807315715d6ff3131d9e",
+    "target/g75-native-measurement.log": "99e53bebf367659364a5adb5064ec8117c9dd41e5752988a8ab357dca33571b5",
+    "target/g75-native-model_contract.log": "af7ecbe60b466eb228909f3afce49c660e1ce5b84ab4edfad4e76b46ca1d9148",
+    "target/g75-native-native_tree.log": "0b55bf5dfd7ee37bf189c7c8c16304fd40dd5c407482995388311df38f3d82f9",
+    "target/g75-native-network_api.log": "eb0d097e34ab68622029d1712491db405d57280f46e5969cf27a35c5a029ea0f",
+    "target/g75-native-quantity.log": "2c060f2d9975f5256d232c76a2bb4a2152a3717664456c641910fd60169bfce8",
+    "target/g75-native-rebase_semantic_proof.log": "7642f166cb56b9b173588081baaa2646639c741060aff5bb17ccdd297d8ce2a6",
+    "target/g75-native-results.json": "7d67eec559e78478f2742dda2e70a92b52603666d9915fea4cd90e542148fc7d",
+    "target/g75-native-storage_lifecycle.log": "f0f94176eded39e46532e0bde5f0c2a476f68bb2740b7951e16d77be8d65eb08",
+    "target/g75-optimized-build.json": "829452bca715f705f48d6bb6a53d5ef093d0e0799587961a510be0c6949af33b",
+    "target/g75-optimized.log": "99ce783d5374d3c1579a54f9ea74276caf3f230bf2720a1a9aaab41bc2400edd",
+    "target/g75-optimized.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/g75-probes-build.log": "b36c800eec899914bc917cabeeacf688bb4599b6ae47de6777199d280fa2415f",
+    "target/g75-probes-build.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native": {
+    "corrected_execution": {
+      "executable": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+      "executable_sha256": "96b657cc2ed0811de628a5d8bffd3b2294efd7394aa2c9215d2977ad516bdf69",
+      "runs": [
+        {
+          "case": "local::tests::secured_physical_aborts_include_authority_and_reader_tables",
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+            "local::tests::secured_physical_aborts_include_authority_and_reader_tables",
+            "--exact",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "log": "target/g75-corrected-0.log",
+          "seconds": 0.167
+        },
+        {
+          "case": "parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders",
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+            "parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders",
+            "--exact",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "log": "target/g75-corrected-1.log",
+          "seconds": 0.609
+        },
+        {
+          "case": "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders",
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+            "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders",
+            "--exact",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "log": "target/g75-corrected-2.log",
+          "seconds": 0.408
+        },
+        {
+          "case": "parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates",
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+            "parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates",
+            "--exact",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "log": "target/g75-corrected-3.log",
+          "seconds": 0.976
+        }
+      ],
+      "status": "passed"
+    },
+    "corrected_passed": 4,
+    "distinct_passed": 153,
+    "fingerprint_differences_since_initial": [
+      "src/local.rs",
+      "src/parameter_tests.rs",
+      "src/storage/concurrency_checks.rs"
+    ],
+    "harnesses": 13,
+    "initial_execution": {
+      "runs": [
+        {
+          "cases": [
+            {
+              "name": "causal::tests::resolved_query_cannot_substitute_an_unauthored_account",
+              "status": "ok"
+            },
+            {
+              "name": "causal::tests::selective_closure_matches_source_arithmetic_through_repeated_topology_edits",
+              "status": "ok"
+            },
+            {
+              "name": "dependency::tests::dense_prefix_dependencies_keep_the_existing_linear_gate_path",
+              "status": "ok"
+            },
+            {
+              "name": "dependency::tests::final_moves_reverse_edges_without_union_cycles_or_excluded_prefix_feedback",
+              "status": "ok"
+            },
+            {
+              "name": "dependency::tests::inclusive_bounds_consume_whole_equal_time_groups_and_extreme_timestamps",
+              "status": "ok"
+            },
+            {
+              "name": "dependency::tests::sparse_windows_use_linear_graph_space_and_enforce_build_and_schedule_budgets",
+              "status": "ok"
+            },
+            {
+              "name": "dependency::tests::window_gates_match_independent_pairwise_reachability_and_cycles",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::action_metadata_is_checked_and_advertised_only_for_effect_models",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::corrupt_effect_inventory_rejects_complete_check_and_restore_without_publication",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::current_account_authority_controls_creation_cancel_status_and_receipt_disclosure",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::immutable_input_expiry_and_allocation_failures_leave_no_intent_or_receipt",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::intent_and_cancel_roll_back_after_actual_writes_and_share_receipts",
+              "status": "ok"
+            },
+            {
+              "name": "effect_tests::real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset",
+              "status": "ok"
+            },
+            {
+              "name": "effects::tests::due_key_preserves_full_signed_time_and_uuid_order",
+              "status": "ok"
+            },
+            {
+              "name": "effects::tests::schedule_defaults_and_twenty_four_hour_boundaries_are_exact",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::archive_retains_inbox_and_clean_reset_rejects_old_receipts_claims_and_hints",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::authentication_covers_exact_bytes_identity_skew_and_bounded_typed_json",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::complete_capacity_retains_a_blocked_event_advances_sweeps_and_fits_backup",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::durable_ack_dedup_and_consumed_fact_rollback_cover_actual_writes",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::inbox_inventory_and_compiled_action_mismatch_reject_check_and_restore",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::ingress::prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates",
+              "status": "ok"
+            },
+            {
+              "name": "effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption",
+              "status": "ok"
+            },
+            {
+              "name": "fixtures::tests::fixtures_remap_declared_references_and_reject_invalid_inventories",
+              "status": "ok"
+            },
+            {
+              "name": "index_tests::index_codes_and_time_keys_are_strict_native_values",
+              "status": "ok"
+            },
+            {
+              "name": "index_tests::native_financial_algebra_matches_complete_time_source_scans",
+              "status": "ok"
+            },
+            {
+              "name": "index_tests::native_query_port_preserves_standard_scalar_wire_and_rejects_statistics",
+              "status": "ok"
+            },
+            {
+              "name": "index_tests::one_native_tree_supports_noncopy_nontime_values",
+              "status": "ok"
+            },
+            {
+              "name": "inspector::tests::data_is_text_in_the_offline_artifact",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::canonical_orphan_root_returns_corruption_at_check_startup_and_restore",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::corrupt_data_chain_is_rejected_before_unbounded_recursion",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::model_population_limits_are_checked_inside_codec_envelope",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::scoped_coordination_inventory_rejects_corruption_without_repair",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::selector_checker_recomputes_empty_identity_minimum_and_bounded_count_from_sources",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::selector_checker_rejects_wrong_order_imbalance_and_disconnected_nodes",
+              "status": "ok"
+            },
+            {
+              "name": "integrity::tests::source_inventory_and_structure_reject_corruption_without_writer_replay",
+              "status": "ok"
+            },
+            {
+              "name": "json::tests::nested_duplicate_keys_trailing_documents_and_oversize_input_reject",
+              "status": "ok"
+            },
+            {
+              "name": "local::tests::active_model_context_and_table_inventory_are_checked_before_use",
+              "status": "ok"
+            },
+            {
+              "name": "local::tests::old_store_format_is_rejected_before_decoding_legacy_meta",
+              "status": "ok"
+            },
+            {
+              "name": "local::tests::partial_writes_and_receipt_writes_abort_all_application_tables",
+              "status": "ok"
+            },
+            {
+              "name": "local::tests::secured_physical_aborts_include_authority_and_reader_tables",
+              "status": "FAILED"
+            },
+            {
+              "name": "model::tests::bundled_preparation_exports_public_schemas_without_private_roles",
+              "status": "ok"
+            },
+            {
+              "name": "model::tests::preparation_rejects_ambiguous_or_inconsistent_declarations",
+              "status": "ok"
+            },
+            {
+              "name": "models::invoicing_check::tests::independent_invoicing_checker_rejects_numeric_and_structural_corruption",
+              "status": "ok"
+            },
+            {
+              "name": "mutation::tests::opaque_tokens_preserve_noops_and_reject_delete_recreate_aba",
+              "status": "ok"
+            },
+            {
+              "name": "native_slice::tests::prepared_calculation_and_exact_bindings",
+              "status": "ok"
+            },
+            {
+              "name": "native_slice::tests::typed_workspace_retains_old_images_and_coalesces_current_state",
+              "status": "ok"
+            },
+            {
+              "name": "parameter_tests::calculation_only_reader_recomputes_fallback_when_its_query_is_inactive",
+              "status": "ok"
+            },
+            {
+              "name": "parameter_tests::inherited_parameters_react_retarget_and_survive_replay_and_reopening",
+              "status": "ok"
+            },
+            {
+              "name": "parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders",
+              "status": "FAILED"
+            },
+            {
+              "name": "parameter_tests::rejected_parent_changes_leave_all_tables_revision_and_receipts_unchanged",
+              "status": "ok"
+            },
+            {
+              "name": "parameter_tests::terminal_only_reader_tracks_strict_bounds_roots_activation_and_deletion",
+              "status": "ok"
+            },
+            {
+              "name": "parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders",
+              "status": "FAILED"
+            },
+            {
+              "name": "parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates",
+              "status": "FAILED"
+            },
+            {
+              "name": "publication_tests::aggregate_change_reaches_publication_diamond_chain_and_deduplicated_routes",
+              "status": "ok"
+            },
+            {
+              "name": "publication_tests::final_publication_and_financial_graph_matches_plain_enumerated_orders",
+              "status": "ok"
+            },
+            {
+              "name": "publication_tests::final_reversal_retargets_in_both_command_orders_and_equal_values_keep_edges",
+              "status": "ok"
+            },
+            {
+              "name": "publication_tests::malformed_resolved_slots_targets_native_type_and_tenant_are_atomic",
+              "status": "ok"
+            },
+            {
+              "name": "publication_tests::prepared_publication_contract_rejects_unresolved_and_incompatible_declarations",
+              "status": "ok"
+            },
+            {
+              "name": "publication_tests::self_direct_mixed_cycles_and_overflow_roll_back_every_table_and_receipt",
+              "status": "ok"
+            },
+            {
+              "name": "receipts::tests::exact_capacity_uses_last_slot_and_full_rejection_preserves_tables",
+              "status": "ok"
+            },
+            {
+              "name": "receipts::tests::slot_collision_probes_and_partial_publication_aborts",
+              "status": "ok"
+            },
+            {
+              "name": "receipts::tests::slot_inventory_rejects_orphan_duplicate_and_mismatched_bindings",
+              "status": "ok"
+            },
+            {
+              "name": "route_tests::bounded_stabbing_prunes_both_sides_at_gate_population",
+              "status": "ok"
+            },
+            {
+              "name": "route_tests::empty_identity_minimum_cache_extremes_and_exact_remove_are_preserved",
+              "status": "ok"
+            },
+            {
+              "name": "route_tests::through_endpoints_interleave_and_only_subscribers_accept_windows",
+              "status": "ok"
+            },
+            {
+              "name": "route_tests::window_routes_match_literal_sources_after_rotations_rekeys_and_old_new_moves",
+              "status": "ok"
+            },
+            {
+              "name": "rpc::tests::definite_storage_rejections_remain_distinct_from_uncertain_commit",
+              "status": "ok"
+            },
+            {
+              "name": "server::tests::deadline_keeps_admission_until_the_real_transaction_finishes",
+              "status": "ok"
+            },
+            {
+              "name": "storage::foundationdb::tests::definite_commit_abort_retains_conflict_or_limit_classification",
+              "status": "ok"
+            },
+            {
+              "name": "storage::foundationdb::tests::timeout_is_definite_before_submission_and_uncertain_during_commit",
+              "status": "ok"
+            },
+            {
+              "name": "storage::tests::legacy_adapter_preserves_atomic_spaces_and_read_snapshot",
+              "status": "ok"
+            },
+            {
+              "name": "time_range::tests::closed_open_and_extreme_membership_matches_literal_predicates",
+              "status": "ok"
+            },
+            {
+              "name": "time_range::tests::wire_is_canonical_closed_and_preserves_empty_window_identity",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::intermediate_overflow_is_distinct_from_final_overflow",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::reduction_and_canonical_wire_preserve_native_boundaries",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::schema_exports_the_wire_contract_and_rounding_names",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::tax_fx_and_rounding_location_are_model_choices",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::ties_and_directed_rounding_are_explicit_for_both_signs",
+              "status": "ok"
+            },
+            {
+              "name": "values::tests::wire_rejects_noncanonical_or_unbounded_values",
+              "status": "ok"
+            },
+            {
+              "name": "window_tests::terminal_windows_validate_final_managed_repairs_in_both_command_orders",
+              "status": "ok"
+            },
+            {
+              "name": "window_tests::windows_accept_edge_reversal_even_when_old_new_union_is_cyclic",
+              "status": "ok"
+            },
+            {
+              "name": "window_tests::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting",
+              "status": "ok"
+            },
+            {
+              "name": "window_tests::windows_reject_zero_feedback_and_preserve_activation_and_phase_identity",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4",
+            "--test-threads=1"
+          ],
+          "counts": [
+            91,
+            4,
+            0
+          ],
+          "exit_code": 101,
+          "log": "target/g75-native-rebase_semantic_proof.log",
+          "seconds": 66.106,
+          "sha256": "c5650c215d26033f5d3a65a99379450f3e7de662e0352048f676d1f0b1871f84",
+          "target": "rebase_semantic_proof"
+        },
+        {
+          "cases": [
+            {
+              "name": "budgeted_reads_distinguish_empty_pages_unknown_and_exhaustion",
+              "status": "ok"
+            },
+            {
+              "name": "cursor_contract_scope_survives_unrelated_edits_and_covers_derived_only_changes",
+              "status": "ok"
+            },
+            {
+              "name": "cursors_bind_query_scope_and_survive_replay_noop_and_unchanged_reopen",
+              "status": "ok"
+            },
+            {
+              "name": "exact_mutations_publish_settled_values_and_durable_replay_receipts",
+              "status": "ok"
+            },
+            {
+              "name": "framing_and_request_rejections_cannot_execute_hidden_mutations",
+              "status": "ok"
+            },
+            {
+              "name": "private_identity_and_fixture_paths_are_not_public_operations",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/local_api-ffbf8b3041a2c3cf",
+            "--test-threads=1"
+          ],
+          "counts": [
+            6,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-local_api.log",
+          "seconds": 1.649,
+          "sha256": "9e9b67532f562767e38289884fbccb362474c7adb3221b67c1250c0cea2ec36c",
+          "target": "local_api"
+        },
+        {
+          "cases": [
+            {
+              "name": "direct_group_access_inherits_grants_without_granting_siblings",
+              "status": "ok"
+            },
+            {
+              "name": "prepared_scopes_match_independent_path_search_and_preserve_diamonds",
+              "status": "ok"
+            },
+            {
+              "name": "reader_partition_cursors_survive_disjoint_changes_and_fence_both_sides_of_moves",
+              "status": "ok"
+            },
+            {
+              "name": "real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/access_control-1d682269e3a4f7fe",
+            "--test-threads=1"
+          ],
+          "counts": [
+            4,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-access_control.log",
+          "seconds": 0.971,
+          "sha256": "76c667fad0ca56533cb6195521f9078fb20c7fbf92da5be6a8b3a2870e5aad50",
+          "target": "access_control"
+        },
+        {
+          "cases": [
+            {
+              "name": "archived_receipts_fence_old_uncertain_requests_and_remain_reconcilable",
+              "status": "ok"
+            },
+            {
+              "name": "damaged_or_incomplete_backups_never_publish_a_destination",
+              "status": "ok"
+            },
+            {
+              "name": "mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startup",
+              "status": "ok"
+            },
+            {
+              "name": "verified_backup_restore_and_reset_preserve_or_atomically_replace_complete_state",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/storage_lifecycle-290a590cb16c4857",
+            "--test-threads=1"
+          ],
+          "counts": [
+            4,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-storage_lifecycle.log",
+          "seconds": 2.014,
+          "sha256": "6a396ca5473fb5a1a3fd9001589829bb49d63d064bae9439d91036e55384c097",
+          "target": "storage_lifecycle"
+        },
+        {
+          "cases": [
+            {
+              "name": "authored_fixture_bindings_agree_with_prepared_schemas",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/model_contract-13a920eb1f6e646d",
+            "--test-threads=1"
+          ],
+          "counts": [
+            1,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-model_contract.log",
+          "seconds": 0.523,
+          "sha256": "c8a350520a23bb13e89e6ee0d0b2bc8a83780da3d0643fe81cb9820a7b4c0f12",
+          "target": "model_contract"
+        },
+        {
+          "cases": [
+            {
+              "name": "cas_replay_reopen_and_lifecycle_preserve_quantities",
+              "status": "ok"
+            },
+            {
+              "name": "exact_rounding_rejects_every_scale_atomically_and_zero_factor_does_not_hide_cycle",
+              "status": "ok"
+            },
+            {
+              "name": "ready_publication_chain_diamond_repeat_slots_and_source_edit",
+              "status": "ok"
+            },
+            {
+              "name": "retargets_and_parent_edits_settle_final_state_in_either_order",
+              "status": "ok"
+            },
+            {
+              "name": "source_bounds_accept_signed_limits_and_reject_values_outside_them",
+              "status": "ok"
+            },
+            {
+              "name": "source_literal_rational_oracle_covers_signed_ties_large_values_and_bounds",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/quantity-713b5efa0be800e6",
+            "--test-threads=1"
+          ],
+          "counts": [
+            6,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-quantity.log",
+          "seconds": 1.263,
+          "sha256": "832df8aa26d54a9fca58a431c1988cede74d1d4f435f187ba5a91169de1768c2",
+          "target": "quantity"
+        },
+        {
+          "cases": [
+            {
+              "name": "independent_equipment_model_reuses_mutation_receipts_queries_and_storage",
+              "status": "ok"
+            },
+            {
+              "name": "sparse_equipment_contracts_are_closed_and_native_bound",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/equipment-859bc88de82b6a9d",
+            "--test-threads=1"
+          ],
+          "counts": [
+            2,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-equipment.log",
+          "seconds": 1.091,
+          "sha256": "caa36810c412944931a0d547f01c1f6872ea7677faf6b5f7ce52cac167178eb1",
+          "target": "equipment"
+        },
+        {
+          "cases": [
+            {
+              "name": "full_population_replacement_accepts_both_command_orders",
+              "status": "ok"
+            },
+            {
+              "name": "latest_observation_final_retarget_unit_repairs_and_budget_are_atomic",
+              "status": "ok"
+            },
+            {
+              "name": "latest_observation_native_selection_uses_complete_member_slot_ties",
+              "status": "ok"
+            },
+            {
+              "name": "latest_observation_query_variants_are_closed_and_report_bytes_are_preserved",
+              "status": "ok"
+            },
+            {
+              "name": "latest_observation_tracks_absence_ties_nonwinners_and_every_changed_root",
+              "status": "ok"
+            },
+            {
+              "name": "measurement_algebra_matches_literal_scan_for_every_short_parenthesization",
+              "status": "ok"
+            },
+            {
+              "name": "measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks",
+              "status": "ok"
+            },
+            {
+              "name": "measurement_schemas_and_native_objects_are_closed_and_exact",
+              "status": "ok"
+            },
+            {
+              "name": "measurements_use_native_members_windows_final_unit_repairs_replay_and_lifecycle",
+              "status": "ok"
+            },
+            {
+              "name": "observation_report_and_native_corruptions_fail_check_startup_and_verified_restore",
+              "status": "ok"
+            },
+            {
+              "name": "observation_report_budget_failure_discards_staged_queries_and_all_tables",
+              "status": "ok"
+            },
+            {
+              "name": "observation_report_query_contract_and_native_result_are_checked",
+              "status": "ok"
+            },
+            {
+              "name": "observation_reports_keep_exact_empty_and_equal_result_dependencies",
+              "status": "ok"
+            },
+            {
+              "name": "observation_reports_retarget_and_repair_units_in_both_orders_with_complete_rollback",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/measurement-367a72e7e4c31dd1",
+            "--test-threads=1"
+          ],
+          "counts": [
+            14,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-measurement.log",
+          "seconds": 11.298,
+          "sha256": "362bf3c6d190e2aa0867bbdfc39c97bbc9dc95168f722fb9a47d1425564b4503",
+          "target": "measurement"
+        },
+        {
+          "cases": [
+            {
+              "name": "dated_source_and_rule_edits_recompute_taxes_and_preserve_zero_roles",
+              "status": "ok"
+            },
+            {
+              "name": "developer_fixtures_are_repeatable_and_execute_through_the_shared_store",
+              "status": "ok"
+            },
+            {
+              "name": "fractional_issue_dated_taxes_and_linked_credit_reach_literal_totals",
+              "status": "ok"
+            },
+            {
+              "name": "invalid_invoicing_batches_preserve_every_table_revision_and_receipt",
+              "status": "ok"
+            },
+            {
+              "name": "invalid_settlement_batches_roll_back_every_table_revision_and_receipt",
+              "status": "ok"
+            },
+            {
+              "name": "partial_payments_repeated_refunds_and_self_memberships_follow_the_final_graph",
+              "status": "ok"
+            },
+            {
+              "name": "self_membership_resolves_only_a_declared_root_of_its_own_contract",
+              "status": "ok"
+            },
+            {
+              "name": "settlement_preserves_historical_balance_and_claim_identity_across_sign_changes",
+              "status": "ok"
+            },
+            {
+              "name": "zero_outputs_and_owned_roots_retire_with_their_authored_producers",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/invoicing-406f3acb48d42047",
+            "--test-threads=1"
+          ],
+          "counts": [
+            9,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-invoicing.log",
+          "seconds": 13.646,
+          "sha256": "5981de0f47a14e080841d868a612bf585d293c3f4423e3f010fc5d21afe4098b",
+          "target": "invoicing"
+        },
+        {
+          "cases": [
+            {
+              "name": "binary_demo_offline_export_process_api_and_restart_are_usable_together",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/local_cli-db325c3a8aeea3fc",
+            "--test-threads=1"
+          ],
+          "counts": [
+            1,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-local_cli.log",
+          "seconds": 0.787,
+          "sha256": "748b9eabbd5b04b9b1c2deefdf005566cf1e683ae9e6b4f0fc5e63bdb90f72e2",
+          "target": "local_cli"
+        },
+        {
+          "cases": [
+            {
+              "name": "authenticated_ranges_preserve_complete_times_exact_bounds_and_reopen",
+              "status": "ok"
+            },
+            {
+              "name": "real_http_concurrency_receipts_revocation_and_reopen",
+              "status": "ok"
+            },
+            {
+              "name": "standard_credential_profile_rejects_wrong_context_signature_time_and_key",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/network_api-a82362cb1ea51502",
+            "--test-threads=1"
+          ],
+          "counts": [
+            3,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-network_api.log",
+          "seconds": 0.938,
+          "sha256": "644b069f6d67c0b1760138bc51e8f735d66e120613f2e26e9647c8ccc8a03d19",
+          "target": "network_api"
+        },
+        {
+          "cases": [
+            {
+              "name": "equipment_uses_shared_http_authority_receipts_and_sparse_queries",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/equipment_http-99cf6981e20b3183",
+            "--test-threads=1"
+          ],
+          "counts": [
+            1,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-equipment_http.log",
+          "seconds": 0.703,
+          "sha256": "df88e47c67c8980556ceb705cb92ce8cfbdce7541c5eb49544e92f101a23c596",
+          "target": "equipment_http"
+        },
+        {
+          "cases": [
+            {
+              "name": "all_rotation_directions_and_intrusive_deletions_match_source_scans",
+              "status": "ok"
+            },
+            {
+              "name": "equal_time_complete_boundaries_and_latest_extremes",
+              "status": "ok"
+            },
+            {
+              "name": "range_extrema_are_rebased_folds_not_differences_of_prefix_minima",
+              "status": "ok"
+            },
+            {
+              "name": "range_prunes_many_positions_under_a_population_independent_budget",
+              "status": "ok"
+            },
+            {
+              "name": "range_rejects_overflow_and_corrupt_traversed_links",
+              "status": "ok"
+            },
+            {
+              "name": "ranges_match_literal_subsets_complete_groups_and_extreme_bounds",
+              "status": "ok"
+            },
+            {
+              "name": "strict_prefix_matches_authored_scan_at_equal_times_and_extremes",
+              "status": "ok"
+            }
+          ],
+          "command": [
+            "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/verification-build/debug/deps/native_tree-42b15469c52491cd",
+            "--test-threads=1"
+          ],
+          "counts": [
+            7,
+            0,
+            0
+          ],
+          "exit_code": 0,
+          "log": "target/g75-native-native_tree.log",
+          "seconds": 2.981,
+          "sha256": "a4f48678058bc61eb80cd87a25e915c75750b755553bed64bc5729be1d250014",
+          "target": "native_tree"
+        }
+      ],
+      "scope": "affected native/store/API/authority/codec and binding controls; not the prior population or workshop campaigns",
+      "source_fingerprints": {
+        "Cargo.lock": "ca79b248ddddae74112c0b49a69df18794ae81309e04b2477bd6fdbe1f9b8f1e",
+        "Cargo.toml": "077b38cf84b01e58c728aa67b74a2410a06306d452d4c13d53b4e95534bc29b7",
+        "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+        "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+        "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+        "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+        "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+        "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+        "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+        "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+        "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+        "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+        "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+        "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+        "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+        "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+        "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+        "src/bin/rebase-next.rs": "ca48fd97c8660c95e8775cb4e5de32363b115644899d939498ede46adbc4ff16",
+        "src/binding.rs": "bc75f0ae6da662a76ea7a9d79267c657eeacff2216e85be13fc3c1515e2248a2",
+        "src/causal.rs": "443c211535e2ebf6c0d73d1223dc93d595ac20decee86e5ef7e88ee3ee921b39",
+        "src/demo.rs": "67e8f68d6dcd75d4327ccc1f4a168326c6932f66f057e70dae2ab939b6a23b64",
+        "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+        "src/effect_tests.rs": "3d4c0aea0251ca8ff0404855274001b4d85a92f66ccde9cf1ff3e117339fd58b",
+        "src/effects.rs": "95254b4da675899e1094be5095e1b7d868124b241fddc2dff2d63e8d621d9210",
+        "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+        "src/effects/conformance.rs": "ff53b80e39874f7e44b2d0a711c66903450eab35fa10b2317b8bdbc9a461aaef",
+        "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+        "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+        "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+        "src/effects/state.rs": "cb309a2996c3b2851aa0e50d41b2885da58d8ff0599c5cfb0a56f1d888113b53",
+        "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+        "src/effects/worker_tests.rs": "60874edc388f116cf16a545aee1adab7f56eb431931b44beab34215eac0f5bc4",
+        "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+        "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+        "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+        "src/index_tests.rs": "bd904203227983c8c2b77f73e2f29fe18c1b88302d4319c676e7d661005b5ccb",
+        "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+        "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+        "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+        "src/inspector.rs": "76a70b023678d329a642fba103501a5b445e181f1d7c958139f884195f29e4c1",
+        "src/integrity.rs": "1fc515ffb0c8102639c3b1e9ed1032531906950d2b00ab0ba8f8ca72085e457b",
+        "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+        "src/lib.rs": "4f5edb65b55d73b1da9035cb849c6f9f729b21da9085df000685fac1e3deaa7a",
+        "src/lifecycle.rs": "694857d8c48869190622bd3abdde06733275809d553f8abfd55b94c4ab708194",
+        "src/local.rs": "e7b34094926e4ad27baefc901bc9de983cf690ac2d4fa282f9073593d59f16b1",
+        "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+        "src/model.rs": "d02a9cdce08bafb50d63f0bcbd5dbbb0242c2ee0d0d2210957996a22d9aabd77",
+        "src/models/calculation.rs": "2e1af7dbd32b5a7a291c0d79926d93bd5b89b1101011c1ddd4abff76b021ac9e",
+        "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+        "src/models/effect_demo.rs": "7cec49ee3ce9d8723d8a8e0f67b6a8fc9d79d5f47bcdb2ea90feee6d86b2846d",
+        "src/models/equipment.rs": "48da4b90edb7891e15b8d60719b02c0ce5b456e387287b253f759200b96ea6f7",
+        "src/models/invoicing.rs": "2321e0c3415fa087ab6c76d4880b55fa92df01d479b794880ede6efff3f21f08",
+        "src/models/invoicing_check.rs": "d0b8f3054e1e6047a7f533ca862d39558628d62353d12b872621a47cea3650d4",
+        "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+        "src/models/measurement.rs": "1bac494627806021b562b99c9afbd9250a0c6e5b86af7bc4fbb9c8bf87901fc5",
+        "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+        "src/models/quantity.rs": "e303295e4460f970d15ce403a2d0f4294150a95491f5d722e93114cb3af03fd8",
+        "src/mutation.rs": "eb10bf1a99075deec1f19ba65f618e6df9d5ae2ae08d12dff0212beb240b1579",
+        "src/native_codec.rs": "25c6cfe9a3864fba78724151d27d5792540ab2b2d3a02d758a19fc6c805ec642",
+        "src/native_slice.rs": "ed20e699ae827ec28280fc500447267d0ca8882831adbd33e9967d2b6153bccd",
+        "src/parameter_tests.rs": "b301826d43ac5874ea4c2a129359e14bd674710d6f306dd414afb13c31f668b5",
+        "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+        "src/publication_tests.rs": "d72080acbb9e9771fa71df24f5b3daa327fc7f586021a27b5e0cd012cefc0b2b",
+        "src/query.rs": "afb3cdacf9362795c4f72c01825c5aff999f25e93c30546ec3bf25df3ee05ddb",
+        "src/receipts.rs": "1f86d0614c1b00325bc4ed15ab3b2b18819efc0e25989ec72be88a7688b3437a",
+        "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+        "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+        "src/rpc.rs": "f59d7f3e70a3283da4ccafd774875ab7e81bfd3a1548273232b72270458eea7d",
+        "src/security.rs": "246eff3056c48e9214d0820cde673c82820bf9244d22b287d1031cef743529cb",
+        "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+        "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+        "src/storage.rs": "5e022b15f10d61817bcb464657edb6561f3e16fbef293c51f90238649e81cd02",
+        "src/storage/application_checks.rs": "ba41d9544e8f53a0e4b251fce001b3ba057895936ec4e60536d89290a0e5ab8a",
+        "src/storage/concurrency_checks.rs": "87d7d5d94e13314ef033f79238f0b8605666497c9175098d909982d6b2323a72",
+        "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+        "src/storage/coordination_checks.rs": "c59fc0b93c9cde59aeef9a86039e9681331e6e543c2832f0046456d06433da35",
+        "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+        "src/storage/lifecycle_checks.rs": "d77124da1f23c878e97a192bce80c962bd51b6738a5ef3e482e7b8b7738fb32f",
+        "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+        "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+        "src/storage/target.rs": "c4cb75d1071c3a3eb20e61946d64bb933cf9bd04fe5254fa7845f24a657a5c99",
+        "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+        "src/tree.rs": "fbd413f710e5c4c5e4c0a4cbd751de05711f63bc0041ecad9abce1b90517de9c",
+        "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+        "src/window_tests.rs": "93063b8395a4af6256330a725b601ffd9495fa37c0add4766b6cc19970b0ed4c",
+        "tests/access_control.rs": "78f6cf28d93a6641899ad0a44f7d1d871d99617325fb1b1d9ad4b3419fe5bc45",
+        "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+        "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+        "tests/exact_values.rs": "ce2c28030b79a2e9677fed9cc8ecf87cdfe8ea337e3c9f12a50b546909973548",
+        "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+        "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+        "tests/local_api.rs": "22b8c70244f9c836a4629bbced6d1bc0e18e12a96c4acf44ea9908a4f6695d8c",
+        "tests/local_cli.rs": "f6619a37d459d9929251746ff3d955ff6821a11034eebc34899d169974feaa35",
+        "tests/measurement.rs": "3b763c4ff86b78065136171b3e5dcff028ab42126bba6b2edefb53601211768f",
+        "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+        "tests/native_tree.rs": "f9e9486836f639efc37c8e1a7754f587e976f547db7c374323b721a7162197a0",
+        "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+        "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+        "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+        "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+        "tests/storage_lifecycle.rs": "86e1a4ce5977ff0d45da035467773a44fe788ad0c65618194cac9e705364857e",
+        "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6"
+      },
+      "status": "failed"
+    },
+    "initial_passed": 149,
+    "status": "passed_after_four_exact_fixture_corrections"
+  },
+  "next": "Commit/push G7.5 on existing main, then final shared byte and remaining SurrealKV/redb application/coordination/HTTP acceptance. Reuse matching FoundationDB evidence. TiKV,G6,G8 and frontend stay deferred.",
+  "python_controls": {
+    "provenance": "Contributor direct tool output; no separate log retained; not rerun for packaging.",
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "-B",
+          "tools/test_harness.py",
+          "-v"
+        ],
+        "corrupt_archive_variants": 18,
+        "status": "passed",
+        "tests": 2
+      },
+      {
+        "command": [
+          "python3",
+          "-B",
+          "tools/test_client.py",
+          "-v"
+        ],
+        "status": "passed",
+        "tests": 6
+      }
+    ],
+    "syntax": {
+      "files_inspected": 15,
+      "method": "ast.parse; exact earlier command transcript not retained",
+      "status": "passed"
+    }
+  },
+  "review": {
+    "final_review": "Contributor read-only integration review found no runtime blocker; older root response/current-format guide references were corrected.",
+    "independent_expectations": "Literal independent balances 8/7 and reference schedules 18/9 and 24/6, complete-image rollback, receipt-slot bijection and corrupt archive variants. No adapter-manufactured conflict is accepted."
+  },
+  "scope": "Scoped revision, cursor and receipt coordination; real FoundationDB controls and affected native/optimized HTTP checks. No earlier population or V1 campaign repeated.",
+  "source_sha256": {
+    "Cargo.lock": "ca79b248ddddae74112c0b49a69df18794ae81309e04b2477bd6fdbe1f9b8f1e",
+    "Cargo.toml": "077b38cf84b01e58c728aa67b74a2410a06306d452d4c13d53b4e95534bc29b7",
+    "examples/demo.json": "74093d7f1c4853c040fadcbcee48135395a527d63a3c34f8a304ffbeb567956e",
+    "examples/exact_values.rs": "30d01b31efb5be07cff55cfd4e322909ccabf5c82d1b20ecf48701c284e59a03",
+    "examples/feasibility.rs": "61351497cf00c5a0dd926de79f6b877790eaa17cc0b482ec754a3800fc068b78",
+    "examples/g7_application.rs": "c44a97acd5c77ceb674e2068fe32f4664a1a01b8120e2141363a7f1831888258",
+    "examples/g7_coordination.rs": "9f402b64662c1e1b0efedd3c1d7a2c05f17fd653f0b57b9e0402ad48dafe3536",
+    "examples/g7_storage.rs": "c98fb776d3f334d793ce38f0d847c5aa71deea8ef441e21cada851970aaaac2c",
+    "examples/local_acceptance.rs": "6ca55b98f415141000f82c005ca0b88e1c98ec28964e082121e3685ab2ea6ed6",
+    "examples/native_slice.rs": "b8cb6e8a0f597494ff6d185e2a5deb6fd54f889fde2ae811eb68ade2d19bde90",
+    "examples/storage_probe.rs": "304719ba8dd9656a735843987f0a8b5af246c56c404cac9144a171d89fd01440",
+    "model/fixtures/causal-demo.json": "c979c5c605f18cae40ff19e05f94ed67d1f8f866075fe8fb239f99d377f700c9",
+    "model/schemas/account.json": "2cfcdc8f54f10a24e8f5e8c7fc62fecca9d511ec4f703f205972cb648cd2a764",
+    "model/schemas/adjustment.json": "abdcfd3169ea299dc5e9ae1a22c9789acad5c6e389d1c4b677e1bf184d326841",
+    "model/schemas/basis.json": "c69926a042c23d2578deac658f946d4945f2b5fde8c02cc44d4888d4b3d9812e",
+    "model/schemas/curve.json": "de28b7fc7407c466dee5b866905d4ed5fecce7d7b2c7901622a57fd9f7e78a3a",
+    "model/schemas/entry.json": "334545cc507e3799a2eb6b887781fa638aa08487a51751b77e0ebff5c1871950",
+    "model/schemas/moment.json": "f9427790c85e6fa36b2f8bd13ece886015a3d2ebe7e4775367280c616fc755c4",
+    "model/schemas/output.json": "89be3ec8d9e5bc6affcc09796d196240901bc4219e8e181260eab153f60fb039",
+    "model/schemas/pin.json": "6a5f084575f76dc476eae65910f72861cb802cc8754e1813597aa70fccc7030b",
+    "model/schemas/posting.json": "da7d7478beeae35e63b4337de5b8b33b2593b3e71317b683beb3e175236a8ea6",
+    "model/schemas/quote.json": "8b5adadbcf7e465a4484293cf86d335ab67572fe15009cc05c55122e635228e5",
+    "model/schemas/rule.json": "ce0d088dd7fad3d7330be0113e73e235408acb7c7d9563d32867845175c0168d",
+    "model/schemas/subsidiary.json": "0db676a46ab47a81c9f2550e6fe37db1d0283f31a1008a39f2c073629e1d0f45",
+    "src/access.rs": "e61e7721a3adc58d7cb357622ee5791bb82c40e68d8b1041f1f2466484eae49a",
+    "src/algebra.rs": "1bd126f1f86f7ce5450fa46cbb1a382fd848a85807d433d9c1f095128720f730",
+    "src/bin/rebase-next.rs": "ca48fd97c8660c95e8775cb4e5de32363b115644899d939498ede46adbc4ff16",
+    "src/binding.rs": "bc75f0ae6da662a76ea7a9d79267c657eeacff2216e85be13fc3c1515e2248a2",
+    "src/causal.rs": "443c211535e2ebf6c0d73d1223dc93d595ac20decee86e5ef7e88ee3ee921b39",
+    "src/demo.rs": "67e8f68d6dcd75d4327ccc1f4a168326c6932f66f057e70dae2ab939b6a23b64",
+    "src/dependency.rs": "e80c497cd43aef1a31d494503fb708987bf27ebe6875773206cb0b3311e2ced4",
+    "src/effect_tests.rs": "3d4c0aea0251ca8ff0404855274001b4d85a92f66ccde9cf1ff3e117339fd58b",
+    "src/effects.rs": "95254b4da675899e1094be5095e1b7d868124b241fddc2dff2d63e8d621d9210",
+    "src/effects/application.rs": "cc98ee06737b381f9e25f2142c86eee58ba0b154784ab5b5245c2350f556125f",
+    "src/effects/conformance.rs": "ff53b80e39874f7e44b2d0a711c66903450eab35fa10b2317b8bdbc9a461aaef",
+    "src/effects/fake.rs": "edaa02a881bc2f3074847107e16fafd7b397ff98950680405c54c84cd0760153",
+    "src/effects/inbox.rs": "da0c443430e0bc9322597c2be42e86612faeda79e6e38359ed5bfa5e278df32f",
+    "src/effects/inbox_tests.rs": "a3c21608cf98b17771e7b6e39422b1c99ab44ef9db1d9a328ccf9c934b03aaa2",
+    "src/effects/state.rs": "cb309a2996c3b2851aa0e50d41b2885da58d8ff0599c5cfb0a56f1d888113b53",
+    "src/effects/worker.rs": "170cceaf5161a9a9d328b59b12d62c44e162a2cf9337179c019b576060a60167",
+    "src/effects/worker_tests.rs": "60874edc388f116cf16a545aee1adab7f56eb431931b44beab34215eac0f5bc4",
+    "src/fixtures.rs": "d8cbf8d04698e2407e0199e8982768f9b23ffd69c35d76b533ce7a0adc3af80b",
+    "src/identity.rs": "bd27c2af4fdc0cce8faa8fd714e55aaa247ebaa4c6b2e52124e6072bdea973bb",
+    "src/index.rs": "506dcb7c1f8d3c0a939ed04744e9be416c06e73e28717d6b7837db6fd770a693",
+    "src/index_tests.rs": "bd904203227983c8c2b77f73e2f29fe18c1b88302d4319c676e7d661005b5ccb",
+    "src/indexes/measurement.rs": "02f3c7af5e8b224d8a9daaf8a4df76e9e399bd116c8593468566430a7aeef9d0",
+    "src/indexes/mod.rs": "ff10cd3603f3690ecfeea3ada6fe623534385de21faad8f2fec4168986652c9b",
+    "src/indexes/standard.rs": "e0d50f4b490c317c6ec80efd59fb058e852ddc67bc1a684470cd383aa9ed6c47",
+    "src/inspector.rs": "76a70b023678d329a642fba103501a5b445e181f1d7c958139f884195f29e4c1",
+    "src/integrity.rs": "1fc515ffb0c8102639c3b1e9ed1032531906950d2b00ab0ba8f8ca72085e457b",
+    "src/json.rs": "8f7f71d5f0763954cdbc374c3ee9668483b5170ec0bb63a9a961eec509c3d21e",
+    "src/lib.rs": "4f5edb65b55d73b1da9035cb849c6f9f729b21da9085df000685fac1e3deaa7a",
+    "src/lifecycle.rs": "694857d8c48869190622bd3abdde06733275809d553f8abfd55b94c4ab708194",
+    "src/local.rs": "64cd57ee6ae20e371eb503f49984f11ccf02455566461abb3e2a683853b0cb88",
+    "src/merge.rs": "34bc9a9677a8db60fe993a294ff11690b28d2764a8ebe8b1acc25fe61ed1816e",
+    "src/model.rs": "d02a9cdce08bafb50d63f0bcbd5dbbb0242c2ee0d0d2210957996a22d9aabd77",
+    "src/models/calculation.rs": "2e1af7dbd32b5a7a291c0d79926d93bd5b89b1101011c1ddd4abff76b021ac9e",
+    "src/models/calculation_reactivity.rs": "d63c9332a782d747d8754342a395ab53f92dc4da34338a6581b3401ba1506490",
+    "src/models/effect_demo.rs": "7cec49ee3ce9d8723d8a8e0f67b6a8fc9d79d5f47bcdb2ea90feee6d86b2846d",
+    "src/models/equipment.rs": "48da4b90edb7891e15b8d60719b02c0ce5b456e387287b253f759200b96ea6f7",
+    "src/models/invoicing.rs": "2321e0c3415fa087ab6c76d4880b55fa92df01d479b794880ede6efff3f21f08",
+    "src/models/invoicing_check.rs": "d0b8f3054e1e6047a7f533ca862d39558628d62353d12b872621a47cea3650d4",
+    "src/models/invoicing_fixtures.rs": "f4b9bd3aa6421e7888665b0a574de93eb5c57f032d68dc1b13a1dab8995d0e75",
+    "src/models/measurement.rs": "1bac494627806021b562b99c9afbd9250a0c6e5b86af7bc4fbb9c8bf87901fc5",
+    "src/models/mod.rs": "9e9640d6ac03694c408223625206509a2c38224d1d31a02f2d3b6ce1850478d3",
+    "src/models/quantity.rs": "e303295e4460f970d15ce403a2d0f4294150a95491f5d722e93114cb3af03fd8",
+    "src/mutation.rs": "eb10bf1a99075deec1f19ba65f618e6df9d5ae2ae08d12dff0212beb240b1579",
+    "src/native_codec.rs": "25c6cfe9a3864fba78724151d27d5792540ab2b2d3a02d758a19fc6c805ec642",
+    "src/native_slice.rs": "ed20e699ae827ec28280fc500447267d0ca8882831adbd33e9967d2b6153bccd",
+    "src/parameter_tests.rs": "ad5d654ce2d5d80f158849cc5c60c4604bbe051614828ef0a66c33cd89481a20",
+    "src/plan.rs": "66ebe8d9c7e8daf799206e91554f11047a98a6ed311f8b27f72feef0e3dc1cd2",
+    "src/publication_tests.rs": "d72080acbb9e9771fa71df24f5b3daa327fc7f586021a27b5e0cd012cefc0b2b",
+    "src/query.rs": "afb3cdacf9362795c4f72c01825c5aff999f25e93c30546ec3bf25df3ee05ddb",
+    "src/receipts.rs": "1f86d0614c1b00325bc4ed15ab3b2b18819efc0e25989ec72be88a7688b3437a",
+    "src/route_tests.rs": "a65e92052d96d26a2f681fc3ad87f91e4b29277b42d15dc59750036b1b0bf493",
+    "src/routes.rs": "ad9a4c59f4b951a5af472596c9a956df6086793e67973dc4b0f7e191d744b8a6",
+    "src/rpc.rs": "f59d7f3e70a3283da4ccafd774875ab7e81bfd3a1548273232b72270458eea7d",
+    "src/security.rs": "246eff3056c48e9214d0820cde673c82820bf9244d22b287d1031cef743529cb",
+    "src/server.rs": "9f39340cc91ac2ed08c23fe8b74e8192c273b1f1c21e85c9728437c980381c9a",
+    "src/staging.rs": "4874ea605de90554b01cbb53976a51c4b82681648e753d5f9096994f9d582ce8",
+    "src/storage.rs": "5e022b15f10d61817bcb464657edb6561f3e16fbef293c51f90238649e81cd02",
+    "src/storage/application_checks.rs": "ba41d9544e8f53a0e4b251fce001b3ba057895936ec4e60536d89290a0e5ab8a",
+    "src/storage/concurrency_checks.rs": "9529dded81cca8e02a600b47d7666422d37d13b4a73b5d49ce46ed0532047cb2",
+    "src/storage/conformance.rs": "67b3b6a38f7b8212fd1cf5462b66aeba9c9fffc671e6e8158ee3a8cb258b73e3",
+    "src/storage/coordination_checks.rs": "c59fc0b93c9cde59aeef9a86039e9681331e6e543c2832f0046456d06433da35",
+    "src/storage/foundationdb.rs": "08fb314ecea1da5df0c327382dbd4f09ef6418b6b6ef7d6aefd844a83d1e4f9e",
+    "src/storage/lifecycle_checks.rs": "d77124da1f23c878e97a192bce80c962bd51b6738a5ef3e482e7b8b7738fb32f",
+    "src/storage/redb.rs": "596b0fa1ddd8990a47ea83a8b1b39f9cb9a4cc02916dcdfd4b025efd14cfb1dc",
+    "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+    "src/storage/target.rs": "c4cb75d1071c3a3eb20e61946d64bb933cf9bd04fe5254fa7845f24a657a5c99",
+    "src/time_range.rs": "289d91d42c1ca1e685c6c676950a8b1fa59e11168b84500aaf1ed1840185097f",
+    "src/tree.rs": "fbd413f710e5c4c5e4c0a4cbd751de05711f63bc0041ecad9abce1b90517de9c",
+    "src/values.rs": "d7fcf11d19fef5502cb7fb4b8ffdf9ac4dab22e7ab40370fbc640fb372226819",
+    "src/window_tests.rs": "93063b8395a4af6256330a725b601ffd9495fa37c0add4766b6cc19970b0ed4c",
+    "tests/access_control.rs": "78f6cf28d93a6641899ad0a44f7d1d871d99617325fb1b1d9ad4b3419fe5bc45",
+    "tests/equipment.rs": "1543c144ed74af433d72256ed5da16c3e519525ea3d1fa1d9e815c9b9d1cd0d6",
+    "tests/equipment_http.rs": "e38e191004643b9f59bc94a7ebd44253d53a1bb5b4a3d5e88b157ac96e640de5",
+    "tests/exact_values.rs": "ce2c28030b79a2e9677fed9cc8ecf87cdfe8ea337e3c9f12a50b546909973548",
+    "tests/invoicing.rs": "5c344b44160f817cce754f01a309ec56d2983f01201a46f858ca3fb2e05c9cf9",
+    "tests/issue_share.rs": "493de3d7ae9f5c7086476b49d118fc45c6896e4b812a10cbf7c9d01ef80edf56",
+    "tests/local_api.rs": "22b8c70244f9c836a4629bbced6d1bc0e18e12a96c4acf44ea9908a4f6695d8c",
+    "tests/local_cli.rs": "f6619a37d459d9929251746ff3d955ff6821a11034eebc34899d169974feaa35",
+    "tests/measurement.rs": "3b763c4ff86b78065136171b3e5dcff028ab42126bba6b2edefb53601211768f",
+    "tests/model_contract.rs": "e740859a25a4232b033a3bb603cf5b77ba7a6d79c0e4f0800bb501f8e959dc75",
+    "tests/native_tree.rs": "f9e9486836f639efc37c8e1a7754f587e976f547db7c374323b721a7162197a0",
+    "tests/network_api.rs": "aed169591051d0248fe3c2d6edfb5f1d059dfb44163bc46c59e711364e238e31",
+    "tests/quantity.rs": "66b43c6ed922636b1bb3de1da7c0e43bcea2c561f661a1015bae7a21ff397bdc",
+    "tests/routes.rs": "8af8e67715cfe2c2c07e2eee9699d6ae62444006a536765ce1171d4df146cd50",
+    "tests/semantics.rs": "a22ca5c4c033648e08d83d85f7aad3b7864397d22512613d8a10021624080e9a",
+    "tests/storage_lifecycle.rs": "86e1a4ce5977ff0d45da035467773a44fe788ad0c65618194cac9e705364857e",
+    "tests/workshop_exhaustive.rs": "7db890367d1cef167983e52ef5e88822087c9e1ba3d2080e8dffaaee7aa6e4f6",
+    "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+    "tools/client.py": "62878fa57b97e16916c4142434e06d6735ebc4afd6f845b3d6a17ec7f6dd7948",
+    "tools/effects.py": "f377abddf8af9e69cb35e4732b0fa64bb43f9e65f4dd420a90a6a5bd26498141",
+    "tools/effects_ingress.py": "e4078c90baa8aa3aa85f11f4289391a7129c256ffcbf3c917978a2c0d385f76e",
+    "tools/effects_worker.py": "6da7c246719da61bb03e95d2f02381312c912dd290db8184cf21d79d2e523c3c",
+    "tools/fake_provider.py": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21",
+    "tools/fdb_cluster.py": "5c6ad0029fe549c6e7eadad5a0cea15b8bd4393372dcb4dab171d8aaf2b46925",
+    "tools/g7_http.py": "ba541614ed8ca2d48ca292fb4375bcebc0f0f45ca4ec233e399c11537581e81c",
+    "tools/g7_oracle.py": "548bf325c66325b53f3a5a3331b966df3fdf161a11664fca6ff55d5dbbb983dd",
+    "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+    "tools/invoicing.py": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b",
+    "tools/issue_shares.py": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a",
+    "tools/observation_reports.py": "24f903554fa2dfa89a879a5534c614af222a19416a501b66f3455cfd6ed8d744",
+    "tools/observation_selection.py": "cd10ff95bc27f051c4a031cbbfa1872404ec333b708589100abf26034e3e3422",
+    "tools/package.py": "feefb785552dc370ec2ef3e5691a566dff26ff3b48d320f072200f6bd891b2b5",
+    "tools/test_capacity.py": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6",
+    "tools/test_client.py": "35030f4371850d9946db4c17ed59af4d75252b33b858dfe31ceccc5dd9176afb",
+    "tools/test_harness.py": "b60675cf8223e21620523a4df8a44306c986c4cae6f6a170fe33d59e36ab260c",
+    "tools/test_invoicing.py": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4",
+    "tools/test_verify_checks.py": "3b49b1a64cfa30a997327d4fdaeb97034564bde18a459bfaeb40b447752b66ed",
+    "tools/test_verify_explore.py": "8cfcd7eb66b08cf0643939ca0aa7736eff3949f44f7493828800f4a1b7ea82a7",
+    "tools/test_verify_walk.py": "f759adff26632abd97a5465751aa0e36921963bc57b5e7c70fcdca31a4e89f38",
+    "tools/verify.py": "d4baa7b1a2cad4e6d67ab7d16920ae876ed97a9f7571bcc8fd52e2ba19b3b3b7",
+    "tools/verify_cases.py": "f65f30f2c8884e8d5ecf218e726b9a2095d551cd099e44407df3d8eebf949fb7",
+    "tools/verify_checks.py": "0b244ffacebcedd900ff2f163a623c6b6155d01e9ebb1190eb2fb1d387e63c32",
+    "tools/verify_explore.py": "75358e0f9ada0a8ab1a7d3262819de28f8a42e7dd30ede63adaf26a30db8539a",
+    "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c",
+    "tools/verify_runtime.py": "b04feb924dbbb9b3ed50a13fa343f65380a8a3fec20ff8136e4a6487d013e3e0"
+  },
+  "source_version": "0.16.0",
+  "status": "accepted"
+}

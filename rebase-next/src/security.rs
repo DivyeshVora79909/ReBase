@@ -24,6 +24,21 @@ use crate::{
 pub(crate) const AUTHORITY: TableDefinition<&[u8], &[u8]> = TableDefinition::new("authority");
 pub(crate) const READERS: TableDefinition<&[u8], u16> = TableDefinition::new("reader_records");
 const GRAPH: &[u8] = b"graph";
+pub(crate) const REVISION: &[u8] = b"revision";
+
+/// Administration-only CAS counter; domain mutations never rewrite it.
+pub(crate) fn authority_revision(
+    table: &impl ReadableTable<&'static [u8], &'static [u8]>,
+) -> Result<u64> {
+    let bytes = table
+        .get(REVISION)?
+        .ok_or_else(|| corrupt("missing authority revision"))?;
+    let revision: u64 = decode(bytes.value())?;
+    if encode(&revision)? != bytes.value() {
+        return Err(corrupt("noncanonical authority revision"));
+    }
+    Ok(revision)
+}
 
 fn operation_mac(
     header: &crate::local::RuntimeHeader,
@@ -120,6 +135,9 @@ pub(crate) fn write_graph(write: &WriteTransaction) -> Result<PreparedGraph> {
 
 pub(crate) fn store_graph(write: &WriteTransaction, graph: &PreparedGraph) -> Result<()> {
     let mut table = write.open_table(AUTHORITY).map_err(storage)?;
+    if table.get(REVISION)?.is_none() {
+        table.insert(REVISION, encode(&0_u64)?.as_slice())?;
+    }
     table
         .insert(GRAPH, encode(&graph.graph)?.as_slice())
         .map_err(storage)?;
@@ -135,7 +153,7 @@ pub(crate) fn repair_readers<B: Binding, L: FnMut(&[u8]) -> Result<Option<Vec<u8
     ws: &mut Attempt<L, B>,
     model: &Prepared<B>,
     ids: BTreeSet<Uuid>,
-    revision: u64,
+    revision: Uuid,
     select: &mut impl FnMut(&[Uuid], Uuid) -> Result<Uuid>,
 ) -> Result<()> {
     // Public readers use immediate owners, so there is no recursive reader fold.
@@ -376,7 +394,7 @@ impl<B: Binding> Store<B> {
     }
 
     pub fn access_graph(&self, model: &str) -> Result<Value> {
-        let (read, meta, _) = self.read(model)?;
+        let (read, _, _) = self.read(model)?;
         if !self.secured || !self.authority(&read)?.grants.admin {
             return Err(denied());
         }
@@ -388,7 +406,7 @@ impl<B: Binding> Store<B> {
                 .ok_or_else(|| corrupt("missing graph"))?
                 .value(),
         )?;
-        Ok(json!({"revision":meta.revision.to_string(),"graph":graph}))
+        Ok(json!({"revision":authority_revision(&table)?.to_string(),"graph":graph}))
     }
 
     /// Separate compare-and-set administration. No domain batch can grant its
@@ -401,8 +419,8 @@ impl<B: Binding> Store<B> {
         if !self.write_authority(&write)?.grants.admin {
             return Err(denied());
         }
-        let mut native = write.open_table(KV).map_err(storage)?;
-        let mut meta = match native_codec::decode_for::<B>(
+        let native = write.open_table(KV).map_err(storage)?;
+        let meta = match native_codec::decode_for::<B>(
             &Key::Meta,
             native
                 .get(Key::Meta.encode().as_slice())
@@ -414,7 +432,8 @@ impl<B: Binding> Store<B> {
             _ => return Err(corrupt("meta type")),
         };
         self.check_meta(&meta, &request.model)?;
-        if meta.revision != request.if_revision {
+        let revision = authority_revision(&write.open_table(AUTHORITY)?)?;
+        if revision != request.if_revision {
             return Err(Error::new("stale_version", "authority revision changed"));
         }
         if request.graph.tenant != meta.tenant {
@@ -450,12 +469,20 @@ impl<B: Binding> Store<B> {
             }
         }
         if old.graph == graph.graph {
-            return Ok(json!({"revision":meta.revision.to_string(),"changed":false}));
+            // FoundationDB does not validate conflict ranges for a read-only
+            // commit. This administration-only same-value write makes the
+            // graph CAS and authorization reads participate without advancing
+            // the epoch or changing the logical image.
+            write
+                .open_table(AUTHORITY)?
+                .insert(REVISION, encode(&revision)?.as_slice())?;
+            drop(native);
+            write.commit()?;
+            return Ok(json!({"revision":revision.to_string(),"changed":false}));
         }
-        meta.revision = meta
-            .revision
+        let revision = revision
             .checked_add(1)
-            .ok_or_else(|| Error::new("revision_exhausted", "store counter"))?;
+            .ok_or_else(|| Error::new("revision_exhausted", "authority counter"))?;
         let mut ws = Attempt::<_, B>::new(
             |key: &[u8]| {
                 native
@@ -477,7 +504,7 @@ impl<B: Binding> Store<B> {
             &mut ws,
             &self.model,
             ids,
-            meta.revision,
+            Uuid::new_v4(),
             &mut |owners, fallback| {
                 if !graph.scopes.contains_key(&fallback) {
                     return Err(corrupt("unknown owner"));
@@ -485,24 +512,15 @@ impl<B: Binding> Store<B> {
                 Ok(graph.reader(owners, fallback))
             },
         )?;
-        ws.put(Key::Meta, Some(StoredValue::Meta(meta.clone())))?;
         let batch = ws.finish()?;
         drop(ws);
-        for (key, value) in &batch {
-            if let Key::Record(id) = Key::decode(key)? {
-                update_reader_index(&write, &native, &self.model, id, value.as_deref())?;
-            }
-            if let Some(bytes) = value {
-                native
-                    .insert(key.as_slice(), bytes.as_slice())
-                    .map_err(storage)?;
-            } else {
-                native.remove(key.as_slice()).map_err(storage)?;
-            }
-        }
         drop(native);
+        self.publish_native(&write, &batch, None)?;
         store_graph(&write, &graph)?;
+        write
+            .open_table(AUTHORITY)?
+            .insert(REVISION, encode(&revision)?.as_slice())?;
         write.commit().map_err(storage)?;
-        Ok(json!({"revision":meta.revision.to_string(),"changed":true}))
+        Ok(json!({"revision":revision.to_string(),"changed":true}))
     }
 }

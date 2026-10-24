@@ -13,7 +13,9 @@ use crate::{
         QueryDeclaration, Reference, RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
+    native_slice::{
+        Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Query, Result,
+    },
     routes,
     time_range::{TimeBound, TimeRange},
 };
@@ -341,8 +343,8 @@ impl Binding for WindowModel {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
@@ -361,7 +363,7 @@ impl Binding for WindowModel {
                 entry_member(change.new.as_ref().map(|r| &r.input)),
             )?;
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)
     }
     fn check(store: &Store<Self>) -> Result<Value> {
         check(store)

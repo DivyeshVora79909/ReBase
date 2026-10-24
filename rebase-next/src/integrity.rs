@@ -14,7 +14,7 @@ use crate::{
     native_codec::{self, Address, Key, Stored},
     native_slice::{Calculated, Derived, Input, Query},
     native_slice::{Error, Result},
-    native_slice::{Meta, ModelRecord},
+    native_slice::{Meta, ModelRecord, Population},
     time_range::{TimeBound, TimeRange},
     tree::{FullKey, Node, Span},
 };
@@ -352,6 +352,7 @@ pub(crate) struct Snapshot<'a, B: Binding> {
     store: &'a Store<B>,
     pub(crate) read: crate::storage::ReadTransaction,
     pub(crate) meta: Meta,
+    pub(crate) population: Population,
     pub(crate) header: RuntimeHeader,
     pub(crate) all: BTreeMap<Key, StoredValue<B>>,
     pub(crate) records: BTreeMap<Uuid, ModelRecord<B>>,
@@ -381,6 +382,10 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 native_codec::decode_for::<B>(&key, value.value())?,
             );
         }
+        let population = match all.get(&Key::Population) {
+            Some(StoredValue::Population(population)) => population.clone(),
+            _ => return Err(local::corrupt("missing population")),
+        };
         let records: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
@@ -421,7 +426,19 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 graph.scopes.contains_key(&meta.actor),
                 "bootstrap principal identity",
             )?;
-            let mut expected = BTreeMap::from([(b"graph".to_vec(), local::encode(&graph.graph)?)]);
+            let revision: u64 = local::decode(
+                auth.get(crate::security::REVISION)
+                    .map_err(local::storage)?
+                    .ok_or_else(|| local::corrupt("missing authority revision"))?
+                    .value(),
+            )?;
+            let mut expected = BTreeMap::from([
+                (b"graph".to_vec(), local::encode(&graph.graph)?),
+                (
+                    crate::security::REVISION.to_vec(),
+                    local::encode(&revision)?,
+                ),
+            ]);
             for (actor, scope) in &graph.scopes {
                 let mut key = vec![b's'];
                 key.extend_from_slice(actor.as_bytes());
@@ -441,14 +458,11 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         let mut counts: BTreeMap<_, u16> = store.model().contracts().map(|c| (c.code, 0)).collect();
         let mut public = BTreeMap::new();
         let mut readers = BTreeMap::new();
-        let mut expected_keys = BTreeSet::from([Key::Meta]);
+        let mut expected_keys = BTreeSet::from([Key::Meta, Key::Population]);
         let mut routes = BTreeMap::<Key, BTreeSet<Address>>::new();
         for (&id, r) in &records {
             require(
-                r.contract == r.input.contract()
-                    && r.tenant == meta.tenant
-                    && r.version > 0
-                    && r.version <= meta.revision,
+                r.contract == r.input.contract() && r.tenant == meta.tenant && !r.version.is_nil(),
                 "record header",
             )?;
             store.model().validate(
@@ -458,7 +472,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             *counts.entry(r.contract).or_insert(0u16) += 1;
             expected_keys.insert(Key::Record(id));
             let contract = store.model().contract(r.contract)?;
-            for (key, _) in crate::binding::headers(store.model(), id, &r.input, meta.revision)? {
+            for (key, _) in crate::binding::headers(store.model(), id, &r.input, r.version)? {
                 match key {
                     Key::Incoming(_) | Key::Direct(_) | Key::Subscribers(_) => {
                         routes.entry(key).or_default();
@@ -538,7 +552,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             })
             .collect();
         require(
-            bindings.len() == reserved.len() && bindings.len() == usize::from(meta.reserved),
+            bindings.len() == reserved.len() && bindings.len() == usize::from(population.reserved),
             "reservation population",
         )?;
         for (role, binding) in &bindings {
@@ -597,12 +611,13 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 )?;
             }
         }
-        require(counts == meta.counts, "record population")?;
-        check_populations(store.model(), &counts, meta.reserved)?;
+        require(counts == population.counts, "record population")?;
+        check_populations(store.model(), &counts, population.reserved)?;
         Ok(Self {
             store,
             read,
             meta,
+            population,
             header,
             all,
             records,
@@ -691,7 +706,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         };
         for (&address, root) in roots {
             require(
-                expected_keys.contains(&Key::Root(address)) && root.revision <= meta.revision,
+                expected_keys.contains(&Key::Root(address)) && !root.revision.is_nil(),
                 "root inventory/version",
             )?;
             let owner = records
@@ -777,14 +792,73 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 .collect::<Result<BTreeMap<_, _>>>()?;
             require(actual == *readers, "reader index inventory")?;
         }
+        // Epochs are sparse and retained after a partition becomes empty. Their
+        // entire inventory must still be bounded by declared readers/contracts;
+        // every current public partition must have a nonnil epoch.
+        let epoch_table = read
+            .open_table(crate::query::EPOCHS)
+            .map_err(local::storage)?;
+        let mut epochs = BTreeSet::new();
+        let reader_count = graph.as_ref().map_or(1, |g| g.scopes.len());
+        let contract_count = store
+            .model()
+            .contracts()
+            .filter(|c| c.visibility == Visibility::Public)
+            .count();
+        for row in epoch_table.iter().map_err(local::storage)? {
+            let (key, value) = row.map_err(local::storage)?;
+            require(
+                key.value().len() == 18 && value.value().len() == 16,
+                "query epoch shape",
+            )?;
+            let reader = Uuid::from_slice(&key.value()[..16])
+                .map_err(|_| local::corrupt("query epoch reader"))?;
+            let contract = u16::from_be_bytes(key.value()[16..].try_into().unwrap());
+            let token =
+                Uuid::from_slice(value.value()).map_err(|_| local::corrupt("query epoch token"))?;
+            require(
+                graph
+                    .as_ref()
+                    .map_or(reader == meta.actor, |g| g.scopes.contains_key(&reader))
+                    && store
+                        .model()
+                        .contract(contract)
+                        .is_ok_and(|c| c.visibility == Visibility::Public)
+                    && !token.is_nil(),
+                "query epoch scope/token",
+            )?;
+            epochs.insert(key.value().to_vec());
+            require(
+                epochs.len() <= reader_count * contract_count,
+                "query epoch population",
+            )?;
+        }
+        for record in records.values().filter(|r| {
+            store
+                .model()
+                .contract(r.contract)
+                .is_ok_and(|c| c.visibility == Visibility::Public)
+        }) {
+            let key = [
+                record.reader.as_bytes().as_slice(),
+                &record.contract.to_be_bytes(),
+            ]
+            .concat();
+            require(epochs.contains(&key), "missing public query epoch")?;
+        }
         let receipts = read.open_table(RECEIPTS).map_err(local::storage)?;
         let effects =
             crate::effects::check(read, store.model(), meta, header, records, store.secured)?;
         let mut receipt_count = 0;
+        let mut expected_slots = BTreeMap::new();
         for row in receipts.iter().map_err(local::storage)? {
             let (k, v) = row.map_err(local::storage)?;
             let r: ReceiptValue<B> = local::decode(v.value())?;
             receipt_count += 1;
+            require(
+                receipt_count <= usize::from(local::MAX_RECEIPTS),
+                "receipt capacity",
+            )?;
             crate::security::check_operation_context(
                 &r.context,
                 header,
@@ -817,9 +891,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 for returned in &result.records {
                     if let Some(record) = &returned.record {
                         require(
-                            record.id == returned.id
-                                && record.version > 0
-                                && record.version <= result.revision,
+                            record.id == returned.id && !record.version.is_nil(),
                             "receipt record binding/version",
                         )?;
                         let contract = store.model.public_contract(record.contract)?;
@@ -855,17 +927,42 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 k.value() == expected
                     && r.model == meta.model
                     && r.tenant == meta.tenant
-                    && r.result.revision() > 0
-                    && r.result.revision() <= meta.revision
+                    && !r.result.revision().is_nil()
                     && r.request_hash.len() == 64
                     && local::unhex(&r.request_hash).is_ok(),
                 "receipt scope/shape",
             )?;
+            require(
+                r.slot < local::MAX_RECEIPTS
+                    && expected_slots
+                        .insert(r.slot.to_be_bytes().to_vec(), expected)
+                        .is_none(),
+                "receipt allocation slot",
+            )?;
         }
-        require(receipt_count == header.receipts, "receipt population")?;
+        let slots = read
+            .open_table(crate::receipts::SLOTS)
+            .map_err(local::storage)?;
+        let actual_slots = slots
+            .iter()
+            .map_err(local::storage)?
+            .enumerate()
+            .map(|(index, row)| {
+                require(
+                    index < usize::from(local::MAX_RECEIPTS),
+                    "receipt slot capacity",
+                )?;
+                row.map(|(k, v)| (k.value().to_vec(), v.value().to_vec()))
+                    .map_err(local::storage)
+            })
+            .collect::<Result<BTreeMap<_, _>>>()?;
+        require(
+            receipt_count <= usize::from(local::MAX_RECEIPTS) && actual_slots == expected_slots,
+            "receipt slot bijection/capacity",
+        )?;
         Ok(
             json!({"status":"valid","scope":"complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
-            "store":header.store_id,"model":meta.model,"revision":meta.revision.to_string(),"records":records.len(),"roots":roots.len(),"nodes":nodes.len(),"rows":all.len(),"receipts":receipt_count,"effects":effects}),
+            "store":header.store_id,"model":meta.model,"records":records.len(),"roots":roots.len(),"nodes":nodes.len(),"rows":all.len(),"receipts":receipt_count,"effects":effects}),
         )
     }
 }
@@ -873,7 +970,7 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
     let snapshot = Snapshot::load(store)?;
     let all = &snapshot.all;
     let records = &snapshot.records;
-    let meta = &snapshot.meta;
+    let population = &snapshot.population;
     let mut expected_keys = snapshot.expected_keys.clone();
     let mut members = Members::new();
     let mut routes = snapshot.routes.clone();
@@ -1155,7 +1252,7 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
         }
     }
     require(
-        bindings.len() == reserved.len() && bindings.len() == usize::from(meta.reserved),
+        bindings.len() == reserved.len() && bindings.len() == usize::from(population.reserved),
         "reservation population",
     )?;
     require(
@@ -1231,6 +1328,151 @@ mod tests {
     use crate::local::LocalStore;
     use std::sync::Arc;
     #[test]
+    fn scoped_coordination_inventory_rejects_corruption_without_repair() {
+        use crate::{local::Mutation, native_slice::Context, storage::TableDefinition};
+
+        let directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target/integrity-tests")
+            .join(Uuid::new_v4().to_string());
+        std::fs::create_dir_all(&directory).unwrap();
+        let model = Arc::new(crate::model::PreparedModel::load().unwrap());
+        let actor = Uuid::from_u128(2);
+        let store = LocalStore::create_secured(
+            directory.join("scoped.redb"),
+            model.clone(),
+            Context {
+                tenant: Uuid::from_u128(1),
+                actor,
+            },
+        )
+        .unwrap();
+        for (id, contract, fields) in [
+            (Uuid::from_u128(10), 4, json!({"native_unit":1})),
+            (Uuid::from_u128(11), 7, json!({"at":"0"})),
+        ] {
+            let request: Mutation = serde_json::from_value(json!({
+                "model":model.identity(),
+                "context":store.operation_context(model.identity()).unwrap(),
+                "operation_id":Uuid::new_v4(),
+                "commands":[{"op":"create","id":id,"contract":contract,"fields":fields}],
+                "returning":[id],
+            }))
+            .unwrap();
+            store.mutate(&request).unwrap();
+        }
+        store.check_integrity().unwrap();
+        let baseline = store.observe_for_verification().unwrap();
+        let bytes = |table: &str, index: usize| {
+            let row = &baseline["tables"][table][index];
+            (
+                local::unhex(row["key"].as_str().unwrap()).unwrap(),
+                local::unhex(row["value"].as_str().unwrap()).unwrap(),
+            )
+        };
+        let (slot, pointer) = bytes("receipt_slots", 0);
+        let (receipt_key, receipt_bytes) = bytes("operations", 0);
+        let mut receipt: ReceiptValue<Calculation> = local::decode(&receipt_bytes).unwrap();
+        receipt.slot = local::MAX_RECEIPTS;
+        let (second_key, second_bytes) = bytes("operations", 1);
+        let mut second: ReceiptValue<Calculation> = local::decode(&second_bytes).unwrap();
+        second.slot = local::decode::<ReceiptValue<Calculation>>(&receipt_bytes)
+            .unwrap()
+            .slot;
+        let (epoch_key, epoch_token) = bytes("query_epochs", 0);
+        let mut unknown_reader = epoch_key.clone();
+        unknown_reader[..16].copy_from_slice(Uuid::from_u128(999).as_bytes());
+        let mut unknown_contract = epoch_key.clone();
+        unknown_contract[16..].copy_from_slice(&u16::MAX.to_be_bytes());
+        let mut changes = vec![
+            ("receipt_slots", slot.clone(), None),
+            (
+                "receipt_slots",
+                slot,
+                Some(
+                    [
+                        actor.as_bytes().as_slice(),
+                        Uuid::nil().as_bytes().as_slice(),
+                    ]
+                    .concat(),
+                ),
+            ),
+            (
+                "receipt_slots",
+                local::MAX_RECEIPTS.to_be_bytes().to_vec(),
+                Some(pointer),
+            ),
+            (
+                "operations",
+                receipt_key,
+                Some(local::encode(&receipt).unwrap()),
+            ),
+            (
+                "operations",
+                second_key,
+                Some(local::encode(&second).unwrap()),
+            ),
+            ("query_epochs", epoch_key.clone(), None),
+            (
+                "query_epochs",
+                epoch_key,
+                Some(Uuid::nil().as_bytes().to_vec()),
+            ),
+            ("query_epochs", unknown_reader, Some(epoch_token.clone())),
+            ("query_epochs", unknown_contract, Some(epoch_token)),
+            ("authority", crate::security::REVISION.to_vec(), None),
+            ("native_kv", Key::Population.encode(), None),
+        ];
+        for row in baseline["tables"]["native_kv"].as_array().unwrap() {
+            let key = local::unhex(row["key"].as_str().unwrap()).unwrap();
+            let mut value: Stored =
+                local::decode(&local::unhex(row["value"].as_str().unwrap()).unwrap()).unwrap();
+            match &mut value {
+                Stored::Record(record) => record.version = Uuid::nil(),
+                Stored::Root(root) => root.revision = Uuid::nil(),
+                _ => continue,
+            }
+            // Bypass the native encoder deliberately: the reader must reject
+            // invalid stored tokens, not just prevent writers from making them.
+            changes.push(("native_kv", key, Some(local::encode(&value).unwrap())));
+        }
+        assert_eq!(changes.len(), 14);
+        for (name, key, value) in changes {
+            let definition: TableDefinition<&[u8], &[u8]> = TableDefinition::new(name);
+            let original = {
+                let read = store.db.begin_read().unwrap();
+                read.open_table(definition)
+                    .unwrap()
+                    .get(key.as_slice())
+                    .unwrap()
+                    .map(|v| v.value().to_vec())
+            };
+            let replace = |value: Option<&[u8]>| {
+                let write = store.db.begin_write().unwrap();
+                let mut table = write.open_table(definition).unwrap();
+                if let Some(value) = value {
+                    table.insert(key.as_slice(), value).unwrap();
+                } else {
+                    table.remove(key.as_slice()).unwrap();
+                }
+                drop(table);
+                write.commit().unwrap();
+            };
+            replace(value.as_deref());
+            let corrupted = store.observe_for_verification().unwrap();
+            assert_eq!(
+                store.check_integrity().unwrap_err().code,
+                "corrupt_state",
+                "{name}"
+            );
+            assert_eq!(store.observe_for_verification().unwrap(), corrupted);
+            replace(original.as_deref());
+            assert_eq!(store.observe_for_verification().unwrap(), baseline);
+        }
+        store.check_integrity().unwrap();
+        drop(store);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
     fn canonical_orphan_root_returns_corruption_at_check_startup_and_restore() {
         use crate::{
             identity::IdentityConfig,
@@ -1265,7 +1507,7 @@ mod tests {
         let key = Key::Root(Address::new(Uuid::from_u128(1000), 2));
         let value = native_codec::encode(
             &key,
-            &Stored::Root(Root::<Standard>::empty(FINANCIAL, 0).unwrap()),
+            &Stored::Root(Root::<Standard>::empty(FINANCIAL, Uuid::new_v4()).unwrap()),
         )
         .unwrap();
         let write = store.db.begin_write().unwrap();
@@ -1752,9 +1994,9 @@ mod tests {
                     }
                     changes.push((key.clone(), Some(Stored::Record(r))));
                 }
-                Stored::Meta(mut m) => {
-                    *m.counts.entry(1).or_default() += 1;
-                    changes.push((key.clone(), Some(Stored::Meta(m))));
+                Stored::Population(mut population) => {
+                    *population.counts.entry(1).or_default() += 1;
+                    changes.push((key.clone(), Some(Stored::Population(population))));
                 }
                 _ => {}
             }

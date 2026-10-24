@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub const MODEL_NAME: &str = "rebase-next-local";
-pub const API_VERSION: &str = "rebase-local-api-3";
+pub const API_VERSION: &str = "rebase-local-api-4";
 pub const SCHEMA_DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -224,6 +224,17 @@ impl<B: Binding> Prepared<B> {
     /// validates metadata; it does not load executable code from a document.
     pub fn prepare(mut declarations: Vec<Contract>) -> Result<Self> {
         unique(declarations.iter().map(|c| c.code), "contracts")?;
+        if declarations
+            .iter()
+            .filter(|c| c.visibility == Visibility::Public)
+            .count()
+            .saturating_mul(crate::access::MAX_PRINCIPALS)
+            > crate::query::MAX_EPOCHS
+        {
+            return Err(model_error(
+                "query epoch inventory exceeds observation bound",
+            ));
+        }
         let indexes = B::Index::descriptors();
         unique(indexes.iter().map(|i| i.code.get()), "index codes")?;
         let mut index_names = BTreeSet::new();
@@ -771,7 +782,8 @@ fn model_capabilities<B: Binding>() -> Value {
         "path":{"name":"records.by_id","order":"UUID ascending","filter":"optional public contract and one declared scalar authored-field equality"},
         "limits":{"commands":64,"public_records":limits.public_records,"outputs":limits.outputs,"reservations":limits.reservations,"per_contract":limits.per_contract,
             "returning":32,"page_limit":32,"visit_budget":128,"receipts":1024,"request_bytes":65536},
-        "cursor":"HMAC-SHA256; bound store/model/actor/query/revision; restart after any new mutation",
+        "cursor":"HMAC-SHA256; bound store/model/actor/query and scoped reader/contract epochs plus authority revision; unchanged scopes and true no-ops preserve cursors",
+        "versions":"record/root/mutation revisions are opaque UUID tokens, never ordered; access revision is an administration-only counter; pages return a scoped digest",
         "updates":"set replaces complete fields; unset must be empty in this model",
         "receipt":"required actor/store/generation context from session.describe; same operation ID/content replays; offline archive advances its fence",
         "not_observed":"receipt absence does not prove failure"});

@@ -32,7 +32,7 @@ use std::{
 };
 use uuid::Uuid;
 
-pub const CODEC: &str = "rebase-effects-3";
+pub const CODEC: &str = "rebase-effects-4";
 pub const MAX_UNRESOLVED: u16 = 64;
 pub const MAX_RETAINED: u16 = 256;
 pub const MAX_FACTS: usize = 1024;
@@ -262,8 +262,8 @@ pub struct Cancel {
 pub(crate) struct CancelledValue {
     #[serde(with = "uuid_text")]
     pub operation_id: Uuid,
-    #[serde(with = "decimal")]
-    pub revision: u64,
+    #[serde(with = "uuid_text")]
+    pub revision: Uuid,
     #[serde(with = "uuid_text")]
     pub execution_id: Uuid,
     #[serde(with = "uuid_text")]
@@ -811,7 +811,7 @@ impl<B: Binding> Store<B> {
         let hash = self.request_hash("effects.cancel", request)?;
         let write = self.db.begin_write().map_err(local::storage)?;
         let scope = self.write_authority(&write)?;
-        let mut header: RuntimeHeader = local::decode(
+        let header: RuntimeHeader = local::decode(
             write
                 .open_table(RUNTIME)
                 .map_err(local::storage)?
@@ -827,7 +827,6 @@ impl<B: Binding> Store<B> {
             self.context(),
             self.model().identity(),
         )?;
-        let mut meta;
         let (result, disclosed) = {
             let table = write.open_table(KV).map_err(local::storage)?;
             let mut ws = Attempt::<_, B>::new(
@@ -842,8 +841,7 @@ impl<B: Binding> Store<B> {
             let Some(StoredValue::Meta(found)) = ws.get(&Key::Meta)? else {
                 return Err(local::corrupt("meta"));
             };
-            meta = found;
-            self.check_meta(&meta, &request.model)?;
+            self.check_meta(&found, &request.model)?;
             let receipts = write.open_table(RECEIPTS).map_err(local::storage)?;
             if let Some(bytes) = receipts
                 .get(self.receipt_key(request.operation_id).as_slice())
@@ -860,9 +858,6 @@ impl<B: Binding> Store<B> {
                 return Ok(
                     json!({"status":"committed","replayed":true,"result":self.disclose_result(&scope,receipt.result,&mut ws)?}),
                 );
-            }
-            if header.receipts >= local::MAX_RECEIPTS {
-                return Err(Error::new("receipt_limit", "receipt retention exhausted"));
             }
             let executions = write.open_table(EXECUTIONS).map_err(local::storage)?;
             let bytes = executions
@@ -899,13 +894,9 @@ impl<B: Binding> Store<B> {
                 row.advance()?;
                 replace_execution(&write, &mut runtime, &before, &row, abort_after)?;
             }
-            meta.revision = meta
-                .revision
-                .checked_add(1)
-                .ok_or_else(|| Error::new("revision_exhausted", "store revision"))?;
             let result = CancelledValue {
                 operation_id: request.operation_id,
-                revision: meta.revision,
+                revision: Uuid::new_v4(),
                 execution_id: row.id,
                 target: row.target,
                 execution_revision: row.revision,
@@ -915,15 +906,8 @@ impl<B: Binding> Store<B> {
                 self.disclose_result(&scope, ReceiptResult::Cancel(result.clone()), &mut ws)?;
             (result, disclosed)
         };
-        write
-            .open_table(KV)
-            .map_err(local::storage)?
-            .insert(
-                Key::Meta.encode().as_slice(),
-                native_codec::encode_for::<B>(&Key::Meta, &StoredValue::Meta(meta))?.as_slice(),
-            )
-            .map_err(local::storage)?;
         let receipt = ReceiptValue {
+            slot: crate::receipts::allocate(&write, &self.receipt_key(request.operation_id))?,
             kind: ReceiptKind::Cancel,
             context: request.context.clone(),
             model: self.model().identity().into(),
@@ -932,7 +916,7 @@ impl<B: Binding> Store<B> {
             request_hash: hash,
             result: ReceiptResult::Cancel(result.clone()),
         };
-        self.publish_receipt(&write, &mut header, &receipt)?;
+        self.publish_receipt(&write, &receipt)?;
         injected(abort_after, usize::MAX)?;
         write.commit()?;
         Ok(json!({"status":"committed","replayed":false,"result":disclosed}))
@@ -1099,8 +1083,7 @@ pub(crate) fn check<B: Binding>(
         )?;
         if let Some(revision) = fact.applied_revision {
             ensure(
-                revision > 0
-                    && revision <= meta.revision
+                !revision.is_nil()
                     && fact.disposition == Disposition::Succeeded
                     && row.terminal_fact.as_ref() == Some(&fact.digest)
                     && row.application == Application::Applied,

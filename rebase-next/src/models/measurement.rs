@@ -13,7 +13,9 @@ use crate::{
         QueryDeclaration, Reference, RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, decimal, optional_decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
+    native_slice::{
+        Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Query, Result,
+    },
     time_range::{TimeBound, TimeRange},
     tree,
 };
@@ -324,7 +326,7 @@ impl Binding for Measurement {
     type Outcome = ();
     type Index = Statistics;
     const NAME: &'static str = "dimensioned-measurements";
-    const BEHAVIOR: &'static str = "dimensioned-measurements-3";
+    const BEHAVIOR: &'static str = "dimensioned-measurements-4";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -390,8 +392,8 @@ impl Binding for Measurement {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         let mut roots = BTreeSet::new();
@@ -448,7 +450,7 @@ impl Binding for Measurement {
                 ));
             }
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)
     }
     fn check(store: &Store<Self>) -> Result<Value> {
         check(store)

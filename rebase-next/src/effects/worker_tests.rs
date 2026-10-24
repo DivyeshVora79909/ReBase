@@ -730,7 +730,7 @@ fn typed_outcome_binding_and_fact_inventory_reject_corruption() {
         let mut fact = original.clone();
         match changed {
             0 => fact.request_hash = "0".repeat(64),
-            1 => fact.applied_revision = Some(u64::MAX),
+            1 => fact.applied_revision = Some(Uuid::nil()),
             _ => fact.disposition = Disposition::Waiting,
         }
         let key = state::fact_key(e, &original.digest).unwrap();

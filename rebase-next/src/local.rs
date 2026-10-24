@@ -15,7 +15,7 @@ use crate::{
     binding::{Binding, Calculation, NativeInput},
     model::{Prepared, Visibility},
     native_codec::{self, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Command, Context, Error, Meta, ModelRecord, Result},
+    native_slice::{Attempt, Command, Context, Error, Meta, ModelRecord, Population, Result},
 };
 
 pub(crate) const KV: TableDefinition<&[u8], &[u8]> = TableDefinition::new("native_kv");
@@ -23,7 +23,7 @@ pub(crate) const PUBLIC: TableDefinition<&[u8], u16> = TableDefinition::new("pub
 pub(crate) const RECEIPTS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("operations");
 pub(crate) const RUNTIME: TableDefinition<&[u8], &[u8]> = TableDefinition::new("local_runtime");
 pub(crate) const HEADER: &[u8] = b"header";
-pub const STORE_FORMAT: &str = "rebase-store-9";
+pub const STORE_FORMAT: &str = "rebase-store-10";
 pub const MAX_RECEIPTS: u16 = 1024;
 pub const MUTATION_WORK_LIMIT: u64 = 200_000;
 
@@ -114,8 +114,8 @@ pub struct PublicRecordValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub id: Uuid,
     pub contract: u16,
-    #[serde(with = "decimal")]
-    pub version: u64,
+    #[serde(with = "uuid_text")]
+    pub version: Uuid,
     pub input: B::Input,
     pub derived: Option<Value>,
 }
@@ -133,8 +133,8 @@ pub struct ReturnedValue<B: Binding> {
 pub struct CommittedValue<B: Binding> {
     #[serde(with = "uuid_text")]
     pub operation_id: Uuid,
-    #[serde(with = "decimal")]
-    pub revision: u64,
+    #[serde(with = "uuid_text")]
+    pub revision: Uuid,
     pub records: Vec<ReturnedValue<B>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub executions: Vec<crate::effects::Created>,
@@ -166,7 +166,7 @@ impl<B: Binding> ReceiptResult<B> {
             Self::Cancel(r) => r.operation_id,
         }
     }
-    pub(crate) fn revision(&self) -> u64 {
+    pub(crate) fn revision(&self) -> Uuid {
         match self {
             Self::Records(r) => r.revision,
             Self::Cancel(r) => r.revision,
@@ -177,6 +177,7 @@ impl<B: Binding> ReceiptResult<B> {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, bound(serialize = "", deserialize = ""))]
 pub(crate) struct ReceiptValue<B: Binding> {
+    pub(crate) slot: u16,
     pub(crate) kind: ReceiptKind,
     pub(crate) context: String,
     pub(crate) model: String,
@@ -195,7 +196,6 @@ pub(crate) struct RuntimeHeader {
     #[serde(with = "uuid_text")]
     pub(crate) store_id: Uuid,
     pub(crate) cursor_key: String,
-    pub(crate) receipts: u16,
     #[serde(with = "decimal")]
     pub(crate) operation_epoch: u64,
 }
@@ -211,7 +211,6 @@ impl RuntimeHeader {
             format: STORE_FORMAT.into(),
             store_id: Uuid::new_v4(),
             cursor_key: native_codec::hex(&key),
-            receipts: 0,
             operation_epoch: 0,
         }
     }
@@ -283,16 +282,27 @@ impl<B: Binding> Store<B> {
                 codec: native_codec::CODEC.into(),
                 tenant: context.tenant,
                 actor: context.actor,
-                revision: 0,
-                counts: model.contracts().map(|c| (c.code, 0)).collect(),
-                reserved: 0,
             };
             let bytes = native_codec::encode_for::<B>(&Key::Meta, &StoredValue::Meta(meta))?;
             table
                 .insert(Key::Meta.encode().as_slice(), bytes.as_slice())
                 .map_err(storage)?;
+            let population = Population {
+                counts: model.contracts().map(|c| (c.code, 0)).collect(),
+                reserved: 0,
+            };
+            table.insert(
+                Key::Population.encode().as_slice(),
+                native_codec::encode_for::<B>(
+                    &Key::Population,
+                    &StoredValue::Population(population),
+                )?
+                .as_slice(),
+            )?;
             write.open_table(PUBLIC).map_err(storage)?;
             write.open_table(RECEIPTS).map_err(storage)?;
+            write.open_table(crate::receipts::SLOTS)?;
+            write.open_table(crate::query::EPOCHS)?;
             crate::effects::create_tables(&write)?;
             if secured {
                 crate::security::store_graph(&write, &crate::access::Graph::bootstrap(context)?)?;
@@ -337,9 +347,10 @@ impl<B: Binding> Store<B> {
 
     pub fn open_backend(db: Database, model: Arc<Prepared<B>>) -> Result<Self> {
         let read = db.begin_read().map_err(storage)?;
+        read_header(&read)?;
         check_tables(&read)?;
-        let header = read_header(&read)?;
         let meta = read_meta(&read)?;
+        let population = read_population(&read)?;
         let context = Context {
             tenant: meta.tenant,
             actor: meta.actor,
@@ -363,20 +374,12 @@ impl<B: Binding> Store<B> {
                 .model
                 .contracts()
                 .filter(|c| c.visibility == Visibility::Public)
-                .map(|c| u64::from(*meta.counts.get(&c.code).unwrap_or(&0)))
+                .map(|c| u64::from(*population.counts.get(&c.code).unwrap_or(&0)))
                 .sum::<u64>()
         {
             return Err(corrupt("public index population"));
         }
-        if read
-            .open_table(RECEIPTS)
-            .map_err(storage)?
-            .len()
-            .map_err(storage)?
-            != u64::from(header.receipts)
-        {
-            return Err(corrupt("receipt population"));
-        }
+        crate::receipts::check::<B>(&read, secured)?;
         Ok(store)
     }
 
@@ -499,7 +502,7 @@ impl<B: Binding> Store<B> {
         let request_hash = self.request_hash("records.mutate", request)?;
         let write = self.db.begin_write().map_err(storage)?;
         let scope = self.write_authority(&write)?;
-        let mut header: RuntimeHeader;
+        let header: RuntimeHeader;
         let (batch, result, disclosed, intents, work) = {
             let table = write.open_table(KV).map_err(storage)?;
             let mut ws = Attempt::<_, B>::new(
@@ -546,9 +549,6 @@ impl<B: Binding> Store<B> {
                 }
                 let result = self.disclose_result(&scope, receipt.result, &mut ws)?;
                 return Ok(json!({"status":"committed","replayed":true,"result":result}));
-            }
-            if header.receipts >= MAX_RECEIPTS {
-                return Err(Error::new("receipt_limit", "receipt retention exhausted"));
             }
             let settled = crate::mutation::settle_authorized(
                 &mut ws,
@@ -649,6 +649,7 @@ impl<B: Binding> Store<B> {
         self.publish_native(&write, &batch, abort_after)?;
         crate::effects::publish(&write, intents, abort_after)?;
         let receipt = ReceiptValue {
+            slot: crate::receipts::allocate(&write, &self.receipt_key(request.operation_id))?,
             kind: ReceiptKind::Records,
             context: request.context.clone(),
             model: self.model.identity().into(),
@@ -657,7 +658,7 @@ impl<B: Binding> Store<B> {
             request_hash,
             result,
         };
-        self.publish_receipt(&write, &mut header, &receipt)?;
+        self.publish_receipt(&write, &receipt)?;
         if abort_after == Some(usize::MAX) {
             return Err(Error::new(
                 "injected_abort",
@@ -687,6 +688,7 @@ impl<B: Binding> Store<B> {
         batch: &crate::staging::Batch,
         abort_after: Option<usize>,
     ) -> Result<()> {
+        crate::query::publish_epochs::<B>(write, &self.model, batch)?;
         {
             let mut table = write.open_table(KV).map_err(storage)?;
             let mut index = write.open_table(PUBLIC).map_err(storage)?;
@@ -743,26 +745,13 @@ impl<B: Binding> Store<B> {
     pub(crate) fn publish_receipt(
         &self,
         write: &crate::storage::WriteTransaction,
-        header: &mut RuntimeHeader,
         receipt: &ReceiptValue<B>,
     ) -> Result<()> {
-        {
-            write
-                .open_table(RECEIPTS)
-                .map_err(storage)?
-                .insert(
-                    self.receipt_key(receipt.result.operation_id()).as_slice(),
-                    encode(receipt)?.as_slice(),
-                )
-                .map_err(storage)?;
-            header.receipts += 1;
-            write
-                .open_table(RUNTIME)
-                .map_err(storage)?
-                .insert(HEADER, encode(header)?.as_slice())
-                .map_err(storage)?;
-        }
-        Ok(())
+        crate::receipts::publish(
+            write,
+            &self.receipt_key(receipt.result.operation_id()),
+            receipt,
+        )
     }
 
     pub(crate) fn request_hash<T: Serialize>(&self, method: &str, request: &T) -> Result<String> {
@@ -854,8 +843,8 @@ impl<B: Binding> Store<B> {
             }
         }
         Ok(
-            json!({"model":meta.model,"codec":meta.codec,"store":header.store_id,"revision":meta.revision.to_string(),
-            "tenant":meta.tenant,"actor":meta.actor,"receipt_count":header.receipts,"records":records,"roots":roots,"queries":queries,"roles":roles}),
+            json!({"model":meta.model,"codec":meta.codec,"store":header.store_id,
+            "tenant":meta.tenant,"actor":meta.actor,"receipt_count":crate::receipts::check::<B>(&read,self.secured)?,"records":records,"roots":roots,"queries":queries,"roles":roles}),
         )
     }
     /// Complete privileged application-table observation for independent local
@@ -873,21 +862,55 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
         .list_tables()
         .map_err(storage)?
         .any(|t| t.name() == "authority");
+    observe_tables(
+        secured,
+        |definition| read.open_table(definition),
+        |definition| read.open_table(definition),
+    )
+}
+
+/// The archive compares the identical complete image inside its cleanup
+/// transaction. Every scanned range, including empty tables, stays protected.
+pub(crate) fn observe_write(write: &crate::storage::WriteTransaction) -> Result<Value> {
+    let mut names: Vec<_> = write.list_tables()?.map(|t| t.name().to_owned()).collect();
+    names.sort();
+    let secured = names.iter().any(|name| name == "authority");
+    if names != table_names(secured) {
+        return Err(corrupt("unexpected local table inventory"));
+    }
+    observe_tables(
+        secured,
+        |definition| write.open_table(definition),
+        |definition| write.open_table(definition),
+    )
+}
+
+fn observe_tables(
+    secured: bool,
+    bytes: impl Fn(
+        TableDefinition<'static, &'static [u8], &'static [u8]>,
+    ) -> Result<crate::storage::Table<&'static [u8], &'static [u8]>>,
+    index: impl Fn(
+        TableDefinition<'static, &'static [u8], u16>,
+    ) -> Result<crate::storage::Table<&'static [u8], u16>>,
+) -> Result<Value> {
     let mut tables = serde_json::Map::new();
     let mut definitions = vec![
         (KV, crate::binding::MAX_INVENTORY_ROWS),
         (RUNTIME, 1),
         (RECEIPTS, usize::from(MAX_RECEIPTS)),
+        (crate::receipts::SLOTS, usize::from(MAX_RECEIPTS)),
+        (crate::query::EPOCHS, crate::query::MAX_EPOCHS),
     ];
     definitions.extend(crate::effects::TABLES);
     if secured {
         definitions.push((
             crate::security::AUTHORITY,
-            crate::access::MAX_PRINCIPALS + 1,
+            crate::access::MAX_PRINCIPALS + 2,
         ));
     }
     for (definition, limit) in definitions {
-        let table = read.open_table(definition).map_err(storage)?;
+        let table = bytes(definition)?;
         let mut rows = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
             if i >= limit {
@@ -898,7 +921,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
         }
         tables.insert(definition.name().into(), json!(rows));
     }
-    let table = read.open_table(PUBLIC).map_err(storage)?;
+    let table = index(PUBLIC)?;
     let mut rows = vec![];
     for (i, row) in table.iter().map_err(storage)?.enumerate() {
         if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
@@ -912,7 +935,7 @@ pub(crate) fn observe(read: &ReadTransaction) -> Result<Value> {
     }
     tables.insert(PUBLIC.name().into(), json!(rows));
     if secured {
-        let table = read.open_table(crate::security::READERS).map_err(storage)?;
+        let table = index(crate::security::READERS)?;
         let mut rows = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
             if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
@@ -943,14 +966,22 @@ pub(crate) fn read_meta(read: &ReadTransaction) -> Result<Meta> {
     }
 }
 
+pub(crate) fn read_population(read: &ReadTransaction) -> Result<Population> {
+    let table = read.open_table(KV)?;
+    let value = table
+        .get(Key::Population.encode())?
+        .ok_or_else(|| corrupt("missing population"))?;
+    match native_codec::decode(&Key::Population, value.value())? {
+        native_codec::Stored::Population(population) => Ok(population),
+        _ => Err(corrupt("population type")),
+    }
+}
+
 pub(crate) fn validate_header(header: &RuntimeHeader) -> Result<()> {
     if header.format != STORE_FORMAT {
         return Err(Error::new("model_mismatch", "runtime format differs"));
     }
-    if header.receipts > MAX_RECEIPTS
-        || unhex(&header.cursor_key).is_err()
-        || header.cursor_key.len() != 64
-    {
+    if unhex(&header.cursor_key).is_err() || header.cursor_key.len() != 64 {
         return Err(corrupt("runtime header"));
     }
     Ok(())
@@ -985,7 +1016,14 @@ pub(crate) fn check_tables(read: &ReadTransaction) -> Result<()> {
 }
 
 pub(crate) fn table_names(secured: bool) -> Vec<String> {
-    let mut names = vec!["local_runtime", "native_kv", "operations", "public_records"];
+    let mut names = vec![
+        "local_runtime",
+        "native_kv",
+        "operations",
+        "public_records",
+        "receipt_slots",
+        "query_epochs",
+    ];
     names.extend(crate::effects::TABLES.iter().map(|(table, _)| table.name()));
     if secured {
         names.extend(["authority", "reader_records"]);
@@ -1047,7 +1085,12 @@ mod tests {
             assert_eq!(observe(&old).unwrap(), before);
         }
         let result = store.mutate(&request).unwrap();
-        assert_eq!(result["result"]["revision"], "1");
+        let revision = Uuid::parse_str(result["result"]["revision"].as_str().unwrap()).unwrap();
+        assert!(!revision.is_nil());
+        assert_eq!(
+            result["result"]["records"][0]["record"]["version"],
+            revision.to_string()
+        );
         assert_eq!(observe(&old).unwrap(), before);
         drop(old);
         let after = store.observe_for_verification().unwrap();
@@ -1076,7 +1119,7 @@ mod tests {
         )
         .unwrap();
         let before = store.observe_for_verification().unwrap();
-        assert_eq!(before["tables"].as_object().unwrap().len(), 11);
+        assert_eq!(before["tables"].as_object().unwrap().len(), 13);
         let request: Mutation = serde_json::from_value(json!({"model":store.model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(3),
             "commands":[{"op":"create","id":Uuid::from_u128(4),"contract":7,"fields":{"at":"1"}}],"returning":[]})).unwrap();
         for abort in [2, usize::MAX] {

@@ -17,7 +17,7 @@ use crate::{
     local::Store,
     model::{Contract, Prepared},
     native_codec::{self, Address, Key, StoredValue},
-    native_slice::{Attempt, Context, Error, Input, Meta, Model, ModelChange, Result},
+    native_slice::{Attempt, Context, Error, Input, Model, ModelChange, Population, Result},
     time_range::TimeRange,
     tree::{self, FullKey, Node, Root, Span},
 };
@@ -311,8 +311,8 @@ impl Binding for WordBinding {
         _model: &Prepared<Self>,
         _context: Context,
         _changes: &[ModelChange<Self>],
-        _meta: &mut Meta,
-        _revision: u64,
+        _population: &mut Population,
+        _revision: Uuid,
         _allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         Err(Error::new("unsupported_query", "tree-only test binding"))
@@ -491,7 +491,7 @@ fn word_scan(store: &Bytes, owner: Address, source: &Sources) -> Result<()> {
 fn one_native_tree_supports_noncopy_nontime_values() -> Result<()> {
     let owner = address(100, 1);
     let key = Key::Root(owner);
-    let root = Root::<Words>::empty(WORDS, 0)?;
+    let root = Root::<Words>::empty(WORDS, Uuid::new_v4())?;
     let mut store: Bytes = [(
         key.encode(),
         native_codec::encode_for::<WordBinding>(&key, &StoredValue::Root(root))?,

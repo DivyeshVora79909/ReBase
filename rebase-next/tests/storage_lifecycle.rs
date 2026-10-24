@@ -171,12 +171,21 @@ fn archived_receipts_fence_old_uncertain_requests_and_remain_reconcilable() {
     let request:Mutation=serde_json::from_value(json!({"model":model.identity(),"context":context,"operation_id":id(100),"commands":[{"op":"create","id":id(10),"contract":7,"fields":{"at":"0"}}],"returning":[id(10)]})).unwrap();
     let original = store.mutate(&request).unwrap();
     let archive = dir.0.join("archive.json");
-    let before = store.check_integrity().unwrap();
+    let before = store.observe_for_verification().unwrap();
     store.archive_receipts(&archive).unwrap();
     let after = store.check_integrity().unwrap();
-    assert_eq!(before["revision"], after["revision"]);
     assert_eq!(after["receipts"], 0);
     let snapshot = store.observe_for_verification().unwrap();
+    for (name, table) in before["tables"].as_object().unwrap() {
+        if !matches!(
+            name.as_str(),
+            "operations" | "receipt_slots" | "local_runtime"
+        ) {
+            assert_eq!(snapshot["tables"][name], *table, "archive changed {name}");
+        }
+    }
+    assert_eq!(snapshot["tables"]["operations"], json!([]));
+    assert_eq!(snapshot["tables"]["receipt_slots"], json!([]));
     assert_eq!(
         store.mutate(&request).unwrap_err().code,
         "operation_expired"
@@ -275,7 +284,7 @@ fn mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startu
             .unwrap()
             .unwrap()
             .version
-            > early.version
+            != early.version
     );
     assert_eq!(
         store

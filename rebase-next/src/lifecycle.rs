@@ -5,7 +5,7 @@ use crate::{
     local::{self, HEADER, KV, PUBLIC, RECEIPTS, RUNTIME, RuntimeHeader, Store},
     model::Prepared,
     native_codec::{self, Key, StoredValue},
-    native_slice::{Error, Meta, Result},
+    native_slice::{Error, Meta, Population, Result},
     security::{AUTHORITY, READERS},
 };
 use serde::{Deserialize, Serialize};
@@ -81,8 +81,12 @@ fn publish(temp: &Temporary, destination: &Path) -> Result<()> {
 impl<B: Binding> Store<B> {
     pub fn backup(&self, destination: impl AsRef<Path>) -> Result<Value> {
         self.check_integrity()?;
-        let (read, meta, header) = self.read(self.model().identity())?;
+        let (read, _, header) = self.read(self.model().identity())?;
         let payload = local::observe(&read)?; // one consistent snapshot
+        let receipt_count = payload["tables"][RECEIPTS.name()]
+            .as_array()
+            .ok_or_else(|| local::corrupt("backup receipt inventory"))?
+            .len();
         let digest = native_codec::hex(&Sha256::digest(local::encode(&payload)?));
         let bytes = local::encode(&Backup {
             format: "rebase-backup-1".into(),
@@ -101,13 +105,29 @@ impl<B: Binding> Store<B> {
         publish(&temp, destination)?;
         Ok(
             json!({"status":"backed_up","bytes":bytes.len(),"sha256":digest,"path":destination,
-            "store":header.store_id,"revision":meta.revision.to_string(),"operation_epoch":header.operation_epoch.to_string(),"receipts":header.receipts}),
+            "store":header.store_id,"operation_epoch":header.operation_epoch.to_string(),"receipts":receipt_count}),
         )
     }
 
     pub fn archive_receipts(&self, destination: impl AsRef<Path>) -> Result<Value> {
         let backup = self.backup(destination)?;
         let write = self.db.begin_write().map_err(local::storage)?;
+        self.archive_cleanup(write, &backup)
+    }
+
+    /// The caller supplies the already published complete backup. This seam
+    /// also permits real adapter schedules to stage cleanup before a competitor.
+    pub(crate) fn archive_cleanup(&self, write: WriteTransaction, backup: &Value) -> Result<Value> {
+        // Protect every table/range through cleanup commit, including effects
+        // and authority changes that need not alter any domain record token.
+        let image = local::observe_write(&write)?;
+        let digest = native_codec::hex(&Sha256::digest(local::encode(&image)?));
+        if backup["sha256"] != digest {
+            return Err(Error::new(
+                "stale_version",
+                "store changed during archive; backup retained, receipts unchanged",
+            ));
+        }
         let mut header: RuntimeHeader = local::decode(
             write
                 .open_table(RUNTIME)
@@ -117,42 +137,15 @@ impl<B: Binding> Store<B> {
                 .ok_or_else(|| local::corrupt("missing header"))?
                 .value(),
         )?;
-        let meta = match native_codec::decode_for::<B>(
-            &Key::Meta,
-            write
-                .open_table(KV)
-                .map_err(local::storage)?
-                .get(Key::Meta.encode().as_slice())
-                .map_err(local::storage)?
-                .ok_or_else(|| local::corrupt("missing meta"))?
-                .value(),
-        )? {
-            StoredValue::Meta(meta) => meta,
-            _ => return Err(local::corrupt("meta type")),
-        };
-        if backup["store"] != header.store_id.to_string()
-            || backup["revision"]
-                .as_str()
-                .and_then(|v| v.parse::<u64>().ok())
-                != Some(meta.revision)
-            || backup["operation_epoch"]
-                .as_str()
-                .and_then(|v| v.parse::<u64>().ok())
-                != Some(header.operation_epoch)
-            || backup["receipts"] != header.receipts
-        {
-            return Err(Error::new(
-                "stale_version",
-                "store changed during archive; backup retained, receipts unchanged",
-            ));
-        }
+        local::validate_header(&header)?;
         header.operation_epoch = header
             .operation_epoch
             .checked_add(1)
             .ok_or_else(|| Error::new("revision_exhausted", "operation epoch"))?;
-        header.receipts = 0;
-        write.delete_table(RECEIPTS).map_err(local::storage)?;
-        write.open_table(RECEIPTS).map_err(local::storage)?;
+        for table in [RECEIPTS, crate::receipts::SLOTS] {
+            write.delete_table(table).map_err(local::storage)?;
+            write.open_table(table).map_err(local::storage)?;
+        }
         write
             .open_table(RUNTIME)
             .map_err(local::storage)?
@@ -198,7 +191,13 @@ impl<B: Binding> Store<B> {
                     .ok_or_else(|| Error::new("revision_exhausted", "credential epoch"))?;
             }
         }
-        for def in [KV, RECEIPTS, RUNTIME] {
+        for def in [
+            KV,
+            RECEIPTS,
+            RUNTIME,
+            crate::receipts::SLOTS,
+            crate::query::EPOCHS,
+        ] {
             write.delete_table(def).map_err(local::storage)?;
             write.open_table(def).map_err(local::storage)?;
         }
@@ -214,9 +213,6 @@ impl<B: Binding> Store<B> {
             codec: native_codec::CODEC.into(),
             tenant: self.context.tenant,
             actor: self.bootstrap_actor,
-            revision: 0,
-            counts: self.model.contracts().map(|c| (c.code, 0)).collect(),
-            reserved: 0,
         };
         write
             .open_table(KV)
@@ -224,6 +220,22 @@ impl<B: Binding> Store<B> {
             .insert(
                 Key::Meta.encode().as_slice(),
                 native_codec::encode_for::<B>(&Key::Meta, &StoredValue::Meta(meta))?.as_slice(),
+            )
+            .map_err(local::storage)?;
+        let population = Population {
+            counts: self.model.contracts().map(|c| (c.code, 0)).collect(),
+            reserved: 0,
+        };
+        write
+            .open_table(KV)
+            .map_err(local::storage)?
+            .insert(
+                Key::Population.encode().as_slice(),
+                native_codec::encode_for::<B>(
+                    &Key::Population,
+                    &StoredValue::Population(population),
+                )?
+                .as_slice(),
             )
             .map_err(local::storage)?;
         let fresh = RuntimeHeader::fresh();
@@ -338,9 +350,16 @@ pub fn restore_to_backend<B: Binding>(
 }
 
 fn import_image(write: &WriteTransaction, image: &Observation) -> Result<()> {
-    for def in [KV, RECEIPTS, RUNTIME, AUTHORITY]
-        .into_iter()
-        .chain(crate::effects::TABLES.iter().map(|(def, _)| *def))
+    for def in [
+        KV,
+        RECEIPTS,
+        RUNTIME,
+        AUTHORITY,
+        crate::receipts::SLOTS,
+        crate::query::EPOCHS,
+    ]
+    .into_iter()
+    .chain(crate::effects::TABLES.iter().map(|(def, _)| *def))
     {
         let Some(rows) = image.tables.get(def.name()) else {
             continue;

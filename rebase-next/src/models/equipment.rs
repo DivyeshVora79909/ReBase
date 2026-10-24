@@ -10,7 +10,7 @@ use crate::{
         QueryDeclaration, Reference, RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
+    native_slice::{Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Result},
     tree,
 };
 use serde::{Deserialize, Serialize};
@@ -316,7 +316,7 @@ impl Binding for Equipment {
     type Derived = Derived;
     type Outcome = ();
     const NAME: &'static str = "equipment-reservations";
-    const BEHAVIOR: &'static str = "equipment-reservations-5";
+    const BEHAVIOR: &'static str = "equipment-reservations-6";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -339,8 +339,8 @@ impl Binding for Equipment {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
@@ -359,7 +359,7 @@ impl Binding for Equipment {
                 delivery(change.new.as_ref().map(|r| &r.input)),
             )?;
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)?;
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)?;
         for address in ws.changed_roots() {
             if address.slot == 7 {
                 let root = tree::root(ws, address)?;

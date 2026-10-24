@@ -1,14 +1,12 @@
 # Run and use the local prototype
 
-The 0.6 source also provides [bounded invoicing and settlement](invoicing.md) via
-`--model invoicing`, sharing these operations. The examples and original
-calculation/equipment acceptance below remain dated.
-
-ReBase Next 0.4.0 provides two compiled models, exact values and a local redb
-store. The examples below use the default `calculation` model. Select equipment
-with `--model equipment` before the command; the same operator and public API
-functions serve either model. See [equipment semantics](equipment.md). It contains no runtime
-imports from the original ReBase or MetaSol projects.
+This reference describes the current 0.16.0 source /API 4 contract. The examples
+use the default `calculation` model and redb backend. Select equipment with
+`--model equipment` or [bounded invoicing and settlement](invoicing.md) with
+`--model invoicing`; the other compiled models share the same operations.
+See [equipment semantics](equipment.md) and [backend selection](storage-backends.md).
+Original 0.4 calculation/equipment and 0.6 invoicing acceptance remain dated.
+There are no runtime imports from the original ReBase or MetaSol projects.
 
 ## Build and demonstrate
 
@@ -62,14 +60,17 @@ the explicit codes, references, memberships, queries, formulas and publications.
 Formats are disabled; UUID patterns plus native binding enforce canonical UUIDs.
 Schema defaults/readOnly annotations do not create fields or grant authority.
 
-The binary selects one of the compiled `calculation` or `equipment` bindings;
+The binary selects one of its compiled bindings;
 there is no runtime behavior loader. Model identity binds resolved declarations
 and schemas to the binding's explicit behavior contract and codec. Build bytes,
 HTML/CSS and source-location labels do not define data compatibility.
-Version 0.4.0 uses `rebase-store-4` and `native-slice-kv-4`, calculation behavior
+Current source uses `rebase-store-10`, `native-slice-kv-7`, `rebase-effects-4`
+and `rebase-local-api-4`, with explicit changed behavior identities. No earlier
+store or saved operation is reinterpreted by this API. Historically, version
+0.4.0 used `rebase-store-4` and `native-slice-kv-4`, calculation behavior
 `rebase-calculation-contract-4` and equipment behavior `equipment-reservations-3`.
-Resolved declarations also contribute to model identity. Format 2 and 3 stores
-and backups reject without silent migration or automatic reset. Retain the old
+Resolved declarations also contribute to model identity. That version rejected
+format 2 and 3 stores and backups without migration or automatic reset. Retain the old
 compatible binary and its verified backups, and use that binary to restore old
 backups. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
@@ -92,8 +93,9 @@ The following contract table describes `calculation`:
 
 All input fields are required. Basis feedback is explicitly `null` when inactive.
 Updates replace whole named fields through `set`; `unset` must be empty in this
-model. Unit codes are immutable. Exact amounts, times and versions are canonical
-decimal strings. Codes/counts/limits are JSON integers. Native binding applies
+model. Unit codes are immutable. Exact amounts and times are canonical decimal
+strings. Record versions and `if_version` are canonical nonnil UUID strings;
+compare them only for equality. Codes/counts/limits are JSON integers. Native binding applies
 the declared i64/i128 ranges in addition to JSON Schema validation.
 
 Equipment instead declares Pool 101 (availability root slot 7), Delivery 205,
@@ -146,8 +148,8 @@ includes input schemas, published fields, permitted predicates and limits.
 | Method | Params besides `model` |
 | --- | --- |
 | `session.describe` | No params; returns model, actor and operation context |
-| `access.describe` | Administrator-only current graph |
-| `access.replace` | Administrator-only `if_revision`, `graph` |
+| `access.describe` | Administrator-only current graph and numeric administration revision |
+| `access.replace` | Administrator-only decimal-string `if_revision`, `graph` |
 | `records.get` | `id` |
 | `records.mutate` | `context` from `session.describe`, `operation_id`, `commands`, `returning` UUID array |
 | `operations.status` | original `context`, `operation_id` |
@@ -203,7 +205,11 @@ update supplies `op`, `id`, `if_version`, `set`, `unset`; delete supplies `op`,
 `id`, `if_version`. A command may refer to earlier creations in that mutation.
 Forward references reject. Every source ID may occur in only one command.
 The returned `result.records` contains settled public records/nulls for the
-requested IDs, alongside the confirmed operation ID and revision.
+requested IDs, alongside the confirmed operation ID and a fresh UUID result
+`revision`. Changed records and roots receive that mutation token. An unchanged
+record retains its prior token, including in a genuine no-op operation whose
+receipt has a new result token. Delete/recreate always obtains a fresh token.
+These values provide identity comparisons, not a store-wide ordering of commits.
 
 Same operation ID and normalized content replays its original confirmed result
 without applying it again. Changed content rejects with `operation_conflict`.
@@ -212,6 +218,9 @@ review, not an automatic replacement version. On `outcome_unknown`, retain the
 operation ID and request, reopen and reconcile. `not_observed` is not proof of
 failure. The local store retains up to 1024 receipts without eviction; reaching
 that bound rejects new mutations, while existing receipts can still replay.
+Allocation uses 1,024 independently guarded slots with bounded hash-start probing,
+not an ordinary-mutation write to one global count. See [receipt retention](storage.md#receipt-retention-without-unsafe-retries)
+for collision cost and complete-digest archive cleanup.
 
 ## Query and publication semantics
 
@@ -231,11 +240,20 @@ There is no extra uncounted lookahead: a page that ends exactly at its limit may
 need one final empty continuation to establish exhaustion.
 
 Cursors are HMAC authenticated and bind the store, model, actor/tenant, exact
-query, last visited public ID and global mutation revision. Limit/budget may
-change when resuming. Any new committed mutation, even a semantic no-op,
-invalidates a cursor with `query_changed`. A receipt replay does not. Cursors
-survive reopening while their revision remains current. Each page uses one fresh
-snapshot; this is not a frozen multi-request export.
+query, last visited public ID and scoped query `revision`. This revision is a
+64-character lowercase SHA-256 digest of the selected reader/contract epochs,
+including absent partitions, plus the numeric authority administration revision
+for secured stores. The bounded epoch vector is represented by this one signed
+field; cursors retain the 4,096-byte limit. Limit/budget may change when resuming.
+
+Changes to a selected public partition invalidate the cursor with `query_changed`,
+including derived-only changes and either side of a reader move. An actual
+authority graph change invalidates secured cursors. A genuine no-op, receipt
+replay or mutation outside the selected reader/contract scope preserves it.
+Changes within a selected partition may invalidate even if the particular
+filter's result would stay equal. Cursors survive unchanged reopen. Each page
+uses one fresh snapshot; this is not a frozen multi-request export. Neither the
+digest nor the authority counter is a global domain-mutation sequence.
 
 Root reads use one of:
 
@@ -249,7 +267,8 @@ For calculation, Account slot 2 allows summary and strict `before`; Subsidiary s
 summary; Curve slot 1 allows summary and `latest`. A financial summary publishes
 count, sum, complete-time minimum, and first/last time. `before` excludes **all**
 equal-time occurrences, including at i64 extrema. `latest` returns a public quote
-ID/rate or `null`. Root results include the root revision and store revision.
+ID/rate or `null`. Root results include their opaque UUID `revision`; there is
+no `store_revision` field.
 Equipment Pool slot 7 allows summary and strict `before` over availability.
 These publications include declared private contributions without exposing their
 private record identities. Record-list filtering does not redefine a root sum.
@@ -275,9 +294,7 @@ and backups retain the 64 MiB bound.
 CARGO_TARGET_DIR=target/native-slice/build cargo test --locked --all-targets
 cargo fmt --all -- --check
 CARGO_TARGET_DIR=target/native-slice/build cargo clippy --locked --all-targets -- -D warnings
-CARGO_TARGET_DIR=target/native-slice/build cargo run --locked --example local_acceptance
-# Use the emitted observation path:
-python3 -B research/experiments/local_prototype.py --actual target/local-prototype/run-.../local-observations.json
+python3 -B tools/harness.py --binary target/native-slice/build/debug/rebase-next --out target/my-local-workflow --writes 0
 python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-population-run
 ```
 
@@ -287,13 +304,17 @@ Its HTTP checks and measured fanout boundaries are described in the
 [population result](../research/24-population-scaling-result.md). It records
 work-limit rollback rather than assuming every full-population edit can commit.
 
-The local observer is privileged and used only for disposable acceptance stores.
+The historical local observer is privileged and used only for disposable acceptance stores.
 Its complete application-table images include test-store signing material; it
 is absent from RPC and from the normal inspector. The checker independently
 derives sources/outputs, every subtree, public index membership and receipt
-results/content hashes. Earlier native corpora still test the wider causal and
-original settlement matrix; their commands are in the research result papers.
+results/content hashes. Earlier native corpora cover the wider causal and original
+settlement matrix at their recorded source revisions; their commands are in the
+research result papers. Keep their numeric-version fixtures and dated evidence
+with the matching historical implementation. Do not rerun them against API 4 by
+silently interpreting numeric versions as UUID tokens.
 
-Distributed adapters, external effects,
-general decimal rounding, arbitrary model loading/migrations and a full
-accounting/frontend port remain separate future work.
+Current [transactional adapters](storage-backends.md) and bounded
+[external work](external-effects.md) have their own gate results and limits.
+TiKV, G6 accounting, G8 workload/release expansion, arbitrary model loading,
+implicit migrations and frontend remain deferred.

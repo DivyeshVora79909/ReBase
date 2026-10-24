@@ -101,9 +101,24 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "bounded existence",
     )?;
     let swap_id = Uuid::from_u128(1001);
+    let mut moment_versions = std::collections::BTreeMap::new();
+    for name in ["MP", "MQ"] {
+        let record = call(
+            &store,
+            &mut transcript,
+            &format!("Read {name} compare-and-set token"),
+            "records.get",
+            json!({"model":model.identity(),"id":recipe.ids[name]}),
+        )?;
+        check(
+            record["result"]["version"].is_string(),
+            "missing moment token",
+        )?;
+        moment_versions.insert(name, record["result"]["version"].clone());
+    }
     let swap = json!({"model":model.identity(),"context":store.operation_context(store.model().identity()).unwrap(),"operation_id":swap_id,"commands":[
-        {"op":"update","id":recipe.ids["MP"],"if_version":"1","set":{"at":"20"},"unset":[]},
-        {"op":"update","id":recipe.ids["MQ"],"if_version":"1","set":{"at":"10"},"unset":[]}
+        {"op":"update","id":recipe.ids["MP"],"if_version":moment_versions["MP"],"set":{"at":"20"},"unset":[]},
+        {"op":"update","id":recipe.ids["MQ"],"if_version":moment_versions["MQ"],"set":{"at":"10"},"unset":[]}
     ],"returning":[recipe.ids["P"],recipe.ids["Q"],recipe.ids["J"]]});
     let swapped = call(
         &store,
@@ -120,13 +135,14 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
     )?;
     let after = values(&store, &recipe, &mut transcript, "After the move")?;
     check(after == recipe.expected["after_move"], "moved publications")?;
+    let after_swap = store.observe_for_verification()?;
     let stale = call(
         &store,
         &mut transcript,
         "Reject a stale editor version",
         "records.mutate",
         json!({"model":model.identity(),
-        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1002),"commands":[{"op":"update","id":recipe.ids["MP"],"if_version":"1","set":{"at":"30"},"unset":[]}],"returning":[]}),
+        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1002),"commands":[{"op":"update","id":recipe.ids["MP"],"if_version":moment_versions["MP"],"set":{"at":"30"},"unset":[]}],"returning":[]}),
     )?;
     check(
         stale["error"]["data"]["kind"] == "stale_version",
@@ -138,7 +154,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
         "Reject zero-valued feedback",
         "records.mutate",
         json!({"model":model.identity(),
-        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1003),"commands":[{"op":"update","id":recipe.ids["J"],"if_version":"2",
+        "context":store.operation_context(store.model().identity()).unwrap(),"operation_id":Uuid::from_u128(1003),"commands":[{"op":"update","id":recipe.ids["J"],"if_version":swapped["result"]["result"]["records"][2]["record"]["version"],
             "set":{"feedback":{"account":recipe.ids["A"],"at":"5"}},"unset":[]}],"returning":[]}),
     )?;
     check(
@@ -170,8 +186,8 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
     )?;
     let before_reopen = store.inspect()?;
     check(
-        before_reopen["revision"] == "2" && before_reopen["receipt_count"] == 2,
-        "rejections/replay preserve revision and receipts",
+        store.observe_for_verification()? == after_swap && before_reopen["receipt_count"] == 2,
+        "rejections/replay preserve complete tables and receipts",
     )?;
     drop(store);
     let reopened = LocalStore::open(&path, model.clone())?;
@@ -213,7 +229,7 @@ pub fn run(directory: &Path, model: Arc<PreparedModel>) -> Result<Value> {
     )
     .map_err(io)?;
     let report = json!({"status":"passed","demo":recipe.name,"model":model.identity(),"store":path,
-        "initial":initial,"after_move":after,"reopened_equal":true,"revision":"2","public_sources":14,"private_outputs":5,
+        "initial":initial,"after_move":after,"reopened_equal":true,"last_mutation":swapped["result"]["result"]["revision"],"public_sources":14,"private_outputs":5,
         "confirmed_receipts":2,"checks":["exact moved-prefix results","reporting diamond","budgeted existence",
             "stale-version rejection","zero-feedback rejection","receipt replay/status","unchanged rejections","restart","public index"],
         "artifacts":{"inspector":directory.join("inspect.html"),"transcript":directory.join("transcript.json"),

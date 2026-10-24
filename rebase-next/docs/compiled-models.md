@@ -25,7 +25,8 @@ committed with Account changes. Optional `Binding::effect_action` and
 `effect_template` hooks declare and freeze the model-owned native input; the
 ordinary transaction publishes intent and receipt together. Preparation checks
 the action's immutable source and required typed target reference and hashes its
-versioned metadata. Models without an action keep their existing identities.
+versioned metadata. Action metadata contributes to the declaring model's identity;
+shared semantic changes still require every affected behavior identity to change.
 
 `--model` must precede the command. Use the same selector for initialization,
 serving, checks, inspection, backup, restore and reset. There is no HTTP operation
@@ -100,13 +101,25 @@ handles out of evaluation. Model hooks remain trusted Rust code; the interface
 does not enforce purity against malicious code.
 
 `Store::<B>` supplies the shared adapter. The engine stages source commands,
-checks schema and CAS versions, enforces current authority, and creates declared
+checks schema and equality-only UUID CAS tokens, enforces current authority, and creates declared
 headers. Model settlement maintains its direct memberships and reverse routes;
 the shared reactive engine discovers affected work from old and new routes,
 detaches old managed outputs, builds the final dependency graph, rejects cycles,
 evaluates in dependency order and reconciles private output identities. Model
 validation runs against the settled state before the shared transaction publishes
-root/source revisions, reader indexes and receipts atomically.
+root/source tokens, reader indexes, query epochs, receipt allocations and receipts
+atomically over the selected storage backend.
+
+The native `Meta` contains immutable model/codec/tenant/bootstrap identity.
+`Population` separately holds exact per-contract counts and retained reservation
+counts. Settlement receives `&mut Population` and one fresh UUID mutation token;
+it writes the population row only when counts actually change. Changed records
+and roots receive the token, while unchanged state retains its prior token.
+Declared roots still guard their shared invariants. New capacity reservations
+and shared reader/contract query partitions can coordinate otherwise separate
+updates; model hooks must not invent a global mutation sequence or a backend-
+specific calculation path. [Storage contracts](storage.md#data-identity-and-upgrades)
+distinguish these tokens from administration/execution counters.
 
 Requested source writes and new links require client authority. Declared managed
 outputs and repairs run under engine authority; the public API rejects writes
@@ -135,7 +148,8 @@ Calculation and equipment provide independent checkers. The equipment checker de
 allocations and event histories from authored sources, then compares managed
 outputs, publications, queries and memberships. Shared snapshot checking verifies
 exact key inventory, role reservations, authority/reader indexes, real tree links,
-caches and receipts. A second fixture alone would not establish this boundary:
+caches, population counts, scoped epochs and the exact receipt/slot bijection.
+A second fixture alone would not establish this boundary:
 equipment uses separate native types and sparse contract, root, member, query and
 role codes through the same engine.
 
@@ -185,12 +199,20 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-The 0.14.0 source uses store 9 /native codec 6 /effect codec 3 /API 3, calculation behavior
-`rebase-calculation-contract-6`, equipment behavior `equipment-reservations-5`
-and measurement behavior `dimensioned-measurements-3`. Invoicing uses
-`invoice-assessments-5` for IssueShare. Only measurement's identity changes from 0.13.0;
-effect-demo owns `effect-demo-ingress-3`. Checked inbox events and explicit
-worker modes require new format-9 stores. There is no implicit migration from earlier stores.
+Current source 0.16.0 uses store 10 /native codec 7 /effect codec 4 /API 4, with
+calculation behavior `rebase-calculation-contract-7`, equipment
+`equipment-reservations-6`, invoicing `invoice-assessments-6`, measurement
+`dimensioned-measurements-4`, effect-demo `effect-demo-ingress-4` and quantity
+`quantity-flow-2`. These identities reflect the shared token/coordination contract;
+the declared business formulas remain unchanged. New-format stores are required.
+
+Historically, 0.14.0 source used store 9 /native codec 6 /effect codec 3 /API 3,
+calculation behavior `rebase-calculation-contract-6`, equipment behavior
+`equipment-reservations-5` and measurement behavior `dimensioned-measurements-3`.
+Invoicing used `invoice-assessments-5` for IssueShare. Only measurement's identity
+changed from 0.13.0; effect-demo used `effect-demo-ingress-3`. Checked inbox
+events and explicit worker modes required new format-9 stores. No implicit
+migration from earlier stores was provided.
 The [0.6 deployment result](../research/29-deployment-result.md) remains dated
 evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-upgrades).
 
@@ -213,7 +235,8 @@ model identity. A saved plan preserves the original operation context across
 retries and status checks. It never refreshes an uncertain operation across a
 reset or archive fence. The filesystem stdio/operator interface remains separate
 from authenticated HTTP. No arbitrary JSON behavior loader, scripting runtime,
-plugin registry, distributed adapter, external delivery or frontend is included.
+plugin registry, live-provider delivery or frontend is included. The selected
+[transactional adapters](storage-backends.md) use the same model and mutation paths.
 
 ## Native index families
 
@@ -257,5 +280,7 @@ Its limit is 16 public records with absolute published quantities at most
 
 Publication target declarations put even terminal Sources into the existing
 shared scheduler. A parent must still use supported causal query operations.
-This adds no fake root/query or second writer, and changes no existing model
-catalog or persisted format. The model has behavior identity `quantity-flow-1`.
+The original 0.15.0 addition needed no fake root/query or second writer and changed
+no existing model catalog or persisted format; its behavior identity was
+`quantity-flow-1`. Source 0.16.0 uses `quantity-flow-2` for the shared UUID token
+and coordination contract.

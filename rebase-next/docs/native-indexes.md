@@ -220,11 +220,13 @@ literal scan, and run distinct valid AVL insertion orders through complete check
 The HTTP oracle uses Python integer arithmetic over authored facts, exact boundary
 filters, complete rollback snapshots and rehashed corrupted-backup controls.
 
-Source 0.14.0 uses store 9 /native codec 6 /effect codec 3 /API 3. Authored selection
-changes measurement's behavior to `dimensioned-measurements-3`; other model
-identities and existing Standard query bytes remain unchanged. Report summary
-and derived encodings are preserved. Keep older measurement stores with matching
-binaries; there is no implicit populated-store migration. See
+The source-0.14.0 authored-selection checkpoint used store 9 /native codec 6 /
+effect codec 3 /API 3 and measurement behavior `dimensioned-measurements-3`;
+other model identities and existing Standard query bytes were unchanged.
+Current source 0.16.0 uses store 10 /native codec 7 /effect codec 4 /API 4 and
+`dimensioned-measurements-4` for the shared UUID/scoped-coordination contract.
+Report summary and derived encodings retain their meaning. Keep older
+measurement stores with matching binaries; there is no implicit migration. See
 [storage identities and upgrades](storage.md#data-identity-and-upgrades).
 Behavior revisions cover algebra, ordering, projection and invariant semantics;
 descriptor hashes supplement that explicit contract.

@@ -12,7 +12,9 @@ use crate::{
         RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Query, Result},
+    native_slice::{
+        Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Query, Result,
+    },
     routes,
     time_range::TimeRange,
     values::{Rational, Rounding},
@@ -424,8 +426,8 @@ impl Binding for ParentTax {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
@@ -444,7 +446,7 @@ impl Binding for ParentTax {
                 entry_member(change.new.as_ref().map(|r| &r.input)),
             )?;
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)
     }
     fn check(store: &Store<Self>) -> Result<Value> {
         check(store)
@@ -851,6 +853,37 @@ fn record(store: &Store<ParentTax>, n: u128) -> ModelRecord<ParentTax> {
 fn update(store: &Store<ParentTax>, n: u128, set: Value) -> Value {
     json!({"op":"update","id":id(n),"if_version":record(store,n).version.to_string(),"set":set,"unset":[]})
 }
+// Independent stores issue different random token bytes. Preserve their exact
+// equality classes while comparing all authored and calculated record fields.
+// Representatives are assigned in record-ID order, never token order.
+fn normalize_record_tokens<'a>(records: impl Iterator<Item = &'a mut ModelRecord<ParentTax>>) {
+    let mut classes = BTreeMap::new();
+    for record in records {
+        assert!(!record.version.is_nil());
+        let representative = Uuid::from_u128(classes.len() as u128 + 1);
+        record.version = *classes.entry(record.version).or_insert(representative);
+    }
+}
+fn assert_changed_command_tokens(
+    snapshot: &Snapshot<'_, ParentTax>,
+    request: &Mutation,
+    result: &Value,
+) {
+    let token = Uuid::parse_str(result["result"]["revision"].as_str().unwrap()).unwrap();
+    assert!(!token.is_nil());
+    for command in &request.commands {
+        match command {
+            crate::native_slice::Command::Update { if_version, .. } => {
+                assert_ne!(token, *if_version)
+            }
+            crate::native_slice::Command::Create { .. } => {}
+            crate::native_slice::Command::Delete { .. } => {
+                panic!("these order controls do not delete")
+            }
+        }
+        assert_eq!(snapshot.records[&command.id()].version, token);
+    }
+}
 fn assert_tax(store: &Store<ParentTax>, basis: i128, tax: i128) {
     assert_eq!(
         record(store, 40).derived,
@@ -1053,7 +1086,7 @@ fn terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders() {
         );
         let negative = update(&store, 30, json!({"amount":"-1"}));
         let repair = json!({"op":"create","id":id(31),"contract":ENTRY,"fields":{"bucket":id(20),"at":"0","amount":"2"}});
-        commit(
+        let (request, result) = commit(
             &store,
             1402,
             if reverse {
@@ -1064,12 +1097,17 @@ fn terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders() {
         );
         assert_eq!(reader_query(&store, 50).unwrap().result, 1);
         let snapshot = Snapshot::load(&store).unwrap();
-        let logical: BTreeMap<_, _> = snapshot
+        assert_changed_command_tokens(&snapshot, &request, &result);
+        let mut logical: BTreeMap<_, _> = snapshot
             .all
             .iter()
             .filter(|(key, _)| matches!(key, Key::Record(_) | Key::Query(_)))
             .map(|(key, value)| (key.clone(), value.clone()))
             .collect();
+        normalize_record_tokens(logical.values_mut().filter_map(|value| match value {
+            StoredValue::Record(record) => Some(record),
+            _ => None,
+        }));
         if let Some(expected) = &expected {
             assert_eq!(&logical, expected);
         } else {
@@ -1214,12 +1252,17 @@ fn terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluat
             })
         );
         let snapshot = Snapshot::load(&store).unwrap();
-        let logical: BTreeMap<_, _> = snapshot
+        assert_changed_command_tokens(&snapshot, &last_request, &last_result);
+        let mut logical: BTreeMap<_, _> = snapshot
             .all
             .iter()
             .filter(|(key, _)| matches!(key, Key::Record(_) | Key::Query(_)))
             .map(|(key, value)| (key.clone(), value.clone()))
             .collect();
+        normalize_record_tokens(logical.values_mut().filter_map(|value| match value {
+            StoredValue::Record(record) => Some(record),
+            _ => None,
+        }));
         if let Some(expected) = &expected {
             assert_eq!(&logical, expected);
         } else {
@@ -1438,9 +1481,12 @@ fn parent_edit_and_retarget_use_the_final_authored_state_in_both_orders() {
             } else {
                 json!([parent, child])
             };
-            commit(&store, 1200, commands);
+            let (request, result) = commit(&store, 1200, commands);
             assert_tax(&store, 10005, if edit_old_parent { 2501 } else { 2001 });
             let snapshot = Snapshot::load(&store).unwrap();
+            assert_changed_command_tokens(&snapshot, &request, &result);
+            let mut records = snapshot.records.clone();
+            normalize_record_tokens(records.values_mut());
             let queries: BTreeMap<_, _> = snapshot
                 .all
                 .iter()
@@ -1448,10 +1494,10 @@ fn parent_edit_and_retarget_use_the_final_authored_state_in_both_orders() {
                 .map(|(key, value)| (key.clone(), value.clone()))
                 .collect();
             if let Some(expected) = &expected_records {
-                assert_eq!(&snapshot.records, expected);
+                assert_eq!(&records, expected);
                 assert_eq!(Some(&queries), expected_queries.as_ref());
             } else {
-                expected_records = Some(snapshot.records.clone());
+                expected_records = Some(records);
                 expected_queries = Some(queries);
             }
         }

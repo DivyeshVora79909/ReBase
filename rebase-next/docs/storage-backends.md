@@ -1,10 +1,13 @@
 # Selecting a transactional backend
 
 The same engine, model, authority, query and effect code can run over redb,
-FoundationDB or standalone SurrealKV. [G7.3](../research/48-storage-publication-result.md)
-and [G7.4](../research/49-storage-api-result.md) record the verified application
-and HTTP scope. Final G7.5/G7.6 coordination and cross-backend acceptance remain
-open; these checks do not establish production capacity or replicated failover.
+FoundationDB or standalone SurrealKV. [G7.5](../research/50-scoped-coordination-result.md)
+accepts scoped coordination on real FoundationDB after the earlier application
+and HTTP checkpoints. G7.6 final cross-adapter acceptance remains open; these
+checks do not establish production capacity or replicated failover.
+Current source is 0.16.0 with store format 10 /native codec 7 /effect codec 4 /
+API 4. Earlier-format stores and backups require their matching binaries;
+selection of another backend does not migrate them.
 
 ## Build and select
 
@@ -12,6 +15,7 @@ The default build uses redb and needs no FoundationDB client. Optional Cargo
 features are `foundationdb` and `surrealkv`:
 
 ```sh
+export CARGO_TARGET_DIR=target/verification-build CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
 cargo build --locked --release --bin rebase-next
 cargo build --locked --release --bin rebase-next --features surrealkv
 # Requires the FoundationDB native SDK/runtime described below.
@@ -57,6 +61,39 @@ adapter does not introduce automatic retries. RPC distinguishes
 outcome is uncertain and read its receipt; an absent observation alone does not
 prove an earlier request has stopped. The [client guide](developer-tools.md)
 describes saved plans and explicit composition.
+
+## Coordination and contention
+
+Source mutations use fresh UUID tokens for changed records and roots, with
+equality-only CAS. There is no global domain revision write. Immutable identity
+is separate from exact population/reservation counters; ordinary updates write
+those counters only if the population or reservations change. Creates and new
+output reservations can therefore require shared capacity coordination.
+
+Public query epochs are scoped to `(reader, contract)`. Changes in one such
+partition coordinate even when their business roots differ. Cursors digest the
+selected epochs plus the numeric authority administration revision. True no-ops
+and edits outside that scope preserve cursors; changed public derivations and
+old/new readers on a move invalidate affected scopes. Any actual authority graph
+change invalidates secured cursors. The digest is one signed 64-character SHA-256 field,
+so the full epoch vector need not fit inside the 4,096-byte cursor bound.
+
+There are 1,024 receipt allocation slots. Hash-start linear probing preserves the
+exact capacity, with the selected slot pointer and receipt in the same commit.
+Replays check the original receipt before allocating. Occupied-slot probes and
+hash collisions create contention, especially near capacity. Ordinary operations
+only read the archive/reset header; cleanup protects and compares the complete
+backup digest before clearing receipts and slots and advancing context expiry.
+
+The disjoint-root conformance case updates already-populated business roots in
+distinct reader partitions and receipt slots. It requires real FoundationDB
+transactions and records the absence of a shared written coordination key. This
+case does not measure unrestricted throughput or make creates, shared roots,
+same-partition queries or effect-runtime quotas independent. Business-root
+invariants retain their required guards. redb has one serialized writer;
+SurrealKV's hashed point guards and table range guards can cause conservative
+conflicts between logically separate operations. See [storage lifecycle](storage.md)
+for the precise token and retention contracts.
 
 ## FoundationDB prerequisites and limits
 
@@ -104,3 +141,6 @@ clients. The script retains private credentials, plans, complete backups and a
 result, then stops its owned application server. It reuses the normal client and
 harness; it adds no model DSL or runtime service. Its proxy deliberately loses
 one request or completed HTTP response, not a native database commit acknowledgement.
+The current complete secured inventory contains thirteen tables, including
+`query_epochs` and `receipt_slots`. Restart and restore compare their complete
+images; archive compares all preserved tables and the exact expiry-header change.

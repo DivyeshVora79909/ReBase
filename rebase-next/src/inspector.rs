@@ -47,13 +47,13 @@ pub fn render<B: Binding>(
         let records = snapshot["records"].as_array().map_or(0, Vec::len);
         let roots = snapshot["roots"].as_array().map_or(0, Vec::len);
         let queries = snapshot["queries"].as_array().map_or(0, Vec::len);
-        body.push_str(&format!("<section id=state><div class=section-title><h2>Settled snapshot</h2><span>Revision {}</span></div><div class=stats><article><b>{records}</b><span>Records</span></article><article><b>{roots}</b><span>Published roots</span></article><article><b>{queries}</b><span>Active reads</span></article></div><p class=note>This trusted local snapshot includes private output roles. It carries no connection or access grant.</p>",escape(snapshot["revision"].as_str().unwrap_or("—"))));
+        body.push_str(&format!("<section id=state><div class=section-title><h2>Settled snapshot</h2><span>Store {}</span></div><div class=stats><article><b>{records}</b><span>Records</span></article><article><b>{roots}</b><span>Published roots</span></article><article><b>{queries}</b><span>Active reads</span></article></div><p class=note>This trusted local snapshot includes private output roles. It carries no connection or access grant.</p>",escape(snapshot["store"].as_str().unwrap_or("—"))));
         body.push_str("<h3>Root publications</h3><div class=root-grid>");
         for root in snapshot["roots"].as_array().into_iter().flatten() {
             let id = root["root"]["id"].as_str().unwrap_or("");
             let summary = &root["summary"]["value"];
             let sum = summary["sum"].as_str().unwrap_or("—");
-            body.push_str(&format!("<article class=root><span>{} / root slot {}</span><b>{}</b><code>{}</code><small>{} occurrences · revision {}</small></article>",escape(label(snapshot,id).unwrap_or("Publication")),root["root"]["slot"],escape(sum),escape(id),summary["count"],escape(root["revision"].as_str().unwrap_or(""))));
+            body.push_str(&format!("<article class=root><span>{} / root slot {}</span><b>{}</b><code>{}</code><small>{} occurrences · token {}</small></article>",escape(label(snapshot,id).unwrap_or("Publication")),root["root"]["slot"],escape(sum),escape(id),summary["count"],escape(root["revision"].as_str().unwrap_or(""))));
         }
         body.push_str("</div><h3>Records</h3>");
         for row in snapshot["records"].as_array().into_iter().flatten() {

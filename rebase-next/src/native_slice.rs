@@ -16,7 +16,7 @@ use crate::{
     time_range::TimeRange,
 };
 
-pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-6";
+pub const BEHAVIOR_CONTRACT: &str = "rebase-calculation-contract-7";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -49,8 +49,13 @@ pub struct Meta {
     pub tenant: Uuid,
     #[serde(with = "uuid_text")]
     pub actor: Uuid,
-    #[serde(with = "decimal")]
-    pub revision: u64,
+}
+
+/// Exact capacity accounting. Existing-record edits read this state but only
+/// population or reservation changes write it; identity remains immutable.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Population {
     pub counts: BTreeMap<u16, u16>,
     pub reserved: u16,
 }
@@ -308,8 +313,8 @@ pub struct ModelRecord<B: Binding> {
     pub owner: Uuid,
     #[serde(with = "uuid_text")]
     pub reader: Uuid,
-    #[serde(with = "decimal")]
-    pub version: u64,
+    #[serde(with = "uuid_text")]
+    pub version: Uuid,
     pub input: B::Input,
     pub derived: Option<B::Derived>,
 }
@@ -345,16 +350,16 @@ pub enum Command {
     Update {
         #[serde(with = "uuid_text")]
         id: Uuid,
-        #[serde(with = "decimal")]
-        if_version: u64,
+        #[serde(with = "uuid_text")]
+        if_version: Uuid,
         set: BTreeMap<String, serde_json::Value>,
         unset: Vec<String>,
     },
     Delete {
         #[serde(with = "uuid_text")]
         id: Uuid,
-        #[serde(with = "decimal")]
-        if_version: u64,
+        #[serde(with = "uuid_text")]
+        if_version: Uuid,
     },
 }
 
@@ -649,8 +654,8 @@ pub(crate) type Change = ModelChange<Calculation>;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Settled {
-    #[serde(with = "decimal")]
-    pub revision: u64,
+    #[serde(with = "uuid_text")]
+    pub revision: Uuid,
 }
 
 pub(crate) fn required<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>>(
@@ -968,8 +973,8 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
     model: &crate::model::PreparedModel,
     context: Context,
     changes: &[Change],
-    meta: &mut Meta,
-    revision: u64,
+    population: &mut Population,
+    revision: Uuid,
     allocate: &mut dyn FnMut() -> Result<Uuid>,
 ) -> Result<()> {
     use crate::indexes::standard::{Aggregate, Leaf};
@@ -1142,7 +1147,7 @@ pub(crate) fn settle_calculation_changes<L: FnMut(&[u8]) -> Result<Option<Vec<u8
         }
     }
 
-    crate::causal::settle(ws, model, context, changes, meta, revision, allocate)?;
+    crate::causal::settle(ws, model, context, changes, population, revision, allocate)?;
     for id in ws.changed_roots() {
         if id.slot == 2
             && let Some(Stored::Root(root)) = ws.get(&Key::Root(id))?

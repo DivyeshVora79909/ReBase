@@ -206,7 +206,7 @@ pub fn run(factory: impl Fn(&str) -> Result<Database>, concurrent: bool) -> Resu
     cases.push("effect-intent-atomic-publication-and-replay");
     let stale = request(
         &effect,
-        json!([{"op":"update","id":id(100),"if_version":"0","set":{"balance":"21"},"unset":[]}]),
+        json!([{"op":"update","id":id(100),"if_version":Uuid::nil(),"set":{"balance":"21"},"unset":[]}]),
     )?;
     reject(&effect, &stale, "stale_version", None)?;
     cases.push("stale-cas-preserves-complete-inventory");

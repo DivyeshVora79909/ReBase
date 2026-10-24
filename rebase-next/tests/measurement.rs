@@ -1336,7 +1336,9 @@ fn latest_observation_native_selection_uses_complete_member_slot_ties() {
     let owner = Address::new(id(10), 7);
     ws.put(
         Key::Root(owner),
-        Some(StoredValue::Root(tree::Root::empty(STATISTICS, 0).unwrap())),
+        Some(StoredValue::Root(
+            tree::Root::empty(STATISTICS, Uuid::new_v4()).unwrap(),
+        )),
     )
     .unwrap();
     assert!(

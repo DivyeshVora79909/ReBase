@@ -1,24 +1,113 @@
 //! Declared local reads and authenticated revision-bound resumptions.
 
 use crate::binding::Binding;
-use crate::storage::ReadableTable;
-use std::{cmp::Reverse, collections::BinaryHeap, ops::Bound};
+use crate::storage::{ReadTransaction, ReadableTable, TableDefinition, WriteTransaction};
+use std::{
+    cmp::Reverse,
+    collections::{BTreeSet, BinaryHeap},
+    ops::Bound,
+};
 
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
     index::{NativeIndex, SummaryRead},
     local::{KV, PUBLIC, PublicRecordValue, RuntimeHeader, Store, corrupt, encode, storage, unhex},
-    model::API_VERSION,
-    native_codec::{self, Address, decimal, uuid_text},
+    model::{API_VERSION, Prepared, Visibility},
+    native_codec::{self, Address, Key, StoredValue, decimal, uuid_text},
     native_slice::{Attempt, Error, Result},
     time_range::TimeRange,
     tree,
 };
+
+pub(crate) const EPOCHS: TableDefinition<&[u8], &[u8]> = TableDefinition::new("query_epochs");
+pub(crate) const MAX_EPOCHS: usize = crate::binding::MAX_INVENTORY_ROWS;
+
+fn epoch_key(reader: Uuid, contract: u16) -> Vec<u8> {
+    [reader.as_bytes().as_slice(), &contract.to_be_bytes()].concat()
+}
+
+/// Epochs follow public projections, including derived-only edits and both
+/// partitions when a reader moves. No-op batches write no epochs.
+pub(crate) fn publish_epochs<B: Binding>(
+    write: &WriteTransaction,
+    model: &Prepared<B>,
+    batch: &crate::staging::Batch,
+) -> Result<()> {
+    let native = write.open_table(KV)?;
+    let mut changed = BTreeSet::new();
+    for (key, value) in batch {
+        if let Key::Record(id) = Key::decode(key)? {
+            let old = native.get(key)?.map(|v| v.value().to_vec());
+            if old.as_deref() == value.as_deref() {
+                continue;
+            }
+            for bytes in [old.as_deref(), value.as_deref()].into_iter().flatten() {
+                let StoredValue::Record(record) =
+                    native_codec::decode_for::<B>(&Key::Record(id), bytes)?
+                else {
+                    return Err(corrupt("query epoch record type"));
+                };
+                if model.contract(record.contract)?.visibility == Visibility::Public {
+                    changed.insert((record.reader, record.contract));
+                }
+            }
+        }
+    }
+    if !changed.is_empty() {
+        let mut epochs = write.open_table(EPOCHS)?;
+        for (reader, contract) in changed {
+            // The port's insert protects the previous value/absence. Equal
+            // partition edits serialize even when their records are disjoint.
+            epochs.insert(
+                epoch_key(reader, contract).as_slice(),
+                Uuid::new_v4().as_bytes().as_slice(),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn scope_revision(
+    read: &ReadTransaction,
+    scope: &crate::access::Scope,
+    codes: &[u16],
+    secured: bool,
+) -> Result<String> {
+    if scope.accessible.len().saturating_mul(codes.len()) > crate::access::MAX_READER_STREAMS {
+        return Err(Error::new("work_limit", "reader partition setup limit"));
+    }
+    let mut digest = Sha256::new();
+    digest.update(b"rebase-query-scope-1\0");
+    if secured {
+        let authority = read.open_table(crate::security::AUTHORITY)?;
+        digest.update(crate::security::authority_revision(&authority)?.to_be_bytes());
+    }
+    let epochs = read.open_table(EPOCHS)?;
+    for &reader in &scope.accessible {
+        for &contract in codes {
+            let key = epoch_key(reader, contract);
+            digest.update(&key);
+            let value = epochs.get(&key)?;
+            match value {
+                Some(value) => {
+                    let token = Uuid::from_slice(value.value())
+                        .map_err(|_| corrupt("query epoch token"))?;
+                    if token.is_nil() {
+                        return Err(corrupt("nil query epoch"));
+                    }
+                    digest.update(token.as_bytes());
+                }
+                None => digest.update(Uuid::nil().as_bytes()),
+            }
+        }
+    }
+    Ok(native_codec::hex(&digest.finalize()))
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -71,8 +160,7 @@ pub struct PageValue<B: Binding> {
     pub visited: u16,
     pub exhausted: bool,
     pub cursor: Option<String>,
-    #[serde(with = "decimal")]
-    pub revision: u64,
+    pub revision: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -86,8 +174,7 @@ struct Cursor {
     actor: Uuid,
     #[serde(with = "uuid_text")]
     tenant: Uuid,
-    #[serde(with = "decimal")]
-    revision: u64,
+    revision: String,
     query: RecordQuery,
     #[serde(with = "uuid_text")]
     after: Uuid,
@@ -184,7 +271,7 @@ impl<B: Binding> Store<B> {
             self.model
                 .validate_predicate(code, &predicate.field, &predicate.value)?;
         }
-        let (read, meta, header) = self.read(&request.model)?;
+        let (read, _, header) = self.read(&request.model)?;
         let scope = self.authority(&read)?;
         if request
             .query
@@ -193,6 +280,17 @@ impl<B: Binding> Store<B> {
         {
             return Err(crate::access::denied());
         }
+        let codes: Vec<_> = self
+            .model
+            .contracts()
+            .filter(|c| {
+                c.visibility == Visibility::Public
+                    && scope.grants.allows(c.code, crate::access::Action::Read)
+                    && request.query.contract.is_none_or(|code| code == c.code)
+            })
+            .map(|c| c.code)
+            .collect();
+        let revision = scope_revision(&read, &scope, &codes, self.secured)?;
         let after = if let Some(token) = &request.cursor {
             let cursor = parse_cursor(token, &header)?;
             if cursor.api != API_VERSION
@@ -204,10 +302,10 @@ impl<B: Binding> Store<B> {
             {
                 return Err(Error::new("invalid_cursor", "cursor scope/query differs"));
             }
-            if cursor.revision != meta.revision {
+            if cursor.revision != revision {
                 return Err(Error::new(
                     "query_changed",
-                    "restart after committed mutation",
+                    "restart after the query scope or authority changes",
                 ));
             }
             Some(cursor.after)
@@ -223,21 +321,6 @@ impl<B: Binding> Store<B> {
         let mut streams = vec![];
         let mut partitions = vec![];
         if let Some(index) = &readers {
-            let codes: Vec<_> = self
-                .model
-                .contracts()
-                .filter(|c| {
-                    c.visibility == crate::model::Visibility::Public
-                        && scope.grants.allows(c.code, crate::access::Action::Read)
-                        && request.query.contract.is_none_or(|code| code == c.code)
-                })
-                .map(|c| c.code)
-                .collect();
-            if scope.accessible.len().saturating_mul(codes.len())
-                > crate::access::MAX_READER_STREAMS
-            {
-                return Err(Error::new("work_limit", "reader partition setup limit"));
-            }
             for &reader in &scope.accessible {
                 for &code in &codes {
                     let lower = match after {
@@ -334,7 +417,7 @@ impl<B: Binding> Store<B> {
                     model: self.model.identity().into(),
                     actor: self.context.actor,
                     tenant: self.context.tenant,
-                    revision: meta.revision,
+                    revision: revision.clone(),
                     query: request.query.clone(),
                     after,
                 },
@@ -346,7 +429,7 @@ impl<B: Binding> Store<B> {
             visited,
             exhausted,
             cursor,
-            revision: meta.revision,
+            revision,
         })
     }
 
@@ -372,7 +455,7 @@ impl<B: Binding> Store<B> {
     }
 
     pub fn root_read(&self, request: &RootRequest) -> Result<Value> {
-        let (read, meta, _) = self.read(&request.model)?;
+        let (read, _, _) = self.read(&request.model)?;
         let scope = self.authority(&read)?;
         let table = read.open_table(KV).map_err(storage)?;
         let mut ws = Attempt::<_, B>::new(
@@ -436,7 +519,7 @@ impl<B: Binding> Store<B> {
         };
         Ok(
             json!({"owner":request.owner,"slot":request.slot,"revision":root.revision.to_string(),
-            "store_revision":meta.revision.to_string(),"value":value}),
+            "value":value}),
         )
     }
 }

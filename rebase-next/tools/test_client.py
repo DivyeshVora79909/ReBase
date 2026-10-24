@@ -96,7 +96,7 @@ class ClientControls(unittest.TestCase):
         plan = {"format": client.PLAN_FORMAT,
                 "target": {"url": self.url + "ok", "model": "test", "store": identity, "tenant": identity, "actor": identity},
                 "request": {"model": "test", "context": "original", "operation_id": identity,
-                            "commands": [{"op": "delete", "id": identity, "if_version": "1"}], "returning": []}}
+                            "commands": [{"op": "delete", "id": identity, "if_version": str(uuid.uuid4())}], "returning": []}}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "saved.json"
             client.save_plan(path, plan)

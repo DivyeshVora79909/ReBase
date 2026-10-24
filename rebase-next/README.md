@@ -8,9 +8,11 @@ stateless Python client and model-driven fixtures make it directly usable from
 scripts. Calculation, equipment reservation, sensor measurement and bounded
 external work share the engine, authority and tools. Existing bounded invoicing
 remains available. All implementation and dependencies stay inside this directory.
-This checkout's package source is 0.15.0 and includes native index families,
+This checkout's package source is 0.16.0 and includes native index families,
 reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
-work with signed events and reconciliation after restore.
+work with signed events and reconciliation after restore. Shared storage now uses
+opaque mutation tokens, scoped query epochs and bounded receipt allocation slots;
+the [G7 plan](research/45-storage-adapter-plan.md) records checkpoint status.
 A [self-explaining workshop](docs/workshop.md) adds independent checks, bounded
 exploration and replay across four small examples.
 The last verified deployment bundle is 0.6.0; source capabilities do not imply
@@ -53,16 +55,18 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
-| Active storage-adapter work | [G7 plan](research/45-storage-adapter-plan.md) · [Backend usage](docs/storage-backends.md) · [G7.4 result](research/49-storage-api-result.md) |
-| Current source verification | [V1 workshop result](research/44-workshop-verification-result.md) |
+| Active storage-adapter work | [G7 plan](research/45-storage-adapter-plan.md) · [Backend usage](docs/storage-backends.md) · [G7.5 result](research/50-scoped-coordination-result.md) |
+| Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
-The supported deployment is **one embedded redb process, one tenant and
-one selected compiled model**. Calculation/equipment allow up to 4,096 public source records, 8,192 active
+The last packaged deployment uses **one embedded redb process, one tenant and
+one selected compiled model**. Current source also offers explicit FoundationDB
+and standalone SurrealKV selection; see [backend usage](docs/storage-backends.md)
+for the current verification boundaries. Calculation/equipment allow up to 4,096 public source records, 8,192 active
 private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
-loading, distributed storage, a full accounting port, live-provider adapters and a
-frontend are separate future gates. Invoicing initially supports 64 public
+loading, a full accounting port, live-provider adapters and a frontend are separate
+future gates. TiKV, G6 and G8 remain deferred. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,
 not a claim of general production capacity.
@@ -82,9 +86,10 @@ python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-n
 It checks source arithmetic, selective updates, fanout, rollback, replay,
 authorization, restart and verified restore through the real HTTP process.
 Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. The 0.15.0 source uses store format 9 /native codec 6 /
-effect codec 3 /API 3. Calculation, equipment, invoicing and effect-demo identities
-match 0.13.0; measurement's selection behavior has a new identity. There is no implicit migration from earlier formats;
+reject atomically. The 0.16.0 source uses store format 10 /native codec 7 /
+effect codec 4 /API 4. All six compiled model behavior identities change with
+the token and coordination contract; formulas retain their declared meaning.
+There is no implicit migration from earlier formats;
 keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).
 
 `rebase-next --help` lists operator commands. Select equipment with

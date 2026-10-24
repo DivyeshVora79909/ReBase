@@ -11,7 +11,7 @@ use std::{
 use rebase_semantic_proof::{
     native_codec::{self, Key, Stored},
     native_slice::{
-        Command, Context, Error as NativeError, Meta, Model, Settled, Work, Workspace,
+        Command, Context, Error as NativeError, Meta, Model, Population, Settled, Work, Workspace,
         settle_fixture, settle_with_ids,
     },
 };
@@ -163,12 +163,17 @@ fn initialize(db: &Database, model: &Model, context: Context) -> Result<()> {
                 codec: model.codec.clone(),
                 tenant: context.tenant,
                 actor: context.actor,
-                revision: 0,
-                counts: (1..=12).map(|code| (code, 0)).collect(),
-                reserved: 0,
             }),
         )?;
         table.insert(Key::Meta.encode().as_slice(), bytes.as_slice())?;
+        let population = Stored::Population(Population {
+            counts: (1..=12).map(|code| (code, 0)).collect(),
+            reserved: 0,
+        });
+        table.insert(
+            Key::Population.encode().as_slice(),
+            native_codec::encode(&Key::Population, &population)?.as_slice(),
+        )?;
     }
     write.commit()?;
     Ok(())

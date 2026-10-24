@@ -84,6 +84,17 @@ fn kind(response: &Value) -> &str {
         .as_str()
         .unwrap_or("no error")
 }
+fn version(store: &LocalStore, id: &Value) -> String {
+    store
+        .get(
+            store.model().identity(),
+            Uuid::parse_str(id.as_str().unwrap()).unwrap(),
+        )
+        .unwrap()
+        .unwrap()
+        .version
+        .to_string()
+}
 
 #[test]
 fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
@@ -108,17 +119,25 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
         kind(&call(&store, "records.mutate", conflicting)),
         "operation_conflict"
     );
+    let old_mp = version(&store, &f["ids"]["MP"]);
     let update = mutation(
         &store,
         1001,
         json!([
-            {"op":"update","id":f["ids"]["MP"],"if_version":"1","set":{"at":"20"},"unset":[]},
-            {"op":"update","id":f["ids"]["MQ"],"if_version":"1","set":{"at":"10"},"unset":[]}
+            {"op":"update","id":f["ids"]["MP"],"if_version":old_mp,"set":{"at":"20"},"unset":[]},
+            {"op":"update","id":f["ids"]["MQ"],"if_version":version(&store,&f["ids"]["MQ"]),"set":{"at":"10"},"unset":[]}
         ]),
         json!([f["ids"]["P"], f["ids"]["J"]]),
     );
     let response = call(&store, "records.mutate", update);
-    assert_eq!(response["result"]["result"]["revision"], "2", "{response}");
+    assert_eq!(response["result"]["status"], "committed", "{response}");
+    let revision =
+        Uuid::parse_str(response["result"]["result"]["revision"].as_str().unwrap()).unwrap();
+    assert!(!revision.is_nil());
+    assert_ne!(
+        response["result"]["result"]["revision"],
+        first["result"]["result"]["revision"]
+    );
     assert_eq!(
         response["result"]["result"]["records"][0]["record"]["derived"],
         json!({"at":"20","before":"30","delta":"-10"})
@@ -130,7 +149,7 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
     let stale = mutation(
         &store,
         1002,
-        json!([{ "op":"update","id":f["ids"]["MP"],"if_version":"1","set":{"at":"30"},"unset":[]}]),
+        json!([{ "op":"update","id":f["ids"]["MP"],"if_version":old_mp,"set":{"at":"30"},"unset":[]}]),
         json!([]),
     );
     assert_eq!(
@@ -148,7 +167,7 @@ fn exact_mutations_publish_settled_values_and_durable_replay_receipts() {
     let feedback = mutation(
         &store,
         1003,
-        json!([{ "op":"update","id":f["ids"]["J"],"if_version":"2","set":{"feedback":{"account":f["ids"]["A"],"at":"5"}},"unset":[]}]),
+        json!([{ "op":"update","id":f["ids"]["J"],"if_version":version(&store,&f["ids"]["J"]),"set":{"feedback":{"account":f["ids"]["A"],"at":"5"}},"unset":[]}]),
         json!([]),
     );
     assert_eq!(kind(&call(&store, "records.mutate", feedback)), "feedback");
@@ -237,7 +256,7 @@ fn budgeted_reads_distinguish_empty_pages_unknown_and_exhaustion() {
 }
 
 #[test]
-fn cursors_bind_query_store_revision_and_survive_unchanged_reopen() {
+fn cursors_bind_query_scope_and_survive_replay_noop_and_unchanged_reopen() {
     let dir = Directory::new();
     let first_store = store(&dir);
     let (f, base) = seed(&first_store);
@@ -262,24 +281,23 @@ fn cursors_bind_query_store_revision_and_survive_unchanged_reopen() {
     drop(first_store);
     let store = LocalStore::open(dir.file(), Arc::new(PreparedModel::load().unwrap())).unwrap();
     assert_eq!(store.page(&request).unwrap().records, expected);
+    let before = version(&store, &f["ids"]["P"]);
     let noop = mutation(
         &store,
         1001,
-        json!([{ "op":"update","id":f["ids"]["P"],"if_version":"1","set":{"target":"20"},"unset":[]}]),
+        json!([{ "op":"update","id":f["ids"]["P"],"if_version":before,"set":{"target":"20"},"unset":[]}]),
         json!([f["ids"]["P"]]),
     );
     let result = call(&store, "records.mutate", noop);
     assert_eq!(
         result["result"]["result"]["records"][0]["record"]["version"],
-        "1"
+        before
     );
-    assert_eq!(store.page(&request).unwrap_err().code, "query_changed");
-    request.cursor = None;
-    request.cursor = store.page(&request).unwrap().cursor;
+    assert_eq!(store.page(&request).unwrap().records, expected);
     let field_edit = mutation(
         &store,
         1002,
-        json!([{ "op":"update","id":f["ids"]["SeedA"],"if_version":"1","set":{"amount":"11"},"unset":[]}]),
+        json!([{ "op":"update","id":f["ids"]["SeedA"],"if_version":version(&store,&f["ids"]["SeedA"]),"set":{"amount":"11"},"unset":[]}]),
         json!([]),
     );
     assert_eq!(
@@ -287,6 +305,46 @@ fn cursors_bind_query_store_revision_and_survive_unchanged_reopen() {
         "committed"
     );
     assert_eq!(store.page(&request).unwrap_err().code, "query_changed");
+}
+
+#[test]
+fn cursor_contract_scope_survives_unrelated_edits_and_covers_derived_only_changes() {
+    let dir = Directory::new();
+    let store = store(&dir);
+    let (fixture, _) = seed(&store);
+    let mut request = page(&store);
+    request.query.contract = Some(9);
+    request.limit = 1;
+    request.visit_budget = 32;
+    request.cursor = store.page(&request).unwrap().cursor;
+    assert!(request.cursor.is_some());
+    let expected = store.page(&request).unwrap().records;
+    let unrelated = mutation(
+        &store,
+        3000,
+        json!([{"op":"create","id":id(800),"contract":1,"fields":{"c":"2"}}]),
+        json!([]),
+    );
+    assert_eq!(
+        call(&store, "records.mutate", unrelated)["result"]["status"],
+        "committed"
+    );
+    assert_eq!(store.page(&request).unwrap().records, expected);
+    let source = &fixture["ids"]["SeedA"];
+    let derived_change = mutation(
+        &store,
+        3001,
+        json!([{"op":"update","id":source,"if_version":version(&store,source),"set":{"amount":"11"},"unset":[]}]),
+        json!([]),
+    );
+    // The command targets an Entry (8). Its changed derived Prefix (9) must
+    // invalidate the Prefix-only cursor even though no Prefix was authored.
+    assert_eq!(
+        call(&store, "records.mutate", derived_change)["result"]["status"],
+        "committed"
+    );
+    assert_eq!(store.page(&request).unwrap_err().code, "query_changed");
+    store.check_integrity().unwrap();
 }
 
 #[test]
@@ -306,8 +364,8 @@ fn private_identity_and_fixture_paths_are_not_public_operations() {
     for (n, command) in [
         json!({"op":"create","id":id(400),"contract":11,"fields":{"output":output}}),
         json!({"op":"create","id":id(401),"contract":12,"fields":{}}),
-        json!({"op":"update","id":output,"if_version":"1","set":{"at":"99"},"unset":[]}),
-        json!({"op":"delete","id":output,"if_version":"1"}),
+        json!({"op":"update","id":output,"if_version":id(1),"set":{"at":"99"},"unset":[]}),
+        json!({"op":"delete","id":output,"if_version":id(1)}),
     ]
     .into_iter()
     .enumerate()
@@ -323,7 +381,7 @@ fn private_identity_and_fixture_paths_are_not_public_operations() {
     let request = mutation(
         &store,
         2010,
-        json!([{ "op":"update","id":f["ids"]["P"],"if_version":"1","set":{},"unset":[]}]),
+        json!([{ "op":"update","id":f["ids"]["P"],"if_version":version(&store,&f["ids"]["P"]),"set":{},"unset":[]}]),
         json!([output]),
     );
     assert!(

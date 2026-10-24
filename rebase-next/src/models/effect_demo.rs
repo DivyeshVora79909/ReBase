@@ -6,7 +6,7 @@ use crate::{
     local::Store,
     model::{self, Contract, InputField, Prepared, Reference, Visibility},
     native_codec::{Address, Key, decimal, optional_decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, Result},
+    native_slice::{Attempt, Context, Error, Model, ModelChange, Population, Result},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -108,7 +108,7 @@ impl Binding for EffectDemo {
     type Outcome = Outcome;
     type Index = Standard;
     const NAME: &'static str = "effect-demo";
-    const BEHAVIOR: &'static str = "effect-demo-ingress-3";
+    const BEHAVIOR: &'static str = "effect-demo-ingress-4";
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
@@ -163,8 +163,8 @@ impl Binding for EffectDemo {
         _model: &Prepared<Self>,
         _context: Context,
         changes: &[ModelChange<Self>],
-        _meta: &mut Meta,
-        _revision: u64,
+        _population: &mut Population,
+        _revision: Uuid,
         _allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {

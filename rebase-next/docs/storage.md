@@ -1,9 +1,11 @@
 # Storage lifecycle and recovery
 
-The supported backend is one process owning one embedded redb file. Runtime
-writes, derived repairs, indexes, authority and receipts commit atomically.
+The default backend is one process owning one embedded redb file. The same
+persistence boundary also serves explicitly selected FoundationDB and standalone
+SurrealKV targets; see [backend usage and scope](storage-backends.md). Runtime
+writes, derived repairs, indexes, authority, query epochs and receipts commit atomically.
 Network startup checks complete current-state integrity before listening.
-Operator commands below take the file lock; stop the HTTP process first.
+The redb operator commands below take the file lock; stop the HTTP process first.
 The [external-work model](external-effects.md) also persists executions, due
 rows, immutable provider facts, signed inbox events and reserved recovery capacity.
 Effect-bearing restores rotate activation and remain quarantined; explicit
@@ -41,7 +43,8 @@ derives expected records/roles/memberships/routes/queries from complete
 source observations, checks scalar equations and final causal edges including
 zero contributions, and verifies actual AVL order, links, balance, neighbours,
 exact subtree/root summaries and historical floors. It also checks authority
-scopes, complete public/reader indexes, reservations and receipt structure.
+scopes, complete public/reader indexes, separate population/reservation counts,
+bounded query epochs and the exact receipt/slot bijection.
 It calls no tree writer/rotation/settlement/query traversal. It reuses the
 independently tested summary algebra and reader-fold primitive. This is a
 current-state verifier; it cannot reconstruct the historical truth of every old
@@ -62,17 +65,28 @@ context, the operation UUID and the exact normalized request for reconciliation.
 `operations.status` also requires the original context. The HMAC binds actor,
 tenant, store, model and receipt generation; it grants no authorization.
 
-The active window holds at most 1024 receipts. Before it fills, stop the service
-and archive it:
+The active window holds exactly 1,024 possible receipt allocations. Each operation
+hashes its actor/operation key to a starting slot and probes at most 1,024 slots
+for a free one. The slot pointer, bound receipt and all application changes commit
+together. Replay is checked before allocation, so retained operations still replay
+at capacity. There is no global receipt count written on every operation and no
+per-bucket quota that strands capacity. Collisions and near-full probing can cause
+contention; a full window rejects a new operation atomically with `receipt_limit`.
+Before it fills, stop the service and archive it:
 
 ```sh
 rebase-next receipts archive app.redb backups/receipt-window-0001.json
 ```
 
-This first creates and fsyncs a complete backup, then atomically clears receipts
-and advances the operation fence if the backed-up state is still current.
-Domain data, authority and revision remain intact. A racing write makes archive
-fail safely; its consistent backup remains available. Old request contexts now
+This first creates and fsyncs a complete backup, then reads and protects the entire
+application-table image inside the cleanup transaction. Its SHA-256 digest must
+match the published backup. Cleanup atomically clears both receipts and allocation
+slots and advances the numeric operation-context expiry epoch. Domain records,
+root tokens, query epochs, authority and effect evidence remain intact. A racing
+domain, authority or effect write either changes the digest or conflicts with the
+protected cleanup; the backup remains available after rejection. Ordinary
+mutations read the expiry header and do not rewrite it, so archive/reset still
+fence in-flight operations. Old request contexts now
 return `operation_expired`, so loss of a receipt never silently permits its old
 request to run again. Fetch a fresh context **only for a new intended operation**.
 Never update the context of an uncertain old request to bypass that error.
@@ -90,7 +104,7 @@ Read the store UUID from `check` or `inspect`, then supply it explicitly:
 rebase-next reset disposable.redb --expect-store <store-uuid>
 ```
 
-One transaction clears domain records/trees/indexes/reservations/receipts,
+One transaction clears domain records/trees/indexes/reservations/query epochs/receipts/slots,
 preserves configured principals/grants, advances every credential epoch, and
 installs a new store UUID/cursor key. Old tokens, cursors and operation contexts
 are fenced. Issue fresh credentials before reusing the service. This avoids any
@@ -100,8 +114,9 @@ trusted operator tool and has no network RPC counterpart.
 ## Data identity and upgrades
 
 The last verified deployment bundle, 0.6.0, uses store format
-`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.14.0 source
-uses `rebase-store-9`, `native-slice-kv-6`, `rebase-effects-3` and API 3. One store holds one selected
+`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.16.0 source
+uses `rebase-store-10`, `native-slice-kv-7`, `rebase-effects-4` and
+`rebase-local-api-4`. One store holds one selected
 compiled model.
 Model identity hashes the resolved declarations/schemas and the explicit native
 behavior contract revision. Transport formatting and dependency patch bytes do
@@ -112,24 +127,48 @@ Shared semantic changes require bumping every affected binding. Structural/schem
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-In 0.14.0 source, calculation behavior is `rebase-calculation-contract-6`,
-equipment behavior is `equipment-reservations-5`, and invoicing behavior is
-`invoice-assessments-5`. Measurement uses `dimensioned-measurements-3` for native
+Source 0.16.0 separates immutable model/store identity, exact population/reservation
+counts and the numeric authority administration revision. Population is written
+only when its counts change. Domain writes have no global mutation sequence.
+
+| Field | Meaning in API 4 |
+| --- | --- |
+| Record `version` / command `if_version` | Canonical nonnil UUID for equality-only compare-and-set. Changed records get a fresh mutation token; unchanged records retain theirs. |
+| Root `revision` | Canonical nonnil UUID identifying that root's current stored state. |
+| Mutation/cancellation result `revision` | Fresh UUID for the committed operation, retained unchanged by its receipt. A genuine no-op has a new result token while unchanged records/roots keep theirs. |
+| Page/exists `revision` | Lowercase SHA-256 digest of selected reader/contract epochs and, for secured stores, the authority administration revision. |
+| Access `revision` / `if_revision` | Canonical decimal string counter for graph administration only. Domain mutations do not advance it. |
+| Execution `revision` / cancellation `if_revision` | Ordered per-execution decimal-string fence; distinct from the cancellation result UUID. |
+
+Never sort UUID tokens or interpret them as counters. Delete/recreate obtains a
+fresh token, so an earlier record token cannot pass CAS after reuse. `check`,
+`inspect` and backup metadata expose no global domain revision. Cursor digest
+semantics are described in the [operation reference](local-prototype.md#query-and-publication-semantics).
+
+The current behavior identities are `rebase-calculation-contract-7`,
+`equipment-reservations-6`, `invoice-assessments-6`,
+`dimensioned-measurements-4`, `effect-demo-ingress-4` and `quantity-flow-2`.
+All require new compatible stores. These identities describe the changed shared
+coordination contract, not new business formulas.
+
+Historically, in 0.14.0 source, calculation behavior was `rebase-calculation-contract-6`,
+equipment behavior was `equipment-reservations-5`, and invoicing behavior was
+`invoice-assessments-5`. Measurement used `dimensioned-measurements-3` for native
 ObservationReport and LatestObservation queries with authored-unit dependencies.
-Effect-demo owns `effect-demo-ingress-3`; its action and typed outcome schema
-also participate in its model identity. Calculation, equipment, invoicing and
-effect-demo identities match 0.13.0. Family-owned query results preserve existing
-Standard and report bytes; measurement's changed model identity rejects earlier measurement
-stores even though the shared store/codec versions remain unchanged.
-Store format 9 adds checked inbox rows and explicit worker modes. API 3 replaces
-the effect status boolean with `worker_mode`; the capability catalog declares
+Effect-demo used `effect-demo-ingress-3`; its action and typed outcome schema
+also participated in its model identity. Calculation, equipment, invoicing and
+effect-demo identities matched 0.13.0. Family-owned query results preserved
+Standard and report bytes; measurement's changed model identity rejected earlier measurement
+stores even though the shared store/codec versions remained unchanged.
+Store format 9 added checked inbox rows and explicit worker modes. API 3 replaced
+the effect status boolean with `worker_mode`; the capability catalog declared
 the disabled default. Format 8 added checked facts, leases, application state and bounded due
 sweeps. Format 7 introduced effect tables and tagged operation receipts.
 The 0.8 native index codes, generic keys and independent subtree spans required
-format 6. The 0.9 publication inputs reuse existing Direct route bytes and
-attempt-local values: only invoicing's model identity changes. Other 0.8 models
-retain their identities. The typed read ranges and augmented reverse-route node
-layout introduced in 0.7.0 remain in use. The source rejects older formats,
+format 6. The 0.9 publication inputs reused existing Direct route bytes and
+attempt-local values: only invoicing's model identity changed. Other 0.8 models
+retained their identities. The typed read ranges and augmented reverse-route node
+layout introduced in 0.7.0 remain in use. Those source versions rejected older formats,
 including 0.7.0 format 5 and 0.6.0 format 4, without migrating them. Keep each
 matching binary and its backups together. The 0.6.0 bundle remains the last
 verified deployment; source checkpoint acceptance does not certify a new bundle.
@@ -141,7 +180,7 @@ Measurement allows 64 public sources and no private outputs or reservations.
 Backup remains capped at 64 MiB, and the active receipt window remains 1,024
 operations.
 
-Format 2 through 8 stores and their backups intentionally reject in 0.14.0. The
+Format 2 through 9 stores and their backups intentionally reject in 0.16.0. The
 runtime header is checked before native metadata decoding, so an old store
 reports a model/format mismatch rather than being reinterpreted. There is no
 silent migration, automatic reset or cross-model restore. Restore a backup only

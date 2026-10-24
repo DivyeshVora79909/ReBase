@@ -12,7 +12,7 @@ use rebase_semantic_proof::{
     },
     mutation::reconcile_member,
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, Result},
+    native_slice::{Attempt, Context, Error, Model, ModelChange, Population, Result},
     routes,
     server::{self, ServerConfig},
     time_range::TimeRange,
@@ -209,8 +209,8 @@ impl Binding for ExactEntries {
         _model: &Prepared<Self>,
         _context: Context,
         changes: &[ModelChange<Self>],
-        _meta: &mut Meta,
-        _revision: u64,
+        _population: &mut Population,
+        _revision: Uuid,
         _allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {

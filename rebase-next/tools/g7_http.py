@@ -25,11 +25,11 @@ import uuid
 
 import client
 from capacity import snapshot
-from harness import Backend, expect_error, latency, require, write_private
+from harness import Backend, backup_image, check_archive, expect_error, latency, require, write_private
 
 
 TABLES = {"native_kv", "public_records", "reader_records", "authority",
-          "operations", "local_runtime", "effect_executions", "effect_due",
+          "operations", "receipt_slots", "query_epochs", "local_runtime", "effect_executions", "effect_due",
           "effect_facts", "effect_inbox", "effect_runtime"}
 
 
@@ -253,8 +253,8 @@ def run(backend, rounds, clients):
         require(root_sum(root) == "10", "Receipt archive changed business root")
         backend.stop()
         archived = backend.cli("check", restored)
-        require(archived["receipts"] == 0 and archived["revision"] == integrity["revision"],
-                "Archive changed revision or retained receipts")
+        require(archived["receipts"] == 0, "Archive retained receipts")
+        check_archive(restored_image, backup_image(backend, "after-archive"))
         reset = backend.cli("reset", restored, "--expect-store", session["store"])
         empty = backend.cli("check", restored)
         require(reset["store"] != session["store"] and empty["records"] == 0 and empty["receipts"] == 0,
@@ -274,13 +274,14 @@ def run(backend, rounds, clients):
         "process_restart": {"signal": "SIGKILL after acknowledged commits", "all_tables_equal": True,
             "table_count": len(TABLES), "image_sha256": digest(stable), "same_id_status_replay": True},
         "lifecycle": {"fresh_restore_all_tables_equal": True, "archive_original_context_expired": True,
-            "reset_identity_changed": True, "reset_integrity": empty},
+            "archive_complete_state_preserved": True, "reset_identity_changed": True, "reset_integrity": empty},
         "measurement_scope": "Client wall time includes session checks; fresh plan preparation excluded. "
             "Submission barrier does not force transaction overlap. This local setup establishes no production capacity.",
         "remaining_fault_gaps": ["No storage-native commit acknowledgement injection through ordinary RPC.",
             "No database-server, replicated-node, disk or power-loss fault is injected.",
             "Before-forward absence is an intentional unsent mutation, not a native uncertain commit abort.",
-            "Global revision/receipt keys may cause conservative conflicts; no disjoint-root scale claim.",
+            "Population/reservation quotas, shared readers/business roots and adapter guards still coordinate; "
+            "native G7.5 schedules own the bounded disjoint-root claim.",
             "Effect facts/inbox/application and transaction-size/lifetime boundaries belong to native controls."]}
 
 

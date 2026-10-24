@@ -1,4 +1,46 @@
-# Compact context — 2026-10-24
+# Compact context — 2026-10-25
+
+**G7.0–G7.5 complete; next: G7.6 final cross-adapter closeout.**
+Continue on existing `main` and commit/push each verified checkpoint. Read
+[G7.5](research/50-scoped-coordination-result.md) and its
+[evidence](research/evidence/2026-10-25-g75-scoped-coordination.json), then the
+[G7 contract](research/45-storage-adapter-plan.md). Source/store/native/effect/API
+are 0.16.0 /10 /7 /4 /4; every binding behavior identity advances. No migration.
+
+Immutable Meta, conditionally written Population, UUID record/root/result tokens,
+scoped reader/contract cursor epochs and 1,024 independently guarded receipt
+slots replace incidental global domain/receipt writes. Archive compares the
+complete digest inside cleanup. Authority no-op CAS uses a same-value authority
+write to validate FoundationDB reads while preserving its counter and cursors.
+Both independent populated-root edits commit with no common application write,
+no Meta/Population/header write and no range scan. Exact population changes,
+business roots, query partitions and effect counters remain coordination points.
+
+Accepted: 153 distinct native checks across 13 harnesses; 29 real FoundationDB
+coordination/lifecycle controls; 58 shared application controls; optimized
+secured HTTP (32 competing attempts, eight commits, 24 confirmed conflicts),
+thirteen-table rollback/restart/restore, original-ID outcomes and archive expiry.
+Four stale native expectations and one authority-initialization fixture were
+corrected with their failed trials retained. Formatting, Clippy and default
+all-target compilation pass. Earlier population and V1 campaigns were not rerun.
+
+**Exact continuation:** use retained `target/g75-accepted/rebase-next` and the
+`g7_coordination`, `g7_application`, `g7_storage` probes there. Run coordination,
+application and optimized HTTP on fresh SurrealKV and redb targets, plus the
+final shared byte suite on all three adapters. Reuse accepted G7.5 FoundationDB
+application/coordination/HTTP evidence unless the relevant source changes.
+Publish G7.6 formats, dependencies, exact supported guards, complete-state
+recovery and remaining fault gaps; update continuation docs and commit/push.
+
+One Cargo owner, two jobs, incremental off, cache `target/verification-build`.
+The owned FoundationDB 7.3.77 server is running for G7.6. Its cluster/client/server
+are under `target/g7-environment`; both FDB_CLIENT_LIB_PATH and LD_LIBRARY_PATH
+use `target/g7-environment/root/usr/lib`. A feature-enabled executable needs the
+native library even for redb. Stop the owned helper at final closeout with
+`python3 -B tools/fdb_cluster.py stop`. No application or Cargo process is active.
+TiKV, G6, G8 and frontend remain deferred; the last packaged release is 0.6.0.
+
+**Historical G7.4 handoff, 2026-10-24:**
 
 **Paused cleanly after G7.4; G7.0–G7.4 complete. Next: G7.5, then G7.6.**
 The user requested review of incoming `643c8f6` and continuation on existing

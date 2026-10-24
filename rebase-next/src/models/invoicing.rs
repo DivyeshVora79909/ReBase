@@ -14,7 +14,7 @@ use crate::{
         PublicationSlot, PublishedField, QueryDeclaration, Reference, RootDeclaration, Visibility,
     },
     native_codec::{Address, Key, StoredValue, decimal, uuid_text},
-    native_slice::{Attempt, Context, Error, Meta, Model, ModelChange, ModelRecord, Result},
+    native_slice::{Attempt, Context, Error, Model, ModelChange, ModelRecord, Population, Result},
     routes,
     time_range::TimeRange,
     tree,
@@ -800,7 +800,7 @@ impl Binding for Invoicing {
     type Derived = Derived;
     type Outcome = ();
     const NAME: &'static str = "invoice-assessments";
-    const BEHAVIOR: &'static str = "invoice-assessments-5";
+    const BEHAVIOR: &'static str = "invoice-assessments-6";
     fn declarations() -> Result<Vec<Contract>> {
         declarations()
     }
@@ -841,8 +841,8 @@ impl Binding for Invoicing {
         model: &Prepared<Self>,
         context: Context,
         changes: &[ModelChange<Self>],
-        meta: &mut Meta,
-        revision: u64,
+        population: &mut Population,
+        revision: Uuid,
         allocate: &mut dyn FnMut() -> Result<Uuid>,
     ) -> Result<()> {
         for change in changes {
@@ -935,7 +935,7 @@ impl Binding for Invoicing {
                 )?;
             }
         }
-        crate::causal::settle(ws, model, context, changes, meta, revision, allocate)?;
+        crate::causal::settle(ws, model, context, changes, population, revision, allocate)?;
         // Only an authored assessment timestamp can introduce a duplicate.
         // Its final managed node's neighbours decide uniqueness in bounded work.
         for change in changes {

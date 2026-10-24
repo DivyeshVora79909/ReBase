@@ -194,6 +194,87 @@ fn direct_group_access_inherits_grants_without_granting_siblings() {
 }
 
 #[test]
+fn reader_partition_cursors_survive_disjoint_changes_and_fence_both_sides_of_moves() {
+    let dir = Directory::new();
+    let model = Arc::new(PreparedModel::load().unwrap());
+    let admin = LocalStore::create_secured(
+        dir.file(),
+        model.clone(),
+        Context {
+            tenant: id(1),
+            actor: id(2),
+        },
+    )
+    .unwrap();
+    replace(&admin, graph()).unwrap();
+    let left = admin.session(id(4), 0).unwrap();
+    let right = admin.session(id(5), 0).unwrap();
+    let authority_revision = admin.access_graph(model.identity()).unwrap()["revision"].clone();
+    for (owner, account, operation) in [(&left, 10, 100), (&right, 20, 101)] {
+        owner
+            .mutate(&mutation(
+                owner,
+                operation,
+                json!([{"op":"create","id":id(account),"contract":4,"fields":{"native_unit":1}}]),
+                json!([]),
+            ))
+            .unwrap();
+    }
+    admin.mutate(&mutation(&admin, 102, json!([
+        {"op":"create","id":id(40),"contract":8,"fields":{"account":id(10),"at":"0","amount":"1"}},
+        {"op":"create","id":id(41),"contract":8,"fields":{"account":id(10),"at":"1","amount":"1"}},
+        {"op":"create","id":id(50),"contract":8,"fields":{"account":id(20),"at":"0","amount":"1"}},
+        {"op":"create","id":id(51),"contract":8,"fields":{"account":id(20),"at":"1","amount":"1"}}
+    ]), json!([]))).unwrap();
+    let cursor = |store: &LocalStore| {
+        let mut request = PageRequest {
+            model: model.identity().into(),
+            query: RecordQuery {
+                contract: Some(8),
+                ..RecordQuery::default()
+            },
+            limit: 1,
+            visit_budget: 64,
+            cursor: None,
+        };
+        request.cursor = store.page(&request).unwrap().cursor;
+        assert!(request.cursor.is_some());
+        request
+    };
+    let left_cursor = cursor(&left);
+    let expected = left.page(&left_cursor).unwrap().records;
+    let right_version = admin
+        .get(model.identity(), id(50))
+        .unwrap()
+        .unwrap()
+        .version;
+    admin.mutate(&mutation(&admin, 103,
+        json!([{"op":"update","id":id(50),"if_version":right_version,"set":{"amount":"2"},"unset":[]}]),
+        json!([]),
+    )).unwrap();
+    assert_eq!(left.page(&left_cursor).unwrap().records, expected);
+    assert_eq!(
+        admin.access_graph(model.identity()).unwrap()["revision"],
+        authority_revision
+    );
+    let right_cursor = cursor(&right);
+    let moving = admin
+        .get(model.identity(), id(40))
+        .unwrap()
+        .unwrap()
+        .version;
+    admin.mutate(&mutation(&admin, 104,
+        json!([{"op":"update","id":id(40),"if_version":moving,"set":{"account":id(20)},"unset":[]}]),
+        json!([]),
+    )).unwrap();
+    assert_eq!(left.page(&left_cursor).unwrap_err().code, "query_changed");
+    assert_eq!(right.page(&right_cursor).unwrap_err().code, "query_changed");
+    assert!(left.get(model.identity(), id(40)).unwrap().is_none());
+    assert!(right.get(model.identity(), id(40)).unwrap().is_some());
+    admin.check_integrity().unwrap();
+}
+
+#[test]
 fn real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts() {
     let dir = Directory::new();
     let model = Arc::new(PreparedModel::load().unwrap());
@@ -250,7 +331,7 @@ fn real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts() 
     let denied = mutation(
         &child,
         102,
-        json!([{"op":"update","id":id(11),"if_version":"0","set":{"amount":"-999"},"unset":[]}]),
+        json!([{"op":"update","id":id(11),"if_version":id(999),"set":{"amount":"-999"},"unset":[]}]),
         json!([]),
     );
     assert_eq!(child.mutate(&denied).unwrap_err().code, "forbidden"); // authority before version/error details

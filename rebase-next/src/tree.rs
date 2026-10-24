@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     binding::Binding,
     index::{IndexCode, KeyRange, NativeIndex, Selected},
-    native_codec::{Address, Key, StoredValue, decimal, uuid_text},
+    native_codec::{Address, Key, StoredValue, uuid_text},
     native_slice::{Attempt, Error, Result},
     time_range::{TimeBound, TimeRange},
 };
@@ -43,12 +43,12 @@ pub struct Root<I: NativeIndex> {
     pub height: u16,
     pub span: Option<Span<I::Key>>,
     pub summary: I::Summary,
-    #[serde(with = "decimal")]
-    pub revision: u64,
+    #[serde(with = "uuid_text")]
+    pub revision: Uuid,
 }
 
 impl<I: NativeIndex> Root<I> {
-    pub fn empty(kind: IndexCode, revision: u64) -> Result<Self> {
+    pub fn empty(kind: IndexCode, revision: Uuid) -> Result<Self> {
         Ok(Self {
             kind,
             head: None,

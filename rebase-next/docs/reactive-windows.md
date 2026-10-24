@@ -3,8 +3,8 @@
 The 0.7.0 source adds exact financial time windows to causal reads and the
 authorized `roots.read` operation. The source tree is ahead of the last verified
 deployment bundle: that bundle is 0.6.0 and uses store/native codec format 4.
-The current 0.8.0 source uses format 6; see [storage upgrades](storage.md#data-identity-and-upgrades)
-before opening a store.
+Current source 0.16.0 uses store 10 /native codec 7 /effect codec 4 /API 4;
+see [storage upgrades](storage.md#data-identity-and-upgrades) before opening a store.
 
 ## Wire form
 
@@ -58,7 +58,8 @@ with the resolved model identity returned by `model public`:
 }
 ```
 
-The response includes `owner`, `slot`, root `revision` and `store_revision`.
+The response includes `owner`, `slot` and an opaque UUID root `revision`.
+Compare revision tokens only for equality; no global store revision is returned.
 Its `value` contains `count`, `sum`, `complete_min`, `first` and `last`; amounts
 and timestamps are decimal strings, while `first` and `last` are null
 for an empty result. The server applies the same current root-owner and reader
@@ -99,10 +100,11 @@ typed query-result variants. Ordered query results remain exact `i128` sums.
 
 ## Store compatibility
 
-G4b introduced these semantics in source 0.7.0 / format 5. The current
-0.8.0 native-index extraction uses `rebase-store-6` and `native-slice-kv-6`,
-with `rebase-calculation-contract-6`, `equipment-reservations-5` and
-`invoice-assessments-4`. Generic native payloads and subtree spans change
-format 5; the earlier range semantics and reverse-route caches remain in use.
+G4b introduced these semantics in source 0.7.0 /format 5; G4c's source 0.8.0
+native-index extraction advanced to format 6. Current source 0.16.0 uses
+store 10 /native codec 7 /effect codec 4 /API 4, with UUID revisions and scoped
+cursor epochs. Its behavior contracts include `rebase-calculation-contract-7`,
+`equipment-reservations-6` and `invoice-assessments-6`. The earlier financial
+range semantics and reverse-route caches remain in use.
 There is no implicit migration from older stores. Preserve matching binaries
 and backups; the verified 0.6.0 bundle remains the last deployment artifact.
