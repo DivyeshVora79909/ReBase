@@ -30,28 +30,31 @@ fn main() -> Result<()> {
         .map_err(|e| Error::new("runtime", e.to_string()))?;
     let result = runtime.block_on(async move {
         tokio::task::spawn_blocking(move || {
-            storage::application_checks::run(
-                |family| match backend.as_str() {
-                    "redb" => {
-                        let path = std::path::Path::new(&location).join(format!("{family}.redb"));
-                        if path.exists() {
-                            storage::Database::open(path)
-                        } else {
-                            storage::Database::create(path)
-                        }
+            let factory = |family: &str| match backend.as_str() {
+                "redb" => {
+                    let path = std::path::Path::new(&location).join(format!("{family}.redb"));
+                    if path.exists() {
+                        storage::Database::open(path)
+                    } else {
+                        storage::Database::create(path)
                     }
-                    #[cfg(feature = "foundationdb")]
-                    "foundationdb" => storage::foundationdb::connect(
-                        Some(&location),
-                        format!("{namespace}/{family}").as_bytes(),
-                    ),
-                    #[cfg(feature = "surrealkv")]
-                    "surrealkv" => {
-                        storage::surrealkv::connect(std::path::Path::new(&location).join(family))
-                    }
-                    _ => Err(Error::new("invalid_input", "backend feature not compiled")),
-                },
-                concurrent,
+                }
+                #[cfg(feature = "foundationdb")]
+                "foundationdb" => storage::foundationdb::connect(
+                    Some(&location),
+                    format!("{namespace}/{family}").as_bytes(),
+                ),
+                #[cfg(feature = "surrealkv")]
+                "surrealkv" => {
+                    storage::surrealkv::connect(std::path::Path::new(&location).join(family))
+                }
+                _ => Err(Error::new("invalid_input", "backend feature not compiled")),
+            };
+            let application = storage::application_checks::run(factory, concurrent)?;
+            let effects = rebase_semantic_proof::effects::conformance::run(factory)?;
+            let predicates = storage::concurrency_checks::run(factory, concurrent)?;
+            Ok::<_, Error>(
+                json!({"application":application,"effects":effects,"predicates":predicates}),
             )
         })
         .await

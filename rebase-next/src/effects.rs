@@ -1,6 +1,7 @@
 //! Bounded immutable intent, committed by the ordinary domain transaction.
 //! Provider calls are owned by the worker and never occur in a transaction.
 mod application;
+pub mod conformance;
 pub mod fake;
 pub(crate) mod inbox;
 mod state;

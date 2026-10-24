@@ -9,6 +9,7 @@ use std::{
 };
 
 pub mod application_checks;
+pub mod concurrency_checks;
 pub mod conformance;
 #[cfg(feature = "foundationdb")]
 pub mod foundationdb;
