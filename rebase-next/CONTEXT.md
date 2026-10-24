@@ -1,31 +1,36 @@
 # Compact context — 2026-10-25
 
-**Current: G8 preparation complete; implementation has not started.** The user
-requested the latest pull, verification and an optimal documented goal for a
-separate implementing agent. Pulled `8e90a0c` (G7.6), following G7.5 `86c61fe`.
-All 139 accepted source/tool fingerprints match; the three previously omitted
-modules are committed and the backup helper reads complete backup bytes rather
-than the 128 KiB plan reader. Two focused Python archive-oracle controls pass.
-No Rust, database, population or long-running campaign was rerun for this
-documentation-only task. Historical source/evidence are unchanged.
+**Current: G8.0 verified; next G8.1–G8.5.** The user explicitly assigned the
+implementation on existing `main`, requested local checkpoint/subcheckpoint
+commits only and **no pushes**. After G8.0, G8.1–G8.4 may be delegated in parallel
+with exact file ownership. Keep one Cargo owner and serialize host/cluster load.
+Read [the plan](research/52-workload-deployment-plan.md),
+[current results](research/53-workload-deployment-result.md) and
+[the developer guide](docs/workloads.md).
 
-**Exact next goal, when assigned:** implement G8.0–G8.5 from
-[the workload/deployment plan](research/52-workload-deployment-plan.md).
-It defines shared bounded inputs/observers, default 300-second seeded CRUD and
-continuous-PID memory windows, separate real receipt/archive cycles, overload/
-backpressure, owned database outage/recovery, extracted release and closeout.
-The plan includes delegation boundaries and a ready continuation prompt.
-No G8 checkpoint is yet implemented or accepted. Preparing the plan does not
-authorize starting its runtime implementation in this documentation turn.
+G8.0 provides `tools/g8.py`, ordinary `g8_workload` and `g8_observe` functions,
+explicit feasible profiles, bounded private evidence streams and independent
+resource/source checks. Short eight-second CLI runs pass on all three adapters;
+explicit function composition has equivalent checks. Twenty-one new Python and
+six existing client controls pass. Original G7 core/Cargo fingerprints and the
+retained optimized binary match. Client errors now expose observed HTTP status;
+wire/store/retry behavior is unchanged. The declared host budgets and two failed
+fixture trials are recorded in the G8.0 evidence. No 300-second run, archive-cycle,
+overload, database-outage or current release acceptance is claimed yet.
 
-Preserve accepted G7. Reuse matching evidence and ordinary APIs; no health
-endpoint, configuration DSL, monitoring service or generic fixture engine.
-Keep queues, observations, artifacts and time explicit; no unknown operation is
-discarded or given a fresh context to hide its outcome. Current count/inventory/
-backup bounds still prevent flag-only million-record tests. G6, TiKV, frontend,
-live providers, million-record expansion and unprovided replicated/power-loss
-infrastructure remain deferred. Local checkpoint commits on main suffice; push
-normally when credentials are available. One Cargo owner for future source work.
+**Exact next work:** paced 300-second equipment PID epochs, 30-second warmup and
+cooldown, action floors and two real full receipt/archive cycles per adapter;
+then finite overload, verified owned FDB service outage/recovery, default-redb
+and feature-enabled extracted release, evidence closeout. Keep original operation
+IDs/contexts and resolve work before archiving. `target/g75-accepted/rebase-next`
+remains the matching optimized runtime. Use `LD_LIBRARY_PATH` pointing at
+`target/g7-environment/root/usr/lib` even for redb with that executable. Short
+runs are in `target/g80-*`; the owned FDB helper is running for upcoming G8
+verification. No application or Cargo process remains at this checkpoint.
+The packaged release remains historical 0.6 until G8.4 acceptance.
+
+G6, TiKV, frontend, live providers, million-record expansion and unprovided
+native commit-ack, replicated failover and power-loss infrastructure stay deferred.
 
 **Historical G7 closeout; accepted baseline for G8:**
 

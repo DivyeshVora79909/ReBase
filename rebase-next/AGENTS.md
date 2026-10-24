@@ -5,22 +5,26 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**Active scope: G8 preparation only, 2026-10-25.** The user requested the latest
-pull, verification and a documented plan for a separate implementing agent.
-Read [G8 workload/deployment checkpoints](research/52-workload-deployment-plan.md)
-and the top of `CONTEXT.md`. G8.0–G8.5 are prepared, not implemented or accepted.
-Default churn measurement is 300 seconds; continuous-process memory evidence
-and offline receipt/archive epochs are distinct. Reuse G7 checks and ordinary
-functions. Add no health API, test DSL or general framework. Keep million-record
-envelope expansion, G6, TiKV and frontend deferred. Do not begin implementation
-until the user supplies that goal; the suggested prompt is in paper 52.
+**Active scope: authorized G8.0–G8.5 implementation, 2026-10-25.** Read
+[the workload/deployment plan](research/52-workload-deployment-plan.md),
+[the current results](research/53-workload-deployment-result.md) and the top of
+`CONTEXT.md`. G8.0 is implemented and verified; G8.1–G8.5 remain to be accepted.
+The user explicitly allows parallel delegated G8.1/G8.2/G8.3/G8.4 work after
+G8.0. Assign exact file ownership, keep one Cargo owner (two jobs, incremental
+off), and serialize competing measurements on the owned host/cluster. Commit
+verified checkpoints or subcheckpoints on existing `main`; **do not push**.
+Default churn measurement is 300 seconds; continuous-PID memory evidence and
+offline receipt/archive epochs are distinct. Reuse matching G7 evidence and
+ordinary composable functions. Add no health API, DSL or general framework.
+Keep G6, TiKV, frontend, live providers, million-record envelope expansion and
+unprovided native commit-ack/replicated/power-loss infrastructure deferred.
 
 **Accepted baseline: G7.0–G7.6, 2026-10-25.** Read
 [the final result and stop boundary](research/51-storage-conformance-result.md)
 and the top of `CONTEXT.md`. FoundationDB, redb and standalone SurrealKV use
 one persistence boundary with executed application and recovery evidence.
-TiKV, G6 accounting, G8 implementation and frontend remain deferred; G8
-preparation is selected above. The user confirmed that local commits
+TiKV, G6 accounting and frontend remain deferred; G8 implementation is
+selected above. The user confirmed that local commits
 on existing `main` are enough; G7.5/G7.6 do not require a push.
 For future authorized implementation, use small delegated tasks with exact file
 ownership, one Cargo owner, cached artifacts and incremental off. Preserve
@@ -81,7 +85,7 @@ Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
 Within the user's active scope, commit each verified checkpoint on existing
-`main`. G7 is complete; G8 implementation awaits its explicit goal. Do not
+`main`. G7 is complete; G8 implementation is explicitly assigned above. Do not
 automatically start G6, TiKV or frontend.
 Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old

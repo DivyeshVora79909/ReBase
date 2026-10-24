@@ -19,8 +19,9 @@ PLAN_FORMAT = "rebase-operation-plan-1"
 
 
 class ClientError(Exception):
-    def __init__(self, kind, message):
+    def __init__(self, kind, message, *, http_status=None):
         self.kind = kind
+        self.http_status = http_status
         super().__init__(message)
 
 
@@ -124,34 +125,34 @@ def call(url, token, method, params, *, timeout=20):
             expected_length = response.headers.get("Content-Length")
             body = response.read(MAX_RESPONSE_BYTES + 1)
         if 300 <= status < 400:
-            raise ClientError("redirect_rejected", "RPC redirects are not followed")
+            raise ClientError("redirect_rejected", "RPC redirects are not followed", http_status=status)
         if status == 401:
-            raise ClientError("unauthenticated", "Credential rejected")
+            raise ClientError("unauthenticated", "Credential rejected", http_status=status)
         if status == 429:
-            raise ClientError("busy", "Server admission is full; no automatic retry")
+            raise ClientError("busy", "Server admission is full; no automatic retry", http_status=status)
         if len(body) > MAX_RESPONSE_BYTES:
-            raise ClientError("outcome_unknown", "Response exceeds the client limit; retain any saved mutation plan")
+            raise ClientError("outcome_unknown", "Response exceeds the client limit; retain any saved mutation plan", http_status=status)
         if expected_length is not None and (not expected_length.isdigit() or int(expected_length) != len(body)):
-            raise ClientError("outcome_unknown", "Incomplete response; retain any saved mutation plan")
+            raise ClientError("outcome_unknown", "Incomplete response; retain any saved mutation plan", http_status=status)
         try:
             value = loads(body)
         except ClientError as error:
-            raise ClientError("outcome_unknown", "Response was not valid JSON; retain any saved mutation plan") from error
+            raise ClientError("outcome_unknown", "Response was not valid JSON; retain any saved mutation plan", http_status=status) from error
         if (not isinstance(value, dict) or value.get("jsonrpc") != "2.0"
                 or value.get("id") != request_id
                 or ("result" in value) == ("error" in value)):
-            raise ClientError("outcome_unknown", "Invalid RPC response; retain any saved mutation plan")
+            raise ClientError("outcome_unknown", "Invalid RPC response; retain any saved mutation plan", http_status=status)
         if "error" in value:
             error = value["error"]
             if not isinstance(error, dict) or not isinstance(error.get("data"), dict):
-                raise ClientError("outcome_unknown", "Invalid RPC error response")
+                raise ClientError("outcome_unknown", "Invalid RPC error response", http_status=status)
             kind = error["data"].get("kind")
             message = error.get("message")
             if not isinstance(kind, str) or not isinstance(message, str):
-                raise ClientError("outcome_unknown", "Invalid RPC error response")
-            raise RpcError(kind, message)
+                raise ClientError("outcome_unknown", "Invalid RPC error response", http_status=status)
+            raise RpcError(kind, message, http_status=status)
         if status != 200:
-            raise ClientError("outcome_unknown", f"Unexpected HTTP status {status}; retain any saved mutation plan")
+            raise ClientError("outcome_unknown", f"Unexpected HTTP status {status}; retain any saved mutation plan", http_status=status)
         return value["result"]
     except (OSError, urllib.error.URLError, http.client.HTTPException) as error:
         # The peer may have committed even if connect/read/close failed locally.

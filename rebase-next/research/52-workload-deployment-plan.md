@@ -1,6 +1,8 @@
 # G8 workload and deployment assurance
 
-**Prepared 2026-10-25; implementation and acceptance have not run.** The user
+**Prepared 2026-10-25; implementation is now explicitly assigned.**
+[Current checkpoint results](53-workload-deployment-result.md) track execution;
+the preparation review below remains historical. The user
 selected preparation so another agent can implement this bounded goal. G7.0–G7.6
 remain [accepted](51-storage-conformance-result.md). This plan supplies the next
 implementation checkpoints; preparing it does not select or execute them.

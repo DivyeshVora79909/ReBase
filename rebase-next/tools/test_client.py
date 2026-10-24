@@ -89,6 +89,7 @@ class ClientControls(unittest.TestCase):
         with self.assertRaises(client.RpcError) as caught:
             client.call(self.url + "expired", "test-token", "operations.status", request)
         self.assertEqual(caught.exception.kind, "operation_expired")
+        self.assertEqual(caught.exception.http_status, 200)
         self.assertEqual(self.server.calls[-1][1]["params"], request)
 
     def test_private_plan_is_complete_and_never_overwrites(self):

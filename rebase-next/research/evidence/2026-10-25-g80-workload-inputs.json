@@ -1,0 +1,1568 @@
+{
+  "baseline_commit": "7333f6af139631f9de69a05ada14447d2336d4c9",
+  "cargo_owner": "root; no Cargo build at G8.0",
+  "checkpoint": "G8.0",
+  "controls": {
+    "actual_missing_libfdb_c_preflight": {
+      "exit": 1,
+      "expected": "failed clearly"
+    },
+    "composition_vs_cli_equivalent_checks": true,
+    "existing_client": 6,
+    "negative_classes": [
+      "unknown/nonfinite/infeasible configuration",
+      "missing backend/native SDK",
+      "incomplete/missing JSONL",
+      "RSS/HWM, FD, file growth budgets",
+      "injected excessive constant-inventory cooldown growth",
+      "PID switch/sample gaps"
+    ],
+    "new_python": 21
+  },
+  "date": "2026-10-25",
+  "defaults": {
+    "budgets": {
+      "app_fds": 256,
+      "app_rss_kib": 524288,
+      "app_threads": 96,
+      "artifacts_bytes": 134217728,
+      "controller_fds": 128,
+      "controller_rss_kib": 524288,
+      "controller_threads": 32,
+      "cooldown_growth_kib": 16384,
+      "database_fds": 512,
+      "database_rss_kib": 1048576,
+      "database_threads": 64,
+      "db_cooldown_growth_kib": 65536,
+      "observer_ms": 250.0,
+      "physical_growth_bytes": 536870912,
+      "sample_gap_seconds": 3.0,
+      "samples_bytes": 8388608,
+      "trace_bytes": 33554432
+    },
+    "cooldown_seconds": 2.0,
+    "duration_seconds": 8.0,
+    "floors": {
+      "create": 3,
+      "delete": 3,
+      "invalid": 1,
+      "noop": 1,
+      "read": 10,
+      "replay": 1,
+      "stale": 1,
+      "update": 3
+    },
+    "identity_pool": 64,
+    "label": "custom-short-smoke",
+    "max_new_operations": 64,
+    "max_pending": 8,
+    "mutation_rate": 4.0,
+    "preflight": {
+      "backend": "redb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "catalog": {
+        "api": "rebase-local-api-4",
+        "capabilities": {
+          "cursor": "HMAC-SHA256; bound store/model/actor/query and scoped reader/contract epochs plus authority revision; unchanged scopes and true no-ops preserve cursors",
+          "limits": {
+            "commands": 64,
+            "outputs": 8192,
+            "page_limit": 32,
+            "per_contract": {},
+            "public_records": 4096,
+            "receipts": 1024,
+            "request_bytes": 65536,
+            "reservations": 16384,
+            "returning": 32,
+            "visit_budget": 128
+          },
+          "methods": [
+            "model.describe",
+            "records.get",
+            "records.mutate",
+            "operations.status",
+            "records.page",
+            "records.exists",
+            "roots.read",
+            "session.describe",
+            "access.describe",
+            "access.replace"
+          ],
+          "not_observed": "receipt absence does not prove failure",
+          "path": {
+            "filter": "optional public contract and one declared scalar authored-field equality",
+            "name": "records.by_id",
+            "order": "UUID ascending"
+          },
+          "receipt": "required actor/store/generation context from session.describe; same operation ID/content replays; offline archive advances its fence",
+          "transport": "JSON-RPC 2.0 over stdio or authenticated HTTP /rpc; string request IDs; no batches/notifications",
+          "updates": "set replaces complete fields; unset must be empty in this model",
+          "versions": "record/root/mutation revisions are opaque UUID tokens, never ordered; access revision is an administration-only counter; pages return a scoped digest"
+        },
+        "codec": "native-slice-kv-7",
+        "contracts": [
+          {
+            "code": 101,
+            "fields": [
+              {
+                "code": 1,
+                "mutable": false,
+                "name": "unit"
+              }
+            ],
+            "input_schema": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "unit": {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-rebase-binding": "u16_code"
+                }
+              },
+              "required": [
+                "unit"
+              ],
+              "type": "object"
+            },
+            "name": "Pool",
+            "predicate_fields": [
+              "unit"
+            ],
+            "published": [],
+            "roots": [
+              {
+                "kind": 1,
+                "name": "availability",
+                "reads": [
+                  "summary",
+                  "before",
+                  "range"
+                ],
+                "slot": 7
+              }
+            ]
+          },
+          {
+            "code": 205,
+            "fields": [
+              {
+                "code": 1,
+                "mutable": true,
+                "name": "pool"
+              },
+              {
+                "code": 2,
+                "mutable": true,
+                "name": "at"
+              },
+              {
+                "code": 3,
+                "mutable": true,
+                "name": "quantity"
+              }
+            ],
+            "input_schema": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "at": {
+                  "pattern": "^(0|-?[1-9][0-9]*)$",
+                  "type": "string",
+                  "x-rebase-range": [
+                    "-9223372036854775808",
+                    "9223372036854775807"
+                  ]
+                },
+                "pool": {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                  "type": "string",
+                  "x-rebase-binding": "uuid"
+                },
+                "quantity": {
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "type": "string",
+                  "x-rebase-range": [
+                    "0",
+                    "1000000"
+                  ]
+                }
+              },
+              "required": [
+                "at",
+                "pool",
+                "quantity"
+              ],
+              "type": "object"
+            },
+            "name": "Delivery",
+            "predicate_fields": [
+              "pool",
+              "at",
+              "quantity"
+            ],
+            "published": [],
+            "roots": []
+          },
+          {
+            "code": 410,
+            "fields": [
+              {
+                "code": 1,
+                "mutable": true,
+                "name": "pool"
+              },
+              {
+                "code": 2,
+                "mutable": true,
+                "name": "starts"
+              },
+              {
+                "code": 3,
+                "mutable": true,
+                "name": "ends"
+              },
+              {
+                "code": 4,
+                "mutable": true,
+                "name": "requested"
+              },
+              {
+                "code": 5,
+                "mutable": true,
+                "name": "active"
+              }
+            ],
+            "input_schema": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "ends": {
+                  "pattern": "^(0|-?[1-9][0-9]*)$",
+                  "type": "string",
+                  "x-rebase-range": [
+                    "-9223372036854775808",
+                    "9223372036854775807"
+                  ]
+                },
+                "pool": {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                  "type": "string",
+                  "x-rebase-binding": "uuid"
+                },
+                "requested": {
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "type": "string",
+                  "x-rebase-range": [
+                    "0",
+                    "1000000"
+                  ]
+                },
+                "starts": {
+                  "pattern": "^(0|-?[1-9][0-9]*)$",
+                  "type": "string",
+                  "x-rebase-range": [
+                    "-9223372036854775808",
+                    "9223372036854775807"
+                  ]
+                }
+              },
+              "required": [
+                "active",
+                "ends",
+                "pool",
+                "requested",
+                "starts"
+              ],
+              "type": "object"
+            },
+            "name": "Reservation",
+            "predicate_fields": [
+              "pool",
+              "starts",
+              "ends",
+              "requested",
+              "active"
+            ],
+            "published": [
+              {
+                "binding": "i128",
+                "code": 101,
+                "name": "available_before"
+              },
+              {
+                "binding": "i128",
+                "code": 102,
+                "name": "allocated"
+              }
+            ],
+            "roots": []
+          }
+        ],
+        "exact_values": "canonical decimal strings plus native range binding",
+        "indexes": [
+          {
+            "code": 1,
+            "financial": true,
+            "key_schema": {
+              "format": "i64",
+              "pattern": "^(0|-?[1-9][0-9]*)$",
+              "type": "string"
+            },
+            "leaf_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "financial"
+                },
+                "value": {
+                  "format": "i128",
+                  "pattern": "^(0|-?[1-9][0-9]*)$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "value"
+              ],
+              "type": "object"
+            },
+            "name": "financial",
+            "quote": false,
+            "reads": [
+              "summary",
+              "sum",
+              "before",
+              "range"
+            ],
+            "result_schemas": {
+              "before": {
+                "additionalProperties": false,
+                "properties": {
+                  "sum": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sum"
+                ],
+                "type": "object"
+              },
+              "range": {
+                "additionalProperties": false,
+                "properties": {
+                  "complete_min": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  },
+                  "count": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "first": {
+                    "anyOf": [
+                      {
+                        "format": "i64",
+                        "pattern": "^(0|-?[1-9][0-9]*)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last": {
+                    "anyOf": [
+                      {
+                        "format": "i64",
+                        "pattern": "^(0|-?[1-9][0-9]*)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sum": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "complete_min",
+                  "count",
+                  "first",
+                  "last",
+                  "sum"
+                ],
+                "type": "object"
+              },
+              "sum": {
+                "additionalProperties": false,
+                "properties": {
+                  "sum": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sum"
+                ],
+                "type": "object"
+              },
+              "summary": {
+                "additionalProperties": false,
+                "properties": {
+                  "complete_min": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  },
+                  "count": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "first": {
+                    "anyOf": [
+                      {
+                        "format": "i64",
+                        "pattern": "^(0|-?[1-9][0-9]*)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last": {
+                    "anyOf": [
+                      {
+                        "format": "i64",
+                        "pattern": "^(0|-?[1-9][0-9]*)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sum": {
+                    "format": "i128",
+                    "pattern": "^(0|-?[1-9][0-9]*)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "complete_min",
+                  "count",
+                  "first",
+                  "last",
+                  "sum"
+                ],
+                "type": "object"
+              }
+            },
+            "summary_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "financial"
+                },
+                "value": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "boundary_max": {
+                      "anyOf": [
+                        {
+                          "format": "i128",
+                          "pattern": "^(0|-?[1-9][0-9]*)$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "boundary_min": {
+                      "anyOf": [
+                        {
+                          "format": "i128",
+                          "pattern": "^(0|-?[1-9][0-9]*)$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "count": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "first": {
+                      "anyOf": [
+                        {
+                          "format": "i64",
+                          "pattern": "^(0|-?[1-9][0-9]*)$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "last": {
+                      "anyOf": [
+                        {
+                          "format": "i64",
+                          "pattern": "^(0|-?[1-9][0-9]*)$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "max_prefix": {
+                      "format": "i128",
+                      "pattern": "^(0|-?[1-9][0-9]*)$",
+                      "type": "string"
+                    },
+                    "min_prefix": {
+                      "format": "i128",
+                      "pattern": "^(0|-?[1-9][0-9]*)$",
+                      "type": "string"
+                    },
+                    "sum": {
+                      "format": "i128",
+                      "pattern": "^(0|-?[1-9][0-9]*)$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "boundary_max",
+                    "boundary_min",
+                    "count",
+                    "first",
+                    "last",
+                    "max_prefix",
+                    "min_prefix",
+                    "sum"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "value"
+              ],
+              "type": "object"
+            },
+            "time": true
+          }
+        ],
+        "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+        "name": "equipment-reservations",
+        "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+        "schema_formats": "disabled; canonical UUIDs use patterns and native binding"
+      },
+      "changed_tools": [
+        "tools/client.py",
+        "tools/package.py",
+        "tools/test_client.py"
+      ],
+      "core_unchanged": true,
+      "g7_evidence_sha256": "b395ed8bea3fb610247d433fdc3e1097bb7deb7ad2811892a73dadc9d7198ecb",
+      "g7_matching_fingerprints": 136,
+      "host": {
+        "affinity_cpus": 12,
+        "cgroup": {
+          "cpu.max": null,
+          "memory.current": null,
+          "memory.max": null,
+          "pids.max": null
+        },
+        "cpu_count": 12,
+        "memory_kib": {
+          "MemAvailable": 8821504,
+          "MemTotal": 16068736,
+          "SwapFree": 826516,
+          "SwapTotal": 4194300
+        },
+        "platform": "Linux",
+        "process_limits": {
+          "nofile": {
+            "hard": 1048576,
+            "soft": 1048576
+          },
+          "nproc": {
+            "hard": 55429,
+            "soft": 55429
+          }
+        }
+      },
+      "model": {
+        "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+        "store_format": "rebase-store-10",
+        "version": "0.16.0"
+      },
+      "prefix": [
+        "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g75-accepted/rebase-next",
+        "--backend",
+        "redb"
+      ]
+    },
+    "reader_rate": 4.0,
+    "readers": 2,
+    "receipt_preflight": {
+      "fixture": 1,
+      "measurement_max": 64,
+      "reserve": 32,
+      "warmup_max": 5
+    },
+    "receipt_reserve": 32,
+    "sample_seconds": 0.25,
+    "scenario": "equipment",
+    "seed": 8042,
+    "warmup_seconds": 1.0
+  },
+  "failed_trials": [
+    {
+      "path": "target/g80-cli-redb-1/failure.json",
+      "product_change": false,
+      "reason": "Invalid interval was invalid_input; corrected to valid complete-time invariant witness"
+    },
+    {
+      "path": "target/g80-cli-redb-2/failure.json",
+      "product_change": false,
+      "reason": "Native integrity records include private outputs; corrected expected count"
+    }
+  ],
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effects": "rebase-effects-4",
+    "native": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "g7_reuse": {
+    "changed_tool_files": [
+      "tools/client.py",
+      "tools/package.py",
+      "tools/test_client.py"
+    ],
+    "core_cargo_all_match": true,
+    "evidence": "research/evidence/2026-10-25-g76-storage-conformance.json",
+    "native_campaigns_repeated": false,
+    "original_fingerprint_count": 139,
+    "sha256": "b395ed8bea3fb610247d433fdc3e1097bb7deb7ad2811892a73dadc9d7198ecb"
+  },
+  "git_delivery": "local checkpoint commit on main; no push",
+  "next": "G8.1\u2013G8.4 may implement in parallel; serialize measured host loads; G8.5 follows accepted evidence",
+  "runs": [
+    {
+      "backend": "redb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "complete_state": {
+        "image_sha256": "0a5d1762eb6ee756c85acd9ff70f62ee2a30f3498bf6ec699f2d290c4b96fa19",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 6,
+          "receipts": 32,
+          "records": 10,
+          "roots": 2,
+          "rows": 96,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "ac1153da-9b71-4f2d-b930-c7170bbb78d1"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 6,
+          "receipt_slots": 32,
+          "retained_roles": 24
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "coverage": {
+        "achieved": {
+          "create": 9,
+          "delete": 9,
+          "invalid": 2,
+          "noop": 1,
+          "read": 64,
+          "replay": 1,
+          "stale": 1,
+          "update": 9
+        },
+        "requested": {
+          "create": 3,
+          "delete": 3,
+          "invalid": 1,
+          "noop": 1,
+          "read": 10,
+          "replay": 1,
+          "stale": 1,
+          "update": 3
+        },
+        "status": "passed"
+      },
+      "measurement_seconds": 8.0,
+      "path": "target/g80-final-redb/result.json",
+      "receipt_outcomes": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 36,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 6,
+            "receipt_slots": 32,
+            "retained_roles": 24
+          },
+          "required": false,
+          "samples": 8,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 2
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.02,
+              "cpu_last_seconds": 0.35,
+              "open_fds": 12,
+              "peak_rss_kib": 34808,
+              "rss_kib": 34808,
+              "threads": 6
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3688907,
+              84300244
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.6,
+              "cpu_last_seconds": 1.3,
+              "open_fds": 11,
+              "peak_rss_kib": 28304,
+              "rss_kib": 28304,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 32,
+              "retained_roles": 24
+            },
+            "required": false,
+            "samples": 8,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 2
+          },
+          "database_resources": {
+            "reason": "no separate database PID required by this profile",
+            "required": false,
+            "status": "unsupported"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 17.475527012720704,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 110592,
+            "initial_bytes": 114688,
+            "peak_bytes": 225280,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 0.25031718699028715,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.02,
+            "cpu_last_seconds": 0.35,
+            "open_fds": 12,
+            "peak_rss_kib": 34808,
+            "rss_kib": 34808,
+            "threads": 6
+          },
+          "controller": {
+            "cpu_first_seconds": 0.6,
+            "cpu_last_seconds": 1.3,
+            "open_fds": 11,
+            "peak_rss_kib": 28304,
+            "rss_kib": 28304,
+            "threads": 4
+          }
+        },
+        "sample_count": 45,
+        "status": "passed"
+      },
+      "sha256": "2d1a2bbf915ce6ad3aa082823bc92837d7cc8f268ca7187ae1a38a7cbee30ef7",
+      "trace_pairing_checked": 36
+    },
+    {
+      "backend": "surrealkv",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "complete_state": {
+        "image_sha256": "2f9bbd216a09b710e5c6e8c265fc6d046c1f29e93977d953267c17f045055449",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 6,
+          "receipts": 32,
+          "records": 10,
+          "roots": 2,
+          "rows": 96,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "3e381703-60d7-4a3d-8d58-9f411f50d28b"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 6,
+          "receipt_slots": 32,
+          "retained_roles": 24
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "coverage": {
+        "achieved": {
+          "create": 9,
+          "delete": 9,
+          "invalid": 2,
+          "noop": 1,
+          "read": 64,
+          "replay": 1,
+          "stale": 1,
+          "update": 9
+        },
+        "requested": {
+          "create": 3,
+          "delete": 3,
+          "invalid": 1,
+          "noop": 1,
+          "read": 10,
+          "replay": 1,
+          "stale": 1,
+          "update": 3
+        },
+        "status": "passed"
+      },
+      "measurement_seconds": 8.0,
+      "path": "target/g80-cli-surreal/result.json",
+      "receipt_outcomes": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 36,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 6,
+            "receipt_slots": 32,
+            "retained_roles": 24
+          },
+          "required": false,
+          "samples": 8,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 2
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.02,
+              "cpu_last_seconds": 0.37,
+              "open_fds": 22,
+              "peak_rss_kib": 36444,
+              "rss_kib": 36444,
+              "threads": 9
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3671631,
+              84243598
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.44,
+              "cpu_last_seconds": 1.21,
+              "open_fds": 11,
+              "peak_rss_kib": 28192,
+              "rss_kib": 28192,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 32,
+              "retained_roles": 24
+            },
+            "required": false,
+            "samples": 8,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 2
+          },
+          "database_resources": {
+            "reason": "no separate database PID required by this profile",
+            "required": false,
+            "status": "unsupported"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 21.830337995197624,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 283860,
+            "initial_bytes": 24414,
+            "peak_bytes": 308274,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 0.25039532798109576,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.02,
+            "cpu_last_seconds": 0.37,
+            "open_fds": 22,
+            "peak_rss_kib": 36444,
+            "rss_kib": 36444,
+            "threads": 9
+          },
+          "controller": {
+            "cpu_first_seconds": 0.44,
+            "cpu_last_seconds": 1.21,
+            "open_fds": 11,
+            "peak_rss_kib": 28192,
+            "rss_kib": 28192,
+            "threads": 4
+          }
+        },
+        "sample_count": 45,
+        "status": "passed"
+      },
+      "sha256": "56b3dd1b4da9b424bb934a106be59c2d293ff2875d9be71df47eba31291b09f2",
+      "trace_pairing_checked": 36
+    },
+    {
+      "backend": "foundationdb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "complete_state": {
+        "image_sha256": "ba503be3d00be8029fa0c396fe80710098a9504397428547f46cf6b52a1fd97b",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 6,
+          "receipts": 32,
+          "records": 10,
+          "roots": 2,
+          "rows": 96,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "06a905d5-73ef-430b-bb68-0b375018c8c6"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 6,
+          "receipt_slots": 32,
+          "retained_roles": 24
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "coverage": {
+        "achieved": {
+          "create": 9,
+          "delete": 9,
+          "invalid": 2,
+          "noop": 1,
+          "read": 64,
+          "replay": 1,
+          "stale": 1,
+          "update": 9
+        },
+        "requested": {
+          "create": 3,
+          "delete": 3,
+          "invalid": 1,
+          "noop": 1,
+          "read": 10,
+          "replay": 1,
+          "stale": 1,
+          "update": 3
+        },
+        "status": "passed"
+      },
+      "measurement_seconds": 8.0,
+      "path": "target/g80-cli-fdb/result.json",
+      "receipt_outcomes": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 36,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384,
+            "database": 65536
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0,
+            "database": 4.0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 6,
+            "receipt_slots": 32,
+            "retained_roles": 24
+          },
+          "required": false,
+          "samples": 8,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 2
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.03,
+              "cpu_last_seconds": 1.01,
+              "open_fds": 18,
+              "peak_rss_kib": 43744,
+              "rss_kib": 43744,
+              "threads": 7
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3669860,
+              84237768
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.51,
+              "cpu_last_seconds": 1.3,
+              "open_fds": 11,
+              "peak_rss_kib": 28260,
+              "rss_kib": 28260,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384,
+              "database": 65536
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0,
+              "database": 4.0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 32,
+              "retained_roles": 24
+            },
+            "required": false,
+            "samples": 8,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 2
+          },
+          "database_resources": {
+            "budgets": {
+              "open_fds": 512,
+              "rss_kib": 1048576,
+              "threads": 64
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.69,
+              "cpu_last_seconds": 1.38,
+              "open_fds": 22,
+              "peak_rss_kib": 84972,
+              "rss_kib": 84972,
+              "threads": 6
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 15.417677001096308,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 140520,
+            "initial_bytes": 323930678,
+            "peak_bytes": 324071198,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 0.25031738402321935,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.03,
+            "cpu_last_seconds": 1.01,
+            "open_fds": 18,
+            "peak_rss_kib": 43744,
+            "rss_kib": 43744,
+            "threads": 7
+          },
+          "controller": {
+            "cpu_first_seconds": 0.51,
+            "cpu_last_seconds": 1.3,
+            "open_fds": 11,
+            "peak_rss_kib": 28260,
+            "rss_kib": 28260,
+            "threads": 4
+          },
+          "database": {
+            "cpu_first_seconds": 0.69,
+            "cpu_last_seconds": 1.38,
+            "open_fds": 22,
+            "peak_rss_kib": 84972,
+            "rss_kib": 84972,
+            "threads": 6
+          }
+        },
+        "sample_count": 45,
+        "status": "passed"
+      },
+      "sha256": "b5ac5fc2c61f3129c8c6e0d06165a8ff4be0c589ba3d2656479b4f0e32a0f9bd",
+      "trace_pairing_checked": 36
+    },
+    {
+      "backend": "redb",
+      "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+      "complete_state": {
+        "image_sha256": "fda77e4e8b94d5e9aa688e8b716b63558a74de4fb7d562881ff39fd52db18523",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 6,
+          "receipts": 32,
+          "records": 10,
+          "roots": 2,
+          "rows": 96,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "1ccff602-b95c-4430-9970-83889bcf460e"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 6,
+          "receipt_slots": 32,
+          "retained_roles": 24
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "coverage": {
+        "achieved": {
+          "create": 9,
+          "delete": 9,
+          "invalid": 2,
+          "noop": 1,
+          "read": 64,
+          "replay": 1,
+          "stale": 1,
+          "update": 9
+        },
+        "requested": {
+          "create": 3,
+          "delete": 3,
+          "invalid": 1,
+          "noop": 1,
+          "read": 10,
+          "replay": 1,
+          "stale": 1,
+          "update": 3
+        },
+        "status": "passed"
+      },
+      "measurement_seconds": 8.0,
+      "path": "target/g80-composed-redb/result.json",
+      "receipt_outcomes": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 36,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 6,
+            "receipt_slots": 32,
+            "retained_roles": 24
+          },
+          "required": false,
+          "samples": 8,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 2
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.02,
+              "cpu_last_seconds": 0.34,
+              "open_fds": 14,
+              "peak_rss_kib": 35272,
+              "rss_kib": 35272,
+              "threads": 6
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3659988,
+              84203033
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.5,
+              "cpu_last_seconds": 1.19,
+              "open_fds": 11,
+              "peak_rss_kib": 28284,
+              "rss_kib": 28284,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 32,
+              "retained_roles": 24
+            },
+            "required": false,
+            "samples": 8,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 2
+          },
+          "database_resources": {
+            "reason": "no separate database PID required by this profile",
+            "required": false,
+            "status": "unsupported"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 15.071262954734266,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 110592,
+            "initial_bytes": 114688,
+            "peak_bytes": 225280,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 0.2502502829884179,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.02,
+            "cpu_last_seconds": 0.34,
+            "open_fds": 14,
+            "peak_rss_kib": 35272,
+            "rss_kib": 35272,
+            "threads": 6
+          },
+          "controller": {
+            "cpu_first_seconds": 0.5,
+            "cpu_last_seconds": 1.19,
+            "open_fds": 11,
+            "peak_rss_kib": 28284,
+            "rss_kib": 28284,
+            "threads": 4
+          }
+        },
+        "sample_count": 45,
+        "status": "passed"
+      },
+      "sha256": "4af65a45dfe09e7ec0210994aff3397bf5693d9320f899886dfeff6b46207fa2",
+      "trace_pairing_checked": 36
+    }
+  ],
+  "scope": "Bounded inputs/observations/preflight, short real scenarios; no G8.1 or later acceptance",
+  "source_sha256": {
+    "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+    "tools/g8.py": "8964496efcc7cdaf53b64144883e2ceafc7fd0edf221111f08e6f85978a9fbd3",
+    "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+    "tools/g8_workload.py": "ed3712d54cf15df545ab3a627c0ceb00b27fb5a75c7e5988c42e10fa86ac6ecb",
+    "tools/test_client.py": "2f09e89cd60e084dec6c83930db0595e740402924280a92e0aed781c85d266f7",
+    "tools/test_g8_observe.py": "010ef0ef4193f9a349a7ae545fd73e9eca63654fbb29c3727a2151adea54eccc",
+    "tools/test_g8_workload.py": "d9c0e9201059069c7c6bad32384aad94567ae4d521446ec44e31449c11d39893"
+  },
+  "source_version": "0.16.0",
+  "status": "passed"
+}
