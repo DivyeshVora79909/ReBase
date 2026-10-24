@@ -29,6 +29,7 @@ pub mod rpc;
 pub mod security;
 pub mod server;
 pub mod staging;
+pub mod storage;
 pub mod time_range;
 pub mod tree;
 pub mod values;

@@ -1,6 +1,6 @@
 # Compact context — 2026-10-23
 
-**Active: G7.0 preparation, FoundationDB-first storage adapters.**
+**Active: G7.2 shared application persistence; G7.0 and G7.1 complete.**
 The user authorized implementation and checkpoint pushes on 2026-10-24.
 Read [the active contract](research/45-storage-adapter-plan.md). The sequence is
 contract/runtime probes, shared transaction/version coordination, complete
@@ -8,12 +8,15 @@ FoundationDB integration, redb, SurrealKV, and cross-backend closeout. All
 application spaces must commit atomically; no automatic transaction retries by
 default. Unknown commit outcome retains the original operation identity.
 
-**Exact continuation:** finish G7.0 documentation verification/commit, then
-G7.1 real FoundationDB SDK/network/runtime/concurrency probes. Root is the sole
-Cargo owner, two jobs, `CARGO_INCREMENTAL=0`, existing cache
-`target/verification-build`. Contributors own separate adapter files. No backend
-implementation is accepted merely because its source exists. Shared counter and
-cursor changes require their own tests before distributed scalability claims.
+**Exact continuation:** implement G7.2 shared application persistence and scoped
+version coordination. [G7.1 raw storage probes](research/46-storage-runtime-probe.md)
+passed on real FoundationDB 7.3.77 and SurrealKV 1.0.0, plus redb 4.4.0. Storage
+facades/adapters exist but Store/authority/query/effects still use the original
+redb paths; do not mistake probe acceptance for application integration.
+FoundationDB test runtime is live at 127.0.0.1:4500; cluster and lib are under
+`target/g7-environment`. Read the source/log fingerprints in G7.1 evidence.
+Root is the sole Cargo owner, two jobs, incremental off, existing cache
+`target/verification-build`. No automatic transaction retries.
 TiKV, G6 accounting, G8 execution and frontend remain deferred.
 
 **V1.1–V1.5 complete: self-explaining non-accounting verification.**

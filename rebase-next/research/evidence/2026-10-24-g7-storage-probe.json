@@ -1,0 +1,102 @@
+{
+  "base_commit": "ce907b7",
+  "checkpoint": "G7.1",
+  "checks": {
+    "build_owner": "root",
+    "clippy_all_targets_all_storage_features": "passed",
+    "clippy_log": "target/g7-clippy.log",
+    "formatting": "passed",
+    "incremental": false,
+    "jobs": 2
+  },
+  "configuration": {
+    "cluster": "target/g7-environment/fdb.cluster",
+    "native_lib": "target/g7-environment/lib/libfdb_c.so",
+    "native_lib_sha256": "e4ad7fed7b7580bf5f7b38f0a4279d37e698f69d534182e5de0b8beeef6cd1b1",
+    "setup": "Official 7.3.77 Debian packages extracted into ignored target; no system installation. Single-process single-redundancy test cluster, not HA evidence."
+  },
+  "controls": {
+    "fdb": {
+      "backend": "foundationdb",
+      "cases": [
+        "atomic-spaces-and-stable-read-snapshot",
+        "drop-aborts-all-spaces",
+        "absent-point-read-protects-decision",
+        "empty-range-phantom-protects-decision",
+        "disjoint-read-write-attempts-both-commit",
+        "staged-writes-merge-through-64-row-pages"
+      ],
+      "concurrent_schedule_scope": "optimistic snapshot conflicts",
+      "namespace": "rebase-g7-probe-779027ce-ce70-48d6-9301-f8f53cba0988",
+      "scope": "storage/runtime contract only; application integration and unknown-response recovery are later gates",
+      "status": "passed"
+    },
+    "redb": {
+      "backend": "redb",
+      "cases": [
+        "atomic-spaces-and-stable-read-snapshot",
+        "drop-aborts-all-spaces",
+        "staged-writes-merge-through-64-row-pages"
+      ],
+      "concurrent_schedule_scope": "serialized writers; concurrent controls supplied separately",
+      "namespace": "rebase-g7-probe-c6ec47d2-9521-4c53-957f-bb8e175c9564",
+      "scope": "storage/runtime contract only; application integration and unknown-response recovery are later gates",
+      "status": "passed"
+    },
+    "surreal": {
+      "backend": "surrealkv",
+      "cases": [
+        "atomic-spaces-and-stable-read-snapshot",
+        "drop-aborts-all-spaces",
+        "absent-point-read-protects-decision",
+        "empty-range-phantom-protects-decision",
+        "disjoint-read-write-attempts-both-commit",
+        "staged-writes-merge-through-64-row-pages"
+      ],
+      "concurrent_schedule_scope": "optimistic snapshot conflicts",
+      "namespace": "rebase-g7-probe-f6f55337-79d3-46e3-99ee-def49cd4222b",
+      "scope": "storage/runtime contract only; application integration and unknown-response recovery are later gates",
+      "status": "passed"
+    }
+  },
+  "corrections": [
+    "Docker layer registration failed for space; extracted official release packages instead. Upgraded initial 7.3.69 runtime to verified stable Latest 7.3.77 before accepted probe.",
+    "FoundationDB 0.11 required compatible serde_json and uuid updates; existing exact pins prevented dependency resolution.",
+    "Initial FDB namespace incorrectly entered reserved 0xff system range; corrected to user keyspace and reran real controls.",
+    "Compiler caught published SurrealKV API differences; corrected imports and range arity.",
+    "Added validated Surreal point reads, 256 conservative range-guard buckets, and persistent runtime/explicit close; no per-commit threads."
+  ],
+  "date": "2026-10-24",
+  "limitations": [
+    "Surreal guard bucket collisions can cause conservative false conflicts.",
+    "redb concurrency is serialized; the raw optimistic overlap schedules are not executed for redb.",
+    "No application receipt/replay or response-loss assertion is claimed by this probe.",
+    "FoundationDB limits remain default; no throughput or full-production claim."
+  ],
+  "port_unit_controls": {
+    "log": "target/g7-port-tests.log",
+    "name": "storage::tests::legacy_adapter_preserves_atomic_spaces_and_read_snapshot",
+    "passed": 1
+  },
+  "scope": "Raw storage/runtime contract only. Application Store integration, metadata/cursor coordination, API workflow recovery and G7 closeout remain unaccepted.",
+  "source_fingerprints": {
+    "Cargo.lock": "90989b7a40b379ade024f333b4a33d1a0ecb279cbfa3fc11b0342d860d359e6c",
+    "Cargo.toml": "a519e2e88d11b1d4382e6519bbfb0cc68c0a683673f4f0b94db97c0a9ef0b0cd",
+    "examples/storage_probe.rs": "304719ba8dd9656a735843987f0a8b5af246c56c404cac9144a171d89fd01440",
+    "src/lib.rs": "e21070db2fc1f546de2446700ef1f3dc730b9c8321b74b5d7c56340dac07a595",
+    "src/storage.rs": "cd4dc89760a04f8959cd8774d6f35a9480c383215de7b307834b72ef6714b904",
+    "src/storage/foundationdb.rs": "4697a8e13153075893b4a7c2365d9af974d26c5e3a59f7afd5bee12fd1a11a2f",
+    "src/storage/redb.rs": "db022a3f4681f8bffd8765d03968e814f8585b1705d3d8e586f55f2bb2e63229",
+    "src/storage/surrealkv.rs": "db7358a960c5a673397e431d6cb0326b5e57c8e99922ac9610a396eb6e072924",
+    "tools/fdb_cluster.py": "fe8e114561ec16c448a650f3e72512401edf77425e8df7a139e1ee4502a67c60"
+  },
+  "status": "accepted-storage-runtime-probe",
+  "versions": {
+    "foundationdb_rust": "0.11.0",
+    "foundationdb_server_client": "7.3.77",
+    "redb": "4.4.0",
+    "serde_json": "1.0.154",
+    "surrealkv": "1.0.0",
+    "uuid": "1.29.0"
+  }
+}
