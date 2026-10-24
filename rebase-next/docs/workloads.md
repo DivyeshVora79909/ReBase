@@ -3,13 +3,15 @@
 `tools/g8.py` is the operational entry point. It uses the ordinary authenticated
 client, owned `Backend` processes and the workshop's source-only arithmetic.
 Use a fresh private output directory for each run. The current acceptance is
-[G8.0](../research/53-workload-deployment-result.md); later checkpoints require
+[G8.0–G8.1](../research/53-workload-deployment-result.md); later checkpoints require
 their own executed evidence.
 
 ```sh
 export LD_LIBRARY_PATH="$PWD/target/g7-environment/root/usr/lib"
 python3 -B tools/g8.py smoke --binary target/g75-accepted/rebase-next --backend redb --out target/my-g8-smoke
 python3 -B tools/g8.py check --result target/my-g8-smoke/result.json
+# One continuous memory epoch, then two separate full receipt/archive cycles.
+python3 -B tools/g8.py churn --binary target/g75-accepted/rebase-next --backend redb --out target/my-g8-churn
 ```
 
 The retained G7 executable enables both optional adapters and needs `libfdb_c`
@@ -42,6 +44,14 @@ thirteen-table check. `g8_observe.sample`, `check_resources`, `read_jsonl` and
 `JsonlWriter` are usable without the runner. Reports describe trusted functions
 and values; they never execute code from an artifact.
 
+`g8_check.check_directory(directory)` independently consumes the saved raw
+trace, source observations, samples and complete images. The CLI `check` uses
+that function and requires the completed epoch's `result.json` with its adjacent
+private evidence. It does not accept a cached pass without the required raw files.
+`g8_cycles.run_cycles(state)` also composes alone; its own source, receipt and
+complete-image checks run before it returns. Standalone lifecycle results are
+separate from the memory-epoch raw checker.
+
 The default profile is equipment, seed 8042, one sequential writer and two
 readers, 64 reusable source IDs including six fixture records, 30 seconds of
 warmup, 300 measured seconds, a 30-second read-only cooldown and one-second
@@ -58,6 +68,14 @@ The default measurement requires 100 successful creates, updates and deletes,
 and ten stale edits. Planned complete cycles guarantee these classes before
 seeded mixing. The short smoke profile declares smaller floors and eight measured
 seconds; it establishes no five-minute claim.
+
+Public CRUD reuses Delivery UUIDs from the finite pool. Reservation updates
+activate/deactivate an existing producer, so private outputs churn while four
+retained role identities remain stable. Recreating a deleted Reservation with
+the same producer UUID rejects under the existing storage contract. `churn`
+finishes the continuous epoch before offline archive/restart, then executes two
+full receipt allocation/archive cycles with original-ID replay, unchanged-state
+overflow rejection, expiry and resumed CRUD. It never resets the store.
 
 G8.0 host calibration uses 12 available CPUs and about 15.3 GiB physical memory.
 The short redb baseline used about 35 MiB application RSS and 28 MiB controller

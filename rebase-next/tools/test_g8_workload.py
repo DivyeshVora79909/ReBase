@@ -1,5 +1,6 @@
 """Preflight and independently consumable acceptance controls for G8."""
 from copy import deepcopy
+import json
 from pathlib import Path
 import random
 import tempfile
@@ -79,6 +80,35 @@ class ProfileControls(unittest.TestCase):
                 output.write({"event": "outcome", "action": "create", "plan": {"context": "refreshed"}})
             with self.assertRaises(Incomplete):
                 list(workload.trace_outcomes(path, workload.DEFAULT_BUDGETS))
+
+    def test_replay_splice_and_relabel_cannot_change_measured_coverage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for number, outcome in enumerate(({"event": "outcome", "action": "replay", "plan": {}},
+                {"event": "outcome", "action": "create", "phase": "measurement", "expected": "committed", "plan": {}})):
+                path = Path(directory) / f"bad-{number}.jsonl"
+                with JsonlWriter(path, 1024) as output:
+                    output.write({"event": "intent", "action": "create", "phase": "warmup", "expected": "committed", "plan": {}})
+                    output.write(outcome)
+                with self.assertRaises(Incomplete):
+                    list(workload.trace_outcomes(path, workload.DEFAULT_BUDGETS))
+
+    def test_final_publication_counts_report_and_complete_retained_suffix(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "summary.md").write_text("retained summary\n")
+            (directory / "cycles-result.json").write_text("receipt archive suffix\n")
+            result = {"status": "passed"}
+            workload.publish_result(directory / "result.json", result, directory, workload.DEFAULT_BUDGETS)
+            self.assertEqual(result["artifacts"]["bytes"], sum(p.stat().st_size for p in directory.iterdir()))
+
+    def test_final_publication_exhaustion_is_incomplete(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "summary.md").write_text("retained summary\n")
+            with self.assertRaisesRegex(Incomplete, "final artifact budget"):
+                workload.publish_result(directory / "result.json", {"status": "passed"}, directory,
+                    {**workload.DEFAULT_BUDGETS, "artifacts_bytes": 32})
+            self.assertEqual(json.loads((directory / "result.json").read_text())["status"], "incomplete")
 
 
 if __name__ == "__main__":

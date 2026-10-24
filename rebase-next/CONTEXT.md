@@ -1,6 +1,6 @@
 # Compact context — 2026-10-25
 
-**Current: G8.0 verified; next G8.1–G8.5.** The user explicitly assigned the
+**Current: G8.0–G8.1 verified; next G8.2–G8.5.** The user explicitly assigned the
 implementation on existing `main`, requested local checkpoint/subcheckpoint
 commits only and **no pushes**. After G8.0, G8.1–G8.4 may be delegated in parallel
 with exact file ownership. Keep one Cargo owner and serialize host/cluster load.
@@ -8,25 +8,35 @@ Read [the plan](research/52-workload-deployment-plan.md),
 [current results](research/53-workload-deployment-result.md) and
 [the developer guide](docs/workloads.md).
 
-G8.0 provides `tools/g8.py`, ordinary `g8_workload` and `g8_observe` functions,
-explicit feasible profiles, bounded private evidence streams and independent
-resource/source checks. Short eight-second CLI runs pass on all three adapters;
-explicit function composition has equivalent checks. Twenty-one new Python and
-six existing client controls pass. Original G7 core/Cargo fingerprints and the
-retained optimized binary match. Client errors now expose observed HTTP status;
-wire/store/retry behavior is unchanged. The declared host budgets and two failed
-fixture trials are recorded in the G8.0 evidence. No 300-second run, archive-cycle,
-overload, database-outage or current release acceptance is claimed yet.
+G8.1 adds ordinary `g8_cycles` and independent `g8_check` functions. All three
+adapters pass 300-second paced equipment measurements in one application PID,
+30-second warmup/cooldown, every action floor, and two executed full receipt/
+archive cycles. Each measurement has 181 creates/updates, 180 deletes, 600 reads,
+13 replays, 14 no-ops/invalid attempts and 17 stale edits. Raw checks verify 608
+transient source states, thirteen-table images, original receipts and resource
+budgets per adapter. Forty-three checker/workload/sampler controls pass; the final
+publication correction also passes a short CLI/raw-check run. No Cargo build or
+earlier G7 campaign was repeated; all 72 core/Cargo fingerprints still match.
+Read [the G8.1 evidence](research/evidence/2026-10-25-g81-churn-resources.json).
 
-**Exact next work:** paced 300-second equipment PID epochs, 30-second warmup and
-cooldown, action floors and two real full receipt/archive cycles per adapter;
-then finite overload, verified owned FDB service outage/recovery, default-redb
-and feature-enabled extracted release, evidence closeout. Keep original operation
-IDs/contexts and resolve work before archiving. `target/g75-accepted/rebase-next`
-remains the matching optimized runtime. Use `LD_LIBRARY_PATH` pointing at
-`target/g7-environment/root/usr/lib` even for redb with that executable. Short
-runs are in `target/g80-*`; the owned FDB helper is running for upcoming G8
-verification. No application or Cargo process remains at this checkpoint.
+Delivery UUID reuse and existing Reservation activation churn keep four retained
+private role identities stable. An initial retired-producer UUID recreation
+failed correctly; its original intent is resolved as absent after drain, and its
+failed target is preserved. Long-run evidence remains immutable; actual complete
+artifact totals are independently recomputed. The shared publisher includes its
+own final report and archive suffix and marks exhaustion incomplete.
+
+**Exact next work:** G8.2 finite overload on fresh six-record prepared equipment
+targets plus targeted Quantity geometry and matching native permit evidence;
+then G8.3 owned FDB outage closeout, G8.4 default-redb and feature-enabled extracted
+release, G8.5 evidence handoff. Delegated helpers are present but later checkpoint
+acceptance is not yet claimed. Keep original IDs/contexts, drain before archive,
+and preserve the exact fault boundaries. `target/g75-accepted/rebase-next` remains
+the matching optimized runtime; use `LD_LIBRARY_PATH` pointing at
+`target/g7-environment/root/usr/lib` even for redb. The accepted G8.1 private runs
+are `target/g81-default-redb-2`, `target/g81-default-surreal` and
+`target/g81-default-fdb`, with separate `*-independent-check.json` reports.
+The owned FDB helper remains running; all application/Cargo processes are stopped.
 The packaged release remains historical 0.6 until G8.4 acceptance.
 
 G6, TiKV, frontend, live providers, million-record expansion and unprovided

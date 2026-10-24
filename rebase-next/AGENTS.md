@@ -8,7 +8,7 @@ a task whose meaning is already recorded. Recheck current source when it matters
 **Active scope: authorized G8.0–G8.5 implementation, 2026-10-25.** Read
 [the workload/deployment plan](research/52-workload-deployment-plan.md),
 [the current results](research/53-workload-deployment-result.md) and the top of
-`CONTEXT.md`. G8.0 is implemented and verified; G8.1–G8.5 remain to be accepted.
+`CONTEXT.md`. G8.0–G8.1 are implemented and verified; G8.2–G8.5 remain to be accepted.
 The user explicitly allows parallel delegated G8.1/G8.2/G8.3/G8.4 work after
 G8.0. Assign exact file ownership, keep one Cargo owner (two jobs, incremental
 off), and serialize competing measurements on the owned host/cluster. Commit

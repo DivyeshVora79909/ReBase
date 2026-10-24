@@ -68,7 +68,7 @@ for the current verification boundaries. Calculation/equipment allow up to 4,096
 private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, a full accounting port, live-provider adapters and a frontend are separate
-future gates. TiKV and G6 remain deferred; G8.0 is verified and the remaining G8 checkpoints
+future gates. TiKV and G6 remain deferred; G8.0–G8.1 are verified and the remaining G8 checkpoints
 are assigned, with exact results and bounds documented. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,

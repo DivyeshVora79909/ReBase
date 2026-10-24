@@ -1,0 +1,1816 @@
+{
+  "baseline_commit": "0551b7c540d96c14e46f10c7d3ceb5c04859cdff",
+  "checker_correction": "Validate agreeing preflight.execution_tools_sha256 mappings as the actual run-start artifact and keep current fingerprints separate; bounded legacy file reader retained",
+  "checkpoint": "G8.1",
+  "cleanup": {
+    "cargo": "none active",
+    "epoch_applications": "stopped after lifecycle closeout",
+    "owned_foundationdb": "kept for authorized G8.2-G8.4 verification"
+  },
+  "controls": {
+    "test_g8_check.py": {
+      "cases": [
+        "test_raw_small_evidence_passes_with_source_calculations",
+        "test_cached_pass_cannot_hide_bad_raw_rss",
+        "test_retained_runtime_failure_preserves_failed_or_incomplete",
+        "test_dropped_original_outcome_is_incomplete",
+        "test_raw_coverage_is_required_even_when_cached_counts_pass",
+        "test_changed_final_authored_facts_fail",
+        "test_wrong_transient_allocation_is_detected_before_final_state",
+        "test_stale_edit_cannot_be_relabelled_as_a_successful_update",
+        "test_missing_fixture_or_final_private_artifacts_is_incomplete",
+        "test_declared_duration_cannot_hide_truncated_samples",
+        "test_embedded_run_start_hashes_agree_without_claiming_current_equality",
+        "test_malformed_embedded_run_start_hash_fails",
+        "test_mismatched_embedded_run_start_hashes_fail",
+        "test_missing_embedded_run_start_counterpart_is_incomplete",
+        "test_legacy_run_start_artifact_remains_supported",
+        "test_exact_full_images_archive_and_resumed_inventory_pass",
+        "test_truncated_slot_inventory_is_not_full_capacity",
+        "test_archive_cannot_change_preserved_native_rows",
+        "test_incomplete_archive_artifact_does_not_pass"
+      ],
+      "distinct_controls": 19,
+      "status": "passed"
+    },
+    "test_g8_observe.py": {
+      "cases": [
+        "test_equal_inventory_windows_pass_without_claiming_a_soak",
+        "test_short_observation_keeps_absolute_bounds_but_no_trend_verdict",
+        "test_changing_retained_slots_prevents_false_comparable_verdict",
+        "test_missing_observation_is_incomplete",
+        "test_peak_hwm_excess_fails_even_when_current_rss_falls",
+        "test_injected_excessive_growth_rejects_intended_trend_class",
+        "test_sample_gap_and_pid_restart_do_not_pass_continuous_evidence",
+        "test_database_observation_required_only_when_declared",
+        "test_budgetless_unknown_and_nonfinite_fields_reject",
+        "test_physical_and_fd_budgets_fail_their_own_obligations",
+        "test_private_stream_exhaustion_preserves_complete_prefix_and_fails",
+        "test_truncated_missing_and_oversized_streams_are_incomplete",
+        "test_physical_paths_and_hardlinks_are_counted_once",
+        "test_owned_self_process_has_pid_identity_and_cpu"
+      ],
+      "distinct_controls": 14,
+      "status": "passed"
+    },
+    "test_g8_workload.py": {
+      "cases": [
+        "test_default_epoch_has_real_receipt_room_and_coverage",
+        "test_invalid_unknown_unbounded_and_infeasible_shapes_reject",
+        "test_zero_weight_is_not_achieved_coverage",
+        "test_missing_binary_backend_sdk_preflight_fails_clearly",
+        "test_bad_observations_cannot_pass_independent_result_check",
+        "test_missing_original_outcome_cannot_be_silently_discarded",
+        "test_replaced_original_plan_cannot_reconcile_as_the_original",
+        "test_replay_splice_and_relabel_cannot_change_measured_coverage",
+        "test_final_publication_counts_report_and_complete_retained_suffix",
+        "test_final_publication_exhaustion_is_incomplete"
+      ],
+      "distinct_controls": 10,
+      "status": "passed"
+    }
+  },
+  "date": "2026-10-25",
+  "defaults_declared_before_measurement": {
+    "budgets": {
+      "app_fds": 256,
+      "app_rss_kib": 524288,
+      "app_threads": 96,
+      "artifacts_bytes": 134217728,
+      "controller_fds": 128,
+      "controller_rss_kib": 524288,
+      "controller_threads": 32,
+      "cooldown_growth_kib": 16384,
+      "database_fds": 512,
+      "database_rss_kib": 1048576,
+      "database_threads": 64,
+      "db_cooldown_growth_kib": 65536,
+      "observer_ms": 250.0,
+      "physical_growth_bytes": 536870912,
+      "sample_gap_seconds": 3.0,
+      "samples_bytes": 8388608,
+      "trace_bytes": 33554432
+    },
+    "cooldown_seconds": 30.0,
+    "duration_seconds": 300.0,
+    "floors": {
+      "create": 100,
+      "delete": 100,
+      "invalid": 10,
+      "noop": 10,
+      "read": 500,
+      "replay": 10,
+      "stale": 10,
+      "update": 100
+    },
+    "identity_pool": 64,
+    "label": "default-300-second",
+    "max_new_operations": 800,
+    "max_pending": 8,
+    "mutation_rate": 2.0,
+    "reader_rate": 1.0,
+    "readers": 2,
+    "receipt_preflight": {
+      "fixture": 1,
+      "measurement_max": 800,
+      "reserve": 32,
+      "warmup_max": 61
+    },
+    "receipt_reserve": 32,
+    "sample_seconds": 1.0,
+    "scenario": "equipment",
+    "seed": 8042,
+    "warmup_seconds": 30.0
+  },
+  "deferred": [
+    "G6 accounting",
+    "TiKV",
+    "frontend",
+    "live providers",
+    "migrations",
+    "million-record envelope expansion",
+    "native commit-ack isolation",
+    "replicated failover",
+    "disk/power loss"
+  ],
+  "failed_trials": [
+    {
+      "cause": "Recreating a deleted Reservation reuses a retained output-producer identity and correctly rejects",
+      "diagnosis": "target/g81-default-redb/diagnosis.json",
+      "diagnosis_sha256": "b9d258c6ef181d240d20fdf2272db72475451812112413994042b981287e4c1a",
+      "fix": "Reuse Delivery UUIDs for public CRUD and toggle existing Reservations for private output churn; verify stable role identities",
+      "path": "target/g81-default-redb/failure.json",
+      "resolution": {
+        "cause": "Existing retired output-producer identity blocks reservation UUID recreation",
+        "core_change": false,
+        "original_operation_id": "d0195f28-0b8f-42cf-b57c-b629f25a8837",
+        "original_receipt": "not_observed",
+        "replacement_submissions": 0,
+        "status": "resolved_after_drain"
+      },
+      "sha256": "d2397e58d313b51d169861dcdaee8ca6e081d79006d22461e440c165ca64bc3c"
+    }
+  ],
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effects": "rebase-effects-4",
+    "native": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "g7_reuse": {
+    "binary_sha256": "288232e18700d24ef63c7db785f3aff51426a4c6e35b579a949f846d5a36b632",
+    "cargo_build": false,
+    "core_changes": false,
+    "core_fingerprints_matched": 72,
+    "evidence": "research/evidence/2026-10-25-g76-storage-conformance.json",
+    "evidence_sha256": "b395ed8bea3fb610247d433fdc3e1097bb7deb7ad2811892a73dadc9d7198ecb",
+    "repeated_g7_campaigns": false,
+    "retained_binary": "target/g75-accepted/rebase-next"
+  },
+  "git_delivery": "local checkpoint on existing main; no push",
+  "next": "G8.2 finite overload, G8.3 fault closeout, G8.4 extracted release, G8.5 handoff",
+  "observation_limits": {
+    "longer_soak": "unsupported",
+    "per_supporting_http_request_counters": "unsupported separately; no total transport throughput claim",
+    "private_roles": "Four stable retained identities; active outputs toggle between two and four",
+    "throughput_unit": "Primary scenario actions, separate bounded root readers; action latency includes preparation and source observations"
+  },
+  "publication_correction": {
+    "exact_artifact_bytes": 620332,
+    "historical_artifacts": "Long-run results remain immutable; memory-epoch totals are distinct from recomputed complete suffix totals",
+    "negative_control": "Publication exhaustion returns Incomplete and persists incomplete status",
+    "raw_check": "target/g81-publication-smoke-check.json",
+    "raw_check_sha256": "020282838bf36af20bab6d32cfa16a0720ffacc975226ffb838233f0074a0270",
+    "scope": "Only final report publication and raw-check CLI dispatch changed after the long runs; workload, sampler and core behavior are unchanged",
+    "smoke": "target/g81-publication-smoke/result.json",
+    "smoke_sha256": "379a95ab7129a4e291a0624d4a1e5dfe924cf729438c928f51075f1754e9d7d2"
+  },
+  "retained_failure_classification_correction": "A focused fixture reproduced incomplete failure markers incorrectly returning failed; bounded marker reads now preserve failed/incomplete, with both filenames and statuses covered. Original passed reports remain unchanged.",
+  "runs": [
+    {
+      "auth_renewals": 1,
+      "backend": "redb",
+      "complete_artifacts_recomputed": {
+        "budget_bytes": 134217728,
+        "bytes": 18925956,
+        "status": "passed"
+      },
+      "complete_state": {
+        "image_sha256": "13d4c0c5baae0d904ff2c2d3c3278dc6b34f507972b7ad4c21c23e28a3eff296",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 7,
+          "receipts": 609,
+          "records": 11,
+          "roots": 2,
+          "rows": 60,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "474d1960-3675-450b-86e6-03410dc4d109"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 7,
+          "receipt_slots": 609,
+          "retained_roles": 4
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "continuous_application_pid": 3780917,
+      "coverage": {
+        "achieved": {
+          "create": 181,
+          "delete": 180,
+          "invalid": 14,
+          "noop": 14,
+          "read": 600,
+          "replay": 13,
+          "stale": 17,
+          "update": 181
+        },
+        "requested": {
+          "create": 100,
+          "delete": 100,
+          "invalid": 10,
+          "noop": 10,
+          "read": 500,
+          "replay": 10,
+          "stale": 10,
+          "update": 100
+        },
+        "status": "passed"
+      },
+      "cumulative_committed_operator_events": 2052,
+      "cycle_execution_module_sha256": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+      "cycles": [
+        {
+          "cycle": 0,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 14.088175216049422,
+          "fill_coverage": {
+            "create": 138,
+            "delete": 139,
+            "update": 138
+          },
+          "final_integrity": {
+            "image_sha256": "b589261a5bb334d612f853416822963f73a7370510ed98c01021fe0dfd6886bb",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 4,
+              "receipts": 3,
+              "records": 8,
+              "roots": 2,
+              "rows": 44,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "474d1960-3675-450b-86e6-03410dc4d109"
+            },
+            "logical": {
+              "active_outputs": 2,
+              "public_sources": 6,
+              "receipt_slots": 3,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 415,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 1,
+            "update": 1
+          },
+          "starting_executed_receipts": 609,
+          "status": "passed",
+          "unresolved": 0
+        },
+        {
+          "cycle": 1,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 33.74967408704106,
+          "fill_coverage": {
+            "create": 341,
+            "delete": 340,
+            "update": 340
+          },
+          "final_integrity": {
+            "image_sha256": "288e376a739de0f2c559ab5cb1162f964aa94119cf0f7b3d24a689f678b6c282",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 6,
+              "receipts": 4,
+              "records": 10,
+              "roots": 2,
+              "rows": 56,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "474d1960-3675-450b-86e6-03410dc4d109"
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 4,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 1021,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 2,
+            "update": 1
+          },
+          "starting_executed_receipts": 3,
+          "status": "passed",
+          "unresolved": 0
+        }
+      ],
+      "cycles_result": "target/g81-default-redb-2/cycles-result.json",
+      "cycles_sha256": "f66d459b8953b7e7af0b7837d47077207d0ded37ef5e52fd15a2bf967043c592",
+      "duration_seconds": 300,
+      "engine": {
+        "committed_events": 609,
+        "peaks": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 2,
+          "causal_evaluations": 2,
+          "command_visits": 6,
+          "dependency_checks": 20,
+          "dependency_edges": 8,
+          "detached_outputs": 4,
+          "encoded_bytes": 15132,
+          "evaluations": 0,
+          "final_dirty_keys": 55,
+          "graph_nodes": 6,
+          "inventory_visits": 0,
+          "key_loads": 84,
+          "loaded_bytes": 13045,
+          "node_visits": 194,
+          "reader_checks": 10,
+          "rotations": 4,
+          "route_entries": 68,
+          "scheduler_visits": 14,
+          "selector_visits": 3,
+          "staged_patches": 124,
+          "work_units": 444
+        },
+        "scope": "Existing native counters; no unprovided counter is represented as zero",
+        "status": "passed",
+        "totals": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 398,
+          "causal_evaluations": 398,
+          "command_visits": 614,
+          "dependency_checks": 3187,
+          "dependency_edges": 1097,
+          "detached_outputs": 594,
+          "encoded_bytes": 2843287,
+          "evaluations": 0,
+          "final_dirty_keys": 10010,
+          "graph_nodes": 996,
+          "inventory_visits": 0,
+          "key_loads": 15392,
+          "loaded_bytes": 3680135,
+          "node_visits": 33652,
+          "reader_checks": 1198,
+          "rotations": 427,
+          "route_entries": 10017,
+          "scheduler_visits": 2093,
+          "selector_visits": 954,
+          "staged_patches": 24451,
+          "work_units": 93655
+        }
+      },
+      "final_logical": {
+        "active_outputs": 4,
+        "public_sources": 6,
+        "receipt_slots": 4,
+        "retained_roles": 4
+      },
+      "independent_check": "target/g81-default-redb-2-independent-check.json",
+      "independent_check_sha256": "1b62747be2f94c71fa66ece780c2e2f224a18e358fcd390383fbe7eabf5ca89f",
+      "independent_checker": {
+        "path": "tools/g8_check.py",
+        "sha256": "c5cdc1cae701baf7f87ad039877cb850939a030b5c742db7040b163bf6206312"
+      },
+      "logical": {
+        "active_outputs": 4,
+        "public_sources": 7,
+        "receipt_slots": 609,
+        "retained_roles": 4
+      },
+      "markers": [
+        {
+          "duration_achieved": 30.01707737898687,
+          "duration_requested": 30.0,
+          "phase": "warmup",
+          "pid": 3780917,
+          "start_seconds": 0.0036843239795416594
+        },
+        {
+          "duration_achieved": 300.1799503749935,
+          "duration_requested": 300.0,
+          "phase": "measurement",
+          "pid": 3780917,
+          "start_seconds": 30.020787881978322
+        },
+        {
+          "duration_achieved": 30.000177947978955,
+          "duration_requested": 30.0,
+          "phase": "cooldown",
+          "pid": 3780917,
+          "start_seconds": 330.20075716701103
+        }
+      ],
+      "raw_obligations": {
+        "artifacts": {
+          "required": true,
+          "status": "passed"
+        },
+        "complete_observations": {
+          "required": true,
+          "status": "passed"
+        },
+        "duration": {
+          "required": true,
+          "status": "passed"
+        },
+        "inputs": {
+          "required": true,
+          "status": "passed"
+        },
+        "memory_outcomes": {
+          "required": true,
+          "status": "passed"
+        },
+        "operator_events": {
+          "required": true,
+          "status": "passed"
+        },
+        "receipt_cycles": {
+          "cycle_count": 2,
+          "required": true,
+          "status": "passed"
+        },
+        "resources": {
+          "required": true,
+          "status": "passed"
+        },
+        "run_start_identities": {
+          "required": true,
+          "status": "passed"
+        },
+        "stale_token_observations": {
+          "required": false,
+          "status": "passed"
+        },
+        "transient_source_values": {
+          "checked_states": 608,
+          "missing_states": 0,
+          "required": true,
+          "status": "passed"
+        }
+      },
+      "receipts": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 661,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "recorded_execution_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "1c6ec2042a2097dc41621ca8b64e1f0198591481c598271b17009eafff0a8325",
+        "tools/g8_cycles.py": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "f364239859da62d3c76039781541577f90c64a661753384ad3f9620ec203bf4b",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 7,
+            "receipt_slots": 609,
+            "retained_roles": 4
+          },
+          "required": false,
+          "samples": 30,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 10
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.02,
+              "cpu_last_seconds": 9.61,
+              "open_fds": 14,
+              "peak_rss_kib": 35852,
+              "rss_kib": 35852,
+              "threads": 6
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3780917,
+              84598118
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.44,
+              "cpu_last_seconds": 17.66,
+              "open_fds": 10,
+              "peak_rss_kib": 27796,
+              "rss_kib": 27796,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 7,
+              "receipt_slots": 609,
+              "retained_roles": 4
+            },
+            "required": false,
+            "samples": 30,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 10
+          },
+          "database_resources": {
+            "reason": "no separate database PID required by this profile",
+            "required": false,
+            "status": "unsupported"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 19.015516969375312,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 1216512,
+            "initial_bytes": 114688,
+            "peak_bytes": 1331200,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 1.0021143869962543,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.02,
+            "cpu_last_seconds": 9.61,
+            "open_fds": 14,
+            "peak_rss_kib": 35852,
+            "rss_kib": 35852,
+            "threads": 6
+          },
+          "controller": {
+            "cpu_first_seconds": 0.44,
+            "cpu_last_seconds": 17.66,
+            "open_fds": 10,
+            "peak_rss_kib": 27796,
+            "rss_kib": 27796,
+            "threads": 4
+          }
+        },
+        "sample_count": 361,
+        "status": "passed"
+      },
+      "result": "target/g81-default-redb-2/result.json",
+      "result_sha256": "1fa42d6df11da8656ea3e68fd621b428386828ded9672827b858918499dde2b6",
+      "status": "passed",
+      "work": {
+        "action_latency": {
+          "count": 600,
+          "max_ms": 111.034,
+          "p50_ms": 35.778,
+          "p95_ms": 50.796
+        },
+        "completed": 600,
+        "http_statuses": {
+          "200": 600
+        },
+        "latency_scope": "End-to-end action including source oracle, preparation, session, mutation/replay and result checks",
+        "max_pending_bound": 3,
+        "measurement_completions_per_second": 2.0,
+        "offered": 600,
+        "outcomes": {
+          "committed": 556,
+          "invariant": 14,
+          "replayed": 13,
+          "stale_version": 17
+        },
+        "reads_by_phase": {
+          "cooldown": 60,
+          "measurement": 600,
+          "warmup": 62
+        },
+        "submitted": 600,
+        "unit": "Primary scenario actions; session and per-transition oracle observations are included in action latency",
+        "unresolved": 0
+      }
+    },
+    {
+      "auth_renewals": 1,
+      "backend": "surrealkv",
+      "complete_artifacts_recomputed": {
+        "budget_bytes": 134217728,
+        "bytes": 18810846,
+        "status": "passed"
+      },
+      "complete_state": {
+        "image_sha256": "c8015b5b70c75c301d64c14e024463d23bf3bdd9a7052ea34c66446a066f608d",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 7,
+          "receipts": 609,
+          "records": 11,
+          "roots": 2,
+          "rows": 60,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "9bdb702e-91a9-43cd-8c29-06badd228f17"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 7,
+          "receipt_slots": 609,
+          "retained_roles": 4
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "continuous_application_pid": 3820538,
+      "coverage": {
+        "achieved": {
+          "create": 181,
+          "delete": 180,
+          "invalid": 14,
+          "noop": 14,
+          "read": 600,
+          "replay": 13,
+          "stale": 17,
+          "update": 181
+        },
+        "requested": {
+          "create": 100,
+          "delete": 100,
+          "invalid": 10,
+          "noop": 10,
+          "read": 500,
+          "replay": 10,
+          "stale": 10,
+          "update": 100
+        },
+        "status": "passed"
+      },
+      "cumulative_committed_operator_events": 2052,
+      "cycle_execution_module_sha256": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+      "cycles": [
+        {
+          "cycle": 0,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 15.773373114992864,
+          "fill_coverage": {
+            "create": 138,
+            "delete": 139,
+            "update": 138
+          },
+          "final_integrity": {
+            "image_sha256": "0b0aa245f4819c0402f6fe2a11416b476759202544c07ddc8bd3dc7114e409d9",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 4,
+              "receipts": 3,
+              "records": 8,
+              "roots": 2,
+              "rows": 44,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "9bdb702e-91a9-43cd-8c29-06badd228f17"
+            },
+            "logical": {
+              "active_outputs": 2,
+              "public_sources": 6,
+              "receipt_slots": 3,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 415,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 1,
+            "update": 1
+          },
+          "starting_executed_receipts": 609,
+          "status": "passed",
+          "unresolved": 0
+        },
+        {
+          "cycle": 1,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 39.29030466102995,
+          "fill_coverage": {
+            "create": 341,
+            "delete": 340,
+            "update": 340
+          },
+          "final_integrity": {
+            "image_sha256": "d2e14c46f5feb8566fe4e5ba32ea3aa117f2c5a80524fe5e774d03cb2ebd2ed3",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 6,
+              "receipts": 4,
+              "records": 10,
+              "roots": 2,
+              "rows": 56,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "9bdb702e-91a9-43cd-8c29-06badd228f17"
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 4,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 1021,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 2,
+            "update": 1
+          },
+          "starting_executed_receipts": 3,
+          "status": "passed",
+          "unresolved": 0
+        }
+      ],
+      "cycles_result": "target/g81-default-surreal/cycles-result.json",
+      "cycles_sha256": "944585ba3f0b3c02be60d555a844db6782fc5ad4251c8b88692c6d5650fb9d13",
+      "duration_seconds": 300,
+      "engine": {
+        "committed_events": 609,
+        "peaks": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 2,
+          "causal_evaluations": 2,
+          "command_visits": 6,
+          "dependency_checks": 20,
+          "dependency_edges": 8,
+          "detached_outputs": 4,
+          "encoded_bytes": 15132,
+          "evaluations": 0,
+          "final_dirty_keys": 55,
+          "graph_nodes": 6,
+          "inventory_visits": 0,
+          "key_loads": 84,
+          "loaded_bytes": 12743,
+          "node_visits": 194,
+          "reader_checks": 10,
+          "rotations": 4,
+          "route_entries": 63,
+          "scheduler_visits": 14,
+          "selector_visits": 3,
+          "staged_patches": 121,
+          "work_units": 444
+        },
+        "scope": "Existing native counters; no unprovided counter is represented as zero",
+        "status": "passed",
+        "totals": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 398,
+          "causal_evaluations": 398,
+          "command_visits": 614,
+          "dependency_checks": 3187,
+          "dependency_edges": 1097,
+          "detached_outputs": 594,
+          "encoded_bytes": 2765515,
+          "evaluations": 0,
+          "final_dirty_keys": 9824,
+          "graph_nodes": 996,
+          "inventory_visits": 0,
+          "key_loads": 15180,
+          "loaded_bytes": 3615011,
+          "node_visits": 33652,
+          "reader_checks": 1198,
+          "rotations": 427,
+          "route_entries": 10541,
+          "scheduler_visits": 2093,
+          "selector_visits": 954,
+          "staged_patches": 24270,
+          "work_units": 93786
+        }
+      },
+      "final_logical": {
+        "active_outputs": 4,
+        "public_sources": 6,
+        "receipt_slots": 4,
+        "retained_roles": 4
+      },
+      "independent_check": "target/g81-default-surreal-independent-check.json",
+      "independent_check_sha256": "eb3bc460108375ff8f8b4085e5517c1e9c8038beab412e906cd4340d68135fbc",
+      "independent_checker": {
+        "path": "tools/g8_check.py",
+        "sha256": "c5cdc1cae701baf7f87ad039877cb850939a030b5c742db7040b163bf6206312"
+      },
+      "logical": {
+        "active_outputs": 4,
+        "public_sources": 7,
+        "receipt_slots": 609,
+        "retained_roles": 4
+      },
+      "markers": [
+        {
+          "duration_achieved": 30.015528641990386,
+          "duration_requested": 30.0,
+          "phase": "warmup",
+          "pid": 3820538,
+          "start_seconds": 0.004010030999779701
+        },
+        {
+          "duration_achieved": 300.19507994299056,
+          "duration_requested": 300.0,
+          "phase": "measurement",
+          "pid": 3820538,
+          "start_seconds": 30.0195616420242
+        },
+        {
+          "duration_achieved": 30.000158171984367,
+          "duration_requested": 30.0,
+          "phase": "cooldown",
+          "pid": 3820538,
+          "start_seconds": 330.2146601669956
+        }
+      ],
+      "raw_obligations": {
+        "artifacts": {
+          "required": true,
+          "status": "passed"
+        },
+        "complete_observations": {
+          "required": true,
+          "status": "passed"
+        },
+        "duration": {
+          "required": true,
+          "status": "passed"
+        },
+        "inputs": {
+          "required": true,
+          "status": "passed"
+        },
+        "memory_outcomes": {
+          "required": true,
+          "status": "passed"
+        },
+        "operator_events": {
+          "required": true,
+          "status": "passed"
+        },
+        "receipt_cycles": {
+          "cycle_count": 2,
+          "required": true,
+          "status": "passed"
+        },
+        "resources": {
+          "required": true,
+          "status": "passed"
+        },
+        "run_start_identities": {
+          "required": true,
+          "status": "passed"
+        },
+        "stale_token_observations": {
+          "required": false,
+          "status": "passed"
+        },
+        "transient_source_values": {
+          "checked_states": 608,
+          "missing_states": 0,
+          "required": true,
+          "status": "passed"
+        }
+      },
+      "receipts": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 661,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "recorded_execution_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "1c6ec2042a2097dc41621ca8b64e1f0198591481c598271b17009eafff0a8325",
+        "tools/g8_cycles.py": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "69d1a9aefe236b6e4f1bb4742e3de63f802d03492a78320be7bd3d2b21794d01",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384
+          },
+          "growth_kib": {
+            "application": 0,
+            "controller": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 7,
+            "receipt_slots": 609,
+            "retained_roles": 4
+          },
+          "required": false,
+          "samples": 30,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 10
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.01,
+              "cpu_last_seconds": 9.44,
+              "open_fds": 22,
+              "peak_rss_kib": 41088,
+              "rss_kib": 41088,
+              "threads": 9
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3820538,
+              84732986
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.39,
+              "cpu_last_seconds": 17.02,
+              "open_fds": 11,
+              "peak_rss_kib": 28224,
+              "rss_kib": 28224,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384
+            },
+            "growth_kib": {
+              "application": 0,
+              "controller": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 7,
+              "receipt_slots": 609,
+              "retained_roles": 4
+            },
+            "required": false,
+            "samples": 30,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 10
+          },
+          "database_resources": {
+            "reason": "no separate database PID required by this profile",
+            "required": false,
+            "status": "unsupported"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 14.963973022531718,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 4505533,
+            "initial_bytes": 24401,
+            "peak_bytes": 4529934,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 1.0142307310015894,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.01,
+            "cpu_last_seconds": 9.44,
+            "open_fds": 22,
+            "peak_rss_kib": 41088,
+            "rss_kib": 41088,
+            "threads": 9
+          },
+          "controller": {
+            "cpu_first_seconds": 0.39,
+            "cpu_last_seconds": 17.02,
+            "open_fds": 11,
+            "peak_rss_kib": 28224,
+            "rss_kib": 28224,
+            "threads": 4
+          }
+        },
+        "sample_count": 361,
+        "status": "passed"
+      },
+      "result": "target/g81-default-surreal/result.json",
+      "result_sha256": "b22e425a85cae6350eaf5d6deb9f25b8432190c7e0cc288ba9bccd0dbf3bdf27",
+      "status": "passed",
+      "work": {
+        "action_latency": {
+          "count": 600,
+          "max_ms": 125.137,
+          "p50_ms": 36.705,
+          "p95_ms": 46.239
+        },
+        "completed": 600,
+        "http_statuses": {
+          "200": 600
+        },
+        "latency_scope": "End-to-end action including source oracle, preparation, session, mutation/replay and result checks",
+        "max_pending_bound": 3,
+        "measurement_completions_per_second": 2.0,
+        "offered": 600,
+        "outcomes": {
+          "committed": 556,
+          "invariant": 14,
+          "replayed": 13,
+          "stale_version": 17
+        },
+        "reads_by_phase": {
+          "cooldown": 60,
+          "measurement": 600,
+          "warmup": 62
+        },
+        "submitted": 600,
+        "unit": "Primary scenario actions; session and per-transition oracle observations are included in action latency",
+        "unresolved": 0
+      }
+    },
+    {
+      "auth_renewals": 1,
+      "backend": "foundationdb",
+      "complete_artifacts_recomputed": {
+        "budget_bytes": 134217728,
+        "bytes": 18954614,
+        "status": "passed"
+      },
+      "complete_state": {
+        "image_sha256": "1b19df81c8575bfe72c2ecdec07d914aaad5c3d281aa93776d0a80ab85c97dea",
+        "integrity": {
+          "effects": {
+            "accounted_bytes": 4096,
+            "blocked": 0,
+            "expired_leases": 0,
+            "facts": 0,
+            "inbox": 0,
+            "inbox_pending": 0,
+            "oldest_eligible_age_ms": null,
+            "quarantined": false,
+            "reserved_facts": 0,
+            "retained": 0,
+            "uncertain": 0,
+            "unresolved": 0,
+            "worker_mode": "disabled"
+          },
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "nodes": 7,
+          "receipts": 609,
+          "records": 11,
+          "roots": 2,
+          "rows": 60,
+          "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+          "status": "valid",
+          "store": "b201ce21-3e97-4c3d-a61d-151994ce7fff"
+        },
+        "logical": {
+          "active_outputs": 4,
+          "public_sources": 7,
+          "receipt_slots": 609,
+          "retained_roles": 4
+        },
+        "status": "passed",
+        "table_count": 13
+      },
+      "continuous_application_pid": 3836180,
+      "coverage": {
+        "achieved": {
+          "create": 181,
+          "delete": 180,
+          "invalid": 14,
+          "noop": 14,
+          "read": 600,
+          "replay": 13,
+          "stale": 17,
+          "update": 181
+        },
+        "requested": {
+          "create": 100,
+          "delete": 100,
+          "invalid": 10,
+          "noop": 10,
+          "read": 500,
+          "replay": 10,
+          "stale": 10,
+          "update": 100
+        },
+        "status": "passed"
+      },
+      "cumulative_committed_operator_events": 2052,
+      "cycle_execution_module_sha256": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+      "cycles": [
+        {
+          "cycle": 0,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 38.75714566197712,
+          "fill_coverage": {
+            "create": 138,
+            "delete": 139,
+            "update": 138
+          },
+          "final_integrity": {
+            "image_sha256": "ecf564360b01fa5010242e2a36265696ebe82a0e2f83e211de2c231d68b702db",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 4,
+              "receipts": 3,
+              "records": 8,
+              "roots": 2,
+              "rows": 44,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "b201ce21-3e97-4c3d-a61d-151994ce7fff"
+            },
+            "logical": {
+              "active_outputs": 2,
+              "public_sources": 6,
+              "receipt_slots": 3,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 415,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 1,
+            "update": 1
+          },
+          "starting_executed_receipts": 609,
+          "status": "passed",
+          "unresolved": 0
+        },
+        {
+          "cycle": 1,
+          "cycle_budget_seconds": 300,
+          "cycle_seconds": 82.04341381799895,
+          "fill_coverage": {
+            "create": 341,
+            "delete": 340,
+            "update": 340
+          },
+          "final_integrity": {
+            "image_sha256": "619f1d46874f5356cdc47a4fbdc456fe911e56e64065524c2459f6e4cee083d6",
+            "integrity": {
+              "effects": {
+                "accounted_bytes": 4096,
+                "blocked": 0,
+                "expired_leases": 0,
+                "facts": 0,
+                "inbox": 0,
+                "inbox_pending": 0,
+                "oldest_eligible_age_ms": null,
+                "quarantined": false,
+                "reserved_facts": 0,
+                "retained": 0,
+                "uncertain": 0,
+                "unresolved": 0,
+                "worker_mode": "disabled"
+              },
+              "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+              "nodes": 6,
+              "receipts": 4,
+              "records": 10,
+              "roots": 2,
+              "rows": 56,
+              "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+              "status": "valid",
+              "store": "b201ce21-3e97-4c3d-a61d-151994ce7fff"
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 6,
+              "receipt_slots": 4,
+              "retained_roles": 4
+            },
+            "status": "passed",
+            "table_count": 13
+          },
+          "full_capacity": 1024,
+          "new_executed_fill_requests": 1021,
+          "reset_used": false,
+          "resumed_crud": {
+            "create": 1,
+            "delete": 2,
+            "update": 1
+          },
+          "starting_executed_receipts": 3,
+          "status": "passed",
+          "unresolved": 0
+        }
+      ],
+      "cycles_result": "target/g81-default-fdb/cycles-result.json",
+      "cycles_sha256": "e5ce689f735e39ca6278b835fb06d16894000667b9e8d7c6aa61e6947d61ffeb",
+      "duration_seconds": 300,
+      "engine": {
+        "committed_events": 609,
+        "peaks": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 2,
+          "causal_evaluations": 2,
+          "command_visits": 6,
+          "dependency_checks": 20,
+          "dependency_edges": 8,
+          "detached_outputs": 4,
+          "encoded_bytes": 15132,
+          "evaluations": 0,
+          "final_dirty_keys": 55,
+          "graph_nodes": 6,
+          "inventory_visits": 0,
+          "key_loads": 84,
+          "loaded_bytes": 13045,
+          "node_visits": 194,
+          "reader_checks": 10,
+          "rotations": 4,
+          "route_entries": 63,
+          "scheduler_visits": 14,
+          "selector_visits": 3,
+          "staged_patches": 121,
+          "work_units": 444
+        },
+        "scope": "Existing native counters; no unprovided counter is represented as zero",
+        "status": "passed",
+        "totals": {
+          "allocations": 4,
+          "candidates": 0,
+          "causal_candidates": 398,
+          "causal_evaluations": 398,
+          "command_visits": 614,
+          "dependency_checks": 3187,
+          "dependency_edges": 1097,
+          "detached_outputs": 594,
+          "encoded_bytes": 2828097,
+          "evaluations": 0,
+          "final_dirty_keys": 9965,
+          "graph_nodes": 996,
+          "inventory_visits": 0,
+          "key_loads": 15392,
+          "loaded_bytes": 3680085,
+          "node_visits": 33652,
+          "reader_checks": 1198,
+          "rotations": 427,
+          "route_entries": 10025,
+          "scheduler_visits": 2093,
+          "selector_visits": 954,
+          "staged_patches": 24404,
+          "work_units": 93616
+        }
+      },
+      "final_logical": {
+        "active_outputs": 4,
+        "public_sources": 6,
+        "receipt_slots": 4,
+        "retained_roles": 4
+      },
+      "independent_check": "target/g81-default-fdb-independent-check.json",
+      "independent_check_sha256": "9f92a6ff4379fa3673513ca2ac248d8ecff4410ee07a01b5fd0f613475b28c85",
+      "independent_checker": {
+        "path": "tools/g8_check.py",
+        "sha256": "c5cdc1cae701baf7f87ad039877cb850939a030b5c742db7040b163bf6206312"
+      },
+      "logical": {
+        "active_outputs": 4,
+        "public_sources": 7,
+        "receipt_slots": 609,
+        "retained_roles": 4
+      },
+      "markers": [
+        {
+          "duration_achieved": 30.020105578005314,
+          "duration_requested": 30.0,
+          "phase": "warmup",
+          "pid": 3836180,
+          "start_seconds": 0.0035874719615094364
+        },
+        {
+          "duration_achieved": 300.23627536499407,
+          "duration_requested": 300.0,
+          "phase": "measurement",
+          "pid": 3836180,
+          "start_seconds": 30.023708947992418
+        },
+        {
+          "duration_achieved": 30.0002603160101,
+          "duration_requested": 30.0,
+          "phase": "cooldown",
+          "pid": 3836180,
+          "start_seconds": 330.2600113749504
+        }
+      ],
+      "raw_obligations": {
+        "artifacts": {
+          "required": true,
+          "status": "passed"
+        },
+        "complete_observations": {
+          "required": true,
+          "status": "passed"
+        },
+        "duration": {
+          "required": true,
+          "status": "passed"
+        },
+        "inputs": {
+          "required": true,
+          "status": "passed"
+        },
+        "memory_outcomes": {
+          "required": true,
+          "status": "passed"
+        },
+        "operator_events": {
+          "required": true,
+          "status": "passed"
+        },
+        "receipt_cycles": {
+          "cycle_count": 2,
+          "required": true,
+          "status": "passed"
+        },
+        "resources": {
+          "required": true,
+          "status": "passed"
+        },
+        "run_start_identities": {
+          "required": true,
+          "status": "passed"
+        },
+        "stale_token_observations": {
+          "required": false,
+          "status": "passed"
+        },
+        "transient_source_values": {
+          "checked_states": 608,
+          "missing_states": 0,
+          "required": true,
+          "status": "passed"
+        }
+      },
+      "receipts": {
+        "original_contexts_preserved": true,
+        "replacement_submissions": 0,
+        "resolved": 661,
+        "status": "passed",
+        "unresolved": 0
+      },
+      "recorded_execution_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "1c6ec2042a2097dc41621ca8b64e1f0198591481c598271b17009eafff0a8325",
+        "tools/g8_cycles.py": "f17e49d3193795c08f777986e7d8efe2a367449aaba80367b51abf22f30f35e1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "69d1a9aefe236b6e4f1bb4742e3de63f802d03492a78320be7bd3d2b21794d01",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "resources": {
+        "cooldown": {
+          "budgets_kib": {
+            "application": 16384,
+            "controller": 16384,
+            "database": 65536
+          },
+          "growth_kib": {
+            "application": 3.599999999998545,
+            "controller": 0,
+            "database": 0
+          },
+          "logical": {
+            "active_outputs": 4,
+            "public_sources": 7,
+            "receipt_slots": 609,
+            "retained_roles": 4
+          },
+          "required": false,
+          "samples": 30,
+          "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+          "status": "passed",
+          "window_samples": 10
+        },
+        "obligations": {
+          "application_resources": {
+            "budgets": {
+              "open_fds": 256,
+              "rss_kib": 524288,
+              "threads": 96
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.04,
+              "cpu_last_seconds": 26.11,
+              "open_fds": 18,
+              "peak_rss_kib": 44668,
+              "rss_kib": 44668,
+              "threads": 7
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "continuous_application_pid": {
+            "identity": [
+              3836180,
+              84783514
+            ],
+            "required": true,
+            "status": "passed"
+          },
+          "controller_resources": {
+            "budgets": {
+              "open_fds": 128,
+              "rss_kib": 524288,
+              "threads": 32
+            },
+            "peaks": {
+              "cpu_first_seconds": 0.38,
+              "cpu_last_seconds": 17.86,
+              "open_fds": 11,
+              "peak_rss_kib": 27716,
+              "rss_kib": 27716,
+              "threads": 4
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "cooldown_growth": {
+            "budgets_kib": {
+              "application": 16384,
+              "controller": 16384,
+              "database": 65536
+            },
+            "growth_kib": {
+              "application": 3.599999999998545,
+              "controller": 0,
+              "database": 0
+            },
+            "logical": {
+              "active_outputs": 4,
+              "public_sources": 7,
+              "receipt_slots": 609,
+              "retained_roles": 4
+            },
+            "required": false,
+            "samples": 30,
+            "scope": "comparable read-only cooldown windows; no longer soak or leak-freedom claim",
+            "status": "passed",
+            "window_samples": 10
+          },
+          "database_resources": {
+            "budgets": {
+              "open_fds": 512,
+              "rss_kib": 1048576,
+              "threads": 64
+            },
+            "peaks": {
+              "cpu_first_seconds": 118.51,
+              "cpu_last_seconds": 138.72,
+              "open_fds": 22,
+              "peak_rss_kib": 91880,
+              "rss_kib": 91880,
+              "threads": 7
+            },
+            "required": true,
+            "status": "passed"
+          },
+          "observations": {
+            "missing_physical": false,
+            "missing_processes": [],
+            "problems": [],
+            "required": true,
+            "status": "passed"
+          },
+          "observer_overhead": {
+            "budget_ms": 250.0,
+            "peak_ms": 16.347277036402375,
+            "required": true,
+            "status": "passed"
+          },
+          "physical_growth": {
+            "budget_bytes": 536870912,
+            "growth_bytes": 1127569,
+            "initial_bytes": 337366384,
+            "peak_bytes": 338493953,
+            "required": true,
+            "status": "passed"
+          },
+          "sample_gap": {
+            "budget_seconds": 3.0,
+            "max_seconds": 1.0003702729591168,
+            "required": true,
+            "status": "passed"
+          }
+        },
+        "peaks": {
+          "application": {
+            "cpu_first_seconds": 0.04,
+            "cpu_last_seconds": 26.11,
+            "open_fds": 18,
+            "peak_rss_kib": 44668,
+            "rss_kib": 44668,
+            "threads": 7
+          },
+          "controller": {
+            "cpu_first_seconds": 0.38,
+            "cpu_last_seconds": 17.86,
+            "open_fds": 11,
+            "peak_rss_kib": 27716,
+            "rss_kib": 27716,
+            "threads": 4
+          },
+          "database": {
+            "cpu_first_seconds": 118.51,
+            "cpu_last_seconds": 138.72,
+            "open_fds": 22,
+            "peak_rss_kib": 91880,
+            "rss_kib": 91880,
+            "threads": 7
+          }
+        },
+        "sample_count": 361,
+        "status": "passed"
+      },
+      "result": "target/g81-default-fdb/result.json",
+      "result_sha256": "01ba7e9a7835a3896de0a852f74ab90f452aa546b43bd162bb5b422580cae024",
+      "status": "passed",
+      "work": {
+        "action_latency": {
+          "count": 600,
+          "max_ms": 182.503,
+          "p50_ms": 77.524,
+          "p95_ms": 104.39
+        },
+        "completed": 600,
+        "http_statuses": {
+          "200": 600
+        },
+        "latency_scope": "End-to-end action including source oracle, preparation, session, mutation/replay and result checks",
+        "max_pending_bound": 3,
+        "measurement_completions_per_second": 2.0,
+        "offered": 600,
+        "outcomes": {
+          "committed": 556,
+          "invariant": 14,
+          "replayed": 13,
+          "stale_version": 17
+        },
+        "reads_by_phase": {
+          "cooldown": 60,
+          "measurement": 600,
+          "warmup": 62
+        },
+        "submitted": 600,
+        "unit": "Primary scenario actions; session and per-transition oracle observations are included in action latency",
+        "unresolved": 0
+      }
+    }
+  ],
+  "scope": "Three paced 300-second equipment PID observations and two real receipt allocation/archive cycles per adapter; no longer soak or unrestricted capacity claim",
+  "source_sha256": {
+    "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+    "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+    "tools/g8.py": "716e49d7257094cc5da796b91fd23132468f7321419363319d8896f2740e1cf2",
+    "tools/g8_check.py": "2d9ef4d7376fd17a67d49b705a31e48ecae2fc5e6e9c873ced8cfca5e579e535",
+    "tools/g8_cycles.py": "0f0e2ac53fbbd8d71ef53d06e7afa3e3a0f9df2f0dfff8d65ca58e88dc1ddec1",
+    "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+    "tools/g8_workload.py": "c89f353714f9891b93fbaae808368f995ce1e71587b60d62b0768a671ae65b93",
+    "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+    "tools/test_g8_check.py": "0b7dd5b5b8c6d9d983bf1caa9e2b8c7ec9033e36bd3b830a60f2c962e8940d44",
+    "tools/test_g8_observe.py": "010ef0ef4193f9a349a7ae545fd73e9eca63654fbb29c3727a2151adea54eccc",
+    "tools/test_g8_workload.py": "8ed7ef80727778176e15c8743dde88fc303144cb74ec3bb0a56c4e34506e20c6",
+    "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+  },
+  "source_version": "0.16.0",
+  "status": "passed"
+}

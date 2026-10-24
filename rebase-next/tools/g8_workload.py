@@ -127,7 +127,36 @@ def preflight(binary, backend="redb", cluster_file=None):
     return {"prefix": prefix, "backend": backend, "binary_sha256": digest(binary),
         "model": identity, "catalog": catalog, "g7_evidence_sha256": digest(baseline_path),
         "g7_matching_fingerprints": len(baseline["source_sha256"]) - len(mismatches),
-        "changed_tools": mismatches, "core_unchanged": True, "host": host_limits()}
+        "changed_tools": mismatches, "core_unchanged": True, "host": host_limits(),
+        "execution_tools_sha256": {"tools/"+name: digest(ROOT / "tools" / name) for name in (
+            "g8.py", "g8_workload.py", "g8_observe.py", "g8_cycles.py", "client.py",
+            "verify_oracles.py", "capacity.py", "harness.py") if (ROOT / "tools" / name).is_file()}}
+
+
+def database_observer(pid, cluster_file, data_path, log_path):
+    """Validate an explicitly selected FDB process and its actual data/log paths.
+
+    This read-only observer interface also works outside the source checkout.
+    Service interruption retains the stricter disposable-helper ownership check.
+    """
+    if type(pid) is not int or pid <= 0:
+        raise ValueError("An explicitly owned positive database PID is required")
+    cluster = Path(cluster_file).resolve(strict=True)
+    data, logs = Path(data_path).resolve(strict=True), Path(log_path).resolve(strict=True)
+    if not data.is_dir() or not logs.is_dir() or data == logs:
+        raise ValueError("Distinct actual database data and log directories are required")
+    try:
+        executable = Path(f"/proc/{pid}/exe").resolve(strict=True)
+        arguments = [value.decode() for value in Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0") if value]
+    except (OSError, UnicodeError) as error:
+        raise ValueError("Selected database process is unavailable") from error
+    if executable.name != "fdbserver":
+        raise ValueError("Database PID must identify the selected FoundationDB server")
+    for flag, value in (("-C", cluster), ("-d", data), ("-L", logs)):
+        if arguments.count(flag) != 1 or arguments[arguments.index(flag)+1:arguments.index(flag)+2] != [str(value)]:
+            raise ValueError("Database process does not own the selected cluster/data/log paths")
+    return {"pid": pid, "cluster_file": str(cluster), "data": str(data), "logs": str(logs),
+            "executable": str(executable)}
 
 
 def prepare(binary, directory, *, backend="redb", cluster_file=None, settings=None):
@@ -242,7 +271,8 @@ def perform(state, action, rng, trace, *, phase="measurement"):
     backend, model, ids = state["backend"], state["model"], state["ids"]
     renew_auth(state)
     started = time.monotonic()
-    commands, proposal, rejected = None, None, None
+    commands, proposal, rejected, expected = None, None, None, None
+    publications = {}
     if action == "replay":
         saved, original = state["last"]
         response = client.execute(backend.url, backend.token, saved)
@@ -253,36 +283,37 @@ def perform(state, action, rng, trace, *, phase="measurement"):
     else:
         if action == "invalid":
             commands = [{"op": "create", "id": ids[-1], "contract": 410,
-                         "fields": reservation(ids[0], 10, 15, 3)}]
+                         "fields": reservation(ids[0], 20, 25, 11)}]
         elif action == "create":
             require(state["active"] is None, "CRUD cycle is not drained")
             i = state["cycle"] % (len(ids) - 6)
             identity = ids[i + 6]
-            commands = [{"op": "create", "id": identity, "contract": 410,
-                         "fields": reservation(ids[rng.randrange(2)], 50+i*10, 55+i*10, rng.randrange(1, 7))}]
+            # Delivery has no retained output-producer identity, so its public
+            # UUID can be reused. Existing reservations own private-output churn.
+            commands = [{"op": "create", "id": identity, "contract": 205,
+                         "fields": {"pool": ids[rng.randrange(2)], "at": str(50+i*10),
+                                    "quantity": str(rng.randrange(1, 7))}}]
         else:
-            identity = ids[2] if action == "noop" else state["active"]
+            identity = ids[2] if action == "noop" else ids[4] if action in ("update", "stale") else state["active"]
             require(identity is not None, "An active CRUD source is required")
             record = backend.call("records.get", {"model": model, "id": identity})
             if action == "delete":
                 commands = [{"op": "delete", "id": identity, "if_version": record["version"]}]
             else:
-                fields = {"quantity": "10"} if action == "noop" else {
-                    "pool": ids[rng.randrange(2)], "requested": str(rng.randrange(1, 7)),
-                    "ends": str(int(record["input"]["starts"]) + rng.randrange(3, 9))}
+                fields = {"quantity": "10"} if action == "noop" else {"active": not record["input"]["active"]}
                 commands = [{"op": "update", "id": identity,
                     "if_version": state["stale_version"] if action == "stale" else record["version"],
                     "set": fields, "unset": []}]
                 if action == "update":
-                    # Force a changed field so that the actual previous token becomes stale.
-                    commands[0]["set"]["requested"] = str(int(record["input"]["requested"]) + 1)
+                    # Actual activation changes the token and retires/reuses the
+                    # two existing private roles without deleting the producer.
                     state["stale_version"] = record["version"]
         if action == "stale":
             rejected = "stale_version"
         else:
             try:
                 proposal = stage(state["facts"], commands)
-                evaluate("equipment", proposal)
+                expected = evaluate("equipment", proposal)
             except OracleError as error:
                 rejected = error.kind
             equal("action.oracle", "invariant" if action == "invalid" else None, rejected)
@@ -303,19 +334,30 @@ def perform(state, action, rng, trace, *, phase="measurement"):
         else:
             response = client.execute(backend.url, backend.token, saved)
             equal("mutation.status", "committed", response["status"])
+            # Check transient publications before the next edit/delete can hide
+            # a wrong result. Only the sequential writer changes these sources.
+            for identity, source in proposal.items():
+                observed = backend.call("records.get", {"model": model, "id": identity})
+                equal("committed.input", source["fields"], observed["input"])
+                equal("committed.source_derived", expected["derived"].get(identity), observed["derived"])
+                publications[identity] = {key: observed[key] for key in ("input", "derived", "version")}
+            if action == "noop":
+                equal("noop.original_version", record["version"], publications[ids[2]]["version"])
             with state["lock"]:
                 state["facts"] = proposal
                 state["receipts"] += 1
                 if action == "create":
                     state["active"] = commands[0]["id"]
-                    state["reserved"].add(state["active"])
+                    if commands[0]["contract"] == 410:
+                        state["reserved"].add(state["active"])
                 elif action == "delete":
                     state["active"] = None
                     state["cycle"] += 1
             state["last"] = saved, response
             kind = "committed"
         item = {"action": action, "phase": phase, "plan": saved, "expected": rejected or "committed",
-                "response": response, "kind": kind, "http_status": http_status if rejected else 200}
+                "response": response, "kind": kind, "http_status": http_status if rejected else 200,
+                "checked_publications": publications}
     item.update(event="outcome", latency_ms=(time.monotonic()-started)*1000)
     trace.write(item)
     return item
@@ -333,6 +375,10 @@ def offline(state, label):
     equal("integrity.receipts", state["receipts"], integrity["receipts"])
     inspector = backend.cli("inspect", backend.store)
     equal("integrity.retained_roles", len(state["reserved"])*2, len(inspector["roles"]))
+    role_ids = {hashlib.sha256(client._bytes(row["source_role"])).hexdigest(): row["binding"]["output"]
+                for row in inspector["roles"]}
+    if "initial_role_ids" in state:
+        equal("integrity.stable_private_role_ids", state["initial_role_ids"], role_ids)
     write_json(state["directory"] / (label + ".inspect.json"), inspector)
     return {"status": "passed", "integrity": integrity, "table_count": len(TABLES),
             "image_sha256": hashlib.sha256(client._bytes(image)).hexdigest(),
@@ -343,6 +389,9 @@ def rollback_control(state, label):
     backend = state["backend"]
     backend.stop()
     before = backup_image(backend, label + "-before")
+    inspection = backend.cli("inspect", backend.store)
+    state["initial_role_ids"] = {hashlib.sha256(client._bytes(row["source_role"])).hexdigest(): row["binding"]["output"]
+                                 for row in inspection["roles"]}
     backend.start()
     bad = {"op": "create", "id": state["ids"][-1], "contract": 410,
            "fields": reservation(state["ids"][0], 10, 15, 3)}
@@ -391,9 +440,14 @@ def trace_outcomes(path, budgets):
                 raise Incomplete("An original submitted intent has no outcome")
             pending = item
         elif event == "outcome":
-            if item.get("action") != "replay":
+            if item.get("action") == "replay":
+                if pending is not None:
+                    raise Incomplete("Replay was spliced into an unfinished original intent")
+            else:
                 if pending is None or pending.get("plan") != item.get("plan"):
                     raise Incomplete("Outcome does not match the retained original intent")
+                if any(pending.get(key) != item.get(key) for key in ("action", "phase", "expected")):
+                    raise Incomplete("Outcome relabeled its original action, phase or expectation")
                 pending = None
             count += 1
             yield item
@@ -403,12 +457,15 @@ def trace_outcomes(path, budgets):
         raise Incomplete("Trace is missing required submitted outcomes")
 
 
-def reconcile_trace(state, path):
+def reconcile_trace(state, path, *, deadline=None):
     """At drain, resolve each submitted original intent using its saved context."""
     backend, count = state["backend"], 0
     for item in trace_outcomes(path, state["profile"]["budgets"]):
+        remaining = 40 if deadline is None else deadline-time.monotonic()
+        if remaining <= 0:
+            raise Incomplete("Original-intent reconciliation exceeded its deadline")
         saved = item["plan"]
-        status = client.execute(backend.url, backend.token, saved, status=True)
+        status = client.execute(backend.url, backend.token, saved, status=True, timeout=min(20, remaining/2))
         if item["kind"] in ("committed", "replayed"):
             equal("drain.receipt", item["response"]["result"], status["result"])
         else:
@@ -443,8 +500,11 @@ def run(state, *, database_pid=None, database_paths=()):
                 t = time.monotonic()
                 summary = backend.call("roots.read", {"model": state["model"], "owner": state["ids"][0],
                     "slot": 7, "read": {"kind": "summary"}})["value"]
-                # Every valid reservation consumes/releases equally: delivery is always ten.
-                equal("reader.literal.sum", "10", summary["sum"])
+                # At most one positive delivery in [1,6] coexists with the ten
+                # fixture units. This finite source-declared set covers either
+                # side of an in-flight create/delete; every completed transition
+                # separately checks exact quantities and private publications.
+                require(10 <= int(summary["sum"]) <= 16, "Reader sum is outside the declared source trajectories")
                 with lock:
                     name = phase["name"]
                     read_counts[name] += 1
@@ -500,6 +560,7 @@ def run(state, *, database_pid=None, database_paths=()):
                 while time.monotonic() < begin + duration and not stop.is_set():
                     if name == "measurement" and index >= settings["max_new_operations"]:
                         raise Incomplete("Measurement operation budget exhausted before duration")
+                    offered_at = time.monotonic()
                     item = perform(state, next(actions), rng, trace, phase=name)
                     if name == "measurement":
                         coverage[item["action"]] += 1
@@ -507,7 +568,9 @@ def run(state, *, database_pid=None, database_paths=()):
                         http[item["http_status"]] += 1
                         latencies.append(item["latency_ms"])
                     index += 1
-                    stop.wait(max(0, begin + index/settings["mutation_rate"] - time.monotonic()))
+                    # No catch-up bursts after a slow action: the next new
+                    # action cannot start earlier than one declared interval.
+                    stop.wait(max(0, offered_at + 1/settings["mutation_rate"] - time.monotonic()))
             markers[-1]["duration_achieved"] = time.monotonic()-begin
             if failures:
                 raise failures[0]
@@ -528,9 +591,11 @@ def run(state, *, database_pid=None, database_paths=()):
         "profile": settings, "backend": state["preflight"]["backend"], "preflight": state["preflight"],
         "coverage": {"status": floor_status, "requested": settings["floors"], "achieved": dict(coverage)},
         "work": {"offered": sum(v for k,v in coverage.items() if k != "read"), "submitted": sum(kinds.values()),
+                 "unit": "Primary scenario actions; session and per-transition oracle observations are included in action latency",
                  "completed": sum(kinds.values()), "unresolved": 0, "outcomes": dict(kinds),
                  "http_statuses": dict(http), "reads_by_phase": dict(read_counts), "max_pending_bound": settings["readers"]+1,
-                 "mutation_latency": latency(latencies) if latencies else {},
+                 "action_latency": latency(latencies) if latencies else {},
+                 "latency_scope": "End-to-end action including source oracle, preparation, session, mutation/replay and result checks",
                  "measurement_completions_per_second": sum(kinds.values())/settings["duration_seconds"]},
         "markers": markers, "continuous_application_pid": pid, "resources": resources,
         "measurement_windows": {"steady_seconds": [0, settings["duration_seconds"]*2/3],
@@ -581,6 +646,22 @@ def check(result):
     return {"status": "passed", "coverage": True, "resolved": True, "resources": True}
 
 
+def publish_result(path, result, artifact_root, budgets):
+    """Count the final report itself and all retained files under its byte budget."""
+    for _ in range(5):
+        write_json(path, result)
+        actual = check_artifacts(artifact_root, budgets)
+        if actual["status"] != "passed":
+            result["status"] = "incomplete"
+            result["artifacts"] = {**actual, "status": "incomplete"}
+            write_json(path, result)
+            raise Incomplete("Required final artifact budget exceeded or observation unavailable")
+        if result.get("artifacts") == actual:
+            return result
+        result["artifacts"] = actual
+    raise Incomplete("Required final artifact observation did not stabilize")
+
+
 def complete_epoch(state, *, database_pid=None, database_paths=()):
     rollback = rollback_control(state, "preflight-rollback")
     result = run(state, database_pid=database_pid, database_paths=database_paths)
@@ -593,7 +674,5 @@ def complete_epoch(state, *, database_pid=None, database_paths=()):
     write_json(state["directory"] / "final-facts.json", state["facts"])
     check(result)
     write_observation_report(state, result)
-    result["artifacts"] = check_artifacts(state["directory"], state["profile"]["budgets"])
-    require(result["artifacts"]["status"] == "passed", "Required artifacts exceed their declared byte budget")
-    write_json(state["directory"] / "result.json", result)
+    publish_result(state["directory"] / "result.json", result, state["directory"], state["profile"]["budgets"])
     return result
