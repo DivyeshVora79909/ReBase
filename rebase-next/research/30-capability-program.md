@@ -22,11 +22,11 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 
 ## Capability map and dependency order
 
-**Current execution boundary (2026-10-23):** G4/G5 and the bounded V1 workshop
-are accepted. [V1 execution and limits](44-workshop-verification-result.md) owns
-current verification; its earlier plan remains historical preparation. The
-assigned V1 goal is complete. G6 accounting, G7, G8 and frontend remain deferred
-until separately selected; keep their gate identities and evidence.
+**Current execution boundary (2026-10-24):** V1 is accepted and G7 is now
+selected. Follow [the G7 checkpoints](45-storage-adapter-plan.md): FoundationDB
+first, then redb and standalone SurrealKV through one contract. TiKV, G6, G8
+execution and frontend remain deferred. Backend acceptance requires real
+transaction/concurrency evidence, not just a wrapper or generated source.
 
 | Gate | Observable power | Preparation and acceptance boundary |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ until separately selected; keep their gate identities and evidence.
 | G5 | Reliable external work | [G5a intent](37-atomic-intent-implementation.md), [G5b worker/application](38-fenced-worker-implementation.md) and [G5c inbox/recovery](39-ingress-recovery-implementation.md) accepted for the fixed fake provider |
 | V1 | Self-explaining example verification suite | **Accepted:** [workshop result](44-workshop-verification-result.md), four non-accounting chapters, independent expectations, bounded exploration, replay and all 15 current capability rows |
 | G6 | Representative accounting power | **Deferred until separately selected:** dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns; existing bounded invoicing remains a regression example |
-| G7 | Distributed storage | One real backend adapter and actual controlled conflict/retry/unknown-commit schedules; neither a mock nor redb serialization proves conformance |
+| G7 | Distributed storage | **Selected:** [adapter plan](45-storage-adapter-plan.md), FoundationDB first, then redb/SurrealKV; real conflict, abort and unknown-commit schedules required |
 | G8 | Workload and deployment acceptance | Extended workloads, recovery and release package with explicit limits rather than unlimited production claims |
 
 The table is the program, not a claim that every row is implementation-ready.
@@ -100,8 +100,7 @@ without another prompt. Keep `CONTEXT.md` current for switching agents.
 
 G4a, G4b, G4c, G4d-a/b/c and G5a-G5c are accepted. The
 [G4d-c result](42-authored-selection-result.md) closes the previous selected scope.
-V1.1–V1.5 are now [accepted](44-workshop-verification-result.md). Stop after
-this goal; do not begin G6–G8 or frontend without a separately selected goal.
+V1.1–V1.5 are now [accepted](44-workshop-verification-result.md). G7 is subsequently selected above; G6, G8 and frontend remain deferred.
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
 fake-provider execution, durable signed ingress and restored reconciliation are

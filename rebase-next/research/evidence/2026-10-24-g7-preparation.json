@@ -1,0 +1,32 @@
+{
+  "base_commit": "48006c23a5b2b968064aa4f7d395928200f700ec",
+  "checkpoint": "G7.0",
+  "date": "2026-10-24",
+  "deferred": [
+    "TiKV",
+    "G6",
+    "G8",
+    "frontend"
+  ],
+  "execution": "Documentation only; adapter files may be in progress separately but no backend acceptance is claimed.",
+  "relative_links_checked": 137,
+  "selected_backends": [
+    "FoundationDB",
+    "redb",
+    "SurrealKV"
+  ],
+  "source_fingerprints": {
+    "AGENTS.md": "daf9ac1df3a8d52754d28e6997b9ae7f55cbe48f1667ee3a4981c19b57ea2d25",
+    "CONTEXT.md": "fc1d1fe489bbf1b64f848f28888cf2dbdfe8efb3fc8ce5ea86777ffa6193af45",
+    "Cargo.lock": "17cf204c539b86397841eaec07a7ccfed4ba4c886652ae38ac2aedae2eccbced",
+    "Cargo.toml": "8c93f8c6b8fdb8a6ec396203e6cbb798b24e4015ceed38178814a3aa8c267855",
+    "README.md": "e890e78cbda5516cc7cd73a460a5e612744b910476ed27eb4be2300bedc9addf",
+    "research/30-capability-program.md": "4835c3e1ac015d5681d291517a1afbe6a503ed7bc4e4656981b3d116cbc29609",
+    "research/45-storage-adapter-plan.md": "b620ce1ed62a7d5b61d7b90ede30839ab2abc5feb0fae4a267956dcbbd7423e8",
+    "src/local.rs": "28d5c9077696cc2e7a8fa26b1bd19088092d7b6b62a8b0856bcc3452cbad1c28",
+    "src/mutation.rs": "6e94d6f71e4ab729be94c3e2e720337967256d479e8b9f6255ef31c0e8d5cd70",
+    "src/native_slice.rs": "d5ed1d09f208637cc4dade5926617f0dfef3312fa3095e1a465a3b0558dccc4e",
+    "src/query.rs": "fdfa9719d988b0638562d85e836b56cad45708c779e41e92a4deba8663798a57"
+  },
+  "status": "prepared"
+}

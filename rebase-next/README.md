@@ -53,6 +53,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
+| Active storage-adapter work | [G7 plan and checkpoints](research/45-storage-adapter-plan.md) |
 | Current source verification | [V1 workshop result](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 

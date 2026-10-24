@@ -1,5 +1,21 @@
 # Compact context — 2026-10-23
 
+**Active: G7.0 preparation, FoundationDB-first storage adapters.**
+The user authorized implementation and checkpoint pushes on 2026-10-24.
+Read [the active contract](research/45-storage-adapter-plan.md). The sequence is
+contract/runtime probes, shared transaction/version coordination, complete
+FoundationDB integration, redb, SurrealKV, and cross-backend closeout. All
+application spaces must commit atomically; no automatic transaction retries by
+default. Unknown commit outcome retains the original operation identity.
+
+**Exact continuation:** finish G7.0 documentation verification/commit, then
+G7.1 real FoundationDB SDK/network/runtime/concurrency probes. Root is the sole
+Cargo owner, two jobs, `CARGO_INCREMENTAL=0`, existing cache
+`target/verification-build`. Contributors own separate adapter files. No backend
+implementation is accepted merely because its source exists. Shared counter and
+cursor changes require their own tests before distributed scalability claims.
+TiKV, G6 accounting, G8 execution and frontend remain deferred.
+
 **V1.1–V1.5 complete: self-explaining non-accounting verification.**
 Read the [workshop result](research/44-workshop-verification-result.md),
 [evidence](research/evidence/2026-10-23-v1-workshop.json), and
@@ -24,7 +40,7 @@ replay pass. A test-only wrong observation is detected, shrinks from nine action
 to one, and reproduces in a fresh store. Twenty Python controls pass. This is
 bounded evidence, not unrestricted scale or all-program correctness.
 
-**Exact continuation:** the assigned V1 goal is complete; stop and report.
+**Historical V1 stop boundary (superseded only by selected G7 above):**
 G6 accounting, G7 distributed storage, G8 workload/release expansion and frontend
 remain deferred. Do not invent another gate or restart G4/G5. The last verified
 packaged release remains 0.6.0. Source 0.15 is not a new release bundle.
@@ -254,7 +270,7 @@ HTTPS fetch/push works in this cloud workspace. Keep checkpoint commits linear
 on `main`; compare current remote state before pushing and never force unrelated
 changes. Historical connector-era references remain under `refs/codex/checkpoints/`.
 
-**Current next action:** V1.1–V1.5 are accepted in the
+**Historical next action:** V1.1–V1.5 are accepted in the
 [workshop result](research/44-workshop-verification-result.md). The assigned goal
 stops here; G6 broader accounting, G7 distribution and G8 release expansion
 remain deferred. Earlier executable and acceptance notes below are historical.

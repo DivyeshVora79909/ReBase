@@ -5,19 +5,20 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**V1 workshop verification is complete in source 0.15.0.** Read the
-[result and limits](research/44-workshop-verification-result.md),
-[workshop guide](docs/workshop.md), and top of `CONTEXT.md`.
-V1.1–V1.5 now have executable evidence: four ordinary HTTP chapters, independent
-source oracles and full rollback checks, 15 current capability rows, finite
-native exploration, seeded actions, logical replay and a real-HTTP injected-fault
-shrinking control. Do not restart accepted stages or treat finite tests as a
-proof of arbitrary designs. Keep one build owner and reuse matching artifacts.
-The V1 goal stops here. G6 accounting, G7 distributed storage, G8 release
-expansion and frontend remain deferred until separately selected. The historical
-[plan](research/43-example-verification-suite.md) retains its preparation scope;
-paper 44 owns execution acceptance. No new broad implementation is authorized
-by an unassigned continuation beyond this goal.
+**Active goal: G7 FoundationDB-first storage adapters.** The user authorized
+implementation and checkpoint pushes on 2026-10-24. Read the
+[G7 contract and checkpoints](research/45-storage-adapter-plan.md) and the top of
+`CONTEXT.md`. Implement G7.0–G7.6 with one shared persistence boundary, then
+FoundationDB, redb and standalone SurrealKV adapters. TiKV, G6 accounting, G8
+workload/release expansion and frontend stay deferred. Commit and push each
+verified checkpoint on existing `main`; continue without another prompt.
+Use small delegated tasks with exact file ownership, one Cargo owner, cached
+artifacts and incremental off. Do not accept mock-only distributed evidence.
+
+V1.1–V1.5 remain accepted in source 0.15.0:
+[results](research/44-workshop-verification-result.md) and
+[guide](docs/workshop.md). Preserve historical source/evidence; adapter
+preparation and implementation are not yet backend acceptance.
 
 **Current release: G3d/G3e complete, 0.6.0.** Read
 [deployment acceptance](research/29-deployment-result.md) and the
@@ -44,7 +45,7 @@ API 3 and measurement behavior 2. [G4d-c authored selection](research/42-authore
 is accepted in source 0.14.0, with the same shared formats and measurement
 behavior 3. G4 and G5 are complete within their declared bounds. The earlier
 stop after G5 is superseded only by the V1 verification implementation above;
-broader accounting, distribution and release expansion remain deferred.
+broader accounting and release expansion remain deferred; G7 is now selected above.
 Preserve earlier evidence and boundaries below.
 
 The deployable bounded backend and developer-tool goal, excluding frontend, is
@@ -61,7 +62,7 @@ Do not repeat accepted G1/G2, raise constants and call that scalability, or
 represent these authored workload checks as unrestricted production capacity.
 Future work enters a named capability gate; do not restart accepted stages.
 Within the user's active scope, commit and push each verified checkpoint on the
-existing `main`. The current V1 goal is complete; do not automatically start G6.
+existing `main`. Continue the selected G7 goal; do not automatically start G6 or G8.
 Keep the current gate and exact continuation at
 the top of `CONTEXT.md` so a fresh agent can resume. Preserve capability, not the old
 implementation: choose a simpler approach when it satisfies the same contracts.
