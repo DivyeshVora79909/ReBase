@@ -24,7 +24,7 @@ Use the current source build described in the guide. Equipment, measurement,
 quantity and effect-demo each use their own store and the same production APIs;
 these are not cross-store transactions. Broader accounting remains deferred.
 
-## Workload tools and prepared population goal
+## Workload and population tools
 
 [G8.0–G8.5 are accepted within their recorded boundaries](../research/53-workload-deployment-result.md). The
 [workload guide](workloads.md) shows ordinary prepare/run/check composition,
@@ -37,11 +37,13 @@ extracted package acceptance. G8.5 closes the evidence handoff. See the
 [results](../research/53-workload-deployment-result.md) for artifact hashes and
 the package limits.
 
-[G9](../research/54-composable-developer-tools-plan.md) is prepared for general
-population using existing model metadata, explicit reference pools and fresh
-aggregate rules. It is not an implemented API. It composes with the existing
-mutation client and G8 observations rather than adding a second writer or stress
-framework. Existing model/receipt limits apply.
+[G9 population](population.md) provides explicit `prepare`, `propose`, `accept`
+and `reject` operations over public developer metadata and typed reference pools.
+The caller owns state and current context; the existing mutation client saves and
+submits each plan. Live Equipment/Quantity examples also reuse G8’s bounded
+scheduler and observations. G9.4 evidence export and final handoff review remain
+pending. See the [G9 plan and status](../research/54-composable-developer-tools-plan.md)
+for checkpoint details. Existing model and receipt limits apply.
 
 ## Existing model and fixture tools
 
