@@ -1,0 +1,184 @@
+{
+  "catalog_sha256": {
+    "calculation.developer.json": "7b2c08e8fd4c9972c973ff0aef6458d3ecc9f85d62fe6fb6835693fcc1c4cc72",
+    "calculation.public.json": "e219c3ec2085da8071fce106ee101f7c6b767252c8ec28a7e0a7da8feffd9f36",
+    "effect-demo.developer.json": "47aeb33d291fffd90eb6a1ef7ef171db6456dc324d1e19fa65d151ab186682a4",
+    "effect-demo.public.json": "4899e8ebbb5b21dc36c40b51ee5f140bfed7ce768036ebf2de4ea2c5c16bd8b8",
+    "equipment.developer.json": "fa982d4a45473d1d1a8389fa7cccf1a8f53b8200489e2f4d67a5fab36e38d366",
+    "equipment.public.json": "db511f774bece4c8914f968b8806213b0f80bb63b07eb30592cca836a7407d47",
+    "invoicing.developer.json": "31ea19584122ffbe902a355ca5e8a3dcc1098f2717ba845c0e8fdc0d80100b02",
+    "invoicing.public.json": "aa4ecfd39bc1d553c9fb07ad92078e7ca48c0f0ca59504bd2b3f7f6945c76fbb",
+    "measurement.developer.json": "8dc97f5011cdba8c1d5f40ed008ad783a480ad92c935b428a73b5cb7c82d6f5e",
+    "measurement.public.json": "03f57dbddd82c9db3f59c7227ee9c0f250872bb4db635af7874a56ceaa8cadec",
+    "quantity.developer.json": "be0af12d3504a0f835ec83d92d30a73f272a2e3839ec4677aed2ddaab25ba761",
+    "quantity.public.json": "9c45346fd59b4625ff0d0a5a356804e697d9c8256a89ac535da8d15c16c73116"
+  },
+  "checkpoint": "G9.0 feasibility and operation contract",
+  "date": "2026-10-25",
+  "decision": {
+    "keyword_policy": "Exercise standard JSON Schema generation for tested 2020-12 shapes. Fail clearly for unsupported assertion keywords rather than silently weakening constraints. x-* are annotations; apply explicit model strategies for native range/binding meaning. Revalidate final overlaid values with a prepared validator and retain server validation as authority.",
+    "node_package": "json-schema-faker@0.6.3",
+    "optional_value_provider": "One bounded Node JSONSchemaFaker subprocess per schema batch; provider is replaceable by an ordinary Python callback and is not required when explicit strategies supply values.",
+    "orchestration": "Python population core and existing tools/client.py",
+    "provider_api": "provider(schema, count, seed) -> list[dict]",
+    "provider_bounds": {
+      "count_max": 128,
+      "input_bytes_max": 262144,
+      "output_bytes_max": 2097152,
+      "processes": "one per bounded batch; no persistent worker",
+      "timeout_seconds_max": 15
+    },
+    "receipt_binding": "Require response.status=committed, response.result.kind=records, nested response.result.result.operation_id equal to the exact saved plan request operation_id, and exact proposal/plan request equality. Unknown outcomes retain the original plan/context and block progress.",
+    "state_boundary": "Caller-owned state retains accepted pools/counts/usage, explicit attempt cursor, one pending proposal and exact saved plan; proposals do not publish parents or fulfill quotas. Only a matching committed records receipt advances accepted state."
+  },
+  "evidence_paths": [
+    "/tmp/g90-batch/provider.mjs",
+    "/tmp/g90-batch/adapter.py",
+    "/tmp/g90-batch/compare.py",
+    "/tmp/g90-native/provider_validate.py",
+    "/tmp/g90-native"
+  ],
+  "gate": "G9.0",
+  "git_delivery": {
+    "future_pushes": "ordinary main pushes; never overwrite unexpected new upstream commits",
+    "previous_remote_partial_tip": "1fe6310f755c8bbe231c7576c33a3825b8e80903",
+    "result": "exact force-with-lease push succeeded; origin now has linear verified G8 history",
+    "verified_g8_tip": "deeced1"
+  },
+  "native_followup": {
+    "binary": "/tmp/rebase-g84-redb-payload/rebase-next-0.16.0-linux-x86_64-redb/bin/rebase-next",
+    "binary_version": "0.16.0 redb-only SDK-free package",
+    "catalog_exports": "/tmp/g90-native/{calculation,equipment,invoicing,measurement,effect-demo,quantity}.{public,developer}.json",
+    "commands": [
+      "BIN=/tmp/rebase-g84-redb-payload/rebase-next-0.16.0-linux-x86_64-redb/bin/rebase-next; for m in calculation equipment invoicing measurement effect-demo quantity; do $BIN --model $m model public > /tmp/g90-native/$m.public.json; $BIN --model $m model developer > /tmp/g90-native/$m.developer.json; done",
+      "python3 /tmp/g90-native/provider_validate.py"
+    ],
+    "developer_reference_counts": {
+      "calculation": 15,
+      "effect-demo": 1,
+      "equipment": 4,
+      "invoicing": 26,
+      "measurement": 3,
+      "quantity": 3
+    },
+    "evidence_script": "/tmp/g90-native/provider_validate.py",
+    "inputs": {
+      "calculation-3.input": {
+        "at": "0",
+        "curve": "00000000-0000-4000-8000-000000000002",
+        "rate": "1"
+      },
+      "effect-demo-205.input": {
+        "account": "00000000-0000-4000-8000-000000000002",
+        "execute_at": null,
+        "not_after": null,
+        "units": "1"
+      },
+      "equipment-410.input": {
+        "active": true,
+        "ends": "30",
+        "pool": "00000000-0000-4000-8000-000000000002",
+        "requested": "8",
+        "starts": "10"
+      },
+      "invoicing-211.input": {
+        "at": "0",
+        "invoice": "00000000-0000-4000-8000-000000000002",
+        "quantity": {
+          "denominator": "1",
+          "numerator": "1"
+        },
+        "rounding": "half_even",
+        "unit_price_minor": "100"
+      },
+      "measurement-211.input": {
+        "at": "0",
+        "instrument": "00000000-0000-4000-8000-000000000002",
+        "unit": 7,
+        "value": "5"
+      },
+      "quantity-205.input": {
+        "factor": {
+          "denominator": "2",
+          "numerator": "1"
+        },
+        "parent": "00000000-0000-4000-8000-000000000002",
+        "rounding": "half_even"
+      }
+    },
+    "limitations": [
+      "CLI native validation is schema/native binding validation, not a transaction or aggregate proof.",
+      "Equipment available_before alone does not prove arbitrary interval feasibility; the accepted recipe must use increasing starts, a common future end and no unseen intermediate capacity loss, or an explicit whole-interval rule.",
+      "Public HTTP catalog omits reference declarations; trusted developer catalog contains references and private contracts, so population must select public contracts and use declared target metadata.",
+      "Generated proposals are not committed parents; server authority, OCC, global invariants and aggregate feasibility remain authoritative.",
+      "The provider timing is value generation only and does not establish end-to-end throughput."
+    ],
+    "overlay_controls": 6,
+    "overlay_result": "One schema-generated and explicitly overlaid dependent/public sample per model passed native `model validate`: Calculation Quote, Equipment Reservation, Invoicing Issue, Measurement Observation, Effect Demo Dispatch, Quantity Scale.",
+    "public_contract_counts": {
+      "calculation": 10,
+      "effect-demo": 2,
+      "equipment": 3,
+      "invoicing": 9,
+      "measurement": 4,
+      "quantity": 3,
+      "total": 31
+    },
+    "raw_control": "Five of six raw generated samples passed this one-seed native validation set; Equipment Reservation failed because generated starts and ends were both 0, caught by native model binding. This demonstrates the need for explicit strategies and native validation beyond schema shape."
+  },
+  "python_vs_node_trial": {
+    "node": {
+      "node": "26.12",
+      "npm": "12.2",
+      "production_packages": 1,
+      "production_transitives": 0,
+      "rows": 1024,
+      "seconds_batch_128": 0.419,
+      "seconds_batch_32": 1.365,
+      "timing_scope": "process startup + JSON input/output + generation; excludes RPC/database transport"
+    },
+    "prototype_loc": {
+      "javascript_worker": 10,
+      "python_adapter": 16,
+      "total": 26
+    },
+    "python": {
+      "api_limit": "Hypothesis test-generation API; .example() is unsupported for population throughput",
+      "packages": [
+        "hypothesis-jsonschema==0.23.1",
+        "hypothesis==6.170.9",
+        "jsonschema==4.26.0"
+      ],
+      "rows": 1024,
+      "seconds": 19.327,
+      "transitive_packages": 6
+    },
+    "schema_trials": {
+      "catalogs": [
+        "calculation",
+        "equipment",
+        "invoicing",
+        "measurement",
+        "effect-demo"
+      ],
+      "distinct_contracts": 28,
+      "seeded_repeatability": "same seed/settings yielded identical samples in trial",
+      "shapes": [
+        "nested object",
+        "array",
+        "optional/nullable",
+        "oneOf",
+        "canonical decimal-string patterns",
+        "UUID patterns"
+      ]
+    },
+    "scope_note": "An earlier Python count of 38 included a duplicate calculation export; 28 is the distinct count across these five catalogs. Quantity was added in the native follow-up, giving 31 public contracts across six actual catalogs."
+  },
+  "root_review": {
+    "native_overlay_controls_rerun": 6,
+    "result": "passed",
+    "scope": "offline existing model native validation; not real writes",
+    "script_sha256": "ba167f8a0990553035d8818f1c75bfca88afccf516b0071735d638821130bb79"
+  },
+  "status": "passed; G9.1 implementation not yet accepted"
+}

@@ -1,5 +1,23 @@
 # Compact context — 2026-10-25
 
+**Active: G9.0 accepted; G9.1–G9.4 implementation underway after completed G8.** The user
+explicitly requests replacing unverified origin tip 1fe6310 with verified linear
+history, checkpoint pushes to main, and continued composable population work.
+Root alone integrates Git and verifies the final result; use detailed Luna
+delegation with disjoint ownership. Begin G9.0 with supported-library trials and
+existing model/client contract checks; select the smallest maintainable path
+before writing a general generator. [G9 results](research/55-population-tooling-result.md)
+select Python orchestration plus an optional bounded Node JSONSchemaFaker value
+provider, preserving the existing client. Root reran six native overlay controls;
+schema-only values do not imply native/global validity. Core/provider owners are
+disjoint; no real backend workflow or new Cargo build has run for G9 yet.
+Origin/main was updated from the exact partial tip to verified deeced1 with a
+guarded force-with-lease; subsequent checkpoint pushes are ordinary linear ones.
+G8 has no unaccepted active checkpoint.
+Do not restart its long campaigns or begin deferred feature/capacity goals.
+
+## Historical G8 closeout (superseded stop instruction)
+
 **Goal complete: G8.0–G8.5 accepted within their recorded boundaries; stop here.**
 The continuation review passes 43 isolated baseline controls and matches all
 72 core/Cargo plus 13 model fingerprints. Historical G8.1 raw runs are absent

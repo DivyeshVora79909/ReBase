@@ -1,9 +1,9 @@
 # G9 composable population and experiment tools
 
-Preparation only, following the user's developer-tool discussion. G8 remains
-the active implementation goal; this paper defines the next tooling goal and
-a narrow composition refinement for G8. No G9 API or acceptance is implemented
-by this document. Historical D5, G2, V1 and G8.0 evidence remains dated evidence.
+Implementation explicitly assigned after G8 closeout, 2026-10-25. G9.0 is the
+first checkpoint; this plan is not executable acceptance. Historical D5, G2,
+V1 and G8 evidence remains dated evidence. The user permits breaking changes
+and requests verified checkpoint commits/pushes on existing main.
 
 ## Goal and placement
 
@@ -215,10 +215,11 @@ change. Reuse unchanged engine evidence; do not repeat G7 or a full scale campai
 
 ## Integration and continuation
 
-G8.1–G8.5 remain the active agent's work. Preparation of G9 can proceed alongside
-that work; implementation in new owned files may overlap only after agreeing
+G8.0–G8.5 are complete within their recorded bounds. G9 is now selected;
+implementation in new owned files may overlap only after agreeing
 ownership of shared clients, workload tools, package manifests and guides.
 Never have two agents refactor the same runner. One owner integrates the G8
-extraction. Default order is G8 closeout, then G9.0–G9.4; no G6, TiKV, frontend,
+extraction. Continue G9.0–G9.4; no G6, TiKV, frontend,
 new monitoring service or engine-capacity expansion is selected by this paper.
-Use the existing main branch and local checkpoint commits; no push is needed.
+Use the existing main branch and verified checkpoint commits/pushes. Root owns
+remote history and checks new upstream commits before pushing.

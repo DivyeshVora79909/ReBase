@@ -5,10 +5,23 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
+**Active goal: implement G9.0–G9.4, 2026-10-25.** The user explicitly authorized
+G9 after G8 closeout and now requests checkpoint pushes to origin/main. This
+supersedes the earlier stop/no-push handoff. Root owns Git integration and
+pushes; replace the unverified origin tip only with an exact force-with-lease,
+then use ordinary linear pushes. Never overwrite unexpected new remote commits.
+Read [G9](research/54-composable-developer-tools-plan.md), [current results](research/55-population-tooling-result.md)
+and the top of CONTEXT. G9.0 is accepted; G9.1–G9.4 remain. Use the selected
+Python orchestration and optional bounded Node value provider, then implement
+accepted operation
+boundaries; do not build a universal schema or constraint engine. Use Luna leads
+and narrow disjoint delegated tasks with explicit tests; root verifies final
+integration. One Cargo owner, two jobs, incremental off; reuse G8 evidence.
+G6, TiKV, frontend, live providers and million-record expansion remain deferred.
+
 **Latest closeout: G8.0–G8.5 accepted within recorded limits, 2026-10-25.** Read
 [the workload/deployment plan](research/52-workload-deployment-plan.md), [the results](research/53-workload-deployment-result.md)
-and the top of `CONTEXT.md`. G9 is prepared only and must not start without a
-separately selected goal. Do not begin G6, TiKV, frontend, live-provider or
+and the top of `CONTEXT.md`. The newly selected G9 goal is above. Do not begin G6, TiKV, frontend, live-provider or
 million-record capacity work.
 
 The current tools provide smoke, churn, overload, outage and independent check
@@ -17,11 +30,11 @@ commands through `tools/g8.py`; profiles and exact boundaries are in
 re-run unavailable historical campaigns or turn paced observations into capacity
 claims. Preserve the G8.3 outage boundary: owned local FoundationDB service
 recovery, not native commit-ack, replicated failover or disk/power-loss proof.
-The user requested stopping after G8; only root integrates and commits closeout.
-Do not push.
+The earlier G8-only stop and no-push instruction is historical; the active G9
+goal above supersedes it.
 
-G9 is [prepared](research/54-composable-developer-tools-plan.md), not implemented;
-any implementation requires a separately selected goal. Reuse the existing
+G9 is [selected](research/54-composable-developer-tools-plan.md), with G9.0 first.
+Reuse the existing
 client, scheduler/observer primitives and authoritative model metadata.
 The resumed environment rebuilt 0.16.0; historical g75/g81 run paths can be absent.
 Read the current continuation rather than assume those binaries are available.
