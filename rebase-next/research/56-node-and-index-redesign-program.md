@@ -108,7 +108,8 @@ also deferred; concise executable examples and API reference remain required.
 ## Checkpoint graph and current status
 
 P0 is this documentation delivery. **Twelve implementation checkpoints remain:**
-N0–N6, S0–S3 and F0. All are pending at preparation. A completed planning packet
+N0–N6, S0–S3 and F0. All were pending at P0; the preparation ledger below tracks
+subsequent acceptance. A completed planning packet
 does not count as executed acceptance for any of them.
 
 ```text
@@ -275,12 +276,13 @@ simple object manipulation remain ordinary JavaScript.
 | Checkpoint | Status at this delivery |
 | --- | --- |
 | P0 — current program, three companion contracts and navigation | Prepared; [documentation verification](evidence/2026-10-25-g10-preparation.json) records checks and fingerprints, not runtime acceptance |
-| N0 | Next implementation checkpoint; pending |
-| N1–N6 | Pending |
+| N0 | Accepted: [contracts and dependency feasibility](62-node-foundation-result.md); no native host/API implementation claimed |
+| N1 | Next implementation checkpoint; pending |
+| N2–N6 | Pending |
 | S0–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
 To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
-program and the N0 inventory. Start N0, preserve the same Git context, and finish
-the bounded feasibility/coverage decisions before assigning disjoint executable
-changes. Follow the dependencies above; do not restart G7–G9 or implement G6.
+program, the N0 result and frozen contracts. Start N1, preserve the same Git
+context, and assign disjoint native/Node ownership. Follow the dependencies
+above; do not restart G7–G9 or implement G6.

@@ -1,0 +1,17 @@
+{
+  "name": "@rebase/next-tools",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test:n0": "node --test ./test/n0-feasibility.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "json-bigint": "1.0.0",
+    "json-schema-faker": "0.6.3"
+  }
+}

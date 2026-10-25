@@ -1,0 +1,168 @@
+{
+  "schema": "rebase.n0-node-foundation-review.v1",
+  "date": "2026-10-25",
+  "review": {
+    "status": "complete",
+    "scope": [
+      "60-file capability ledger coverage",
+      "Node dependency and runtime feasibility witness",
+      "configuration registry required fields",
+      "native wire fixture and envelope shape",
+      "reused native binary and catalog provenance"
+    ],
+    "implementation_accepted": false,
+    "n1_n6_acceptance": "pending"
+  },
+  "reviewed_file_sha256": {
+    "research/60-native-host-contract.md": "367b38dd2b33fd4fa6140076337608fce111c8add4824ed94674d390458dd1d2",
+    "research/61-node-tooling-contract.md": "2b72ed43627550941e74699cfc65a6ac3645561b48b64abf294f0eb1519115db",
+    "research/fixtures/n0-migration-ledger.json": "47e5bbf90226a3a5dc087056efe874290a2833bbfba6f2278e9c9e3d237c8b9c",
+    "research/fixtures/n0-config-registry.json": "dfb310418bc0390a78762031436c20a90942450d99f494b13d9f7e4dc9ac5b90",
+    "research/fixtures/n0-native-protocol.json": "568bdae5cf255910a1c793f752034ccb3fa92dc2dac31c1dfc6ff739d057bc14",
+    "tools/node/package.json": "71ca08d0e45fa4a272da1ea2bb57374d2cef1fb9d1eeda28bfee7125abec8003",
+    "tools/node/package-lock.json": "64bd1070db31b0fa254072f3100d66c94a334706d6b49f8a9eb214004ae2d84f",
+    "tools/node/test/n0-feasibility.test.mjs": "35ad862d72f99f542dcb021acc84e9b643617746be0829a927a0b347d315666e",
+    ".nvmrc": "68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53"
+  },
+  "frozen_example_syntax_check": {
+    "source": "research/57-node-developer-contract.md fenced JavaScript composition example",
+    "command": "extract code block | node --check --input-type=module",
+    "result": "passed",
+    "scope": "syntax only; no imports executed and no future exports or types are implemented to validate"
+  },
+  "ledger": {
+    "total": 60,
+    "tools_python": 50,
+    "experiments_python": 10,
+    "unique_paths": 60,
+    "matches_current_inventory": true,
+    "required_row_fields_present": true,
+    "all_referenced_paths_exist": true
+  },
+  "node": {
+    "minimum_major": 24,
+    "verified_runtime": "Node.js 24.22.1",
+    "verified_npm": "11.19.1",
+    "distribution_sha256_checked_against_official_shasums": true,
+    "package_scope": "tools/node",
+    "package_engine": ">=24",
+    "direct_dependencies": {
+      "ajv": "8.20.0",
+      "ajv-formats": "3.0.1",
+      "json-schema-faker": "0.6.3",
+      "json-bigint": "1.0.0"
+    },
+    "lock_package_records": 9,
+    "lock_integrity_present_for_all_external_records": true,
+    "isolated_install": "npm ci --ignore-scripts --no-audit --no-fund",
+    "isolated_test": "npm run test:n0",
+    "checkout_node_modules_created": false,
+    "result": {
+      "passed": 3,
+      "failed": 0,
+      "runtime": "Node.js 24.22.1 / npm 11.19.1",
+      "execution_record": "research/61-node-tooling-contract.md; isolated run reported by the Node feasibility lead"
+    },
+    "covered": [
+      "Draft 2020-12 validation and native exact integer formats/ranges",
+      "seeded per-instance generation reproducibility and advancement",
+      "nested duplicate-key rejection",
+      "safe-number boundary and exact large integer rejection",
+      "invalid JSON token rejection",
+      "escaped lone surrogate rejection and valid surrogate pair handling",
+      "fatal UTF-8 decoder behavior"
+    ],
+    "limitation": "Focused dependency/contract witness; not full native IPC or full catalog/generation acceptance"
+  },
+  "config_registry": {
+    "format": "rebase-node-config-registry-1",
+    "entries": 10,
+    "required_entry_fields": [
+      "owner",
+      "default",
+      "unit",
+      "allowedRange",
+      "overridePolicy",
+      "source",
+      "secret"
+    ],
+    "all_required_entry_fields_present": true,
+    "configuration_families": 5
+  },
+  "native_protocol": {
+    "protocol": "rebase-native-host-1",
+    "fixture": "research/fixtures/n0-native-protocol.json",
+    "valid_session_scenarios": 4,
+    "malformed_frame_examples": 8,
+    "envelope_shape_check": "all concrete responses carry the specified protocol and ID and exactly one result or error; assertion-only catalog cases are explicitly labeled",
+    "n1_methods": [
+      "host.describe",
+      "host.configure",
+      "model.catalog",
+      "store.check",
+      "store.inspect",
+      "host.close"
+    ],
+    "n2_n5_methods_separated": true
+  },
+  "native_trial": {
+    "binary": "target/verification-build/release/rebase-next",
+    "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+    "bundle": "target/g84-package-all/BUNDLE.json",
+    "bundle_binary_sha256_matches": true,
+    "bundle_source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502",
+    "build_performed_for_trial": false,
+    "store_opened": false,
+    "service_started": false,
+    "native_host_executed": false,
+    "source_version": "0.16.0",
+    "store_format": "rebase-store-10",
+    "api": "rebase-local-api-4",
+    "native_codec": "native-slice-kv-7",
+    "effect_codec": "rebase-effects-4",
+    "models": [
+      {
+        "selector": "calculation",
+        "identity": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "public_sha256": "e219c3ec2085da8071fce106ee101f7c6b767252c8ec28a7e0a7da8feffd9f36",
+        "developer_bytes": 43411
+      },
+      {
+        "selector": "equipment",
+        "identity": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+        "public_sha256": "db511f774bece4c8914f968b8806213b0f80bb63b07eb30592cca836a7407d47",
+        "developer_bytes": 22325
+      },
+      {
+        "selector": "invoicing",
+        "identity": "4c0fa1ad55595d251294a3dcd2e84c7f9b336dbcb6028d440b5379efded51969",
+        "public_sha256": "aa4ecfd39bc1d553c9fb07ad92078e7ca48c0f0ca59504bd2b3f7f6945c76fbb",
+        "developer_bytes": 68045
+      },
+      {
+        "selector": "measurement",
+        "identity": "882ce20a2504a697e23573e71e25b73cf16642614eaa95354b57411d61c7350d",
+        "public_sha256": "03f57dbddd82c9db3f59c7227ee9c0f250872bb4db635af7874a56ceaa8cadec",
+        "developer_bytes": 23406
+      },
+      {
+        "selector": "effect-demo",
+        "identity": "58a118c4c633281404672d0426756074177caffcf174611218dc357d5cfd0878",
+        "public_sha256": "4899e8ebbb5b21dc36c40b51ee5f140bfed7ce768036ebf2de4ea2c5c16bd8b8",
+        "developer_bytes": 18851
+      },
+      {
+        "selector": "quantity",
+        "identity": "ef26726c7e3fb2ef11947a2bcde8791a8e0d7b5d4cf744ffb6b7b91659af7dc4",
+        "public_sha256": "9c45346fd59b4625ff0d0a5a356804e697d9c8256a89ac535da8d15c16c73116",
+        "developer_bytes": 19756
+      }
+    ],
+    "largest_developer_catalog": "invoicing, 68045 bytes"
+  },
+  "limitations": [
+    "The existing binary's retained bundle identity is evidence of a reusable artifact, not proof of a new host implementation.",
+    "N1 must run real host framing, ownership, configuration, error, close and catalog equivalence controls.",
+    "N2/N5 operator, service, recovery and extracted-package controls remain pending."
+  ]
+}

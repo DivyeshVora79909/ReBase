@@ -1,0 +1,884 @@
+{
+  "schema": "rebase.n0-migration-ledger.v1",
+  "status": "N0 decision record; replacements are planned and unimplemented",
+  "source": {
+    "commit": "e7458dc3e14893588f4958640b83b546f9663ca8",
+    "tree": "ec5d478ad52655391d700717662ce6c4fb8f9ff6",
+    "source_version": "0.16.0",
+    "store": 10,
+    "native_codec": 7,
+    "effect_codec": 4,
+    "api": 4,
+    "provenance": "G10 preparation baseline; historical evidence and fingerprints remain immutable"
+  },
+  "node_decision": {
+    "baseline": "Node.js 24 LTS minimum, ESM; implementation must record exact patch and verify upstream support at lockfile creation",
+    "package_scope": "tools/node/; do not modify unrelated repository-root package.json or tools/schema-values provider package",
+    "dependencies": [
+      "Ajv 2020-12 dialect, pinned exact version in tools/node/package-lock.json after schema feasibility check",
+      "json-schema-faker, pinned exact version in tools/node/package-lock.json after isolated seeded-RNG feasibility check",
+      "small maintained duplicate-key rejecting JSON parser, pinned in same lockfile"
+    ],
+    "native_runtime": "Rust only; Node is development/operator tooling, never a production runtime dependency",
+    "status": "dependency names/dialect chosen; exact versions and support-date evidence are N0 follow-through before N1 implementation"
+  },
+  "contract_freeze": {
+    "public_groups": [
+      "config.resolveConfig/parseEnvironment",
+      "native.openNative",
+      "model.prepareModel",
+      "client.connect/savePlan",
+      "population.preparePopulation/propose/accept/reject",
+      "operator.openOperator",
+      "workload.runWorkload/checkRun",
+      "package.buildPackage/verifyPackage"
+    ],
+    "resource_rule": "explicit handle ownership, awaited idempotent close, AbortSignal for cancellation, import side effects zero",
+    "control_transport": "private structured JSON over owned stdin/stdout pipes; bounded frames, request IDs, startup identity handshake and protocol version; stdout frames only, bounded stderr diagnostics; method allowlist and scoped local ownership",
+    "wire": "JSON request {version,id,method,params}; response {version,id,ok,result} or {version,id,ok:false,error:{code,message,details}}; reject mismatched IDs/versions and duplicate keys; max frame 8 MiB pending focused feasibility witness; catalog/model/store identity included where relevant; no raw KV, arbitrary command, path escape or public HTTP operator dispatch",
+    "n1_ownership": "one process owns embedded store; operator handle uses that host; snapshots use native verified backup; restore targets explicit new destination; reset has expected-store identity fence",
+    "configuration": "explicit defaults < allowlisted parsed environment < explicit overrides; unknown supplied keys rejected; native hard limits authoritative; secrets redacted; imports never read process.env"
+  },
+  "supplementary_surface": [
+    {
+      "path": "tools/schema-values/package.json",
+      "kind": "Node provider manifest",
+      "checkpoint": "N3",
+      "disposition": "replace-provider-implementation-and-retire-python-bridge-at-N6",
+      "note": "Move supported faker contract into tools/node dependency ownership; no Python-to-Node subprocess"
+    },
+    {
+      "path": "Cargo.toml and src/bin/rebase-next.rs",
+      "kind": "native manifest and CLI parser",
+      "checkpoint": "N5-N6",
+      "disposition": "merge-minimal-native-bootstrap-and-retire-superseded-project-parsers",
+      "note": "Cargo remains standard; retain only product/runtime boundary and indispensable bootstrap"
+    },
+    {
+      "path": "README.md, CONTEXT.md, docs/**/*.md, templates/**/*.md",
+      "kind": "guides/templates",
+      "checkpoint": "N6",
+      "disposition": "replace-active-Python-workflows-with-Node-functions",
+      "note": "Historical dated evidence citations remain unchanged"
+    }
+  ],
+  "counts": {
+    "tools_python": 50,
+    "experiments_python": 10,
+    "total": 60
+  },
+  "rows": [
+    {
+      "path": "research/experiments/deployment_bundle.py",
+      "capability": [
+        "independent release manifest/recovery expectations"
+      ],
+      "future_node_group": "package",
+      "checkpoint": "N5",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent release manifest/recovery expectations"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/effect_lifecycle.py",
+      "capability": [
+        "independent effect lifecycle expectations"
+      ],
+      "future_node_group": "operator",
+      "checkpoint": "N5",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent effect lifecycle expectations"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/exact_values.py",
+      "capability": [
+        "independent exact-value vectors"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent exact-value vectors"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/local_prototype.py",
+      "capability": [
+        "independent local adapter/receipt expectations"
+      ],
+      "future_node_group": "native",
+      "checkpoint": "N5",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent local adapter/receipt expectations"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/m3_m5.py",
+      "capability": [
+        "literal calculation/query oracle vectors"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: literal calculation/query oracle vectors"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/m6.py",
+      "capability": [
+        "independent typed snapshot invariants"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent typed snapshot invariants"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/measurement.py",
+      "capability": [
+        "historical measurement source provenance"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "retire-historical",
+      "semantic_controls": [
+        "No live replacement test: immutable historical measurement evidence suffices; do not rerun unavailable campaign"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/native_slice.py",
+      "capability": [
+        "source oracle",
+        "native KV checker"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: source oracle; native KV checker"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/reactive_windows.py",
+      "capability": [
+        "independent window/causality vectors"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: independent window/causality vectors"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "research/experiments/workshop_shrink_probe.py",
+      "capability": [
+        "injected failure shrink/replay expectation"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Merge independent vectors/control into N4/N5 node:test coverage: injected failure shrink/replay expectation"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/capacity.py",
+      "capability": [
+        "bounded capacity envelope",
+        "independent expected state",
+        "atomic rejection"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: bounded capacity envelope; independent expected state; atomic rejection"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/client.py",
+      "capability": [
+        "client transport",
+        "strict duplicate JSON",
+        "endpoint/auth fences",
+        "immutable plan and unknown outcome"
+      ],
+      "future_node_group": "client",
+      "checkpoint": "N2",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N2: client transport; strict duplicate JSON; endpoint/auth fences; immutable plan and unknown outcome"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/effects.py",
+      "capability": [
+        "authenticated effect intent",
+        "status/replay"
+      ],
+      "future_node_group": "operator",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: authenticated effect intent; status/replay"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/effects_ingress.py",
+      "capability": [
+        "signed ingress",
+        "deduplication",
+        "restore/reset fences"
+      ],
+      "future_node_group": "operator",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: signed ingress; deduplication; restore/reset fences"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/effects_worker.py",
+      "capability": [
+        "durable journal",
+        "reconciliation",
+        "crash boundaries"
+      ],
+      "future_node_group": "operator",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: durable journal; reconciliation; crash boundaries"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/fake_provider.py",
+      "capability": [
+        "deterministic fake provider lifecycle"
+      ],
+      "future_node_group": "operator",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: deterministic fake provider lifecycle"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/fdb_cluster.py",
+      "capability": [
+        "owned FoundationDB lifecycle",
+        "PID/port checks",
+        "bounded cleanup"
+      ],
+      "future_node_group": "native",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: owned FoundationDB lifecycle; PID/port checks; bounded cleanup"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g7_http.py",
+      "capability": [
+        "backend HTTP conformance",
+        "fault boundary"
+      ],
+      "future_node_group": "native",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: backend HTTP conformance; fault boundary"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g7_oracle.py",
+      "capability": [
+        "independent storage/application oracle"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: independent storage/application oracle"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8.py",
+      "capability": [
+        "bounded workload compositions",
+        "remove project CLI dispatch"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "retire-cli",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: bounded workload compositions; remove project CLI dispatch"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_check.py",
+      "capability": [
+        "independent workload result checking"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: independent workload result checking"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_cycles.py",
+      "capability": [
+        "bounded receipt/workload cycles"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: bounded receipt/workload cycles"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_faults.py",
+      "capability": [
+        "fault injection boundaries",
+        "owned cleanup"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: fault injection boundaries; owned cleanup"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_observe.py",
+      "capability": [
+        "workload observations and reports"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: workload observations and reports"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_pressure.py",
+      "capability": [
+        "pressure caps",
+        "claim boundaries"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: pressure caps; claim boundaries"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_release.py",
+      "capability": [
+        "release behavior",
+        "report checking"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: release behavior; report checking"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/g8_workload.py",
+      "capability": [
+        "bounded workload setup/execution"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: bounded workload setup/execution"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/harness.py",
+      "capability": [
+        "owned process lifecycle",
+        "cleanup and bounded artifacts"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: owned process lifecycle; cleanup and bounded artifacts"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/invoicing.py",
+      "capability": [
+        "bounded invoicing composition",
+        "exact value and receipt behavior"
+      ],
+      "future_node_group": "client",
+      "checkpoint": "N2",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N2: bounded invoicing composition; exact value and receipt behavior"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/issue_shares.py",
+      "capability": [
+        "authored share issuance and report"
+      ],
+      "future_node_group": "client",
+      "checkpoint": "N2",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N2: authored share issuance and report"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/observation_reports.py",
+      "capability": [
+        "machine and human report meaning"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: machine and human report meaning"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/observation_selection.py",
+      "capability": [
+        "bounded observation selection"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: bounded observation selection"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/package.py",
+      "capability": [
+        "committed-source export",
+        "manifest/checksum",
+        "restore isolation"
+      ],
+      "future_node_group": "package",
+      "checkpoint": "N5",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N5: committed-source export; manifest/checksum; restore isolation"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/population.py",
+      "capability": [
+        "typed pools",
+        "seed/cursor",
+        "fresh context",
+        "pending plan acknowledgement"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N3: typed pools; seed/cursor; fresh context; pending plan acknowledgement"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/population_demo.py",
+      "capability": [
+        "demo composition",
+        "resume/replay identity"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N3: demo composition; resume/replay identity"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/population_values.py",
+      "capability": [
+        "exact typed values",
+        "provider boundary"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N3: exact typed values; provider boundary"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_capacity.py",
+      "capability": [
+        "semantic controls for capacity capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for capacity capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_client.py",
+      "capability": [
+        "semantic controls for client capability"
+      ],
+      "future_node_group": "client",
+      "checkpoint": "N2",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for client capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_check.py",
+      "capability": [
+        "semantic controls for g8_check capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_check capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_cli.py",
+      "capability": [
+        "semantic controls for g8_cli capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_cli capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_faults.py",
+      "capability": [
+        "semantic controls for g8_faults capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_faults capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_observe.py",
+      "capability": [
+        "semantic controls for g8_observe capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_observe capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_pressure.py",
+      "capability": [
+        "semantic controls for g8_pressure capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_pressure capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_release.py",
+      "capability": [
+        "semantic controls for g8_release capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_release capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_g8_workload.py",
+      "capability": [
+        "semantic controls for g8_workload capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for g8_workload capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_harness.py",
+      "capability": [
+        "semantic controls for harness capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for harness capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_invoicing.py",
+      "capability": [
+        "semantic controls for invoicing capability"
+      ],
+      "future_node_group": "client",
+      "checkpoint": "N2",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for invoicing capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_package.py",
+      "capability": [
+        "semantic controls for package capability"
+      ],
+      "future_node_group": "package",
+      "checkpoint": "N5",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for package capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_population.py",
+      "capability": [
+        "semantic controls for population capability"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for population capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_population_demo.py",
+      "capability": [
+        "semantic controls for population_demo capability"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for population_demo capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_population_values.py",
+      "capability": [
+        "semantic controls for population_values capability"
+      ],
+      "future_node_group": "population",
+      "checkpoint": "N3",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for population_values capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_verify_checks.py",
+      "capability": [
+        "semantic controls for verify_checks capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for verify_checks capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_verify_explore.py",
+      "capability": [
+        "semantic controls for verify_explore capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for verify_explore capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/test_verify_walk.py",
+      "capability": [
+        "semantic controls for verify_walk capability"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "merge",
+      "semantic_controls": [
+        "Node node:test controls for semantic controls for verify_walk capability"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify.py",
+      "capability": [
+        "walk/check/explore/replay entry behavior"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: walk/check/explore/replay entry behavior"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify_cases.py",
+      "capability": [
+        "explicit cases and expected data"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: explicit cases and expected data"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify_checks.py",
+      "capability": [
+        "independent persisted snapshot checks",
+        "bounded checker work"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: independent persisted snapshot checks; bounded checker work"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify_explore.py",
+      "capability": [
+        "seeded explore",
+        "shrink/minimize",
+        "logical replay"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: seeded explore; shrink/minimize; logical replay"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify_oracles.py",
+      "capability": [
+        "independent source-derived oracle"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: independent source-derived oracle"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    },
+    {
+      "path": "tools/verify_runtime.py",
+      "capability": [
+        "scenario comparison",
+        "mismatch diagnostics",
+        "artifact identity"
+      ],
+      "future_node_group": "workload",
+      "checkpoint": "N4",
+      "disposition": "replace",
+      "semantic_controls": [
+        "Node node:test semantic coverage at N4: scenario comparison; mismatch diagnostics; artifact identity"
+      ],
+      "delete_earliest": "N6-after-replacement-controls-and-docs"
+    }
+  ]
+}

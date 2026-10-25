@@ -1,10 +1,12 @@
 # Compact context — 2026-10-25
 
-## Current handoff — G10 planning complete; N0 next
+## Current handoff — G10 N0 accepted; N1 next
 
-G10 is at P0: planning and navigation are prepared. All implementation
-checkpoints N0–N6, storage checkpoints S0–S3 and final integration F0 remain
-pending; N0 is the next checkpoint. Read the [G10 program](research/56-node-and-index-redesign-program.md),
+G10 P0 and N0 are complete. N1–N6, S0–S3 and F0 remain pending.
+Read [N0 results](research/62-node-foundation-result.md), the
+[native wire contract](research/60-native-host-contract.md),
+[Node decisions](research/61-node-tooling-contract.md) and the
+[G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [ordered-storage contract](research/58-ordered-storage-redesign.md) and
 [capability inventory](research/59-node-capability-inventory.md).
@@ -14,6 +16,19 @@ until their replacement checkpoints pass. G7–G9 evidence remains historical
 acceptance for its recorded sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
 [preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
+
+N0 freezes a scoped Node ESM package on Node 24 LTS, four pinned dependencies,
+explicit configuration authority, the complete 60-file replacement ledger,
+and `rebase-native-host-1` private framing. Three focused tests pass on official
+Node 24.22.1 outside the checkout. Six read-only native catalogs match the retained
+G8 artifact; this does not execute the proposed host. Native Rust/Cargo 1.95
+are on PATH. Initial N1 host methods are describe/configure/catalog/check/inspect/
+close with redb ownership; N2 extends service and optional backends. No Python
+file is deleted until its replacement controls pass. Root owns Git; workers own
+disjoint files; a single Cargo owner reuses `target/verification-build`, two
+jobs, incremental off. Source and result identities are in
+[N0 evidence](research/evidence/2026-10-25-n0-node-foundation.json).
+Next: implement and verify N1's native host plus Node config/process owner.
 
 ## Historical G9 current handoff — superseded
 

@@ -1,0 +1,702 @@
+{
+  "format": "rebase-n0-native-protocol-fixtures-1",
+  "status": "frozen N1 implementation inputs; native host not implemented or accepted at N0",
+  "protocol": "rebase-native-host-1",
+  "encoding": {
+    "media": "UTF-8 JSON object followed by LF",
+    "request_max_bytes_excluding_lf": 65536,
+    "response_max_bytes_excluding_lf": 8388608,
+    "max_outstanding": 1,
+    "id_pattern": "^[A-Za-z0-9._:-]{1,128}$",
+    "unknown_fields": "reject",
+    "duplicate_keys": "reject at every depth",
+    "batches": false,
+    "notifications": false,
+    "stdout": "frames only",
+    "stderr": "bounded redacted diagnostics",
+    "wire_comparison": "JSON object key order is irrelevant; exactly one LF is required after every complete object"
+  },
+  "methods": {
+    "N1": [
+      "host.describe",
+      "host.configure",
+      "model.catalog",
+      "store.check",
+      "store.inspect",
+      "host.close"
+    ],
+    "N2_planned": [
+      "model.explain",
+      "model.validate",
+      "model.render",
+      "fixture.catalog",
+      "fixture.plan",
+      "service.start",
+      "service.stop",
+      "identity.issue",
+      "store.backup",
+      "store.restore",
+      "store.archive",
+      "store.reset"
+    ],
+    "N5": "package metadata and extracted artifact verification; no arbitrary native build or shell verb"
+  },
+  "configuration": {
+    "required": [
+      "model",
+      "backend",
+      "target",
+      "operator_methods"
+    ],
+    "models": [
+      "calculation",
+      "equipment",
+      "invoicing",
+      "measurement",
+      "effect-demo",
+      "quantity"
+    ],
+    "backend": {
+      "kind": "redb",
+      "cluster_file": null
+    },
+    "target_variants": [
+      null,
+      {
+        "mode": "create",
+        "path": "/absolute/new-store.redb",
+        "tenant": "11111111-1111-4111-8111-111111111111",
+        "actor": "22222222-2222-4222-8222-222222222222"
+      },
+      {
+        "mode": "open",
+        "path": "/absolute/existing-store.redb",
+        "expect_store": "33333333-3333-4333-8333-333333333333"
+      }
+    ],
+    "operator_methods_allowed": [
+      "store.check",
+      "store.inspect"
+    ],
+    "path_max_utf8_bytes": 4096,
+    "source_of_defaults": "No native implicit defaults; Node resolution passes explicit objects",
+    "open_guard": "expected store and model preview before writable open; recheck under native lock"
+  },
+  "describe_result": {
+    "required_exact_keys": [
+      "protocol",
+      "state",
+      "engine",
+      "configuration",
+      "capabilities",
+      "selection",
+      "ownership"
+    ],
+    "state_enum": [
+      "unconfigured",
+      "configured"
+    ],
+    "engine_required": [
+      "version",
+      "api",
+      "store_format",
+      "native_codec",
+      "effect_codec",
+      "compiled_models",
+      "compiled_backends"
+    ],
+    "configuration_required": [
+      "schema",
+      "defaults",
+      "sources"
+    ],
+    "capabilities_required": [
+      "framing",
+      "host_methods",
+      "host_backends",
+      "model",
+      "mutation_work_limit",
+      "backup_bytes"
+    ],
+    "unconfigured": {
+      "selection": null,
+      "ownership": null,
+      "model_capabilities": null
+    },
+    "configured_model_only": {
+      "selection": {
+        "selector": "calculation",
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "backend": {
+          "kind": "redb",
+          "cluster_file": null
+        },
+        "target": null
+      },
+      "ownership": null
+    },
+    "configured_store_ownership": {
+      "store": "33333333-3333-4333-8333-333333333333",
+      "mode": "exclusive"
+    }
+  },
+  "fixed_errors": {
+    "parse_error": "Invalid JSON frame",
+    "invalid_request": "Invalid host request",
+    "protocol_mismatch": "Unsupported host protocol",
+    "request_limit": "Host request byte limit",
+    "response_limit": "Host response byte limit",
+    "method_not_found": "Unknown host method",
+    "not_configured": "Host is not configured",
+    "already_configured": "Host is already configured",
+    "invalid_config": "Invalid host configuration",
+    "unsupported_backend": "Backend is not supported by this host",
+    "wrong_target": "Host target identity differs",
+    "forbidden": "Host operation is not granted",
+    "store_busy": "Store is already owned",
+    "recovery_required": "Store requires explicit recovery",
+    "internal": "Host operation failed"
+  },
+  "sessions": [
+    {
+      "name": "model-only-lifecycle",
+      "exchanges": [
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": null
+              },
+              "target": null,
+              "operator_methods": []
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "result": {
+              "status": "configured",
+              "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+              "target": null,
+              "operator_methods": []
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "method": "model.catalog",
+            "params": {
+              "scope": "public"
+            }
+          },
+          "response_assertion": {
+            "id": "n0:2",
+            "result_equals": "Prepared<Calculation>::public_catalog() unchanged; historical pure export hash e219c3ec2085da8071fce106ee101f7c6b767252c8ec28a7e0a7da8feffd9f36 (pretty CLI bytes including LF)"
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:3",
+            "method": "model.catalog",
+            "params": {
+              "scope": "developer"
+            }
+          },
+          "response_assertion": {
+            "id": "n0:3",
+            "result_equals": "Prepared<Calculation>::developer_catalog() unchanged"
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": null
+              },
+              "target": null,
+              "operator_methods": []
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "error": {
+              "kind": "already_configured",
+              "message": "Host is already configured"
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:5",
+            "method": "host.close",
+            "params": {}
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:5",
+            "result": {
+              "status": "closed"
+            }
+          },
+          "after": "stdout flush, store/tasks dropped, child exit 0"
+        }
+      ]
+    },
+    {
+      "name": "unconfigured-denies-model",
+      "exchanges": [
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "method": "model.catalog",
+            "params": {
+              "scope": "public"
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "error": {
+              "kind": "not_configured",
+              "message": "Host is not configured"
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "method": "host.close",
+            "params": {}
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "result": {
+              "status": "closed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid-config-remains-unconfigured",
+      "exchanges": [
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": "/must-not-be-used"
+              },
+              "target": null,
+              "operator_methods": []
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "error": {
+              "kind": "invalid_config",
+              "message": "Invalid host configuration"
+            }
+          },
+          "side_effects": "no path/file/lock/listener/worker"
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": null
+              },
+              "target": null,
+              "operator_methods": [],
+              "ignored_knob": 1
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "error": {
+              "kind": "invalid_config",
+              "message": "Invalid host configuration"
+            }
+          },
+          "side_effects": "none"
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:3",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": null
+              },
+              "target": null,
+              "operator_methods": [
+                "store.inspect"
+              ]
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:3",
+            "error": {
+              "kind": "invalid_config",
+              "message": "Invalid host configuration"
+            }
+          },
+          "side_effects": "none"
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "method": "host.configure",
+            "params": {
+              "model": "calculation",
+              "backend": {
+                "kind": "redb",
+                "cluster_file": null
+              },
+              "target": null,
+              "operator_methods": []
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "result": {
+              "status": "configured",
+              "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+              "target": null,
+              "operator_methods": []
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:5",
+            "method": "host.close",
+            "params": {}
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:5",
+            "result": {
+              "status": "closed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "version-and-allowlist",
+      "exchanges": [
+        {
+          "request": {
+            "protocol": "rebase-native-host-999",
+            "id": "n0:1",
+            "method": "host.describe",
+            "params": {}
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:1",
+            "error": {
+              "kind": "protocol_mismatch",
+              "message": "Unsupported host protocol"
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "method": "shell.exec",
+            "params": {
+              "command": "anything"
+            }
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:2",
+            "error": {
+              "kind": "method_not_found",
+              "message": "Unknown host method"
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:3",
+            "method": "host.describe",
+            "params": {},
+            "extra": 1
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:3",
+            "error": {
+              "kind": "invalid_request",
+              "message": "Invalid host request"
+            }
+          }
+        },
+        {
+          "request": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "method": "host.close",
+            "params": {}
+          },
+          "response": {
+            "protocol": "rebase-native-host-1",
+            "id": "n0:4",
+            "result": {
+              "status": "closed"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "malformed_frames": [
+    {
+      "name": "duplicate-envelope-key",
+      "raw_utf8": "{\"protocol\":\"rebase-native-host-1\",\"id\":\"n0:1\",\"id\":\"n0:2\",\"method\":\"host.describe\",\"params\":{}}\n",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "nested-duplicate-key",
+      "raw_utf8": "{\"protocol\":\"rebase-native-host-1\",\"id\":\"n0:1\",\"method\":\"host.configure\",\"params\":{\"backend\":{\"kind\":\"redb\",\"kind\":\"redb\"}}}\n",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "lone-surrogate",
+      "raw_utf8": "{\"protocol\":\"rebase-native-host-1\",\"id\":\"n0:1\",\"method\":\"host.describe\",\"params\":{\"x\":\"\\ud800\"}}\n",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "invalid-utf8",
+      "raw_hex": "ff0a",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "trailing-documents",
+      "raw_utf8": "{} {}\n",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "unterminated-at-eof",
+      "raw_utf8": "{\"protocol\":\"rebase-native-host-1\",\"id\":\"n0:1\",\"method\":\"host.describe\",\"params\":{}}",
+      "eof": true,
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      },
+      "after": "cleanup and exit"
+    },
+    {
+      "name": "empty-line",
+      "raw_utf8": "\n",
+      "response": {
+        "protocol": "rebase-native-host-1",
+        "id": null,
+        "error": {
+          "kind": "parse_error",
+          "message": "Invalid JSON frame"
+        }
+      }
+    },
+    {
+      "name": "over-limit-followed-by-valid-frame",
+      "generator": {
+        "prefix": " ",
+        "repeat": 65537,
+        "suffix": "\n{\"protocol\":\"rebase-native-host-1\",\"id\":\"n0:next\",\"method\":\"host.close\",\"params\":{}}\n"
+      },
+      "responses": [
+        {
+          "protocol": "rebase-native-host-1",
+          "id": null,
+          "error": {
+            "kind": "request_limit",
+            "message": "Host request byte limit"
+          }
+        },
+        {
+          "protocol": "rebase-native-host-1",
+          "id": "n0:next",
+          "result": {
+            "status": "closed"
+          }
+        }
+      ],
+      "peak_input_assembly_bytes_max": 65537
+    }
+  ],
+  "n1_required_controls": [
+    "real child startup and describe",
+    "exact-limit and over-limit request frame",
+    "split UTF-8 and LF across writes",
+    "multiple frames in one write",
+    "duplicate nested keys",
+    "lone surrogate and invalid UTF-8",
+    "response byte bound before stdout publication",
+    "invalid config rejects before path creation",
+    "open wrong store/model unchanged snapshot bytes",
+    "operator grant denial",
+    "current scope guard on every store method",
+    "exclusive create refusal for existing destination",
+    "same-process duplicate ownership",
+    "separate-process redb lock refusal",
+    "owned store check and inspection",
+    "clean EOF cleanup",
+    "child exit during request",
+    "stdout only complete protocol frames",
+    "stderr drain bounded and redacted",
+    "close twice shares promise",
+    "reopen after clean close",
+    "all six model catalogs equal authoritative native exports"
+  ],
+  "native_trial": {
+    "date": "2026-10-25",
+    "binary": "target/verification-build/release/rebase-next",
+    "sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+    "library_path": "target/g7-environment/lib",
+    "store_opened": false,
+    "cargo_build": false,
+    "native_host_executed": false,
+    "source_version": "0.16.0",
+    "store_format": "rebase-store-10",
+    "api": "rebase-local-api-4",
+    "native_codec": "native-slice-kv-7",
+    "effect_codec": "rebase-effects-4",
+    "models": [
+      {
+        "selector": "calculation",
+        "identity": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "public_bytes": 27865,
+        "developer_bytes": 43411,
+        "public_contracts": 10,
+        "developer_contracts": 12,
+        "public_hash_matches_retained_bundle": true
+      },
+      {
+        "selector": "equipment",
+        "identity": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+        "public_bytes": 13045,
+        "developer_bytes": 22325,
+        "public_contracts": 3,
+        "developer_contracts": 4,
+        "public_hash_matches_retained_bundle": true
+      },
+      {
+        "selector": "invoicing",
+        "identity": "4c0fa1ad55595d251294a3dcd2e84c7f9b336dbcb6028d440b5379efded51969",
+        "public_bytes": 28178,
+        "developer_bytes": 68045,
+        "public_contracts": 9,
+        "developer_contracts": 16,
+        "public_hash_matches_retained_bundle": true
+      },
+      {
+        "selector": "measurement",
+        "identity": "882ce20a2504a697e23573e71e25b73cf16642614eaa95354b57411d61c7350d",
+        "public_bytes": 19643,
+        "developer_bytes": 23406,
+        "public_contracts": 4,
+        "developer_contracts": 4,
+        "public_hash_matches_retained_bundle": true
+      },
+      {
+        "selector": "effect-demo",
+        "identity": "58a118c4c633281404672d0426756074177caffcf174611218dc357d5cfd0878",
+        "public_bytes": 7477,
+        "developer_bytes": 18851,
+        "public_contracts": 2,
+        "developer_contracts": 2,
+        "public_hash_matches_retained_bundle": true
+      },
+      {
+        "selector": "quantity",
+        "identity": "ef26726c7e3fb2ef11947a2bcde8791a8e0d7b5d4cf744ffb6b7b91659af7dc4",
+        "public_bytes": 6342,
+        "developer_bytes": 19756,
+        "public_contracts": 3,
+        "developer_contracts": 3,
+        "public_hash_matches_retained_bundle": true
+      }
+    ]
+  }
+}

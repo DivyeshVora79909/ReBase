@@ -1,0 +1,201 @@
+{
+  "format": "rebase-node-config-registry-1",
+  "entries": [
+    {
+      "path": "native.protocol",
+      "owner": "native host protocol",
+      "kind": "identity",
+      "value": "rebase-native-host-1",
+      "source": "research/60-native-host-contract.md",
+      "default": null,
+      "unit": null,
+      "allowedRange": ["exact protocol identity only"],
+      "overridePolicy": "reject",
+      "secret": false
+    },
+    {
+      "path": "native.requestFrameBytes",
+      "owner": "native host protocol",
+      "kind": "hard-limit",
+      "nativeValue": 65536,
+      "source": "research/60-native-host-contract.md protocol rebase-native-host-1; aligned with src/json.rs::MAX_REQUEST_BYTES (65536 bytes)",
+      "default": null,
+      "unit": "bytes, excluding LF",
+      "allowedRange": "native describe value only",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Resolve from native capability metadata at runtime. Do not copy this value into a mutable JavaScript default."
+    },
+    {
+      "path": "native.responseFrameBytes",
+      "owner": "native host protocol",
+      "kind": "hard-limit",
+      "nativeValue": 8388608,
+      "source": "research/60-native-host-contract.md protocol rebase-native-host-1",
+      "default": null,
+      "unit": "bytes, excluding LF",
+      "allowedRange": "native describe value only",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Resolve from native capability metadata at runtime."
+    },
+    {
+      "path": "native.publicRecords",
+      "owner": "native model catalog/Rust binding",
+      "kind": "hard-limit",
+      "nativeValue": null,
+      "source": "src/binding.rs::MAX_PUBLIC_RECORDS; per-model limits may be smaller",
+      "default": null,
+      "unit": "records",
+      "allowedRange": "catalog-reported model value up to compiled outer bound",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Resolve from the selected native model catalog."
+    },
+    {
+      "path": "native.outputs",
+      "owner": "native model catalog/Rust binding",
+      "kind": "hard-limit",
+      "nativeValue": null,
+      "source": "src/binding.rs::MAX_OUTPUTS; per-model limits may be smaller",
+      "default": null,
+      "unit": "active output rows",
+      "allowedRange": "catalog-reported model value up to compiled outer bound",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Resolve from the selected native model catalog."
+    },
+    {
+      "path": "native.reservations",
+      "owner": "native model catalog/Rust binding",
+      "kind": "hard-limit",
+      "nativeValue": null,
+      "source": "src/binding.rs::MAX_RESERVATIONS; per-model limits may be smaller",
+      "default": null,
+      "unit": "reservations",
+      "allowedRange": "catalog-reported model value up to compiled outer bound",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Resolve from the selected native model catalog."
+    },
+    {
+      "path": "native.mutationWorkUnits",
+      "owner": "native local mutation engine",
+      "kind": "hard-limit",
+      "nativeValue": null,
+      "source": "src/local.rs::MUTATION_WORK_LIMIT (200000 units)",
+      "default": null,
+      "unit": "native work units",
+      "allowedRange": "native describe value only",
+      "overridePolicy": "reject",
+      "secret": false,
+      "note": "Report from native capability metadata; never permit a JavaScript override."
+    },
+    {
+      "path": "runner.startTimeoutMs",
+      "owner": "Node native-host lifecycle",
+      "kind": "runner-budget",
+      "default": 10000,
+      "source": "Node N0 proposal; bounded native child startup wait",
+      "unit": "milliseconds",
+      "minimum": 1,
+      "maximum": 120000,
+      "allowedRange": "integer 1..120000",
+      "overridePolicy": "explicit override > explicit allowlisted environment > default",
+      "secret": false
+    },
+    {
+      "path": "runner.diagnosticBytes",
+      "owner": "Node native-host lifecycle",
+      "kind": "runner-budget",
+      "default": 16384,
+      "source": "Node N0 proposal; retained diagnostic tail for owned child stderr",
+      "unit": "bytes",
+      "minimum": 0,
+      "maximum": 1048576,
+      "allowedRange": "integer 0..1048576",
+      "overridePolicy": "explicit override > explicit allowlisted environment > default",
+      "secret": false
+    },
+    {
+      "path": "client.credentialProvider",
+      "owner": "caller/client composition root",
+      "kind": "secret-provider",
+      "default": null,
+      "source": "caller-owned explicit provider per research/57-node-developer-contract.md §4",
+      "unit": null,
+      "allowedRange": "opaque provider reference only; credentials excluded from serialized configuration",
+      "overridePolicy": "explicit caller argument only; never sourced from environment by a lower module",
+      "secret": true,
+      "redaction": "always"
+    }
+  ],
+  "precedence": ["explicit overrides", "explicitly parsed environment", "defaults"],
+  "environment": {
+    "allowlist": ["REBASE_NODE_START_TIMEOUT_MS", "REBASE_NODE_DIAGNOSTIC_BYTES"],
+    "unknownKeys": "reject",
+    "secrets": "must be explicit protected values or providers; redact from diagnostics and reports"
+  },
+  "validation": {
+    "unknownConfigKeys": "reject",
+    "null": "reject unless the setting explicitly declares nullable",
+    "nonFiniteNumbers": "reject",
+    "unsafeIntegerNumbers": "reject at exact-value boundaries; use canonical decimal strings for exact integers outside Number safe range",
+    "contradictoryBackendOptions": "reject",
+    "hardLimitOverrides": "reject"
+  },
+  "configurationFamilies": [
+    {
+      "family": "target.model/backend/store",
+      "owner": "Node composition root with native host capability validation",
+      "default": null,
+      "unit": "identity and explicit target object",
+      "allowedRange": "model/backend choices from host.describe; target create/open shape from native protocol",
+      "overridePolicy": "explicit run input only; reject contradictory adapter options",
+      "secret": false,
+      "source": "research/60-native-host-contract.md; src/storage.rs"
+    },
+    {
+      "family": "server.listen/identity/max_inflight/request_timeout_seconds",
+      "owner": "native server configuration; Node supplies explicit values",
+      "default": null,
+      "unit": "socket address, identity reference, concurrent requests, seconds",
+      "allowedRange": "max_inflight 1..64; request_timeout_seconds 1..120; listen and identity validated by Rust",
+      "overridePolicy": "explicit configuration only; runtime validation remains native",
+      "secret": "identity key material is secret; use explicit file/provider reference and redact",
+      "source": "src/server.rs::ServerConfig and serve validation"
+    },
+    {
+      "family": "client.request/plan/response bytes and deadline",
+      "owner": "Node client; native request bytes additionally owned by Rust",
+      "default": "derive request ceiling from native host; other runtime budgets supplied by client policy",
+      "unit": "bytes and seconds",
+      "allowedRange": "request <= host hard ceiling; current legacy plan 131072 bytes, HTTP response 2097152 bytes, deadline 1..300 seconds are migration evidence, not frozen Node defaults",
+      "overridePolicy": "caller may lower runtime budgets; reject raises above native ceiling",
+      "secret": "bearer credential is secret and never serialized or included in error/report data",
+      "source": "src/json.rs::MAX_REQUEST_BYTES; tools/client.py::MAX_PLAN_BYTES, MAX_RESPONSE_BYTES and call timeout validation"
+    },
+    {
+      "family": "owned child environment and adapter library paths",
+      "owner": "specific process/service owner",
+      "default": "empty inherited environment except documented OS necessities",
+      "unit": "explicit environment keys and filesystem paths",
+      "allowedRange": "per-process allowlist; validate path scope and adapter feature requirements",
+      "overridePolicy": "never copy ambient process environment wholesale",
+      "secret": "secret values passed only to the owning child and redacted from diagnostics",
+      "source": "research/57-node-developer-contract.md §5; tools/package.py; tools/harness.py; tools/fdb_cluster.py"
+    },
+    {
+      "family": "population, workload, observation, package and lifecycle budgets",
+      "owner": "the function or resource handle that consumes each budget",
+      "default": "explicit checkpoint defaults with recorded provenance; never implicit process globals",
+      "unit": "rows, quotas, batch size, concurrency, elapsed time, samples, traces, logs, artifacts and cleanup time",
+      "allowedRange": "caller budget bounded by selected native capabilities and each operation's declared accepted envelope",
+      "overridePolicy": "explicit per-run value > explicitly parsed allowlisted environment > documented default; native hard bounds remain unraiseable",
+      "secret": false,
+      "source": "research/56-node-and-index-redesign-program.md N2-N5; tools/population.py; tools/g8_observe.py; tools/g8_release.py; tools/g8_faults.py; tools/harness.py"
+    }
+  ],
+  "settingOwnerRule": "Every resolved setting has one owner; local defaults cannot shadow native capability limits.",
+  "provenanceRule": "Resolved values retain the selected source label (explicit override, environment key, declared default, or native catalog identity)."
+}
