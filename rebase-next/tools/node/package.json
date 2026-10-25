@@ -8,7 +8,8 @@
   "scripts": {
     "test:n0": "node --test ./test/n0-feasibility.test.mjs",
     "test:n1": "node --test ./test/config.test.mjs ./test/private-codec.test.mjs ./test/native.test.mjs ./test/native-integration.test.mjs",
-    "test": "node --test ./test/*.test.mjs"
+    "test": "node --test ./test/*.test.mjs",
+    "test:n2": "node --test ./test/client.test.mjs ./test/model.test.mjs ./test/operator.test.mjs ./test/n2-real-workflow.test.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

@@ -1,0 +1,161 @@
+{
+  "format": "rebase-n2-native-protocol-fixtures-1",
+  "status": "frozen extension shapes; N2 acceptance pending",
+  "protocol": "rebase-native-host-1",
+  "envelope": "same strict N1 request/result/error envelope and bounds",
+  "scope": {
+    "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+    "store": "33333333-3333-4333-8333-333333333333"
+  },
+  "methods": {
+    "model.explain": {
+      "selector": "Account"
+    },
+    "model.validate": {
+      "code": 1,
+      "input": {}
+    },
+    "model.render": {
+      "scope": "model"
+    },
+    "fixture.catalog": {},
+    "fixture.plan": {
+      "name": "bounded-example",
+      "namespace": "44444444-4444-4444-8444-444444444444"
+    },
+    "service.start": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "config": {
+        "listen": "127.0.0.1:0",
+        "identity": {
+          "issuer": "local-n2",
+          "audience": "rebase-n2",
+          "public_keys": {
+            "local": "<Ed25519 public PEM>"
+          },
+          "max_token_seconds": 300
+        },
+        "max_inflight": 8,
+        "request_timeout_seconds": 10,
+        "effects": null
+      }
+    },
+    "service.stop": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "service": "55555555-5555-4555-8555-555555555555"
+    },
+    "identity.issue": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "identity": {
+        "issuer": "local-n2",
+        "audience": "rebase-n2",
+        "public_keys": {
+          "local": "<Ed25519 public PEM>"
+        },
+        "max_token_seconds": 300
+      },
+      "request": {
+        "tenant": "11111111-1111-4111-8111-111111111111",
+        "actor": "22222222-2222-4222-8222-222222222222",
+        "epoch": 0,
+        "ttl": 300,
+        "key_id": "local"
+      },
+      "private_key_pem": "<Ed25519 private PEM; secret>"
+    },
+    "store.backup": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "destination": "/owned/new-backup.json"
+    },
+    "store.archive": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "destination": "/owned/new-archive.json"
+    },
+    "store.reset": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "expect_store": "33333333-3333-4333-8333-333333333333"
+    },
+    "store.restore": {
+      "scope": {
+        "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+        "store": "33333333-3333-4333-8333-333333333333"
+      },
+      "backup": "/owned/backup.json",
+      "expect_backup_store": "33333333-3333-4333-8333-333333333333",
+      "destination": {
+        "backend": {
+          "kind": "redb",
+          "cluster_file": null
+        },
+        "target": {
+          "path": "/owned/new-restored.redb"
+        }
+      }
+    }
+  },
+  "store_render": {
+    "scope": "store",
+    "target": {
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "store": "33333333-3333-4333-8333-333333333333"
+    }
+  },
+  "service_start_result": {
+    "status": "started",
+    "service": "55555555-5555-4555-8555-555555555555",
+    "address": "127.0.0.1:49152",
+    "endpoint": "http://127.0.0.1:49152/rpc",
+    "scope": {
+      "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+      "store": "33333333-3333-4333-8333-333333333333"
+    }
+  },
+  "service_stop_result": {
+    "status": "stopped",
+    "service": "55555555-5555-4555-8555-555555555555"
+  },
+  "additional_errors": {
+    "service_running": "Service must be stopped",
+    "service_not_running": "Service is not running",
+    "invalid_destination": "Invalid restore destination"
+  },
+  "recovery_target": {
+    "mode": "recover",
+    "path": "/owned/crashed.redb",
+    "expect_store": "33333333-3333-4333-8333-333333333333"
+  },
+  "foundationdb_target": {
+    "mode": "create",
+    "namespace": "n2-owned-example",
+    "tenant": "11111111-1111-4111-8111-111111111111",
+    "actor": "22222222-2222-4222-8222-222222222222"
+  },
+  "native_reuse": "No public mutation/auth/store-format changes; exact existing catalog, fixture, lifecycle and EdDSA functions remain authoritative",
+  "foundationdb_backend": {
+    "kind": "foundationdb",
+    "cluster_file": "/owned/explicit-fdb.cluster"
+  },
+  "foundationdb_null_cluster_file": {
+    "kind": "foundationdb",
+    "cluster_file": null,
+    "expected_error": "invalid_config"
+  }
+}

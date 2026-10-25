@@ -1,22 +1,25 @@
 # Compact context — 2026-10-25
 
-## Current handoff — G10 N1 accepted; N2 next
+## Current handoff — G10 N2 accepted; N3 next
 
-G10 P0, N0 and N1 are complete. N2–N6, S0–S3 and F0 remain pending.
+G10 P0, N0, N1 and N2 are complete. N3–N6, S0–S3 and F0 remain pending.
 Read [N0 results](research/62-node-foundation-result.md),
 [N1 results](research/63-node-native-host-result.md), the
+[N2 result](research/65-node-workflow-result.md),
 [native wire contract](research/60-native-host-contract.md),
 [Node decisions](research/61-node-tooling-contract.md) and the
 [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [ordered-storage contract](research/58-ordered-storage-redesign.md) and
 [capability inventory](research/59-node-capability-inventory.md).
-N1 implements `parseEnvironment`, `resolveConfig` and `openNative` in
-`tools/node/`. The host exposes six model catalogs plus scoped redb check and
-inspection; it does not replace the Python developer workflows. Those Python
-commands remain the accepted runnable baseline until later replacement
-checkpoints pass. G7–G9 evidence remains historical acceptance for its recorded
-sources and bounds.
+N2 adds ordinary ESM model/client/operator functions, owned authenticated
+service lifecycle, scoped identity and explicit store lifecycle operations.
+The Equipment example is in `tools/node/examples/n2-equipment-workflow.mjs`;
+the accepted boundaries, artifact identities and evidence are in the
+[N2 result](research/65-node-workflow-result.md) and
+[evidence record](research/evidence/2026-10-25-n2-node-workflow.json). Python
+workflow deletion remains pending until N6 replacement controls pass. G7–G9
+evidence remains historical acceptance for its recorded sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
 [preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
 
@@ -26,12 +29,15 @@ configuration authority, the complete 60-file replacement ledger, and
 host unit test, all-features check, formatting and Clippy pass; npm audit reports
 zero vulnerabilities. The verified host binary is
 `target/verification-build/debug/rebase-next` (SHA-256 is in
-[N1 evidence](research/evidence/2026-10-25-n1-native-host.json)). Rust/Cargo
-1.95 are on PATH. The offline Cargo cache is
+[N1 evidence](research/evidence/2026-10-25-n1-native-host.json)). N2 ran 48
+native test executions over 28 unique controls, passed default/all-features
+Clippy and formatting, and exercised fresh local SurrealKV/FoundationDB adapter
+lifecycle plus a Node FoundationDB ownership smoke. It does not claim
+multi-host latency or broad capacity. Rust/Cargo 1.95 are on PATH. The offline Cargo cache is
 `/workspace/.rebase-tools/rust-review/cargo`; shared build outputs are in
-`target/verification-build`. N1 supports redb ownership only. N2 adds owned
-services and optional adapter lifecycle/recovery. No Python file is deleted
-until its replacement controls pass. Root owns Git. Next: implement N2.
+`target/verification-build`. One FDB Host per native process is supported.
+No Python file is deleted until its replacement controls pass. Root owns Git.
+Next: implement N3 population and scenario functions.
 
 ## Historical G9 current handoff — superseded
 

@@ -190,14 +190,21 @@ fn webhook_error(error: Error) -> Response {
     response(status, json!({"error":error.code}))
 }
 
-pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result<Router> {
+fn router_with_admission<B: Binding>(
+    store: Arc<Store<B>>,
+    config: &ServerConfig,
+    expected_store: Option<uuid::Uuid>,
+) -> Result<(Router, Arc<Semaphore>)> {
     if !store.secured {
         return Err(Error::new(
             "invalid_input",
             "network API requires a secured store",
         ));
     }
-    store.check_integrity()?;
+    let checked = store.check_integrity()?;
+    if expected_store.is_some_and(|expected| checked["store"] != expected.to_string()) {
+        return Err(Error::new("wrong_target", "service store scope changed"));
+    }
     if let Some(effects) = &config.effects {
         effects.validate::<B>()?;
     }
@@ -209,10 +216,11 @@ pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result
             "network concurrency/deadline limits",
         ));
     }
+    let permits = Arc::new(Semaphore::new(usize::from(config.max_inflight)));
     let app = App {
         store,
         verifier: Arc::new(Verifier::new(config.identity.clone())?),
-        permits: Arc::new(Semaphore::new(usize::from(config.max_inflight))),
+        permits: permits.clone(),
         timeout: Duration::from_secs(u64::from(config.request_timeout_seconds)),
         ingress: config
             .effects
@@ -225,31 +233,59 @@ pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result
             .as_ref()
             .and_then(|effects| effects.probe_directory.clone()),
     };
-    Ok(Router::new()
-        .route("/health", get(health))
-        .route("/rpc", post(call::<B>))
-        .route("/effects/fake", post(webhook::<B>))
-        .layer(DefaultBodyLimit::max(MAX_REQUEST_BYTES))
-        .with_state(app))
+    Ok((
+        Router::new()
+            .route("/health", get(health))
+            .route("/rpc", post(call::<B>))
+            .route("/effects/fake", post(webhook::<B>))
+            .layer(DefaultBodyLimit::max(MAX_REQUEST_BYTES))
+            .with_state(app),
+        permits,
+    ))
 }
 
-pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<()> {
-    let routes = router(store.clone(), &config)?;
+pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result<Router> {
+    Ok(router_with_admission(store, config, None)?.0)
+}
+
+/// One bound native service. Explicit stop joins HTTP, all admitted blocking
+/// operations (including those whose HTTP wait timed out), and effect workers.
+pub struct OwnedService {
+    pub address: SocketAddr,
+    stop: tokio::sync::watch::Sender<bool>,
+    task: tokio::task::JoinHandle<Result<()>>,
+}
+impl OwnedService {
+    pub async fn stop(self) -> Result<()> {
+        let _ = self.stop.send(true);
+        self.task
+            .await
+            .map_err(|_| Error::new("internal", "service task"))?
+    }
+}
+
+pub async fn start<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<OwnedService> {
+    start_scoped(store, config, None).await
+}
+
+pub(crate) async fn start_scoped<B: Binding>(
+    store: Arc<Store<B>>,
+    config: ServerConfig,
+    expected_store: Option<uuid::Uuid>,
+) -> Result<OwnedService> {
+    let checked = config.clone();
+    let owner = store.clone();
+    let (routes, admission) =
+        tokio::task::spawn_blocking(move || router_with_admission(owner, &checked, expected_store))
+            .await
+            .map_err(|_| Error::new("internal", "service validation task"))??;
     let listener = TcpListener::bind(config.listen)
         .await
         .map_err(|e| Error::new("transport", e.to_string()))?;
-    eprintln!(
-        "ReBase Next listening on {} (TLS belongs at the ingress proxy)",
-        listener
-            .local_addr()
-            .map_err(|e| Error::new("transport", e.to_string()))?
-    );
+    let address = listener
+        .local_addr()
+        .map_err(|e| Error::new("transport", e.to_string()))?;
     let (stop, mut stopped) = tokio::sync::watch::channel(false);
-    let signal_stop = stop.clone();
-    let signal = tokio::spawn(async move {
-        shutdown().await;
-        let _ = signal_stop.send(true);
-    });
     let worker = if B::effect_action().is_some() {
         let owner = store.clone();
         let mode = config
@@ -278,32 +314,57 @@ pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Re
     } else {
         None
     };
-    let served = axum::serve(listener, routes)
-        .with_graceful_shutdown(async move {
-            while !*stopped.borrow() {
-                if stopped.changed().await.is_err() {
-                    break;
+    let finished = stop.clone();
+    let task = tokio::spawn(async move {
+        let served = axum::serve(listener, routes)
+            .with_graceful_shutdown(async move {
+                while !*stopped.borrow() {
+                    if stopped.changed().await.is_err() {
+                        break;
+                    }
                 }
-            }
-        })
-        .await
-        .map_err(|e| Error::new("transport", e.to_string()));
-    let _ = stop.send(true);
-    signal.abort();
-    let worker_result = match worker {
-        Some(worker) => worker
+            })
             .await
-            .map_err(|_| Error::new("internal", "effect worker task"))?,
-        None => Ok(()),
-    };
-    if B::effect_action().is_some() {
-        tokio::task::spawn_blocking(move || {
-            store.activate_effect_worker(crate::effects::WorkerMode::Disabled)
-        })
-        .await
-        .map_err(|_| Error::new("internal", "worker shutdown task"))??;
+            .map_err(|e| Error::new("transport", e.to_string()));
+        let _ = finished.send(true);
+        // HTTP timeouts do not stop spawn_blocking work. Every admitted operation
+        // retains its permit until it actually finishes, so drain all permits.
+        let _drained = admission
+            .acquire_many_owned(u32::from(config.max_inflight))
+            .await
+            .map_err(|_| Error::new("internal", "service admission closed"))?;
+        let worker_result = match worker {
+            Some(worker) => worker
+                .await
+                .map_err(|_| Error::new("internal", "effect worker task"))?,
+            None => Ok(()),
+        };
+        if B::effect_action().is_some() {
+            tokio::task::spawn_blocking(move || {
+                store.activate_effect_worker(crate::effects::WorkerMode::Disabled)
+            })
+            .await
+            .map_err(|_| Error::new("internal", "worker shutdown task"))??;
+        }
+        served.and(worker_result)
+    });
+    Ok(OwnedService {
+        address,
+        stop,
+        task,
+    })
+}
+
+pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<()> {
+    let mut service = start(store, config).await?;
+    eprintln!(
+        "ReBase Next listening on {} (TLS belongs at the ingress proxy)",
+        service.address
+    );
+    tokio::select! {
+        result = &mut service.task => result.map_err(|_|Error::new("internal","service task"))?,
+        _ = shutdown() => service.stop().await,
     }
-    served.and(worker_result)
 }
 async fn shutdown() {
     #[cfg(unix)]
@@ -330,6 +391,44 @@ mod tests {
     };
     use std::collections::BTreeMap;
     use uuid::Uuid;
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn scoped_start_rejects_reset_before_native_validation() {
+        let dir = std::env::temp_dir().join(format!("rebase-service-scope-{}", Uuid::new_v4()));
+        std::fs::create_dir(&dir).unwrap();
+        let store = Arc::new(
+            LocalStore::create_secured(
+                dir.join("store.redb"),
+                Arc::new(PreparedModel::load().unwrap()),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+            )
+            .unwrap(),
+        );
+        let (_, _, header) = store.read(store.model().identity()).unwrap();
+        store.reset(header.store_id).unwrap();
+        let config = ServerConfig {
+            listen: "127.0.0.1:0".parse().unwrap(),
+            identity: IdentityConfig {
+                issuer: "scope".into(),
+                audience: "scope".into(),
+                public_keys: BTreeMap::from([(
+                    "test".into(),
+                    include_str!("../tests/fixtures/test-ed25519-public.pem").into(),
+                )]),
+                max_token_seconds: 600,
+            },
+            max_inflight: 1,
+            request_timeout_seconds: 1,
+            effects: None,
+        };
+        let result = start_scoped(store.clone(), config, Some(header.store_id)).await;
+        assert!(matches!(result, Err(error) if error.code == "wrong_target"));
+        drop(store);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn deadline_keeps_admission_until_the_real_transaction_finishes() {
@@ -414,6 +513,89 @@ mod tests {
             "committed"
         );
         drop(app);
+        drop(store);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn owned_stop_waits_for_timed_out_blocking_attempt() {
+        let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target/owned-stop-tests")
+            .join(Uuid::new_v4().to_string());
+        std::fs::create_dir_all(&dir).unwrap();
+        let store = Arc::new(
+            LocalStore::create_secured(
+                dir.join("store.redb"),
+                Arc::new(PreparedModel::load().unwrap()),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+            )
+            .unwrap(),
+        );
+        let identity = IdentityConfig {
+            issuer: "owned-stop".into(),
+            audience: "owned-stop".into(),
+            public_keys: BTreeMap::from([(
+                "test".into(),
+                include_str!("../tests/fixtures/test-ed25519-public.pem").into(),
+            )]),
+            max_token_seconds: 600,
+        };
+        let token = identity::issue(
+            &identity,
+            &TokenRequest {
+                tenant: store.context().tenant,
+                actor: store.context().actor,
+                epoch: 0,
+                ttl: 300,
+                key_id: "test".into(),
+            },
+            include_bytes!("../tests/fixtures/test-ed25519-private.pem"),
+        )
+        .unwrap();
+        let service = start(
+            store.clone(),
+            ServerConfig {
+                listen: "127.0.0.1:0".parse().unwrap(),
+                identity,
+                max_inflight: 1,
+                request_timeout_seconds: 1,
+                effects: None,
+            },
+        )
+        .await
+        .unwrap();
+        let operation = Uuid::new_v4();
+        let context = store.operation_context(store.model().identity()).unwrap();
+        let request = json!({"jsonrpc":"2.0","id":"timed","method":"records.mutate","params":{"model":store.model().identity(),"context":context,"operation_id":operation,"commands":[{"op":"create","id":Uuid::new_v4(),"contract":7,"fields":{"at":"0"}}],"returning":[]}});
+        let held = store.db.begin_write().unwrap();
+        let response = reqwest::Client::new()
+            .post(format!("http://{}/rpc", service.address))
+            .bearer_auth(token)
+            .json(&request)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::GATEWAY_TIMEOUT);
+        let stopped = tokio::spawn(service.stop());
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        assert!(
+            !stopped.is_finished(),
+            "service released ownership while blocking attempt still ran"
+        );
+        drop(held);
+        tokio::time::timeout(Duration::from_secs(5), stopped)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            store
+                .operation_status(store.model().identity(), &context, operation)
+                .unwrap()["status"],
+            "committed"
+        );
         drop(store);
         std::fs::remove_dir_all(dir).unwrap();
     }

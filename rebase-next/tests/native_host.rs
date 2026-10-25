@@ -210,7 +210,7 @@ fn invalid_config_has_no_filesystem_effect_and_description_schema_validates() {
     let valid = config("calculation", created(&path), json!(["store.check"]));
     assert!(validator.is_valid(&valid));
     let mut bad = valid.clone();
-    bad["operator_methods"] = json!(["store.reset"]);
+    bad["operator_methods"] = json!(["store.raw"]);
     assert!(!validator.is_valid(&bad));
     assert_eq!(
         kind(&process.call("invalid-grant", "host.configure", bad)),
@@ -231,8 +231,17 @@ fn invalid_config_has_no_filesystem_effect_and_description_schema_validates() {
     let mut bad = valid.clone();
     bad["backend"]["kind"] = json!("foundationdb");
     assert_eq!(
+        kind(&process.call("implicit-fdb", "host.configure", bad.clone())),
+        Some("invalid_config")
+    );
+    bad["backend"]["cluster_file"] = json!("/explicit/unused-fdb.cluster");
+    assert_eq!(
         kind(&process.call("unsupported", "host.configure", bad)),
-        Some("unsupported_backend")
+        Some(if cfg!(feature = "foundationdb") {
+            "invalid_config"
+        } else {
+            "unsupported_backend"
+        })
     );
     let mut bad = valid.clone();
     bad["model"] = json!("missing");
@@ -573,6 +582,28 @@ fn killed_owner_requires_explicit_recovery_without_preview_writes() {
     assert_eq!(kind(&reply), Some("recovery_required"));
     reopened.finish();
     assert_eq!(digest(&path), before);
+    let mut recovered = Process::new();
+    let configured = recovered.call(
+        "recover",
+        "host.configure",
+        config(
+            "calculation",
+            json!({"mode":"recover","path":path,"expect_store":store}),
+            json!(["store.recover", "store.check"]),
+        ),
+    );
+    assert!(configured.get("result").is_some(), "{configured}");
+    assert!(
+        recovered
+            .call(
+                "check",
+                "store.check",
+                json!({"scope":{"model":configured["result"]["model"],"store":store}})
+            )
+            .get("result")
+            .is_some()
+    );
+    recovered.finish();
 }
 
 #[test]
@@ -594,6 +625,14 @@ fn public_rpc_cannot_reach_the_operator_allowlist() {
         "store.inspect",
         "store.check",
         "host.close",
+        "model.render",
+        "service.start",
+        "service.stop",
+        "identity.issue",
+        "store.backup",
+        "store.restore",
+        "store.archive",
+        "store.reset",
     ] {
         let reply = rebase_semantic_proof::rpc::handle(
             &store,
@@ -604,4 +643,65 @@ fn public_rpc_cannot_reach_the_operator_allowlist() {
         );
         assert_eq!(reply["error"]["data"]["kind"], "method_not_found");
     }
+}
+
+#[test]
+fn close_and_eof_join_owned_services_before_releasing_the_store() {
+    for explicit_close in [true, false] {
+        let directory = Directory::new();
+        let path = directory.0.join("service.redb");
+        let mut owner = Process::new();
+        let configured = owner.call(
+            "create",
+            "host.configure",
+            config("calculation", created(&path), json!(["service.start"])),
+        );
+        let scope = json!({"model":configured["result"]["model"],"store":configured["result"]["target"]["store"]});
+        let started = owner.call("start", "service.start", json!({"scope":scope,"config":{"listen":"127.0.0.1:0","identity":{"issuer":"close-test","audience":"close-test","public_keys":{"test":include_str!("fixtures/test-ed25519-public.pem")},"max_token_seconds":600},"max_inflight":1,"request_timeout_seconds":1,"effects":null}}));
+        assert!(started.get("result").is_some(), "{started}");
+        let address = started["result"]["address"].as_str().unwrap();
+        assert!(std::net::TcpStream::connect(address).is_ok());
+        if explicit_close {
+            assert_eq!(
+                owner.call("close", "host.close", json!({}))["result"]["status"],
+                "closed"
+            );
+        }
+        owner.finish();
+        assert!(std::net::TcpStream::connect(address).is_err());
+        let mut reopened = Process::new();
+        let reply = reopened.call(
+            "open",
+            "host.configure",
+            config(
+                "calculation",
+                json!({"mode":"open","path":path,"expect_store":scope["store"]}),
+                json!([]),
+            ),
+        );
+        assert!(reply.get("result").is_some(), "{reply}");
+        reopened.finish();
+    }
+}
+
+#[cfg(feature = "foundationdb")]
+#[test]
+fn failed_fdb_configuration_keeps_the_process_network_for_retry() {
+    let directory = Directory::new();
+    let mut process = Process::new();
+    let configuration = json!({"model":"calculation","backend":{"kind":"foundationdb","cluster_file":directory.0.join("missing.cluster")},"target":{"mode":"open","namespace":"n2-missing-cluster-retry","expect_store":Uuid::new_v4()},"operator_methods":[]});
+    for id in ["first", "retry"] {
+        assert!(
+            process
+                .call(id, "host.configure", configuration.clone())
+                .get("error")
+                .is_some()
+        );
+    }
+    assert_eq!(
+        process.call("describe", "host.describe", json!({}))["result"]["state"],
+        "unconfigured"
+    );
+    process.call("close", "host.close", json!({}));
+    process.finish();
 }

@@ -1,11 +1,16 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
-import { validateNativeConfigurationSchema, validateNativeDescription, validatePublicConfig } from './private/config-validation.mjs';
+import { validateNativeConfigurationSchema, validateNativeDescription, validatePublicConfig, validateServiceConfigurationShape } from './private/config-validation.mjs';
 import { encodeFrame, parseFrame } from './private/json-codec.mjs';
 import { LineFrameDecoder, PROTOCOL, REQUEST_MAX_BYTES, RESPONSE_MAX_BYTES } from './private/framing.mjs';
 
-const ALLOWED_METHODS = new Set(['host.describe', 'host.configure', 'model.catalog', 'store.check', 'store.inspect', 'host.close']);
+const ALLOWED_METHODS = new Set([
+  'host.describe', 'host.configure', 'model.catalog', 'store.check', 'store.inspect', 'host.close',
+  'model.explain', 'model.validate', 'model.render', 'fixture.catalog', 'fixture.plan',
+  'service.start', 'service.stop', 'identity.issue', 'store.backup', 'store.archive',
+  'store.reset', 'store.restore',
+]);
 const RESPONSE_KEYS = new Set(['protocol', 'id', 'result', 'error']);
 const HASH = /^[0-9a-f]{64}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -58,6 +63,7 @@ class NativeHost {
   #description = null;
   #configured = null;
   #grants = new Set();
+  #service = null;
 
   constructor(child, config) {
     this.#child = child;
@@ -100,7 +106,7 @@ class NativeHost {
     const backendName = configuration.backend.kind;
     if (!description.capabilities.host_backends.includes(backendName)) throw new Error('Native host does not support the requested backend');
     this.#description = description;
-    this.#configured = Object.freeze({ model: result.model, target: result.target });
+    this.#configured = Object.freeze({ selector: expectedModelSelector, model: result.model, target: result.target });
     this.#grants = new Set(result.operator_methods);
   }
 
@@ -108,6 +114,9 @@ class NativeHost {
     const host = this;
     let closePromise = null;
     return Object.freeze({
+      selection: Object.freeze({ selector: host.#configured.selector, model: host.#configured.model }),
+      scope: host.#configured.target ? Object.freeze({ model: host.#configured.model, store: host.#configured.target.store }) : null,
+      grants: Object.freeze([...host.#grants].sort()),
       describe(options) { return host.describe(options); },
       catalog({ scope = 'public', signal } = {}) {
         if (!['public', 'developer'].includes(scope)) return Promise.reject(new TypeError('scope must be public or developer'));
@@ -115,6 +124,18 @@ class NativeHost {
       },
       check({ signal } = {}) { return host.#operatorRequest('store.check', signal); },
       inspect({ signal } = {}) { return host.#operatorRequest('store.inspect', signal); },
+      explain(params, options = {}) { return host.#request('model.explain', params, options, false); },
+      validate(params, options = {}) { return host.#request('model.validate', params, options, false); },
+      render(params, options = {}) { return host.#request('model.render', params, options, false); },
+      fixtureCatalog(options = {}) { return host.#request('fixture.catalog', {}, options, false); },
+      fixturePlan(params, options = {}) { return host.#request('fixture.plan', params, options, false); },
+      startService(params, options = {}) { return host.#startService(params, options); },
+      stopService(params, options = {}) { return host.#stopService(params, options); },
+      issueIdentity(params, options = {}) { return host.#request('identity.issue', params, options, true); },
+      backup(params, options = {}) { return host.#request('store.backup', params, options, true); },
+      restore(params, options = {}) { return host.#request('store.restore', params, options, true); },
+      archive(params, options = {}) { return host.#request('store.archive', params, options, true); },
+      reset(params, options = {}) { return host.#request('store.reset', params, options, true); },
       diagnostics() { return host.#diagnostics(); },
       close() { closePromise ??= host.close(); return closePromise; },
     });
@@ -124,12 +145,56 @@ class NativeHost {
     if (!this.#configured?.target || !this.#grants.has(method)) {
       return Promise.reject(hostError('forbidden', 'Host operation is not granted'));
     }
-    return this.#request(method, { scope: { model: this.#configured.model, store: this.#configured.target.store } }, { signal }, false);
+    return this.#request(method, { scope: this.#scope() }, { signal }, false);
+  }
+
+  #scope() {
+    if (!this.#configured?.target) throw hostError('forbidden', 'Host operation requires a configured store');
+    return { model: this.#configured.model, store: this.#configured.target.store };
+  }
+
+  #startService(params, options) {
+    let admittedParams;
+    try { admittedParams = detachParams(params); }
+    catch (error) { return Promise.reject(error); }
+    return this.#request('service.start', admittedParams, options, true).then(result => {
+      try {
+        assertServiceStartResult(result, this.#scope());
+        if (this.#service !== null) throw new Error('Native host reported more than one active service');
+        this.#service = result.service;
+        return result;
+      } catch (error) {
+        const failure = outcomeUnknown({ method: 'service.start', params: admittedParams }, 'Native service readiness response was invalid');
+        this.#fail(failure);
+        throw failure;
+      }
+    });
+  }
+
+  #stopService(params, options) {
+    let admittedParams;
+    try { admittedParams = detachParams(params); }
+    catch (error) { return Promise.reject(error); }
+    return this.#request('service.stop', admittedParams, options, true).then(result => {
+      try {
+        assertServiceStopResult(result, admittedParams?.service);
+        if (this.#service !== null && this.#service !== result.service) throw new Error('Service identity changed during stop');
+        this.#service = null;
+        return result;
+      } catch (error) {
+        const failure = outcomeUnknown({ method: 'service.stop', params: admittedParams }, 'Native service stop response was invalid');
+        this.#fail(failure);
+        throw failure;
+      }
+    });
   }
 
   #request(method, params, { signal, timeoutMs } = {}, sideEffecting) {
     if (!ALLOWED_METHODS.has(method)) return Promise.reject(new TypeError('Unsupported native host method'));
     if (this.#admissionClosed) return Promise.reject(transportError('Native host is closing'));
+    let admittedParams;
+    try { admittedParams = detachParams(params); }
+    catch (error) { return Promise.reject(error); }
     let resolveCaller;
     let rejectCaller;
     const caller = new Promise((resolve, reject) => { resolveCaller = resolve; rejectCaller = reject; });
@@ -137,7 +202,7 @@ class NativeHost {
       if (this.#failed) { rejectCaller(this.#failed); return; }
       if (this.#closed) { rejectCaller(transportError('Native host is closed')); return; }
       if (signal?.aborted) { rejectCaller(abortError()); return; }
-      return this.#startExchange(method, params, { signal, timeoutMs, sideEffecting }, resolveCaller, rejectCaller);
+      return this.#startExchange(method, admittedParams, { signal, timeoutMs, sideEffecting }, resolveCaller, rejectCaller);
     });
     this.#queue = scheduled.catch(() => {});
     return caller;
@@ -400,7 +465,7 @@ class NativeHost {
 function assertHostCanConfigure(description, configuration) {
   if (description.state !== 'unconfigured') throw new Error('Native host must start unconfigured');
   if (!description.engine.compiled_models.includes(configuration.model)) throw new Error('Native host does not compile the requested model');
-  if (configuration.backend.kind !== 'redb' || !description.capabilities.host_backends.includes('redb')) {
+  if (!description.capabilities.host_backends.includes(configuration.backend.kind)) {
     throw new Error('Native host does not support the requested backend');
   }
   if (!description.capabilities.host_methods.includes('host.configure')) throw new Error('Native host does not advertise host.configure');
@@ -412,7 +477,7 @@ function assertHostCanConfigure(description, configuration) {
 function validateLaunchConfig(config) {
   const fail = message => { throw new TypeError(`invalid resolved native configuration: ${message}`); };
   const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-  if (!isRecord(config) || Object.keys(config).some(key => !['runner', 'native', 'provenance'].includes(key))) fail('unknown top-level key');
+  if (!isRecord(config) || Object.keys(config).some(key => !['runner', 'native', 'service', 'provenance'].includes(key))) fail('unknown top-level key');
   if (!isRecord(config.runner) || Object.keys(config.runner).length !== 3
     || !['startTimeoutMs', 'diagnosticBytes', 'closeTimeoutMs'].every(key => Object.hasOwn(config.runner, key))) fail('runner settings are incomplete');
   for (const [key, value] of Object.entries(config.runner)) {
@@ -428,6 +493,10 @@ function validateLaunchConfig(config) {
   }
   try { validatePublicConfig(config.native.configuration); }
   catch (error) { fail(error.message); }
+  if (Object.hasOwn(config, 'service')) {
+    try { validateServiceConfigurationShape(config.service, 'service'); }
+    catch (error) { fail(error.message); }
+  }
   if (Object.hasOwn(config, 'provenance')) {
     if (!isRecord(config.provenance) || Object.values(config.provenance).some(value => !['default', 'environment', 'override'].includes(value))) fail('provenance is invalid');
   }
@@ -437,8 +506,8 @@ function normalizeConfiguration(configuration) {
   validatePublicConfig(configuration);
   return {
     model: configuration.model,
-    backend: { kind: configuration.backend.kind, cluster_file: null },
-    target: configuration.target === null ? null : { ...configuration.target },
+    backend: { kind: configuration.backend.kind, cluster_file: configuration.backend.cluster_file },
+    target: configuration.target === null ? null : structuredClone(configuration.target),
     operator_methods: [...configuration.operator_methods].sort(),
   };
 }
@@ -456,13 +525,40 @@ function validateConfiguredResult(result, configuration) {
   if (configuration.target === null) {
     if (result.target !== null) throw transportError('Native host returned unexpected store ownership');
   } else {
-    assertExactObject(result.target, ['path', 'store']);
-    if (typeof result.target.path !== 'string' || !path.isAbsolute(result.target.path) || !UUID.test(result.target.store)) {
-      throw transportError('Native host target acknowledgement was invalid');
+    if (!isRecord(result.target) || !UUID.test(result.target.store)) throw transportError('Native host target acknowledgement was invalid');
+    if (Object.hasOwn(configuration.target, 'namespace')) {
+      assertExactObject(result.target, ['namespace', 'store']);
+      if (typeof result.target.namespace !== 'string' || !result.target.namespace) throw transportError('Native host namespace acknowledgement was invalid');
+    } else {
+      assertExactObject(result.target, ['path', 'store']);
+      if (typeof result.target.path !== 'string' || !path.isAbsolute(result.target.path)) throw transportError('Native host target path acknowledgement was invalid');
     }
     if (configuration.target.mode === 'open' && result.target.store !== configuration.target.expect_store) {
       throw transportError('Native host opened a different store than requested');
     }
+    if (configuration.target.mode === 'recover' && result.target.store !== configuration.target.expect_store) {
+      throw transportError('Native host recovered a different store than requested');
+    }
+  }
+}
+
+function assertServiceStartResult(result, scope) {
+  assertExactObject(result, ['status', 'service', 'address', 'endpoint', 'scope']);
+  if (result.status !== 'started' || !UUID.test(result.service) || typeof result.address !== 'string'
+    || !result.address || typeof result.endpoint !== 'string') throw transportError('Native service readiness result was invalid');
+  let endpoint;
+  try { endpoint = new URL(result.endpoint); } catch { throw transportError('Native service endpoint was invalid'); }
+  if (!['http:', 'https:'].includes(endpoint.protocol) || !endpoint.pathname.endsWith('/rpc') || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+    throw transportError('Native service endpoint was invalid');
+  }
+  assertExactObject(result.scope, ['model', 'store']);
+  if (result.scope.model !== scope.model || result.scope.store !== scope.store) throw transportError('Native service scope did not match its host');
+}
+
+function assertServiceStopResult(result, expectedService) {
+  assertExactObject(result, ['status', 'service']);
+  if (result.status !== 'stopped' || !UUID.test(result.service) || result.service !== expectedService) {
+    throw transportError('Native service stop result was invalid');
   }
 }
 
@@ -508,11 +604,32 @@ function transportError(message, cause) {
 }
 
 function outcomeUnknown(pending, message, cause) {
-  const error = new Error(`${message}; host outcome is unknown`, cause ? { cause } : undefined);
+  // The explicit operation is retained for reconciliation. Keep it out of default
+  // Error inspection/serialization, and do not preserve a cause chain that could
+  // accidentally repeat private request material.
+  const error = new Error(`${message}; host outcome is unknown`);
   error.name = 'NativeOutcomeUnknownError';
   error.code = 'outcome_unknown';
-  error.operation = Object.freeze({ protocol: PROTOCOL, id: pending.id, method: pending.method, params: pending.params });
+  Object.defineProperty(error, 'operation', {
+    value: Object.freeze({ protocol: PROTOCOL, id: pending.id, method: pending.method, params: pending.params }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
   return error;
+}
+
+function detachParams(params) {
+  const detached = parseFrame(encodeFrame({ params }, REQUEST_MAX_BYTES)).params;
+  return deepFreeze(detached);
+}
+
+function deepFreeze(value) {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
 }
 
 function abortError() {

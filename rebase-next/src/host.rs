@@ -11,7 +11,7 @@ use crate::{
     native_codec::uuid_text,
     native_slice::{Context, Error, Result},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeSet,
@@ -20,6 +20,9 @@ use std::{
     sync::Arc,
 };
 use uuid::Uuid;
+
+mod backend;
+mod operations;
 
 pub const PROTOCOL: &str = "rebase-native-host-1";
 pub const MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
@@ -31,13 +34,25 @@ const MODELS: [&str; 6] = [
     "effect-demo",
     "quantity",
 ];
-const METHODS: [&str; 6] = [
+const METHODS: [&str; 18] = [
     "host.describe",
     "host.configure",
     "model.catalog",
     "store.check",
     "store.inspect",
     "host.close",
+    "model.explain",
+    "model.validate",
+    "model.render",
+    "fixture.catalog",
+    "fixture.plan",
+    "service.start",
+    "service.stop",
+    "identity.issue",
+    "store.backup",
+    "store.restore",
+    "store.archive",
+    "store.reset",
 ];
 
 #[derive(Deserialize)]
@@ -51,7 +66,7 @@ struct Request {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Empty {}
-#[derive(Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct BackendConfig {
     kind: String,
@@ -69,22 +84,39 @@ struct Config {
 #[serde(tag = "mode", rename_all = "snake_case", deny_unknown_fields)]
 enum Target {
     Create {
-        path: String,
+        path: Option<String>,
+        namespace: Option<String>,
         #[serde(with = "uuid_text")]
         tenant: Uuid,
         #[serde(with = "uuid_text")]
         actor: Uuid,
     },
     Open {
-        path: String,
+        path: Option<String>,
+        namespace: Option<String>,
+        #[serde(with = "uuid_text")]
+        expect_store: Uuid,
+    },
+    Recover {
+        path: Option<String>,
+        namespace: Option<String>,
         #[serde(with = "uuid_text")]
         expect_store: Uuid,
     },
 }
 impl Target {
-    fn path(&self) -> &str {
+    fn path(&self) -> Option<&str> {
         match self {
-            Self::Create { path, .. } | Self::Open { path, .. } => path,
+            Self::Create { path, .. } | Self::Open { path, .. } | Self::Recover { path, .. } => {
+                path.as_deref()
+            }
+        }
+    }
+    fn namespace(&self) -> Option<&str> {
+        match self {
+            Self::Create { namespace, .. }
+            | Self::Open { namespace, .. }
+            | Self::Recover { namespace, .. } => namespace.as_deref(),
         }
     }
 }
@@ -132,6 +164,9 @@ fn failure(id: Value, kind: &str) -> Value {
         "forbidden" => "Host operation is not granted",
         "store_busy" => "Store is already owned",
         "recovery_required" => "Store requires explicit recovery",
+        "service_running" => "Service must be stopped",
+        "service_not_running" => "Service is not running",
+        "invalid_destination" => "Invalid restore destination",
         "internal" => "Host operation failed",
         _ => {
             let public = crate::rpc::failure(id.clone(), kind);
@@ -147,16 +182,32 @@ fn failure(id: Value, kind: &str) -> Value {
 
 trait Selected {
     fn identity(&self) -> &str;
+    fn backend(&self) -> Value;
     fn catalog(&self, developer: bool) -> Value;
     fn target(&self) -> Result<Value>;
     fn operate(&self, method: &str, scope: &Scope) -> Result<Value>;
+    fn extended(
+        &mut self,
+        method: &str,
+        params: Value,
+        runtime: Option<&tokio::runtime::Handle>,
+    ) -> Result<Value>;
+    fn shutdown(&mut self, runtime: Option<&tokio::runtime::Handle>) -> Result<()>;
 }
 struct SelectedModel<B: Binding> {
     model: Arc<Prepared<B>>,
-    store: Option<local::Store<B>>,
+    store: Option<Arc<local::Store<B>>>,
+    service: Option<(Uuid, crate::server::OwnedService)>,
     path: Option<PathBuf>,
+    namespace: Option<String>,
+    backend: BackendConfig,
+    #[cfg(feature = "foundationdb")]
+    network: Arc<std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>>,
 }
 impl<B: Binding> Selected for SelectedModel<B> {
+    fn backend(&self) -> Value {
+        serde_json::to_value(&self.backend).expect("backend config serializes")
+    }
     fn identity(&self) -> &str {
         self.model.identity()
     }
@@ -171,10 +222,30 @@ impl<B: Binding> Selected for SelectedModel<B> {
         match &self.store {
             Some(store) => {
                 let (_, _, header) = store.read(self.model.identity())?;
-                Ok(json!({"path":self.path,"store":header.store_id}))
+                Ok(if let Some(namespace) = &self.namespace {
+                    json!({"namespace":namespace,"store":header.store_id})
+                } else {
+                    json!({"path":self.path,"store":header.store_id})
+                })
             }
             None => Ok(Value::Null),
         }
+    }
+    fn extended(
+        &mut self,
+        method: &str,
+        params: Value,
+        runtime: Option<&tokio::runtime::Handle>,
+    ) -> Result<Value> {
+        self.dispatch_extended(method, params, runtime)
+    }
+    fn shutdown(&mut self, runtime: Option<&tokio::runtime::Handle>) -> Result<()> {
+        if let Some((_, service)) = self.service.take() {
+            runtime
+                .ok_or_else(|| Error::new("internal", "service runtime unavailable"))?
+                .block_on(service.stop())?;
+        }
+        Ok(())
     }
     fn operate(&self, method: &str, scope: &Scope) -> Result<Value> {
         let store = self
@@ -185,118 +256,124 @@ impl<B: Binding> Selected for SelectedModel<B> {
         if scope.model != self.model.identity() || scope.store != header.store_id {
             return Err(Error::new("wrong_target", "scope differs"));
         }
-        match method {
+        let result = match method {
             "store.check" => store.check_integrity(),
             "store.inspect" => store.inspect(),
             _ => unreachable!("closed operator allowlist"),
+        }?;
+        if result["store"] != scope.store.to_string() {
+            return Err(Error::new(
+                "wrong_target",
+                "store changed during inspection",
+            ));
         }
+        Ok(result)
     }
 }
 
-fn prepare<B: Binding>(target: Option<Target>) -> Result<Box<dyn Selected>> {
+fn prepare<B: Binding>(
+    target: Option<Target>,
+    backend: BackendConfig,
+    #[cfg(feature = "foundationdb")] network: Arc<
+        std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>,
+    >,
+) -> Result<Box<dyn Selected>> {
     let model = Arc::new(Prepared::<B>::load()?);
-    let mut path = None;
-    let store = match target {
-        None => None,
-        Some(target) => {
-            if let Target::Create { tenant, actor, .. } = &target {
-                // Validate native authority bootstrap before exclusive creation;
-                // an invalid tenant/actor pair must not leave a destination.
-                crate::access::Graph::bootstrap(Context {
-                    tenant: *tenant,
-                    actor: *actor,
-                })
-                .map_err(|_| Error::new("invalid_config", "invalid authority bootstrap"))?;
-            }
-            let requested = Path::new(target.path());
-            let canonical = match &target {
-                Target::Create { .. } => requested
-                    .parent()
-                    .and_then(|p| p.canonicalize().ok())
-                    .and_then(|p| requested.file_name().map(|name| p.join(name)))
-                    .ok_or_else(|| Error::new("invalid_config", "create parent must exist"))?,
-                Target::Open { .. } => requested.canonicalize().map_err(local::storage)?,
-            };
-            let opened = match target {
-                Target::Create { tenant, actor, .. } => local::Store::create_secured(
-                    &canonical,
-                    model.clone(),
-                    Context { tenant, actor },
-                )?,
-                Target::Open { expect_store, .. } => {
-                    crate::storage::open_host_redb(&canonical, model.clone(), expect_store)?
-                }
-            };
-            path = Some(canonical);
-            Some(opened)
-        }
+    let mut selected = SelectedModel {
+        model,
+        store: None,
+        path: None,
+        namespace: None,
+        backend,
+        service: None,
+        #[cfg(feature = "foundationdb")]
+        network,
     };
-    Ok(Box::new(SelectedModel { model, store, path }))
+    if let Some(target) = target {
+        selected.open_target(target)?;
+    }
+    Ok(Box::new(selected))
 }
 
 /// One control owner, with no retained request history or hidden process state.
+/// FDB supports the executable's single Host owner per process; its SDK network
+/// cannot be restarted by creating another independent Host after this one drops.
 #[derive(Default)]
 pub struct Host {
     selected: Option<Box<dyn Selected>>,
     selector: Option<String>,
     grants: BTreeSet<String>,
     closed: bool,
+    runtime: Option<tokio::runtime::Runtime>,
+    // Keep the SDK network across failed configuration, and drop it only after
+    // selected stores and service/runtime work have been released.
+    #[cfg(feature = "foundationdb")]
+    network: Arc<std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>>,
 }
+impl Drop for Host {
+    fn drop(&mut self) {
+        if let Some(selected) = &mut self.selected {
+            let _ = selected.shutdown(self.runtime.as_ref().map(|r| r.handle()));
+        }
+    }
+}
+
 impl Host {
     fn configure(&mut self, params: Value) -> Result<Value> {
         if self.selected.is_some() {
             return Err(Error::new("already_configured", "immutable configuration"));
         }
         let config: Config = bind(params, "invalid_config")?;
-        if !MODELS.contains(&config.model.as_str()) || !config.backend.cluster_file.is_null() {
-            return Err(Error::new(
-                "invalid_config",
-                "invalid model/backend combination",
-            ));
+        if !MODELS.contains(&config.model.as_str()) {
+            return Err(Error::new("invalid_config", "unknown model"));
         }
-        match config.backend.kind.as_str() {
-            "redb" => {}
-            "foundationdb" | "surrealkv" => {
-                return Err(Error::new(
-                    "unsupported_backend",
-                    "host backend not implemented",
-                ));
-            }
-            _ => return Err(Error::new("invalid_config", "unknown backend")),
-        }
+        backend::validate(&config.backend)?;
         let grants: BTreeSet<_> = config.operator_methods.iter().cloned().collect();
         if grants.len() != config.operator_methods.len()
-            || grants
-                .iter()
-                .any(|g| !matches!(g.as_str(), "store.check" | "store.inspect"))
+            || grants.iter().any(|g| {
+                !matches!(
+                    g.as_str(),
+                    "store.check"
+                        | "store.inspect"
+                        | "service.start"
+                        | "service.stop"
+                        | "identity.issue"
+                        | "store.backup"
+                        | "store.restore"
+                        | "store.archive"
+                        | "store.reset"
+                        | "store.recover"
+                )
+            })
             || (config.target.is_null() && !grants.is_empty())
         {
             return Err(Error::new("invalid_config", "invalid operator grants"));
         }
+        backend::validate_target(&config.backend, &config.target, &grants)?;
         let target: Option<Target> = if config.target.is_null() {
             None
         } else {
             Some(bind(config.target, "invalid_config")?)
         };
-        if let Some(target) = &target {
-            let path = target.path();
-            if path.is_empty()
-                || path.len() > 4096
-                || path.contains('\0')
-                || !Path::new(path).is_absolute()
-            {
-                return Err(Error::new("invalid_config", "invalid absolute target path"));
-            }
-        }
         // All parameter/grant validation precedes model preparation and every
         // store side effect. Selection only becomes visible on full success.
+        macro_rules! prepare_selected {
+            ($binding:ty) => {
+                prepare::<$binding>(
+                    target,
+                    config.backend,
+                    #[cfg(feature = "foundationdb")]
+                    self.network.clone(),
+                )?
+            };
+        }
         let selected = match config.model.as_str() {
-            "calculation" => prepare::<Calculation>(target)?,
-            "equipment" => prepare::<Equipment>(target)?,
-            "invoicing" => prepare::<Invoicing>(target)?,
-            "measurement" => prepare::<Measurement>(target)?,
-            "effect-demo" => prepare::<EffectDemo>(target)?,
-            "quantity" => prepare::<Quantity>(target)?,
+            "calculation" => prepare_selected!(Calculation),
+            "equipment" => prepare_selected!(Equipment),
+            "invoicing" => prepare_selected!(Invoicing),
+            "measurement" => prepare_selected!(Measurement),
+            "effect-demo" => prepare_selected!(EffectDemo),
+            "quantity" => prepare_selected!(Quantity),
             _ => unreachable!("validated compiled selector"),
         };
         let response = json!({"status":"configured","model":selected.identity(),"target":selected.target()?,"operator_methods":grants});
@@ -320,10 +397,10 @@ impl Host {
                 let ownership = if target.is_null() {
                     Value::Null
                 } else {
-                    json!({"store":target["store"],"mode":"exclusive"})
+                    json!({"store":target["store"],"mode":if selected.backend()["kind"] == "foundationdb" {"shared_transactional"} else {"exclusive"}})
                 };
                 (
-                    json!({"selector":self.selector,"model":selected.identity(),"backend":{"kind":"redb","cluster_file":null},"target":target}),
+                    json!({"selector":self.selector,"model":selected.identity(),"backend":selected.backend(),"target":target}),
                     ownership,
                     selected.catalog(false)["capabilities"].clone(),
                 )
@@ -338,7 +415,7 @@ impl Host {
                 "response_bytes":"src/host.rs::MAX_RESPONSE_BYTES","model":"src/model.rs::Prepared::public_catalog",
                 "mutation_work_limit":"src/local.rs::MUTATION_WORK_LIMIT","backup_bytes":"src/lifecycle.rs::MAX_BACKUP_BYTES"}},
             "capabilities":{"framing":{"request_bytes":json::MAX_REQUEST_BYTES,"response_bytes":MAX_RESPONSE_BYTES,"max_outstanding":1,"bytes_exclude_lf":true},
-                "host_methods":METHODS,"host_backends":["redb"],"model":capabilities,
+                "host_methods":METHODS,"host_backends":compiled_backends,"model":capabilities,
                 "mutation_work_limit":local::MUTATION_WORK_LIMIT,"backup_bytes":crate::lifecycle::MAX_BACKUP_BYTES},
             "selection":selection,"ownership":ownership}),
         )
@@ -352,6 +429,9 @@ impl Host {
             "host.configure" => self.configure(params),
             "host.close" => {
                 let _: Empty = bind(params, "invalid_request")?;
+                if let Some(selected) = &mut self.selected {
+                    selected.shutdown(self.runtime.as_ref().map(|r| r.handle()))?;
+                }
                 self.selected.take();
                 self.closed = true;
                 Ok(json!({"status":"closed"}))
@@ -378,6 +458,39 @@ impl Host {
                 }
                 let p: Scoped = bind(params, "invalid_request")?;
                 selected.operate(method, &p.scope)
+            }
+            "model.explain" | "model.validate" | "model.render" | "fixture.catalog"
+            | "fixture.plan" | "service.start" | "service.stop" | "identity.issue"
+            | "store.backup" | "store.restore" | "store.archive" | "store.reset" => {
+                if self.selected.is_none() {
+                    return Err(Error::new("not_configured", "model/store unavailable"));
+                }
+                let privileged = method.starts_with("service.")
+                    || method.starts_with("identity.")
+                    || method.starts_with("store.");
+                if privileged && !self.grants.contains(method) {
+                    return Err(Error::new("forbidden", "operator grant absent"));
+                }
+                if method == "model.render"
+                    && params["scope"] == "store"
+                    && !self.grants.contains("store.inspect")
+                {
+                    return Err(Error::new("forbidden", "inspection grant absent"));
+                }
+                if method == "service.start" && self.runtime.is_none() {
+                    self.runtime = Some(
+                        tokio::runtime::Builder::new_multi_thread()
+                            .worker_threads(2)
+                            .enable_all()
+                            .build()
+                            .map_err(local::storage)?,
+                    );
+                }
+                self.selected.as_mut().expect("checked selection").extended(
+                    method,
+                    params,
+                    self.runtime.as_ref().map(|r| r.handle()),
+                )
             }
             _ => Err(Error::new("method_not_found", "closed host allowlist")),
         }
@@ -415,13 +528,24 @@ impl Host {
 pub fn configuration_schema() -> Value {
     let uuid = json!({"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"});
     let path = json!({"type":"string","minLength":1,"maxLength":4096,"x-maxUtf8Bytes":4096,"pattern":"^/[^\\u0000]*$"});
-    json!({"$schema":crate::model::SCHEMA_DIALECT,"type":"object","additionalProperties":false,
-        "required":["model","backend","target","operator_methods"],"properties":{
-        "model":{"enum":MODELS},"backend":{"type":"object","additionalProperties":false,"required":["kind","cluster_file"],"properties":{"kind":{"const":"redb"},"cluster_file":{"type":"null"}}},
-        "target":{"oneOf":[{"type":"null"},{"type":"object","additionalProperties":false,"required":["mode","path","tenant","actor"],"properties":{"mode":{"const":"create"},"path":path,"tenant":uuid,"actor":uuid}},
-            {"type":"object","additionalProperties":false,"required":["mode","path","expect_store"],"properties":{"mode":{"const":"open"},"path":path,"expect_store":uuid}}]},
-        "operator_methods":{"type":"array","uniqueItems":true,"maxItems":2,"items":{"enum":["store.check","store.inspect"]}}},
-        "allOf":[{"if":{"properties":{"target":{"type":"null"}}},"then":{"properties":{"operator_methods":{"maxItems":0}}}}]})
+    let namespace = json!({"type":"string","minLength":1,"maxLength":1024,"x-maxUtf8Bytes":1024});
+    let mut backends = vec!["redb"];
+    if cfg!(feature = "foundationdb") {
+        backends.push("foundationdb");
+    }
+    if cfg!(feature = "surrealkv") {
+        backends.push("surrealkv");
+    }
+    let target = |address: &str, value: Value| {
+        json!({"oneOf":[{"type":"null"},{"type":"object","additionalProperties":false,"required":["mode",address,"tenant","actor"],"properties":{"mode":{"const":"create"},(address):value,"tenant":uuid,"actor":uuid}},
+        {"type":"object","additionalProperties":false,"required":["mode",address,"expect_store"],"properties":{"mode":{"enum":["open","recover"]},(address):value,"expect_store":uuid}}]})
+    };
+    json!({"$schema":crate::model::SCHEMA_DIALECT,"type":"object","additionalProperties":false,"required":["model","backend","target","operator_methods"],"properties":{
+        "model":{"enum":MODELS},"backend":{"type":"object","additionalProperties":false,"required":["kind","cluster_file"],"properties":{"kind":{"enum":backends},"cluster_file":{"oneOf":[{"type":"null"},path]}}},
+        "target":{},"operator_methods":{"type":"array","uniqueItems":true,"maxItems":10,"items":{"enum":["store.check","store.inspect","service.start","service.stop","identity.issue","store.backup","store.restore","store.archive","store.reset","store.recover"]}}},
+        "allOf":[{"if":{"properties":{"target":{"type":"null"}}},"then":{"properties":{"operator_methods":{"maxItems":0}}}},
+        {"if":{"properties":{"backend":{"properties":{"kind":{"const":"foundationdb"}}}}},"then":{"properties":{"target":target("namespace",namespace),"backend":{"properties":{"cluster_file":path}}}},"else":{"properties":{"target":target("path",path),"backend":{"properties":{"cluster_file":{"type":"null"}}}}}},
+        {"if":{"properties":{"target":{"type":"object","properties":{"mode":{"const":"recover"}},"required":["mode"]}}},"then":{"properties":{"backend":{"properties":{"kind":{"const":"redb"}}},"operator_methods":{"contains":{"const":"store.recover"}}}}}]})
 }
 
 enum Frame {

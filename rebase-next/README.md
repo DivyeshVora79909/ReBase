@@ -1,16 +1,17 @@
 # ReBase Next
 
-**G10 status (2026-10-25):** N1 is accepted. `tools/node/` now provides ordinary
-ESM functions for resolved configuration and an owned private native host with
-model catalogs and redb check/inspection. The [N1 result](research/63-node-native-host-result.md)
-records its limits and evidence. N2–N6 and the ordered-storage redesign remain
-pending; existing Python workflows remain the accepted runnable baseline until
-their replacement checkpoints pass. See the [G10 program](research/56-node-and-index-redesign-program.md),
+**G10 status (2026-10-25):** N1 and N2 are accepted. `tools/node/` provides
+ordinary ESM functions for configuration, native model/store access, authenticated
+services, client workflows and scoped operator lifecycle. The [N2 result](research/65-node-workflow-result.md)
+records its evidence and limits. N3–N6 and the ordered-storage redesign remain
+pending; Python workflow deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).
 
-Compose the N1 functions directly from JavaScript. This model-only example
-returns the selected compiled model's public catalog and closes its owned host:
+Compose the native host functions directly from JavaScript. This N1 model-only
+example returns the selected compiled model's public catalog and closes its
+owned host. For an N2 authenticated Equipment workflow, see the complete
+[ordinary function example](tools/node/examples/n2-equipment-workflow.mjs):
 
 ```js
 import { resolve } from 'node:path';
@@ -48,6 +49,9 @@ try {
 
 The binary path must resolve to a built executable. See the complete
 [N1 model-catalog example](tools/node/examples/n1-model-catalog.mjs).
+The N2 function composition example shows the Equipment model, scoped operator,
+local authenticated service, saved plan and status recovery:
+[N2 Equipment workflow](tools/node/examples/n2-equipment-workflow.mjs).
 
 **A bounded calculation backend with reusable compiled models and developer tools.**
 One Rust executable provides exact connected calculations, private outputs,

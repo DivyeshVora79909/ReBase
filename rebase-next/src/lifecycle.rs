@@ -80,8 +80,19 @@ fn publish(temp: &Temporary, destination: &Path) -> Result<()> {
 }
 impl<B: Binding> Store<B> {
     pub fn backup(&self, destination: impl AsRef<Path>) -> Result<Value> {
+        self.backup_scoped(destination, None)
+    }
+
+    pub(crate) fn backup_scoped(
+        &self,
+        destination: impl AsRef<Path>,
+        expected_store: Option<Uuid>,
+    ) -> Result<Value> {
         self.check_integrity()?;
         let (read, _, header) = self.read(self.model().identity())?;
+        if expected_store.is_some_and(|expected| expected != header.store_id) {
+            return Err(Error::new("wrong_target", "backup store scope changed"));
+        }
         let payload = local::observe(&read)?; // one consistent snapshot
         let receipt_count = payload["tables"][RECEIPTS.name()]
             .as_array()
@@ -110,7 +121,15 @@ impl<B: Binding> Store<B> {
     }
 
     pub fn archive_receipts(&self, destination: impl AsRef<Path>) -> Result<Value> {
-        let backup = self.backup(destination)?;
+        self.archive_receipts_scoped(destination, None)
+    }
+
+    pub(crate) fn archive_receipts_scoped(
+        &self,
+        destination: impl AsRef<Path>,
+        expected_store: Option<Uuid>,
+    ) -> Result<Value> {
+        let backup = self.backup_scoped(destination, expected_store)?;
         let write = self.db.begin_write().map_err(local::storage)?;
         self.archive_cleanup(write, &backup)
     }
@@ -254,11 +273,7 @@ impl<B: Binding> Store<B> {
     }
 }
 
-pub fn restore<B: Binding>(
-    backup: impl AsRef<Path>,
-    destination: impl AsRef<Path>,
-    model: Arc<Prepared<B>>,
-) -> Result<Value> {
+fn read_backup_image(backup: impl AsRef<Path>) -> Result<Observation> {
     let mut bytes = vec![];
     File::open(backup)
         .map_err(local::storage)?
@@ -292,6 +307,34 @@ pub fn restore<B: Binding>(
             "complete backup inventory required",
         ));
     }
+    Ok(image)
+}
+
+/// Read only protected backup metadata before activating a requested destination.
+pub(crate) fn backup_store(backup: impl AsRef<Path>) -> Result<Uuid> {
+    let image = read_backup_image(backup)?;
+    let rows: Vec<ByteRow> = serde_json::from_value(
+        image
+            .tables
+            .get(RUNTIME.name())
+            .cloned()
+            .ok_or_else(|| local::corrupt("backup header table"))?,
+    )
+    .map_err(local::storage)?;
+    if rows.len() != 1 || rows[0].key != native_codec::hex(HEADER) {
+        return Err(local::corrupt("backup header inventory"));
+    }
+    let header: RuntimeHeader = local::decode(&local::unhex(&rows[0].value)?)?;
+    local::validate_header(&header)?;
+    Ok(header.store_id)
+}
+
+pub fn restore<B: Binding>(
+    backup: impl AsRef<Path>,
+    destination: impl AsRef<Path>,
+    model: Arc<Prepared<B>>,
+) -> Result<Value> {
+    let image = read_backup_image(backup)?;
     let destination = destination.as_ref();
     let (temp, file) = new_temporary(destination)?;
     let db = redb::Database::builder()
@@ -327,6 +370,15 @@ pub fn restore_to_backend<B: Binding>(
     db: Database,
     model: Arc<Prepared<B>>,
 ) -> Result<Value> {
+    restore_backend_after_validation(backup, model, || Ok(db))
+}
+
+/// The destination opener runs only after native validation and quarantine.
+pub(crate) fn restore_backend_after_validation<B: Binding>(
+    backup: impl AsRef<Path>,
+    model: Arc<Prepared<B>>,
+    create: impl FnOnce() -> Result<Database>,
+) -> Result<Value> {
     let validation_path =
         std::env::temp_dir().join(format!("rebase-restore-validation-{}.redb", Uuid::new_v4()));
     restore(backup, &validation_path, model.clone())?;
@@ -338,6 +390,7 @@ pub fn restore_to_backend<B: Binding>(
         serde_json::from_value(quarantined.observe_for_verification()?).map_err(local::storage)?;
     drop(quarantined);
 
+    let db = create()?;
     let write = db.begin_write().map_err(local::storage)?;
     if write.list_tables()?.next().is_some() {
         return Err(Error::new("storage_exists", "destination must be empty"));
@@ -396,4 +449,70 @@ fn import_image(write: &WriteTransaction, image: &Observation) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod scoped_tests {
+    use super::*;
+
+    #[test]
+    fn invalid_restore_never_calls_the_optional_backend_opener() {
+        let path =
+            std::env::temp_dir().join(format!("rebase-invalid-backup-{}.json", Uuid::new_v4()));
+        fs::write(&path, b"{}").unwrap();
+        let opened = std::cell::Cell::new(false);
+        let result = restore_backend_after_validation(
+            &path,
+            Arc::new(crate::model::PreparedModel::load().unwrap()),
+            || {
+                opened.set(true);
+                Err(Error::new("internal", "must not open destination"))
+            },
+        );
+        assert!(result.is_err());
+        assert!(!opened.get());
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn stale_scope_cannot_publish_backup_or_archive_a_reset_store() {
+        let directory =
+            std::env::temp_dir().join(format!("rebase-scoped-archive-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let model = Arc::new(crate::model::PreparedModel::load().unwrap());
+        let store = crate::local::LocalStore::create_secured(
+            directory.join("store.redb"),
+            model.clone(),
+            crate::native_slice::Context {
+                tenant: Uuid::from_u128(1),
+                actor: Uuid::from_u128(2),
+            },
+        )
+        .unwrap();
+        let (_, _, header) = store.read(model.identity()).unwrap();
+        let backup = store.backup(directory.join("before.json")).unwrap();
+        store.reset(header.store_id).unwrap();
+        let before = store.observe_for_verification().unwrap();
+        for archive in [false, true] {
+            let destination = directory.join(format!("rejected-{archive}.json"));
+            let result = if archive {
+                store.archive_receipts_scoped(&destination, Some(header.store_id))
+            } else {
+                store.backup_scoped(&destination, Some(header.store_id))
+            };
+            assert_eq!(result.unwrap_err().code, "wrong_target");
+            assert!(!destination.exists());
+        }
+        // A reset after a correctly scoped backup must also fence cleanup.
+        assert_eq!(
+            store
+                .archive_cleanup(store.db.begin_write().unwrap(), &backup)
+                .unwrap_err()
+                .code,
+            "stale_version"
+        );
+        assert_eq!(store.observe_for_verification().unwrap(), before);
+        drop(store);
+        fs::remove_dir_all(directory).unwrap();
+    }
 }

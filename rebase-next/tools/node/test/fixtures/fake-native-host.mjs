@@ -148,6 +148,16 @@ function handle(request) {
     if (mode === 'delayed-catalog') return setTimeout(() => respond(request, { scope: request.params.scope, contracts: [] }), 120);
     return respond(request, { scope: request.params.scope, contracts: [] });
   }
+  if (request.method === 'identity.issue' && mode === 'delayed-catalog') {
+    process.stdout.write(`{"protocol":"${protocol}","id":"${request.id}","id":"${request.id}","result":{}}\n`);
+    return;
+  }
+  if (request.method === 'service.start' && mode === 'delayed-catalog') {
+    return respond(request, { status: 'started', service: 'malformed-service-id' });
+  }
+  if (request.method === 'service.stop' && mode === 'delayed-catalog') {
+    return respond(request, { status: 'stopped', service: request.params.service });
+  }
   if (request.method === 'store.check' || request.method === 'store.inspect') {
     const grant = request.method;
     if (!grants.includes(grant)) return respond(request, undefined, { kind: 'forbidden', message: 'Host operation is not granted' });

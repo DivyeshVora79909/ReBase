@@ -30,6 +30,23 @@ pub(crate) fn open_host_redb<B: crate::binding::Binding>(
     model: Arc<crate::model::Prepared<B>>,
     expected_store: uuid::Uuid,
 ) -> Result<crate::local::Store<B>> {
+    open_host_redb_mode(path, model, expected_store, false)
+}
+
+pub(crate) fn recover_host_redb<B: crate::binding::Binding>(
+    path: &std::path::Path,
+    model: Arc<crate::model::Prepared<B>>,
+    expected_store: uuid::Uuid,
+) -> Result<crate::local::Store<B>> {
+    open_host_redb_mode(path, model, expected_store, true)
+}
+
+fn open_host_redb_mode<B: crate::binding::Binding>(
+    path: &std::path::Path,
+    model: Arc<crate::model::Prepared<B>>,
+    expected_store: uuid::Uuid,
+    recover: bool,
+) -> Result<crate::local::Store<B>> {
     use ::redb::ReadableDatabase;
     fn database_error(error: ::redb::DatabaseError) -> StorageError {
         let code = match error {
@@ -65,12 +82,21 @@ pub(crate) fn open_host_redb<B: crate::binding::Binding>(
         Ok(())
     }
     {
-        let preview = ::redb::ReadOnlyDatabase::open(path).map_err(database_error)?;
-        let read = ReadTransaction::from_redb(preview.begin_read().map_err(crate::local::storage)?);
-        check(&read, &model, expected_store)?;
+        match ::redb::ReadOnlyDatabase::open(path) {
+            Ok(preview) => {
+                let read = ReadTransaction::from_redb(
+                    preview.begin_read().map_err(crate::local::storage)?,
+                );
+                check(&read, &model, expected_store)?;
+            }
+            Err(::redb::DatabaseError::RepairAborted) if recover => {}
+            Err(error) => return Err(database_error(error)),
+        }
     }
     let mut builder = ::redb::Database::builder();
-    builder.set_repair_callback(|session| session.abort());
+    if !recover {
+        builder.set_repair_callback(|session| session.abort());
+    }
     let db = Database::from_redb(builder.open(path).map_err(database_error)?);
     check(&db.begin_read()?, &model, expected_store)?;
     crate::local::Store::open_backend(db, model)

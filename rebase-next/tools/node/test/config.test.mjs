@@ -3,7 +3,7 @@ import test from 'node:test';
 import * as configAPI from '../config.mjs';
 const { parseEnvironment, resolveConfig } = configAPI;
 import { ConfigurationError } from '../private/config-errors.mjs';
-import { validateNativeConfigurationSchema } from '../private/config-validation.mjs';
+import { validateNativeConfigurationSchema, validateNativeDescription } from '../private/config-validation.mjs';
 
 const target = Object.freeze({
   model: 'calculation',
@@ -71,6 +71,97 @@ test('N1 native config rejects ambiguous backends, unknown fields, duplicate gra
   ];
   for (const config of invalid) assert.throws(() => resolveConfig({ overrides: { native: { configuration: config } } }), ConfigurationError);
   assert.equal(resolveConfig({ overrides: { native: { configuration: { ...target, model: 'future-binding' } } } }).native.configuration.model, 'future-binding');
+});
+
+test('N2 config accepts explicit backend target shapes and defers method availability to native schema', () => {
+  const configuration = value => resolveConfig({ overrides: { native: { configuration: value } } }).native.configuration;
+  const surrealkv = configuration({
+    ...target,
+    backend: { kind: 'surrealkv', cluster_file: null },
+    target: { mode: 'open', path: '/tmp/owned.skv', expect_store: '33333333-3333-4333-8333-333333333333' },
+    operator_methods: ['store.backup', 'service.start'],
+  });
+  assert.equal(surrealkv.backend.kind, 'surrealkv');
+  assert.deepEqual(surrealkv.operator_methods, ['store.backup', 'service.start']);
+  assert.equal(configuration({
+    ...target,
+    backend: { kind: 'foundationdb', cluster_file: '/etc/foundationdb/fdb.cluster' },
+    target: { mode: 'create', namespace: 'n2-isolated', tenant: '11111111-1111-4111-8111-111111111111', actor: '22222222-2222-4222-8222-222222222222' },
+    operator_methods: [],
+  }).target.namespace, 'n2-isolated');
+  assert.throws(() => configuration({
+    ...target,
+    backend: { kind: 'foundationdb', cluster_file: null },
+  }), ConfigurationError);
+  assert.equal(configuration({
+    ...target,
+    target: { mode: 'recover', path: '/tmp/crashed.redb', expect_store: '33333333-3333-4333-8333-333333333333' },
+    operator_methods: ['store.recover'],
+  }).target.mode, 'recover');
+  assert.throws(() => configuration({
+    ...target,
+    backend: { kind: 'surrealkv', cluster_file: null },
+    target: { mode: 'recover', path: '/tmp/crashed.skv', expect_store: '33333333-3333-4333-8333-333333333333' },
+  }), ConfigurationError);
+});
+
+test('configured host ownership mode matches its advertised backend', () => {
+  const store = '33333333-3333-4333-8333-333333333333';
+  const description = (kind, mode) => ({
+    protocol: 'rebase-native-host-1',
+    state: 'configured',
+    engine: {
+      version: '0.16.0', api: '4', store_format: '10', native_codec: '7', effect_codec: '4',
+      compiled_models: ['equipment'], compiled_backends: ['redb', 'surrealkv', 'foundationdb'],
+    },
+    configuration: { schema: {}, defaults: {}, sources: {} },
+    capabilities: {
+      framing: { request_bytes: 65536, response_bytes: 8388608, max_outstanding: 1, bytes_exclude_lf: true },
+      host_methods: ['host.configure', 'host.close'],
+      host_backends: ['redb', 'surrealkv', 'foundationdb'],
+      model: null, mutation_work_limit: null, backup_bytes: null,
+    },
+    selection: {
+      selector: 'equipment', model: 'a'.repeat(64),
+      backend: { kind, cluster_file: kind === 'foundationdb' ? '/etc/foundationdb/fdb.cluster' : null },
+      target: kind === 'foundationdb' ? { namespace: 'n2-test', store } : { path: '/tmp/n2-test.db', store },
+    },
+    ownership: { store, mode },
+  });
+
+  for (const [backend, mode] of [['redb', 'exclusive'], ['surrealkv', 'exclusive'], ['foundationdb', 'shared_transactional']]) {
+    assert.equal(validateNativeDescription(description(backend, mode)).ownership.mode, mode);
+  }
+  for (const [backend, mode] of [['redb', 'shared_transactional'], ['surrealkv', 'shared_transactional'], ['foundationdb', 'exclusive']]) {
+    assert.throws(() => validateNativeDescription(description(backend, mode)), ConfigurationError);
+  }
+  const unscoped = description('foundationdb', 'shared_transactional');
+  unscoped.selection.target = null;
+  assert.throws(() => validateNativeDescription(unscoped), ConfigurationError);
+});
+
+test('N2 service config has no implicit listen, identity, concurrency, deadline, or effect defaults', () => {
+  const service = {
+    listen: '127.0.0.1:0',
+    identity: { issuer: 'local', audience: 'rebase-test', public_keys: { local: 'PUBLIC PEM' }, max_token_seconds: 60 },
+    max_inflight: 8,
+    request_timeout_seconds: 10,
+    effects: null,
+  };
+  const config = resolveConfig({
+    defaults: { service },
+    overrides: { service: { request_timeout_seconds: 20 } },
+  });
+  assert.equal(config.service.request_timeout_seconds, 20);
+  assert.equal(config.provenance['service.request_timeout_seconds'], 'override');
+  assert.equal(config.provenance['service.listen'], 'default');
+  assert.ok(Object.isFrozen(config.service.identity.public_keys));
+  for (const invalid of [
+    { ...service, listen: null },
+    { ...service, identity: { ...service.identity, private_key_pem: 'not config' } },
+    { ...service, max_inflight: 0 },
+    { ...service, request_timeout_seconds: null },
+  ]) assert.throws(() => resolveConfig({ overrides: { service: invalid } }), ConfigurationError);
 });
 
 test('native schemas are compiled locally with strict unknown-key checks and no remote reference resolution', () => {

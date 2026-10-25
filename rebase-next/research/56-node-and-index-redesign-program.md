@@ -129,7 +129,7 @@ well as S2's engine result. F0 accepts one integrated source/artifact identity.
 | --- | --- | --- |
 | N0 | Confirmed capability/deletion ledger and Node dependency decision | Every active Python tool, helper, test and executable research experiment has a replacement, merge or documented retirement. Select supported Node baseline from upstream support status, a lockfile and schema dialect; do not infer stable/LTS from the highest version string. Freeze N1 wire/ownership fixtures. Stop at a reviewable contract and focused feasibility witness. |
 | N1 | Shared resolved configuration, capabilities and structured native host boundary | **Accepted:** [N1 result](63-node-native-host-result.md) and [evidence](evidence/2026-10-25-n1-native-host.json). Native process dispatch takes objects; one authority for schemas and hard limits; explicit precedence and secret handling; unknown settings fail. Bounded framing, clean shutdown, invalid config with no side effects, wrong-target fences, exclusive redb ownership and private/public separation pass within the result's stated boundaries. |
-| N2 | Node session/client, model and operator composition | **Next; pending.** Generate/configure keys with supported facilities, start/stop an owned service, inspect/explain/validate a model, author a fixture, save/send/reconcile an intent, read and mutate through ordinary APIs. Preserve redaction, exact values, CAS, access DAG, original unknown plans and loss/replay controls. Model and stored-state HTML are returned values, not shell redirection recipes. |
+| N2 | Node session/client, model and operator composition | **Accepted within bounded scope:** [N2 result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json). Ordinary Node ESM composition, scoped service/identity and lifecycle controls pass; supported adapters and execution limits are recorded there. |
 | N3 | Node population and scenario functions | Direct faker + prepared schema validation, explicit reference pools, quotas, seed/clock, rule/context callbacks, accepted progress and unresolved plans. Demonstrate Equipment and Quantity, custom selection, existing anchors, exact rationals, invalid/stalled inputs, concurrent stale context and no double advancement. Preserve deliberate rejected cases. No mandatory solver or inferred universal validity. |
 | N4 | Node experiments, observation and independent verification | Ordinary actions/async iterables compose with bounded scheduling, sampling and checkers. Preserve walk/check/explore/replay, logical replay versus original-intent replay, shrinking and source-only expectations. Port churn/overload/outage and receipt cycles with explicit ownership. Reports separate generation/setup/RPC/queue/native/checker costs; incomplete samples cannot pass. Prove reuse by two scenarios without a new runner. |
 | N5 | Node storage/service/release lifecycle | Check/inspect/backup/restore/reset/archive and fake-effect recovery preserve existing fences. Package committed source, backend/model manifests and checksum verification; use extracted functions outside Git with no workspace imports. Exercise supported adapters and managed test infrastructure through explicit objects. Minimal service bootstrap is documented and validated. |
@@ -278,11 +278,12 @@ simple object manipulation remain ordinary JavaScript.
 | P0 — current program, three companion contracts and navigation | Prepared; [documentation verification](evidence/2026-10-25-g10-preparation.json) records checks and fingerprints, not runtime acceptance |
 | N0 | Accepted: [contracts and dependency feasibility](62-node-foundation-result.md); no native host/API implementation claimed |
 | N1 | Accepted: [Node/native host result](63-node-native-host-result.md) and [evidence](evidence/2026-10-25-n1-native-host.json) |
-| N2–N6 | Pending |
+| N2 | Accepted: [Node workflow result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json) |
+| N3–N6 | Pending |
 | S0–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
 To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
-program, the N0 and N1 results and frozen contracts. Start N2, preserve the same Git
+program, the N0–N2 results and frozen contracts. Start N3, preserve the same Git
 context, and assign disjoint native/Node ownership. Follow the dependencies
 above; do not restart G7–G9 or implement G6.

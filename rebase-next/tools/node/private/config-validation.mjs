@@ -13,23 +13,43 @@ export function validateNativeConfigurationShape(configuration) {
     throw new ConfigurationError('must be a bounded lowercase model selector', 'native.configuration.model');
   }
   assertExactKeys(configuration.backend, new Set(['kind', 'cluster_file']), 'native.configuration.backend');
-  if (configuration.backend.kind !== 'redb' || configuration.backend.cluster_file !== null) {
-    throw new ConfigurationError('N1 supports only {kind:"redb",cluster_file:null}', 'native.configuration.backend');
+  if (typeof configuration.backend.kind !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(configuration.backend.kind)) {
+    throw new ConfigurationError('must be a bounded backend selector', 'native.configuration.backend.kind');
+  }
+  if (configuration.backend.kind === 'foundationdb') {
+    validateAbsolutePath(configuration.backend.cluster_file, 'native.configuration.backend.cluster_file');
+  } else if (configuration.backend.cluster_file !== null) {
+    throw new ConfigurationError('cluster_file is only valid for FoundationDB', 'native.configuration.backend.cluster_file');
   }
   if (configuration.target !== null) {
     if (!isRecord(configuration.target)) throw new ConfigurationError('must be null or a target object', 'native.configuration.target');
     const target = configuration.target;
+    const foundationdb = configuration.backend.kind === 'foundationdb';
+    const targetName = foundationdb ? 'namespace' : 'path';
+    const validateTarget = () => {
+      if (foundationdb) {
+        if (typeof target.namespace !== 'string' || !target.namespace || target.namespace.includes('\0')) {
+          throw new ConfigurationError('must be a nonempty namespace without NUL', 'native.configuration.target.namespace');
+        }
+      } else {
+        validateAbsolutePath(target.path, 'native.configuration.target.path');
+      }
+    };
     if (target.mode === 'create') {
-      assertExactKeys(target, new Set(['mode', 'path', 'tenant', 'actor']), 'native.configuration.target');
-      validateAbsolutePath(target.path, 'native.configuration.target.path');
+      assertExactKeys(target, new Set(['mode', targetName, 'tenant', 'actor']), 'native.configuration.target');
+      validateTarget();
       validateUuid(target.tenant, 'native.configuration.target.tenant');
       validateUuid(target.actor, 'native.configuration.target.actor');
     } else if (target.mode === 'open') {
+      assertExactKeys(target, new Set(['mode', targetName, 'expect_store']), 'native.configuration.target');
+      validateTarget();
+      validateUuid(target.expect_store, 'native.configuration.target.expect_store');
+    } else if (target.mode === 'recover' && configuration.backend.kind === 'redb') {
       assertExactKeys(target, new Set(['mode', 'path', 'expect_store']), 'native.configuration.target');
       validateAbsolutePath(target.path, 'native.configuration.target.path');
       validateUuid(target.expect_store, 'native.configuration.target.expect_store');
     } else {
-      throw new ConfigurationError('target mode must be create or open', 'native.configuration.target.mode');
+      throw new ConfigurationError('target mode must be create, open, or supported redb recover', 'native.configuration.target.mode');
     }
   }
   if (!Array.isArray(configuration.operator_methods)) {
@@ -37,14 +57,48 @@ export function validateNativeConfigurationShape(configuration) {
   }
   const seen = new Set();
   for (const method of configuration.operator_methods) {
-    if (!['store.check', 'store.inspect'].includes(method)) {
-      throw new ConfigurationError('unsupported N1 operator method', 'native.configuration.operator_methods');
+    if (typeof method !== 'string' || !/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){0,2}$/.test(method)) {
+      throw new ConfigurationError('must be a bounded native method name', 'native.configuration.operator_methods');
     }
     if (seen.has(method)) throw new ConfigurationError('duplicate method grant', 'native.configuration.operator_methods');
     seen.add(method);
   }
   if (configuration.target === null && configuration.operator_methods.length !== 0) {
     throw new ConfigurationError('model-only configuration cannot grant store methods', 'native.configuration.operator_methods');
+  }
+  return configuration;
+}
+
+export function validateServiceConfigurationShape(configuration, label = 'service') {
+  assertExactKeys(configuration, new Set(['listen', 'identity', 'max_inflight', 'request_timeout_seconds', 'effects']), label);
+  if (typeof configuration.listen !== 'string' || !configuration.listen || configuration.listen.includes('\0')) {
+    throw new ConfigurationError('must be an explicit socket address', `${label}.listen`);
+  }
+  if (!Number.isSafeInteger(configuration.max_inflight) || configuration.max_inflight < 1) {
+    throw new ConfigurationError('must be an explicit positive integer', `${label}.max_inflight`);
+  }
+  if (!Number.isSafeInteger(configuration.request_timeout_seconds) || configuration.request_timeout_seconds < 1) {
+    throw new ConfigurationError('must be an explicit positive integer', `${label}.request_timeout_seconds`);
+  }
+  assertExactKeys(configuration.identity, new Set(['issuer', 'audience', 'public_keys', 'max_token_seconds']), `${label}.identity`);
+  for (const name of ['issuer', 'audience']) {
+    if (typeof configuration.identity[name] !== 'string' || !configuration.identity[name] || configuration.identity[name].includes('\0')) {
+      throw new ConfigurationError('must be an explicit nonempty string', `${label}.identity.${name}`);
+    }
+  }
+  if (!isRecord(configuration.identity.public_keys) || Object.keys(configuration.identity.public_keys).length === 0) {
+    throw new ConfigurationError('must contain explicit public key PEM entries', `${label}.identity.public_keys`);
+  }
+  for (const [keyId, pem] of Object.entries(configuration.identity.public_keys)) {
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(keyId) || typeof pem !== 'string' || !pem || pem.includes('\0')) {
+      throw new ConfigurationError('must contain a valid key ID and public PEM', `${label}.identity.public_keys`);
+    }
+  }
+  if (!Number.isSafeInteger(configuration.identity.max_token_seconds) || configuration.identity.max_token_seconds < 1) {
+    throw new ConfigurationError('must be an explicit positive integer', `${label}.identity.max_token_seconds`);
+  }
+  if (!(configuration.effects === null || isRecord(configuration.effects))) {
+    throw new ConfigurationError('must be null or an explicit effects configuration object', `${label}.effects`);
   }
   return configuration;
 }
@@ -138,12 +192,22 @@ export function validateNativeDescription(description, protocol = 'rebase-native
       throw new ConfigurationError('configured host selection identity was invalid', 'host.describe.result.selection');
     }
     assertExactKeys(description.selection.backend, new Set(['kind', 'cluster_file']), 'host.describe.result.selection.backend');
+    const backend = description.selection.backend.kind;
+    if (!['redb', 'surrealkv', 'foundationdb'].includes(backend)
+      || !description.capabilities.host_backends.includes(backend)) {
+      throw new ConfigurationError('configured backend was not advertised by the host', 'host.describe.result.selection.backend');
+    }
     if (description.selection.target !== null && !isRecord(description.selection.target)) {
       throw new ConfigurationError('must be null or a target descriptor', 'host.describe.result.selection.target');
     }
-    if (description.ownership !== null) {
+    if (description.selection.target === null) {
+      if (description.ownership !== null) {
+        throw new ConfigurationError('unscoped host disclosed store ownership', 'host.describe.result.ownership');
+      }
+    } else {
       assertExactKeys(description.ownership, new Set(['store', 'mode']), 'host.describe.result.ownership');
-      if (!UUID.test(description.ownership.store) || description.ownership.mode !== 'exclusive') {
+      const expectedMode = backend === 'foundationdb' ? 'shared_transactional' : 'exclusive';
+      if (!UUID.test(description.ownership.store) || description.ownership.mode !== expectedMode) {
         throw new ConfigurationError('ownership identity was invalid', 'host.describe.result.ownership');
       }
     }

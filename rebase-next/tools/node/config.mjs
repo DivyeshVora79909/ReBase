@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { ConfigurationError } from './private/config-errors.mjs';
-import { validateNativeConfigurationShape } from './private/config-validation.mjs';
+import { validateNativeConfigurationShape, validateServiceConfigurationShape } from './private/config-validation.mjs';
 
 const ENVIRONMENT_SETTINGS = Object.freeze({
   REBASE_NODE_START_TIMEOUT_MS: { path: ['runner', 'startTimeoutMs'], minimum: 1, maximum: 120_000 },
@@ -16,7 +16,7 @@ const DEFAULTS = Object.freeze({
 const NATIVE_ENVIRONMENT_KEYS = new Set([
   'PATH', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH', 'FDB_CLIENT_LIB_PATH', 'TMPDIR', 'TMP', 'TEMP',
 ]);
-const NODE_KEYS = new Set(['runner', 'native']);
+const NODE_KEYS = new Set(['runner', 'native', 'service']);
 const RUNNER_KEYS = new Set(['startTimeoutMs', 'diagnosticBytes', 'closeTimeoutMs']);
 const NATIVE_KEYS = new Set(['binary', 'environment', 'configuration']);
 
@@ -83,10 +83,16 @@ function validateFragment(fragment, label) {
     if (Object.hasOwn(fragment.native, 'environment')) validateChildEnvironment(fragment.native.environment, `${label}.native.environment`);
     if (Object.hasOwn(fragment.native, 'configuration')) validateNativeConfigurationShape(fragment.native.configuration);
   }
+  if (Object.hasOwn(fragment, 'service')) assertRecord(fragment.service, `${label}.service`);
 }
 
 function validateResolved(config) {
-  validateFragment({ runner: config.runner, native: config.native }, 'config');
+  const resolved = { runner: config.runner, native: config.native };
+  if (Object.hasOwn(config, 'service')) {
+    validateServiceConfigurationShape(config.service, 'config.service');
+    resolved.service = config.service;
+  }
+  validateFragment(resolved, 'config');
 }
 
 function validateChildEnvironment(environment, label) {

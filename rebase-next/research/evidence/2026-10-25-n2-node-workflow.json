@@ -1,0 +1,179 @@
+{
+  "schema": "rebase.n2-node-workflow-evidence.v1",
+  "date": "2026-10-25",
+  "status": "accepted_with_bounded_scope",
+  "scope": [
+    "Node ESM service/client/model/operator workflow",
+    "native model and fixture operations",
+    "scoped service and identity ownership",
+    "explicit backup, restore, archive and reset lifecycle",
+    "compiled redb, SurrealKV and FoundationDB host ownership"
+  ],
+  "node": {
+    "version": "Node.js 24.22.1",
+    "npm": "11.19.1",
+    "final_full_suite": {
+      "command": "PATH=/tmp/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N2_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next npm test",
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 3231.638149,
+      "binary": "target/n2-native-default/rebase-next",
+      "binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+      "log": "research/evidence/2026-10-25-n2-node-final.log",
+      "log_sha256": "6a7c2c9e0616b4abfcba8546a06c5faa9d95f28dadd9e4270af352866815ff53"
+    },
+    "focused_after_final_fixes": [
+      {
+        "suite": "client",
+        "command": "PATH=/tmp/node24.22.1/bin:$PATH node --test ./test/client.test.mjs",
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "native",
+        "command": "PATH=/tmp/node24.22.1/bin:$PATH node --test ./test/native.test.mjs",
+        "passed": 23,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "config",
+        "command": "PATH=/tmp/node24.22.1/bin:$PATH node --test ./test/config.test.mjs",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "real_workflow",
+        "command": "PATH=/tmp/node24.22.1/bin:$PATH node --test ./test/n2-real-workflow.test.mjs",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "real_redb_workflow": "Passed within the final 58/58 suite against the default binary hash above.",
+    "earlier_failed_attempt": {
+      "passed": 56,
+      "failed": 2,
+      "note": "An initial npm test omitted explicit binary variables and selected a mutable all-features debug binary; two integration controls hit EPIPE. Superseded by the final passing run."
+    },
+    "independent_review": "No remaining Node findings after final snapshot/reconciliation fixes.",
+    "source_sha256": {
+      "tools/node/package.json": "db29b1690ccacb89d34ea5bf87a08eb727ccac432343cc60c59456ef124956cc",
+      "tools/node/client.mjs": "e84e7dc75781a2c7a044458862b3391ff397f34c31c19032fbfed65d06670a60",
+      "tools/node/config.mjs": "45cf01bf34680f8a8f460048adc1f17ef66d8e43c5dce3cc3d6edf2d771ed9cf",
+      "tools/node/model.mjs": "20f379ca9ee65b4749dc99df8d81ced797a078474be32f29f6d2b9d0417036b4",
+      "tools/node/native.mjs": "b280627fdb7ba9499effc4c16d996c28983b8616239e2465f9cd9f9533cd899a",
+      "tools/node/operator.mjs": "a9dd4f7c97154e24f157ecfcc7325e2b591b959365af5bdb2bf5ca8e66bfb540",
+      "tools/node/private/client-wire.mjs": "d00224f4b38fd4ea1c43499f63afaa5e96bcc0aeb19ba579cdba8743903fc5ac",
+      "tools/node/private/plan-files.mjs": "3db4cde6ece4e360299073153278fc1d6ceb3091b8e63b8e27c8780bce954336",
+      "tools/node/examples/n2-equipment-workflow.mjs": "b2ac8f4cdbcb96296e4739ae7c9120ca758561106fcc2d12e57bf534b17cf8de",
+      "tools/node/test/client.test.mjs": "c4ec9bee5d5f0529c01e6ed6cd5f2a5fb3f014137c23fd41ef5835b148371681",
+      "tools/node/test/config.test.mjs": "f97c46ba0fb50a0a4b32a43c76922e7708a2131c453e7af56c5de94dcc20eb55",
+      "tools/node/test/model.test.mjs": "7fb1d49b93042024cbb4bf2276c6ac1179060cabbca74b0d8dea10574b6f7e79",
+      "tools/node/test/native.test.mjs": "b9c07c391131e8b8256d76ddcb07041fca069ee941c4142a2c4aa3a394ee49a8",
+      "tools/node/test/n2-real-workflow.test.mjs": "caf537c4d4a6bc9de86fb8507db9d286da5920a2a218826059ca28c3ec380fd8",
+      "tools/node/test/operator.test.mjs": "a41279bad88ccfb81554d3bebffc0fda0cb2dde740f6cd513f70c5fc4e6614b3",
+      "tools/node/test/fixtures/fake-native-host.mjs": "a3968051b82178b37e6e49804f5499fe28d3cf3eb26730990c0b230525603f22"
+    }
+  },
+  "native": {
+    "rustc": "1.95.0",
+    "cargo": "1.95.0",
+    "cargo_home": "/workspace/.rebase-tools/rust-review/cargo",
+    "cargo_target_dir": "target/verification-build",
+    "cargo_build_jobs": 2,
+    "cargo_incremental": 0,
+    "runtime_input_count": 88,
+    "runtime_inputs_sha256": "1378f90fcfb7ce47e072dec41910df4e8431e1c9d773fb947735cdf6639ae85d",
+    "commands": [
+      { "command": "cargo fmt --all -- --check", "result": "passed" },
+      { "command": "cargo test --offline --locked --test native_host --test native_service --test storage_lifecycle", "passed": 20 },
+      { "command": "cargo clippy --offline --locked --all-targets -- -D warnings", "result": "passed", "warnings": 0 },
+      { "command": "cargo test --offline --locked --all-features --test native_host --test native_service --test storage_lifecycle", "passed": 21 },
+      { "command": "cargo test --offline --locked --all-features --lib identity_old_scope_cannot_authorize_the_post_reset_credential_epoch", "passed": 1 },
+      { "command": "cargo test --offline --locked --all-features --lib scoped_tests", "passed": 2 },
+      { "command": "cargo test --offline --locked --all-features --lib server::tests", "passed": 3 },
+      { "command": "cargo test --offline --locked --all-features --lib prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission", "passed": 1 },
+      { "command": "cargo clippy --offline --locked --all-features --all-targets -- -D warnings", "result": "passed", "warnings": 0 }
+    ],
+    "test_executions": 48,
+    "unique_controls": 28,
+    "artifacts": {
+      "default": {
+        "path": "target/n2-native-default/rebase-next",
+        "sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e"
+      },
+      "all_features": {
+        "features": ["foundationdb", "surrealkv"],
+        "path": "target/n2-native-all/rebase-next",
+        "sha256": "dd15140864a59b933511d394ef953adf045f6a6708e4e9b60f71db390f27c63a"
+      }
+    },
+    "manifest": {
+      "path": "target/n2-native-final-source.json",
+      "sha256": "071a2723ca7b25fa7d86c75c6bdfd3829b4c0c3d6bcccb975045b614eb9456e5"
+    },
+    "verification_record": {
+      "path": "target/n2-native-final-verification.json",
+      "sha256": "924457c487bc2db47be0cbae4eba987c415cfd6bda7ec40d3ab3a9cac33a8e35"
+    }
+  },
+  "adapter_trial": {
+    "command": "REBASE_N2_HOLD=1 REBASE_NATIVE_BINARY=/workspace/ReBase/rebase-next/target/n2-native-all/rebase-next node target/n2-native-adapters/trial.mjs",
+    "result": "target/n2-native-adapters/addfb849-e11a-453b-a7e2-70688f09b1e4/result.json",
+    "result_sha256": "ba1f5f0d10932b9591a139eb641a877bd447bbb1ca32cf80bbb70a9d293f21eb",
+    "result_format": "rebase-n2-real-native-adapter-trial-1",
+    "probe_source": "research/experiments/n2-native-adapter-trial.mjs",
+    "probe_source_sha256": "7a3f1c781effce76642f0b0b712451e54428cdeb10062fc726233c4281c9f57b",
+    "binary_sha256": "dd15140864a59b933511d394ef953adf045f6a6708e4e9b60f71db390f27c63a",
+    "passed": true,
+    "backends": ["surrealkv", "foundationdb"],
+    "checks": [
+      "create",
+      "HTTP mutation",
+      "replay",
+      "same-owner inspection",
+      "wrong-scope denial",
+      "backup",
+      "archive",
+      "isolated restore",
+      "create-only restore refusal",
+      "reset fence",
+      "FoundationDB transactional host sharing",
+      "FoundationDB failed-configuration retry"
+    ],
+    "surrealkv_configure_retry": "not attempted; false in result does not mean failure",
+    "cleanup": {
+      "owned_fdb_pid": 475597,
+      "pid_absent": true,
+      "listener_46003_absent": true,
+      "owned_application_processes_stopped": true,
+      "private_artifacts_retained_under": "target/n2-native-adapters/addfb849-e11a-453b-a7e2-70688f09b1e4"
+    }
+  },
+  "node_foundationdb_smoke": {
+    "command": "PATH=/tmp/node24.22.1/bin:$PATH node /tmp/n2-fdb-node-smoke.mjs",
+    "script_sha256": "172d90a3bbc733f736ccaab8409e686ca34d792d497743c54e3a572ed12a84ee",
+    "passed": true,
+    "ownership": "shared_transactional"
+  },
+  "node_execution_log": {
+    "path": "research/evidence/2026-10-25-n2-node-final.log",
+    "sha256": "6a7c2c9e0616b4abfcba8546a06c5faa9d95f28dadd9e4270af352866815ff53"
+  },
+  "review": {
+    "status": "passed",
+    "findings": "Native and Node snapshot, scope, credential, service, restore, and redaction findings were fixed and reviewed."
+  },
+  "limitations": [
+    "Only one FoundationDB Host per native process is supported; multiple independent embedded owners in one process are unsupported.",
+    "Local FoundationDB trial is not multi-host latency evidence.",
+    "Adapter trial itself does not demonstrate effect quarantine; restore relies on the existing native integrity/quarantine path and focused unit control covers pre-start reconciliation only.",
+    "No historical capacity campaign or multi-host performance campaign was repeated.",
+    "SKV configure retry was not attempted.",
+    "N3 population, N4 workloads, N5 packaging, N6 Python/legacy CLI retirement and S0–S3 ordered-storage work remain pending."
+  ]
+}

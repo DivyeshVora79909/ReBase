@@ -3,6 +3,7 @@ import { mkdtemp, copyFile, chmod, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { inspect } from 'node:util';
 import { openNative } from '../native.mjs';
 import { resolveConfig } from '../config.mjs';
 
@@ -178,6 +179,77 @@ test('an aborted read stops caller waiting but drains its response before the ne
   assert.equal(description.state, 'configured');
   await handle.close();
   openedHandles.delete(handle);
+});
+
+test('queued side-effect inputs are detached and unknown identity operations stay hidden by default', async () => {
+  const handle = await open('delayed-catalog');
+  const first = handle.catalog({ scope: 'developer' });
+  const pem = 'PRIVATE-KEY-SENTINEL-original';
+  const params = {
+    scope: { model: 'model-original', store: 'store-original' },
+    identity: { issuer: 'issuer-original', public_keys: { local: 'public-original' } },
+    request: { actor: 'actor-original', epoch: 0 },
+    private_key_pem: pem,
+  };
+  const identity = handle.issueIdentity(params);
+  params.scope.model = 'model-mutated';
+  params.scope.store = 'store-mutated';
+  params.identity.issuer = 'issuer-mutated';
+  params.request.epoch = 99;
+  params.private_key_pem = 'PRIVATE-KEY-SENTINEL-mutated';
+
+  await first;
+  await assert.rejects(identity, error => {
+    assert.equal(error.code, 'outcome_unknown');
+    assert.equal(error.operation.method, 'identity.issue');
+    assert.equal(error.operation.params.scope.model, 'model-original');
+    assert.equal(error.operation.params.scope.store, 'store-original');
+    assert.equal(error.operation.params.identity.issuer, 'issuer-original');
+    assert.equal(error.operation.params.request.epoch, 0);
+    assert.equal(error.operation.params.private_key_pem, pem);
+    assert.ok(Object.isFrozen(error.operation.params.scope));
+    assert.ok(Object.isFrozen(error.operation.params));
+    assert.equal(error.cause, undefined);
+    assert.doesNotMatch(inspect(error), /PRIVATE-KEY-SENTINEL/);
+    assert.doesNotMatch(JSON.stringify(error), /PRIVATE-KEY-SENTINEL/);
+    return true;
+  });
+  await assert.rejects(handle.close(), error => error.code === 'native_transport');
+  openedHandles.delete(handle);
+});
+
+test('service result reconciliation uses the admitted service request snapshot', async () => {
+  const handle = await open('delayed-catalog');
+  const first = handle.catalog({ scope: 'developer' });
+  const stopParams = {
+    scope: { model: 'model-original', store: 'store-original' },
+    service: '11111111-1111-4111-8111-111111111111',
+  };
+  const stopping = handle.stopService(stopParams);
+  stopParams.scope.model = 'model-mutated';
+  stopParams.service = '22222222-2222-4222-8222-222222222222';
+  await first;
+  assert.deepEqual(await stopping, { status: 'stopped', service: '11111111-1111-4111-8111-111111111111' });
+  await handle.close();
+  openedHandles.delete(handle);
+
+  const malformed = await open('delayed-catalog');
+  const pendingRead = malformed.catalog({ scope: 'developer' });
+  const startParams = { scope: { model: 'start-model-original', store: 'start-store-original' }, config: { listen: '127.0.0.1:0' } };
+  const starting = malformed.startService(startParams);
+  startParams.scope.model = 'start-model-mutated';
+  startParams.config.listen = '127.0.0.1:9999';
+  await pendingRead;
+  await assert.rejects(starting, error => {
+    assert.equal(error.code, 'outcome_unknown');
+    assert.equal(error.operation.method, 'service.start');
+    assert.equal(error.operation.params.scope.model, 'start-model-original');
+    assert.equal(error.operation.params.scope.store, 'start-store-original');
+    assert.equal(error.operation.params.config.listen, '127.0.0.1:0');
+    return true;
+  });
+  await assert.rejects(malformed.close(), error => error.code === 'outcome_unknown');
+  openedHandles.delete(malformed);
 });
 
 test('close stops new admission but waits for work already queued', async () => {
