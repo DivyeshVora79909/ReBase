@@ -1,5 +1,13 @@
 # Composable population tools
 
+**Current versus planned:** this guide documents the accepted Python population
+tools. G10 proposes Node ESM developer functions and an ordered-storage
+redesign; neither is implemented. Existing commands remain the runnable
+baseline until replacement checkpoints pass. See the [G10 program](../research/56-node-and-index-redesign-program.md),
+[Node contract](../research/57-node-developer-contract.md),
+[storage contract](../research/58-ordered-storage-redesign.md) and
+[capability inventory](../research/59-node-capability-inventory.md).
+
 `tools/population.py` helps a Python script author bounded creates from a
 developer model catalog. It does not submit mutations or decide whether a
 whole business graph is valid. Your code supplies values, reference pools and

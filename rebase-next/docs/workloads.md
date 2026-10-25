@@ -1,10 +1,18 @@
 # Bounded workload and deployment checks
 
+**Current versus planned:** this guide documents the accepted Python workload
+tools and results. G10 proposes Node ESM developer functions and an
+ordered-storage redesign; neither is implemented. Existing commands remain the
+runnable baseline until replacement checkpoints pass. See the [G10 program](../research/56-node-and-index-redesign-program.md),
+[Node contract](../research/57-node-developer-contract.md),
+[storage contract](../research/58-ordered-storage-redesign.md) and
+[capability inventory](../research/59-node-capability-inventory.md).
+
 `tools/g8.py` is the operational entry point. It uses the ordinary authenticated
 client, owned `Backend` processes and the workshop's source-only arithmetic.
 Use a fresh private output directory for each run. G8.0–G8.5 are accepted within
 the boundaries in the [results](../research/53-workload-deployment-result.md).
-The user requested stopping after G8; G9 remains prepared only.
+G8 and G9 are accepted within the bounds in their respective results.
 
 ```sh
 export LD_LIBRARY_PATH="$PWD/target/g7-environment/root/usr/lib"
@@ -149,7 +157,9 @@ remain 0 passed, 1 failed and 2 incomplete.
 
 See [deployment](deployment.md) for current package and extracted-workflow
 commands. No general fake-data generator is implied by the current workload
-profiles. G9 is prepared only and requires a separately selected goal.
+profiles. G9 population tooling is documented in the
+[accepted results](../research/55-population-tooling-result.md); G10 planning
+and its next checkpoint are in the [current program](../research/56-node-and-index-redesign-program.md).
 
 G6, TiKV, frontend, live providers, migrations, million-record envelope expansion,
 native commit-ack injection, replicated failover and disk/power-loss infrastructure

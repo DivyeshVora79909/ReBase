@@ -1,5 +1,22 @@
 # Compact context — 2026-10-25
 
+## Current handoff — G10 planning complete; N0 next
+
+G10 is at P0: planning and navigation are prepared. All implementation
+checkpoints N0–N6, storage checkpoints S0–S3 and final integration F0 remain
+pending; N0 is the next checkpoint. Read the [G10 program](research/56-node-and-index-redesign-program.md),
+[Node contract](research/57-node-developer-contract.md),
+[ordered-storage contract](research/58-ordered-storage-redesign.md) and
+[capability inventory](research/59-node-capability-inventory.md).
+The Node APIs and storage layout are proposals, not implemented behavior. The
+currently documented Python commands remain the accepted runnable baseline
+until their replacement checkpoints pass. G7–G9 evidence remains historical
+acceptance for its recorded sources and bounds.
+Documentation-only checks and fingerprints are recorded in the
+[preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
+
+## Historical G9 current handoff — superseded
+
 **Current completion: G8 and G9.0–G9.4 are accepted within documented bounds.**
 The user authorized linear main pushes and G9 implementation, superseding the
 historical stop/no-push handoff below. Root replaced only known partial tip

@@ -1,5 +1,13 @@
 # Composable developer workflow
 
+**Current versus planned:** this guide documents the accepted Python/client
+workflow. G10 proposes Node ESM developer functions and an ordered-storage
+redesign; neither is implemented. Existing commands remain the runnable
+baseline until replacement checkpoints pass. See the [G10 program](../research/56-node-and-index-redesign-program.md),
+[Node contract](../research/57-node-developer-contract.md),
+[storage contract](../research/58-ordered-storage-redesign.md) and
+[capability inventory](../research/59-node-capability-inventory.md).
+
 D5 contract: offline model and fixture tools produce JSON; one stateless client
 submits public operations to the authenticated backend. There is no fixture RPC,
 hidden session cache, automatic mutation retry or alternate database writer.

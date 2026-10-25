@@ -1,0 +1,286 @@
+# G10 — Node developer APIs and ordered-storage redesign
+
+Prepared 2026-10-25. **This is a planning checkpoint, P0. No replacement runtime,
+Node SDK or storage layout is implemented or accepted by this document.**
+The starting implementation is commit `e7458dc`, source 0.16.0, store 10, native
+codec 7, effect codec 4 and API 4. G7, G8 and G9 evidence remains historical
+acceptance for its recorded inputs. A Git pull before preparation was already
+up to date. Check current origin before each later integration.
+
+## User intent and authority
+
+The user explicitly selected this redesign after the G9 closeout. The user is
+experienced in JavaScript and the Node REPL and wants to compose ordinary
+functions, inspect returned values, and automate scenarios without learning a
+project-specific command language. Preserve the original ReBase's useful power,
+not its names, implementation, language mixture or compatibility surface.
+
+Current delivery is detailed planning, reviewed documentation, and a linear
+commit/push to main. Do not start implementation during this documentation task.
+A subsequent implementation continuation starts N0 below; it need not repeat
+the design discussion or request approval for routine authorized changes.
+
+The user permits breaking changes and explicitly requests:
+
+- Node JavaScript as the single active developer-tool runtime; remove Python
+  from supported development, testing orchestration, generation and packaging.
+- Direct ESM imports and ordinary functions with explicit arguments and state.
+  No custom REPL, command builder, argument-parser facade or workflow DSL.
+- Common configuration, limits discovery and predictable explicit environment
+  handling, rather than copied constants and hidden process defaults.
+- Supported libraries and standard Node facilities for generation, validation,
+  files, processes and cryptography, with custom code restricted to real gaps.
+- Automation of model inspection, fixtures, service lifecycle, identity setup,
+  population, experiments, independent checking, reporting and releases.
+- A rigorous assessment of ordered storage, paging and fewer dependent remote
+  reads, including the physical/logical distinction discussed below.
+
+Rust remains the native calculation/storage/server implementation. Cargo,
+rustup, npm and the operating system keep their normal interfaces. User-facing
+JavaScript passes structured data to Rust; it does not reimplement business
+formulas or raw storage writes. The production Rust server must not acquire a
+Python or Node dependency just because developers use Node tooling.
+
+This supersedes earlier instructions to preserve Python orchestration, the
+Python-to-Node faker bridge and all legacy project CLI verbs. The older papers
+remain descriptions of their accepted releases, not compatibility obligations.
+The previous mathematical cautions also remain: do not turn an unproven idea
+into a logarithmic complexity or distributed-performance claim.
+
+## Canonical companion contracts
+
+Read this program first, then the relevant companion only:
+
+| Document | Owns |
+| --- | --- |
+| [Node developer contract](57-node-developer-contract.md) | Proposed function surface, native boundary, configuration, exact values, ownership and population |
+| [Ordered-storage contract](58-ordered-storage-redesign.md) | Physical pages versus logical summaries, algorithms, experiments, complexity and transaction obligations |
+| [Capability inventory](59-node-capability-inventory.md) | Existing tool families, semantic replacement coverage and deletion obligations |
+
+If these disagree, resolve the ambiguity in a recorded decision before changing
+an executable interface. The checkpoint graph in this document owns ordering
+and status. Companion examples are proposals; existing guides remain the source
+of runnable commands until their replacement checkpoint passes.
+
+## Architecture decisions already made
+
+1. Use plain Node ESM JavaScript. JSDoc or generated declarations may help
+   discovery; do not require a TypeScript transpilation pipeline to use the REPL.
+2. Use one authoritative compiled model and exported metadata. Rust owns schema
+   and native semantics. JavaScript prepares validators/generators from those
+   exports. A JavaScript config does not make arbitrary executable models loadable.
+3. Separate pure transformations from owned resources. Pure functions receive
+   values; processes, sessions, streams and mutable generation state are explicit
+   handles. Avoid global configuration, credentials, RNGs or implicit sessions.
+4. Keep one native mutation/validation path. Remote authenticated operations and
+   trusted local operator operations have different capabilities; the latter
+   must not become public HTTP methods merely to simplify tooling.
+5. Return useful objects, iterables or strings. Use `node:fs/promises` for normal
+   file writing. A dedicated function is justified for a real semantic boundary,
+   such as private write-once plans or verified atomic backup publication.
+6. Build process adapters with argument arrays and structured IPC, never shell
+   strings. A minimal Rust process bootstrap is acceptable. Maintaining one CLI
+   verb for every domain function is not the target architecture.
+7. Preserve independent expectations. Replacing Python does not authorize an
+   oracle that calls the engine's own calculation or trusts its cached totals.
+8. Use page and tree automation through defined algorithms. A database cannot
+   automatically split application-defined arrays inside opaque values. Packing
+   values may lower key overhead and increase rewrite bytes at the same time.
+
+## Scope and explicit deferred work
+
+In scope: all active ReBase Next developer operations and their checks; discovery,
+structured local operation dispatch, lifecycle, generation, experiments, output
+rendering, package preparation and isolated acceptance; normalization of settings;
+instrumentation and a selected, justified ordered-storage improvement.
+
+Retain coverage for all six existing compiled models, including bounded invoicing,
+without expanding their accounting business scope. Equipment, Quantity and
+Measurement supply small non-accounting examples; effect-demo retains the fake
+provider lifecycle. These examples must remain usable as ordinary compositions.
+
+Deferred: broader G6 accounting, frontend, live provider integrations, TiKV,
+populated-store migration and unrestricted million-record engine capacity. A
+large standalone index experiment is allowed only with an explicit distinction
+from the application's accepted limits. The explanation-course checkpoints are
+also deferred; concise executable examples and API reference remain required.
+
+## Checkpoint graph and current status
+
+P0 is this documentation delivery. **Twelve implementation checkpoints remain:**
+N0–N6, S0–S3 and F0. All are pending at preparation. A completed planning packet
+does not count as executed acceptance for any of them.
+
+```text
+N0 → N1 → N2 → N3 → N4 → N5 → N6 → F0
+     N1 → S0 → S1 → S2 → S3 → F0
+                         N5 → S3
+```
+
+The arrows show acceptance dependencies, not a prohibition on independent
+research or drafting. S0 execution follows N1's common configuration/capability
+contract so measurements have stable identities. N3 and N4 owners can develop
+disjoint modules in parallel after N2, but N4 acceptance includes N3 reuse.
+N5 acceptance includes N4's independent checks. S3 uses N5 release functions as
+well as S2's engine result. F0 accepts one integrated source/artifact identity.
+
+| Gate | Exact deliverable | Required acceptance and stop point |
+| --- | --- | --- |
+| N0 | Confirmed capability/deletion ledger and Node dependency decision | Every active Python tool, helper, test and executable research experiment has a replacement, merge or documented retirement. Select supported Node baseline from upstream support status, a lockfile and schema dialect; do not infer stable/LTS from the highest version string. Freeze N1 wire/ownership fixtures. Stop at a reviewable contract and focused feasibility witness. |
+| N1 | Shared resolved configuration, capabilities and structured native host boundary | Native process dispatch takes objects; one authority for schemas and hard limits; explicit precedence and secret handling; unknown settings fail. Prove bounded framing, clean shutdown, invalid config with no side effects, wrong-target fences, exclusive embedded ownership and privileged local versus public access separation. Standard Cargo arguments remain internal or directly usable. |
+| N2 | Node session/client, model and operator composition | Generate/configure keys with supported facilities, start/stop an owned service, inspect/explain/validate a model, author a fixture, save/send/reconcile an intent, read and mutate through ordinary APIs. Preserve redaction, exact values, CAS, access DAG, original unknown plans and loss/replay controls. Model and stored-state HTML are returned values, not shell redirection recipes. |
+| N3 | Node population and scenario functions | Direct faker + prepared schema validation, explicit reference pools, quotas, seed/clock, rule/context callbacks, accepted progress and unresolved plans. Demonstrate Equipment and Quantity, custom selection, existing anchors, exact rationals, invalid/stalled inputs, concurrent stale context and no double advancement. Preserve deliberate rejected cases. No mandatory solver or inferred universal validity. |
+| N4 | Node experiments, observation and independent verification | Ordinary actions/async iterables compose with bounded scheduling, sampling and checkers. Preserve walk/check/explore/replay, logical replay versus original-intent replay, shrinking and source-only expectations. Port churn/overload/outage and receipt cycles with explicit ownership. Reports separate generation/setup/RPC/queue/native/checker costs; incomplete samples cannot pass. Prove reuse by two scenarios without a new runner. |
+| N5 | Node storage/service/release lifecycle | Check/inspect/backup/restore/reset/archive and fake-effect recovery preserve existing fences. Package committed source, backend/model manifests and checksum verification; use extracted functions outside Git with no workspace imports. Exercise supported adapters and managed test infrastructure through explicit objects. Minimal service bootstrap is documented and validated. |
+| N6 | Python and redundant CLI removal | Delete replaced active Python tools/requirements/provider bridge and custom project CLI parser paths, update imports/manifests/docs/templates. Final supported workflows and package verification need Node, Rust/native prerequisites only. Historical executable Python experiments are converted if still needed or retired to their historical Git commits; dated evidence remains immutable. No hidden Python invocation or second maintained implementation. |
+| S0 | FoundationDB and embedded access baseline | Instrument logical/physical loads, wait dependencies, bytes, cache hits, scans and writes without altering semantics. Record host/cluster/process topology and cold/warm controls. Reuse existing correctness witnesses. Local multiple processes are not a multi-host network benchmark. |
+| S1 | Bounded alternatives trial and selected layout decision | Compare the baseline with small transaction-local batching/cache changes and a justified paged/stable-partition candidate. Validate correctness independently before timing. Define acceptance thresholds from the S0 workload before candidate results. Account for rewrite bytes, conflicts, structural metadata and rank/select costs. Select the smallest maintainable design meeting the evidence; retaining AVL is a valid measured decision. |
+| S2 | Selected ordered-access implementation | Implement only the S1 decision, adapt independent structural checking and retain atomic mutations/receipts/authority. If encoding or meaning changes, bump identities and reject incompatible stores; do not silently migrate. Physical page changes must not become false business dependencies. Record algorithms, bounds and changed public/private capabilities. |
+| S3 | Cross-adapter and latency acceptance | Verify the selected implementation on redb, standalone SurrealKV and FoundationDB; compare complete logical outcomes, rollback, query/replay and lifecycle. Run affected N5 extracted checks. Record real multi-host results if infrastructure exists; otherwise mark that claim incomplete and record its exact required run. No synthetic delay result may be promoted to distributed capacity. |
+| F0 | Integrated developer experience, deletion and source/artifact handoff | From a clean source export, import the Node entry point in a standard REPL/script and complete model → owned service → fixture/population → mutation/query → inspection → experiment → check → backup/recovery → package workflow. Verify source/artifact/format identities and no Python/custom CLI dependency. Publish supported/deferred/blocked claims, hashes, results, cleanup and a next-action handoff. |
+
+Each row can be split into small commits without inventing additional completion
+claims. Do not mark a gate accepted on implementation alone; include the specified
+counterexamples and evidence. Do not repeatedly ask the user to say "continue"
+between authorized implementation gates. Stop only for a material unavailable
+prerequisite, an unresolved correctness contract, or the user's stop instruction.
+
+## N0 output required before parallel implementation
+
+N0 must produce a compact decision record, not another open-ended planning phase:
+
+- Baseline hashes and actual currently runnable artifacts; identify missing
+  historical raw data explicitly rather than regenerating old evidence silently.
+- A ledger mapping every file in [the inventory](59-node-capability-inventory.md)
+  to an owned capability and a deletion/replacement checkpoint.
+- Proposed exports frozen for N1/N2 with examples accepted by syntax/type checks;
+  names can change before implementation, but only one naming scheme survives.
+- The private native protocol: model/store selection, framing, versioning,
+  request/result/error shapes, maximum sizes, capability scope and resource
+  ownership. Select an extension of existing Rust functions/dispatch; do not
+  wrap all historical CLI verbs or add another calculation engine.
+- Library and Node support decisions: validator dialect/custom annotations,
+  faker behavior, duplicate-key JSON policy, exact arithmetic, seed semantics,
+  abort/resource limits and installation outside the checkout. Tests must cover
+  semantic differences between Python and Node, not just matching happy outputs.
+- A configuration registry listing each setting's owner, default, unit, allowed
+  range, override policy, secret treatment and source of authoritative limits.
+
+Do not build a whole generic config framework. A few schema-checked objects and
+explicit resolver functions are sufficient. Reuse native public/developer model
+metadata; new operator config metadata should originate beside its Rust types.
+
+## Configuration and resource invariants
+
+There are three distinct kinds of limits. The resolved context must explain all
+three without duplicating policy across every script:
+
+1. **Native/storage capabilities:** encoding widths, model inventory ceilings,
+   FoundationDB key/value/transaction/snapshot restrictions. These are not lifted
+   by setting an environment variable.
+2. **Operator policy:** admission, work/query budgets, timeouts, package and
+   backup bounds within supported capabilities. Native code validates enforcement.
+3. **Experiment choices:** rates, concurrency, duration, seed, population shape,
+   sampling and artifact retention. Preflight verifies their combined feasibility.
+
+Ordinary modules do not read environment variables during import. A caller may
+pass an allowlisted environment snapshot to the resolver. Precedence is explicit
+options over explicit environment over documented defaults. Omitted is different
+from null/zero/false; reject unknown fields and incompatible backend settings.
+Expose effective values and provenance with secrets redacted. Do not persist
+tokens or private keys in shared reports, fingerprints or default REPL inspection.
+
+Distinguish environment needed by native libraries/toolchains from application
+configuration. Dynamic library search, Cargo cache/feature inputs and the FDB
+cluster file remain explicit host prerequisites. No fabricated portable Node
+memory/RSS guarantee replaces POSIX resource limits from the previous provider.
+If the replacement has different containment, document and verify that exact
+boundary. Node-to-Node bounded workers are acceptable when justified; a permanent
+Python launcher is not.
+
+## Required semantic preservation
+
+Breaking interfaces does not permit weakening the following obligations:
+
+- One transaction publishes input, exact calculations, indexes, authority-related
+  repair, operation receipt and applicable effect intent together.
+- Parent/reference validity, tenant separation, public/private distinction and
+  final-graph causality remain authoritative in Rust. Zero contributions still
+  carry dependencies; empty/absent is never invented as a successful zero.
+- Saved intents retain their operation ID, original context, target and content.
+  Timeout, cancellation and missing observations do not imply rollback. No
+  automatic replacement intent, silent archive or expired-context refresh.
+- Opaque record tokens, root tokens, cursor digests, graph revisions and effect
+  fences keep their distinct meanings. Never manufacture them from a local clock.
+- One owner for an embedded store; local operator methods do not bypass live
+  server ownership. Restores are create-only and independently verified. Reset
+  and archive explicitly fence identity/receipt generations as currently defined.
+- Provider facts, quarantine/reconciliation, lease fences and captured authority
+  retain their meaning. A Node fake provider is evidence, not a live integration.
+- Histories, inclusive/exclusive bounds, equal-time groups, multiple slots and
+  non-invertible summaries remain correct through any index transformation.
+
+## Delegation and economical execution
+
+Use the user's requested model mix: Luna for inventory, deterministic module
+ports, examples and narrow tests; Sol 6.1 for native protocol, transaction,
+algorithm and independent-review tasks. A lead owns interface decisions and
+cross-module integration. Do not assign models by derogatory assumptions; supply
+the same exact contracts and source references to every worker.
+
+Every delegated task must name: allowed files, starting source identity, required
+reads, inputs/outputs, forbidden shortcuts, acceptance cases, evidence destination,
+and handoff fields. Root owns Git/pushes; workers never reset/stash/rebase shared
+state. Source mutations and verification on shared fixtures require an execution
+lease. Use distinct disposable namespaces and directories, explicit process PIDs
+and `finally` cleanup. Do not kill processes owned by another task.
+
+Parallel lanes after contract freeze: client/config, population, independent
+oracles and experiment/reporting can have disjoint owners. Native protocol and
+storage changes share a coordinated Rust owner. Only one Cargo owner runs builds,
+with two jobs and incremental off in this cloud environment. Reuse unchanged
+native artifacts when hashes match; Node-only changes do not require repeated
+full native builds. Serialise host benchmarks to avoid contaminating timings.
+
+Prefer a small informative counterexample or affected test set over repeating
+complete accepted campaigns. Retain source fingerprints and failed-trial context.
+A Node port needs fresh acceptance for changed tools; copying Python's pass flag
+or calling Python from Node is not acceptance. Final release verification is
+performed on the actual exported artifact rather than the source workspace.
+
+## Evidence, integration and handoff contract
+
+For each accepted checkpoint, retain source identity, environment/tool versions,
+commands or function calls actually executed, test counts/results, output hashes,
+resource observations, failed trials, unresolved boundaries and cleanup state.
+Record `passed`, `failed`, `incomplete` and `unsupported` distinctly. Do not
+write an empty success report when optional infrastructure was absent.
+
+Commit a checkpoint on existing main after focused verification, with a message
+stating capability and boundary. Fetch before pushing; preserve unexpected remote
+commits through linear integration. Use ordinary pushes. The old replacement of
+partial tip `1fe6310` is historical and must never be repeated by this program.
+Update the top of CONTEXT and the ledger after each checkpoint. A handoff names
+one exact next action, file owners, live processes, reusable artifacts and blockers.
+
+The final node-only developer guide must be demonstrable with ordinary imports,
+values and `await` in Node. Keep explanatory comments near examples. The public
+surface should add a function only where it owns a reusable obligation: protocol
+identity, transactional lifecycle, constrained generation, bounded execution,
+independent checking or verified packaging. Native filesystem operations and
+simple object manipulation remain ordinary JavaScript.
+
+## Preparation ledger
+
+| Checkpoint | Status at this delivery |
+| --- | --- |
+| P0 — current program, three companion contracts and navigation | Prepared; [documentation verification](evidence/2026-10-25-g10-preparation.json) records checks and fingerprints, not runtime acceptance |
+| N0 | Next implementation checkpoint; pending |
+| N1–N6 | Pending |
+| S0–S3 | Pending; no layout selection or performance claim |
+| F0 | Pending |
+
+To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
+program and the N0 inventory. Start N0, preserve the same Git context, and finish
+the bounded feasibility/coverage decisions before assigning disjoint executable
+changes. Follow the dependencies above; do not restart G7–G9 or implement G6.

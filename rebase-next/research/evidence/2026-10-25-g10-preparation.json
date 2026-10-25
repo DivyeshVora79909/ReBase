@@ -1,0 +1,81 @@
+{
+  "schema": "rebase-g10-preparation/v1",
+  "name": "G10 preparation documentation verification",
+  "generated_at_utc": "2026-10-25T16:48:31Z",
+  "checkpoint": "G10 P0 preparation",
+  "status": "prepared-not-implemented",
+  "baseline_commit": "e7458dc3e14893588f4958640b83b546f9663ca8",
+  "scope": "Documentation and handoff only. P0 is prepared; N0 is next. No implementation checkpoint has been executed or accepted.",
+  "preparation": {
+    "P0": "prepared",
+    "next": "N0",
+    "implementation_checkpoints_pending": 12,
+    "pending_checkpoints": [
+      "N0",
+      "N1",
+      "N2",
+      "N3",
+      "N4",
+      "N5",
+      "N6",
+      "S0",
+      "S1",
+      "S2",
+      "S3",
+      "F0"
+    ]
+  },
+  "executed_checks": {
+    "changed_markdown_files": 11,
+    "local_markdown_file_links": {
+      "all_markdown_link_targets": 220,
+      "scheme_or_external_targets_ignored": 2,
+      "local_checked": 218,
+      "resolved": 218,
+      "unresolved": 0
+    },
+    "inventory_59": {
+      "actual_python_files": 60,
+      "table_rows": 60,
+      "unique_paths": 60,
+      "duplicate_paths": 0,
+      "missing_paths": 0,
+      "nonexistent_paths": 0
+    },
+    "git_diff_check": "passed",
+    "git_diff_cached_check": "passed",
+    "git_diff_head_check": "passed",
+    "worktree_scope": "Documentation only: 11 Markdown files and this evidence JSON; baseline runtime source unchanged."
+  },
+  "documentation_sha256": {
+    "AGENTS.md": "2c97d3fd05492d724b9f5c28c7423a9f5bee17586899c2c28b9e10f652dca74a",
+    "CONTEXT.md": "e70fc5d83ed2f789d45d72612e9ee8587afd56700af6534b22bd52b3d29b52cb",
+    "README.md": "18b17802f9ab21cf46a646772653d383439275781c5b90edd9f56100c44ec16b",
+    "docs/developer-tools.md": "e37eaaca682df7c8b79a075a3c7be0d2685678df2dd0f7f046eb7b5bece3db51",
+    "docs/population.md": "eef5cbe58fddc0bc8b85c5a536fb66cea18b0dbebedcc339448846f0b9d6177a",
+    "docs/workloads.md": "3ccfa8c1b2dc5676cca177659750ed9d6e478934521b4e129fe4d2ad8d018172",
+    "research/30-capability-program.md": "f666b0810a2831aed9cf9351f2f9836bd3de3f23676b984f6d60422088fe37b4",
+    "research/56-node-and-index-redesign-program.md": "7e72c7cd79596adc5e623a498a36324504d393f8be83be80d5e251fd0fdb8816",
+    "research/57-node-developer-contract.md": "ebf13bfd31f1a66306350463273f436492d13eb51536e0a725ebd247999b0a31",
+    "research/58-ordered-storage-redesign.md": "d1bc3b6f506d24f9931259637ef10f7883168795a3856188f1d23cb938cb8f0e",
+    "research/59-node-capability-inventory.md": "672cc5e6b62029142ec1419310321593f76545cbf5378c0f3dde6ca7a93d1d23"
+  },
+  "not_executed": [
+    "Rust/Cargo checks or campaigns",
+    "Node implementation or acceptance checks",
+    "database/server startup",
+    "cluster or workload runs",
+    "storage redesign or performance measurements"
+  ],
+  "independent_review": {
+    "source": "Separate read-only Sol review, as reported by root",
+    "result": "No material issues found",
+    "reported_findings": {
+      "inventory_rows": 60,
+      "prior_links_reviewed": 7,
+      "implementation_checkpoints": 12,
+      "node_median_claim": "k=2..12",
+      "prior_fixes": "confirmed"
+    }
+  }
+}

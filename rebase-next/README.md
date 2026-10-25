@@ -1,5 +1,13 @@
 # ReBase Next
 
+**Planning notice (G10, 2026-10-25):** the Node developer API and ordered-storage
+redesign are planned; neither replacement is implemented. Existing Python
+commands below remain the accepted runnable baseline until replacement
+checkpoints pass. Follow the [G10 program](research/56-node-and-index-redesign-program.md)
+for the current plan and continuation, with proposed [Node](research/57-node-developer-contract.md),
+[storage](research/58-ordered-storage-redesign.md) and
+[capability](research/59-node-capability-inventory.md) contracts.
+
 **A bounded calculation backend with reusable compiled models and developer tools.**
 One Rust executable provides exact connected calculations, private outputs,
 ordered aggregates and historical invariants, transactional DAG authority,
@@ -123,7 +131,7 @@ python3 -B tools/test_client.py -v
 ```
 
 For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[current release result](research/53-workload-deployment-result.md). The research papers
+[G10 program](research/56-node-and-index-redesign-program.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

@@ -22,7 +22,12 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 
 ## Capability map and dependency order
 
-**Current execution boundary (2026-10-25):** V1 and G7 are accepted.
+**Current execution boundary (2026-10-25):** V1 and G7 are accepted, and G10
+planning P0 is prepared with N0 next. G10's Node APIs and ordered-storage
+layout are proposals, not implemented behavior; see the [current G10 program](56-node-and-index-redesign-program.md)
+and its proposed [Node contract](57-node-developer-contract.md),
+[storage contract](58-ordered-storage-redesign.md) and
+[capability inventory](59-node-capability-inventory.md).
 [The G7 closeout](51-storage-conformance-result.md) records real FoundationDB,
 redb and standalone SurrealKV conformance through one persistence contract.
 G8.0–G8.5 are accepted within their recorded boundaries in
@@ -47,6 +52,7 @@ deployment result remains historical.
 | G7 | Distributed storage | **Accepted:** [cross-adapter result](51-storage-conformance-result.md), FoundationDB/redb/SurrealKV; exact protection, coordination and HTTP-loss/restart limits recorded |
 | G8 | Workload and deployment acceptance | **G8.0–G8.5 accepted within recorded limits:** [plan](52-workload-deployment-plan.md) and [results](53-workload-deployment-result.md), shared observations, churn, overload, owned database outage/recovery and extracted package acceptance |
 | G9 | Composable population and developer experiments | **G9.0–G9.4 accepted within recorded bounds:** [results](55-population-tooling-result.md), authoritative metadata, typed pools, explicit runtime rules, confirmed progress and existing workload/check reuse |
+| G10 | Node developer APIs and ordered-storage redesign | **Planning P0 prepared; N0 next.** N0–N6, S0–S3 and F0 remain pending; see [program](56-node-and-index-redesign-program.md) and proposed [Node](57-node-developer-contract.md), [storage](58-ordered-storage-redesign.md) and [capability](59-node-capability-inventory.md) contracts. |
 
 The table is the program, not a claim that every row is implementation-ready.
 Close the next gate's semantic questions before coding it. Concrete examples
@@ -109,8 +115,9 @@ without another prompt. Keep `CONTEXT.md` current for switching agents.
 G4a, G4b, G4c, G4d-a/b/c and G5a-G5c are accepted. The
 [G4d-c result](42-authored-selection-result.md) closes the previous selected scope.
 V1.1–V1.5 are now [accepted](44-workshop-verification-result.md). G7 is subsequently
-accepted above. G8.0–G8.5 and G9.0–G9.4 are accepted within recorded boundaries;
-no further gate is selected. TiKV, G6 and frontend remain
+accepted above. G8.0–G8.5 and G9.0–G9.4 are accepted within recorded boundaries.
+G10 planning P0 is prepared and N0 is next; its implementation rows remain
+pending. TiKV, G6 and frontend remain
 deferred.
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
