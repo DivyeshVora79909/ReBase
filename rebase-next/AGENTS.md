@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — G10 N0 accepted; N1 is next
+## Current instruction — G10 N1 accepted; N2 is next
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -19,10 +19,13 @@ Read [the program](research/56-node-and-index-redesign-program.md), then
 [storage contracts](research/58-ordered-storage-redesign.md) or
 [the inventory](research/59-node-capability-inventory.md) as needed.
 Read the [N0 decisions and bounded evidence](research/62-node-foundation-result.md),
+[N1 result and boundaries](research/63-node-native-host-result.md),
 [frozen native wire](research/60-native-host-contract.md) and
-[Node dependency decisions](research/61-node-tooling-contract.md) before N1.
-N0 accepts contracts and dependency feasibility; developer APIs and storage
-changes remain unimplemented. On continuation, start N1 and follow the dependency
+[Node dependency decisions](research/61-node-tooling-contract.md) when changing
+the N1 boundary or starting N2.
+N1 implements Node configuration and the private native host for model catalogs
+and redb check/inspection. Later Node workflow replacement and ordered-storage
+changes remain unimplemented. On continuation, start N2 and follow the dependency
 ledger through verified checkpoints; do not ask for repeated routine permission.
 
 This explicitly supersedes older instructions to preserve Python orchestration,

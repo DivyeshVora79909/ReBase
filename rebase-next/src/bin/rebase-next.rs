@@ -38,6 +38,10 @@ fn read_json(path: &str) -> Result<serde_json::Value, Box<dyn Error>> {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let mut raw: Vec<_> = std::env::args().skip(1).collect();
+    if raw == ["host"] {
+        rebase_semantic_proof::host::run_stdio()?;
+        return Ok(());
+    }
     let mut target = BackendTarget::default();
     let mut selected = "calculation".to_owned();
     while !raw.is_empty() {

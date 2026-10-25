@@ -1,34 +1,37 @@
 # Compact context — 2026-10-25
 
-## Current handoff — G10 N0 accepted; N1 next
+## Current handoff — G10 N1 accepted; N2 next
 
-G10 P0 and N0 are complete. N1–N6, S0–S3 and F0 remain pending.
-Read [N0 results](research/62-node-foundation-result.md), the
+G10 P0, N0 and N1 are complete. N2–N6, S0–S3 and F0 remain pending.
+Read [N0 results](research/62-node-foundation-result.md),
+[N1 results](research/63-node-native-host-result.md), the
 [native wire contract](research/60-native-host-contract.md),
 [Node decisions](research/61-node-tooling-contract.md) and the
 [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [ordered-storage contract](research/58-ordered-storage-redesign.md) and
 [capability inventory](research/59-node-capability-inventory.md).
-The Node APIs and storage layout are proposals, not implemented behavior. The
-currently documented Python commands remain the accepted runnable baseline
-until their replacement checkpoints pass. G7–G9 evidence remains historical
-acceptance for its recorded sources and bounds.
+N1 implements `parseEnvironment`, `resolveConfig` and `openNative` in
+`tools/node/`. The host exposes six model catalogs plus scoped redb check and
+inspection; it does not replace the Python developer workflows. Those Python
+commands remain the accepted runnable baseline until later replacement
+checkpoints pass. G7–G9 evidence remains historical acceptance for its recorded
+sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
 [preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
 
 N0 freezes a scoped Node ESM package on Node 24 LTS, four pinned dependencies,
-explicit configuration authority, the complete 60-file replacement ledger,
-and `rebase-native-host-1` private framing. Three focused tests pass on official
-Node 24.22.1 outside the checkout. Six read-only native catalogs match the retained
-G8 artifact; this does not execute the proposed host. Native Rust/Cargo 1.95
-are on PATH. Initial N1 host methods are describe/configure/catalog/check/inspect/
-close with redb ownership; N2 extends service and optional backends. No Python
-file is deleted until its replacement controls pass. Root owns Git; workers own
-disjoint files; a single Cargo owner reuses `target/verification-build`, two
-jobs, incremental off. Source and result identities are in
-[N0 evidence](research/evidence/2026-10-25-n0-node-foundation.json).
-Next: implement and verify N1's native host plus Node config/process owner.
+configuration authority, the complete 60-file replacement ledger, and
+`rebase-native-host-1`. N1's 36 Node tests, 11 native integration tests, focused
+host unit test, all-features check, formatting and Clippy pass; npm audit reports
+zero vulnerabilities. The verified host binary is
+`target/verification-build/debug/rebase-next` (SHA-256 is in
+[N1 evidence](research/evidence/2026-10-25-n1-native-host.json)). Rust/Cargo
+1.95 are on PATH. The offline Cargo cache is
+`/workspace/.rebase-tools/rust-review/cargo`; shared build outputs are in
+`target/verification-build`. N1 supports redb ownership only. N2 adds owned
+services and optional adapter lifecycle/recovery. No Python file is deleted
+until its replacement controls pass. Root owns Git. Next: implement N2.
 
 ## Historical G9 current handoff — superseded
 

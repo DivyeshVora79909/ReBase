@@ -21,6 +21,61 @@ pub mod surrealkv;
 pub mod target;
 
 pub use crate::native_slice::{Error as StorageError, Result};
+
+/// Private-host redb ownership: a wrong expected identity is rejected by a
+/// read-only preview before writable maintenance. Recovery is explicitly refused.
+/// The acquired owner is checked again before it can service any operation.
+pub(crate) fn open_host_redb<B: crate::binding::Binding>(
+    path: &std::path::Path,
+    model: Arc<crate::model::Prepared<B>>,
+    expected_store: uuid::Uuid,
+) -> Result<crate::local::Store<B>> {
+    use ::redb::ReadableDatabase;
+    fn database_error(error: ::redb::DatabaseError) -> StorageError {
+        let code = match error {
+            ::redb::DatabaseError::DatabaseAlreadyOpen => "store_busy",
+            ::redb::DatabaseError::RepairAborted => "recovery_required",
+            _ => "storage",
+        };
+        StorageError::new(code, "guarded redb open failed")
+    }
+    fn check<B: crate::binding::Binding>(
+        read: &ReadTransaction,
+        model: &crate::model::Prepared<B>,
+        expected: uuid::Uuid,
+    ) -> Result<()> {
+        let meta = crate::local::read_meta(read)?;
+        let header = crate::local::read_header(read)?;
+        if meta.model != model.identity()
+            || meta.codec != crate::native_codec::CODEC
+            || header.store_id != expected
+        {
+            return Err(StorageError::new(
+                "wrong_target",
+                "expected model/store differs",
+            ));
+        }
+        crate::local::check_tables(read)?;
+        if !read.list_tables()?.any(|t| t.name() == "authority") {
+            return Err(StorageError::new(
+                "invalid_config",
+                "host requires a secured store",
+            ));
+        }
+        Ok(())
+    }
+    {
+        let preview = ::redb::ReadOnlyDatabase::open(path).map_err(database_error)?;
+        let read = ReadTransaction::from_redb(preview.begin_read().map_err(crate::local::storage)?);
+        check(&read, &model, expected_store)?;
+    }
+    let mut builder = ::redb::Database::builder();
+    builder.set_repair_callback(|session| session.abort());
+    let db = Database::from_redb(builder.open(path).map_err(database_error)?);
+    check(&db.begin_read()?, &model, expected_store)?;
+    crate::local::Store::open_backend(db, model)
+}
+
 fn failure(detail: impl Into<String>) -> StorageError {
     StorageError::new("storage", detail.into())
 }

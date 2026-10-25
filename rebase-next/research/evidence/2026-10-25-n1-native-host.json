@@ -1,0 +1,139 @@
+{
+  "schema": "rebase.n1-native-host-evidence.v1",
+  "date": "2026-10-25",
+  "status": "accepted_with_bounded_scope",
+  "scope": [
+    "resolved Node configuration",
+    "private structured native host",
+    "six native model catalogs",
+    "redb store ownership, check and inspection"
+  ],
+  "limitations": [
+    "N1 owns redb only; other backend host ownership is pending",
+    "all-features check establishes compilation, not optional backend runtime behavior",
+    "stable local paths were tested; adversarial filesystem isolation is not claimed",
+    "service and credential ownership, lifecycle operations, population, workloads, packaging, Python deletion and ordered-storage redesign remain pending"
+  ],
+  "cargo": {
+    "executable": "/home/agent/.local/bin/cargo",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "cargo_version": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "environment": {
+      "CARGO_HOME": "/workspace/.rebase-tools/rust-review/cargo",
+      "CARGO_TARGET_DIR": "/workspace/ReBase/rebase-next/target/verification-build",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_INCREMENTAL": "0"
+    },
+    "offline_cache_reused": true,
+    "commands": [
+      {
+        "args": ["test", "--locked", "--offline", "--test", "native_host", "--", "--nocapture"],
+        "passed": 11,
+        "failed": 0,
+        "test_seconds": 0.64,
+        "build_seconds": 29.4
+      },
+      {
+        "args": ["test", "--locked", "--offline", "--lib", "host::tests", "--", "--nocapture"],
+        "passed": 1,
+        "failed": 0,
+        "filtered": 93,
+        "test_seconds": 0.29
+      },
+      {
+        "args": ["check", "--locked", "--offline", "--all-features", "--bin", "rebase-next"],
+        "result": "passed",
+        "seconds": 5.65
+      },
+      {
+        "args": ["fmt", "--check"],
+        "result": "passed",
+        "seconds": 0.33
+      },
+      {
+        "args": ["clippy", "--locked", "--offline", "--lib", "--bin", "rebase-next", "--test", "native_host", "--", "-D", "warnings"],
+        "result": "passed",
+        "warnings": 0,
+        "seconds": 8.21
+      }
+    ],
+    "optional_sdk": {
+      "library": "target/g7-environment/lib/libfdb_c.so",
+      "all_features_compile": "passed using cached SDK/dependencies",
+      "foundationdb_process_started_by_n1": false
+    }
+  },
+  "node": {
+    "version": "Node.js 24.22.1",
+    "npm": "11.19.1",
+    "distribution_sha256_verified_against_official_shasums": true,
+    "test_command": "PATH=/tmp/node24.22.1/bin:$PATH npm test",
+    "test_working_directory": "/workspace/ReBase/rebase-next/tools/node",
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 2.448185,
+    "audit_command": "PATH=/tmp/node24.22.1/bin:$PATH npm audit --audit-level=low",
+    "audit_result": "found 0 vulnerabilities",
+    "real_host_binary": "target/verification-build/debug/rebase-next",
+    "child_environment": {},
+    "coverage": [
+      "local configuration precedence, ranges, unknown keys and bounded native selector input",
+      "fake-host selector control permits a selector only when described by host metadata and schema; real-host integration covers six shipped catalogs",
+      "private frame size and strict JSON, duplicate keys, unsafe numbers, malformed UTF-8 and unpaired surrogates",
+      "timeouts, aborts, lost configure responses, close admission, repeated close and cleanup escalation",
+      "redacted bounded stderr including small Unicode byte-tail boundaries",
+      "six real host catalogs and real redb create, check and inspect",
+      "wrong model/store unchanged bytes, exclusive create, same/cross-process ownership and store_busy"
+    ]
+  },
+  "review": {
+    "independent_review": "scoped pass; no unresolved material findings",
+    "issues_fixed": [
+      "post-dispatch abort drains the response before the next request",
+      "close shuts request admission before waiting",
+      "close timeout reaches termination escalation",
+      "stderr is redacted before retained-tail truncation",
+      "UTF-8 byte-tail boundary handling",
+      "model selector validity and support come from bounded shape plus native host description/schema, with no static JavaScript model list"
+    ]
+  },
+  "artifacts": {
+    "binary": {
+      "path": "target/verification-build/debug/rebase-next",
+      "sha256": "ef3c26e9abc77853e59b85be32cf81ba153ddec67f81f988b66b172869c72633"
+    },
+    "native_sources": {
+      "src/host.rs": "3cf98e25f593b9c7e8a15359217a9ab4bc34442360612db59f867355d44943db",
+      "src/storage.rs": "eef2e08172545c969243c5bfc08f961c2b0af9a4fe0d2cc08cfd4942c21d3132",
+      "src/bin/rebase-next.rs": "8450e5b7771500f0dfe059cb0f3cd6cb864a107448d275a7ea5b0ad7b4ca7733",
+      "src/lib.rs": "fd5f37aa1cdb58172ce295e82a960788d3a28ec517125542fda38d2bf7f5e8f4",
+      "tests/native_host.rs": "b44d136e4671bcea56c47c02b0201aee313979cffb8fe7e436e17c685b4be2b1"
+    },
+    "node_sources": {
+      "tools/node/config.mjs": "1983b5fc7f22bc8c2a780c321555a31ca6898c42f0b3c4074ffc52316c64b9ec",
+      "tools/node/native.mjs": "3336276ee8e2c01fa52591031d5f77d257c13dbef37c5c3a02c17e4846978cb5",
+      "tools/node/private/config-errors.mjs": "f7384b2363c8b953a598a9c7221d9205cd8bec0613d6d9d5fa8d6cdfead2816c",
+      "tools/node/private/config-validation.mjs": "32e10a66a0f9e02ac0af1043cddaf6bce3f0749f01704d317f64c8eeee417e7f",
+      "tools/node/private/framing.mjs": "ff3fd78682a98efedca2cb4f68176625bc658dacb29e815353acf228a2986f51",
+      "tools/node/private/json-codec.mjs": "5d2713946f650b3f4a53b7c63f8bb2b98f90d46ed3cc5dbf923cab414cb7ec04",
+      "tools/node/package.json": "d624d2b2273359831b363d07ddcd3ac4db61db1c4bc6e7f118c467bb53a40558",
+      "tools/node/package-lock.json": "64bd1070db31b0fa254072f3100d66c94a334706d6b49f8a9eb214004ae2d84f",
+      "tools/node/examples/n1-model-catalog.mjs": "a4b2d2bee0e411b6fb3579a0b4f3b0fc28cc9481d63c54edffa798bc0571b382",
+      "tools/node/test/config.test.mjs": "3aa71d65b987f1883ef6748b94840c648207e73f12bb956cf898a3538a51f904",
+      "tools/node/test/fixtures/fake-native-host.mjs": "6bcf9c5e498d3796497b8f003b8750bb91592728c6a3a46b2cf976046800ef6d",
+      "tools/node/test/n0-feasibility.test.mjs": "35ad862d72f99f542dcb021acc84e9b643617746be0829a927a0b347d315666e",
+      "tools/node/test/native-integration.test.mjs": "37541a56c2fce1a0396a6982f02390360d8418d2dd814a8e1e59a835e5225c75",
+      "tools/node/test/native.test.mjs": "2b792b2ad736d3205d88544bd22b79235797de82fca7595baf47b76209864010",
+      "tools/node/test/private-codec.test.mjs": "996426e2d0d00b868295af0fe3fd8ae34d0cb864bc1bca127a63672fa2aae31d",
+      "tools/node/test/n1-execution.json": "29d9039bc8e778495d510c24e7490c554f3ee417a1e186c55db84fb81eb4afc4",
+      "research/fixtures/n0-config-registry.json": "9f5719ed8058ca7b2f49586c3cc71a9a616faae8c16796c5f99278b626c8f36b"
+    },
+    "target_paths": {
+      "cargo_cache": "/workspace/.rebase-tools/rust-review/cargo",
+      "shared_target": "/workspace/ReBase/rebase-next/target/verification-build",
+      "retained_native_host_binary": "/workspace/ReBase/rebase-next/target/verification-build/debug/rebase-next",
+      "node_module_cache": "/workspace/ReBase/rebase-next/tools/node/node_modules"
+    }
+  }
+}

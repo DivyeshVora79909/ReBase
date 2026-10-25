@@ -8,6 +8,7 @@ pub mod demo;
 mod dependency;
 pub mod effects;
 pub mod fixtures;
+pub mod host;
 pub mod identity;
 pub mod index;
 pub mod indexes;

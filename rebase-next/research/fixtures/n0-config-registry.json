@@ -105,6 +105,19 @@
       "secret": false
     },
     {
+      "path": "runner.closeTimeoutMs",
+      "owner": "Node native-host lifecycle",
+      "kind": "runner-budget",
+      "default": 5000,
+      "source": "Node N1 addition; bounded graceful close/dispose deadline for an owned native child",
+      "unit": "milliseconds",
+      "minimum": 1,
+      "maximum": 120000,
+      "allowedRange": "integer 1..120000",
+      "overridePolicy": "explicit override > explicit allowlisted environment > default",
+      "secret": false
+    },
+    {
       "path": "runner.diagnosticBytes",
       "owner": "Node native-host lifecycle",
       "kind": "runner-budget",
@@ -132,7 +145,7 @@
   ],
   "precedence": ["explicit overrides", "explicitly parsed environment", "defaults"],
   "environment": {
-    "allowlist": ["REBASE_NODE_START_TIMEOUT_MS", "REBASE_NODE_DIAGNOSTIC_BYTES"],
+    "allowlist": ["REBASE_NODE_START_TIMEOUT_MS", "REBASE_NODE_DIAGNOSTIC_BYTES", "REBASE_NODE_CLOSE_TIMEOUT_MS"],
     "unknownKeys": "reject",
     "secrets": "must be explicit protected values or providers; redact from diagnostics and reports"
   },

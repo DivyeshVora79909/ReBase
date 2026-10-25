@@ -1,0 +1,68 @@
+{
+  "format": "rebase-node-n1-execution-1",
+  "status": "Node N1 implementation verified; root checkpoint integration/commit remains external",
+  "date": "2026-10-25",
+  "runtime": {
+    "node": "v24.22.1",
+    "npm": "11.19.1",
+    "baseline": ".nvmrc=24"
+  },
+  "command": "PATH=/tmp/node24.22.1/bin:$PATH npm test",
+  "working_directory": "tools/node",
+  "result": {
+    "tests": 36,
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 2448.185,
+    "diff_check": "passed",
+    "example_syntax_check": "passed"
+  },
+  "dependency_audit": {
+    "command": "PATH=/tmp/node24.22.1/bin:$PATH npm audit --audit-level=low",
+    "result": "found 0 vulnerabilities",
+    "runs": 2,
+    "lockfile_changed_between_runs": false
+  },
+  "native_artifact": {
+    "path": "target/verification-build/debug/rebase-next",
+    "sha256": "ef3c26e9abc77853e59b85be32cf81ba153ddec67f81f988b66b172869c72633",
+    "provided_by": "N1 Rust owner",
+    "child_environment": {},
+    "host_protocol": "rebase-native-host-1"
+  },
+  "lockfile": {
+    "path": "tools/node/package-lock.json",
+    "sha256": "64bd1070db31b0fa254072f3100d66c94a334706d6b49f8a9eb214004ae2d84f",
+    "dependencies": {
+      "ajv": "8.20.0",
+      "ajv-formats": "3.0.1",
+      "json-bigint": "1.0.0",
+      "json-schema-faker": "0.6.3"
+    }
+  },
+  "implementation_sha256": {
+    "tools/node/config.mjs": "1983b5fc7f22bc8c2a780c321555a31ca6898c42f0b3c4074ffc52316c64b9ec",
+    "tools/node/native.mjs": "3336276ee8e2c01fa52591031d5f77d257c13dbef37c5c3a02c17e4846978cb5",
+    "tools/node/private/json-codec.mjs": "5d2713946f650b3f4a53b7c63f8bb2b98f90d46ed3cc5dbf923cab414cb7ec04",
+    "tools/node/private/framing.mjs": "ff3fd78682a98efedca2cb4f68176625bc658dacb29e815353acf228a2986f51",
+    "tools/node/examples/n1-model-catalog.mjs": "a4b2d2bee0e411b6fb3579a0b4f3b0fc28cc9481d63c54edffa798bc0571b382",
+    "tools/node/private/config-errors.mjs": "f7384b2363c8b953a598a9c7221d9205cd8bec0613d6d9d5fa8d6cdfead2816c",
+    "tools/node/private/config-validation.mjs": "32e10a66a0f9e02ac0af1043cddaf6bce3f0749f01704d317f64c8eeee417e7f"
+  },
+  "coverage": [
+    "configuration precedence, provenance, exact validation, unknown settings, nulls, and explicit child environment",
+    "native describe schema authority, no remote schema references, native formats and range/UTF-8 extension validation",
+    "all six public and developer model catalogs from the real native host",
+    "real redb create ownership, scoped check and inspect, competing owner rejection, wrong store/model rejection, unchanged store bytes",
+    "future model selector accepted only when host metadata and host schema both advertise it; unsupported selector rejected before target creation",
+    "duplicate keys, wrong protocol/id, invalid UTF-8, lone surrogates, unsafe integers, oversized frames, coalesced/late extra frames",
+    "request frame exact bound, bounded/redacted stderr including truncated tokens, PEM material, and UTF-8 tail budgets",
+    "startup timeout, abort after configure with original operation retained as unknown, aborted read draining before later request, idempotent close, close admission fence, stuck child escalation"
+  ],
+  "claim_boundary": [
+    "host integration covers the default-feature local redb host only",
+    "no FoundationDB or SurrealKV host ownership, public HTTP client, service lifecycle, population, workload, or release capability is accepted by this result",
+    "no capacity or distributed behavior claim is made"
+  ]
+}

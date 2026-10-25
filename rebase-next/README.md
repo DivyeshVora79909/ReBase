@@ -1,12 +1,53 @@
 # ReBase Next
 
-**Planning notice (G10, 2026-10-25):** the Node developer API and ordered-storage
-redesign are planned; neither replacement is implemented. Existing Python
-commands below remain the accepted runnable baseline until replacement
-checkpoints pass. Follow the [G10 program](research/56-node-and-index-redesign-program.md)
-for the current plan and continuation, with proposed [Node](research/57-node-developer-contract.md),
-[storage](research/58-ordered-storage-redesign.md) and
-[capability](research/59-node-capability-inventory.md) contracts.
+**G10 status (2026-10-25):** N1 is accepted. `tools/node/` now provides ordinary
+ESM functions for resolved configuration and an owned private native host with
+model catalogs and redb check/inspection. The [N1 result](research/63-node-native-host-result.md)
+records its limits and evidence. N2–N6 and the ordered-storage redesign remain
+pending; existing Python workflows remain the accepted runnable baseline until
+their replacement checkpoints pass. See the [G10 program](research/56-node-and-index-redesign-program.md),
+[Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
+and [capability inventory](research/59-node-capability-inventory.md).
+
+Compose the N1 functions directly from JavaScript. This model-only example
+returns the selected compiled model's public catalog and closes its owned host:
+
+```js
+import { resolve } from 'node:path';
+import { parseEnvironment, resolveConfig } from './tools/node/config.mjs';
+import { openNative } from './tools/node/native.mjs';
+
+const config = resolveConfig({
+  defaults: {
+    native: {
+      binary: resolve('target/verification-build/debug/rebase-next'),
+      environment: {},
+    },
+  },
+  environment: parseEnvironment(process.env),
+  overrides: {
+    native: {
+      configuration: {
+        model: 'equipment',
+        backend: { kind: 'redb', cluster_file: null },
+        target: null,
+        operator_methods: [],
+      },
+    },
+  },
+});
+
+const native = await openNative(config);
+try {
+  const catalog = await native.catalog({ scope: 'public' });
+  console.log(catalog);
+} finally {
+  await native.close();
+}
+```
+
+The binary path must resolve to a built executable. See the complete
+[N1 model-catalog example](tools/node/examples/n1-model-catalog.mjs).
 
 **A bounded calculation backend with reusable compiled models and developer tools.**
 One Rust executable provides exact connected calculations, private outputs,
@@ -53,6 +94,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 
 | Task | Guide |
 | --- | --- |
+| Compose the Node native configuration and model-catalog functions | [N1 result and limits](research/63-node-native-host-result.md) · [example module](tools/node/examples/n1-model-catalog.mjs) |
 | Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
 | Use exact fractional rates and explicit rounding in a native model | [Exact values](docs/exact-values.md) |
 | Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
