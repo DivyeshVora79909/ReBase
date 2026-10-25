@@ -1,0 +1,163 @@
+{
+  "checkpoint": "G9.1 metadata, typed pools and accepted progress",
+  "date": "2026-10-25",
+  "independent_review": {
+    "executed_controls": [
+      {
+        "name": "pending plan is detached and write-once",
+        "observed": "After binding original plan, mutation of the caller plan did not change Pending's context or digest. Rebinding with a different operation ID/context raised a write-once error and retained the original. Clearing plan raised and retained it; identical-value reassignment was a no-op.",
+        "result": "passed"
+      },
+      {
+        "name": "uncertain outcome preserves pending state",
+        "observed": "Passing client.RpcError(kind=outcome_unknown, http_status=200) to reject raised; pending plan/digest, accepted count, cursor, and reference usage stayed unchanged.",
+        "result": "passed"
+      },
+      {
+        "name": "actual client receipt shape and operation ID",
+        "observed": "A direct committed records receipt shaped as client.execute returns (result.operation_id/revision/records) advanced accepted progress when operation_id matched the saved plan. The source-derived old nested kind/result shape was not required.",
+        "result": "passed"
+      },
+      {
+        "name": "committed target binding",
+        "observed": "After accepting a first plan, attaching a same-model plan for a different store/actor was rejected before progress changed.",
+        "result": "passed"
+      },
+      {
+        "name": "callback reference override and actual usage",
+        "observed": "A rule changed a child reference from its provisional parent to a second, compatible supplied parent. Final fields contained the second ID and Proposal.usage counted the second typed parent/ID.",
+        "result": "passed"
+      },
+      {
+        "name": "invalid callback reference override",
+        "observed": "A well-formed but unavailable UUID override failed final reference validation instead of producing a proposal.",
+        "result": "passed"
+      },
+      {
+        "name": "indexed reference paths",
+        "observed": "A synthetic contract with required sources[0], optional absent sources[1], and an empty generated array produced exactly one anchored source; optional index 1 remained omitted. Usage identified the chosen parent ID.",
+        "result": "passed"
+      },
+      {
+        "name": "quota and uncommitted-parent boundary",
+        "observed": "Quota 1 with batch size 8 emitted one command. With a required child reference and no supplied anchor, the first batch included only its eligible parent; source inspection and the separate receipt control confirm the child becomes eligible only after parent acceptance.",
+        "result": "passed"
+      },
+      {
+        "name": "not_observed does not reject",
+        "observed": "A not_observed result raised and preserved accepted counts, cursor, usage, and exact pending work.",
+        "result": "passed"
+      },
+      {
+        "name": "catalog snapshot and typed pool sampling",
+        "observed": "Mutating the caller's source catalog after prepare left generated contract code and State.catalog at the prepared value. A NoPoolScan mapping whose values() raised still allowed proposal selection from a 2,000-ID supplied pool.",
+        "result": "passed"
+      },
+      {
+        "name": "provider generation, heap flag, and output bound",
+        "observed": "Public generate_values produced a valid row. A Node heap probe with the production 64 MiB old-space flag reported V8 heap_size_limit 167772160 bytes. A child that wrote indefinitely through _invoke hit the hard 2097153-byte file ceiling and returned 'output exceeds 2097152 bytes'.",
+        "result": "passed"
+      },
+      {
+        "name": "pre-submission saved-plan validation",
+        "observed": "A plan with changed commands, a consistent but wrong request/target model, and a 66,000-byte context each failed during Pending.plan assignment. The slot remained empty and a valid exact plan then bound. Mutating proposal.digest alone also failed before binding; after restoring the marker the original plan bound. A later different operation ID/context rebind was rejected, preserving the original plan and digest.",
+        "result": "passed"
+      },
+      {
+        "name": "64-command provider refill from two 32-value batches",
+        "observed": "provider_batch_size=32 and batch_size=64 called the provider with [32,32], produced 64 commands, and left State provider cursor/buffer unchanged before acknowledgement. A direct committed receipt advanced accepted count to 64, provider cursor to 64, and left an empty buffer.",
+        "result": "passed"
+      },
+      {
+        "name": "partial provider refill failure is atomic in caller state",
+        "observed": "The first 32-value provider call succeeded; the second returned 31 instead of 32. Proposal failed after calls [32,32], while accepted count, proposal cursor, provider cursor and buffer stayed at zero/empty and pending stayed None.",
+        "result": "passed"
+      },
+      {
+        "name": "malformed generated-format schema error",
+        "observed": "After the provider guard fix, _preflight(format=[]) raises PopulationValueError with a path-specific expected-text message rather than raw TypeError.",
+        "result": "passed"
+      }
+    ],
+    "owner_reported_tests": {
+      "result": "45 focused controls passed, reported by root after adding pre-submission wrong-intent/model/fingerprint checks; not run by this read-only reviewer."
+    },
+    "recommendation": "The named G9.1 lifecycle, receipt, plan binding, reference, typed-pool, provider refill, detachment and bounded-provider controls pass after the latest fixes. No unresolved blocker found in this focused review; root can proceed with its real API integration verification and G9.1 signoff. This review did not run or grant a backend lease.",
+    "repository": "/workspace/ReBase/rebase-next",
+    "resolved_observation": {
+      "details": "Malformed format=[] now raises PopulationValueError at #/format instead of raw TypeError.",
+      "result": "fixed and directly rechecked"
+    },
+    "reviewer": "independent G9 verification lead",
+    "scope": "Read-only source review and temporary offline Python controls. No repo edits, Git changes, backend/server lease, Cargo, or server tests.",
+    "source_contracts": {
+      "calculation_reference_paths": "src/model.rs:1147-1150 declares sources[0] required, sources[1] optional, and feedback.account optional; population path tokens now support indexed arrays and nested paths.",
+      "provider_scope": "tools/population_values.py:123-164 applies FSIZE/CORE/CPU limits and timeout cleanup; :218-224 runs Node with --max-old-space-size=64. tools/schema-values/generate.mjs:37-51 checks row/output size incrementally. This is the accepted trusted local provider bound, not full RSS isolation.",
+      "receipt_status": "src/local.rs:795-819 returns not_observed when no receipt exists; src/security.rs:69-85 maps changed/expired context to operation_expired. Neither establishes a no-commit outcome.",
+      "receipt_wire": "tools/client.py:156 returns the JSON-RPC result unchanged; src/local.rs:680 returns status plus disclosed result; src/security.rs:362-382 serializes Records as direct operation_id/revision/records fields (no kind wrapper). Population acceptance now consumes this actual direct shape.",
+      "saved_plan": "tools/client.py:184-232 binds model/context/operation_id/commands/returning; :251-263 executes or status-checks that saved request and never refreshes its context."
+    }
+  },
+  "not_accepted_here": [
+    "G9.2 transactional trajectories",
+    "G9.3 measured experiment",
+    "G9.4 isolated tooling handoff"
+  ],
+  "provider": {
+    "buffer_default": 32,
+    "limits": "POSIX file-size/CPU/core-dump controls plus V8 old-space64MiB; not a whole-RSS/untrusted-code sandbox",
+    "maximum_batch_values": 128,
+    "maximum_input_bytes": 262144,
+    "maximum_output_bytes": 2097152,
+    "npm_audit": {
+      "critical": 0,
+      "high": 0,
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "total": 0
+    },
+    "optional": true,
+    "package": "json-schema-faker0.6.3",
+    "python_validation": "jsonschema4.26.0",
+    "timeout_seconds": 15
+  },
+  "public_operations": [
+    "population.prepare",
+    "population.propose",
+    "population.accept",
+    "population.reject"
+  ],
+  "root_binding_review": "Shared existing-client validation runs when binding, before execution; checks exact intent/model/target and proposal fingerprint. Binding is detached/write-once.",
+  "root_native_control": {
+    "case": "actual Calculation Basis sources[0]/sources[1]/account/feedback.account metadata with ID-only supplied pools",
+    "result": "native model validate valid; accepted count zero until receipt",
+    "runtime": "unchanged accepted SDK-free0.16.0 binary"
+  },
+  "scope": "No new server endpoint, mutation client, core behavior, storage format, automatic retry or global-constraint inference. Caller owns state and explicit rules/context.",
+  "source_contract_correction": {
+    "core_or_wire_change": false,
+    "detected": "independent source review before accepting G9.1",
+    "from": "G9.0 proposed internal ReceiptResult kind/result nesting",
+    "to": "actual unwrapped client response: committed status with result.operation_id/revision/records"
+  },
+  "source_sha256": {
+    "tools/population.py": "81637cbbe19219c415430917e25c68eff303e60a4dddae9a78565a0057e4c772",
+    "tools/population_demo.py": "7c888838f2ca97b208e2ef3ab78a6e6433cd5dc0ac3e4b259db30308d99c26c9",
+    "tools/population_values.py": "404364ba2067c54b66d219643e9bbdf9c7ae54ced0c959534eaada04ec736655",
+    "tools/requirements-population.txt": "4f1a2710e0861ef576aa599eec2087a3710d708b100de0f28e896c83ac07bdc0",
+    "tools/schema-values/generate.mjs": "af5abd5a50889a47de0fd6af53a754b7480340c7f3eb9a127038f4919f47208c",
+    "tools/schema-values/package-lock.json": "32057d3b0c400daf997886480a76b7abe64b44445d41e4484dcef1a7d1c8c9a8",
+    "tools/schema-values/package.json": "b5019d00c23f5740f7c53d41256b86fad7ccd038373bd29136e5cc2930781666",
+    "tools/test_population.py": "b71496345c925900c9d1bf4f403ec2908f586702b30759e5dbfaf780fcc07eb3",
+    "tools/test_population_demo.py": "1acbbf6a2bd7639fbd4909083351e05ccf31a61a09b2458abfb37358aac99b5a",
+    "tools/test_population_values.py": "017076d69c08ac0054374e1ed9f4112bf3a7d400faf90b413c51e1ef4dccb341"
+  },
+  "source_version": "0.16.0",
+  "status": "passed",
+  "unit_controls": {
+    "command": "PYTHONPATH=tools target/g9-venv/bin/python -B -m unittest test_population test_population_values test_population_demo -v",
+    "log_sha256": "03147add3ee05f664eaf61b7cd7aa662f3f2d8fb247546acd34baf2406452688",
+    "passed": 45
+  }
+}

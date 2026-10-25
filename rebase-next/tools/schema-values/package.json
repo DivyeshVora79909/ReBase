@@ -1,0 +1,10 @@
+{
+  "name": "rebase-population-schema-values",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Optional bounded JSON Schema value provider for ReBase developer tools",
+  "dependencies": {
+    "json-schema-faker": "0.6.3"
+  }
+}

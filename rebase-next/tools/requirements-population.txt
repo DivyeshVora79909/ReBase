@@ -1,0 +1,2 @@
+# Developer-only prepared JSON Schema validation; install in target/g9-venv.
+jsonschema==4.26.0

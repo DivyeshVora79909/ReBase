@@ -1,7 +1,7 @@
 # G9 composable population results
 
-G9.0 is accepted on 2026-10-25; G9.1–G9.4 are implementation checkpoints, not
-accepted by this paper yet. [Plan 54](54-composable-developer-tools-plan.md)
+G9.0–G9.1 are accepted on 2026-10-25; G9.2–G9.4 remain to be accepted.
+[Plan 54](54-composable-developer-tools-plan.md)
 defines scope. G8 remains accepted and is not restarted. The user selected G9
 and checkpoint pushes after the earlier G8-only stop/no-push handoff.
 
@@ -48,6 +48,15 @@ Compile validators once and validate final values after reference/rule overlays.
 
 ## Selected operation boundary
 
+**G9.1 contract correction before acceptance:** independent source review found
+the initial G9.0 decision inferred internal ReceiptResult enum tagging rather
+than following disclose_result and client.call. The real client response is
+status=committed with result.operation_id/revision/records directly; it has no
+result.kind or additional result nesting. The implementation and controls use
+that actual wire shape. Original G9.0 trial evidence is retained as recorded;
+its proposed receipt-binding nesting is superseded here, not an executed
+transaction proof. No core/wire compatibility branch is introduced.
+
 The intended public module roles are prepare, propose, accept and reject, with
 plain explicit state/proposal/pending records. Exact implementation signatures
 and examples are recorded when G9.1 is accepted.
@@ -69,11 +78,42 @@ alone is not sufficient for arbitrary interval histories. Quantity supplies a
 different polymorphic graph/exact-arithmetic case. The server remains authority
 for OCC, authorization, native/global invariants and final publication.
 
+## G9.1 — metadata, pools and confirmed progress
+
+The [G9.1 evidence](evidence/2026-10-25-g91-population-core.json) records 45
+focused controls, independent adversarial review and root's actual Calculation
+Basis native-validation witness. The public module operations are prepare,
+propose, accept and reject. State, Proposal and Pending are explicit records;
+there is no automatic client/session or alternate storage writer.
+
+Prepared validators and detached public metadata drive generation. Typed pools
+accept ID-only supplied anchors; supplied rows do not fulfill quotas. Required
+references become available after committed parent acceptance, including indexed,
+nested and polymorphic paths. Default selection samples compatible records
+without scanning all stored parents. A caller selector and per-parent/path
+usage ledger support custom bias; supplied ID-only anchors do not imply known
+historical child counts. Known usage can be seeded explicitly.
+
+An unbound preview can be explicitly cancelled. A bound plan is detached,
+write-once and checked against proposal/model/target before execution. Accept
+requires the actual operation ID and exact requested returning-ID sequence;
+unknown/not-observed outcomes retain their original pending intent. Only a
+confirmed no-commit result for the exact submission may release bound work.
+Do not use a failed status query or a separate in-flight attempt as proof that
+an earlier uncertain submission failed.
+
+Optional schema values use bounded per-contract buffers, separate from database
+batch size; a 64-command proposal works across two 32-value refills. Partial base
+values are checked after reference/rule overlays. Python-only strategies bypass
+Node. Node uses file/CPU/time/old-heap limits and disables core dumps; this is
+not a whole-process RSS or arbitrary-code sandbox. Unknown assertions and
+unsupported native formats fail clearly rather than being silently weakened.
+
 ## Continuation
 
-G9.1 core and optional-provider work have disjoint Luna owners, with independent
-read-only review. After focused unit/native controls, root verifies the state,
-receipt and provider boundaries before granting real G9.2/G9.3 workflow execution.
+G9.1 core and optional-provider work had disjoint Luna owners, with independent
+read-only review. Real G9.2/G9.3 trajectories have run, but their final source
+snapshot, evidence and handoff remain to be accepted separately.
 Keep model/receipt/work limits and matching G8 evidence. G9.4 documents explicit
 composition and affected extracted tooling checks; no G6, TiKV, frontend, live
 provider or million-record engine expansion is selected.
