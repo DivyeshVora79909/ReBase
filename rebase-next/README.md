@@ -1,9 +1,10 @@
 # ReBase Next
 
-**G10 status (2026-10-25):** N1 and N2 are accepted. `tools/node/` provides
+**G10 status (2026-10-25):** N1, N2 and N3 are accepted. `tools/node/` provides
 ordinary ESM functions for configuration, native model/store access, authenticated
-services, client workflows and scoped operator lifecycle. The [N2 result](research/65-node-workflow-result.md)
-records its evidence and limits. N3–N6 and the ordered-storage redesign remain
+services, client workflows, scoped operator lifecycle and receipt-gated
+population. The [N3 result](research/67-node-population-result.md) records its
+examples, evidence and limits. N4–N6 and the ordered-storage redesign remain
 pending; Python workflow deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).
@@ -52,6 +53,8 @@ The binary path must resolve to a built executable. See the complete
 The N2 function composition example shows the Equipment model, scoped operator,
 local authenticated service, saved plan and status recovery:
 [N2 Equipment workflow](tools/node/examples/n2-equipment-workflow.mjs).
+The N3 example composes a caller-owned population proposal with a prepared model
+and client: [N3 population workflow](tools/node/examples/n3-population.mjs).
 
 **A bounded calculation backend with reusable compiled models and developer tools.**
 One Rust executable provides exact connected calculations, private outputs,

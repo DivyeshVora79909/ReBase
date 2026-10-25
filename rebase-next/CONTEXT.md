@@ -1,24 +1,23 @@
 # Compact context — 2026-10-25
 
-## Current handoff — G10 N2 accepted; N3 next
+## Current handoff — G10 N3 accepted; N4 next
 
-G10 P0, N0, N1 and N2 are complete. N3–N6, S0–S3 and F0 remain pending.
+G10 P0, N0, N1, N2 and N3 are complete. N4–N6, S0–S3 and F0 remain pending.
 Read [N0 results](research/62-node-foundation-result.md),
 [N1 results](research/63-node-native-host-result.md), the
 [N2 result](research/65-node-workflow-result.md),
+[N3 result](research/67-node-population-result.md),
 [native wire contract](research/60-native-host-contract.md),
 [Node decisions](research/61-node-tooling-contract.md) and the
 [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [ordered-storage contract](research/58-ordered-storage-redesign.md) and
 [capability inventory](research/59-node-capability-inventory.md).
-N2 adds ordinary ESM model/client/operator functions, owned authenticated
-service lifecycle, scoped identity and explicit store lifecycle operations.
-The Equipment example is in `tools/node/examples/n2-equipment-workflow.mjs`;
-the accepted boundaries, artifact identities and evidence are in the
-[N2 result](research/65-node-workflow-result.md) and
-[evidence record](research/evidence/2026-10-25-n2-node-workflow.json). Python
-workflow deletion remains pending until N6 replacement controls pass. G7–G9
+N3 adds caller-owned population proposals, typed pools, exact saved-plan binding
+and receipt-gated progress. Its Equipment and Quantity workflows use the
+unchanged N2 native binary; the result and evidence record trajectory, receipts,
+source fingerprints and limits. N4 experiments and independent checking are
+next. Python workflow deletion remains pending until N6 replacement controls pass. G7–G9
 evidence remains historical acceptance for its recorded sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
 [preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
@@ -37,7 +36,13 @@ multi-host latency or broad capacity. Rust/Cargo 1.95 are on PATH. The offline C
 `/workspace/.rebase-tools/rust-review/cargo`; shared build outputs are in
 `target/verification-build`. One FDB Host per native process is supported.
 No Python file is deleted until its replacement controls pass. Root owns Git.
-Next: implement N3 population and scenario functions.
+Next exact action: implement N4 experiments, observation and independent
+verification in `tools/node/`, reusing the unchanged
+`target/n2-native-default/rebase-next` binary (SHA-256
+`74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e`). N3 source
+hashes, Equipment/Quantity receipts and run boundaries are recorded in
+[N3 evidence](research/evidence/2026-10-25-n3-population.json). Do not repeat
+the accepted N3 runs unless a new failure or source change requires it.
 
 ## Historical G9 current handoff — superseded
 

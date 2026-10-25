@@ -1,0 +1,124 @@
+{
+  "schema": "rebase.n3-node-population-evidence.v1",
+  "date": "2026-10-25",
+  "status": "accepted_with_bounded_scope",
+  "scope": [
+    "four ordinary Node population functions",
+    "bounded schema-based base generation with explicit strategies and rules",
+    "caller-owned typed pools, exact saved-plan binding and receipt-gated progress",
+    "real Equipment and Quantity trajectories through native redb services"
+  ],
+  "environment": {
+    "node": "Node.js 24.22.1",
+    "native_binary": "target/n2-native-default/rebase-next",
+    "native_binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+    "native_source_runtime_inputs_sha256": "1378f90fcfb7ce47e072dec41910df4e8431e1c9d773fb947735cdf6639ae85d",
+    "native_source_unchanged_from_n2": true,
+    "cargo_build": "not run; no Rust source changed"
+  },
+  "commands": [
+    {
+      "working_directory": "tools/node",
+      "command": "PATH=/tmp/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N2_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next npm test",
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 3883.390711,
+      "binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+      "log": "research/evidence/2026-10-25-n3-node-final.txt",
+      "log_sha256": "0d6376efec1222decf2fbd96494be702a1e5ad6f7a735ee4467356be056448fa"
+    },
+    {
+      "working_directory": "tools/node",
+      "command": "PATH=/tmp/node24.22.1/bin:$PATH REBASE_NODE_N3_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next npm run test:n3",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "coverage": "8 semantic/contract controls and 2 real native workflows"
+    },
+    {
+      "working_directory": "tools/node",
+      "command": "PATH=/tmp/node24.22.1/bin:$PATH REBASE_NODE_N3_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next node --test ./test/client.test.mjs ./test/model.test.mjs ./test/population-semantics.test.mjs ./test/population-contract.test.mjs ./test/n3-population.test.mjs",
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "note": "Combined client/model/N3 run; overlapping with the focused runs and not added to a unique test total."
+    },
+    {
+      "working_directory": "tools/node",
+      "command": "PATH=/tmp/node24.22.1/bin:$PATH node --test ./test/client.test.mjs ./test/model.test.mjs",
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "note": "Separate client/model verification after example status reconciliation."
+    },
+    {
+      "working_directory": "tools/node",
+      "command": "node --check ./population.mjs && node --check ./private/operation-plan.mjs && node --check ./examples/n3-population.mjs",
+      "result": "passed"
+    }
+  ],
+  "real_workflows": {
+    "equipment": {
+      "steps": [
+        "commit one Pool anchor and verify its exact committed receipt",
+        "use a custom typed selector and fresh client read to prepare and commit one Delivery",
+        "submit a Reservation from stale context and receive native invalid_input with no population advancement",
+        "retain the exact saved plan on an unknown outcome, reject plan rebinding, then reject only on the definite native no-commit response"
+      ],
+      "committed_record_count_per_operation": 1,
+      "receipt_shape": "{status:'committed', result:{operation_id, revision, records:[...]}, ...}"
+    },
+    "quantity": {
+      "steps": [
+        "commit Source value '12'",
+        "read selected parent asynchronously and derive exact 24/12 rational target",
+        "concurrently update parent to '1000000000000000000'; native rejects Scale with overflow and state does not advance",
+        "restore Source to '12', derive exact 6/12 rational from fresh read, commit Scale, then commit Join"
+      ],
+      "committed_record_count_per_operation": 1,
+      "receipt_ids_checked": "exact operation ID and ordered returned record IDs before state advancement"
+    }
+  },
+  "intermediate_failed_trials": [
+    "undefined clock was included in strategy context",
+    "proposal fingerprint calculation included its own digest",
+    "implementation expected an extra result wrapper beyond the actual {status,result} client response",
+    "test expected stale error code instead of native overflow",
+    "one attempt-count assertion ran before accept"
+  ],
+  "cleanup": {
+    "raw_final_full_suite_stdout_retained": true,
+    "raw_focused_test_stdout_retained": false,
+    "raw_receipt_dump_retained": false,
+    "test_stores_plans_and_backups": "removed by integration-test finally cleanup",
+    "owned_test_services_and_processes": "stopped by test finally cleanup",
+    "remaining_test_processes": 0
+  },
+  "source_sha256": {
+    "tools/node/population.mjs": "a14d699e45a9177aced87754f95500ebe9fcd0dd89d93cd413ca8ed767efeb21",
+    "tools/node/private/operation-plan.mjs": "9415ac4c846bc1407850979a740fbd9a7ec1c21baad0e220a796f464c1464f3c",
+    "tools/node/client.mjs": "ba33fcf80f5e39d040c87591afe6eb3caa2d84174a367b2a722c843653c7af97",
+    "tools/node/examples/n3-population.mjs": "5121ff5560d459e3f0984a93acc09bea8cebad0d717f6c90ac9c5aae993b360f",
+    "tools/node/test/n3-population.test.mjs": "f576c0e4beac35b4bd9d579c4e8e2cb5db29084f72da08492a5bef8c742eebf6",
+    "tools/node/test/population-semantics.test.mjs": "f1b8903ff5e7e9f989d233e697908fe64d849dbd2439cd22122a417accda583e",
+    "tools/node/test/population-contract.test.mjs": "2590342006ee98d8427a547b69faa84116f789de3d78691a9838078813f616b3",
+    "research/66-node-population-contract.md": "16dfad8dd5078bbff08eee42e7a9dd59333a024ecd94a0aa9f3bf789b6592414",
+    "tools/node/package.json": "f51fa46805dab2f372a99eba30f6fe5629e6d35416d67cb91ce139b8fac650d1"
+  },
+  "review": {
+    "status": "passed",
+    "reviewer": "N3 independent review agent",
+    "independent_controls": 8,
+    "source_review": "passed",
+    "findings": "No blockers.",
+    "acceptance": "accepted by root"
+  },
+  "limitations": [
+    "No global-validity guarantee; native validation and mutation remain authoritative.",
+    "Custom reference selection materializes compatible pool views and costs O(pool size) time and memory for that edge.",
+    "Generating n records has an O(n) lower bound; no constant-time generation claim is made.",
+    "Final full-suite stdout is retained; focused test stdout and raw receipt dumps were not retained.",
+    "N4–N6 and S0–S3 remain pending."
+  ]
+}

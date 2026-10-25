@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — G10 N2 accepted; N3 is next
+## Current instruction — G10 N3 accepted; N4 is next
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -21,14 +21,16 @@ Read [the program](research/56-node-and-index-redesign-program.md), then
 Read the [N0 decisions and bounded evidence](research/62-node-foundation-result.md),
 [N1 result and boundaries](research/63-node-native-host-result.md),
 [N2 result and boundaries](research/65-node-workflow-result.md),
+[N3 result and boundaries](research/67-node-population-result.md),
 [frozen native wire](research/60-native-host-contract.md) and
 [Node dependency decisions](research/61-node-tooling-contract.md) when changing
-the N1/N2 boundary or starting N3.
+the N1/N2/N3 boundary or starting N4.
 N1 implements Node configuration and the private native host for model catalogs
 and redb check/inspection. N2 adds Node workflow composition, owned service and
-operator APIs, and bounded adapter lifecycle evidence. Population, workload,
-packaging, Python/legacy CLI retirement and ordered-storage changes remain
-unimplemented. On continuation, start N3 and follow the dependency
+operator APIs, and bounded adapter lifecycle evidence. N3 adds caller-owned Node
+population state and receipt-gated proposals for Equipment and Quantity. N4–N6
+and ordered-storage changes remain unimplemented. On continuation, start N4 and
+follow the dependency
 ledger through verified checkpoints; do not ask for repeated routine permission.
 
 This explicitly supersedes older instructions to preserve Python orchestration,
