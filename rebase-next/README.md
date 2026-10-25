@@ -16,8 +16,10 @@ the [G7 result](research/51-storage-conformance-result.md) records accepted
 FoundationDB, redb and standalone SurrealKV conformance and its limits.
 A [self-explaining workshop](docs/workshop.md) adds independent checks, bounded
 exploration and replay across four small examples.
-The last verified deployment bundle is 0.6.0; source capabilities do not imply
-that a release bundle has passed deployment acceptance.
+G8.4 verifies 0.16.0 redb-only and all-feature release packages through extracted
+workflows; see the [G8 results](research/53-workload-deployment-result.md) for
+artifact hashes and acceptance limits. The 0.6.0 deployment result remains
+historical evidence.
 
 ```sh
 cd rebase-next
@@ -31,7 +33,7 @@ its own credentials, runs the public API workflow and bounded workload, checks
 restart/restore, then stops its server. The directory retains a usable store,
 saved plans and `result.json`. Use a new output directory for each run.
 Packaged releases include `bin/rebase-next`; use `--binary bin/rebase-next`
-to run the harness without building Rust locally. The [deployment guide](docs/deployment.md#build-and-verify-a-release-bundle)
+to run the harness without building Rust locally. The [deployment guide](docs/deployment.md)
 shows how to build a committed source bundle and verify its extracted tools.
 For an existing non-accounting sensor-report and selection workflow using the
 current checkout's executable:
@@ -55,22 +57,26 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
+| Verified release packages | [G8.4 package result](research/53-workload-deployment-result.md#g84--current-extracted-release-packages) · [historical 0.6 deployment](research/29-deployment-result.md) |
 | Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
 | Operational assurance | [G8 results](research/53-workload-deployment-result.md) · [Workload guide](docs/workloads.md) · [Plan](research/52-workload-deployment-plan.md) |
 | Prepared population and experiment tooling | [G9 plan](research/54-composable-developer-tools-plan.md), no implemented G9 API yet |
 | Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
-The last packaged deployment uses **one embedded redb process, one tenant and
-one selected compiled model**. Current source also offers explicit FoundationDB
-and standalone SurrealKV selection; see [backend usage](docs/storage-backends.md)
-for the current verification boundaries. Calculation/equipment allow up to 4,096 public source records, 8,192 active
+The G8.4 redb-only package supports redb without optional backend features; its
+all-feature package supports redb, FoundationDB and standalone SurrealKV. Extracted
+smoke/recovery checks cover one tenant and one selected compiled model; see the
+[package results](research/53-workload-deployment-result.md#g84--current-extracted-release-packages)
+and [backend usage](docs/storage-backends.md) for verification boundaries.
+Calculation/equipment allow up to 4,096 public source records, 8,192 active
 private outputs, 16,384 retained output identity reservations, and explicit work,
 query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, a full accounting port, live-provider adapters and a frontend are separate
-future gates. TiKV and G6 remain deferred; G8.0–G8.1 are verified and the remaining G8 checkpoints
-are assigned, with exact results and bounds documented. Invoicing initially supports 64 public
+future gates. TiKV and G6 remain deferred; G8.0–G8.5 are accepted within their
+recorded boundaries. G9 remains prepared
+only; G6, TiKV and frontend remain deferred. Exact workload results and bounds
+are documented. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
 Read the resource envelope before choosing a workload; these are enforced bounds,
 not a claim of general production capacity.
@@ -115,7 +121,7 @@ python3 -B tools/test_client.py -v
 ```
 
 For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[current release result](research/29-deployment-result.md). The research papers
+[current release result](research/53-workload-deployment-result.md). The research papers
 distinguish user intent, proposals, mathematical facts and executed evidence.
 [The original discussion index](research/sources.md),
 [model/mathematics](research/01-model-and-mathematics.md),

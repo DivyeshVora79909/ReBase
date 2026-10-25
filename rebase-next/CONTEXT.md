@@ -1,32 +1,35 @@
 # Compact context — 2026-10-25
 
-**Resumed current: G8.0–G8.3 accepted; next G8.4 then G8.5.** Incoming unverified
-tip 1fe6310 was unpacked onto verified parent 105da5d for replacement with tested
-commits. The local d05cf5b planning was saved and its useful G8/G9 plan changes
-retained. G9 remains prepared only; finish G8 before general population tooling.
-
+**Goal complete: G8.0–G8.5 accepted within their recorded boundaries; stop here.**
 The continuation review passes 43 isolated baseline controls and matches all
 72 core/Cargo plus 13 model fingerprints. Historical G8.1 raw runs are absent
-in this environment, so those 300-second campaigns were not newly rerun. A fresh
-feature-enabled 0.16.0 runtime is `/tmp/rebase-g8-current-runtime`, hash cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38.
-Use `target/g7-environment/lib` for the 7.3.77 client, not the older root/usr/lib.
+in this environment; the retained committed evidence is not a newly rerun
+300-second campaign. G8.4 redb-only and all-feature packages from committed source
+`8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502` pass extracted checks for supported
+backends; exact artifacts, source/build identities and results are in
+[G8.4 evidence](research/evidence/2026-10-25-g84-release.json). G8.5 integrated
+results and cleanup are in [closeout evidence](research/evidence/2026-10-25-g85-closeout.json):
+118 focused Python controls passed, all 152 protected source/model/tool/test/
+deploy/Cargo inputs matched the accepted package manifest, and final cleanup
+passed with no owned application/FDB process, helper PID or listener on port 4500.
+The matching feature-enabled 0.16.0 runtime used for G8.2 and G8.3 was
+`/tmp/rebase-g8-current-runtime`, hash
+`cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38`. Use
+`target/g7-environment/lib` for the 7.3.77 client, not the older root/usr/lib.
 
 G8.2 runs `target/g82-review-redb-2`, `target/g82-review-surreal` and
 `target/g82-review-foundationdb` pass real pressure and independent checking;
 each completes 600 offers and resolves 315 originals. G8.3's final
 `target/g83-review-foundationdb-2` passes same-application service recovery in
 8.232 seconds, original-ID reconciliation, exact unchanged images and offline
-checks. Retain the failed pressure trial and superseded report-drift trial.
-See [current results](research/53-workload-deployment-result.md) and their evidence.
-
-**Next:** commit the verified tool checkpoint, build default-redb and explicit
-foundationdb/surrealkv artifacts from committed HEAD using one Cargo owner,
-then verify both outside Git with extracted tools. Only after that mark G8.4
-accepted and perform G8.5 closeout. No core/storage formats changed.
+checks. Retain failed/superseded trials as recorded in [paper 53](research/53-workload-deployment-result.md).
+No core/storage formats changed. The user's requested goal is complete; stop
+here. G9 is prepared only and requires a separately selected goal. Do not start
+G9 runtime, G6, TiKV, frontend, live-provider or million-record capacity work.
 
 ## Historical handoff after G8.1
 
-**Current: G8.0–G8.1 verified; next G8.2–G8.5.** The user explicitly assigned the
+**At that historical handoff: G8.0–G8.1 verified; next G8.2–G8.5.** The user explicitly assigned the
 implementation on existing `main`, requested local checkpoint/subcheckpoint
 commits only and **no pushes**. After G8.0, G8.1–G8.4 may be delegated in parallel
 with exact file ownership. Keep one Cargo owner and serialize host/cluster load.

@@ -139,11 +139,57 @@ and a current 0.16.0 build. All 72 core/Cargo and 13 model hashes match. Histori
 G8.1 raw directories were in another environment and are unavailable here; its
 committed evidence is retained rather than represented as a newly rerun campaign.
 
-G8.0–G8.3 are accepted within those boundaries. G8.4 release tooling has focused
-Python controls but still requires current committed-source packages and real
-extracted acceptance, followed by G8.5 evidence/handoff. G9 population tooling is
-prepared in [paper 54](54-composable-developer-tools-plan.md), with no runtime
-implementation selected by this G8 continuation.
+G8.0–G8.5 are accepted within those boundaries. G8.4 packages and G8.5 evidence
+closeout are recorded below. G9 population tooling is prepared in
+[paper 54](54-composable-developer-tools-plan.md), with no runtime implementation
+selected by this G8 continuation. The user requested G8 completion followed by a
+stop; do not begin G9 runtime work.
+
+## G8.4 — current extracted release packages
+
+Both release artifacts were built from source commit
+`8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502` (tree
+`6b36ea20ee92c9e4723f8d44afe52a6d08a83895`) and passed acceptance outside the
+checkout. The [G8.4 evidence](evidence/2026-10-25-g84-release.json) records the
+artifact identities, package checksums, source, models, controls and independent
+review.
+
+| Package | Archive SHA-256 | Binary SHA-256 | Bytes | Features / backends |
+| --- | --- | --- | ---: | --- |
+| Redb-only | `92505418d2117f1544372c346d67bc365c4908684cc7065e173e12de7a1cebec` | `a333cbf7af1e61441b7b7ab4aaed2001d57d080ed3bc4359c1ed3a8ed5936a27` | 10,811,591 | No optional features; redb; FoundationDB SDK not required |
+| All-feature | `e3467218e5365e5d71b40b6da874c28ba5cdb55444abf5ed1da18c6d23278ac6` | `cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38` | 12,174,221 | `foundationdb`, `surrealkv`; redb, FoundationDB and SurrealKV |
+
+Each package includes all six models—calculation, equipment, invoicing,
+measurement, effect-demo and quantity—and 305 payload checksums. Extracted
+acceptance passed the 8-second equipment smoke, recovery, configuration and
+service-template checks for each advertised backend: redb-only has redb; the
+all-feature package has redb, FoundationDB and SurrealKV. All thirteen tables
+were present. Package results were 31,563,471 bytes for redb-only and 36,590,787 bytes
+for all-feature, both below the 128 MiB artifact budget. Independent review
+matched both archive hashes, report hashes and actual artifact byte counts and
+passed isolated payload validation. Negative controls covered checksum changes,
+missing optional libraries, unknown backend/model selectors and an invalid
+cluster selector.
+
+Source/store formats remain 0.16.0 / store 10 / native codec 7 / effect codec 4 /
+API 4. This acceptance is a short extracted workflow and targeted recovery/configuration
+check, not sustained stress. FoundationDB used the helper-owned local 7.3.77
+cluster; native commit-ack isolation, replicated failover and disk/power-loss
+durability were not exercised.
+
+## G8.5 — evidence and handoff closeout
+
+The [G8.5 closeout evidence](evidence/2026-10-25-g85-closeout.json) records the
+integrated control totals, source/model identity review, final artifact and
+cleanup checks. All 118 focused Python controls pass (100 G8 and 18 package/client).
+All 152 protected source/model/tool/test/deploy/Cargo inputs match the accepted
+package manifest. Final cleanup found no owned application or FoundationDB
+process, no helper PID and no open listener on port 4500; the Cargo owner had
+finished. G8.0–G8.5 are complete within the recorded evidence and limits.
+Historical G8.1 raw run directories
+remain unavailable here and were not represented as newly executed. Preserve
+the retained failed and superseded trials described above. G9 remains prepared
+only; the user requested stopping after G8.
 
 ### Historical continuation after G8.1
 

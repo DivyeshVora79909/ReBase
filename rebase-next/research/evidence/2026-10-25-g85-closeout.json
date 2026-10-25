@@ -1,0 +1,111 @@
+{
+  "checkpoint": "G8.5 evidence and developer handoff",
+  "cleanup": {
+    "cargo_owner": "finished; one at a time",
+    "fdb_helper_pid": null,
+    "fdb_listener_open": false,
+    "owned_application_or_fdb_processes": [],
+    "status": "passed"
+  },
+  "date": "2026-10-25",
+  "deferred": [
+    "G9 general population implementation",
+    "G6 broader accounting",
+    "TiKV",
+    "frontend",
+    "live providers",
+    "migrations",
+    "million-record engine envelope"
+  ],
+  "documentation": {
+    "broken_targets": [],
+    "files": 10,
+    "local_link_targets_checked": 226,
+    "scope": "filesystem targets; external URLs and fragment existence not certified",
+    "sha256": {
+      "AGENTS.md": "7795f724041ce82ec6c98f2d91d7c282ff2387259edd8e7d048fdd4a765d71f9",
+      "CONTEXT.md": "1dd83b5db1d403098bb383b88645257ef0e3b5a971d92bfcad72e69baaf5ae87",
+      "README.md": "986e41db39101a2af21aaa6ce05c01b4f15d59b7f07a61fc49c72a44010aec26",
+      "docs/deployment.md": "23ea42a779d07dd947d9a8d5ceeab320260627500cf95d3b2848fcfeb3732dfb",
+      "docs/developer-tools.md": "b03a9b0714c0d1328689ec92e57fc0d29628a52a77c9616896fce43deffa76b3",
+      "docs/workloads.md": "c74bf164f9262ca86d05dc36c74c55434232cc4a8c1da1ad84ac150220eed169",
+      "research/30-capability-program.md": "d26338f4de0e1f9569e442a96380c54acaede673df5781d76e2d9304bf216d93",
+      "research/52-workload-deployment-plan.md": "387c5824090f7d633e28b097422dd36c32a990211a2286d68feaad933a4f4fa6",
+      "research/53-workload-deployment-result.md": "5944e75e4b264ebc5693edfaf69a2cb7b96918b244b85201c06e48e0fbfb52a1",
+      "research/54-composable-developer-tools-plan.md": "6f4b0082207efe185de384931c22cee8dd9d8d8b8e64d4a57477adacf41cefc0"
+    }
+  },
+  "evidence": {
+    "2026-10-25-g8-continuation-review.json": "31fc7df1390004b9d225a740719d839a1aa13ba3d4026aa4f45f7a8453892dff",
+    "2026-10-25-g80-workload-inputs.json": "b2fdb01ae2645132dbb07c3629a7e0f6aa3832df4f06b9d20195b0489ef814e6",
+    "2026-10-25-g81-churn-resources.json": "bbf9fcd5bb1f5fa60f6ff982b98bc70d8e398449f0ca13b2108809b0c2c27d17",
+    "2026-10-25-g82-pressure.json": "f9e96aa4ad402036bc3751467be5cf1b510afb9f63355961030c8800d5fd0655",
+    "2026-10-25-g83-outage.json": "960f65f3967da89b643c00d4282e9bf2fd9604c0920abebbc0c5f37552de9648",
+    "2026-10-25-g84-release.json": "51d7bbdf8127a665462c5d523201be47a17854039cdc5647637ee8afb154aa19"
+  },
+  "focused_python_controls": {
+    "g8": {
+      "passed": 100,
+      "path": "/tmp/rebase-g8-integrated-unit.log",
+      "result": "OK",
+      "sha256": "89947dce836c8c11d3770d64261cc6548b5a2d45bbb635cb57de9e5c7cddab58"
+    },
+    "package_client": {
+      "passed": 18,
+      "path": "/tmp/rebase-g8-package-client-unit.log",
+      "result": "OK",
+      "sha256": "09c2c4d982281654422f2327f0ba83aa46763a8e2b696c31b50eb7aaf7b0b76f"
+    }
+  },
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effect_codec": "rebase-effects-4",
+    "native_codec": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "git_delivery": {
+    "checkpoint_commits_before_closeout": [
+      "8ddc88f",
+      "6b6e7c9"
+    ],
+    "linear_since": "105da5d",
+    "remote_updated": false,
+    "scope": "local checkpoint commits; origin remains unchanged under the documented no-push instruction",
+    "unverified_tip_removed_from_local_main": true
+  },
+  "goal": "G8.0-G8.5 complete within declared bounded and historical acceptance",
+  "historical_reuse": {
+    "G7_native_storage_and_permit": "reused matching accepted sources",
+    "G8.0_G8.1": "retained committed evidence; isolated43-control baseline reviewed, prior remote-environment raw campaign directories unavailable locally",
+    "new_300_second_campaign": false
+  },
+  "new_execution": [
+    "real pressure+independent raw checks on redb/surrealkv/foundationdb",
+    "owned local FDB service interruption+offline checks",
+    "committed-source isolated default-redb and all-feature package builds",
+    "extracted smoke/recovery/config/template workflows per advertised backend",
+    "root outer archive/payload/report SHA and artifact-byte review"
+  ],
+  "not_executed": [
+    "new full G7 or million-record campaign",
+    "native commit-ack interception",
+    "replicated failover",
+    "disk/power-loss durability",
+    "remote deployment"
+  ],
+  "protected_current_release_inputs_matched": 152,
+  "release_source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502",
+  "retained_trials": [
+    "target/g82-review-redb (stage_end handling)",
+    "target/g83-review-foundationdb (post-publication config byte drift)"
+  ],
+  "source_changes": {
+    "core_rust": false,
+    "new_runtime_dependencies": false,
+    "scope": "developer workload, checking, packaging, deploy templates and documentation",
+    "storage_formats": false
+  },
+  "source_mismatches": [],
+  "status": "passed",
+  "stop_boundary": "G8 complete; G9 is prepared only and requires a separate implementation goal. No automatic feature expansion."
+}

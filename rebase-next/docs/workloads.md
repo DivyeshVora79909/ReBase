@@ -2,9 +2,9 @@
 
 `tools/g8.py` is the operational entry point. It uses the ordinary authenticated
 client, owned `Backend` processes and the workshop's source-only arithmetic.
-Use a fresh private output directory for each run. The current acceptance is
-[G8.0–G8.1](../research/53-workload-deployment-result.md); later checkpoints require
-their own executed evidence.
+Use a fresh private output directory for each run. G8.0–G8.5 are accepted within
+the boundaries in the [results](../research/53-workload-deployment-result.md).
+The user requested stopping after G8; G9 remains prepared only.
 
 ```sh
 export LD_LIBRARY_PATH="$PWD/target/g7-environment/root/usr/lib"
@@ -148,9 +148,8 @@ original evidence directories. Missing required data cannot pass. CLI exit codes
 remain 0 passed, 1 failed and 2 incomplete.
 
 See [deployment](deployment.md) for current package and extracted-workflow
-commands. [G9](../research/54-composable-developer-tools-plan.md) separately
-prepares composable population; no general fake-data generator is implied by
-the current workload profiles.
+commands. No general fake-data generator is implied by the current workload
+profiles. G9 is prepared only and requires a separately selected goal.
 
 G6, TiKV, frontend, live providers, migrations, million-record envelope expansion,
 native commit-ack injection, replicated failover and disk/power-loss infrastructure

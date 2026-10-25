@@ -26,21 +26,22 @@ these are not cross-store transactions. Broader accounting remains deferred.
 
 ## Workload tools and prepared population goal
 
-[G8.0 is verified](../research/53-workload-deployment-result.md). The
+[G8.0–G8.5 are accepted within their recorded boundaries](../research/53-workload-deployment-result.md). The
 [workload guide](workloads.md) shows ordinary prepare/run/check composition,
 independent samplers, bounded resource checks, private traces and JSON/CSV
-observations. The current runner fixes the equipment scenario; its short smoke
-acceptance does not establish arbitrary-model or full-duration stress coverage.
-G8.1–G8.5 cover 300-second churn, overload, owned database outage/recovery and the
-extracted release. See the [plan](../research/52-workload-deployment-plan.md) for
-the composition/reporting refinement and exact acceptance boundaries.
+observations. The current runner fixes the equipment scenario; this does not
+establish arbitrary-model stress coverage. G8.1 records five-minute churn,
+G8.2 finite overload, G8.3 owned FoundationDB service recovery and G8.4
+extracted package acceptance. G8.5 closes the evidence handoff. See the
+[plan](../research/52-workload-deployment-plan.md) for exact boundaries and
+[results](../research/53-workload-deployment-result.md) for artifact hashes and
+the package limits.
 
 [G9](../research/54-composable-developer-tools-plan.md) is prepared for general
 population using existing model metadata, explicit reference pools and fresh
 aggregate rules. It is not an implemented API. It composes with the existing
 mutation client and G8 observations rather than adding a second writer or stress
-framework. Historical D5 supplied the initial developer workflow; G9 extends its
-capability without requiring its API names. Existing model/receipt limits apply.
+framework. Existing model/receipt limits apply.
 
 ## Existing model and fixture tools
 

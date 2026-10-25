@@ -5,23 +5,24 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**Active scope: authorized G8.0–G8.5 implementation, 2026-10-25.** Read
-[the workload/deployment plan](research/52-workload-deployment-plan.md),
-[the current results](research/53-workload-deployment-result.md) and the top of
-`CONTEXT.md`. G8.0–G8.3 are accepted; G8.4–G8.5 remain to be accepted.
-The user explicitly allows parallel delegated G8.1/G8.2/G8.3/G8.4 work after
-G8.0. Assign exact file ownership, keep one Cargo owner (two jobs, incremental
-off), and serialize competing measurements on the owned host/cluster. Commit
-verified checkpoints or subcheckpoints on existing `main`; **do not push**.
-Default churn measurement is 300 seconds; continuous-PID memory evidence and
-offline receipt/archive epochs are distinct. Reuse matching G7 evidence and
-ordinary composable functions. Add no health API, DSL or general framework.
-Keep G6, TiKV, frontend, live providers, million-record envelope expansion and
-unprovided native commit-ack/replicated/power-loss infrastructure deferred.
+**Latest closeout: G8.0–G8.5 accepted within recorded limits, 2026-10-25.** Read
+[the workload/deployment plan](research/52-workload-deployment-plan.md), [the results](research/53-workload-deployment-result.md)
+and the top of `CONTEXT.md`. G9 is prepared only and must not start without a
+separately selected goal. Do not begin G6, TiKV, frontend, live-provider or
+million-record capacity work.
+
+The current tools provide smoke, churn, overload, outage and independent check
+commands through `tools/g8.py`; profiles and exact boundaries are in
+`docs/workloads.md`. Keep existing APIs, limits and evidence identities. Do not
+re-run unavailable historical campaigns or turn paced observations into capacity
+claims. Preserve the G8.3 outage boundary: owned local FoundationDB service
+recovery, not native commit-ack, replicated failover or disk/power-loss proof.
+The user requested stopping after G8; only root integrates and commits closeout.
+Do not push.
 
 G9 is [prepared](research/54-composable-developer-tools-plan.md), not implemented;
-finish G8 first. Breaking tool refactors may improve composition, but reuse the
-existing client, scheduler/observer primitives and authoritative model metadata.
+any implementation requires a separately selected goal. Reuse the existing
+client, scheduler/observer primitives and authoritative model metadata.
 The resumed environment rebuilt 0.16.0; historical g75/g81 run paths can be absent.
 Read the current continuation rather than assume those binaries are available.
 
@@ -49,7 +50,7 @@ V1.1–V1.5 remain accepted in source 0.15.0:
 [guide](docs/workshop.md). Keep this historical source/evidence separate from
 the subsequently executed G7 adapter acceptance.
 
-**Current release: G3d/G3e complete, 0.6.0.** Read
+**Historical G3 release: G3d/G3e complete, 0.6.0.** Read
 [deployment acceptance](research/29-deployment-result.md) and the
 [deployment guide](docs/deployment.md). The selected goal produced a verified
 bundle in this environment, with all three models, issuer/template checks,
