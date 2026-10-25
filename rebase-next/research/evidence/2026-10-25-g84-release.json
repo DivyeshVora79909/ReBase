@@ -1,0 +1,152 @@
+{
+  "acceptance": {
+    "all_features": {
+      "artifact_budget_bytes": 134217728,
+      "artifact_bytes": 36590787,
+      "backend_count": 3,
+      "backends": {
+        "foundationdb": {
+          "complete_tables": 13,
+          "configuration": "passed",
+          "recovery": "passed",
+          "smoke": "passed",
+          "smoke_profile": "custom-short-smoke",
+          "smoke_seconds": 8.0,
+          "template": "passed"
+        },
+        "redb": {
+          "complete_tables": 13,
+          "configuration": "passed",
+          "recovery": "passed",
+          "smoke": "passed",
+          "smoke_profile": "custom-short-smoke",
+          "smoke_seconds": 8.0,
+          "template": "passed"
+        },
+        "surrealkv": {
+          "complete_tables": 13,
+          "configuration": "passed",
+          "recovery": "passed",
+          "smoke": "passed",
+          "smoke_profile": "custom-short-smoke",
+          "smoke_seconds": 8.0,
+          "template": "passed"
+        }
+      },
+      "elapsed_seconds": 44.418,
+      "negative_controls": [
+        "checksums",
+        "missing_library",
+        "unknown-backend",
+        "unknown-model",
+        "wrong-cluster-selector"
+      ],
+      "path": "/tmp/rebase-g84-all-acceptance/result.json",
+      "sha256": "856b6b6c36a40d8663ddfef2c6259fe68aa90d57cdc650670b1c5ef100647f57",
+      "status": "passed"
+    },
+    "redb": {
+      "artifact_budget_bytes": 134217728,
+      "artifact_bytes": 31563471,
+      "backend_count": 1,
+      "backends": {
+        "redb": {
+          "complete_tables": 13,
+          "configuration": "passed",
+          "recovery": "passed",
+          "smoke": "passed",
+          "smoke_profile": "custom-short-smoke",
+          "smoke_seconds": 8.0,
+          "template": "passed"
+        }
+      },
+      "elapsed_seconds": 14.359,
+      "negative_controls": [
+        "checksums",
+        "missing_foundationdb",
+        "missing_surrealkv",
+        "unknown-backend",
+        "unknown-model",
+        "wrong-cluster-selector"
+      ],
+      "path": "/tmp/rebase-g84-redb-acceptance/result.json",
+      "sha256": "7ec23a76da7e45474672fac444add838ec0d51c84f579eb815543490d89d692a",
+      "status": "passed"
+    }
+  },
+  "artifacts": {
+    "all_features": {
+      "archive": "/workspace/ReBase/rebase-next/target/g84-package-all/rebase-next-0.16.0-linux-x86_64-redb-foundationdb-surrealkv.tar.gz",
+      "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+      "bytes": 12174221,
+      "features": [
+        "foundationdb",
+        "surrealkv"
+      ],
+      "model_count": 6,
+      "package_build_seconds": 124.553,
+      "payload_checksums": 305,
+      "sha256": "e3467218e5365e5d71b40b6da874c28ba5cdb55444abf5ed1da18c6d23278ac6",
+      "supported_backends": [
+        "redb",
+        "foundationdb",
+        "surrealkv"
+      ]
+    },
+    "redb": {
+      "archive": "/workspace/ReBase/rebase-next/target/g84-package-redb/rebase-next-0.16.0-linux-x86_64-redb.tar.gz",
+      "binary_sha256": "a333cbf7af1e61441b7b7ab4aaed2001d57d080ed3bc4359c1ed3a8ed5936a27",
+      "bytes": 10811591,
+      "features": [],
+      "model_count": 6,
+      "package_build_seconds": 147.129,
+      "payload_checksums": 305,
+      "sha256": "92505418d2117f1544372c346d67bc365c4908684cc7065e173e12de7a1cebec",
+      "supported_backends": [
+        "redb"
+      ]
+    }
+  },
+  "checkpoint": "G8.4 current extracted releases",
+  "date": "2026-10-25",
+  "failures": [],
+  "formats": {
+    "api": "rebase-local-api-4",
+    "effect_codec": "rebase-effects-4",
+    "native_codec": "native-slice-kv-7",
+    "store": "rebase-store-10"
+  },
+  "limitations": [
+    "Short extracted equipment smoke and targeted recovery/configuration only; not a sustained stress campaign.",
+    "FoundationDB used the helper-owned local 7.3.77 cluster.",
+    "Native commit-ack isolation, replicated failover, and disk/power-loss durability were not exercised."
+  ],
+  "models": [
+    "calculation",
+    "equipment",
+    "invoicing",
+    "measurement",
+    "effect-demo",
+    "quantity"
+  ],
+  "outer_archive_checksums": "passed",
+  "root_independent_review": {
+    "all_features": {
+      "acceptance_report_sha256": "matched",
+      "actual_artifact_bytes": 36590787,
+      "archive_sha256": "matched",
+      "isolated_payload_check": "passed",
+      "source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502"
+    },
+    "redb": {
+      "acceptance_report_sha256": "matched",
+      "actual_artifact_bytes": 31563471,
+      "archive_sha256": "matched",
+      "isolated_payload_check": "passed",
+      "source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502"
+    }
+  },
+  "source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502",
+  "source_tree": "6b36ea20ee92c9e4723f8d44afe52a6d08a83895",
+  "status": "passed"
+}

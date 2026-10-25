@@ -2,12 +2,14 @@
 
 ## Current 0.16.0 source and release bundles
 
-The current source is 0.16.0 and is not covered by the historical 0.6.0
-acceptance below. A package created from the current source is a new artifact;
-its release acceptance remains **pending** until the extracted workflows pass
-and their source commit, features and binary checksum are recorded. See the
-[G8 deployment results](../research/53-workload-deployment-result.md) for the
-latest evidence status.
+The verified current artifacts are 0.16.0, built from commit `8ddc88fa`.
+Both the SDK-free redb variant and the FoundationDB/SurrealKV-enabled variant
+pass isolated extracted workflows. The [G8.4 evidence](../research/evidence/2026-10-25-g84-release.json)
+records exact archive/binary hashes, source identity, six-model inventory and
+per-backend results; [G8 results](../research/53-workload-deployment-result.md)
+describe workload and recovery boundaries. A new package from another commit
+needs its own artifact identity and affected acceptance. Historical 0.6.0
+acceptance remains separate below.
 
 The package tool builds committed `HEAD` from a Git archive outside the
 checkout. Commit the intended source and tools first. Python 3.11+, Git, the
@@ -88,12 +90,12 @@ commit, selected features and acceptance result together. The systemd templates
 are `deploy/rebase-next.service` for redb, `deploy/rebase-next-surreal.service`
 for SurrealKV and `deploy/rebase-next-foundationdb.service` for FoundationDB.
 The latter requires explicit client-library and cluster configuration. No
-current 0.16.0 artifact acceptance is claimed by this guide until those runs
-are recorded.
+claim of native commit-ack interception, replicated failover or disk/power-loss
+durability follows from these local service/recovery and short workflow checks.
 
 ## Historical 0.6.0 deployment
 
-This guide documents the **last verified 0.6.0 bundle**, whose results are
+This historical section documents the **previously verified 0.6.0 bundle**, whose results are
 recorded in the [0.6 release report](../research/29-deployment-result.md). The
 0.16.0 source checkout includes later model and storage capabilities and uses
 incompatible store 10 /native codec 7 /effect codec 4 /API 4. Use the source from the recorded 0.6.0 commit when
