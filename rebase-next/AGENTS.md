@@ -8,7 +8,7 @@ a task whose meaning is already recorded. Recheck current source when it matters
 **Active scope: authorized G8.0–G8.5 implementation, 2026-10-25.** Read
 [the workload/deployment plan](research/52-workload-deployment-plan.md),
 [the current results](research/53-workload-deployment-result.md) and the top of
-`CONTEXT.md`. G8.0–G8.1 are implemented and verified; G8.2–G8.5 remain to be accepted.
+`CONTEXT.md`. G8.0–G8.3 are accepted; G8.4–G8.5 remain to be accepted.
 The user explicitly allows parallel delegated G8.1/G8.2/G8.3/G8.4 work after
 G8.0. Assign exact file ownership, keep one Cargo owner (two jobs, incremental
 off), and serialize competing measurements on the owned host/cluster. Commit
@@ -18,6 +18,12 @@ offline receipt/archive epochs are distinct. Reuse matching G7 evidence and
 ordinary composable functions. Add no health API, DSL or general framework.
 Keep G6, TiKV, frontend, live providers, million-record envelope expansion and
 unprovided native commit-ack/replicated/power-loss infrastructure deferred.
+
+G9 is [prepared](research/54-composable-developer-tools-plan.md), not implemented;
+finish G8 first. Breaking tool refactors may improve composition, but reuse the
+existing client, scheduler/observer primitives and authoritative model metadata.
+The resumed environment rebuilt 0.16.0; historical g75/g81 run paths can be absent.
+Read the current continuation rather than assume those binaries are available.
 
 **Accepted baseline: G7.0–G7.6, 2026-10-25.** Read
 [the final result and stop boundary](research/51-storage-conformance-result.md)

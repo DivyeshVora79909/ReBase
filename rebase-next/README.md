@@ -58,6 +58,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Last verified deployment bundle | [0.6 deployment result](research/29-deployment-result.md) |
 | Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
 | Operational assurance | [G8 results](research/53-workload-deployment-result.md) · [Workload guide](docs/workloads.md) · [Plan](research/52-workload-deployment-plan.md) |
+| Prepared population and experiment tooling | [G9 plan](research/54-composable-developer-tools-plan.md), no implemented G9 API yet |
 | Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 

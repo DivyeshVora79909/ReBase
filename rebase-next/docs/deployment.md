@@ -1,4 +1,97 @@
-# ReBase Next 0.6.0 deployment
+# ReBase Next deployment
+
+## Current 0.16.0 source and release bundles
+
+The current source is 0.16.0 and is not covered by the historical 0.6.0
+acceptance below. A package created from the current source is a new artifact;
+its release acceptance remains **pending** until the extracted workflows pass
+and their source commit, features and binary checksum are recorded. See the
+[G8 deployment results](../research/53-workload-deployment-result.md) for the
+latest evidence status.
+
+The package tool builds committed `HEAD` from a Git archive outside the
+checkout. Commit the intended source and tools first. Python 3.11+, Git, the
+pinned Rust toolchain, a C/C++ toolchain, CMake and GNU `readelf` are required.
+The shared Cargo cache defaults to `target/verification-build`; select another
+with `--target-dir` if needed. Default features build a redb-only binary without
+a FoundationDB SDK:
+
+```sh
+python3 -B tools/package.py --out target/g8-package-redb --target-dir target/verification-build
+```
+
+Optional Cargo features are explicit. A FoundationDB build requires a
+compatible `libfdb_c` SDK directory; this environment's verified SDK path is
+`target/g7-environment/lib` (FoundationDB 7.3.77). SurrealKV requires no native
+SDK. The following builds one artifact advertising redb, SurrealKV and
+FoundationDB:
+
+```sh
+FDB_CLIENT_LIB_PATH="$PWD/target/g7-environment/lib" \
+LD_LIBRARY_PATH="$PWD/target/g7-environment/lib" \
+  python3 -B tools/package.py --features foundationdb,surrealkv \
+    --out target/g8-package-all --target-dir target/verification-build
+```
+
+The artifact records all six compiled models: `calculation`, `equipment`,
+`invoicing`, `measurement`, `effect-demo` and `quantity`. It also records the
+exact feature/backend set, shared storage/API/codec formats, each model's
+catalog and behavior identity, native prerequisites and compatible service
+templates. Every bundle contains `BUNDLE.json`, `SHA256SUMS`, source inputs,
+public catalogs and `bin/rebase-next`. The archive checksum is emitted beside
+the archive. Check that recorded checksum before extraction; then verify every
+payload entry from the extracted root:
+
+```sh
+cd target/g8-package-redb
+sha256sum --check rebase-next-*-linux-x86_64-redb.tar.gz.sha256
+mkdir -p /tmp/rebase-next-release
+tar -xzf rebase-next-*-linux-x86_64-redb.tar.gz -C /tmp/rebase-next-release
+cd /tmp/rebase-next-release/rebase-next-*-linux-x86_64-redb
+sha256sum --check SHA256SUMS
+```
+
+Run extracted acceptance from outside Git with a new private output directory.
+The runner checks the extracted executable's six model identities, backend
+availability, checksums, authenticated equipment workflow, recovery and
+configuration boundaries on every advertised backend. Python imports and
+native library lookup are isolated from the checkout and ambient paths. A
+redb-only artifact needs no library argument. A FoundationDB-feature artifact
+needs the matching client library even for redb startup because it is a dynamic
+binary dependency; its extracted run also needs an explicitly managed test
+cluster, cluster file, owned database process and disposable data/log paths.
+For example, from `rebase-next/`:
+
+```sh
+python3 -B tools/g8_release.py \
+  --bundle /tmp/rebase-next-release/rebase-next-0.16.0-linux-x86_64-redb \
+  --out /tmp/rebase-next-acceptance-redb
+```
+
+For a FoundationDB-enabled artifact, add the explicit prerequisite arguments:
+
+```sh
+python3 -B tools/g8_release.py \
+  --bundle /tmp/rebase-next-release/rebase-next-0.16.0-linux-x86_64-redb-foundationdb-surrealkv \
+  --out /tmp/rebase-next-acceptance-all \
+  --native-library-path "$PWD/target/g7-environment/lib" \
+  --cluster-file /path/to/disposable/fdb.cluster \
+  --database-pid 12345 \
+  --database-data /path/to/disposable/fdb-data \
+  --database-log /path/to/disposable/fdb-log
+```
+
+Use the archive name and source commit reported by the package command rather
+than assuming the illustrative versioned paths above. Preserve `result.json`,
+`summary.md` and private workflow outputs; record the artifact SHA256, source
+commit, selected features and acceptance result together. The systemd templates
+are `deploy/rebase-next.service` for redb, `deploy/rebase-next-surreal.service`
+for SurrealKV and `deploy/rebase-next-foundationdb.service` for FoundationDB.
+The latter requires explicit client-library and cluster configuration. No
+current 0.16.0 artifact acceptance is claimed by this guide until those runs
+are recorded.
+
+## Historical 0.6.0 deployment
 
 This guide documents the **last verified 0.6.0 bundle**, whose results are
 recorded in the [0.6 release report](../research/29-deployment-result.md). The

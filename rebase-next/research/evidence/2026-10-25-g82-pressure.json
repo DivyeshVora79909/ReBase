@@ -1,0 +1,330 @@
+{
+  "baseline_commit": "105da5dacab78cd703b19c875678de1148c47af3",
+  "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+  "checkpoint": "G8.2 bounded overload and authored geometry",
+  "date": "2026-10-25",
+  "limitations": [
+    "Finite 2-second paced stages and finite bursts are observed load, not maximum sustainable throughput.",
+    "Slow-input sockets are voluntarily closed; no unbounded ingress protection or body-read timeout claim.",
+    "Quantity has no maintained native tree memberships.",
+    "No million-record, native commit-ack, replicated failover or disk/power-loss acceptance."
+  ],
+  "native_permit_retention": {
+    "case": "server::tests::deadline_keeps_admission_until_the_real_transaction_finishes",
+    "matching_core_cargo_fingerprints": 72,
+    "new_native_test_run": false,
+    "path": "research/evidence/2026-10-25-g75-scoped-coordination.json",
+    "sha256": "d8229829fc680d0b92a9a655457af1bdd51e2fce7369c5257f5c44c6fac30392",
+    "status": "reused accepted evidence"
+  },
+  "retained_failed_trials": [
+    {
+      "backend": "redb",
+      "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+      "error": "Pressure trace is missing an original plan",
+      "execution_module_sha256": "4ef555326fad179ceffcc42f49eaed41421f99cadeb9da85474bc48b05d63fbf",
+      "independent_checker_status": "not_run",
+      "output_path": "target/g82-review-redb",
+      "runner_status": "incomplete",
+      "source_hashes": null
+    }
+  ],
+  "runs": [
+    {
+      "artifacts": 5980950,
+      "backend": "redb",
+      "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+      "counts": {
+        "busy_rejections": 16,
+        "commits": 11,
+        "completed": 600,
+        "offered": 600,
+        "resolved_originals": 315,
+        "submitted": 600,
+        "successful_reads": 290,
+        "unresolved_originals": 0
+      },
+      "elapsed_seconds": 13.107812792994082,
+      "error": null,
+      "execution_module_sha256": "d0c29ac6fe544af00067d511993270f85fffb5bf33e5d2f59eca34901e7c85c8",
+      "geometry": [
+        {
+          "actual_r": 4,
+          "added_reservations": 4,
+          "public_sources": 10,
+          "root_entries": [
+            5,
+            9
+          ],
+          "work_units": 841
+        },
+        {
+          "actual_r": 10,
+          "added_reservations": 16,
+          "public_sources": 22,
+          "root_entries": [
+            17,
+            21
+          ],
+          "work_units": 2551
+        },
+        {
+          "actual_r": 34,
+          "added_reservations": 64,
+          "public_sources": 70,
+          "root_entries": [
+            65,
+            69
+          ],
+          "work_units": 10494
+        }
+      ],
+      "independent_checker_status": "passed",
+      "negative_capacity": {
+        "all_tables_unchanged": true,
+        "kind": "state_limit",
+        "public_sources": 17,
+        "receipt": "not_observed"
+      },
+      "output_path": "target/g82-review-redb-2",
+      "quantity": [
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 2,
+          "r": 2
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 5,
+          "r": 5
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 16,
+          "r": 16
+        }
+      ],
+      "resources": {
+        "application_peak_fds": 19,
+        "application_peak_rss_kib": 35320,
+        "application_peak_threads": 4,
+        "database_status": "unsupported",
+        "samples": 47
+      },
+      "result_path": "target/g82-review-redb-2/pressure/pressure-result.json",
+      "result_sha256": "b777cb90a6ad3c1f50e92c0248c32df7ee7d1dc880338201522c54c409c449b3",
+      "run_start_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "2927b705a9ece46969ac3c80f1809874f5171b20e332adef0e5c35b6917d53d3",
+        "tools/g8_cycles.py": "0f0e2ac53fbbd8d71ef53d06e7afa3e3a0f9df2f0dfff8d65ca58e88dc1ddec1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "c89f353714f9891b93fbaae808368f995ce1e71587b60d62b0768a671ae65b93",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "runner_status": "passed"
+    },
+    {
+      "artifacts": 5934495,
+      "backend": "surrealkv",
+      "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+      "counts": {
+        "busy_rejections": 17,
+        "commits": 11,
+        "completed": 600,
+        "offered": 600,
+        "resolved_originals": 315,
+        "submitted": 600,
+        "successful_reads": 289,
+        "unresolved_originals": 0
+      },
+      "elapsed_seconds": 12.940184787032194,
+      "error": null,
+      "execution_module_sha256": "d0c29ac6fe544af00067d511993270f85fffb5bf33e5d2f59eca34901e7c85c8",
+      "geometry": [
+        {
+          "actual_r": 4,
+          "added_reservations": 4,
+          "public_sources": 10,
+          "root_entries": [
+            5,
+            9
+          ],
+          "work_units": 841
+        },
+        {
+          "actual_r": 10,
+          "added_reservations": 16,
+          "public_sources": 22,
+          "root_entries": [
+            17,
+            21
+          ],
+          "work_units": 2551
+        },
+        {
+          "actual_r": 34,
+          "added_reservations": 64,
+          "public_sources": 70,
+          "root_entries": [
+            65,
+            69
+          ],
+          "work_units": 10494
+        }
+      ],
+      "independent_checker_status": "passed",
+      "negative_capacity": {
+        "all_tables_unchanged": true,
+        "kind": "state_limit",
+        "public_sources": 17,
+        "receipt": "not_observed"
+      },
+      "output_path": "target/g82-review-surreal",
+      "quantity": [
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 2,
+          "r": 2
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 5,
+          "r": 5
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 16,
+          "r": 16
+        }
+      ],
+      "resources": {
+        "application_peak_fds": 27,
+        "application_peak_rss_kib": 38440,
+        "application_peak_threads": 7,
+        "database_status": "unsupported",
+        "samples": 47
+      },
+      "result_path": "target/g82-review-surreal/pressure/pressure-result.json",
+      "result_sha256": "95b1f73d512ba97d08abd156d26ca22379794d278559803a0ddef783552b94a7",
+      "run_start_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "2927b705a9ece46969ac3c80f1809874f5171b20e332adef0e5c35b6917d53d3",
+        "tools/g8_cycles.py": "0f0e2ac53fbbd8d71ef53d06e7afa3e3a0f9df2f0dfff8d65ca58e88dc1ddec1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "c89f353714f9891b93fbaae808368f995ce1e71587b60d62b0768a671ae65b93",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "runner_status": "passed"
+    },
+    {
+      "artifacts": 4175670,
+      "backend": "foundationdb",
+      "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+      "counts": {
+        "busy_rejections": 48,
+        "commits": 11,
+        "completed": 600,
+        "offered": 600,
+        "resolved_originals": 315,
+        "submitted": 600,
+        "successful_reads": 273,
+        "unresolved_originals": 0
+      },
+      "elapsed_seconds": 17.04729156102985,
+      "error": null,
+      "execution_module_sha256": "d0c29ac6fe544af00067d511993270f85fffb5bf33e5d2f59eca34901e7c85c8",
+      "geometry": [
+        {
+          "actual_r": 4,
+          "added_reservations": 4,
+          "public_sources": 10,
+          "root_entries": [
+            5,
+            9
+          ],
+          "work_units": 841
+        },
+        {
+          "actual_r": 10,
+          "added_reservations": 16,
+          "public_sources": 22,
+          "root_entries": [
+            17,
+            21
+          ],
+          "work_units": 2551
+        },
+        {
+          "actual_r": 34,
+          "added_reservations": 64,
+          "public_sources": 70,
+          "root_entries": [
+            65,
+            69
+          ],
+          "work_units": 10494
+        }
+      ],
+      "independent_checker_status": "passed",
+      "negative_capacity": {
+        "all_tables_unchanged": true,
+        "kind": "state_limit",
+        "public_sources": 17,
+        "receipt": "not_observed"
+      },
+      "output_path": "target/g82-review-foundationdb",
+      "quantity": [
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 2,
+          "r": 2
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 5,
+          "r": 5
+        },
+        {
+          "m": 0,
+          "n": 0,
+          "public_sources": 16,
+          "r": 16
+        }
+      ],
+      "resources": {
+        "application_peak_fds": 23,
+        "application_peak_rss_kib": 45192,
+        "application_peak_threads": 5,
+        "database_status": "passed",
+        "samples": 49
+      },
+      "result_path": "target/g82-review-foundationdb/pressure/pressure-result.json",
+      "result_sha256": "71d479626522477901d8a85f4d5d24a1992623dea8bfa56604ec68766859854f",
+      "run_start_tools_sha256": {
+        "tools/capacity.py": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1",
+        "tools/client.py": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798",
+        "tools/g8.py": "084b35320d10fe595e2025a98bbf70ac1e6fbdcea43b52289942d27b7b410fd4",
+        "tools/g8_cycles.py": "0f0e2ac53fbbd8d71ef53d06e7afa3e3a0f9df2f0dfff8d65ca58e88dc1ddec1",
+        "tools/g8_observe.py": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0",
+        "tools/g8_workload.py": "c89f353714f9891b93fbaae808368f995ce1e71587b60d62b0768a671ae65b93",
+        "tools/harness.py": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b",
+        "tools/verify_oracles.py": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "runner_status": "passed"
+    }
+  ],
+  "source_version": "0.16.0",
+  "status": "passed"
+}

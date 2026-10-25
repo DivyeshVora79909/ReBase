@@ -88,7 +88,64 @@ counts its own report and the complete archive suffix; exact-byte and exhaustion
 controls plus a short redb CLI/raw-check run verify that reporting correction.
 Original long-run artifacts are preserved, with final totals recomputed separately.
 
-## Continuation
+## G8.2 — finite overload and authored geometry
+
+Fresh real HTTP runs and independent raw-artifact checks pass on redb,
+SurrealKV and FoundationDB. Each offers/submits/completes 600 finite operations
+across paced rate/client steps, hot and independent business roots and two
+bounded bursts. The runs expose 16 /17 /48 busy rejections, respectively;
+315 original intents per store are resolved with no replacement retries.
+The [pressure evidence](evidence/2026-10-25-g82-pressure.json) records exact
+counts, run identities, resources, actual geometry and rejected-state checks.
+
+Equipment uses 4/16/64 added reservations and actual evaluated closures of
+4/10/34, with root populations up to 69 entries. Quantity independently tests
+1/4/15 dependents and a complete unchanged-state capacity rejection; it declares
+no tree memberships. These are actual bounded shapes, not million-node claims.
+Queue/worker/drain, resource, source arithmetic and thirteen-table checks pass.
+The accepted G7.5 real-writer deadline/permit case is reused with matching core
+fingerprints. Voluntarily closed slow-input sockets establish only finite
+connection pressure, not an unlimited-ingress or body-read-timeout guarantee.
+
+`bounded_step(requests, submit, hooks...)` supplies the ordinary composition
+seam; scenario oracles remain explicit functions. Raw stage markers now permit
+independent elapsed/rate/drain reconstruction. The initial redb run is retained
+as incomplete: the receipt reconciler originally treated a stage-end marker as
+an operation. A focused trace/reconciler control covers the correction. CLI
+pressure checking now selects the complete evidence root, and nonpassed profiles
+return nonzero status. Paced throughput remains achieved load, not maximum capacity.
+
+## G8.3 — owned FoundationDB service interruption
+
+The [outage evidence](evidence/2026-10-25-g83-outage.json) records a real owned
+service stop/restart while the application PID stays alive. Authenticated DB
+requests fail during downtime; a DB read succeeds after 8.232 seconds. Two
+original mutation IDs reconcile as not observed, with no replacements. Complete
+before/after thirteen-table images match, native integrity passes, and source,
+resource, service-identity and offline raw-artifact checks pass.
+
+One superseded trial exposed a two-byte report drift when the server config
+was restored after publication. Restoration now precedes publication, the outer
+cleanup remains exception-safe, and the offline checker compares final actual
+and reported artifact bytes. Thirteen fault controls cover missing, contradictory
+and altered evidence. This is local service-outage acceptance; native commit-ack,
+replicated failover and disk/power loss remain outside the executed boundary.
+
+## Incoming-work review and continuation
+
+The [continuation review](evidence/2026-10-25-g8-continuation-review.json)
+records the replacement of unverified tip 1fe6310, isolated G8.1 baseline controls
+and a current 0.16.0 build. All 72 core/Cargo and 13 model hashes match. Historical
+G8.1 raw directories were in another environment and are unavailable here; its
+committed evidence is retained rather than represented as a newly rerun campaign.
+
+G8.0–G8.3 are accepted within those boundaries. G8.4 release tooling has focused
+Python controls but still requires current committed-source packages and real
+extracted acceptance, followed by G8.5 evidence/handoff. G9 population tooling is
+prepared in [paper 54](54-composable-developer-tools-plan.md), with no runtime
+implementation selected by this G8 continuation.
+
+### Historical continuation after G8.1
 
 G8.0 and G8.1 are verified. Next is G8.2: finite overload, bounded ingress and
 targeted equipment/Quantity geometry, followed by G8.3–G8.5 in checkpoint order.

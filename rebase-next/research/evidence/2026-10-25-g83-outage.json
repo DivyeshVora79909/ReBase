@@ -1,0 +1,232 @@
+{
+  "binary_sha256": "cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38",
+  "checkpoint": "G8.3 owned database-service outage",
+  "date": "2026-10-25",
+  "execution_module_sha256": "cd4a9cf4bb55f6f0937ec08e979210f792b49ee925a0f1d0a2d856d6433ae9d1",
+  "independent_check": {
+    "obligations": {
+      "complete_state_and_receipts": {
+        "committed_originals": 0,
+        "receipt_count": 1,
+        "required": true,
+        "source_values": {
+          "public_sources": 6,
+          "receipt_count": 1,
+          "records": 10,
+          "roles": 4
+        },
+        "status": "passed",
+        "tables": 13
+      },
+      "inputs": {
+        "required": true,
+        "status": "passed"
+      },
+      "original_intents_and_trace": {
+        "original_operations": 2,
+        "reconciled": 2,
+        "replacement_submissions": 0,
+        "required": true,
+        "status": "passed"
+      },
+      "resources_and_artifact_budget": {
+        "application": {
+          "cooldown": {
+            "reason": "at least six cooldown samples with constant logical inventory are required",
+            "required": false,
+            "samples": 0,
+            "status": "unsupported"
+          },
+          "obligations": {
+            "application_resources": {
+              "budgets": {
+                "open_fds": 256,
+                "rss_kib": 524288,
+                "threads": 96
+              },
+              "peaks": {
+                "cpu_first_seconds": 0.01,
+                "cpu_last_seconds": 0.03,
+                "open_fds": 16,
+                "peak_rss_kib": 41108,
+                "rss_kib": 41108,
+                "threads": 5
+              },
+              "required": true,
+              "status": "passed"
+            },
+            "continuous_application_pid": {
+              "identity": [
+                417327,
+                42914196
+              ],
+              "required": true,
+              "status": "passed"
+            },
+            "controller_resources": {
+              "budgets": {
+                "open_fds": 128,
+                "rss_kib": 524288,
+                "threads": 32
+              },
+              "peaks": {
+                "cpu_first_seconds": 0.18,
+                "cpu_last_seconds": 0.23,
+                "open_fds": 8,
+                "peak_rss_kib": 21004,
+                "rss_kib": 21004,
+                "threads": 2
+              },
+              "required": true,
+              "status": "passed"
+            },
+            "cooldown_growth": {
+              "reason": "at least six cooldown samples with constant logical inventory are required",
+              "required": false,
+              "samples": 0,
+              "status": "unsupported"
+            },
+            "database_resources": {
+              "reason": "no separate database PID required by this profile",
+              "required": false,
+              "status": "unsupported"
+            },
+            "observations": {
+              "missing_physical": false,
+              "missing_processes": [],
+              "problems": [],
+              "required": true,
+              "status": "passed"
+            },
+            "observer_overhead": {
+              "budget_ms": 250.0,
+              "peak_ms": 1.601617957931012,
+              "required": true,
+              "status": "passed"
+            },
+            "physical_growth": {
+              "budget_bytes": 536870912,
+              "growth_bytes": 310025,
+              "initial_bytes": 326877646,
+              "peak_bytes": 327187671,
+              "required": true,
+              "status": "passed"
+            },
+            "sample_gap": {
+              "budget_seconds": 3.0,
+              "max_seconds": 0.5001969150034711,
+              "required": true,
+              "status": "passed"
+            }
+          },
+          "peaks": {
+            "application": {
+              "cpu_first_seconds": 0.01,
+              "cpu_last_seconds": 0.03,
+              "open_fds": 16,
+              "peak_rss_kib": 41108,
+              "rss_kib": 41108,
+              "threads": 5
+            },
+            "controller": {
+              "cpu_first_seconds": 0.18,
+              "cpu_last_seconds": 0.23,
+              "open_fds": 8,
+              "peak_rss_kib": 21004,
+              "rss_kib": 21004,
+              "threads": 2
+            }
+          },
+          "sample_count": 18,
+          "status": "passed"
+        },
+        "artifacts": {
+          "budget_bytes": 134217728,
+          "bytes": 179856,
+          "status": "passed"
+        },
+        "database": {
+          "budgets": {
+            "open_fds": 512,
+            "rss_kib": 1048576,
+            "threads": 64
+          },
+          "downtime_status": "unsupported",
+          "intentional_downtime_samples": 13,
+          "observed_pid_samples": {
+            "416929": 1,
+            "417333": 4
+          },
+          "peaks": {
+            "open_fds": 22,
+            "peak_rss_kib": 96224,
+            "rss_kib": 96224,
+            "threads": 7
+          },
+          "scope": "absolute live-service budgets in two PID epochs; no continuous database memory trend",
+          "status": "passed",
+          "transient_service_exit_samples": 0
+        },
+        "required": true,
+        "status": "passed"
+      },
+      "service_ownership_and_recovery": {
+        "application_pid": 417327,
+        "required": true,
+        "restored_service_pid": 417333,
+        "status": "passed"
+      }
+    },
+    "scope": "offline recomputation from outage traces, original plans, source oracle, complete images and bounded resources",
+    "status": "passed"
+  },
+  "limitations": [
+    "Local single FoundationDB service stop/restart only.",
+    "No native commit-ack interception, replicated failover or disk/power-loss injection.",
+    "Embedded backends have no separate database-service outage; prior process/reopen evidence is reused."
+  ],
+  "result_sha256": "87d042f2380b7516e509ad30aaeae3edecd9658204fd86d72419d7fed70a212d",
+  "retained_superseded_trial": {
+    "path": "target/g83-review-foundationdb",
+    "reason": "Config restoration after report publication changed final bytes by two. Config now restores before publication; checker verifies actual/report byte equality."
+  },
+  "run_path": "target/g83-review-foundationdb-2",
+  "runner": {
+    "application_pid": 417327,
+    "artifacts": {
+      "budget_bytes": 134217728,
+      "bytes": 179856,
+      "status": "passed"
+    },
+    "backend": "foundationdb",
+    "boundary": "owned local database-service stop/restart; no native commit-ack isolation",
+    "mutation_submissions": 2,
+    "outcomes": [
+      {
+        "initial_kind": "outcome_unknown",
+        "operation_id": "2fd7e0a2-70b7-4b17-9263-be449f3e134c",
+        "original_context_preserved": true,
+        "original_plan_sha256": "af246e5a23e82fba22851a6ffa616708b3d53379e68b793fd18573e457d14aad",
+        "outcome_after_drain": "not_observed",
+        "replacement_submissions": 0
+      },
+      {
+        "initial_kind": "busy",
+        "operation_id": "12ddd8e2-16eb-4c80-b97e-20e39f89922e",
+        "original_context_preserved": true,
+        "original_plan_sha256": "e851dd3492ad45ba76acf0f4bc8be9ecbbc3161bed773d65cfed2dc7237dc2c7",
+        "outcome_after_drain": "not_observed",
+        "replacement_submissions": 0
+      }
+    ],
+    "recovery_budget_seconds": 30.0,
+    "recovery_seconds": 8.232204994943459,
+    "replacement_mutation_submissions": 0,
+    "resolved": 2,
+    "same_application_pid_after_recovery": true,
+    "status": "passed",
+    "unresolved": 0
+  },
+  "source_version": "0.16.0",
+  "status": "passed"
+}

@@ -25,9 +25,11 @@ All work and dependencies remain under `rebase-next/`. Frontend remains excluded
 **Current execution boundary (2026-10-25):** V1 and G7 are accepted.
 [The G7 closeout](51-storage-conformance-result.md) records real FoundationDB,
 redb and standalone SurrealKV conformance through one persistence contract.
-The user selected [G8 preparation](52-workload-deployment-plan.md), covering
-G8.0–G8.5. Its implementation and acceptance have not run. TiKV, G6 and frontend
-remain deferred; no runtime work is selected by this documentation task.
+G8 implementation is active: [G8.0–G8.3 are accepted](53-workload-deployment-result.md);
+G8.4–G8.5 remain to be accepted under [paper 52](52-workload-deployment-plan.md).
+[G9 composable developer tooling](54-composable-developer-tools-plan.md) is
+prepared, not implemented, for general population and reuse of workload tools.
+TiKV, G6 and frontend remain deferred.
 The last packaged release remains 0.6.0.
 
 | Gate | Observable power | Preparation and acceptance boundary |
@@ -40,7 +42,8 @@ The last packaged release remains 0.6.0.
 | V1 | Self-explaining example verification suite | **Accepted:** [workshop result](44-workshop-verification-result.md), four non-accounting chapters, independent expectations, bounded exploration, replay and all 15 current capability rows |
 | G6 | Representative accounting power | **Deferred until separately selected:** dated rational FX, sparse native/reporting contributions, resource/currency dimensions and quantity returns; existing bounded invoicing remains a regression example |
 | G7 | Distributed storage | **Accepted:** [cross-adapter result](51-storage-conformance-result.md), FoundationDB/redb/SurrealKV; exact protection, coordination and HTTP-loss/restart limits recorded |
-| G8 | Workload and deployment acceptance | **Prepared, not executed:** [G8.0–G8.5](52-workload-deployment-plan.md), shared observations, 300-second churn, overload, owned database outage/recovery and extracted release acceptance |
+| G8 | Workload and deployment acceptance | **G8.0–G8.3 accepted; G8.4–G8.5 remaining:** [plan](52-workload-deployment-plan.md) and [results](53-workload-deployment-result.md), shared observations, churn, overload, owned database outage/recovery and current extracted release acceptance |
+| G9 | Composable population and developer experiments | **Prepared, not implemented:** [G9.0–G9.4](54-composable-developer-tools-plan.md), authoritative metadata, typed reference pools, explicit runtime rules and existing workload/check reuse |
 
 The table is the program, not a claim that every row is implementation-ready.
 Close the next gate's semantic questions before coding it. Concrete examples
@@ -103,8 +106,8 @@ without another prompt. Keep `CONTEXT.md` current for switching agents.
 G4a, G4b, G4c, G4d-a/b/c and G5a-G5c are accepted. The
 [G4d-c result](42-authored-selection-result.md) closes the previous selected scope.
 V1.1–V1.5 are now [accepted](44-workshop-verification-result.md). G7 is subsequently
-accepted above. G8 preparation is selected; its implementation, TiKV, G6 and
-frontend remain deferred.
+accepted above. G8 implementation is active with G8.0–G8.3 accepted and G8.4–G8.5
+remaining; G9 is prepared only. TiKV, G6 and frontend remain deferred.
 The [external integration review](35-external-integration-review.md)
 locates G5's shared transaction and recovery seams. Atomic intent and bounded
 fake-provider execution, durable signed ingress and restored reconciliation are

@@ -1,0 +1,31 @@
+[Unit]
+Description=ReBase Next equipment backend on a provisioned FoundationDB cluster
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=rebase-next
+Group=rebase-next
+StateDirectory=rebase-next
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/rebase-next
+Environment=LD_LIBRARY_PATH=/usr/local/lib/foundationdb
+ExecStart=/usr/local/bin/rebase-next --backend foundationdb --cluster-file /etc/rebase-next/fdb.cluster --model equipment serve rebase-next-equipment --config /etc/rebase-next/server.json
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=180
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rebase-next
+MemoryMax=512M
+TasksMax=96
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

@@ -24,17 +24,23 @@ Use the current source build described in the guide. Equipment, measurement,
 quantity and effect-demo each use their own store and the same production APIs;
 these are not cross-store transactions. Broader accounting remains deferred.
 
-## Prepared operational assurance goal
+## Workload tools and prepared population goal
 
-[G8.0–G8.5](../research/52-workload-deployment-plan.md) specifies the next
-workload/deployment goal; it does not add an implemented command in this checkout.
-It reuses existing scenarios, clients and independent checks with small explicit
-workload/observer functions. Planned profiles cover default 300-second churn,
-bounded resource observations, overload, owned database outage/recovery and the
-extracted current release. Continuous-PID memory windows are separate from
-offline receipt/archive epochs. No new health API or general test DSL is needed.
-The plan contains checkpoint acceptance and a prompt for a fresh implementing
-agent; existing bounded population and artifact limits still apply.
+[G8.0 is verified](../research/53-workload-deployment-result.md). The
+[workload guide](workloads.md) shows ordinary prepare/run/check composition,
+independent samplers, bounded resource checks, private traces and JSON/CSV
+observations. The current runner fixes the equipment scenario; its short smoke
+acceptance does not establish arbitrary-model or full-duration stress coverage.
+G8.1–G8.5 cover 300-second churn, overload, owned database outage/recovery and the
+extracted release. See the [plan](../research/52-workload-deployment-plan.md) for
+the composition/reporting refinement and exact acceptance boundaries.
+
+[G9](../research/54-composable-developer-tools-plan.md) is prepared for general
+population using existing model metadata, explicit reference pools and fresh
+aggregate rules. It is not an implemented API. It composes with the existing
+mutation client and G8 observations rather than adding a second writer or stress
+framework. Historical D5 supplied the initial developer workflow; G9 extends its
+capability without requiring its API names. Existing model/receipt limits apply.
 
 ## Existing model and fixture tools
 

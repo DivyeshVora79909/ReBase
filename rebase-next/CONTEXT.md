@@ -1,5 +1,31 @@
 # Compact context — 2026-10-25
 
+**Resumed current: G8.0–G8.3 accepted; next G8.4 then G8.5.** Incoming unverified
+tip 1fe6310 was unpacked onto verified parent 105da5d for replacement with tested
+commits. The local d05cf5b planning was saved and its useful G8/G9 plan changes
+retained. G9 remains prepared only; finish G8 before general population tooling.
+
+The continuation review passes 43 isolated baseline controls and matches all
+72 core/Cargo plus 13 model fingerprints. Historical G8.1 raw runs are absent
+in this environment, so those 300-second campaigns were not newly rerun. A fresh
+feature-enabled 0.16.0 runtime is `/tmp/rebase-g8-current-runtime`, hash cf9a5ccf864f362f717da9e441d62845981b4e4c7276de9349f43cb83e392b38.
+Use `target/g7-environment/lib` for the 7.3.77 client, not the older root/usr/lib.
+
+G8.2 runs `target/g82-review-redb-2`, `target/g82-review-surreal` and
+`target/g82-review-foundationdb` pass real pressure and independent checking;
+each completes 600 offers and resolves 315 originals. G8.3's final
+`target/g83-review-foundationdb-2` passes same-application service recovery in
+8.232 seconds, original-ID reconciliation, exact unchanged images and offline
+checks. Retain the failed pressure trial and superseded report-drift trial.
+See [current results](research/53-workload-deployment-result.md) and their evidence.
+
+**Next:** commit the verified tool checkpoint, build default-redb and explicit
+foundationdb/surrealkv artifacts from committed HEAD using one Cargo owner,
+then verify both outside Git with extracted tools. Only after that mark G8.4
+accepted and perform G8.5 closeout. No core/storage formats changed.
+
+## Historical handoff after G8.1
+
 **Current: G8.0–G8.1 verified; next G8.2–G8.5.** The user explicitly assigned the
 implementation on existing `main`, requested local checkpoint/subcheckpoint
 commits only and **no pushes**. After G8.0, G8.1–G8.4 may be delegated in parallel

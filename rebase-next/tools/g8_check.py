@@ -41,7 +41,7 @@ def digest(value):
     return hashlib.sha256(client._bytes(value)).hexdigest()
 
 
-def read_object(path, max_bytes=JSON_BYTES):
+def read_value(path, max_bytes=JSON_BYTES):
     try:
         with Path(path).open("rb") as source:
             data = source.read(max_bytes + 1)
@@ -53,7 +53,20 @@ def read_object(path, max_bytes=JSON_BYTES):
         value = client.loads(data)
     except client.ClientError as error:
         raise Incomplete("required artifact is not complete JSON: " + Path(path).name) from error
+    return value
+
+
+def read_object(path, max_bytes=JSON_BYTES):
+    value = read_value(path, max_bytes)
     expect(isinstance(value, dict), "artifact must contain an object: " + Path(path).name)
+    return value
+
+
+def read_array(path, max_items):
+    value = read_value(path)
+    expect(isinstance(value, list), "artifact must contain an array: " + Path(path).name)
+    if len(value) > max_items:
+        raise Incomplete("artifact array exceeds its bounded inventory: " + Path(path).name)
     return value
 
 
@@ -551,6 +564,616 @@ def check_directory(directory):
         obligations["run_start_identities"] = failure(error)
     return {"status": aggregate(obligations), "obligations": obligations,
             "scope": "offline bounded evidence checks; no new runtime, native-codec, outage or distributed acceptance"}
+
+
+def inspect_source_values(path, selector, facts, target):
+    """Compare ordinary inspector JSON with independently reconstructed inputs."""
+    observed, expected = read_object(path), evaluate(selector, facts)
+    if "codec" not in observed:
+        raise Incomplete("required inspector codec observation is missing")
+    same("native-slice-kv-7", observed.get("codec"), "inspector codec")
+    for field in ("model", "store", "tenant", "actor"):
+        same(target[field], observed.get(field), "inspector " + field)
+    rows = observed.get("records")
+    if not isinstance(rows, list):
+        raise Incomplete("required inspector records are missing")
+    expect(len(rows) <= 16384, "inspector exceeds the bounded record inventory")
+    records = {}
+    for row in rows:
+        identity, record = row["id"], row["record"]
+        expect(identity not in records and isinstance(record, dict), "inspector contains repeated or malformed records")
+        records[identity] = record
+    codes = (101, 205, 410) if selector == "equipment" else (101, 205, 309)
+    public = {identity: record for identity, record in records.items() if record.get("contract") in codes}
+    if set(facts) - set(public):
+        raise Incomplete("required inspected public sources are missing")
+    same(set(facts), set(public), "inspected public source inventory")
+    for identity, fact in facts.items():
+        record = public[identity]
+        if not {"input", "contract", "derived", "version"} <= record.keys():
+            raise Incomplete("required public input/derived/version observation is missing")
+        same(fact["contract"], record["contract"], "inspected public contract")
+        same(fact["fields"], record["input"], "inspected public input")
+        same(expected["derived"].get(identity), record["derived"], "inspected source-derived value")
+        opaque_token(record["version"])
+    actual_roots = {}
+    for row in observed["roots"]:
+        key = row["root"]["id"], row["root"]["slot"]
+        expect(key not in actual_roots, "inspector contains repeated roots")
+        value = row["summary"]["value"]
+        actual_roots[key] = {"sum": value["sum"], "count": value["count"]}
+    same({(row["owner"], row["slot"]): row["summary"] for row in expected["roots"]}, actual_roots,
+         "inspected source-derived root values")
+    return {"public_sources": len(public), "records": len(records), "roles": len(observed["roles"]),
+            "receipt_count": observed["receipt_count"]}, expected
+
+
+def operation_work(path, budgets, committed):
+    """Reuse plain operator counters; never interpret native value bytes."""
+    result = {}
+    try:
+        if path.stat().st_size > budgets["trace_bytes"]:
+            raise Incomplete("operator log exceeds the evidence budget")
+        with path.open() as source:
+            for line in source:
+                if line.startswith('{"event":"mutation_work"'):
+                    row = client.loads(line)
+                    identity = row["operation_id"]
+                    expect(identity not in result and isinstance(row.get("work"), dict), "operator work is repeated or missing")
+                    expect(len(result) < 1024, "operator counters exceed the bounded receipt inventory")
+                    result[identity] = row["work"]
+    except OSError as error:
+        raise Incomplete("required operator log is unavailable") from error
+    if set(committed) - set(result):
+        raise Incomplete("required committed-operation work observations are missing")
+    same(set(committed), set(result), "committed original operator identities")
+    return result
+
+
+def pressure_trace_checks(directory, settings, budgets):
+    """Stream paired originals and stage observations in their recorded order."""
+    state = initial_state(directory, {"identity_pool": 4096})
+    fixture = read_object(directory / "fixture.plan.json")
+    deliveries = {identity for identity, fact in state["facts"].items() if fact["contract"] == 205}
+    pools = {identity for identity, fact in state["facts"].items() if fact["contract"] == 101}
+    hot_pool = fixture["request"]["commands"][0]["id"]
+    pending, stages, outcomes, geometry = {}, {}, {}, {}
+    committed = {fixture["request"]["operation_id"]}
+    counts, trajectories = Counter(), {}
+
+    def roots():
+        current = {row["owner"]: row["summary"] for row in evaluate("equipment", state["facts"])["roots"]}
+        for owner, value in current.items():
+            allowed = trajectories.setdefault(owner, {"sums": set(), "counts": set()})
+            allowed["sums"].update((value["sum"], str(int(value["sum"])+1)))
+            allowed["counts"].add(value["count"])
+        return current
+
+    roots()
+    for row in read_jsonl(directory / "pressure/trace.jsonl", budgets["trace_bytes"], 4*settings["max_requests"]+128):
+        event = row.get("event")
+        if event == "stage":
+            identity = row["stage_id"]
+            expect(isinstance(identity, str) and identity not in stages and len(stages) < 8, "pressure stage identity is repeated or unbounded")
+            stages[identity] = {"observation": row, "counts": Counter(), "pending": 0, "peak_pending": 0,
+                                "pending_mismatches": 0, "unknowns": 0, "drain": None, "roots": roots(), "latencies": [],
+                                "original_versions": {}, "committed_sources": Counter()}
+            continue
+        group = stages.get(row.get("stage_id"))
+        if event == "stage_end":
+            if group is None or group.get("end") is not None:
+                raise Incomplete("raw pressure stage end is missing its unique stage")
+            group["end"] = row
+            continue
+        if event == "offer":
+            if group is None:
+                raise Incomplete("raw pressure offer has no recorded stage")
+            same(group["counts"]["offered"], row["index"], "raw offer index")
+            expect(type(row["producer_accepted"]) is bool and type(row["pending"]) is int
+                   and 0 <= row["pending"] <= settings["max_pending"], "raw pending/offer observation exceeds its budget")
+            group["pending_mismatches"] += row["pending"] != group["pending"]
+            group["counts"]["offered"] += 1
+            if row["producer_accepted"]:
+                expect(row["pending"] < settings["max_pending"], "producer accepted work with a full queue")
+                group["pending"] += 1
+                group["counts"]["submitted"] += 1
+                group["peak_pending"] = max(group["peak_pending"], group["pending"])
+            else:
+                same(settings["max_pending"], row["pending"], "producer backpressure boundary")
+                group["counts"]["producer_backpressure"] += 1
+            continue
+        if event == "drain":
+            if group is None:
+                raise Incomplete("raw pressure drain has no recorded stage")
+            request, response = row["request"], row["response"]
+            same("records.get", request["method"], "sole-permit drain method")
+            same(state["target"]["model"], request["params"]["model"], "sole-permit drain model")
+            expect(request["params"]["id"] in deliveries and isinstance(response, dict)
+                   and {"input", "derived", "version"} <= response.keys(), "authenticated DB drain response is missing")
+            expect(group["drain"] is None, "raw pressure stage repeats its successful drain")
+            group["pending_mismatches"] += group["pending"] != 0
+            group["drain"] = row
+            continue
+        if event not in ("intent", "outcome", "read"):
+            raise Incomplete("unrecognized pressure trace observation")
+        if row.get("phase") == "measurement":
+            if group is None:
+                raise Incomplete("raw pressure completion/intent has no recorded stage")
+            same(group["observation"]["pattern"], row.get("pattern"), "raw pressure stage pattern")
+        if event == "intent":
+            saved = row.get("plan")
+            if not isinstance(saved, dict):
+                raise Incomplete("pressure intent lost its original plan")
+            client._plan(saved)
+            identity = saved["request"]["operation_id"]
+            expect(identity not in state["seen"] and len(state["seen"]) <= settings["max_new_operations"]
+                   and len(pending) < settings["max_pending"], "duplicate or unbounded pressure original inventory")
+            same(state["target"], saved["target"], "pressure original target")
+            same(state["context"], saved["request"]["context"], "pressure original context")
+            if row.get("phase") == "measurement":
+                commands = saved["request"]["commands"]
+                expect(len(commands) == 1 and commands[0]["op"] == "update" and commands[0]["id"] in deliveries,
+                       "pressure measurement is outside its declared delivery edits")
+                command = commands[0]
+                opaque_token(command["if_version"])
+                owner = state["facts"][command["id"]]["fields"]["pool"]
+                expect(owner in pools and (row["pattern"] == "independent_business_roots" or owner == hot_pool),
+                       "pressure edit changed an undeclared business root")
+                same({"quantity": str(int(group["roots"][owner]["sum"])+1)}, command["set"], "declared pressure edit")
+                same([], command.get("unset", []), "declared pressure unset")
+                previous = group["original_versions"].setdefault(command["id"], command["if_version"])
+                same(previous, command["if_version"], "pressure stage original CAS token")
+            state["seen"][identity] = digest(saved)
+            pending[identity] = row
+            if group:
+                group["counts"]["intents"] += 1
+            continue
+        if event == "outcome":
+            saved = row.get("plan")
+            if not isinstance(saved, dict):
+                raise Incomplete("pressure outcome lost its original plan")
+            identity = saved["request"]["operation_id"]
+            original = pending.pop(identity, None)
+            if original is None:
+                raise Incomplete("pressure outcome has no original intent")
+            same(original["plan"], saved, "pressure paired original plan")
+            for field in ("phase", "label", "pattern", "stage_id"):
+                same(original.get(field), row.get(field), "pressure paired " + field)
+            kind = row.get("kind")
+            if kind is None:
+                raise Incomplete("pressure outcome classification is missing")
+            expect(kind in ("committed", "busy", "stale_version", "transaction_conflict", "transaction_limit", "transaction_aborted", "outcome_unknown"),
+                   "pressure mutation classification is invalid")
+            status = kind
+            if kind == "outcome_unknown":
+                if row.get("resolved_status") not in ("committed", "not_observed") or not isinstance(row.get("status_observation"), dict):
+                    raise Incomplete("pressure unknown outcome lacks its original status observation")
+                same(row["resolved_status"], row["status_observation"].get("status"), "unknown status classification")
+                status = row["resolved_status"]
+                if group:
+                    group["unknowns"] += 1
+            response = row.get("response") if kind == "committed" else row.get("status_observation")
+            original_result = None
+            if status == "committed":
+                if not isinstance(response, dict) or response.get("status") != "committed" or not isinstance(response.get("result"), dict):
+                    raise Incomplete("committed pressure result is missing")
+                if kind == "committed":
+                    if "replayed" not in response:
+                        raise Incomplete("new pressure intent replay observation is missing")
+                    same(False, response.get("replayed"), "new pressure intent replay")
+                same(identity, response["result"]["operation_id"], "committed pressure original ID")
+                if kind == "outcome_unknown":
+                    same(response["result"], row["resolved_result"], "resolved original pressure result")
+                original_result = digest(response["result"])
+                if group:
+                    source = saved["request"]["commands"][0]["id"]
+                    group["committed_sources"][source] += 1
+                    same(1, group["committed_sources"][source], "prepared pressure source publication count")
+                state["facts"] = stage(state["facts"], saved["request"]["commands"])
+                expectation = evaluate("equipment", state["facts"])
+                committed.add(identity)
+                roots()
+                label = row.get("label", "")
+                if row.get("phase") == "prepare" and label.startswith("cascade-"):
+                    level = int(label.removeprefix("cascade-"))
+                    owner = state["facts"][saved["request"]["commands"][0]["id"]]["fields"]["pool"]
+                    geometry[level] = {"public_sources": len(state["facts"]), "roots": roots(), "operation_id": identity,
+                                       "r": sum(dependency["active"] and dependency["pool"] == owner for dependency in expectation["dependencies"])}
+            outcomes[identity] = {"plan_sha256": digest(saved), "kind": kind, "status": status,
+                                  "result_sha256": original_result, "status_observation": row.get("status_observation")}
+        else:
+            kind = row.get("kind")
+            if group:
+                group["counts"]["requests"] += 1
+            if kind not in ("read_success", "busy"):
+                raise Incomplete("pressure read classification is missing or unresolved")
+            request = row.get("request")
+            if not isinstance(request, dict):
+                raise Incomplete("pressure read request metadata is missing")
+            same("roots.read", request["method"], "pressure reader method")
+            same(state["target"]["model"], request["params"]["model"], "pressure reader model")
+            same(7, request["params"]["slot"], "pressure reader slot")
+            owner = request["params"]["owner"]
+            expect(owner in pools and (row.get("pattern") == "independent_business_roots" or owner == hot_pool),
+                   "pressure reader changed an undeclared business root")
+            if kind == "read_success":
+                response = row["response"]
+                same(owner, response["owner"], "pressure reader response owner")
+                same(7, response["slot"], "pressure reader response slot")
+                value = response["value"]
+                if group:
+                    expected = group["roots"][owner]
+                    expect(value["sum"] in (expected["sum"], str(int(expected["sum"])+1)) and value["count"] == expected["count"],
+                           "pressure read differs from its source-declared trajectory")
+                else:
+                    expect(value["sum"] in trajectories[owner]["sums"] and value["count"] in trajectories[owner]["counts"],
+                           "pressure read differs from reconstructed source values")
+        if row.get("phase") == "measurement":
+            if type(row.get("http_status")) is not int:
+                raise Incomplete("pressure HTTP observation is missing")
+            expect(100 <= row["http_status"] <= 599, "pressure HTTP observation is invalid")
+            if kind != "outcome_unknown":
+                same(429 if kind == "busy" else 200, row["http_status"], "pressure HTTP/classification pairing")
+            counts["outcome:" + kind] += 1
+            counts["http:" + str(row["http_status"])] += 1
+            counts["completed"] += 1
+            if group:
+                group["counts"]["outcome:" + kind] += 1
+                group["counts"]["http:" + str(row["http_status"])] += 1
+                group["counts"]["completed"] += 1
+                group["counts"]["completions"] += 1
+                group["pending"] -= 1
+                latency = row.get("queue_and_request_ms", row.get("latency_ms"))
+                if not isinstance(latency, (int, float)) or not math.isfinite(latency) or latency < 0:
+                    raise Incomplete("pressure latency observation is missing")
+                group["latencies"].append(latency)
+    if pending or not outcomes:
+        raise Incomplete("pressure trace contains missing original outcomes")
+    return state, outcomes, committed, stages, geometry, counts
+
+
+def pressure_stage_checks(result, stages, counts):
+    """Check offers, completion counts, queue prefixes, latencies and drains."""
+    from harness import latency
+    settings = result["profile"]
+    reports = result["steps"] + result["bursts"]
+    if len(stages) != len(reports) or any(not isinstance(row.get("stage_id"), str) for row in reports):
+        raise Incomplete("pressure evidence lacks raw stage attribution")
+    same(set(stages), {row["stage_id"] for row in reports}, "raw pressure stage inventory")
+    aggregate_counts, total_offered, total_backpressure = Counter(), 0, 0
+    for index, report in enumerate(reports):
+        group = stages[report["stage_id"]]
+        observation, raw = group["observation"], group["counts"]
+        same(report["clients"], observation["clients"], "raw stage clients")
+        if index < len(result["steps"]):
+            for field in ("pattern", "offered_rate"):
+                same(report[field], observation[field], "raw stage " + field)
+            same(settings["step_seconds"], observation["duration_seconds"], "raw offering duration")
+            scheduled = math.ceil(settings["step_seconds"] * report["offered_rate"])
+            same(scheduled - raw["offered"], report["counts"].get("not_offered_before_duration", 0), "not-offered count")
+            expect(0 <= raw["offered"] <= scheduled, "raw offered work exceeds the declared schedule")
+        else:
+            same("barrier", observation.get("mode"), "raw barrier mode")
+            same("hot_root_submission_barrier", observation["pattern"], "raw barrier pattern")
+            same(8, raw["offered"], "raw barrier offers")
+        if group["unknowns"]:
+            raise Incomplete("raw client completion timing for deferred unknown outcomes is unavailable")
+        expect(not group["pending_mismatches"] and group["pending"] == 0, "raw pending queue differs from its completion prefix")
+        same(group["peak_pending"], report["peak_pending"], "raw peak pending queue")
+        if group["drain"] is None:
+            raise Incomplete("pressure stage lacks its successful sole-permit DB drain")
+        if observation.get("mode") == "paced":
+            ending = group.get("end")
+            if not isinstance(ending, dict):
+                raise Incomplete("paced pressure stage lacks achieved elapsed-time evidence")
+            elapsed = ending.get("offering_elapsed_seconds")
+            if isinstance(elapsed, bool) or not isinstance(elapsed, (int, float)) or not math.isfinite(elapsed) or elapsed <= 0:
+                raise Incomplete("paced pressure achieved elapsed time is missing or invalid")
+            future_drain = ending.get("future_drain_seconds")
+            total_drain = ending.get("total_drain_seconds")
+            for label, value in (("future drain", future_drain), ("total drain", total_drain)):
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                    raise Incomplete("paced pressure " + label + " timing is missing or invalid")
+            expect(future_drain <= settings["drain_seconds"] and total_drain <= settings["drain_seconds"],
+                   "paced pressure drain exceeded its declared deadline")
+            same(report.get("offering_elapsed_seconds"), elapsed, "reported achieved offering elapsed time")
+            for field in ("offered", "submitted", "completed"):
+                if field not in report.get("counts", {}):
+                    raise Incomplete("pressure stage omits reported " + field + " count")
+                same(raw[field], report["counts"][field], "reported actual " + field + " count")
+            same(raw["submitted"], raw["intents"] + raw["requests"], "accepted offers and submitted requests")
+            same(raw["completed"], raw["completions"], "completed raw responses")
+            same(raw["offered"] / elapsed, report.get("offered_per_second"), "achieved offered rate")
+            same(raw["submitted"] / elapsed, report.get("submitted_per_second"), "achieved submitted rate")
+            same(raw["completed"] / elapsed, report.get("completed_per_second"), "achieved completed rate")
+        for field in ("offered", "submitted", "completed", "producer_backpressure"):
+            same(raw[field], report["counts"].get(field, 0), "raw stage " + field)
+        names = {name for name in raw if name.startswith(("outcome:", "http:"))}
+        names.update(name for name in report["counts"] if name.startswith(("outcome:", "http:")))
+        for field in names:
+            same(raw[field], report["counts"].get(field, 0), "raw stage " + field)
+        same(latency(group["latencies"]), report["latency"], "raw stage latency distribution")
+        total_offered += raw["offered"]
+        total_backpressure += raw["producer_backpressure"]
+        aggregate_counts.update({name: value for name, value in raw.items()
+                                 if name == "completed" or name.startswith(("outcome:", "http:"))})
+    same(dict(counts), dict(aggregate_counts), "aggregate raw pressure outcomes")
+    return {"status": "passed", "stages": len(stages), "offered": total_offered,
+            "completed": counts["completed"], "producer_backpressure": total_backpressure,
+            "scope": "raw offers/completions check the pending queue; active-worker scalars and drain deadlines also use the existing finite-load checker"}
+
+
+def pressure_receipt_checks(directory, budgets, outcomes, result):
+    statuses, replays = set(), 0
+    for row in read_jsonl(directory / "pressure/receipt-observations.jsonl", budgets["trace_bytes"], 1024):
+        saved, response = row["plan"], row["response"]
+        client._plan(saved)
+        if not isinstance(response, dict):
+            raise Incomplete("pressure receipt response is missing")
+        identity = saved["request"]["operation_id"]
+        expect(identity in outcomes, "receipt observation changed the original operation ID")
+        original = outcomes[identity]
+        same(original["plan_sha256"], digest(saved), "receipt original plan/context")
+        if row["event"] == "status":
+            expect(identity not in statuses, "pressure original status is repeated")
+            statuses.add(identity)
+            expected = "committed" if original["status"] == "committed" else "not_observed"
+            if response.get("status") not in ("committed", "not_observed"):
+                raise Incomplete("original pressure status remains unresolved")
+            same(expected, response["status"], "original post-drain receipt")
+            if expected == "committed":
+                same(original["result_sha256"], digest(response["result"]), "original committed receipt result")
+            if original["status_observation"] is not None:
+                same(original["status_observation"], response, "original unknown status observation")
+        elif row["event"] == "replay":
+            if identity not in statuses:
+                raise Incomplete("pressure replay has no observed original status")
+            expect(original["status"] == "committed", "pressure replay has no confirmed original receipt")
+            same(True, response["replayed"], "pressure same-ID replay")
+            same("committed", response["status"], "pressure replay classification")
+            same(original["result_sha256"], digest(response["result"]), "pressure replay result")
+            replays += 1
+        else:
+            raise Incomplete("unknown pressure receipt observation")
+    if set(outcomes) != statuses or not replays:
+        raise Incomplete("pressure original status/replay observations are missing")
+    absent = sum(row["status"] != "committed" for row in outcomes.values())
+    for field, expected in (("resolved", len(statuses)), ("absent_after_quiescence", absent), ("unresolved", 0),
+                            ("replacement_mutation_submissions", 0), ("original_contexts_preserved", True), ("same_id_replay", True)):
+        same(expected, result["receipts"][field], "reported pressure receipt " + field)
+    return {"status": "passed", "resolved": len(statuses), "absent_after_drain": absent, "same_id_replays": replays,
+            "scope": "complete original plans and raw status/replay responses; no replacement intent or receipt-context refresh"}
+
+
+def pressure_geometry_checks(result, geometry, work):
+    if len(result["geometry"]) != 3 or set(result["profile"]["equipment_reservations"]) != set(geometry):
+        raise Incomplete("required equipment cascade/geometry observations are missing")
+    same(result["profile"]["equipment_reservations"], [row["added_reservations"] for row in result["geometry"]], "equipment geometry levels")
+    same(set(result["profile"]["equipment_reservations"]), set(geometry), "executed equipment cascade levels")
+    for row in result["geometry"]:
+        observed = geometry[row["added_reservations"]]
+        same(row["added_reservations"] + 6, observed["public_sources"], "actual geometry source inventory")
+        same(observed["public_sources"], row["public_sources"], "reported geometry sources")
+        same({owner: value["count"] for owner, value in observed["roots"].items()},
+             {root["owner"]: root["n"] for root in row["relevant_roots"]}, "actual root membership geometry")
+        same({"delivery_record": 1, "reservation_source": 0, "private_occurrence": 1,
+              "maintained_occurrences_per_active_reservation": 2}, row["actual_memberships"], "declared actual memberships")
+        same(work[observed["operation_id"]], row["work"], "raw geometry operation work")
+        same(observed["r"], row["r"], "source-derived equipment invalidation closure")
+        same(observed["r"], row["work"]["causal_evaluations"], "raw equipment evaluated closure")
+    return {"status": "passed", "levels": len(geometry), "scope": "authored public sources, actual root membership counts and raw per-operation counters"}
+
+
+def pressure_quantity_checks(directory, budgets, recorded):
+    prefix = directory / "pressure/quantity"
+    steps = read_array(prefix / "steps.json", 16)
+    if len(steps) != 8:
+        raise Incomplete("required Quantity source observations are missing")
+    same(["source", "prepare-1", "cascade-1", "prepare-4", "cascade-4", "prepare-15", "cascade-15", "seventeenth-source"],
+         [row.get("name") for row in steps], "executed Quantity trajectory")
+    facts, target, context, seen, committed, cascades = {}, None, None, set(), set(), {}
+    for row in steps:
+        saved = row["plan"]
+        client._plan(saved)
+        identity = saved["request"]["operation_id"]
+        expect(identity not in seen, "Quantity reused an original mutation ID")
+        seen.add(identity)
+        if target is None:
+            target, context = saved["target"], saved["request"]["context"]
+        same(target, saved["target"], "Quantity original target")
+        same(context, saved["request"]["context"], "Quantity original receipt context")
+        same(facts, row["before_facts"], "Quantity raw source prefix")
+        proposed = stage(facts, saved["request"]["commands"])
+        if row["name"] == "seventeenth-source":
+            try:
+                evaluate("quantity", proposed)
+            except OracleError as error:
+                same("state_limit", error.kind, "source-derived Quantity rejection")
+            else:
+                raise EvidenceError("the Quantity seventeenth source did not cross its declared envelope")
+            same("state_limit", row["observed"], "recorded Quantity rejection")
+            same("not_observed", row["receipt"], "rejected Quantity receipt")
+            before = image(prefix / "seventeenth-source-before.backup.json")
+            after = image(prefix / "seventeenth-source-after.backup.json")
+            same(before, after, "Quantity quiescent complete rejection image")
+            same(len(committed), len(after["tables"]["operations"]), "Quantity unchanged receipt inventory")
+        else:
+            evaluate("quantity", proposed)
+            same("committed", row["observed"], "Quantity recorded outcome")
+            response = row["result"]
+            same("committed", response["status"], "Quantity mutation classification")
+            same(False, response["replayed"], "Quantity new original replay")
+            same(identity, response["result"]["operation_id"], "Quantity committed original ID")
+            facts = proposed
+            committed.add(identity)
+            inspect_source_values(prefix / (row["name"] + ".inspect.json"), "quantity", facts, target)
+            if row["name"].startswith("cascade-"):
+                cascades[int(row["name"].removeprefix("cascade-"))] = {"sources": len(facts), "operation_id": identity, "work": row["work"]}
+        same(facts, row["after_facts"], "Quantity raw source suffix")
+    work = operation_work(prefix / "server.log", budgets, committed)
+    own = read_object(directory / "pressure/quantity-result.json")
+    same(own, recorded, "nested Quantity result")
+    same(target["model"], recorded["model"], "Quantity model identity")
+    same([1, 4, 15], [row["requested_dependents"] for row in recorded["levels"]], "Quantity geometry levels")
+    for row in recorded["levels"]:
+        actual = cascades[row["requested_dependents"]]
+        same(row["requested_dependents"]+1, actual["sources"], "Quantity actual dependent inventory")
+        same(actual["sources"], row["public_sources"], "Quantity reported sources")
+        same((0, 0, actual["sources"]), (row["n"], row["m"], row["r"]), "Quantity authored geometry and evaluated closure")
+        same(work[actual["operation_id"]], row["work"], "raw Quantity cascade work")
+        same(row["r"], row["work"]["causal_evaluations"], "raw Quantity evaluated closure")
+    same({"kind": "state_limit", "public_sources": 17, "all_tables_unchanged": True, "receipt": "not_observed"},
+         recorded["capacity_rejection"], "Quantity capacity rejection")
+    return {"status": "passed", "source_snapshots": len(committed), "public_sources": len(facts), "levels": len(cascades), "rejection_table_count": 13}
+
+
+def pressure_failure(error):
+    if isinstance(error, (KeyError, TypeError, IndexError)):
+        return failure(Incomplete("required pressure observation fields are missing or unreadable"))
+    return failure(error)
+
+
+def pressure_source_checks(directory, result, state, committed):
+    observed, expected = inspect_source_values(directory / "pressure-complete.inspect.json", "equipment", state["facts"], state["target"])
+    outputs = sum(len(row["roles"]) for row in expected["dependencies"] if row["active"])
+    same(result["model"], state["target"]["model"], "pressure compiled model")
+    same(len(committed), observed["receipt_count"], "inspected complete receipt count")
+    same(len(state["facts"])+outputs, observed["records"], "inspected public/private inventory")
+    same(outputs, observed["roles"], "inspected retained role inventory")
+    same({"public_sources": len(state["facts"]), "active_outputs": outputs, "retained_roles": outputs, "receipt_slots": len(committed)},
+         result["complete_state"]["logical"], "reported complete logical inventory")
+    return {"status": "passed", **observed}
+
+
+def pressure_complete_checks(directory, result, state, committed):
+    complete = image(directory / "backend/pressure-complete.backup.json")
+    same(digest(complete), result["complete_state"]["image_sha256"], "complete pressure image")
+    same(13, result["complete_state"]["table_count"], "complete pressure table count")
+    same(len(state["facts"]), len(complete["tables"]["public_records"]), "complete pressure public inventory")
+    for table in ("operations", "receipt_slots"):
+        same(len(committed), len(complete["tables"][table]), "complete pressure " + table)
+    same("valid", result["complete_state"]["integrity"]["status"], "executed pressure native integrity")
+    same(len(committed), result["complete_state"]["integrity"]["receipts"], "executed pressure native receipt count")
+    return {"status": "passed", "table_count": 13, "committed_receipts": len(committed)}
+
+
+def pressure_ingress_checks(result, settings, budgets):
+    observed = result["slow_input"]
+    same((settings["slow_connections"], settings["slow_connections"], settings["slow_input_seconds"]),
+         (observed["opened"], observed["closed"], observed["owned_hold_seconds"]), "bounded partial-input connection observations")
+    for phase in ("before", "during"):
+        process = observed[phase]
+        if not isinstance(process, dict) or process.get("available") is not True:
+            raise Incomplete("partial-input process observation is unavailable")
+        same(result["application_pid"], process["pid"], "partial-input application PID")
+        expect(max(process["rss_kib"], process["peak_rss_kib"]) <= budgets["app_rss_kib"]
+               and process["open_fds"] <= budgets["app_fds"] and process["threads"] <= budgets["app_threads"],
+               "partial-input application exceeded its resource budget")
+    same("passed", observed["recovery"]["status"], "post-close ingress drain")
+    expect(observed["recovery"]["elapsed_seconds"] <= settings["drain_seconds"], "post-close ingress drain budget exceeded")
+    return {"status": "passed", "owned_partial_connections": observed["opened"],
+            "scope": "finite voluntarily closed sockets and raw process snapshots; no general RPC body-read deadline or unbounded ingress protection claim"}
+
+
+def check_pressure_directory(directory):
+    """Check completed finite pressure artifacts without native execution."""
+    from g8_pressure import check_overload, default_pressure_profile, pressure_profile
+    directory, obligations = Path(directory).resolve(), {}
+    try:
+        result = read_object(directory / "pressure/pressure-result.json")
+        recorded = read_object(directory / "pressure/profile.json")
+        fields = set(default_pressure_profile())
+        expect(set(recorded) == fields | {"backend", "budgets", "database_observer", "execution_module_sha256"}, "unknown pressure profile fields")
+        settings = pressure_profile({name: recorded[name] for name in fields})
+        same(settings, result["profile"], "recorded pressure inputs")
+        budgets = recorded["budgets"]
+        validate_budgets(budgets)
+        expect(result["backend"] in ("redb", "surrealkv", "foundationdb"), "unknown pressure backend")
+        same(result["backend"], recorded["backend"], "pressure profile backend")
+        same(recorded["execution_module_sha256"], result["execution_module_sha256"], "pressure run-start module identity")
+        expect(isinstance(result["execution_module_sha256"], str) and len(result["execution_module_sha256"]) == 64
+               and all(character in "0123456789abcdef" for character in result["execution_module_sha256"]), "pressure run-start hash is malformed")
+        obligations["inputs"] = {"status": "passed", "required": True, "recorded_pressure_module_sha256": result["execution_module_sha256"]}
+    except (Incomplete, ValueError, KeyError, TypeError, client.ClientError) as error:
+        obligations["inputs"] = pressure_failure(error)
+        return {"status": aggregate(obligations), "obligations": obligations}
+    if result.get("status") != "passed":
+        obligations["runtime_result"] = {"status": "failed" if result.get("status") == "failed" else "incomplete", "required": True}
+    for name in ("failure.json", "pressure/failure.json"):
+        if (directory / name).exists():
+            try:
+                retained = read_object(directory / name)
+                expect(retained.get("status") in ("failed", "incomplete"), "retained pressure failure status is invalid")
+                obligations[name] = {"status": retained["status"], "required": True}
+            except (Incomplete, ValueError, KeyError, TypeError) as error:
+                obligations[name] = pressure_failure(error)
+    try:
+        samples = list(read_jsonl(directory / "pressure/samples.jsonl", budgets["samples_bytes"], 10000))
+        resources = check_resources(samples, budgets, require_database=result["backend"] == "foundationdb")
+        for row in samples:
+            same(result["application_pid"], row["processes"]["application"]["pid"], "pressure application PID")
+            if result["backend"] == "foundationdb":
+                same(recorded["database_observer"]["pid"], row["processes"]["database"]["pid"], "pressure database PID")
+        obligations["resources"] = {"status": resources["status"], "required": True, "recomputed": resources}
+    except (Incomplete, ValueError, KeyError, TypeError) as error:
+        obligations["resources"] = pressure_failure(error)
+    state = None
+    try:
+        state, outcomes, committed, stages, geometry, counts = pressure_trace_checks(directory, settings, budgets)
+        obligations["source_trace"] = {"status": "passed", "required": True, "original_outcomes": len(outcomes), "committed": len(committed)}
+    except (Incomplete, ValueError, KeyError, TypeError, IndexError, RuntimeError, client.ClientError) as error:
+        obligations["source_trace"] = pressure_failure(error)
+        state = None
+    if state is not None:
+        for name, function in (("source_values", lambda: pressure_source_checks(directory, result, state, committed)),
+                               ("complete_image", lambda: pressure_complete_checks(directory, result, state, committed)),
+                               ("equipment_geometry", lambda: pressure_geometry_checks(result, geometry, operation_work(directory / "backend/server.log", budgets, committed))),
+                               ("stages", lambda: pressure_stage_checks(result, stages, counts)),
+                               ("original_receipts", lambda: pressure_receipt_checks(directory, budgets, outcomes, result))):
+            try:
+                obligations[name] = {**function(), "required": True}
+            except (Incomplete, ValueError, KeyError, TypeError, IndexError, RuntimeError, client.ClientError) as error:
+                obligations[name] = pressure_failure(error)
+    else:
+        for name in ("source_values", "complete_image", "equipment_geometry", "stages", "original_receipts"):
+            obligations[name] = {"status": "incomplete", "required": True, "reason": "raw original/source prefix must be complete before this observation can be checked"}
+    try:
+        before = image(directory / "backend/pressure-limit-before.backup.json")
+        after = image(directory / "backend/pressure-limit-after.backup.json")
+        same(before, after, "quiescent pressure command/body rejection tables")
+        request = read_object(directory / "pressure/commands-65.request.json")
+        fixture = read_object(directory / "fixture.plan.json")
+        same(fixture["request"]["model"], request["model"], "over-limit original model")
+        same(fixture["request"]["context"], request["context"], "over-limit original receipt context")
+        same(65, len(request["commands"]), "actual over-limit command request")
+        same(65, result["limits"]["commands"], "recorded command limit")
+        same(("invalid_input", "not_observed", 413, client.MAX_REQUEST_BYTES+1),
+             (result["limits"]["command_rpc_kind"], result["limits"]["rejected_receipt"],
+              result["limits"]["body_http_status"], result["limits"]["body_bytes"]), "recorded command/body rejection")
+        obligations["rejection_images"] = {"status": "passed", "required": True, "table_count": 13, "complete_image_sha256": digest(before)}
+    except (Incomplete, ValueError, KeyError, TypeError, RuntimeError) as error:
+        obligations["rejection_images"] = pressure_failure(error)
+    try:
+        obligations["finite_ingress"] = {**pressure_ingress_checks(result, settings, budgets), "required": True}
+    except (Incomplete, ValueError, KeyError, TypeError, RuntimeError) as error:
+        obligations["finite_ingress"] = pressure_failure(error)
+    try:
+        obligations["quantity_geometry"] = {**pressure_quantity_checks(directory, budgets, result["quantity"]), "required": True}
+    except (Incomplete, ValueError, KeyError, TypeError, IndexError, RuntimeError, client.ClientError) as error:
+        obligations["quantity_geometry"] = pressure_failure(error)
+    try:
+        obligations["finite_load"] = {**check_overload(result), "required": True}
+    except (Incomplete, ValueError, KeyError, TypeError, RuntimeError) as error:
+        obligations["finite_load"] = pressure_failure(error)
+    try:
+        obligations["artifacts"] = {**check_artifacts(directory, budgets), "required": True}
+        obligations["run_start_identities"] = execution_identities(directory, result, True)
+    except (Incomplete, ValueError, KeyError, TypeError) as error:
+        obligations["artifacts"] = pressure_failure(error)
+    obligations["native_permit_proof"] = {"status": "unsupported", "required": False,
+        "scope": "matching accepted real-writer/native deadline evidence is supplied by the checkpoint coordinator; raw HTTP pressure alone does not prove native permit retention"}
+    return {"status": aggregate(obligations), "obligations": obligations,
+            "scope": "bounded saved pressure observations, source arithmetic and complete raw images; native codecs and admission semantics are not reimplemented"}
 
 
 def main():

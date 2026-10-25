@@ -108,6 +108,50 @@ in the owned directory. Byte/row bounds prevent silent evidence truncation.
 Published checkpoint summaries omit credentials and complete backup contents.
 Exit codes are 0 for pass, 1 for failure and 2 for incomplete evidence.
 
+## Finite overload and database-service recovery
+
+G8.2 is accepted on all three adapters. The overload profile uses bounded lazy
+producers, 2/16/128 offered actions per second, one/four/eight clients, one native
+permit and at most eight pending submissions. Equipment and Quantity retain
+their own explicit source oracles. The reusable scheduler is
+`g8_pressure.bounded_step(requests, submit, ...)`; hooks observe offers,
+submissions and completions without changing scheduling code.
+
+```sh
+python3 -B tools/g8.py overload --binary /path/to/current/rebase-next --backend redb --out target/my-overload
+python3 -B tools/g8.py check --result target/my-overload/pressure/pressure-result.json
+```
+
+Reports retain counts, latency distributions, achieved elapsed rates, queue/drain
+observations, resources and actual n/m/r. Whole action time, queue/request time
+and native work counters have different meanings; unsupported counters remain
+unsupported. A finite paced rate is observed load, not maximum capacity.
+Partial-input sockets are voluntarily closed; this is not proof of an arbitrary
+connection/body-read deadline. The native timeout/permit correctness case is
+separate matching accepted evidence, supplied by the checkpoint coordinator.
+
+G8.3 interrupts only the verified disposable FoundationDB helper, keeps the
+application PID alive, makes ordinary authenticated database calls, restores the
+service even after exceptions, and reconciles the original operation IDs.
+It is not a replica failover or native commit-ack injection. Embedded backends
+have no independent network database service. Start the helper before this command:
+
+```sh
+python3 -B tools/g8.py outage --binary /path/to/current/rebase-next --backend foundationdb --cluster-file target/g7-environment/fdb.cluster --out target/my-outage
+python3 -B tools/g8.py check --result target/my-outage/outage-result.json
+```
+
+`g8_faults.run_outage(state)` and `check_outage_directory(directory)` also
+compose directly. Offline checks recompute source/receipt outcomes, complete
+images, resource budgets and final artifact bytes. Keep result files in their
+original evidence directories. Missing required data cannot pass. CLI exit codes
+remain 0 passed, 1 failed and 2 incomplete.
+
+See [deployment](deployment.md) for current package and extracted-workflow
+commands. [G9](../research/54-composable-developer-tools-plan.md) separately
+prepares composable population; no general fake-data generator is implied by
+the current workload profiles.
+
 G6, TiKV, frontend, live providers, migrations, million-record envelope expansion,
 native commit-ack injection, replicated failover and disk/power-loss infrastructure
 remain outside these profiles. The existing bounds and the exact plan in

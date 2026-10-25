@@ -12,7 +12,7 @@ from verify_runtime import write_json
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("preflight", "smoke", "churn", "cycles", "check"))
+    parser.add_argument("command", choices=("preflight", "smoke", "churn", "cycles", "overload", "outage", "check"))
     parser.add_argument("--binary", type=Path)
     parser.add_argument("--backend", choices=("redb", "surrealkv", "foundationdb"), default="redb")
     parser.add_argument("--cluster-file", type=Path)
@@ -29,10 +29,19 @@ def main():
         if args.command == "check":
             if not args.result:
                 parser.error("check requires --result")
-            if args.result.name != "result.json":
-                parser.error("check requires the completed epoch result.json and its adjacent raw evidence")
-            from g8_check import check_directory
-            checked = check_directory(args.result.parent)
+            if args.result.name == "pressure-result.json":
+                from g8_check import check_pressure_directory
+                if args.result.parent.name != "pressure":
+                    parser.error("pressure-result.json must remain in its original pressure evidence directory")
+                checked = check_pressure_directory(args.result.parent.parent)
+            elif args.result.name == "result.json":
+                from g8_check import check_directory
+                checked = check_directory(args.result.parent)
+            elif args.result.name == "outage-result.json":
+                from g8_faults import check_outage_directory
+                checked = check_outage_directory(args.result.parent)
+            else:
+                parser.error("check requires result.json, pressure-result.json or outage-result.json and adjacent raw evidence")
             print(json.dumps(checked))
             return 0 if checked["status"] == "passed" else 1 if checked["status"] == "failed" else 2
         if not args.binary:
@@ -44,8 +53,12 @@ def main():
             parser.error("--out is required and must name a new directory")
         overrides = {"seed": args.seed}
         if args.duration is not None:
+            if args.command in ("cycles", "overload", "outage"):
+                raise ValueError("Receipt, overload and outage profiles use their own fixed duration budgets")
             overrides["duration_seconds"] = args.duration
-        settings = profile(smoke=args.command == "smoke", **overrides)
+        if args.command == "outage" and args.backend != "foundationdb":
+            raise ValueError("Database-service outage requires the owned FoundationDB helper")
+        settings = profile(smoke=args.command in ("smoke", "overload", "outage"), **overrides)
         database_pid, paths = None, ()
         if args.backend == "foundationdb":
             if not args.cluster_file:
@@ -64,7 +77,13 @@ def main():
         elif any(value is not None for value in (args.database_pid, args.database_data, args.database_log)):
             raise ValueError("Database process observations require --backend foundationdb")
         state = prepare(args.binary, args.out, backend=args.backend, cluster_file=args.cluster_file, settings=settings)
-        if args.command == "cycles":
+        if args.command == "outage":
+            from g8_faults import run_outage
+            result = run_outage(state)
+        elif args.command == "overload":
+            from g8_pressure import run_overload
+            result = run_overload(state, database_pid=database_pid, database_paths=paths)
+        elif args.command == "cycles":
             from g8_cycles import run_cycles
             result = run_cycles(state, database_pid=database_pid, database_paths=paths)
         else:
@@ -80,9 +99,11 @@ def main():
                 result["receipt_cycles"] = {"status": cycles["status"], "count": cycles["cycle_count"],
                                             "path": "cycles-result.json"}
                 publish_result(state["directory"] / "result.json", result, state["directory"], settings["budgets"])
-        result_path = "cycles-result.json" if args.command == "cycles" else "result.json"
+        result_path = ("pressure/pressure-result.json" if args.command == "overload" else
+                       "outage-result.json" if args.command == "outage" else
+                       "cycles-result.json" if args.command == "cycles" else "result.json")
         print(json.dumps({"status": result["status"], "backend": args.backend, "result": str(args.out / result_path)}))
-        return 0
+        return 0 if result["status"] == "passed" else 1 if result["status"] == "failed" else 2
     except BaseException as error:
         status = "incomplete" if isinstance(error, Incomplete) else "failed"
         if state is not None:

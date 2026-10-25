@@ -57,6 +57,18 @@ G7 establishes more than internal integrity; G8 adds operating-condition evidenc
 
 ## Composition contract
 
+**Developer-tool refinement:** breaking tool refactors are allowed. G8.0 has
+independent observation/resource functions, but its runner still fixes equipment
+fixture setup, action generation, source checks and the reader query. During
+G8.2's concrete equipment/Quantity reuse, separate these scenario functions from
+bounded scheduling, collection and reporting. Let ordinary caller-supplied
+actions/checks compose without editing the scheduler; keep the CLI thin. No
+registry, base-class hierarchy or new workload DSL is required. General
+population belongs to the prepared [G9 goal](54-composable-developer-tools-plan.md),
+which does not block G8. Do not call the current runner arbitrary-model tooling.
+If G8 implementation is already accepted before this refinement is integrated,
+make the extraction in G9.3 and preserve the exact historical G8 claim.
+
 Keep the entry point a thin script, reusing ordinary functions. The following
 responsibilities are a suggested shape, not a new wire API or mandatory wrappers:
 
@@ -126,6 +138,15 @@ Use shared bounded samplers, not another telemetry service. Record:
 - Offered/submitted/completed/unresolved work, successes, reads, replay and
   rejection counts by HTTP status and RPC kind; latency distributions and
   throughput. Separate setup, validation and maintenance time.
+- Report per-operation class and phase: offered/admitted/completed rates,
+  success versus expected rejection, latency quantiles, and achieved concurrency.
+  Preserve distribution/sample counts and distinguish action/workflow elapsed
+  time from individual RPC latency and native engine time. G8.0's current
+  `mutation_latency` measures the whole `perform` workflow, including supporting
+  reads/local checks; rename or explicitly label it rather than implying a
+  single mutation-RPC measurement. Use actual measured elapsed time for rates;
+  account for draining work outside the measurement window separately. Paced
+  throughput is achieved load, not an inferred maximum capacity.
 - Available engine work: loads/bytes, visits, rotations, changed keys and causal
   candidates/evaluations. Missing counters remain unsupported, not zero.
 - Owned-PID RSS/high-water memory, CPU, descriptors and threads; logical
@@ -231,6 +252,11 @@ Use targeted geometric population/fanout levels within current model bounds and
 a few combined demanding cases, with achieved `n/m/r` and rejection boundaries.
 Avoid a full Cartesian sweep or multiplying small-case timings into a fictitious
 large-state result. Reuse a matching prepared fixture where its identity permits.
+Demonstrate the shared scheduling/observation path with the equipment and Quantity
+profiles (or retain this extraction explicitly for G9.3 if G8 was already
+accepted). Scenario-specific commands/oracles remain ordinary functions. A small
+custom-action control establishes the composition seam; it does not require
+another long timing campaign. Include the report distinctions above.
 
 Reuse the existing real-writer deadline test for permit retention; narrowly
 extend it for uncovered/changed obligations. Use deterministic barriers for
