@@ -41,8 +41,8 @@ the package limits.
 and `reject` operations over public developer metadata and typed reference pools.
 The caller owns state and current context; the existing mutation client saves and
 submits each plan. Live Equipment/Quantity examples also reuse G8’s bounded
-scheduler and observations. G9.4 evidence export and final handoff review remain
-pending. See the [G9 plan and status](../research/54-composable-developer-tools-plan.md)
+scheduler and observations. G9.4 isolated source-tooling and optional-provider
+checks pass. See the [G9 results](../research/55-population-tooling-result.md)
 for checkpoint details. Existing model and receipt limits apply.
 
 ## Existing model and fixture tools

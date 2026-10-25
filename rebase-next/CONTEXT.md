@@ -1,5 +1,31 @@
 # Compact context — 2026-10-25
 
+**Current completion: G8 and G9.0–G9.4 are accepted within documented bounds.**
+The user authorized linear main pushes and G9 implementation, superseding the
+historical stop/no-push handoff below. Root replaced only known partial tip
+1fe6310 with the verified G8 history using an exact lease, then pushed ordinary
+G9 checkpoints. No new feature gate is selected; stop after final handoff push.
+
+Read [G9 results](research/55-population-tooling-result.md) and the
+[population guide](docs/population.md). The public operations are prepare,
+propose, accept and reject, using caller-owned state, typed pools, fresh context,
+explicit rules and the existing client. Forty-five controls and fresh real
+Equipment/Quantity trajectories pass. Original unknown plans remain immutable;
+receipt checks use actual unwrapped operation_id/revision/records responses.
+
+G9.4 exports source 8359b3e outside Git, verifies all 315 source files unchanged
+and all 85 runtime inputs matching the accepted SDK-free binary, then passes
+the exported controls/demo and a real optional Node-provider trajectory. Seven
+mixed records use three provider batch calls; the documented callback recipe
+adds an eighth source. All 152 protected pre-G9 inputs remain unchanged. See
+[handoff evidence](research/evidence/2026-10-25-g94-population-handoff.json).
+No Cargo rebuild or new complete runtime bundle was produced for G9; the G8
+artifact source 8ddc88f predates these source tooling files. Owned app processes
+are stopped; no FDB helper/listener remains. G6, TiKV, frontend, live providers,
+migrations and million-record engine expansion remain deferred.
+
+## Historical G9 implementation handoff
+
 **Active: G9.0–G9.3 accepted; G9.4 isolated tooling/handoff verification next.** The user
 explicitly requests replacing unverified origin tip 1fe6310 with verified linear
 history, checkpoint pushes to main, and continued composable population work.

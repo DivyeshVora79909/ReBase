@@ -1,6 +1,6 @@
 # G9 composable population results
 
-G9.0–G9.3 are accepted on 2026-10-25; G9.4 remains to be accepted.
+G9.0–G9.4 are accepted within the recorded bounds on 2026-10-25.
 [Plan 54](54-composable-developer-tools-plan.md)
 defines scope. G8 remains accepted and is not restarted. The user selected G9
 and checkpoint pushes after the earlier G8-only stop/no-push handoff.
@@ -135,15 +135,35 @@ observers. Generation/setup, client-call wall time, queue/submit window and
 verification/observation callbacks are separate report fields. This establishes
 reusable composition, not maximum throughput, sustained stress or leak freedom.
 
-## Continuation
+## G9.4 — isolated tooling and developer handoff
+
+The [handoff evidence](evidence/2026-10-25-g94-population-handoff.json) records
+an isolated export of committed source 8359b3e outside Git. All 315 source files
+remain unchanged after execution; all 85 runtime inputs match the accepted
+SDK-free binary. Forty-five controls and the full Equipment/Quantity demo pass
+using only exported tool modules and explicitly installed host dependencies.
+No Cargo rebuild or new complete runtime release bundle is claimed.
+
+An additional real-API case uses the actual optional Node provider to generate
+two Pools, three Deliveries and two Reservations. Three buffered provider calls
+supply the seven base objects; Python rules, typed references and fresh root
+context complete them. The documented callback recipe then creates an eighth
+source. Independent source checks and native integrity pass. The 152 protected
+pre-G9 inputs from G8's accepted manifest remain unchanged; matching G8 evidence
+is reused. All owned application processes are stopped and the FDB helper/listener
+remains stopped.
+
+The [population guide](../docs/population.md) documents the four APIs, optional
+dependencies, explicit rules and observed limits. Cloning is a one-record
+authored-input example into selected pools; stop/continue retains in-memory
+state, not a restart serializer. The prior G8 bundle predates the new Python
+tools: use the current source checkout/export, or build a new bundle explicitly.
+
+## Completion boundary
 
 G9.1 core and optional-provider work had disjoint Luna owners, with independent
-read-only review. G9.2/G9.3 source snapshots and real trajectories now pass.
-G9.4 will verify current tools from an isolated committed source export using
-the unchanged accepted runtime, including an actual optional Node-provider
-transaction path. A new native release build is unnecessary when every runtime
-source input still matches the accepted binary's manifest; do not claim this
-source-tooling check republishes the old G8 bundle with new contents.
+read-only review. G9.0–G9.4 source, trajectory, isolated tooling and documentation
+checks pass. The selected G8/G9 work is complete; no further gate is selected.
 Keep model/receipt/work limits and matching G8 evidence. G9.4 documents explicit
 composition and affected extracted tooling checks; no G6, TiKV, frontend, live
 provider or million-record engine expansion is selected.

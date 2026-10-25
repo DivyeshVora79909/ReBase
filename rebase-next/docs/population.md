@@ -8,8 +8,8 @@ server remains authoritative for reference access and global rules.
 
 G9.1’s API and state flow are implemented. The real Equipment and Quantity
 examples exercised the ordinary API and G8’s existing bounded action scheduler.
-G9.4 handoff review is still pending, so use the examples as source workflows,
-not as a newly packaged release. The G8 0.16.0 binary predates these Python
+G9.4's isolated source-tooling handoff passes. Use the examples as source
+workflows, not as a newly packaged release. The G8 0.16.0 binary predates these Python
 tools; a compatible binary supplies the existing model/runtime only.
 
 ## Run the examples
@@ -20,6 +20,8 @@ saves original mutation plans, checks committed records against independent
 source oracles, and retains a JSON report. Pass a binary with the same model
 catalog and schemas as the tools. Install the pinned Python schema validator in
 a local virtual environment; Node is not needed for this demo:
+
+Run these commands from `rebase-next/`:
 
 ```sh
 python3 -m venv target/g9-venv
@@ -241,9 +243,11 @@ or replace explicit strategies/rules and final server validation.
 
 ## Acceptance status
 
-G9.1 is committed. Root’s 45 focused controls and the live Equipment/Quantity
-API and workload-composition examples passed on fresh serial SDK-free redb
-stores. G9.4 evidence export and final handoff review are pending; the prior G8
-package does not include the new Python population tools. These examples are
+G9.0–G9.4 are accepted within the [recorded bounds](../research/55-population-tooling-result.md).
+Forty-five controls and the live Equipment/Quantity API/workload examples pass
+both locally and from an isolated committed source export. A separate real
+optional-provider case creates seven mixed records with three buffered Node
+calls, then validates the documented callback example. The prior G8 package
+does not include the new Python population tools. These examples are
 bounded developer workflows, not a general model solver or capacity
 certification.

@@ -1,0 +1,124 @@
+{
+  "checkpoint": "G9.4 isolated developer tooling and handoff",
+  "cleanup": {
+    "fdb_helper_pid": null,
+    "fdb_listener_open": false,
+    "owned_app_or_fdb_processes": []
+  },
+  "date": "2026-10-25",
+  "delivery": {
+    "branch": "main",
+    "checkpoint_commits": [
+      "ae0c064",
+      "8d67843",
+      "6a24ce5",
+      "8359b3e"
+    ],
+    "earlier_partial_replacement": "exact lease, already succeeded",
+    "linear_history_since": "105da5d",
+    "remaining_goal": "none; G8/G9 complete, no further feature gate selected"
+  },
+  "documentation": {
+    "broken_targets": [],
+    "files": 8,
+    "local_link_targets": 205,
+    "scope": "filesystem targets; external URL and fragment checks excluded",
+    "sha256": {
+      "AGENTS.md": "9d83e05b57b50121eace01237f26aff2104fc1c63f462c8873ebea806ac97aca",
+      "CONTEXT.md": "0d541cfbaa73d3ff22a939fc61082f65b4beeb31895af5ebd3394904cd939fa3",
+      "README.md": "6706065a9e7d10b3be0d1aa94ff85badd3745e3ffaba55ab71578cc131bbfc7b",
+      "docs/developer-tools.md": "eca2f2fc274ba310dc1bdf22f551d76f71251ad18b09487ce9f7ed9379581c0c",
+      "docs/population.md": "fa7f770aac96263214a81e59e03b41a46dcd092055535f18594e7bef6d6617c2",
+      "research/30-capability-program.md": "ff3f2b74a06309473e775492d8b04e5b0075a9f05eb9116e6485324f24a6eec7",
+      "research/54-composable-developer-tools-plan.md": "fd75815e5f34792118bc5e3c2ab7222251b31fad2825209bb1946d5f8daaeb1b",
+      "research/55-population-tooling-result.md": "866929eb2129246750bc72ccecbccb1874b53bb9a83b27a95238e683598c371a"
+    }
+  },
+  "extracted_demo_report_sha256": "fb46af4487f5ed8691db601e48c3ba42bd92c17aede9d6f6ff00ec3c750a3fcb",
+  "extracted_unit_log_sha256": "79ab7d7a31ad2de8cadb6e68e8812b848eb7bb4199d5da9454427967255899aa",
+  "limits": [
+    "Source-export acceptance with an unchanged accepted runtime, not a newly republished complete G8 release bundle.",
+    "Fresh serial SDK-free redb workflows only; G8 three-adapter evidence reused with unchanged inputs.",
+    "No new Cargo build, G7/G8 full campaign, million-record or external provider acceptance.",
+    "Caller-owned state is in-memory; saved plans are durable original intents, not a persistent job serializer."
+  ],
+  "optional_provider_real_api": {
+    "accepted": {
+      "Delivery": 3,
+      "Pool": 2,
+      "Reservation": 2
+    },
+    "documented_callback_recipe": "passed",
+    "module_sources": {
+      "client": "/tmp/rebase-g94-source-gwwt7l1k/rebase-next/tools/client.py",
+      "population": "/tmp/rebase-g94-source-gwwt7l1k/rebase-next/tools/population.py",
+      "population_values": "/tmp/rebase-g94-source-gwwt7l1k/rebase-next/tools/population_values.py"
+    },
+    "native_integrity": {
+      "effects": {
+        "accounted_bytes": 4096,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 0,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 0,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+      "nodes": 9,
+      "receipts": 8,
+      "records": 14,
+      "roots": 2,
+      "rows": 79,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "86af186f-ff39-4683-a487-2fc1e968b86e"
+    },
+    "provider_process_calls": [
+      {
+        "count": 2,
+        "elapsed_seconds": 0.06430791202001274
+      },
+      {
+        "count": 3,
+        "elapsed_seconds": 0.06450982100795954
+      },
+      {
+        "count": 2,
+        "elapsed_seconds": 0.06423149898182601
+      }
+    ],
+    "scope": "isolated optional Node value provider + Python rules/typed refs + real ordinary API; no native rebuild",
+    "source_records_after_documented_example": 8,
+    "source_root": "/tmp/rebase-g94-source-gwwt7l1k/rebase-next",
+    "status": "passed"
+  },
+  "source_export": {
+    "binary": "/tmp/rebase-g84-redb-payload/rebase-next-0.16.0-linux-x86_64-redb/bin/rebase-next",
+    "binary_sha256": "a333cbf7af1e61441b7b7ab4aaed2001d57d080ed3bc4359c1ed3a8ed5936a27",
+    "extracted_demo_status": "passed",
+    "extracted_unit_controls": 45,
+    "matching_runtime_inputs": 85,
+    "output_root": "/tmp/rebase-g94-output-gx_hbn_3",
+    "provider_case": "/tmp/rebase-g94-output-gx_hbn_3/node-provider/provider-result.json",
+    "provider_case_sha256": "936f3672cd43ee836cc7ed5d01fe5fa35fe1b118639083c86f5259e125388383",
+    "scope": "isolated committed G9 source-tooling export with unchanged accepted runtime; no new runtime release bundle or Cargo build",
+    "source_commit": "8359b3efb512e7d665a98d74aa79b664d9a58b96",
+    "source_files_unchanged": 315,
+    "source_inventory_method": "full committed git archive from repository root, nonempty inventory asserted; optional installed node_modules excluded from immutable source claim",
+    "source_root": "/tmp/rebase-g94-source-gwwt7l1k/rebase-next"
+  },
+  "status": "passed",
+  "unchanged_g8_runtime_and_existing_tools": {
+    "matched_inputs": 152,
+    "new_native_builds": 0,
+    "new_runtime_bundle": false,
+    "source_commit": "8ddc88fa48ce5a9e1c9023ae2fd420e77e0d1502"
+  }
+}

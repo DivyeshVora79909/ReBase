@@ -1,5 +1,9 @@
 # G9 composable population and experiment tools
 
+**Result: G9.0–G9.4 accepted within recorded bounds.** See
+[the implementation and handoff results](55-population-tooling-result.md).
+The checkpoint plan below retains its original design/acceptance obligations.
+
 Implementation explicitly assigned after G8 closeout, 2026-10-25. G9.0 is the
 first checkpoint; this plan is not executable acceptance. Historical D5, G2,
 V1 and G8 evidence remains dated evidence. The user permits breaking changes

@@ -5,21 +5,22 @@ Read `README.md` and `CONTEXT.md` first, then only the paper relevant to the tas
 fingerprints the inspected inputs. Do not reload all historical transcripts for
 a task whose meaning is already recorded. Recheck current source when it matters.
 
-**Active goal: implement G9.0–G9.4, 2026-10-25.** The user explicitly authorized
+**Selected goal complete: G9.0–G9.4 accepted, 2026-10-25.** The user explicitly authorized
 G9 after G8 closeout and now requests checkpoint pushes to origin/main. This
 supersedes the earlier stop/no-push handoff. Root owns Git integration and
-pushes; replace the unverified origin tip only with an exact force-with-lease,
-then use ordinary linear pushes. Never overwrite unexpected new remote commits.
+pushes. The known unverified origin tip was already replaced with an exact
+force-with-lease; subsequent commits use ordinary linear pushes. Never overwrite
+unexpected new remote commits or replay that historical replacement.
 Read [G9](research/54-composable-developer-tools-plan.md), [current results](research/55-population-tooling-result.md)
-and the top of CONTEXT. G9.0–G9.3 are accepted; G9.4 remains. Use the selected
-Python orchestration and optional bounded Node value provider, then implement
-accepted operation
-boundaries; do not build a universal schema or constraint engine. Use Luna leads
+and the top of CONTEXT. G8 and G9 are complete within their recorded bounds;
+no next gate is selected. Preserve the Python orchestration, optional bounded
+Node value provider and existing client. Do not build a universal schema or
+constraint engine. For a future selected goal, use Luna leads
 and narrow disjoint delegated tasks with explicit tests; root verifies final
 integration. One Cargo owner, two jobs, incremental off; reuse G8 evidence.
 G6, TiKV, frontend, live providers and million-record expansion remain deferred.
 
-**Latest closeout: G8.0–G8.5 accepted within recorded limits, 2026-10-25.** Read
+**Accepted baseline: G8.0–G8.5, 2026-10-25.** Read
 [the workload/deployment plan](research/52-workload-deployment-plan.md), [the results](research/53-workload-deployment-result.md)
 and the top of `CONTEXT.md`. The newly selected G9 goal is above. Do not begin G6, TiKV, frontend, live-provider or
 million-record capacity work.
@@ -33,7 +34,8 @@ recovery, not native commit-ack, replicated failover or disk/power-loss proof.
 The earlier G8-only stop and no-push instruction is historical; the active G9
 goal above supersedes it.
 
-G9 is [selected](research/54-composable-developer-tools-plan.md), with G9.0 first.
+G9 is [accepted](research/55-population-tooling-result.md), with no further
+implementation checkpoint selected.
 Reuse the existing
 client, scheduler/observer primitives and authoritative model metadata.
 The resumed environment rebuilt 0.16.0; historical g75/g81 run paths can be absent.

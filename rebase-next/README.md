@@ -60,7 +60,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Verified release packages | [G8.4 package result](research/53-workload-deployment-result.md#g84--current-extracted-release-packages) · [historical 0.6 deployment](research/29-deployment-result.md) |
 | Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
 | Operational assurance | [G8 results](research/53-workload-deployment-result.md) · [Workload guide](docs/workloads.md) · [Plan](research/52-workload-deployment-plan.md) |
-| Compose bounded population with the existing mutation client | [Population guide](docs/population.md) · [G9 plan and status](research/54-composable-developer-tools-plan.md) |
+| Compose bounded population with the existing mutation client | [Population guide](docs/population.md) · [G9 results](research/55-population-tooling-result.md) |
 | Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
 | Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
 
@@ -75,8 +75,8 @@ query and receipt limits. Trusted Rust modules author models; arbitrary behavior
 loading, a full accounting port, live-provider adapters and a frontend are separate
 future gates. TiKV and G6 remain deferred; G8.0–G8.5 are accepted within their
 recorded boundaries. G9’s composable population API and live Equipment/Quantity
-examples are available in Python; G9.4 evidence export and final handoff review
-remain pending. See the [population guide](docs/population.md) for current scope
+examples are accepted, including isolated source-tooling and optional-provider
+checks. See the [population guide](docs/population.md) for current scope
 and limits. G6, TiKV and frontend remain deferred. Exact workload results and
 bounds are documented. Invoicing initially supports 64 public
 sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
