@@ -11,7 +11,7 @@ supersedes the earlier stop/no-push handoff. Root owns Git integration and
 pushes; replace the unverified origin tip only with an exact force-with-lease,
 then use ordinary linear pushes. Never overwrite unexpected new remote commits.
 Read [G9](research/54-composable-developer-tools-plan.md), [current results](research/55-population-tooling-result.md)
-and the top of CONTEXT. G9.0–G9.1 are accepted; G9.2–G9.4 remain. Use the selected
+and the top of CONTEXT. G9.0–G9.3 are accepted; G9.4 remains. Use the selected
 Python orchestration and optional bounded Node value provider, then implement
 accepted operation
 boundaries; do not build a universal schema or constraint engine. Use Luna leads

@@ -1,6 +1,6 @@
 # G9 composable population results
 
-G9.0–G9.1 are accepted on 2026-10-25; G9.2–G9.4 remain to be accepted.
+G9.0–G9.3 are accepted on 2026-10-25; G9.4 remains to be accepted.
 [Plan 54](54-composable-developer-tools-plan.md)
 defines scope. G8 remains accepted and is not restarted. The user selected G9
 and checkpoint pushes after the earlier G8-only stop/no-push handoff.
@@ -109,11 +109,41 @@ Node. Node uses file/CPU/time/old-heap limits and disables core dumps; this is
 not a whole-process RSS or arbitrary-code sandbox. Unknown assertions and
 unsupported native formats fail clearly rather than being silently weakened.
 
+## G9.2 — fresh context and real transactions
+
+[Runtime evidence](evidence/2026-10-25-g92-population-runtime.json) records root's
+fresh SDK-free redb Equipment/Quantity run with a frozen tool source snapshot.
+Equipment reads availability 10, 4 and 0. A deliberately stale context produces
+an invariant rejection without publishing the proposed ID or fulfilling its
+quota; a separately authored refreshed proposal succeeds. This is an explicit
+interleaving, not a claim about every concurrent schedule or interval history.
+
+Quantity generates exact Source/Scale/Join relationships and checks them against
+the existing independent arithmetic oracle. A discarded post-response reply
+leaves the original saved operation pending; status reconciliation accepts that
+same committed operation without a replacement ID. The example also inspects
+and continues the same in-memory state and clones one authored Join input into
+selected typed pools under a new ID. It does not copy private outputs/versions
+or provide a universal graph-copy/restart engine.
+
+## G9.3 — existing workload and observation composition
+
+[Experiment evidence](evidence/2026-10-25-g93-population-experiment.json) records
+five finite read/update/read/create/delete actions on generated data through the
+unchanged G8 bounded_step scheduler. The caller supplies source checks and G8
+observers. Generation/setup, client-call wall time, queue/submit window and
+verification/observation callbacks are separate report fields. This establishes
+reusable composition, not maximum throughput, sustained stress or leak freedom.
+
 ## Continuation
 
 G9.1 core and optional-provider work had disjoint Luna owners, with independent
-read-only review. Real G9.2/G9.3 trajectories have run, but their final source
-snapshot, evidence and handoff remain to be accepted separately.
+read-only review. G9.2/G9.3 source snapshots and real trajectories now pass.
+G9.4 will verify current tools from an isolated committed source export using
+the unchanged accepted runtime, including an actual optional Node-provider
+transaction path. A new native release build is unnecessary when every runtime
+source input still matches the accepted binary's manifest; do not claim this
+source-tooling check republishes the old G8 bundle with new contents.
 Keep model/receipt/work limits and matching G8 evidence. G9.4 documents explicit
 composition and affected extracted tooling checks; no G6, TiKV, frontend, live
 provider or million-record engine expansion is selected.

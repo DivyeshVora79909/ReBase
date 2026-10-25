@@ -660,4 +660,3 @@ def reject(state, proposal, plan=None, outcome=None):
     _advance_attempt(state, proposal)
     state.pending = None
     return state
-

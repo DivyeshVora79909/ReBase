@@ -1,0 +1,67 @@
+{
+  "actions": [
+    "read",
+    "update",
+    "read",
+    "create",
+    "delete"
+  ],
+  "bounded_step": {
+    "clients": 1,
+    "counts": {
+      "completed": 5,
+      "not_offered_before_duration": 0,
+      "offered": 5,
+      "outcome:committed": 3,
+      "outcome:read": 2,
+      "submitted": 5
+    },
+    "drain_budget_seconds": 20.0,
+    "drain_started_at": 434643.664503537,
+    "elapsed_with_drain_seconds": 0.812534355034586,
+    "future_drain_seconds": 0.012184160994365811,
+    "latency": {
+      "count": 5,
+      "max_ms": 7.719,
+      "p50_ms": 6.652,
+      "p95_ms": 7.719
+    },
+    "max_pending": 1,
+    "offered_rate": 5,
+    "offering_elapsed_seconds": 0.8002190800034441,
+    "offering_seconds": 1.0,
+    "peak_active_clients": 1,
+    "peak_pending": 1,
+    "requested_offers": 5,
+    "unresolved": 0
+  },
+  "checkpoint": "G9.3 generated data in measured developer experiment",
+  "date": "2026-10-25",
+  "observations": {
+    "count": 5,
+    "fields": "Existing G8 app/controller CPU/RSS/FD/thread/logical+physical samples; no second telemetry service"
+  },
+  "raw_report": "target/g9-root-final/population-demo.json",
+  "raw_report_sha256": "fb5bd70afa09ebc5ecaf68db8f1224bc462633109cdbbacf284b6372f4a1c487",
+  "reused_g8_evidence": "G8.0\u2013G8.5 remain separately accepted; no full matrix rerun",
+  "root_execution": "fresh serial Equipment and Quantity stores; no source changes during run; no Cargo/G8 campaigns",
+  "runtime": "unchanged SDK-free G8.4 redb binary",
+  "runtime_sha256": "a333cbf7af1e61441b7b7ab4aaed2001d57d080ed3bc4359c1ed3a8ed5936a27",
+  "scheduler": "existing g8_pressure.bounded_step unchanged",
+  "scope": "Five finite single-writer CRUD/read actions on generated Equipment data; independent source checks after each action. This is composability acceptance, not sustained throughput/capacity/leak certification.",
+  "source_sha256": {
+    "tools/population.py": "573de875f1c68a577f6ff8ce02dab1e66a17ed38e7be1b3b8e45ae379734ce24",
+    "tools/population_demo.py": "7c888838f2ca97b208e2ef3ab78a6e6433cd5dc0ac3e4b259db30308d99c26c9",
+    "tools/population_values.py": "404364ba2067c54b66d219643e9bbdf9c7ae54ced0c959534eaada04ec736655"
+  },
+  "source_version": "0.16.0",
+  "status": "passed",
+  "timing_seconds": {
+    "action_window_including_queue_and_submit": 0.8125920100137591,
+    "client_call_wall_time_including_local_serialization": 0.024569632951170206,
+    "generation": 0.056054437009152025,
+    "observer_callbacks": 0.0019743660814128816,
+    "setup": 0.07141382299596444,
+    "verification_callbacks": 0.023591724107973278
+  }
+}

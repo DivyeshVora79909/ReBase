@@ -1,6 +1,6 @@
 # Compact context — 2026-10-25
 
-**Active: G9.0–G9.1 accepted; final G9.2–G9.4 verification underway.** The user
+**Active: G9.0–G9.3 accepted; G9.4 isolated tooling/handoff verification next.** The user
 explicitly requests replacing unverified origin tip 1fe6310 with verified linear
 history, checkpoint pushes to main, and continued composable population work.
 Root alone integrates Git and verifies the final result; use detailed Luna
@@ -12,7 +12,7 @@ provider, preserving the existing client. Root reran six native overlay controls
 schema-only values do not imply native/global validity. Core/provider owners were
 disjoint. Forty-five focused controls and independent review pass; real
 Equipment/Quantity trajectories now run and their final source/evidence handoff
-is being checked. No G9 Cargo rebuild is needed because runtime/model sources
+passes in target/g9-root-final and evidence g92/g93. No G9 Cargo rebuild is needed because runtime/model sources
 are unchanged. Root owns the final execution lease.
 Origin/main was updated from the exact partial tip to verified deeced1 with a
 guarded force-with-lease; subsequent checkpoint pushes are ordinary linear ones.

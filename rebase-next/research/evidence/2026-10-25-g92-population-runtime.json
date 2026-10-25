@@ -1,0 +1,91 @@
+{
+  "checkpoint": "G9.2 fresh runtime constrained generation",
+  "date": "2026-10-25",
+  "equipment": {
+    "fresh_available_before": [
+      "10",
+      "4",
+      "0"
+    ],
+    "scope": "single-writer disposable redb; strict-before Equipment construction has increasing starts and one common future end; no claim for arbitrary intervals or multi-writer capacity",
+    "stale_context_conflict": {
+      "committed_after_refresh": 1,
+      "fresh_operation_id": "4a7f37a7-0e37-439f-9bbf-dbd953b0882f",
+      "kind": "invariant",
+      "quota_after_reject": 0,
+      "refreshed_available_before": "4",
+      "rejected_operation_id": "30d3893b-8cb5-4920-8a16-27c79cdfa50a"
+    },
+    "timings_seconds": {
+      "client_execute_wall_seconds": 0.028588637069333345,
+      "client_prepare_wall_seconds": 0.02032840298488736,
+      "population_generation_seconds": 0.056054437009152025,
+      "server_and_store_setup_seconds": 0.07141382299596444
+    }
+  },
+  "history": "Prior delegated trials retained in target/g92-review-*; final root run uses exact source snapshot recorded here.",
+  "independent_oracles": "Existing verify_oracles.evaluate/stage expected values checked against all public authored/derived values and native integrity during demo",
+  "limitations": [
+    "Equipment prefix construction has increasing starts/common future end and controlled history, not arbitrary interval validity.",
+    "After-response loss tests original-ID reconciliation; not native commit-ack interception.",
+    "State continuation is in memory; saved original plans are durable, not a full job restart serializer."
+  ],
+  "limits": {
+    "backend": "SDK-free redb",
+    "no_cargo": true,
+    "not_a_capacity_claim": true,
+    "stores": "fresh and serial"
+  },
+  "quantity": {
+    "lost_response_reconciliation": {
+      "accepted_source_quota": 1,
+      "boundary": "after_response",
+      "operation_id": "4dafb8da-d46a-4ef7-883e-e4f5e97da485",
+      "original_plan_unchanged": true,
+      "provider_observation": {
+        "boundary": "after_response",
+        "discarded": 1,
+        "upstream_status": 200
+      },
+      "replacement_operation_id": null,
+      "saved_plan": "/workspace/ReBase/rebase-next/target/g9-root-final/quantity/quantity-lost-response.plan.json",
+      "status": "committed"
+    },
+    "negative_missing_parent": "no eligible quota; unavailable prerequisites or exhausted counts: {'Scale': 1}",
+    "scope": "one disposable redb store; exact integer/rational Source/Scale/Join graph; no general inference claim",
+    "source_count": 5,
+    "status": "passed",
+    "stop_inspect_continue": {
+      "accepted_source_after_continue": 2,
+      "continued_source_id": "7b59b439-fe59-5e0d-be08-ea4e7604db8b",
+      "inspected_after_first_commit": {
+        "accepted": {
+          "Join": 0,
+          "Scale": 0,
+          "Source": 1
+        },
+        "cursor": 1,
+        "pending": null,
+        "pool_ids": {
+          "Join": [],
+          "Scale": [],
+          "Source": [
+            "f52ee3ea-18aa-5f08-b4fc-46ceb6119a4e"
+          ]
+        }
+      }
+    }
+  },
+  "raw_report": "target/g9-root-final/population-demo.json",
+  "raw_report_sha256": "fb5bd70afa09ebc5ecaf68db8f1224bc462633109cdbbacf284b6372f4a1c487",
+  "root_execution": "fresh serial Equipment and Quantity stores; no source changes during run; no Cargo/G8 campaigns",
+  "runtime": "unchanged SDK-free G8.4 redb binary",
+  "runtime_sha256": "a333cbf7af1e61441b7b7ab4aaed2001d57d080ed3bc4359c1ed3a8ed5936a27",
+  "source_sha256": {
+    "tools/population.py": "573de875f1c68a577f6ff8ce02dab1e66a17ed38e7be1b3b8e45ae379734ce24",
+    "tools/population_demo.py": "7c888838f2ca97b208e2ef3ab78a6e6433cd5dc0ac3e4b259db30308d99c26c9",
+    "tools/population_values.py": "404364ba2067c54b66d219643e9bbdf9c7ae54ced0c959534eaada04ec736655"
+  },
+  "source_version": "0.16.0",
+  "status": "passed"
+}
