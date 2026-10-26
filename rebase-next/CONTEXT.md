@@ -1,12 +1,15 @@
-# Compact context — 2026-10-25
+# Compact context — 2026-10-26
 
-## Current handoff — G10 N3 accepted; N4 next
+## Current handoff — G10 N4 accepted; N5 next
 
-G10 P0, N0, N1, N2 and N3 are complete. N4–N6, S0–S3 and F0 remain pending.
+G10 P0, N0, N1, N2, N3 and N4 are accepted within their documented scopes.
+N5 is next; N6, S0–S3 and F0 remain pending.
 Read [N0 results](research/62-node-foundation-result.md),
 [N1 results](research/63-node-native-host-result.md), the
 [N2 result](research/65-node-workflow-result.md),
 [N3 result](research/67-node-population-result.md),
+[N4 result](research/69-node-experiment-result.md) and
+[N4 evidence](research/evidence/2026-10-26-n4-node-experiments.json),
 [native wire contract](research/60-native-host-contract.md),
 [Node decisions](research/61-node-tooling-contract.md) and the
 [G10 program](research/56-node-and-index-redesign-program.md),
@@ -16,8 +19,12 @@ Read [N0 results](research/62-node-foundation-result.md),
 N3 adds caller-owned population proposals, typed pools, exact saved-plan binding
 and receipt-gated progress. Its Equipment and Quantity workflows use the
 unchanged N2 native binary; the result and evidence record trajectory, receipts,
-source fingerprints and limits. N4 experiments and independent checking are
-next. Python workflow deletion remains pending until N6 replacement controls pass. G7–G9
+source fingerprints and limits. N4 adds bounded workloads, observation,
+experiments, and source-only checking. Its 95-test N0–N4 suite and independent
+review pass. Measurement query-result/selection payloads, equal-time mixed-sign
+Equipment prefix extrema, and physical tree verification remain incomplete;
+N5 typed-backup checking and N6 physical-snapshot/deletion work remain owed.
+Python workflow deletion remains pending until N6 replacement controls pass. G7–G9
 evidence remains historical acceptance for its recorded sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
 [preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
@@ -35,9 +42,14 @@ lifecycle plus a Node FoundationDB ownership smoke. It does not claim
 multi-host latency or broad capacity. Rust/Cargo 1.95 are on PATH. The offline Cargo cache is
 `/workspace/.rebase-tools/rust-review/cargo`; shared build outputs are in
 `target/verification-build`. One FDB Host per native process is supported.
-No Python file is deleted until its replacement controls pass. Root owns Git.
-Next exact action: implement N4 experiments, observation and independent
-verification in `tools/node/`, reusing the unchanged
+Node 24 and npm are available at
+`/workspace/.rebase-tools/node24.22.1/bin`. The
+`target/verification-build/debug/rebase-next` artifact is the all-features
+verification build; use pinned `target/n2-native-default/rebase-next` for
+SDK-free workflows and source identity checks. No Python file is deleted until
+its replacement controls pass. Root owns Git.
+Next exact action: implement N5 storage/service/release lifecycle functions,
+reusing the unchanged
 `target/n2-native-default/rebase-next` binary (SHA-256
 `74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e`). N3 source
 hashes, Equipment/Quantity receipts and run boundaries are recorded in

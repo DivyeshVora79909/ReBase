@@ -35,6 +35,7 @@ async function configFor(mode, configuration = { model: 'calculation', backend: 
 
 test('N1 private host configures once, exposes N1 methods and shares one idempotent close promise', async () => {
   const handle = await open('normal');
+  assert.ok(Number.isSafeInteger(handle.pid) && handle.pid > 0);
   const description = await handle.describe();
   assert.equal(description.state, 'configured');
   assert.equal((await handle.catalog({ scope: 'developer' })).scope, 'developer');

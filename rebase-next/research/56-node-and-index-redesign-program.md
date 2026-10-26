@@ -131,7 +131,7 @@ well as S2's engine result. F0 accepts one integrated source/artifact identity.
 | N1 | Shared resolved configuration, capabilities and structured native host boundary | **Accepted:** [N1 result](63-node-native-host-result.md) and [evidence](evidence/2026-10-25-n1-native-host.json). Native process dispatch takes objects; one authority for schemas and hard limits; explicit precedence and secret handling; unknown settings fail. Bounded framing, clean shutdown, invalid config with no side effects, wrong-target fences, exclusive redb ownership and private/public separation pass within the result's stated boundaries. |
 | N2 | Node session/client, model and operator composition | **Accepted within bounded scope:** [N2 result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json). Ordinary Node ESM composition, scoped service/identity and lifecycle controls pass; supported adapters and execution limits are recorded there. |
 | N3 | Node population and scenario functions | **Accepted within bounded scope:** [N3 result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json). Four ordinary functions compose bounded proposals with explicit typed pools, callbacks, saved plans and receipt-gated advancement. Real Equipment and Quantity trajectories and the O(pool-size) custom-selector boundary are recorded; no global-validity claim is made. |
-| N4 | Node experiments, observation and independent verification | Ordinary actions/async iterables compose with bounded scheduling, sampling and checkers. Preserve walk/check/explore/replay, logical replay versus original-intent replay, shrinking and source-only expectations. Port churn/overload/outage and receipt cycles with explicit ownership. Reports separate generation/setup/RPC/queue/native/checker costs; incomplete samples cannot pass. Prove reuse by two scenarios without a new runner. |
+| N4 | Node experiments, observation and independent verification | **Accepted within bounded scope:** [N4 result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json). The 95-test N0–N4 suite and focused independent review pass. Ordinary workloads, bounded observation, source-only Equipment/Quantity/Measurement checks, and real Equipment/Quantity receipt-progress trials are recorded. Measurement query results/selected identities, equal-time mixed-sign Equipment prefix extrema, and physical tree structure remain explicitly incomplete. N5 typed-backup checking and N6 physical snapshots/deletion remain owed. |
 | N5 | Node storage/service/release lifecycle | Check/inspect/backup/restore/reset/archive and fake-effect recovery preserve existing fences. Package committed source, backend/model manifests and checksum verification; use extracted functions outside Git with no workspace imports. Exercise supported adapters and managed test infrastructure through explicit objects. Minimal service bootstrap is documented and validated. |
 | N6 | Python and redundant CLI removal | Delete replaced active Python tools/requirements/provider bridge and custom project CLI parser paths, update imports/manifests/docs/templates. Final supported workflows and package verification need Node, Rust/native prerequisites only. Historical executable Python experiments are converted if still needed or retired to their historical Git commits; dated evidence remains immutable. No hidden Python invocation or second maintained implementation. |
 | S0 | FoundationDB and embedded access baseline | Instrument logical/physical loads, wait dependencies, bytes, cache hits, scans and writes without altering semantics. Record host/cluster/process topology and cold/warm controls. Reuse existing correctness witnesses. Local multiple processes are not a multi-host network benchmark. |
@@ -280,11 +280,12 @@ simple object manipulation remain ordinary JavaScript.
 | N1 | Accepted: [Node/native host result](63-node-native-host-result.md) and [evidence](evidence/2026-10-25-n1-native-host.json) |
 | N2 | Accepted: [Node workflow result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json) |
 | N3 | Accepted: [Node population result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json) |
-| N4–N6 | Pending |
+| N4 | Accepted within bounded scope: [result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json) |
+| N5–N6 | Pending; N5 is next and owes independent typed-backup structural checking before N6 deletions |
 | S0–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
 To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
-program, the N0–N3 results and frozen contracts. Start N4, preserve the same Git
-context, and assign disjoint Node ownership. Follow the dependencies
-above; do not restart G7–G9 or implement G6.
+program, the N0–N4 results and frozen contracts. Start N5, preserve the same Git
+context, and assign disjoint ownership. Follow the dependencies above; do not
+restart G7–G9 or implement G6.

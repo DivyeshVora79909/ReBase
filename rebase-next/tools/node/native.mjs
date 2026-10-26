@@ -114,6 +114,7 @@ class NativeHost {
     const host = this;
     let closePromise = null;
     return Object.freeze({
+      pid: host.#child.pid ?? null,
       selection: Object.freeze({ selector: host.#configured.selector, model: host.#configured.model }),
       scope: host.#configured.target ? Object.freeze({ model: host.#configured.model, store: host.#configured.target.store }) : null,
       grants: Object.freeze([...host.#grants].sort()),

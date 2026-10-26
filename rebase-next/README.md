@@ -1,11 +1,14 @@
 # ReBase Next
 
-**G10 status (2026-10-25):** N1, N2 and N3 are accepted. `tools/node/` provides
+**G10 status (2026-10-26):** N1–N4 are accepted within bounded scopes. `tools/node/` provides
 ordinary ESM functions for configuration, native model/store access, authenticated
 services, client workflows, scoped operator lifecycle and receipt-gated
-population. The [N3 result](research/67-node-population-result.md) records its
-examples, evidence and limits. N4–N6 and the ordered-storage redesign remain
-pending; Python workflow deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
+population, experiments, bounded workloads, observations and source-only
+checking. The [N4 result](research/69-node-experiment-result.md) records its
+evidence and incomplete obligations: Measurement query result/selection,
+equal-time mixed-sign Equipment prefix extrema and physical tree structure.
+N5 is next; N6 and the ordered-storage redesign remain pending. Python workflow
+deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).
 

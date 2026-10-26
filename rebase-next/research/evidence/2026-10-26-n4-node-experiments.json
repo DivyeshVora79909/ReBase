@@ -1,0 +1,119 @@
+{
+  "schema": "rebase.n4-node-experiment-evidence.v1",
+  "date": "2026-10-26",
+  "status": "accepted_with_bounded_scope",
+  "scope": [
+    "bounded Node workload runner and raw-observation checker",
+    "walk, seeded explore, bounded failure shrinking, logical replay, and original-intent reconciliation composition",
+    "source-only Equipment, Quantity, and Measurement expectations",
+    "bounded resource observation",
+    "real Equipment and Quantity receipt-progress trials"
+  ],
+  "environment": {
+    "node": "Node.js 24.22.1",
+    "node_path": "/workspace/.rebase-tools/node24.22.1/bin/node",
+    "native_binary": "target/n2-native-default/rebase-next",
+    "native_binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+    "native_source_runtime_inputs_sha256": "1378f90fcfb7ce47e072dec41910df4e8431e1c9d773fb947735cdf6639ae85d",
+    "root_runtime_input_verification": {
+      "runtime_inputs": 88,
+      "native_source_mismatches": [],
+      "artifact": "target/n4-root-verification.json"
+    },
+    "cargo_build": "not run; no Rust source changed"
+  },
+  "source_sha256": {
+    "tools/node/workload.mjs": "c52121e138ccbe0fefcb3b7def26777e4a788e74219b75a83e117ada1db24533",
+    "tools/node/experiments.mjs": "ebdf9c630b56293d1b13758ebc70d4feb6f6a6a1d908dca52c0b1de0482c4b7b",
+    "tools/node/oracles.mjs": "e5fbd9f4a71e5fbf681be2c148997b9f991ad5e6711b9be39b99ca587ce0e0eb",
+    "tools/node/scenarios.mjs": "d1b183dbd83efbdaf22c5184dee2807280f28a5a83a1cca5ea42f70eee04c2d7",
+    "tools/node/observe.mjs": "11bae5ea71f156fe54ecb197afdb433458111e81b899d16cd294a794bc652ae7",
+    "tools/node/native.mjs": "774100ca6118a7f2745033fba9b3a633b4705c813ed8945ce97a3cb928d2aadd",
+    "tools/node/examples/n4-original-intent-replay.mjs": "51d817a077c8ca8b04bf53cbf0afed72bc40cf50dee63c2f93476210e2629dc9",
+    "tools/node/test/workload.test.mjs": "b2d7a743359761370ab28cd223fc65cc827c64ee3d9bdbc515eaa0d8bf4e4273",
+    "tools/node/test/experiments.test.mjs": "cbd0e3a652ee8ef052beb9c89e38abffaef989074185f4883c52bac49f1f8b72",
+    "tools/node/test/n4-scenarios-observe.test.mjs": "a8622def6c6711b65c8f34c7c5852d05ae2e2492c98e49c8d33daf0cd7ef14f4",
+    "tools/node/test/n4-real-receipt-progress.test.mjs": "e57ba2016bddffab86a24497884d0416c5eb50435f807c9a1d08089f0f8266c5",
+    "tools/node/test/native.test.mjs": "6492a2837c9d451dcb27d5e272a14e7b47a3d1ef959c6fff67f1a40a72a02f9c",
+    "tools/node/package.json": "b7a7d1ff11e153847c58b5f247c9e55e292be221de3c7fc7bc77c77acc6f5ac9",
+    "tools/node/package-lock.json": "64bd1070db31b0fa254072f3100d66c94a334706d6b49f8a9eb214004ae2d84f",
+    "research/68-node-experiment-contract.md": "8037a0aae1e00ff31c0ce2b99d900c5dc386adedf46f1a9df4690c9afb91d4c9"
+  },
+  "commands": [
+    {
+      "working_directory": "tools/node",
+      "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N2_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N3_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N4_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next node --test ./test/client.test.mjs ./test/config.test.mjs ./test/experiments.test.mjs ./test/model.test.mjs ./test/n0-feasibility.test.mjs ./test/n2-real-workflow.test.mjs ./test/n3-population.test.mjs ./test/n4-real-receipt-progress.test.mjs ./test/n4-scenarios-observe.test.mjs ./test/native-integration.test.mjs ./test/native.test.mjs ./test/operator.test.mjs ./test/population-contract.test.mjs ./test/population-semantics.test.mjs ./test/private-codec.test.mjs ./test/workload.test.mjs",
+      "passed": 95,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 3691.320752,
+      "native_binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+      "log": "research/evidence/2026-10-26-n4-node-final.txt",
+      "log_sha256": "101366027c685d01088320de2150f8315634979bf9af183b72b5d474f0b561e4"
+    },
+    {
+      "purpose": "independent focused N4 review controls; separate from suite total",
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0,
+      "review": "Sol final review and root acceptance"
+    }
+  ],
+  "real_trials": {
+    "equipment": {
+      "duration_ms": 180.98611499999993,
+      "model_identity": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+      "backend": "redb",
+      "native_pid": 14419,
+      "observed_samples": 4,
+      "lost_reply": "native committed; client received outcome_unknown; owned service restarted; original operation ID reconciled by status without resubmission",
+      "cleanup": "test finally stops owned service and host and removes trial directory"
+    },
+    "quantity": {
+      "duration_ms": 94.07651099999998,
+      "model_identity": "ef26726c7e3fb2ef11947a2bcde8791a8e0d7b5d4cf744ffb6b7b91659af7dc4",
+      "backend": "redb",
+      "native_pid": 14500,
+      "observed_samples": 2,
+      "receipt_progress": "Source, Scale, and Join proposals each advanced only after exact committed receipt checks; independent derived values were 12, 6, and 24",
+      "cleanup": "test finally stops owned service and host and removes trial directory"
+    },
+    "costs": "Each retained trial reports generation, setup, RPC, queue, observation, native, and checker costs; nativeMs and checkerMs are null when unavailable."
+  },
+  "independent_obligations": {
+    "passed_scope": [
+      "source record identity and inventory",
+      "authored contracts and exact input facts",
+      "independently derived values",
+      "root/query/role address inventories and checked contents",
+      "source-derived summaries where ordering is known"
+    ],
+    "incomplete": [
+      "Measurement query-result and selected-identity payloads are not interpreted independently",
+      "equal-time mixed-sign Equipment prefix extrema lack inspect leaf order",
+      "physical tree node identities, child links, heights, leaf order, and per-node aggregates are unavailable from inspect"
+    ],
+    "native_store_check_counts_as_independent_oracle": false,
+    "required_followup": "N5 typed-backup structural checker; N6 physical-snapshot path and Python workflow replacement/deletion ledger"
+  },
+  "cleanup": {
+    "raw_final_full_suite_stdout_retained": true,
+    "retained_log": "research/evidence/2026-10-26-n4-node-final.txt",
+    "test_stores_plans_and_backups": "owned Equipment and Quantity trial directories removed by test finally cleanup",
+    "owned_test_services_and_processes": "owned service and native host stopped by test finally cleanup",
+    "remaining_test_processes": "not claimed; N5 work is active in the shared workspace"
+  },
+  "acceptance": {
+    "review_status": "passed",
+    "reviewer": "Sol final review; root accepted N4 bounded scope",
+    "focused_independent_controls": 27,
+    "acceptance": "accepted by root after N0-N4 suite passed 95, failed 0, skipped 0"
+  },
+  "limitations": [
+    "A bounded paced local run does not establish general capacity, multi-host latency, exactly-once effects, or arbitrary callback containment.",
+    "Database/disk/power-loss recovery and replicated failover remain unproven.",
+    "Native inspect does not expose physical tree structure needed for independent structural verification.",
+    "Native store.check is an engine integrity check and is not an independent source oracle.",
+    "Older Python source-only checks do not independently verify physical tree links and do not satisfy the structural-check obligation."
+  ]
+}
