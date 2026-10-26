@@ -59,10 +59,13 @@ registries, a second workflow/query DSL, hidden dependency capture and duplicate
 calculation engines. Add a dependency only for a demonstrated supported capability.
 Do not introduce a subprocess merely to wrap a function available in Node.
 
-Use Luna for detailed bounded inventory/port/example tasks and Sol 6.1 for native
-contracts, transactions, algorithms and independent review, as requested by the
-user. Every task has explicit file ownership, inputs, outputs, invariants and
-acceptance evidence. Root integrates and reviews. Shared worker edits are visible;
+Apply the user's selected [agent execution mode](docs/agents/README.md):
+[subscription](docs/agents/subscription.md) or
+[pay as you go](docs/agents/pay-as-you-go.md). Keep the selected model and default
+to one agent. Batch independent tool operations without delegating agent work.
+The 2026-10-26 user instruction supersedes older Luna/Sol delegation preferences.
+Every checkpoint still has explicit inputs, outputs, invariants and acceptance
+evidence. If the user later requests delegation, give disjoint file ownership;
 workers must not reset, stash, rebase or push the shared tree.
 
 Use one Cargo owner and a shared cache, two build jobs and incremental off in
