@@ -137,7 +137,7 @@ test('positive package path discovers native identities and verifies a synthetic
   git(repo, ['init', '-q']);
   git(repo, ['config', 'user.name', 'Release Test']);
   git(repo, ['config', 'user.email', 'release@example.invalid']);
-  await writeFile(path.join(repo, 'Cargo.toml'), '[package]\nname="rebase-next"\nversion="0.16.0"\n');
+  await copyFile(path.join(REPOSITORY, 'Cargo.toml'), path.join(repo, 'Cargo.toml'));
   await writeFile(path.join(repo, 'Cargo.lock'), 'synthetic locked input\n');
   await copyNodeSources(path.join(repo, 'tools/node'));
   await makeOfflineNpmFixture(repo);
@@ -150,7 +150,8 @@ test('positive package path discovers native identities and verifies a synthetic
   const binary = path.join(targetDir, 'release/rebase-next');
   await mkdir(path.dirname(binary), { recursive: true });
   // This is packaging-path evidence only. Root's committed-source release build supplies real Cargo provenance.
-  await copyFile(path.join(REPOSITORY, 'target/n2-native-default/rebase-next'), binary);
+  const fixtureBinary = process.env.REBASE_NODE_N2_BINARY ?? path.join(REPOSITORY, 'target/n2-native-default/rebase-next');
+  await copyFile(fixtureBinary, binary);
   await link(binary, path.join(root, 'cargo-deps-hardlink'));
   const buildEnvironment = { ...env, CARGO_HOME: path.join(root, 'cargo-home') };
   const spec = describeReleaseBuild({ source, features: [], targetDir, environment: buildEnvironment });
