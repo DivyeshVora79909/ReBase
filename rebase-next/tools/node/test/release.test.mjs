@@ -167,7 +167,7 @@ test('positive package path discovers native identities and verifies a synthetic
   const result = await packageRelease({ source, artifact: { path: binary, provenance: { spec, receipt, sha256, buildId } },
     output: path.join(root, 'package'), features: [], environment: env, buildEnvironment,
     toolingEnvironment: { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`,
-      HOME: root, NPM_CONFIG_CACHE: '/workspace/.npm-cache' } });
+      NPM_CONFIG_CACHE: path.join(root, 'npm-cache') } });
   assert.equal(result.status, 'passed');
   assert.equal(result.modelCount, 6);
   assert.deepEqual(result.supportedBackends, ['redb']);
@@ -268,8 +268,8 @@ async function makeOfflineNpmFixture(repo) {
   const tools = path.join(repo, 'tools/node');
   await writeFile(path.join(tools, 'package.json'), `${JSON.stringify({ name: '@rebase/test-tools', private: true, type: 'module', dependencies }, null, 2)}\n`);
   const command = spawnSync('npm', ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], {
-    cwd: tools, env: { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`, HOME: repo,
-      NPM_CONFIG_CACHE: '/workspace/.npm-cache' }, encoding: 'utf8', timeout: 30_000,
+    cwd: tools, env: { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`,
+      NPM_CONFIG_CACHE: path.join(path.dirname(repo), 'npm-cache') }, encoding: 'utf8', timeout: 30_000,
   });
   if (command.status !== 0) throw new Error(`offline npm fixture lock failed: ${command.stderr}`);
 }

@@ -7,6 +7,19 @@ checks cover all six compiled models. Root's committed-source release build,
 extracted verification, and released-artifact adapter runs remain pending.
 The exact command and retained output are recorded in [N5 evidence](evidence/2026-10-26-n5-node-lifecycle.json) and its [prebuild log](evidence/2026-10-26-n5-node-prebuild.txt).
 
+The local continuation built both locked release variants from `8a723b7` and
+verified their extracted manifests, checksums and six-model catalogs. Running
+the complete suite outside Git exposed a cloud-only npm cache path, a historical
+binary hash embedded in the N4 controls, and process-start timing assumptions.
+The corrected tests use owned temporary caches, the supplied or package-manifest
+binary identity, and an observed configuration side effect before cancellation.
+All 122 controls now pass with no skips against the new redb binary, using
+`node --test --test-concurrency=1 test/*.test.mjs`; the raw output is retained in
+[the portability run](evidence/2026-10-26-n5-portability.txt). This is test-source
+verification, not acceptance of the corrected extracted release. Packaging that
+committed correction and the released-artifact adapter runs remain owed. Native
+sources and dependency locks did not change.
+
 Root also completed a managed FoundationDB 7.3.77 ownership witness: it started
 one local server, bootstrapped the cluster, passed a write/read/clear probe and
 status command, then stopped the owned process. The retained result records PID

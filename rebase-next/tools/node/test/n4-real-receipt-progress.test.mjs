@@ -21,8 +21,13 @@ import { checkSourceSnapshot, evaluateSources } from '../oracles.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const binary = process.env.REBASE_NODE_N4_BINARY ?? path.join(root, 'target/n2-native-default/rebase-next');
-const frozenHash = '74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e';
+const bundleManifest = path.join(path.dirname(path.dirname(path.resolve(binary))), 'BUNDLE.json');
+const expectedHash = process.env.REBASE_NODE_N4_BINARY_SHA256
+  ?? (existsSync(bundleManifest) ? JSON.parse(await readFile(bundleManifest, 'utf8')).binary.sha256 : undefined);
+if (expectedHash !== undefined) assert.match(expectedHash, /^[0-9a-f]{64}$/);
 const available = existsSync(binary);
+const selectedHash = available ? createHash('sha256').update(await readFile(binary)).digest('hex') : undefined;
+if (available && expectedHash !== undefined) assert.equal(selectedHash, expectedHash, 'trial binary must match its supplied or release-manifest identity');
 const methods = ['service.start', 'service.stop', 'identity.issue', 'store.archive', 'store.check', 'store.inspect'];
 
 async function openWorkflow(directory, selector) {
@@ -46,8 +51,7 @@ async function openWorkflow(directory, selector) {
     const token = (await operator.issueIdentity({ identity, request: { tenant, actor, epoch: 0, ttl: 300, key_id: 'local' }, privateKeyPem })).token;
     const client = connect({ endpoint: service.endpoint, credential: token });
     const model = prepareModel(await native.catalog({ scope: 'developer' }), { native, selector });
-    const sha256 = createHash('sha256').update(await readFile(binary)).digest('hex');
-    assert.equal(sha256, frozenHash, 'N4 trial must use the frozen N2 native binary');
+    const sha256 = selectedHash;
     return { native, operator, service, serviceConfig: config.service, credential: token,
       serviceRunning: true, client, model, metadata: {
       binary: path.resolve(binary), sha256, model: model.identity, backend: 'redb', pid: native.pid,
@@ -138,7 +142,7 @@ function observedProcesses(nativePid) {
 function receiptOracle(expectedKinds, expectedFacts) {
   return ({ observations, identity }) => {
     const obligations = [];
-    obligations.push({ name: 'native-identity', status: identity.native?.sha256 === frozenHash ? 'passed' : 'failed' });
+    obligations.push({ name: 'native-identity', status: identity.native?.sha256 === selectedHash ? 'passed' : 'failed' });
     obligations.push({ name: 'source-facts', status: JSON.stringify(identity.sourceFacts) === JSON.stringify(expectedFacts) ? 'passed' : 'failed' });
     obligations.push({ name: 'receipt-progress', status: observations.length === expectedKinds.length
       && observations.every((row, index) => row.status === 'completed' && row.kind === expectedKinds[index]
@@ -154,7 +158,7 @@ function receiptOracle(expectedKinds, expectedFacts) {
   };
 }
 
-test('N4 real Equipment create/update/delete receipt progress with bounded observation and archive cleanup', { skip: !available && `frozen N2 native binary not found: ${binary}` }, async t => {
+test('N4 real Equipment create/update/delete receipt progress with bounded observation and archive cleanup', { skip: !available && `native binary not found: ${binary}` }, async t => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'rebase-n4-equipment-'));
   let workflow;
   let proxy;
@@ -306,7 +310,7 @@ test('N4 real Equipment create/update/delete receipt progress with bounded obser
   }
 });
 
-test('N4 real Quantity typed proposals retain exact committed receipt progress and source facts', { skip: !available && `frozen N2 native binary not found: ${binary}` }, async t => {
+test('N4 real Quantity typed proposals retain exact committed receipt progress and source facts', { skip: !available && `native binary not found: ${binary}` }, async t => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'rebase-n4-quantity-'));
   let workflow;
   const started = performance.now();

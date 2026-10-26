@@ -74,7 +74,7 @@ test('complete native config errors remain known errors; lost configure response
     model: 'calculation', backend: { kind: 'redb', cluster_file: null },
     target: { mode: 'create', path: createdPath, tenant: '11111111-1111-4111-8111-111111111111', actor: '22222222-2222-4222-8222-222222222222' },
     operator_methods: ['store.check'],
-  }, { startTimeoutMs: 100 });
+  }, { startTimeoutMs: 1000 });
   await assert.rejects(openNative(config), error => {
     assert.equal(error.name, 'NativeOutcomeUnknownError');
     assert.equal(error.code, 'outcome_unknown');
@@ -94,15 +94,27 @@ test('abort after configure dispatch is unknown and retains the exact target eve
     operator_methods: [],
   };
   const controller = new AbortController();
-  const opening = openNative(await configFor('configure-hang', configuration), { signal: controller.signal });
-  const abortTimer = setTimeout(() => controller.abort(), 50);
-  await assert.rejects(opening, error => {
+  const opening = openNative(await configFor('configure-hang', configuration, { startTimeoutMs: 5000 }), { signal: controller.signal })
+    .then(value => ({ value }), error => ({ error }));
+  try {
+    const deadline = Date.now() + 4000;
+    while (!await stat(createdPath).then(() => true, error => {
+      if (error.code === 'ENOENT') return false;
+      throw error;
+    })) {
+      assert.ok(Date.now() < deadline, 'fixture must observe configure before cancellation');
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    controller.abort();
+    const { error } = await opening;
     assert.equal(error.name, 'NativeOutcomeUnknownError');
     assert.equal(error.operation.method, 'host.configure');
     assert.equal(error.operation.params.target.path, createdPath);
-    return true;
-  });
-  clearTimeout(abortTimer);
+  } finally {
+    controller.abort();
+    const { value } = await opening;
+    await value?.close();
+  }
   assert.equal((await stat(createdPath)).isFile(), true);
 });
 

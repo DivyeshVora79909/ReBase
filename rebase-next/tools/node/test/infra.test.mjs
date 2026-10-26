@@ -111,11 +111,16 @@ test('managed CLI latches timeout and output-limit failures before process close
     dataDirectory: path.join(directory, 'data'), logDirectory: path.join(directory, 'logs'),
     serverLog: path.join(directory, 'logs', 'server.log'), host: '127.0.0.1', port: await freePort(),
     environment: {}, startTimeoutMs: 500, stopTimeoutMs: 500, commandTimeoutMs: 40 });
+  const outputOwner = await openFdbEnvironment({ fdbserver: serverBin, fdbcli: cliBin, clusterFile,
+    dataDirectory: path.join(directory, 'data'), logDirectory: path.join(directory, 'logs'),
+    serverLog: path.join(directory, 'logs', 'server.log'), host: '127.0.0.1', port: await freePort(),
+    environment: {}, startTimeoutMs: 500, stopTimeoutMs: 500, commandTimeoutMs: 5000 });
   try {
     await assert.rejects(owner.status(), error => error.code === 'command_timeout');
-    await assert.rejects(owner.bootstrap(), error => error.code === 'output_limit');
+    await assert.rejects(outputOwner.bootstrap(), error => error.code === 'output_limit');
   } finally {
     await owner.close().catch(() => {});
+    await outputOwner.close().catch(() => {});
     await rm(directory, { recursive: true, force: true });
   }
 });
