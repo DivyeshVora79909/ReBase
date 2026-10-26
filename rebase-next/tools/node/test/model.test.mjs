@@ -113,3 +113,56 @@ test('draftFixture produces the client records.mutate draft from caller supplied
     await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });
+
+test('native exact integer formats enforce canonical strings and bounds before fixture drafts or native calls', () => {
+  const formatted = structuredClone(catalog);
+  formatted.contracts[0].schema = {
+    $schema: schema.$schema, type: 'object', additionalProperties: false,
+    required: ['time', 'amount', 'code', 'unit'],
+    properties: {
+      time: { type: 'string', format: 'i64' },
+      amount: { type: 'string', format: 'i128' },
+      code: { type: 'string', format: 'u16' },
+      unit: { type: 'integer', minimum: 1, maximum: 65535 },
+    },
+  };
+  let nativeCalls = 0;
+  const model = prepareModel(formatted, {
+    selector: 'quantity',
+    native: { selection: { model: catalog.model, selector: 'quantity' }, validate() { nativeCalls += 1; } },
+  });
+  const valid = { time: '0', amount: '0', code: '1', unit: 1 };
+  const id = '33333333-3333-4333-8333-333333333333';
+  for (const [field, bounds] of [
+    ['time', ['-9223372036854775808', '9223372036854775807']],
+    ['amount', ['-170141183460469231731687303715884105728', '170141183460469231731687303715884105727']],
+    ['code', ['1', '65535']],
+  ]) {
+    for (const value of bounds) {
+      assert.equal(model.validate('Child', { ...valid, [field]: value }).valid, true);
+      assert.equal(model.draftFixture([{ contract: 'Child', id, fields: { ...valid, [field]: value } }]).commands.length, 1);
+    }
+    for (const value of ['', '-0', '+1', '01', '-01', '1.0', '1e0', ' 1', '1 ', 1, null]) {
+      const fields = { ...valid, [field]: value };
+      assert.equal(model.validate('Child', fields).valid, false, `${field}: ${String(value)}`);
+      assert.throws(() => model.draftFixture([{ contract: 'Child', id, fields }]), /schema/);
+      assert.throws(() => model.validateNative('Child', fields), /schema/);
+    }
+  }
+  for (const [field, values] of [
+    ['time', ['-9223372036854775809', '9223372036854775808']],
+    ['amount', ['-170141183460469231731687303715884105729', '170141183460469231731687303715884105728']],
+    ['code', ['0', '-1', '65536']],
+    ['unit', ['1', 0, 65536]],
+  ]) {
+    for (const value of values) {
+      const fields = { ...valid, [field]: value };
+      assert.equal(model.validate('Child', fields).valid, false, `${field}: ${String(value)}`);
+      assert.throws(() => model.draftFixture([{ contract: 'Child', id, fields }]), /schema/);
+      assert.throws(() => model.validateNative('Child', fields), /schema/);
+    }
+  }
+  assert.equal(nativeCalls, 0);
+  formatted.contracts[0].schema.properties.time.format = 'unsupported-native-format';
+  assert.throws(() => prepareModel(formatted, { selector: 'quantity' }), /unknown format/);
+});

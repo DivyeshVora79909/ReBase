@@ -103,8 +103,8 @@ export function validateServiceConfigurationShape(configuration, label = 'servic
   return configuration;
 }
 
-export function validateNativeConfigurationSchema(schema, configuration) {
-  assertJsonSchema(schema, 'native.configuration.schema');
+/** One strict registry for native configuration and model value schemas. */
+export function createNativeAjv() {
   const ajv = new Ajv2020({ strict: true, strictTypes: false, allErrors: true, validateSchema: true });
   addFormats(ajv);
   for (const name of ['i64', 'i128', 'u16']) {
@@ -130,6 +130,12 @@ export function validateNativeConfigurationSchema(schema, configuration) {
     keyword: 'x-maxUtf8Bytes', type: 'string', schemaType: 'number',
     validate: (maximum, value) => typeof value === 'string' && Number.isSafeInteger(maximum) && maximum >= 0 && Buffer.byteLength(value, 'utf8') <= maximum,
   });
+  return ajv;
+}
+
+export function validateNativeConfigurationSchema(schema, configuration) {
+  assertJsonSchema(schema, 'native.configuration.schema');
+  const ajv = createNativeAjv();
   let validate;
   try { validate = ajv.compile(schema); }
   catch (error) { throw new ConfigurationError(`native configuration schema rejected: ${safeSchemaError(error)}`, 'native.configuration.schema'); }

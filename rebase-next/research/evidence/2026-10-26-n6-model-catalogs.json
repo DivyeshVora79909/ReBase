@@ -1,0 +1,54 @@
+{
+  "schema": "rebase.n6-node-catalog-formats.v1",
+  "date": "2026-10-26",
+  "status": "node_fix_verified_release_refresh_pending",
+  "baseCommit": "699f0965601d192c6be3ba3fb130d9b00f31e48a",
+  "sourceFiles": {
+    "tools/node/model.mjs": "819c888bda5604708144acb87a0777ed2b9946372f383d58837e0d9798bec0a9",
+    "tools/node/private/config-validation.mjs": "7fb905cdebfc78082950fd621387294c3aa6f8a52cc7a501837dc3deca9ef102",
+    "tools/node/test/model.test.mjs": "f0b605b57068a6dadc6a2082887e0f10406ceb8f0f4658fb5f7eeccf9106527c",
+    "tools/node/test/native-integration.test.mjs": "e5c67f1b75876563b845145db30d0a974716585b7b1a82a819fedde275195cd3"
+  },
+  "finding": "Broader extracted standalone acceptance found prepareModel lacked native exact integer formats for Measurement and EffectDemo. The partial per-model Ajv registry rejected their i64 input fields.",
+  "fix": "Reuse the existing strict private native schema registry for both configuration and model preparation; remove duplicate partial registry. No unknown formats are ignored and no public API or dependency is added.",
+  "verification": {
+    "focused": {
+      "passed": 19,
+      "skipped": 0
+    },
+    "full": {
+      "passed": 143,
+      "failed": 0,
+      "skipped": 0
+    },
+    "nativeModels": 6,
+    "catalogScopes": 12,
+    "allNativeFixturesDraftAndValidate": true,
+    "canonicalFormats": [
+      "i64",
+      "i128",
+      "u16"
+    ],
+    "typedNumericCodesPreserved": true,
+    "unknownFormatsRejected": true,
+    "invalidInputsRejectedBeforeFixtureOrNativeCall": true
+  },
+  "nativeReuse": {
+    "inputCount": 89,
+    "sha256": "1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616",
+    "binarySha256": "18ed0f85e2c4f296a5b85f0530128cca2214040e1bab8521c4016dc5cfae481a",
+    "allNativeInputsMatch": true,
+    "newRustBuildRequired": false
+  },
+  "logs": {
+    "focused": {
+      "path": "research/evidence/2026-10-26-n6-model-catalogs-focused.txt",
+      "sha256": "8e130d3034a48d6e9f395535def831844eb8a35e2d29304fead97930cac9f797"
+    },
+    "full": {
+      "path": "research/evidence/2026-10-26-n6-model-catalogs-full.txt",
+      "sha256": "f79bc6d50aea86b3c9e9d2f7bd640ba77556b50105e374d4a3e01d25ffa53090"
+    }
+  },
+  "claimBoundary": "Local Node fix accepted; refresh committed-source packages and rerun extracted acceptance before closing N6. Earlier 141-test release suite and three-adapter run apply to source699f096 and are not relabeled as this corrected source."
+}

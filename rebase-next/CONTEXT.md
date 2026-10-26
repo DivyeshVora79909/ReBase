@@ -9,6 +9,12 @@ records 200 default native tests, seven focused scope controls, an explicitly
 executed local FDB reset control, and 141 Node tests with no skips. The sole stale
 example assertion was repaired and its targeted rerun passes; the initial failed
 campaign log is preserved.
+Broader extracted six-model acceptance then found an incomplete Node model
+format registry. The [catalog correction](research/evidence/2026-10-26-n6-model-catalogs.json)
+reuses the existing strict registry; all 12 public/developer catalog scopes and
+every native fixture now pass, with 143 full Node tests and no skips. All 89
+native inputs are unchanged. Refresh the committed-source packages before final
+N6 acceptance; the earlier source `699f096` artifacts retain their own identity.
 Structured native `host` / `serve` bootstrap and retirement of the 60 inventoried
 Python paths plus four obsolete schema-values bridge files are now prepared in
 the worktree and verified locally. N6 release acceptance remains pending. The retirement ledger is prepared evidence,

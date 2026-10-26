@@ -59,6 +59,12 @@ the N0 ledger and dated evidence unchanged. The prepared entry point and native
 acceptance matrix are in the [bootstrap contract](research/76-native-bootstrap-contract.md).
 Ordered-storage changes remain pending.
 
+The [catalog format correction](research/evidence/2026-10-26-n6-model-catalogs.json)
+adds six-model/twelve-scope fixture acceptance by sharing the existing strict
+native schema registry. The full suite now passes 143 tests with no skips and
+all 89 native inputs remain unchanged. Refresh packages from the corrected
+commit; do not relabel the preceding `699f096` artifacts as the new source.
+
 Next acceptance sequence: independently verify the ledger's 60 unique Python
 paths and four auxiliary paths against pinned source
 `0d0601187c79d430f8d7ed41674f53e9905af75f` and each recorded SHA-256; check

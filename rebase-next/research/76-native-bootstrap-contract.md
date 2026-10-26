@@ -7,6 +7,12 @@ local FoundationDB reset control, and 141 Node tests with no skips. The initial
 example assertion failure and its targeted repair remain recorded. This does
 not yet claim N6 release acceptance.
 
+The subsequent [catalog correction](evidence/2026-10-26-n6-model-catalogs.json)
+shares the strict native schema registry across configuration and model tools.
+All six models, both catalog scopes and every native fixture now pass; the full
+Node suite has 143 passes and no skips. Native inputs are unchanged. Refreshed
+committed-source packages still require extracted acceptance.
+
 ## Entry points and configuration
 
 The production binary exposes exactly `rebase-next host` and

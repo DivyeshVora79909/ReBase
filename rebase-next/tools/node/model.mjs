@@ -1,9 +1,8 @@
-import Ajv2020 from 'ajv/dist/2020.js';
+import { createNativeAjv } from './private/config-validation.mjs';
 
 const DIALECT = 'https://json-schema.org/draft/2020-12/schema';
 const HASH = /^[0-9a-f]{64}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const DECIMAL = /^(0|-?[1-9][0-9]*)$/;
 const MODEL_SELECTOR = /^[a-z][a-z0-9-]{0,63}$/;
 
 /**
@@ -19,7 +18,7 @@ export function prepareModel(catalog, { native, selector } = {}) {
   if (native && (native.selection?.model !== snapshot.model || native.selection?.selector !== selector)) {
     throw new TypeError('Native handle selection does not match the supplied catalog and selector');
   }
-  const ajv = createAjv();
+  const ajv = createNativeAjv();
   const byName = new Map();
   const byCode = new Map();
 
@@ -106,21 +105,6 @@ export function prepareModel(catalog, { native, selector } = {}) {
       return deepFreeze({ model: snapshot.model, commands, returning: [...returning] });
     },
   });
-}
-
-function createAjv() {
-  const ajv = new Ajv2020({ strict: true, strictTypes: false, allErrors: true, validateSchema: true });
-  ajv.addKeyword({ keyword: 'x-rebase-binding', schemaType: 'string', valid: true });
-  ajv.addKeyword({
-    keyword: 'x-rebase-range', schemaType: 'array',
-    validate(range, value) {
-      if (!Array.isArray(range) || range.length !== 2 || range.some(bound => typeof bound !== 'string' || !DECIMAL.test(bound))
-        || typeof value !== 'string' || !DECIMAL.test(value)) return false;
-      const number = BigInt(value);
-      return number >= BigInt(range[0]) && number <= BigInt(range[1]);
-    },
-  });
-  return ajv;
 }
 
 function validateCatalog(catalog) {

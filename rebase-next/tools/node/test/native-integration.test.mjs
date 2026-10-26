@@ -8,6 +8,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from '../config.mjs';
 import { openNative } from '../native.mjs';
+import { prepareModel } from '../model.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const defaultBinary = path.join(repositoryRoot, 'target/verification-build/debug/rebase-next');
@@ -80,4 +81,39 @@ test('real redb ownership grants scoped check/inspect, rejects conflicts and wro
   }
 
   await assert.rejects(stat(directory), error => error.code === 'ENOENT');
+});
+
+test('all six native models prepare both catalog scopes and validate native fixtures before drafting', { skip: !available && `native binary not found: ${binary}` }, async () => {
+  for (const selector of ['calculation', 'equipment', 'invoicing', 'measurement', 'effect-demo', 'quantity']) {
+    const native = await openNative(config(selector));
+    try {
+      const models = [];
+      for (const scope of ['public', 'developer']) {
+        const model = prepareModel(await native.catalog({ scope }), { native, selector });
+        assert.equal(model.identity, native.selection.model);
+        assert.ok(model.contracts.length > 0);
+        models.push(model);
+      }
+      const fixtures = await models[1].fixtureCatalog();
+      assert.ok(fixtures.length > 0);
+      for (const fixture of fixtures) {
+        const plan = await models[1].fixturePlan({ name: fixture.name, namespace: '11111111-1111-4111-8111-111111111111' });
+        const records = plan.commands.map(({ op, id, contract, fields }) => {
+          assert.equal(op, 'create');
+          return { id, contract, fields };
+        });
+        for (const model of models) {
+          assert.deepEqual(model.draftFixture(records, { returning: plan.returning }), {
+            model: plan.model, commands: plan.commands, returning: plan.returning,
+          });
+        }
+        for (const record of records) {
+          const checked = await models[1].validateNative(record.contract, record.fields);
+          assert.equal(checked.status, 'valid');
+        }
+      }
+    } finally {
+      await native.close();
+    }
+  }
 });

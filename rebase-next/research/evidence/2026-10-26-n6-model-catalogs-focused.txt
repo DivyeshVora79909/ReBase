@@ -1,0 +1,27 @@
+✔ config exposes only the frozen config entry points (1.930055ms)
+✔ config applies explicit override > parsed environment > defaults and reports provenance (6.744106ms)
+✔ environment parser ignores unrelated process settings and rejects unknown or ambiguous owned settings (0.521522ms)
+✔ resolver rejects unknown keys, null, unsafe numbers, invalid child env, and relative executable paths (0.305612ms)
+✔ N1 native config rejects ambiguous backends, unknown fields, duplicate grants, invalid paths and UUIDs (0.591465ms)
+✔ N2 config accepts explicit backend target shapes and defers method availability to native schema (0.566549ms)
+✔ configured host ownership mode matches its advertised backend (0.649751ms)
+✔ N2 service config has no implicit listen, identity, concurrency, deadline, or effect defaults (0.584024ms)
+✔ native schemas are compiled locally with strict unknown-key checks and no remote reference resolution (54.412834ms)
+✔ native schema extension bounds exact decimal strings without Number conversion (26.568494ms)
+✔ native UTF-8 byte extension counts encoded bytes rather than JavaScript characters (30.293113ms)
+✔ prepareModel detaches catalog and compiles native Ajv schema metadata once (38.34835ms)
+✔ prepareModel refuses malformed identities, duplicate contracts, wrong dialect, and external refs (0.563193ms)
+✔ native explain, validation, rendering and fixture values are returned without rewriting (17.8192ms)
+✔ draftFixture produces the client records.mutate draft from caller supplied public values (29.383928ms)
+✔ native exact integer formats enforce canonical strings and bounds before fixture drafts or native calls (23.214582ms)
+✔ real native host serves all six public/developer catalogs over private framed IPC (436.544189ms)
+✔ real redb ownership grants scoped check/inspect, rejects conflicts and wrong identities without modifying the store (262.965891ms)
+✔ all six native models prepare both catalog scopes and validate native fixtures before drafting (579.391806ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1378.295664
