@@ -1,0 +1,16 @@
+✔ public barrel has an explicit stable export surface (75.591729ms)
+✔ importing the public barrel produces no output or child process (120.648639ms)
+✔ S0 selected tree edges and independently known keys have different depth (10.081806ms)
+✔ S0 checks IDs, time bounds, scope containment and completed dependency sources (1.173357ms)
+✔ S0 unsupported metrics stay absent and counts match event retention (1.434324ms)
+✔ S0 repeat is measured inside same Attempt with no new load (0.284672ms)
+✔ S0 schema rejects unknown fields and incomplete metrics without reason (0.409436ms)
+✔ S0 frozen source facts independently reproduce actual n/m/r and expected actions (21.096014ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 258.279851

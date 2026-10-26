@@ -19,7 +19,21 @@ ledger; the N0 ledger and dated evidence remain preserved. This accepts N6, not
 all of G10. Existing capacity limits stay model- and workload-bounded; local
 FoundationDB evidence does not establish multi-host latency or failover.
 
-Next, begin S0 by fixing the trace/workload schema and measurement plan before
+S0.0 now has a [bounded contract](research/79-s0-baseline-contract.md), literal
+inputs/manifest and trace schema in `research/fixtures/s0-*.json`, plus ordinary
+`tools/node/examples/s0-contract.mjs` and focused contract tests. This is checked
+preparation only: no Rust runtime change, Cargo build or native measurement.
+Native command execution, faithful decoded-key disclosure, real adapter metrics,
+trace-off/on overhead and topology measurements remain S0.1/S0.2 obligations.
+The next agent should read the contract, implement S0.1 with one Cargo owner,
+then run the declared pilot before S0.2. Root alone owns Git. The current session
+must stop after the S0.0 commit/push at the user's token-limit stop request.
+Before measurement, S0.1 must add the independent full-key ordered fold and
+prefix extrema, commit-outcome consistency, native Work counter checks and
+decoded-key witness fidelity controls. Synthetic checks do not prove these
+obligations; see the contract's preparation limits.
+
+The full S0 sequence fixes the trace/workload schema and measurement plan before
 choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,
 cache hits, wait dependencies, conflicts and resource use. Record data shape,
 backend, host/cluster/process topology, and cold/warm conditions, then run the

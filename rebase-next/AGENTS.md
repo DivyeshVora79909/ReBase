@@ -26,7 +26,15 @@ JWT/context, SIGTERM drain, restart, and original receipt replay. Details,
 package hashes and boundaries are in the N6 result/evidence. The 60-path
 retirement ledger, N0 ledger, and historical evidence remain preserved.
 
-Next, start S0 by freezing the trace/workload schema and measurement plan before
+The [S0.0 contract](research/79-s0-baseline-contract.md) freezes the trace/workload
+schema and literal bounded inputs, with a focused Node evidence checker. It is
+a checked preparation checkpoint, not native instrumentation or measurement.
+Next continue S0.1 after reading that contract: implement the optional bounded
+recorder and prove native key-disclosure witnesses, then use the pilot before
+S0.2 measurements. Keep one Cargo owner; root alone commits/pushes. Stop after
+the current S0.0 commit for this session as requested by the user.
+
+The full S0 sequence freezes the trace/workload schema and measurement plan before
 choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,
 cache hits, wait dependencies, conflicts and resource measurements; record data
 shape, backend, host/cluster/process topology, and cold/warm controls; then run

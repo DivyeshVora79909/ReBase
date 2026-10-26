@@ -1,0 +1,227 @@
+{
+  "format": "rebase-s0-workload-1",
+  "status": "s0.0-frozen-unexecuted",
+  "source": {
+    "baselineCommit": "1243168",
+    "nativeInputCount": 89,
+    "nativeInputSha256": "1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616",
+    "executionCommit": null,
+    "executionBinarySha256": null,
+    "documentationBaseline": "b34237c"
+  },
+  "path": "real-adapter/Attempt/tree-or-native-settlement",
+  "excludes": [
+    "authenticated-http",
+    "Store-receipt-and-authority-overhead",
+    "multi-host-performance",
+    "layout-selection"
+  ],
+  "backends": [
+    "redb",
+    "foundationdb-local",
+    "surrealkv"
+  ],
+  "concurrency": 1,
+  "samplesPerCase": 30,
+  "unmeasuredProcessWarmupTraversals": 1,
+  "bounds": {
+    "maxEventsPerAction": 4096,
+    "maxKeyFactsPerAction": 4096,
+    "maxTraceBytesPerAction": 1048576,
+    "maxReportBytes": 67108864,
+    "maxDurationMsPerBackend": 600000
+  },
+  "identity": {
+    "seed": "s0-native-avl-1",
+    "ids": "explicit UUIDs in s0-inputs.json; no hidden RNG",
+    "operationIds": "unique per action; retain original on unknown outcome"
+  },
+  "cases": [
+    {
+      "id": "entry-tree-reads",
+      "input": "Account(native_unit=1) plus n Entry(account=Account, at=2*i, amount=i+1), i=0..n-1",
+      "n": [
+        1,
+        8,
+        64
+      ],
+      "m": 1,
+      "r": 0,
+      "roots": "Account slot 2; Entry member slot 1",
+      "actions": [
+        "prefix(before=n)",
+        "range([0,2*n))",
+        "range([1,2*n-1))"
+      ],
+      "phases": [
+        "attempt-first",
+        "attempt-repeat"
+      ],
+      "transactionBoundary": "one read transaction/Attempt per sample; identical traversal repeated before drop",
+      "oracle": "independent sorted input amounts and half-open bounds; root count/sum/min-prefix checked from facts",
+      "corpusIds": [
+        "entry-1",
+        "entry-8",
+        "entry-64"
+      ],
+      "selectedActionIds": [
+        "prefix",
+        "range-full",
+        "range-partial"
+      ]
+    },
+    {
+      "id": "entry-native-mutations",
+      "input": "same Entry corpus as entry-tree-reads; reset to exact base before each measured action",
+      "n": [
+        1,
+        8,
+        64
+      ],
+      "m": 1,
+      "r": 0,
+      "roots": "Account slot 2; Entry member slot 1",
+      "actions": [
+        "create Entry(at=2*n,amount=n+1)",
+        "update middle Entry amount to i+2",
+        "delete middle Entry"
+      ],
+      "phases": [
+        "attempt-first"
+      ],
+      "transactionBoundary": "one native settlement plus batch publication/commit; setup/reset outside timer",
+      "oracle": "sorted input facts before/after action, full ordered occurrence and financial fold",
+      "corpusIds": [
+        "entry-1",
+        "entry-8",
+        "entry-64"
+      ],
+      "selectedActionIds": [
+        "insert-end",
+        "revalue-middle",
+        "delete-middle"
+      ]
+    },
+    {
+      "id": "posting-two-slots",
+      "input": "Rule(c=2), Curve(1,2), Quote(at=0,rate=3), Account(1), Subsidiary(2), n Posting(units=i+1,at=i+1) sharing those inputs",
+      "n": [
+        1,
+        8,
+        64
+      ],
+      "m": 2,
+      "r": 0,
+      "roots": "Posting member slots 1 and 2 -> Account slot 2 and Subsidiary slot 3; n in each root",
+      "actions": [
+        "update one middle Posting units from i+1 to i+2"
+      ],
+      "phases": [
+        "attempt-first"
+      ],
+      "transactionBoundary": "one native settlement plus commit, reset outside timer",
+      "oracle": "literal products native=units*2, reporting=units*2*3; source-derived per-root sorted fold",
+      "corpusIds": [
+        "posting-1",
+        "posting-8",
+        "posting-64"
+      ],
+      "selectedActionIds": [
+        "revalue-posting"
+      ]
+    },
+    {
+      "id": "rule-dependent-postings",
+      "input": "same literal Rule/Curve/Quote/Account/Subsidiary setup, with exactly k dependent Postings",
+      "k": [
+        1,
+        4
+      ],
+      "n": "k in each of Account/Subsidiary roots, recorded per root",
+      "m": 2,
+      "r": "k distinct recalculated Postings excluding the changed Rule",
+      "actions": [
+        "update Rule c from 2 to 3"
+      ],
+      "phases": [
+        "attempt-first"
+      ],
+      "transactionBoundary": "one native settlement plus commit, reset outside timer",
+      "oracle": "literal new products native=units*3, reporting=units*3*3; exact distinct recalculated records and changed memberships",
+      "corpusIds": [
+        "rule-closure-1",
+        "rule-closure-4"
+      ],
+      "selectedActionIds": [
+        "revalue-rule"
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "name": "calculation-root-complete-time-invariant-rollback",
+      "source": "src/storage/application_checks.rs",
+      "timed": false,
+      "invocation": "existing g7_application ordinary Cargo example on owned stores"
+    }
+  ],
+  "statistics": {
+    "estimator": "nearest-rank",
+    "quantiles": [
+      0.5,
+      0.95,
+      0.99
+    ],
+    "retainAllRawSamples": true,
+    "reportSampleCounts": true,
+    "groupBy": [
+      "backend",
+      "case",
+      "action",
+      "actualDimensions",
+      "cachePhase"
+    ]
+  },
+  "requiredRunMetadata": [
+    "exactSourceCommit",
+    "nativeInputSha256",
+    "binarySha256",
+    "backendVersions",
+    "clientVersions",
+    "hardware",
+    "kernel",
+    "topology",
+    "limits",
+    "processWarmup",
+    "storageCacheState",
+    "ownedTargets",
+    "cleanup"
+  ],
+  "requiredOutcomeClasses": [
+    "success",
+    "definite-abort",
+    "conflict",
+    "unknown"
+  ],
+  "missingEvidence": {
+    "multiHostFoundationdb": "incomplete: no real multi-host infrastructure declared",
+    "nativeSettlementDependencyDepth": "incomplete until complete native record/route/causal key discovery is instrumented"
+  },
+  "inputs": {
+    "file": "s0-inputs.json",
+    "sha256": "8cc9beb1c79adb35ee9c82a11f86c5eca0865d3c1b7ec23dcc935e9770652f10",
+    "corpusCount": 8
+  },
+  "pilot": {
+    "samplesPerSelectedAction": 1,
+    "includedInFinalStatistics": false,
+    "onBoundExceeded": "stop incomplete; revise frozen manifest before rerun"
+  },
+  "overheadControl": {
+    "corpus": "entry-8",
+    "action": "prefix",
+    "matchedTraceOffOnPairs": 30,
+    "order": "alternate",
+    "includedInBaselineStatistics": false
+  }
+}

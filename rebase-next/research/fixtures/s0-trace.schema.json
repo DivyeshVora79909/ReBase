@@ -1,0 +1,505 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rebase:s0-trace:1",
+  "title": "One bounded S0 action trace; S0.0 frozen contract, native execution pending",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "actionId",
+    "attemptId",
+    "backend",
+    "path",
+    "phase",
+    "complete",
+    "incompleteReasons",
+    "outcome",
+    "durationNs",
+    "commitNs",
+    "counters",
+    "dependency",
+    "events",
+    "operationId",
+    "initialKeys"
+  ],
+  "properties": {
+    "format": {
+      "const": "rebase-s0-trace-1"
+    },
+    "actionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "backend": {
+      "enum": [
+        "redb",
+        "foundationdb",
+        "surrealkv"
+      ]
+    },
+    "path": {
+      "enum": [
+        "native-tree",
+        "native-settlement",
+        "Store-control"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "attempt-first",
+        "attempt-repeat",
+        "control"
+      ]
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "incompleteReasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 16,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "outcome": {
+      "enum": [
+        "success",
+        "definite-abort",
+        "conflict",
+        "unknown"
+      ]
+    },
+    "durationNs": {
+      "$ref": "#/$defs/count"
+    },
+    "commitNs": {
+      "$ref": "#/$defs/nullableCount"
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logicalTouches",
+        "attemptCacheHits",
+        "attemptLoadAttempts",
+        "attemptLoadedValueBytes",
+        "nodeVisits",
+        "selectorVisits",
+        "facadeGet",
+        "facadeScan",
+        "facadePut",
+        "facadeRemove",
+        "bindingGet",
+        "bindingGetRange",
+        "bindingSet",
+        "bindingClear",
+        "bindingClearRange",
+        "returnedRows",
+        "readKeyBytes",
+        "readValueBytes",
+        "writeKeyBytes",
+        "writeValueBytes",
+        "sdk",
+        "retryCount"
+      ],
+      "properties": {
+        "logicalTouches": {
+          "$ref": "#/$defs/count"
+        },
+        "attemptCacheHits": {
+          "$ref": "#/$defs/count"
+        },
+        "attemptLoadAttempts": {
+          "$ref": "#/$defs/count"
+        },
+        "attemptLoadedValueBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "nodeVisits": {
+          "$ref": "#/$defs/count"
+        },
+        "selectorVisits": {
+          "$ref": "#/$defs/count"
+        },
+        "facadeGet": {
+          "$ref": "#/$defs/count"
+        },
+        "facadeScan": {
+          "$ref": "#/$defs/count"
+        },
+        "facadePut": {
+          "$ref": "#/$defs/count"
+        },
+        "facadeRemove": {
+          "$ref": "#/$defs/count"
+        },
+        "bindingGet": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "bindingGetRange": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "bindingSet": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "bindingClear": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "bindingClearRange": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "returnedRows": {
+          "$ref": "#/$defs/count"
+        },
+        "readKeyBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "readValueBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "writeKeyBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "writeValueBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "retryCount": {
+          "const": 0
+        },
+        "sdk": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "callGet",
+                "callSet",
+                "callClear",
+                "callClearRange",
+                "rowsFetched",
+                "bytesRead",
+                "bytesWritten",
+                "retries",
+                "conflicts",
+                "commitMs"
+              ],
+              "properties": {
+                "callGet": {
+                  "$ref": "#/$defs/count"
+                },
+                "callSet": {
+                  "$ref": "#/$defs/count"
+                },
+                "callClear": {
+                  "$ref": "#/$defs/count"
+                },
+                "callClearRange": {
+                  "$ref": "#/$defs/count"
+                },
+                "rowsFetched": {
+                  "$ref": "#/$defs/count"
+                },
+                "bytesRead": {
+                  "$ref": "#/$defs/count"
+                },
+                "bytesWritten": {
+                  "$ref": "#/$defs/count"
+                },
+                "retries": {
+                  "const": 0
+                },
+                "conflicts": {
+                  "$ref": "#/$defs/count"
+                },
+                "commitMs": {
+                  "$ref": "#/$defs/count"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete",
+        "incompleteReason",
+        "observedReadDepth",
+        "remoteReadRounds"
+      ],
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "incompleteReason": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "observedReadDepth": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "remoteReadRounds": {
+          "type": "null",
+          "description": "No multi-host network round measurement is provided by this local trace"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "incompleteReason": {
+                "type": "null"
+              },
+              "observedReadDepth": {
+                "$ref": "#/$defs/count"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "incompleteReason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "observedReadDepth": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "operationId": {
+      "type": [
+        "null",
+        "string"
+      ],
+      "description": "Original caller operation ID where applicable; direct tree probes have no Store operation ID"
+    },
+    "initialKeys": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "token",
+          "origin"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "origin": {
+            "enum": [
+              "invocation",
+              "locally-generated",
+              "attempt-cache"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "complete": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "incompleteReasons": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "incompleteReasons": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableCount": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/count"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "parentId",
+        "executionPredecessorId",
+        "layer",
+        "operation",
+        "role",
+        "startNs",
+        "endNs",
+        "keyToken",
+        "keyKnowledge",
+        "keyDiscoveredBy",
+        "controlDependencies",
+        "outcome",
+        "rows",
+        "keyBytes",
+        "valueBytes",
+        "discoveredKeyTokens"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/count"
+        },
+        "parentId": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "executionPredecessorId": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "layer": {
+          "enum": [
+            "attempt",
+            "facade",
+            "binding",
+            "commit"
+          ]
+        },
+        "operation": {
+          "enum": [
+            "load",
+            "cache-hit",
+            "get",
+            "scan",
+            "put",
+            "remove",
+            "get-range",
+            "set",
+            "clear",
+            "clear-range",
+            "commit"
+          ]
+        },
+        "role": {
+          "enum": [
+            "native",
+            "catalog",
+            "data",
+            "guard",
+            "other"
+          ]
+        },
+        "startNs": {
+          "$ref": "#/$defs/count"
+        },
+        "endNs": {
+          "$ref": "#/$defs/count"
+        },
+        "keyToken": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keyKnowledge": {
+          "enum": [
+            "invocation",
+            "result-discovered",
+            "locally-generated",
+            "previously-known",
+            "unknown",
+            "not-applicable"
+          ]
+        },
+        "keyDiscoveredBy": {
+          "$ref": "#/$defs/nullableCount"
+        },
+        "controlDependencies": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/count"
+          }
+        },
+        "outcome": {
+          "enum": [
+            "found",
+            "missing",
+            "success",
+            "definite-abort",
+            "conflict",
+            "unknown"
+          ]
+        },
+        "rows": {
+          "$ref": "#/$defs/count"
+        },
+        "keyBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "valueBytes": {
+          "$ref": "#/$defs/count"
+        },
+        "discoveredKeyTokens": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

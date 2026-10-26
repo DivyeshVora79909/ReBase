@@ -1,0 +1,79 @@
+{
+  "schema": "rebase.s0-preparation.v1",
+  "date": "2026-10-26",
+  "status": "checked_preparation_only_native_and_measurements_unexecuted",
+  "baseCommit": "b34237c",
+  "nativeSourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+  "sourceFiles": {
+    "AGENTS.md": "9b8aa926bf7c52de5bbe9c10e4e1d496567651e23aa564427026f17ef4b6c707",
+    "CONTEXT.md": "16798680b79f60770029e6060e501f8f479fabfa5d37312dc720cba514a50a46",
+    "research/79-s0-baseline-contract.md": "fe770076520271fb96fa996e8b8f1e7317912248eda026922d8ca4ec03f2ca0b",
+    "research/fixtures/s0-inputs.json": "8cc9beb1c79adb35ee9c82a11f86c5eca0865d3c1b7ec23dcc935e9770652f10",
+    "research/fixtures/s0-trace.schema.json": "ef9d30f65969713978936779ea1b6acbbdae2667c06c64d38a663704de0e0a65",
+    "research/fixtures/s0-workload-manifest.json": "4ee38db70b36e07d190444fef0cfa1ca105149ce1d42726ec44e32b7255d0ad3",
+    "tools/node/examples/s0-contract.mjs": "c1feb112648b32483a6afbd1e290bffb75ce5296f1eccef4786206cf8a78d3b4",
+    "tools/node/test/s0-contract.test.mjs": "1df299da339081109babde9b3fa867b723a4c85b79279e137fe1d7263fed2388"
+  },
+  "validation": {
+    "focusedNodePassed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "command": [
+      "node",
+      "--test",
+      "tools/node/test/s0-contract.test.mjs",
+      "tools/node/test/index.test.mjs"
+    ],
+    "log": {
+      "path": "research/evidence/2026-10-26-s0-preparation-node.txt",
+      "sha256": "c03c46b62fa0578a360a07d2df51d92616db27f1260d66965d571a471d2db8af"
+    },
+    "relativeMarkdownLinks": 114,
+    "nativeInputHashesMatched": 89,
+    "nativeInputsSha256": "1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616",
+    "cargoRun": false,
+    "nativeOperationsRun": false,
+    "performanceMeasurementsRun": false
+  },
+  "prepared": {
+    "sourceCorpora": 8,
+    "supportedCatalog": "Calculation",
+    "phases": [
+      "attempt-first",
+      "attempt-repeat"
+    ],
+    "backends": [
+      "redb",
+      "foundationdb-local",
+      "surrealkv"
+    ],
+    "semanticChecks": [
+      "source member amounts/totals and n/m/r declarations",
+      "selected action identities",
+      "trace bounds and safe integers",
+      "event IDs, timing, scopes and earlier sources",
+      "first-known and decoded-key disclosure witnesses",
+      "supported metric presence",
+      "event-derived calls and loaded byte deltas",
+      "synthetic truncation and missing-provenance rejection"
+    ]
+  },
+  "review": {
+    "independent": "Found and corrected missing discovery-token witnesses, manifest dimension mapping and complete-FDB metric requirements.",
+    "root": "Added loaded-byte delta check and repeat-zero assertion; removed quadratic event-ID lookup. Remaining semantic obligations explicitly documented."
+  },
+  "remaining": [
+    "independent full-key ordered financial fold/count/prefix extrema",
+    "outcome and commit-event consistency",
+    "faithful native decoded-key and Work counters",
+    "real adapter/FDB metrics and overflow controls",
+    "matched trace-off/on overhead",
+    "pilot then actual S0.2 sample campaign"
+  ],
+  "boundaries": [
+    "Synthetic trace witnesses are not independent native execution evidence",
+    "No Rust runtime, storage, formula, format, dependency or public SDK change",
+    "N6 acceptance remains intact; no S0 performance or layout decision accepted"
+  ],
+  "handoff": "User requested stop after this commit/push. Next agent reads CONTEXT and research/79, then continues S0.1 through tested checkpoints with one Cargo owner."
+}
