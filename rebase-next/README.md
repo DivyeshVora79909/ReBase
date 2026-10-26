@@ -9,7 +9,10 @@ evidence and incomplete obligations: Measurement query result/selection,
 equal-time mixed-sign Equipment prefix extrema and physical tree structure.
 The [N5 release](research/71-node-lifecycle-result.md) verifies committed-source
 packages, 122 extracted Node tests and redb/SurrealKV/local FoundationDB
-lifecycle checks. N6 is next; ordered-storage work remains pending. Python workflow
+lifecycle checks. N6's [complete-backup source checker](research/72-node-complete-backup-contract.md)
+now binds Equipment, Measurement and Quantity expectations to physical trees;
+complete Equipment history needs a retained identity witness. Signed ingress,
+bounded invoicing/IssueShare and retirement remain in N6. Ordered-storage work remains pending. Python workflow
 deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).

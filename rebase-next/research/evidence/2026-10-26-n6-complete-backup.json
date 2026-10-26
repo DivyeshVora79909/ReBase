@@ -1,0 +1,66 @@
+{
+  "schema": "rebase.n6-complete-backup.v1",
+  "date": "2026-10-26",
+  "status": "accepted_bounded_subcheckpoint",
+  "parent_commit": "9f70c0d",
+  "node": "v24.22.1",
+  "native": {
+    "binary": "/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next",
+    "sha256": "18d8a45c8a3d72ec70c19d8c489453fb4f274a43ab2f5631360e79b225402492",
+    "package_source": "6f1616413d8ec1327485ff2a71c182b8b916c156",
+    "native_source_unchanged": true,
+    "cargo_build": "not run; no native inputs changed"
+  },
+  "source_sha256": {
+    "tools/node/oracles.mjs": "5660bc09f5a86642d167c6026ee8dd4b2a3d70f1c72e22225c9285b21304deba",
+    "tools/node/storage-check.mjs": "3c83bb252da832632b75ca09af35e2ac57b26605facf00cc48384cffea1f76d7",
+    "tools/node/test/experiments.test.mjs": "798cb635ca6687747d5be2a39fbe633b1a060804934ec7af0e9cd8b358c68a0f",
+    "tools/node/test/storage-check.test.mjs": "056bf38fd409af60a50dc9328d506b75284e65a3f9de771e7a59272bf539a38d",
+    "tools/node/test/n6-complete-backup.test.mjs": "523004a2826159ef6f3489f064744b66fd9a19dc3971a5c5751a2b6eb9b30c5d",
+    "research/72-node-complete-backup-contract.md": "1d44caaa6eebedb3f458e21057410f9343f1ecef480b7b0642fafcd754b311c4"
+  },
+  "verification": {
+    "working_directory": "tools/node",
+    "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N2_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N3_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N4_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N5_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N6_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next npm test",
+    "passed": 131,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 8843.737734,
+    "log": "research/evidence/2026-10-26-n6-complete-backup-node.txt",
+    "log_sha256": "3a6b01e6c40fe6eeaa3c8f06cd0e02f5dcbcb790d4390d94377da8f6771a4592",
+    "focused_implementation_passed": 26,
+    "review": {
+      "status": "passed",
+      "focused_passed": 15,
+      "independent_adversarial_controls": 4,
+      "note": "Focused counts overlap the full suite and are not added to it."
+    }
+  },
+  "implemented": [
+    "checkSourceBackup from one retained validated image",
+    "exact source-bound roots and members including empty roots",
+    "Measurement Statistics shape and full query result/selection",
+    "Equipment retained-role identity witness and inverse reservations",
+    "mixed-sign equal-time physical prefixes",
+    "exact private output input fields/types and null derived values",
+    "byte limits enforced before copies"
+  ],
+  "real_controls": [
+    "Equipment retarget, deactivate/reactivate, delete, zero outputs, stable identity and rejected ID reuse",
+    "Measurement tied latest identity, inclusive/exclusive ranges and empty selections",
+    "Quantity exact values, zero-factor dependencies and empty physical inventories",
+    "resealed self-consistent wrong trees and erased historical identities rejected",
+    "numeric private input substitutions, forged input fields and fabricated derived values rejected"
+  ],
+  "limits": [
+    "Equipment full completeness requires an explicit retained roleHistory, including an explicit empty witness where appropriate.",
+    "Inspect-only checking remains incomplete for physical structure.",
+    "This is not a complete independent checker for authority, receipts, effects, registrations, reverse edges or other native KV families.",
+    "No capacity, multi-host latency, native semantic or format change is claimed."
+  ],
+  "cleanup": {
+    "owned_native_and_fdb_processes_remaining": 0,
+    "owned_test_directories": "removed by finally cleanup"
+  },
+  "remaining": "N6 signed ingress, bounded invoicing/IssueShare, production bootstrap and Python/CLI retirement; S0–S3 and F0 remain."
+}

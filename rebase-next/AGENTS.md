@@ -39,8 +39,10 @@ N4 result. N5's committed-source redb and all-feature packages from `6836c59`
 verify outside Git; all 122 Node tests pass with no skips. The extracted redb,
 SurrealKV and local FoundationDB lifecycle runs pass with complete cleanup.
 See [release evidence](research/evidence/2026-10-26-n5-release.json) for hashes,
-failed trials and limits. N6 must complete source/physical checking, signed
-ingress and bounded invoicing/IssueShare replacement controls before deleting
+failed trials and limits. N6's first source/physical checkpoint passes for
+Equipment, Measurement and Quantity; see [complete-backup checking](research/72-node-complete-backup-contract.md).
+Complete Equipment history requires the caller's retained role identity witness.
+N6 must still complete signed ingress and bounded invoicing/IssueShare replacement controls before deleting
 Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.

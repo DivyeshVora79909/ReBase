@@ -16,12 +16,16 @@ const DECIMAL = /^(0|-?[1-9][0-9]*)$/;
  * Pass raw UTF-8 bytes/string to retain duplicate-key JSON rejection. The
  * optional expectedMembers Map is keyed by `uuid/slot` and contains
  * `{ root: {id,slot}, time, leaf }` rows from a separate source oracle.
+ * expectedRoots is keyed the same way and contains `{ kind }` entries. Set
+ * includeObservation to return the inspect-compatible semantic rows decoded
+ * from the same validated native KV bytes.
  */
 export function checkBackupStructure(input, { expectedMembers, maxBytes = MAX_BACKUP_BYTES,
-  maxRows = MAX_SNAPSHOT_ROWS, maxDepth = MAX_TREE_DEPTH } = {}) {
+  expectedRoots, includeObservation = false, maxRows = MAX_SNAPSHOT_ROWS, maxDepth = MAX_TREE_DEPTH } = {}) {
   positiveBound(maxBytes, MAX_BACKUP_BYTES, 'maxBytes');
   positiveBound(maxRows, MAX_SNAPSHOT_ROWS, 'maxRows');
   positiveBound(maxDepth, MAX_TREE_DEPTH, 'maxDepth');
+  requireThat(typeof includeObservation === 'boolean', 'includeObservation must be a boolean');
   const backupBytes = asBytes(input, maxBytes);
   const backup = parseFrame(backupBytes);
   object(backup, 'backup');
@@ -51,6 +55,7 @@ export function checkBackupStructure(input, { expectedMembers, maxBytes = MAX_BA
   const rows = backup.payload.tables.native_kv;
   const roots = new Map();
   const nodes = new Map();
+  const observation = { records: [], roots: [], queries: [], roles: [], reserved: [] };
   const nativeKeys = new Set();
   for (const row of rows) {
     object(row, 'native KV row');
@@ -72,14 +77,22 @@ export function checkBackupStructure(input, { expectedMembers, maxBytes = MAX_BA
     } else {
       requireThat(JSON.stringify(value) === valueText, 'non-tree native value bytes are not compact JSON');
     }
+    if (decodedKey.type === 'record') observation.records.push({ id: decodedKey.id, record: value.data });
+    else if (decodedKey.type === 'query') observation.queries.push({ query: decodedKey.address, descriptor: value.data });
+    else if (decodedKey.type === 'role') observation.roles.push({ source_role: decodedKey.address, binding: value.data });
+    else if (decodedKey.type === 'reserved') observation.reserved.push({ id: decodedKey.id, source_role: value.data });
     if (decodedKey.type !== 'root' && decodedKey.type !== 'node') continue;
     const token = addressToken(decodedKey.address);
     requireThat(!(decodedKey.type === 'root' ? roots : nodes).has(token), `duplicate ${decodedKey.type} address`);
-    if (decodedKey.type === 'root') roots.set(token, { address: decodedKey.address, value: value.data });
+    if (decodedKey.type === 'root') {
+      roots.set(token, { address: decodedKey.address, value: value.data });
+      observation.roots.push({ root: decodedKey.address, revision: value.data.revision, summary: value.data.summary });
+    }
     else nodes.set(token, { address: decodedKey.address, value: value.data });
   }
   requireThat(nodes.size <= MAX_TREE_NODES, 'tree node inventory exceeds its bound');
   requireThat(expectedMembers === undefined || expectedMembers instanceof Map, 'expectedMembers must be a Map');
+  requireThat(expectedRoots === undefined || expectedRoots instanceof Map, 'expectedRoots must be a Map');
 
   const reached = new Set();
   let visited = 0;
@@ -155,8 +168,27 @@ export function checkBackupStructure(input, { expectedMembers, maxBytes = MAX_BA
   }
   requireThat(reached.size === nodes.size, 'tree node inventory has disconnected entries');
   if (expectedMembers) requireThat(expectedMembers.size === nodes.size, 'source membership inventory size differs');
-  return Object.freeze({ status: 'passed', sourceMembership: expectedMembers ? 'checked' : 'not_evaluated',
-    rootCount: roots.size, nodeCount: nodes.size, nativeKvRows: rows.length, snapshotBytes: backupBytes.length });
+  if (expectedRoots) {
+    for (const [token, expected] of expectedRoots) {
+      requireThat(typeof token === 'string' && token === addressToken(parseAddressToken(token)), 'invalid expected root address');
+      object(expected, 'expected source root');
+      exactKeys(expected, ['kind'], 'expected source root');
+      requireThat(Number.isInteger(expected.kind), 'invalid expected root kind');
+    }
+    requireThat(expectedRoots.size === roots.size, 'source root inventory size differs');
+    for (const [token, rootRow] of roots) {
+      const expected = expectedRoots.get(token);
+      requireThat(expected !== undefined, 'physical root is absent from independent source inventory');
+      object(expected, 'expected source root');
+      exactKeys(expected, ['kind'], 'expected source root');
+      requireThat(expected.kind === rootRow.value.kind, 'source root kind differs');
+    }
+  }
+  const result = { status: 'passed', sourceMembership: expectedMembers ? 'checked' : 'not_evaluated',
+    rootCount: roots.size, nodeCount: nodes.size, nativeKvRows: rows.length, snapshotBytes: backupBytes.length };
+  if (includeObservation) result.observation = Object.freeze(Object.fromEntries(
+    Object.entries(observation).map(([name, values]) => [name, Object.freeze(values.map(Object.freeze))])));
+  return Object.freeze(result);
 }
 
 function emptyStats(kind) {
@@ -250,7 +282,7 @@ function decodeKey(bytes) {
   const type = ({ 1: 'record', 2: 'root', 3: 'node', 4: 'query', 5: 'incoming', 6: 'direct',
     7: 'subscribers', 8: 'role', 9: 'reserved', 10: 'route_node', 11: 'route_node', 12: 'route_node' })[tag];
   requireThat(type !== undefined, 'invalid native point key tag');
-  return { type, ...(expectedLength === 19 ? { address: { id, slot } } : {}) };
+  return { type, id, ...(expectedLength === 19 ? { address: { id, slot } } : {}) };
 }
 
 function decodeHex(value, label) {
@@ -258,9 +290,15 @@ function decodeHex(value, label) {
   return Buffer.from(value, 'hex');
 }
 function asBytes(input, maxBytes) {
-  const bytes = typeof input === 'string' ? Buffer.from(input, 'utf8') : Buffer.from(input);
-  requireThat(bytes.length > 0 && bytes.length <= maxBytes, 'backup byte limit');
-  return bytes;
+  if (typeof input === 'string') {
+    const byteLength = Buffer.byteLength(input, 'utf8');
+    requireThat(byteLength > 0 && byteLength <= maxBytes, 'backup byte limit');
+    return Buffer.from(input, 'utf8');
+  }
+  requireThat(Buffer.isBuffer(input) || input instanceof Uint8Array,
+    'backup must be a string, Buffer, or Uint8Array byte view');
+  requireThat(input.byteLength > 0 && input.byteLength <= maxBytes, 'backup byte limit');
+  return Buffer.from(input);
 }
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
@@ -302,6 +340,14 @@ function addressToken(address) {
   requireThat(typeof address.id === 'string' && UUID.test(address.id) && Number.isInteger(address.slot) && address.slot > 0 && address.slot <= 65535,
     'invalid tree address');
   return `${address.id}/${address.slot}`;
+}
+function parseAddressToken(token) {
+  requireThat(typeof token === 'string', 'invalid expected root address');
+  const match = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/([1-9][0-9]*)$/.exec(token);
+  requireThat(match !== null, 'invalid expected root address');
+  const slot = Number(match[2]);
+  requireThat(Number.isInteger(slot) && slot <= 65535, 'invalid expected root address');
+  return { id: match[1], slot };
 }
 function sameAddress(left, right) { return (left === null && right === null) || (left !== null && right !== null && addressToken(left) === addressToken(right)); }
 function validateRoot(root, address) {

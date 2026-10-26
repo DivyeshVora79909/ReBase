@@ -1,9 +1,10 @@
 # Compact context — 2026-10-26
 
-## Current handoff — G10 N5 accepted; N6 next
+## Current handoff — N6 source/backup checking accepted; continue N6
 
-P0 and N0–N5 are accepted within their documented bounds. Continue N6's
-replacement controls, then Python/CLI removal, followed by S0–S3 and F0.
+P0 and N0–N5 are accepted within their documented bounds. N6's first source/backup
+checkpoint passes 131 Node tests. Complete the remaining N6 replacement controls,
+then Python/CLI removal, followed by S0–S3 and F0. N6 as a whole is not complete.
 Choose execution policy for the current client: this cloud subscription allows
 authorized model choice and delegation; the user's API client currently permits
 one model. Do not transfer a client's restrictions through Git as global policy.
@@ -26,9 +27,17 @@ The host sanitizes an existing FDB restore destination to internal; complete
 before/after payload equality verifies preservation. N6 can normalize this
 private diagnostic while replacing the native bootstrap.
 
-Exact next work: complete source/physical verification for Measurement query
-payloads/selection and equal-time mixed-sign Equipment prefixes, then add Node
-signed-ingress and bounded invoicing/IssueShare workflows. Preserve their
+The [complete-backup source checker](research/72-node-complete-backup-contract.md)
+now verifies Measurement query payloads/selection and source-bound physical
+Equipment prefixes, roots, members and role provenance. Equipment completeness
+requires an explicit retained role-history witness; missing history remains
+incomplete. Exact inputs and null derived values are enforced for private outputs.
+[Evidence](research/evidence/2026-10-26-n6-complete-backup.json) records the
+131-test run, independent review and scope exclusions. No Rust source changed.
+
+Exact next work: add the Node signed-ingress workflow, then bounded
+invoicing/IssueShare workflows. Fake ingress uses HMAC-SHA256 over exact body
+bytes and headers; bearer identity uses Ed25519 separately. Preserve their
 independent arithmetic, current authority, original plans and recovery checks.
 Map all 60 Python inventory rows to passed replacements or justified historical
 retirement before deleting files. Replace the legacy native domain parser with

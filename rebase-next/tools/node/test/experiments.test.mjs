@@ -58,6 +58,53 @@ test('Measurement oracle honors exact windows and deterministic latest identity 
   assert.equal(value.roots[0].summary.sum, '13');
 });
 
+test('Measurement snapshots check exact query payloads, empty statistics and selected observation contents', () => {
+  const facts = {
+    i: { contract: 101, fields: { unit: 7 } },
+    a: { contract: 211, fields: { instrument: 'i', at: '10', value: '5', unit: 7 } },
+    b: { contract: 211, fields: { instrument: 'i', at: '10', value: '-8', unit: 7 } },
+    report: { contract: 307, fields: { instrument: 'i', unit: 7, range: { lower: { included: '10' }, upper: { included: '10' } }, threshold: '-8' } },
+    empty: { contract: 307, fields: { instrument: 'i', unit: 7, range: { lower: { included: '10' }, upper: { excluded: '10' } }, threshold: '0' } },
+    latest: { contract: 419, fields: { instrument: 'i', unit: 7, at: '10' } },
+    absent: { contract: 419, fields: { instrument: 'i', unit: 7, at: '9' } },
+  };
+  const expected = evaluateSources('measurement', facts);
+  assert.deepEqual(expected.queryResults.report, { count: 2, sum: '-3', min: '-8', max: '5', dimension: { kind: 'unit', code: 7 } });
+  assert.deepEqual(expected.queryResults.empty, { count: 0, sum: '0', min: null, max: null, dimension: { kind: 'empty' } });
+  assert.equal(expected.queryResults.absent, null);
+  const snapshot = {
+    records: Object.entries(facts).map(([id, row]) => ({ id, record: { contract: row.contract, input: row.fields, derived: expected.derived[id] ?? null } })),
+    roots: [{ root: { id: 'i', slot: 7 }, revision: 'retained-revision',
+      summary: { count: 2, sum: '-3', min: '-8', max: '5', dimension: { kind: 'unit', code: 7 } } }],
+    queries: expected.dependencies.map(dep => ({ query: { id: dep.source, slot: dep.query_slot }, descriptor: {
+      source: { id: dep.instrument, slot: 7 }, operation: facts[dep.source].contract === 307 ? 'summary' : 'latest',
+      phase: 'calculate', channel: facts[dep.source].contract === 307 ? 'statistics' : 'observation',
+      range: dep.range, selected: null, result: expected.queryResults[dep.source],
+    } })), roles: [],
+  };
+  const check = value => checkSourceSnapshot({ model: 'measurement', facts, snapshot: value });
+  assert.equal(check(snapshot).obligations.some(row => row.status === 'failed'), false);
+  assert.equal(check(snapshot).status, 'incomplete', 'inspect alone still lacks physical trees');
+  const corruptions = [
+    value => { value.queries[0].descriptor.result.sum = '3'; },
+    value => { value.queries[0].descriptor.result.dimension.code = 8; },
+    value => { value.queries[1].descriptor.result.dimension = { kind: 'unit', code: 7 }; },
+    ...['identity', 'member_slot', 'time', 'unit', 'value'].map(field => value => {
+      value.queries[2].descriptor.result[field] = { identity: 'a', member_slot: 23, time: '9', unit: 8, value: '8' }[field];
+    }),
+    value => { value.queries[2].descriptor.selected = 'b'; },
+    value => { value.queries[3].descriptor.result = expected.queryResults.latest; },
+    value => { value.queries[0].descriptor.extra = true; },
+  ];
+  for (const corrupt of corruptions) {
+    const value = structuredClone(snapshot); corrupt(value);
+    assert.ok(check(value).obligations.some(row => row.name === 'query-descriptor-contents' && row.status === 'failed'));
+  }
+  const wrongEnvelope = structuredClone(snapshot);
+  wrongEnvelope.roots[0].summary = { kind: 'measurement', value: wrongEnvelope.roots[0].summary };
+  assert.ok(check(wrongEnvelope).obligations.some(row => row.name === 'root-summaries' && row.status === 'failed'));
+});
+
 test('source mutation staging is detached and rejects a child before its parent', () => {
   const facts = {};
   assert.throws(() => stageSources(facts, [{ op: 'create', id: 'child', contract: 205,
@@ -93,8 +140,8 @@ test('source snapshot checker rejects duplicate/missing/extra source rows and co
   const snapshot = {
     records: [...Object.entries(facts).map(([id, row]) => ({ id, record: { contract: row.contract, input: row.fields,
       derived: expected.derived[id] ?? null } })),
-      { id: 'private-start', record: { contract: 900, input: { producer: 'reservation', role: 11, pool: 'pool', at: '10', quantity: '-8' } } },
-      { id: 'private-end', record: { contract: 900, input: { producer: 'reservation', role: 29, pool: 'pool', at: '20', quantity: '8' } } }],
+      { id: 'private-start', record: { contract: 900, input: { producer: 'reservation', role: 11, pool: 'pool', at: '10', quantity: '-8' }, derived: null } },
+      { id: 'private-end', record: { contract: 900, input: { producer: 'reservation', role: 29, pool: 'pool', at: '20', quantity: '8' }, derived: null } }],
     roots: [{ root: { id: 'pool', slot: 7 }, revision: 'opaque-revision',
       summary: { kind: 'financial', value: { count: 3, first: '0', last: '20', sum: '10', min_prefix: '0', max_prefix: '10', boundary_min: '2', boundary_max: '10' } } }],
     queries: [{ query: { id: 'reservation', slot: 31 }, descriptor: { source: { id: 'pool', slot: 7 },
@@ -121,6 +168,9 @@ test('source snapshot checker rejects duplicate/missing/extra source rows and co
     ['root-inventory', value => { value.roots[0].root.slot = 8; }],
     ['query-descriptor-contents', value => { value.queries[0].descriptor.operation = 'latest'; }],
     ['role-binding-contents', value => { value.roles[0].binding.retired = true; }],
+    ['private-output-records', value => { value.records[3].record.input.at = 10; value.records[3].record.input.quantity = -8; }],
+    ['private-output-records', value => { value.records[3].record.input.forged = true; }],
+    ['private-output-records', value => { value.records[3].record.derived = { available_before: '999', allocated: '999' }; }],
     ['private-output-records', value => {
       value.records[4].record.input = { producer: 'reservation', role: 11, pool: 'pool', at: '10', quantity: '-8' };
       value.roles[1].binding = { output: 'private-start', retired: false };

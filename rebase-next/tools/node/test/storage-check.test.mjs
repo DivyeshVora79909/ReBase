@@ -71,6 +71,9 @@ test('rejects duplicate JSON keys, invalid checksums and incomplete snapshots', 
   assert.throws(() => checkBackupStructure(Buffer.from('{"format":"a","format":"b"}')), /JSON|backup/i);
   const valid = backupWith(treeRows());
   assert.equal(checkBackupStructure(JSON.stringify(valid)).nodeCount, 1);
+  const bufferInput = Buffer.from(JSON.stringify(valid), 'utf8');
+  assert.equal(checkBackupStructure(bufferInput).nodeCount, 1);
+  assert.equal(checkBackupStructure(new Uint8Array(bufferInput.buffer, bufferInput.byteOffset, bufferInput.byteLength)).nodeCount, 1);
   const badHash = structuredClone(valid);
   badHash.sha256 = '0'.repeat(64);
   assert.throws(() => checkBackupStructure(JSON.stringify(badHash)), /checksum/i);
@@ -78,6 +81,24 @@ test('rejects duplicate JSON keys, invalid checksums and incomplete snapshots', 
   incomplete.payload.complete = false;
   resign(incomplete);
   assert.throws(() => checkBackupStructure(JSON.stringify(incomplete)), /complete/i);
+});
+
+test('preflights supported input lengths before copying and rejects non-byte views', () => {
+  const oversizedBytes = new Uint8Array(9);
+  const oversizedUtf8 = 'é'.repeat(5);
+  const originalFrom = Buffer.from;
+  let copied = false;
+  Buffer.from = function (...args) { copied = true; return originalFrom.apply(this, args); };
+  try {
+    assert.throws(() => checkBackupStructure(oversizedBytes, { maxBytes: 8 }), /byte limit/i);
+    assert.throws(() => checkBackupStructure(oversizedUtf8, { maxBytes: 8 }), /byte limit/i);
+    assert.equal(copied, false);
+  } finally {
+    Buffer.from = originalFrom;
+  }
+  for (const input of [new ArrayBuffer(1), new DataView(new ArrayBuffer(1)), new Uint16Array(1), [1], { length: 1 }]) {
+    assert.throws(() => checkBackupStructure(input), /string, Buffer, or Uint8Array/i);
+  }
 });
 
 test('rejects disconnected nodes, cycles, broken links, heights, spans and summaries', () => {
@@ -103,6 +124,48 @@ test('uses source expectations only as an independent membership check', () => {
   assert.equal(checkBackupStructure(JSON.stringify(backupWith(treeRows())), { expectedMembers }).status, 'passed');
   expectedMembers.set(`${NODE_ID}/1`, { root: { id: ROOT_ID, slot: 1 }, time: '1', leaf: { kind: 'financial', value: '9' } });
   assert.throws(() => checkBackupStructure(JSON.stringify(backupWith(treeRows())), { expectedMembers }), /source membership leaf/i);
+});
+
+test('checks the complete source root inventory, including empty roots and kinds', () => {
+  const rows = [emptyRootRow(ROOT_ID)];
+  const backup = backupWith(rows);
+  const expectedRoots = new Map([[`${ROOT_ID}/1`, { kind: 1 }]]);
+  assert.equal(checkBackupStructure(JSON.stringify(backup), { expectedRoots }).rootCount, 1);
+  assert.throws(() => checkBackupStructure(JSON.stringify(backup), { expectedRoots: new Map() }), /root inventory size/i);
+  assert.throws(() => checkBackupStructure(JSON.stringify(backup), {
+    expectedRoots: new Map([[`${ROOT_ID}/1`, { kind: 2 }]]),
+  }), /root kind/i);
+  assert.throws(() => checkBackupStructure(JSON.stringify(backup), {
+    expectedRoots: new Map([[`${ROOT_ID}/1`, { kind: 1 }], [`${NODE_ID}/1`, { kind: 1 }]]),
+  }), /root inventory size/i);
+  assert.throws(() => checkBackupStructure(JSON.stringify(backup), {
+    expectedRoots: new Map([[`${ROOT_ID}/0`, { kind: 1 }]]),
+  }), /expected root address/i);
+});
+
+test('returns an inspect-compatible projection from the validated native KV parse', () => {
+  const rows = treeRows();
+  const record = { contract: 101, tenant: '11111111-1111-4111-8111-111111111111',
+    owner: '22222222-2222-4222-8222-222222222222', reader: '33333333-3333-4333-8333-333333333333',
+    version: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', input: { unit: 1 }, derived: null };
+  const query = { source: { id: ROOT_ID, slot: 1 }, operation: 'sum', phase: 'calculate', channel: 'amount',
+    range: { from: null, through: null } };
+  const binding = { output: NODE_ID, retired: false };
+  const sourceRole = { id: ROOT_ID, slot: 11 };
+  const reservedRole = { id: ROOT_ID, slot: 29 };
+  rows.push(
+    { key: encodeKey(1, NODE_ID).slice(0, -4), value: hex(JSON.stringify({ type: 'record', data: record })) },
+    { key: encodeKey(4, ROOT_ID), value: hex(JSON.stringify({ type: 'query', data: query })) },
+    { key: encodeKey(8, ROOT_ID).replace(/0001$/, '000b'), value: hex(JSON.stringify({ type: 'role', data: binding })) },
+    { key: encodeKey(9, NODE_ID).slice(0, -4), value: hex(JSON.stringify({ type: 'reserved', data: reservedRole })) },
+  );
+  const result = checkBackupStructure(JSON.stringify(backupWith(rows)), { includeObservation: true });
+  assert.deepEqual(result.observation.records, [{ id: NODE_ID, record }]);
+  assert.deepEqual(result.observation.roots, [{ root: { id: ROOT_ID, slot: 1 }, revision: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', summary: financialSummary() }]);
+  assert.deepEqual(result.observation.queries, [{ query: { id: ROOT_ID, slot: 1 }, descriptor: query }]);
+  assert.deepEqual(result.observation.roles, [{ source_role: sourceRole, binding }]);
+  assert.deepEqual(result.observation.reserved, [{ id: NODE_ID, source_role: reservedRole }]);
+  assert.equal(Object.isFrozen(result.observation.records), true);
 });
 
 test('checks shared quote and Measurement index summary folds without model calculations', () => {
@@ -171,6 +234,52 @@ test('combines each subtree summary bottom-up across a three-node financial tree
   assert.equal(checkBackupStructure(JSON.stringify(backupWith(rows))).nodeCount, 3);
 });
 
+test('folds equal-time financial leaves in full UUID key order and rejects grouped prefixes', () => {
+  const left = { id: '11111111-1111-4111-8111-111111111111', slot: 1 };
+  const middle = { id: '22222222-2222-4222-8222-222222222222', slot: 1 };
+  const right = { id: '33333333-3333-4333-8333-333333333333', slot: 1 };
+  const leafSummary = amount => ({ kind: 'financial', value: {
+    count: 1, first: '1', last: '1', sum: String(amount),
+    min_prefix: String(Math.min(0, amount)), max_prefix: String(Math.max(0, amount)),
+    boundary_min: null, boundary_max: null,
+  } });
+  const fullSummary = { kind: 'financial', value: {
+    count: 3, first: '1', last: '1', sum: '4', min_prefix: '-4', max_prefix: '4',
+    boundary_min: null, boundary_max: null,
+  } };
+  const nodeValue = (address, amount, parent, leftLink, rightLink, prev, next, height, summary) => ({
+    kind: 1, root: { id: ROOT_ID, slot: 1 }, key: { value: '1', id: address.id, slot: address.slot },
+    leaf: { kind: 'financial', value: String(amount) }, parent, left: leftLink, right: rightLink,
+    prev, next, height, span: { first: '1', last: '1' }, summary,
+  });
+  const rows = [
+    { key: encodeKey(2, ROOT_ID), value: hex(JSON.stringify({ type: 'root', data: {
+      kind: 1, head: middle, first: left, last: right, height: 2,
+      span: { first: '1', last: '1' }, summary: fullSummary, revision: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    } })) },
+    nodeRow({ type: 'node', data: nodeValue(left, -2, middle, null, null, null, middle, 1, leafSummary(-2)) }, left.id),
+    nodeRow({ type: 'node', data: nodeValue(middle, -2, null, left, right, left, right, 2, fullSummary) }, middle.id),
+    nodeRow({ type: 'node', data: nodeValue(right, 8, middle, null, null, middle, null, 1, leafSummary(8)) }, right.id),
+  ];
+  const expectedMembers = new Map([
+    [`${left.id}/1`, { root: { id: ROOT_ID, slot: 1 }, time: '1', leaf: { kind: 'financial', value: '-2' } }],
+    [`${middle.id}/1`, { root: { id: ROOT_ID, slot: 1 }, time: '1', leaf: { kind: 'financial', value: '-2' } }],
+    [`${right.id}/1`, { root: { id: ROOT_ID, slot: 1 }, time: '1', leaf: { kind: 'financial', value: '8' } }],
+  ]);
+  assert.equal(checkBackupStructure(JSON.stringify(backupWith(rows)), { expectedMembers }).nodeCount, 3);
+
+  const groupedPrefixRows = structuredClone(rows);
+  const groupedRoot = JSON.parse(Buffer.from(groupedPrefixRows[0].value, 'hex').toString('utf8'));
+  groupedRoot.data.summary.value.min_prefix = '0';
+  groupedPrefixRows[0].value = hex(JSON.stringify(groupedRoot));
+  const middleHex = middle.id.replaceAll('-', '');
+  const groupedMiddleRow = groupedPrefixRows.find(row => Buffer.from(row.key, 'hex').subarray(1, 17).toString('hex') === middleHex);
+  const groupedMiddle = JSON.parse(Buffer.from(groupedMiddleRow.value, 'hex').toString('utf8')).data;
+  groupedMiddle.summary.value.min_prefix = '0';
+  groupedMiddleRow.value = hex(JSON.stringify({ type: 'node', data: groupedMiddle }));
+  assert.throws(() => checkBackupStructure(JSON.stringify(backupWith(groupedPrefixRows))), /summary differs/i);
+});
+
 function treeRows() {
   const address = { id: NODE_ID, slot: 1 };
   const row = node();
@@ -181,6 +290,14 @@ function treeRows() {
     } })) },
     nodeRow(row, NODE_ID),
   ];
+}
+function emptyRootRow(id) {
+  return { key: encodeKey(2, id), value: hex(JSON.stringify({ type: 'root', data: {
+    kind: 1, head: null, first: null, last: null, height: 0, span: null,
+    summary: { kind: 'financial', value: { count: 0, first: null, last: null, sum: '0',
+      min_prefix: '0', max_prefix: '0', boundary_min: null, boundary_max: null } },
+    revision: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  } })) };
 }
 function singleTree(kind, leaf, summary) {
   const address = { id: NODE_ID, slot: 1 };

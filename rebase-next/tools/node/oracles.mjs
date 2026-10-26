@@ -3,6 +3,7 @@
  * Measurement models. Inputs are authored facts: { id: { contract, fields } }.
  * These functions intentionally do not call a model, native host or cache.
  */
+import { checkBackupStructure } from './storage-check.mjs';
 
 export class OracleError extends Error {
   constructor(kind, message) { super(message); this.name = 'OracleError'; this.kind = kind; }
@@ -104,7 +105,7 @@ export function sourceOracle({ model, facts, select, snapshot: snapshotSelector 
 }
 
 /** Check a retained native inspect snapshot using only authored source facts. */
-export function checkSourceSnapshot({ model, facts, snapshot } = {}) {
+export function checkSourceSnapshot({ model, facts, snapshot, roleHistory } = {}) {
   const obligations = [];
   const add = (name, passed, reason) => obligations.push({ name, status: passed ? 'passed' : 'failed', ...(passed ? {} : { reason }) });
   let expected;
@@ -139,8 +140,8 @@ export function checkSourceSnapshot({ model, facts, snapshot } = {}) {
   const actualPrivate = new Map(privateRows.map(row => [privateKey(row), row]));
   const privateMatch = privateRows.length === privateOutputs.length && expectedPrivate.size === privateOutputs.length
     && actualPrivate.size === privateRows.length && [...expectedPrivate].every(([key, wanted]) => {
-      const actual = actualPrivate.get(key)?.record?.input;
-      return actual && actual.pool === wanted.pool && String(actual.at) === wanted.at && String(actual.quantity) === wanted.quantity;
+      const actual = actualPrivate.get(key)?.record;
+      return actual && same(actual.input, wanted) && actual.derived === null;
     });
   if (privateOutputs.length || privateRows.length) add('private-output-records', privateMatch,
     'engine output records do not match source-derived active Equipment roles');
@@ -174,11 +175,26 @@ export function checkSourceSnapshot({ model, facts, snapshot } = {}) {
   const queryRows = uniqueRows(snapshot.queries, row => addressKey(row?.query), 'query');
   const actualQueries = [...queryRows.keys()].map(parseAddressKey).sort(addressSort);
   add('query-inventory', !queryRows.duplicate && same(actualQueries, wantedQueries), 'native query descriptor addresses are missing, extra, duplicated, or malformed');
-  const wantedRoles = Object.entries(facts).flatMap(([id, row]) => model === 'equipment' && row.contract === 410 && row.fields.active
+  const currentRoles = Object.entries(facts).flatMap(([id, row]) => model === 'equipment' && row.contract === 410 && row.fields.active
     ? [11, 29].map(slot => ({ id, slot })) : []).sort(addressSort);
+  const currentRoleKeys = new Set(currentRoles.map(addressKey));
   const roleRows = uniqueRows(snapshot.roles, row => addressKey(row?.source_role), 'role');
   const actualRoles = [...roleRows.keys()].map(parseAddressKey).sort(addressSort);
-  add('role-inventory', !roleRows.duplicate && same(actualRoles, wantedRoles), 'native role bindings are missing, extra, duplicated, or malformed');
+  let history;
+  try { history = validateRoleHistory(roleHistory); }
+  catch (error) { add('role-history', false, error.message); }
+  const historicalRoles = actualRoles.filter(address => !currentRoleKeys.has(addressKey(address)));
+  const wantedRoles = history ? [...history.values()].map(row => ({ id: row.producer, slot: row.role })).sort(addressSort)
+    : [...currentRoles, ...historicalRoles].sort(addressSort);
+  const wantedRoleKeys = new Set(wantedRoles.map(addressKey));
+  add('role-inventory', !roleRows.duplicate && same(actualRoles, wantedRoles)
+    && currentRoles.every(address => wantedRoleKeys.has(addressKey(address)))
+    && (model === 'equipment' || actualRoles.length === 0),
+  'native role bindings are missing, extra, duplicated, or malformed');
+  if (model === 'equipment' && historicalRoles.length && roleHistory === undefined) obligations.push({
+    name: 'role-history-inventory', status: 'incomplete',
+    reason: 'current facts cannot establish historical inactive or deleted producer reservations; supply retained roleHistory identities',
+  });
   const queryContentsMatch = expected.dependencies.filter(dep => model !== 'quantity' && (model !== 'equipment' || dep.active !== false))
     .every(dep => {
       const row = queryRows.get(addressKey({ id: dep.source, slot: dep.query_slot }));
@@ -187,26 +203,32 @@ export function checkSourceSnapshot({ model, facts, snapshot } = {}) {
       const contract = facts[dep.source]?.contract;
       const operation = model === 'equipment' ? 'sum' : contract === 307 ? 'summary' : 'latest';
       const channel = model === 'equipment' ? 'amount' : contract === 307 ? 'statistics' : 'observation';
-      const expectedResult = model === 'equipment' ? expected.derived[dep.source]?.available_before : undefined;
-      const expectedSelected = model === 'equipment' ? null : contract === 419 ? expected.derived[dep.source]?.selection?.identity ?? null : null;
-      return descriptor && same(descriptor.source, source) && descriptor.operation === operation
+      const expectedResult = model === 'equipment' ? expected.derived[dep.source]?.available_before : expected.queryResults?.[dep.source];
+      return descriptor && same(Object.keys(descriptor).sort(), ['source', 'operation', 'phase', 'channel', 'range', 'selected', 'result'].sort())
+        && same(descriptor.source, source) && descriptor.operation === operation
         && descriptor.phase === 'calculate' && descriptor.channel === channel
         && same(descriptor.range, dep.range)
-        && (model !== 'equipment' || String(descriptor.result) === expectedResult)
-        && (model !== 'equipment' || descriptor.selected === expectedSelected);
+        && same(descriptor.result, expectedResult) && descriptor.selected === null;
     });
   if (wantedQueries.length) add('query-descriptor-contents', queryContentsMatch,
     'query descriptor source, operation, phase, channel, range, result, or selected identity differs from source facts');
-  if (model === 'measurement' && wantedQueries.length) obligations.push({ name: 'measurement-query-result', status: 'incomplete',
-    reason: 'measurement query result and selected identity payloads are not yet interpreted independently' });
+  const outputIdentities = new Set();
+  const producers = new Set(actualRoles.map(row => row.id));
   const roleContentsMatch = wantedRoles.every(address => {
     const binding = roleRows.get(addressKey(address))?.binding;
-    if (!binding || binding.retired !== false || typeof binding.output !== 'string') return false;
+    if (!binding || typeof binding.output !== 'string' || typeof binding.retired !== 'boolean'
+      || !same(Object.keys(binding).sort(), ['output', 'retired'])
+      || ![11, 29].includes(address.slot) || outputIdentities.has(binding.output)
+      || Object.hasOwn(facts, binding.output) || producers.has(binding.output)) return false;
+    outputIdentities.add(binding.output);
+    const witness = history?.get(addressKey(address));
+    if (history && witness?.output !== binding.output) return false;
+    const producer = facts[address.id];
+    if (binding.retired !== !producer || (producer && producer.contract !== 410)) return false;
     const output = recordRows.get(binding.output)?.record;
-    const expected = privateOutputs.find(item => item.producer === address.id && item.role === address.slot);
-    return Boolean(expected && output?.contract === 900 && output.input?.producer === expected.producer
-      && output.input?.role === expected.role && output.input?.pool === expected.pool
-      && String(output.input?.at) === expected.at && String(output.input?.quantity) === expected.quantity);
+    if (!producer?.fields.active) return output === undefined;
+    const expected = expectedPrivate.get(addressKey(address));
+    return Boolean(expected && output?.contract === 900 && same(output.input, expected) && output.derived === null);
   });
   if (wantedRoles.length) add('role-binding-contents', roleContentsMatch,
     'role binding is retired, points at the wrong output, or has inconsistent private output facts');
@@ -222,7 +244,94 @@ export function checkSourceSnapshot({ model, facts, snapshot } = {}) {
     structuralScope: SNAPSHOT_STRUCTURE_SCOPE, obligations: Object.freeze(obligations.map(Object.freeze)) });
 }
 
+/** Check source semantics and physical trees from one retained complete backup.
+ * roleHistory is an optional bounded identity witness: [{producer, role, output}].
+ * It lists every reservation ever allocated, including currently active ones.
+ * Identities come from retained committed observations, never guessed UUIDs.
+ */
+export function checkSourceBackup({ model, facts, backup, roleHistory } = {}) {
+  const obligations = [];
+  const add = (name, status, reason) => obligations.push({ name, status, ...(reason ? { reason } : {}) });
+  let bytes, physical, snapshot, expected;
+  try {
+    fail(typeof backup === 'string' || backup instanceof Uint8Array, 'backup_input', 'backup must be a UTF-8 string or Uint8Array');
+    const byteLength = typeof backup === 'string' ? Buffer.byteLength(backup, 'utf8') : backup.byteLength;
+    fail(byteLength > 0 && byteLength <= 64 * 1024 * 1024, 'backup_input', 'backup byte limit');
+    bytes = typeof backup === 'string' ? Buffer.from(backup, 'utf8') : Buffer.from(backup);
+    physical = checkBackupStructure(bytes, { includeObservation: true });
+    snapshot = physical.observation;
+    expected = evaluateSources(model, facts);
+  } catch (error) {
+    return Object.freeze({ status: 'failed', obligations: Object.freeze([
+      Object.freeze({ name: 'complete-backup', status: 'failed', reason: error.message }),
+    ]) });
+  }
+  const logical = checkSourceSnapshot({ model, facts, snapshot, roleHistory });
+  const physicalNames = new Set(['tree-node-inventory', 'tree-child-links', 'tree-heights', 'tree-leaf-order', 'tree-node-aggregates', 'root-prefix-extrema-order']);
+  obligations.push(...logical.obligations.filter(row => !physicalNames.has(row.name)));
+  if (model === 'equipment' && roleHistory === undefined && !obligations.some(row => row.name === 'role-history-inventory')) {
+    add('role-history-inventory', 'incomplete',
+      'supply retained roleHistory identities to establish the complete historical reservation inventory, including absence');
+  }
+  try {
+    const expectedRoots = new Map(expected.roots.map(row => [`${row.owner}/${row.slot}`, { kind: model === 'equipment' ? 1 : 7 }]));
+    const expectedMembers = new Map();
+    const roleRows = new Map(snapshot.roles.map(row => [addressKey(row.source_role), row.binding]));
+    const put = (id, slot, root, time, leaf) => {
+      const token = `${id}/${slot}`;
+      fail(!expectedMembers.has(token), 'source_membership', 'independent membership identity is duplicated');
+      expectedMembers.set(token, { root: { id: root, slot: 7 }, time: String(time), leaf });
+    };
+    for (const [id, row] of Object.entries(facts)) {
+      if (model === 'equipment' && row.contract === 205) put(id, 17, row.fields.pool, row.fields.at,
+        { kind: 'financial', value: String(row.fields.quantity) });
+      if (model === 'measurement' && row.contract === 211) put(id, 17, row.fields.instrument, row.fields.at,
+        { unit: row.fields.unit, value: String(row.fields.value) });
+    }
+    for (const output of expected.privateRecords ?? []) {
+      const binding = roleRows.get(addressKey({ id: output.producer, slot: output.role }));
+      fail(binding && binding.retired === false, 'source_membership', 'active source output role is missing');
+      put(binding.output, 23, output.pool, output.at, { kind: 'financial', value: output.quantity });
+    }
+    physical = checkBackupStructure(bytes, { expectedMembers, expectedRoots });
+    add('source-physical-membership', 'passed');
+    for (const name of physicalNames) if (name !== 'root-prefix-extrema-order' || model === 'equipment') add(name, 'passed');
+  } catch (error) { add('source-physical-membership', 'failed', error.message); }
+  const reserved = uniqueRows(snapshot.reserved, row => row?.id, 'reservation');
+  const roles = uniqueRows(snapshot.roles, row => addressKey(row?.source_role), 'role');
+  const inverse = !reserved.duplicate && !roles.duplicate && reserved.size === roles.size
+    && [...roles].every(([key, row]) => {
+      const address = reserved.get(row.binding?.output)?.source_role;
+      return address && same(Object.keys(address).sort(), ['id', 'slot']) && addressKey(address) === key;
+    });
+  add('role-reservation-inverse', inverse ? 'passed' : 'failed', inverse ? undefined : 'reserved identities and producer-role bindings are not bijective');
+  const result = { status: obligations.some(row => row.status === 'failed') ? 'failed'
+    : obligations.some(row => row.status === 'incomplete') ? 'incomplete' : 'passed',
+  scope: 'bounded source records, queries, roles, roots and complete physical trees; other native inventories are outside this checker',
+  physical: Object.freeze(Object.fromEntries(Object.entries(physical).filter(([name]) => name !== 'observation'))),
+  obligations: Object.freeze(obligations.map(Object.freeze)) };
+  return Object.freeze(result);
+}
+
+function validateRoleHistory(history) {
+  if (history === undefined) return undefined;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  fail(Array.isArray(history) && history.length <= 16_384, 'role_history', 'roleHistory must be an array of at most 16384 reservations');
+  const roles = new Map(), outputs = new Set();
+  for (const row of history) {
+    fail(row && typeof row === 'object' && !Array.isArray(row)
+      && same(Object.keys(row).sort(), ['producer', 'role', 'output'].sort())
+      && typeof row.producer === 'string' && typeof row.output === 'string'
+      && uuid.test(row.producer) && uuid.test(row.output) && [11, 29].includes(row.role), 'role_history', 'invalid roleHistory identity');
+    const key = addressKey({ id: row.producer, slot: row.role });
+    fail(!roles.has(key) && !outputs.has(row.output), 'role_history', 'roleHistory identities are not bijective');
+    roles.set(key, row); outputs.add(row.output);
+  }
+  return roles;
+}
+
 function equipment(facts) {
+  fail(Object.keys(facts).length <= 4096, 'state_limit', 'Equipment source bound');
   const events = new Map();
   const derived = {};
   const dependencies = [];
@@ -342,6 +451,7 @@ function measurement(facts) {
   fail(Object.keys(facts).length <= 64, 'state_limit', 'Measurement source bound');
   const roots = new Map(Object.entries(facts).filter(([, row]) => row.contract === 101).map(([id]) => [id, []]));
   const derived = {};
+  const queryResults = {};
   for (const [id, row] of Object.entries(facts)) {
     const f = row.fields;
     fail([101, 211, 307, 419].includes(row.contract), 'contract', 'Unknown measurement contract');
@@ -363,12 +473,16 @@ function measurement(facts) {
       derived[id] = { count: values.length, min: values.length ? String(min(...values)) : null,
         max: values.length ? String(max(...values)) : null, unit: f.unit,
         at_least_threshold: values.length > 0 && values.every(value => value >= threshold) };
+      queryResults[id] = { count: values.length, sum: String(values.reduce((sum, value) => sum + value, 0n)),
+        min: derived[id].min, max: derived[id].max,
+        dimension: values.length ? { kind: 'unit', code: f.unit } : { kind: 'empty' } };
     } else if (row.contract === 419) {
       const at = integer(f.at);
       const candidates = roots.get(f.instrument).filter(event => event.at <= at)
         .sort((a, b) => cmp(a.at, b.at) || a.id.localeCompare(b.id));
       const event = candidates.at(-1);
       derived[id] = { selection: event ? { identity: event.id, member_slot: 17, time: String(event.at), unit: event.unit, value: String(event.value) } : null };
+      queryResults[id] = derived[id].selection;
     } else if (row.contract !== 101) derived[id] = null;
   }
   const summaries = [...roots].sort(([a], [b]) => a.localeCompare(b)).map(([owner, rows]) => ({ owner, slot: 7,
@@ -380,7 +494,7 @@ function measurement(facts) {
     ? [{ source: id, instrument: row.fields.instrument, query_slot: row.contract === 307 ? 31 : 43,
       range: row.contract === 307 ? clone(row.fields.range) : { lower: null, upper: { included: row.fields.at } } }]
     : []);
-  return { derived, roots: summaries, dependencies };
+  return { derived, roots: summaries, dependencies, queryResults };
 }
 
 function contains(at, range) {
@@ -452,8 +566,8 @@ function addressSort(a, b) { return a.id.localeCompare(b.id) || a.slot - b.slot;
 function same(left, right) { return stable(left) === stable(right); }
 function rootSummaryExpectation(model, root) {
   if (model === 'equipment') return root.summary;
-  if (model === 'measurement') return { kind: 'measurement', value: { count: root.summary.count, sum: root.summary.sum,
+  if (model === 'measurement') return { count: root.summary.count, sum: root.summary.sum,
     min: root.summary.min, max: root.summary.max,
-    dimension: root.summary.count ? { kind: 'unit', code: root.summary.unit } : { kind: 'empty' } } };
+    dimension: root.summary.count ? { kind: 'unit', code: root.summary.unit } : { kind: 'empty' } };
   return root.summary;
 }
