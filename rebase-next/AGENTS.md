@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — N5 implementation tested; release acceptance pending
+## Current instruction — N5 accepted; complete N6 replacement controls
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -24,22 +24,24 @@ Read the [N0 decisions and bounded evidence](research/62-node-foundation-result.
 [N3 result and boundaries](research/67-node-population-result.md),
 [N4 result and boundaries](research/69-node-experiment-result.md),
 [N4 contract and evidence](research/68-node-experiment-contract.md),
-[N5 implementation result](research/71-node-lifecycle-result.md),
+[N5 release result](research/71-node-lifecycle-result.md),
 [N5 lifecycle and release contract](research/70-node-lifecycle-contract.md),
 [frozen native wire](research/60-native-host-contract.md) and
 [Node dependency decisions](research/61-node-tooling-contract.md) when changing
-the N1/N2/N3 boundary or continuing N5.
+the Node/native boundary or continuing N6.
 N1 implements Node configuration and the private native host for model catalogs
 and redb check/inspection. N2 adds Node workflow composition, owned service and
 operator APIs, and bounded adapter lifecycle evidence. N3 adds caller-owned Node
 population state and receipt-gated proposals for Equipment and Quantity. N4 adds
 bounded workloads, experiments, observations and source-only checking; its
 accepted scope and incomplete logical/physical obligations are recorded in the
-N4 result. The N5 Node prebuild suite passes 122 tests, and a local FDB ownership
-witness passes. N5 is not accepted until root builds the exact committed source,
-packages and verifies the extracted artifact, completes the planned released-
-artifact adapter runs, and reviews the evidence and cleanup. Continue at that
-release boundary; N6 and ordered-storage changes remain pending. Follow the
+N4 result. N5's committed-source redb and all-feature packages from `6836c59`
+verify outside Git; all 122 Node tests pass with no skips. The extracted redb,
+SurrealKV and local FoundationDB lifecycle runs pass with complete cleanup.
+See [release evidence](research/evidence/2026-10-26-n5-release.json) for hashes,
+failed trials and limits. N6 must complete source/physical checking, signed
+ingress and bounded invoicing/IssueShare replacement controls before deleting
+Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.
 

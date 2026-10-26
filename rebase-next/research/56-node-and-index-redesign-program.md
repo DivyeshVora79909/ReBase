@@ -132,7 +132,7 @@ well as S2's engine result. F0 accepts one integrated source/artifact identity.
 | N2 | Node session/client, model and operator composition | **Accepted within bounded scope:** [N2 result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json). Ordinary Node ESM composition, scoped service/identity and lifecycle controls pass; supported adapters and execution limits are recorded there. |
 | N3 | Node population and scenario functions | **Accepted within bounded scope:** [N3 result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json). Four ordinary functions compose bounded proposals with explicit typed pools, callbacks, saved plans and receipt-gated advancement. Real Equipment and Quantity trajectories and the O(pool-size) custom-selector boundary are recorded; no global-validity claim is made. |
 | N4 | Node experiments, observation and independent verification | **Accepted within bounded scope:** [N4 result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json). The 95-test N0–N4 suite and focused independent review pass. Ordinary workloads, bounded observation, source-only Equipment/Quantity/Measurement checks, and real Equipment/Quantity receipt-progress trials are recorded. Measurement query results/selected identities, equal-time mixed-sign Equipment prefix extrema, and physical tree structure remain explicitly incomplete. N5 typed-backup checking and N6 physical snapshots/deletion remain owed. |
-| N5 | Node storage/service/release lifecycle | Check/inspect/backup/restore/reset/archive and fake-effect recovery preserve existing fences. Package committed source, backend/model manifests and checksum verification; use extracted functions outside Git with no workspace imports. Exercise supported adapters and managed test infrastructure through explicit objects. Minimal service bootstrap is documented and validated. |
+| N5 | Node storage/service/release lifecycle | **Accepted within bounded scope:** [result](71-node-lifecycle-result.md) and [release evidence](evidence/2026-10-26-n5-release.json). Committed-source packages, 122 extracted Node controls, six-model physical checks and redb/SurrealKV/local FoundationDB lifecycle pass. Current bootstrap remains the private host; removal of the older service parser and the standalone structured service bootstrap belong to N6. |
 | N6 | Python and redundant CLI removal | Delete replaced active Python tools/requirements/provider bridge and custom project CLI parser paths, update imports/manifests/docs/templates. Final supported workflows and package verification need Node, Rust/native prerequisites only. Historical executable Python experiments are converted if still needed or retired to their historical Git commits; dated evidence remains immutable. No hidden Python invocation or second maintained implementation. |
 | S0 | FoundationDB and embedded access baseline | Instrument logical/physical loads, wait dependencies, bytes, cache hits, scans and writes without altering semantics. Record host/cluster/process topology and cold/warm controls. Reuse existing correctness witnesses. Local multiple processes are not a multi-host network benchmark. |
 | S1 | Bounded alternatives trial and selected layout decision | Compare the baseline with small transaction-local batching/cache changes and a justified paged/stable-partition candidate. Validate correctness independently before timing. Define acceptance thresholds from the S0 workload before candidate results. Account for rewrite bytes, conflicts, structural metadata and rank/select costs. Select the smallest maintainable design meeting the evidence; retaining AVL is a valid measured decision. |
@@ -223,11 +223,10 @@ Breaking interfaces does not permit weakening the following obligations:
 
 ## Delegation and economical execution
 
-Use the user's requested model mix: Luna for inventory, deterministic module
-ports, examples and narrow tests; Sol 6.1 for native protocol, transaction,
-algorithm and independent-review tasks. A lead owns interface decisions and
-cross-module integration. Do not assign models by derogatory assumptions; supply
-the same exact contracts and source references to every worker.
+The 2026-10-26 user instruction supersedes the earlier model mix. Use the
+selected [agent execution mode](../docs/agents/README.md), the current model
+and one agent. Batch independent tool operations; do not launch subagents to
+optimize usage. The delegation rules below apply only if later requested.
 
 Every delegated task must name: allowed files, starting source identity, required
 reads, inputs/outputs, forbidden shortcuts, acceptance cases, evidence destination,
@@ -281,11 +280,12 @@ simple object manipulation remain ordinary JavaScript.
 | N2 | Accepted: [Node workflow result](65-node-workflow-result.md) and [evidence](evidence/2026-10-25-n2-node-workflow.json) |
 | N3 | Accepted: [Node population result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json) |
 | N4 | Accepted within bounded scope: [result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json) |
-| N5–N6 | Pending; N5 is next and owes independent typed-backup structural checking before N6 deletions |
+| N5 | Accepted within bounded scope: [result](71-node-lifecycle-result.md) and [committed-source release evidence](evidence/2026-10-26-n5-release.json) |
+| N6 | Next: complete semantic replacement controls and source/physical composition before Python/CLI deletion |
 | S0–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
 To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
-program, the N0–N4 results and frozen contracts. Start N5, preserve the same Git
-context, and assign disjoint ownership. Follow the dependencies above; do not
+program, the N5 release result and relevant frozen contracts. Complete N6,
+preserve the same linear Git context and selected pay-as-you-go mode. Follow the dependencies above; do not
 restart G7–G9 or implement G6.

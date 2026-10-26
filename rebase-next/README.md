@@ -1,13 +1,15 @@
 # ReBase Next
 
-**G10 status (2026-10-26):** N1–N4 are accepted within bounded scopes. `tools/node/` provides
+**G10 status (2026-10-26):** N1–N5 are accepted within bounded scopes. `tools/node/` provides
 ordinary ESM functions for configuration, native model/store access, authenticated
 services, client workflows, scoped operator lifecycle and receipt-gated
 population, experiments, bounded workloads, observations and source-only
 checking. The [N4 result](research/69-node-experiment-result.md) records its
 evidence and incomplete obligations: Measurement query result/selection,
 equal-time mixed-sign Equipment prefix extrema and physical tree structure.
-N5 is next; N6 and the ordered-storage redesign remain pending. Python workflow
+The [N5 release](research/71-node-lifecycle-result.md) verifies committed-source
+packages, 122 extracted Node tests and redb/SurrealKV/local FoundationDB
+lifecycle checks. N6 is next; ordered-storage work remains pending. Python workflow
 deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).
@@ -117,7 +119,7 @@ python3 -B tools/observation_selection.py --binary target/native-slice/build/rel
 | Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
 | Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
 | Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Verified release packages | [G8.4 package result](research/53-workload-deployment-result.md#g84--current-extracted-release-packages) · [historical 0.6 deployment](research/29-deployment-result.md) |
+| Verified release packages | [N5 Node/native package result](research/71-node-lifecycle-result.md) · [historical G8.4 package result](research/53-workload-deployment-result.md#g84--current-extracted-release-packages) |
 | Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
 | Operational assurance | [G8 results](research/53-workload-deployment-result.md) · [Workload guide](docs/workloads.md) · [Plan](research/52-workload-deployment-plan.md) |
 | Compose bounded population with the existing mutation client | [Population guide](docs/population.md) · [G9 results](research/55-population-tooling-result.md) |

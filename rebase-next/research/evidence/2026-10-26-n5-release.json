@@ -1,0 +1,893 @@
+{
+  "schema": "rebase.n5-release.v1",
+  "date": "2026-10-26",
+  "status": "passed",
+  "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+  "sourceTree": "3c64885d75bb6a10e9fe41b3cc5c00e364d63782",
+  "sourceFileCount": 413,
+  "node": "v24.22.1",
+  "rust": "1.95.0",
+  "builds": [
+    {
+      "status": "passed",
+      "checksummedFiles": 1067,
+      "modelCount": 6,
+      "binaryCatalogsChecked": true,
+      "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+      "binarySha256": "57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52",
+      "features": [],
+      "supportedBackends": [
+        "redb"
+      ],
+      "directory": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-redb",
+      "build": {
+        "executable": "cargo",
+        "args": [
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source/Cargo.toml",
+          "--target-dir",
+          "/home/divyeshvora/.cache/rebase-g10/build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next"
+        ],
+        "cwd": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source",
+        "environment": {
+          "PATH": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/toolchains/node-v24.22.1-linux-x64/bin:/home/divyeshvora/.cargo/bin:/usr/local/bin:/usr/bin:/bin",
+          "LANG": "C.UTF-8",
+          "CARGO_HOME": "/home/divyeshvora/.cargo",
+          "RUSTUP_HOME": "/home/divyeshvora/.rustup",
+          "RUSTUP_TOOLCHAIN": "1.95.0",
+          "CARGO_INCREMENTAL": "0",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "profile": "release",
+        "locked": true,
+        "outsideGit": true,
+        "features": [],
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "sourceTree": "3c64885d75bb6a10e9fe41b3cc5c00e364d63782"
+      },
+      "receipt": {
+        "exitCode": 0,
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source/Cargo.toml",
+          "--target-dir",
+          "/home/divyeshvora/.cache/rebase-g10/build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next"
+        ],
+        "cwd": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source",
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "sourceTree": "3c64885d75bb6a10e9fe41b3cc5c00e364d63782",
+        "sourceFilesSha256": "5d4a22cc71cb462147336cbdd8b28b1c7e68a2839e70ecd1dfd35e26beff0e63",
+        "buildLogSha256": "a70da5408e7a6da7efe97b23011504833b16a7875bda14543f2504b5b8c7d97a",
+        "artifactSha256": "57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52"
+      },
+      "buildId": "31d25578cf7b3aca3bfdc1891e76e32b6425af57202a603b38dbf821f0eca2be",
+      "bundleSha256": "d520572c5bae2a0eb917e8f9d5611775c8f6012ec9f224b7f31e35ba626d10ce",
+      "checksumInventorySha256": "3fc607897b7d7ff02a0e4bf639d5023dbe9c2eafcf8be8eebea45d8b8c0c7476",
+      "buildLog": "2026-10-26-n5-cargo-redb.txt",
+      "checkedAfterAllTests": true
+    },
+    {
+      "status": "passed",
+      "checksummedFiles": 1067,
+      "modelCount": 6,
+      "binaryCatalogsChecked": true,
+      "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+      "binarySha256": "eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e",
+      "features": [
+        "foundationdb",
+        "surrealkv"
+      ],
+      "supportedBackends": [
+        "redb",
+        "foundationdb",
+        "surrealkv"
+      ],
+      "directory": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-all",
+      "build": {
+        "executable": "cargo",
+        "args": [
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source/Cargo.toml",
+          "--target-dir",
+          "/home/divyeshvora/.cache/rebase-g10/build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next",
+          "--features",
+          "foundationdb,surrealkv"
+        ],
+        "cwd": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source",
+        "environment": {
+          "PATH": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/toolchains/node-v24.22.1-linux-x64/bin:/home/divyeshvora/.cargo/bin:/usr/local/bin:/usr/bin:/bin",
+          "LANG": "C.UTF-8",
+          "CARGO_HOME": "/home/divyeshvora/.cargo",
+          "RUSTUP_HOME": "/home/divyeshvora/.rustup",
+          "RUSTUP_TOOLCHAIN": "1.95.0",
+          "FDB_CLIENT_LIB_PATH": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/root/usr/lib",
+          "LD_LIBRARY_PATH": "/home/divyeshvora/javascript/node/projects/ReBase/rebase-next/target/g7-environment/root/usr/lib",
+          "CARGO_INCREMENTAL": "0",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "profile": "release",
+        "locked": true,
+        "outsideGit": true,
+        "features": [
+          "foundationdb",
+          "surrealkv"
+        ],
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "sourceTree": "3c64885d75bb6a10e9fe41b3cc5c00e364d63782"
+      },
+      "receipt": {
+        "exitCode": 0,
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source/Cargo.toml",
+          "--target-dir",
+          "/home/divyeshvora/.cache/rebase-g10/build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next",
+          "--features",
+          "foundationdb,surrealkv"
+        ],
+        "cwd": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source",
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "sourceTree": "3c64885d75bb6a10e9fe41b3cc5c00e364d63782",
+        "sourceFilesSha256": "5d4a22cc71cb462147336cbdd8b28b1c7e68a2839e70ecd1dfd35e26beff0e63",
+        "buildLogSha256": "85c8dbac64ed6a362d668bf3988686e26e947620bb15cfdbe2e999a0ff8261b2",
+        "artifactSha256": "eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e"
+      },
+      "buildId": "8f7493a6dda5862daab22be0cb6a8749cb241c6da7282afdd4fa24963d2c6311",
+      "bundleSha256": "0e509e18d84660b54e6ff074002ea0c2d130f3b386c51203bef0612e113ec76d",
+      "checksumInventorySha256": "2954c0a8415ee942ab1562f926fea351ab68610a36884e95b1f9e27057fc407f",
+      "buildLog": "2026-10-26-n5-cargo-all.txt",
+      "checkedAfterAllTests": true
+    }
+  ],
+  "adapterAcceptance": {
+    "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+    "node": "v24.22.1",
+    "scope": "bounded local extracted-artifact lifecycle; one local FDB process, not multi-host latency",
+    "packages": [
+      {
+        "label": "redb",
+        "directory": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-redb",
+        "status": "passed",
+        "checksummedFiles": 1067,
+        "modelCount": 6,
+        "binaryCatalogsChecked": true,
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "binarySha256": "57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52",
+        "features": [],
+        "supportedBackends": [
+          "redb"
+        ]
+      },
+      {
+        "label": "all",
+        "directory": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-all",
+        "status": "passed",
+        "checksummedFiles": 1067,
+        "modelCount": 6,
+        "binaryCatalogsChecked": true,
+        "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+        "binarySha256": "eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e",
+        "features": [
+          "foundationdb",
+          "surrealkv"
+        ],
+        "supportedBackends": [
+          "redb",
+          "foundationdb",
+          "surrealkv"
+        ]
+      }
+    ],
+    "adapters": [
+      {
+        "backend": "redb",
+        "binarySha256": "57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52",
+        "checks": [
+          "ownership",
+          "authenticated-fixture",
+          "original-replay",
+          "private-method-fence",
+          "CAS-winner",
+          "stale-mutation-rollback",
+          "source-expectations-with-declared-incomplete-obligations",
+          "independent-physical-structure",
+          "native-integrity",
+          "restart-and-receipt-recovery",
+          "old-version-receipt-redaction",
+          "wrong-backup-fence",
+          "isolated-restore",
+          "existing-destination-fence",
+          "archive-expiry",
+          "reset-identity-fence"
+        ],
+        "cleanup": [
+          {
+            "pid": 688783,
+            "status": "stopped"
+          },
+          {
+            "pid": 688795,
+            "status": "stopped"
+          },
+          {
+            "pid": 688797,
+            "status": "stopped"
+          },
+          {
+            "pid": 688790,
+            "status": "stopped"
+          }
+        ],
+        "logical": {
+          "status": "incomplete",
+          "structuralScope": {
+            "visible": [
+              "record inventory",
+              "root inventory/revision/summary",
+              "query descriptor inventory",
+              "role binding inventory"
+            ],
+            "unavailable": [
+              "tree node inventory",
+              "child links",
+              "tree heights",
+              "leaf ordering",
+              "per-node aggregates"
+            ],
+            "authority": "native store.check validates engine integrity but is not an independent source oracle; independent structural-tree obligations remain owed to N5/N6"
+          },
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete",
+              "reason": "inspect does not expose node identities and node count; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete",
+              "reason": "inspect does not expose left/right/parent links; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete",
+              "reason": "inspect does not expose stored and derived heights; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete",
+              "reason": "inspect does not expose complete leaf ordering; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete",
+              "reason": "inspect does not expose per-node cached aggregates; independent source verification remains owed to N5/N6"
+            }
+          ]
+        },
+        "structure": {
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 5,
+          "nativeKvRows": 48,
+          "snapshotBytes": 38208
+        },
+        "existingDestinationError": "invalid_destination",
+        "status": "passed"
+      },
+      {
+        "backend": "surrealkv",
+        "binarySha256": "eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e",
+        "checks": [
+          "ownership",
+          "authenticated-fixture",
+          "original-replay",
+          "private-method-fence",
+          "CAS-winner",
+          "stale-mutation-rollback",
+          "source-expectations-with-declared-incomplete-obligations",
+          "independent-physical-structure",
+          "native-integrity",
+          "restart-and-receipt-recovery",
+          "old-version-receipt-redaction",
+          "wrong-backup-fence",
+          "isolated-restore",
+          "existing-destination-fence",
+          "archive-expiry",
+          "reset-identity-fence"
+        ],
+        "cleanup": [
+          {
+            "pid": 688799,
+            "status": "stopped"
+          },
+          {
+            "pid": 688859,
+            "status": "stopped"
+          },
+          {
+            "pid": 688864,
+            "status": "stopped"
+          },
+          {
+            "pid": 688812,
+            "status": "stopped"
+          }
+        ],
+        "logical": {
+          "status": "incomplete",
+          "structuralScope": {
+            "visible": [
+              "record inventory",
+              "root inventory/revision/summary",
+              "query descriptor inventory",
+              "role binding inventory"
+            ],
+            "unavailable": [
+              "tree node inventory",
+              "child links",
+              "tree heights",
+              "leaf ordering",
+              "per-node aggregates"
+            ],
+            "authority": "native store.check validates engine integrity but is not an independent source oracle; independent structural-tree obligations remain owed to N5/N6"
+          },
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete",
+              "reason": "inspect does not expose node identities and node count; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete",
+              "reason": "inspect does not expose left/right/parent links; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete",
+              "reason": "inspect does not expose stored and derived heights; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete",
+              "reason": "inspect does not expose complete leaf ordering; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete",
+              "reason": "inspect does not expose per-node cached aggregates; independent source verification remains owed to N5/N6"
+            }
+          ]
+        },
+        "structure": {
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 5,
+          "nativeKvRows": 48,
+          "snapshotBytes": 38208
+        },
+        "existingDestinationError": "invalid_destination",
+        "status": "passed"
+      },
+      {
+        "backend": "foundationdb",
+        "binarySha256": "eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e",
+        "checks": [
+          "ownership",
+          "authenticated-fixture",
+          "original-replay",
+          "private-method-fence",
+          "CAS-winner",
+          "stale-mutation-rollback",
+          "source-expectations-with-declared-incomplete-obligations",
+          "independent-physical-structure",
+          "native-integrity",
+          "restart-and-receipt-recovery",
+          "old-version-receipt-redaction",
+          "wrong-backup-fence",
+          "isolated-restore",
+          "existing-destination-fence",
+          "shared-host-reset-fence",
+          "archive-expiry",
+          "reset-identity-fence"
+        ],
+        "cleanup": [
+          {
+            "pid": 688869,
+            "status": "stopped"
+          },
+          {
+            "pid": 688892,
+            "status": "stopped"
+          },
+          {
+            "pid": 688895,
+            "status": "stopped"
+          },
+          {
+            "pid": 688872,
+            "status": "stopped"
+          },
+          {
+            "pid": 688878,
+            "status": "stopped"
+          }
+        ],
+        "logical": {
+          "status": "incomplete",
+          "structuralScope": {
+            "visible": [
+              "record inventory",
+              "root inventory/revision/summary",
+              "query descriptor inventory",
+              "role binding inventory"
+            ],
+            "unavailable": [
+              "tree node inventory",
+              "child links",
+              "tree heights",
+              "leaf ordering",
+              "per-node aggregates"
+            ],
+            "authority": "native store.check validates engine integrity but is not an independent source oracle; independent structural-tree obligations remain owed to N5/N6"
+          },
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete",
+              "reason": "inspect does not expose node identities and node count; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete",
+              "reason": "inspect does not expose left/right/parent links; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete",
+              "reason": "inspect does not expose stored and derived heights; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete",
+              "reason": "inspect does not expose complete leaf ordering; independent source verification remains owed to N5/N6"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete",
+              "reason": "inspect does not expose per-node cached aggregates; independent source verification remains owed to N5/N6"
+            }
+          ]
+        },
+        "structure": {
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 5,
+          "nativeKvRows": 48,
+          "snapshotBytes": 38208
+        },
+        "existingDestinationError": "internal",
+        "status": "passed"
+      }
+    ],
+    "cleanup": [
+      {
+        "role": "redb-native",
+        "pid": 688783,
+        "status": "stopped"
+      },
+      {
+        "role": "redb-native",
+        "pid": 688795,
+        "status": "stopped"
+      },
+      {
+        "role": "redb-native",
+        "pid": 688797,
+        "status": "stopped"
+      },
+      {
+        "role": "redb-native",
+        "pid": 688790,
+        "status": "stopped"
+      },
+      {
+        "role": "surrealkv-native",
+        "pid": 688799,
+        "status": "stopped"
+      },
+      {
+        "role": "surrealkv-native",
+        "pid": 688859,
+        "status": "stopped"
+      },
+      {
+        "role": "surrealkv-native",
+        "pid": 688864,
+        "status": "stopped"
+      },
+      {
+        "role": "surrealkv-native",
+        "pid": 688812,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb-native",
+        "pid": 688869,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb-native",
+        "pid": 688892,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb-native",
+        "pid": 688895,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb-native",
+        "pid": 688872,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb-native",
+        "pid": 688878,
+        "status": "stopped"
+      },
+      {
+        "role": "foundationdb",
+        "status": "stopped",
+        "pid": 688675
+      }
+    ],
+    "fdb": {
+      "start": {
+        "status": "started",
+        "pid": 688675,
+        "address": "127.0.0.1:34223"
+      },
+      "bootstrap": {
+        "status": "completed",
+        "stdout": "Database created\n",
+        "stderr": ""
+      },
+      "probe": {
+        "status": "passed",
+        "key": "rebase_n5_environment_probe_11683a26308a48be96ef111a4d5e2187",
+        "output": ">>> writemode on\n>>> begin\nTransaction started\n>>> set rebase_n5_environment_probe_11683a26308a48be96ef111a4d5e2187 verified\n>>> commit\nCommitted (83609)\n>>> get rebase_n5_environment_probe_11683a26308a48be96ef111a4d5e2187\n`rebase_n5_environment_probe_11683a26308a48be96ef111a4d5e2187' is `verified'\n>>> begin\nTransaction started\n>>> clear rebase_n5_environment_probe_11683a26308a48be96ef111a4d5e2187\n>>> commit\nCommitted (88802)\n"
+      },
+      "topology": {
+        "machines": 1,
+        "processes": 1,
+        "redundancy": "single",
+        "memoryMiB": 512
+      }
+    },
+    "status": "passed",
+    "ownedDataRemoved": true
+  },
+  "tests": {
+    "file": "2026-10-26-n5-extracted-node.txt",
+    "command": "node --test --test-concurrency=1 test/*.test.mjs",
+    "location": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-redb/tools/node",
+    "tests": 122,
+    "passed": 122,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cacheReuse": {
+    "sourceCommit": "6836c592abc99398d5e5440c18015b003859df49",
+    "previousCommit": "8a723b72aa3ad40fe80a760adfb3bd9baff890ea",
+    "archivedPreviousSource": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source-8a723b7",
+    "buildDirectory": "/home/divyeshvora/.cache/rebase-g10/n5-8a723b7/source",
+    "unchangedFilesWithPreservedTimestamps": 407,
+    "changedFiles": [
+      "research/71-node-lifecycle-result.md",
+      "research/evidence/2026-10-26-n5-portability.txt",
+      "tools/node/test/infra.test.mjs",
+      "tools/node/test/n4-real-receipt-progress.test.mjs",
+      "tools/node/test/native.test.mjs",
+      "tools/node/test/release.test.mjs"
+    ]
+  },
+  "trials": [
+    {
+      "trial": "stale-receipt",
+      "file": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-failed-stale-receipt.json",
+      "sha256": "c08174f3b0fcb45a2954bb48a659e69bd33a66097d5c4943231fed0417e243bb",
+      "scriptSha256": "0e372866fd72953d6a54d451751ba03658ed976c8e2495be7022c06c895f0cd2",
+      "failure": {
+        "stage": "redb lifecycle",
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    operation_id: '5c695a53-73be-450b-bfd4-7e4baeaa96bb',\n    records: [\n      {\n        id: '17dbfe91-cd68-5e1f-9912-e8e91a9401aa',\n+       record: null\n-       record: {\n-         contract: 410,\n-         derived: {\n-           allocated: '8',\n-           available_before: '10'\n-         },\n-         id: '17dbfe91-cd68-5e1f-9912-e8e91a9401aa',\n-         input: {\n-           active: true,\n-           ends: '30',\n-           pool: '9e577d56-f853-542d-b74d-8831a4116d53',\n-           requested: '8',\n-           starts: '10'\n-         },\n-         version: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n-       }\n      },\n      {\n        id: '85cfc7fb-44a5-5efe-80fe-6ab15f5b5bdc',\n+       record: null\n-       record: {\n-         contract: 410,\n-         derived: {\n-           allocated: '2',\n-           available_before: '2'\n-         },\n-         id: '85cfc7fb-44a5-5efe-80fe-6ab15f5b5bdc',\n-         input: {\n-           active: true,\n-           ends: '40',\n-           pool: '9e577d56-f853-542d-b74d-8831a4116d53',\n-           requested: '7',\n-           starts: '20'\n-         },\n-         version: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n-       }\n      }\n    ],\n    revision: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n  }\n",
+        "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    operation_id: '5c695a53-73be-450b-bfd4-7e4baeaa96bb',\n    records: [\n      {\n        id: '17dbfe91-cd68-5e1f-9912-e8e91a9401aa',\n+       record: null\n-       record: {\n-         contract: 410,\n-         derived: {\n-           allocated: '8',\n-           available_before: '10'\n-         },\n-         id: '17dbfe91-cd68-5e1f-9912-e8e91a9401aa',\n-         input: {\n-           active: true,\n-           ends: '30',\n-           pool: '9e577d56-f853-542d-b74d-8831a4116d53',\n-           requested: '8',\n-           starts: '10'\n-         },\n-         version: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n-       }\n      },\n      {\n        id: '85cfc7fb-44a5-5efe-80fe-6ab15f5b5bdc',\n+       record: null\n-       record: {\n-         contract: 410,\n-         derived: {\n-           allocated: '2',\n-           available_before: '2'\n-         },\n-         id: '85cfc7fb-44a5-5efe-80fe-6ab15f5b5bdc',\n-         input: {\n-           active: true,\n-           ends: '40',\n-           pool: '9e577d56-f853-542d-b74d-8831a4116d53',\n-           requested: '7',\n-           starts: '20'\n-         },\n-         version: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n-       }\n      }\n    ],\n    revision: '5f9004f5-30f1-485b-a966-d4b6439d460f'\n  }\n\n    at verifyBackend (file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:125:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:37:26"
+      },
+      "ownedDataRemoved": true,
+      "cleanup": [
+        {
+          "role": "redb-native",
+          "pid": 550887,
+          "status": "stopped"
+        },
+        {
+          "role": "redb-native",
+          "pid": 550894,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb",
+          "status": "stopped",
+          "pid": 550696
+        }
+      ]
+    },
+    {
+      "trial": "fdb-error-kind",
+      "file": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-failed-fdb-error-kind.json",
+      "sha256": "963ee2fcd31d8b2090fb338071f1c3c5f7ca5d27f28e42f9f0ecf412026eae20",
+      "scriptSha256": "0663efb057e299c598e50f08cb67f77d14a4665db1e0bc74a545496a9509e7a6",
+      "failure": {
+        "stage": "foundationdb lifecycle",
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "The validation function is expected to return \"true\". Received false\n\nCaught error:\n\nNativeHostError: Host operation failed",
+        "stack": "AssertionError [ERR_ASSERTION]: The validation function is expected to return \"true\". Received false\n\nCaught error:\n\nNativeHostError: Host operation failed\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async verifyBackend (file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:138:5)\n    at async file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:37:26"
+      },
+      "ownedDataRemoved": true,
+      "cleanup": [
+        {
+          "role": "redb-native",
+          "pid": 629452,
+          "status": "stopped"
+        },
+        {
+          "role": "redb-native",
+          "pid": 629476,
+          "status": "stopped"
+        },
+        {
+          "role": "redb-native",
+          "pid": 629459,
+          "status": "stopped"
+        },
+        {
+          "role": "surrealkv-native",
+          "pid": 629478,
+          "status": "stopped"
+        },
+        {
+          "role": "surrealkv-native",
+          "pid": 629502,
+          "status": "stopped"
+        },
+        {
+          "role": "surrealkv-native",
+          "pid": 629491,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb-native",
+          "pid": 629507,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb-native",
+          "pid": 629510,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb-native",
+          "pid": 629545,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb",
+          "status": "stopped",
+          "pid": 629330
+        }
+      ]
+    },
+    {
+      "trial": "composition",
+      "file": "/home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-failed-composition.json",
+      "sha256": "92d8f170169463a82a3f0aa29083918620830da36ec8f5c13f3624e100b37826",
+      "scriptSha256": "1961688095bfa42f23999c0e10fa41afff3c39180a76d1ac35ad663bcf68989d",
+      "failure": {
+        "stage": "redb lifecycle",
+        "name": "TypeError",
+        "message": "initialRestoreHost.snapshot is not a function",
+        "stack": "TypeError: initialRestoreHost.snapshot is not a function\n    at verifyBackend (file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:140:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///home/divyeshvora/.cache/rebase-g10/n5-6836c59/adapter-acceptance.mjs:37:26"
+      },
+      "ownedDataRemoved": true,
+      "cleanup": [
+        {
+          "role": "redb-native",
+          "pid": 657188,
+          "status": "stopped"
+        },
+        {
+          "role": "redb-native",
+          "pid": 657205,
+          "status": "stopped"
+        },
+        {
+          "role": "redb-native",
+          "pid": 657229,
+          "status": "stopped"
+        },
+        {
+          "role": "foundationdb",
+          "status": "stopped",
+          "pid": 657084
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Single-machine local FoundationDB 7.3.77, one server, two application hosts; not multi-host latency or capacity.",
+    "Independent physical trees checked for all six models; complete source membership, Measurement query results and equal-time Equipment prefixes remain N6 obligations.",
+    "Existing FDB destination rejects storage_exists internally but host wire sanitizes it to internal; complete before/after backup payload remains identical.",
+    "Python and legacy CLI removal waits for N6."
+  ],
+  "artifacts": {
+    "2026-10-26-n5-extracted-node.txt": "ee98180130eb85a641a68487bde49a35ad6fa1ad0139d20d4d6baf7a4cde5b5c",
+    "2026-10-26-n5-adapter-run.mjs": "33a1852f87a993284cb6db588efef1c8b8f2597fadc633701b9f42b1f41ebeb9",
+    "2026-10-26-n5-adapters.txt": "749e0e62a95056e763b7c6502cc7a7fb2be1a1d414c21b3d7492bf6f3ab19806"
+  }
+}

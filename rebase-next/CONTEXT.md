@@ -1,68 +1,52 @@
 # Compact context — 2026-10-26
 
-## Current handoff — G10 N4 accepted; N5 release acceptance pending
+## Current handoff — G10 N5 accepted; N6 next
 
-G10 P0, N0, N1, N2, N3 and N4 are accepted within their documented scopes.
-N5 implementation is tested but not accepted; its committed-source release and
-adapter checks remain the current task. N6, S0–S3 and F0 remain pending.
-Read [N0 results](research/62-node-foundation-result.md),
-[N1 results](research/63-node-native-host-result.md), the
-[N2 result](research/65-node-workflow-result.md),
-[N3 result](research/67-node-population-result.md),
-[N4 result](research/69-node-experiment-result.md) and
-[N4 evidence](research/evidence/2026-10-26-n4-node-experiments.json),
-[N5 implementation result](research/71-node-lifecycle-result.md),
-[N5 contract](research/70-node-lifecycle-contract.md),
-[native wire contract](research/60-native-host-contract.md),
-[Node decisions](research/61-node-tooling-contract.md) and the
-[G10 program](research/56-node-and-index-redesign-program.md),
-[Node contract](research/57-node-developer-contract.md),
-[ordered-storage contract](research/58-ordered-storage-redesign.md) and
-[capability inventory](research/59-node-capability-inventory.md).
-N3 adds caller-owned population proposals, typed pools, exact saved-plan binding
-and receipt-gated progress. Its Equipment and Quantity workflows use the
-unchanged N2 native binary; the result and evidence record trajectory, receipts,
-source fingerprints and limits. N4 adds bounded workloads, observation,
-experiments, and source-only checking. Its 95-test N0–N4 suite and independent
-review pass. Measurement query-result/selection payloads, equal-time mixed-sign
-Equipment prefix extrema, and physical tree verification remain incomplete;
-N5 typed-backup checking verifies physical trees across six compiled models;
-the 122-test Node prebuild suite and a local FoundationDB 7.3.77 ownership
-witness pass. N5 still needs the committed-source locked release build, package
-verification outside the checkout, and redb/SurrealKV/FoundationDB runs against
-the resulting artifact. N6 physical-snapshot/deletion work remains owed.
-Python workflow deletion remains pending until N6 replacement controls pass. G7–G9
-evidence remains historical acceptance for its recorded sources and bounds.
-Documentation-only checks and fingerprints are recorded in the
-[preparation evidence](research/evidence/2026-10-25-g10-preparation.json).
+P0 and N0–N5 are accepted within their documented bounds. Continue N6's
+replacement controls, then Python/CLI removal, followed by S0–S3 and F0.
+The selected workflow is **pay as you go, one agent**. Read AGENTS, README,
+[the program](research/56-node-and-index-redesign-program.md),
+[N5 result](research/71-node-lifecycle-result.md) and
+[N5 release evidence](research/evidence/2026-10-26-n5-release.json).
+The [capability inventory](research/59-node-capability-inventory.md) and
+[N0 ledger](research/fixtures/n0-migration-ledger.json) govern deletion.
 
-N0 freezes a scoped Node ESM package on Node 24 LTS, four pinned dependencies,
-configuration authority, the complete 60-file replacement ledger, and
-`rebase-native-host-1`. N1's 36 Node tests, 11 native integration tests, focused
-host unit test, all-features check, formatting and Clippy pass; npm audit reports
-zero vulnerabilities. The verified host binary is
-`target/verification-build/debug/rebase-next` (SHA-256 is in
-[N1 evidence](research/evidence/2026-10-25-n1-native-host.json)). N2 ran 48
-native test executions over 28 unique controls, passed default/all-features
-Clippy and formatting, and exercised fresh local SurrealKV/FoundationDB adapter
-lifecycle plus a Node FoundationDB ownership smoke. It does not claim
-multi-host latency or broad capacity. Rust/Cargo 1.95 are on PATH. The offline Cargo cache is
-`/workspace/.rebase-tools/rust-review/cargo`; shared build outputs are in
-`target/verification-build`. One FDB Host per native process is supported.
-Node 24 and npm are available at
-`/workspace/.rebase-tools/node24.22.1/bin`. The
-`target/verification-build/debug/rebase-next` artifact is the all-features
-verification build; use pinned `target/n2-native-default/rebase-next` for
-SDK-free workflows and source identity checks. No Python file is deleted until
-its replacement controls pass. Root owns Git.
-Next exact action: build and package the committed N5 source with its locked
-release profile, verify the extracted artifact, then run the planned adapter
-checks. The prebuild suite reused the unchanged
-`target/n2-native-default/rebase-next` binary (SHA-256
-`74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e`). N3 source
-hashes, Equipment/Quantity receipts and run boundaries are recorded in
-[N3 evidence](research/evidence/2026-10-25-n3-population.json). Do not repeat
-the accepted N3 runs unless a new failure or source change requires it.
+N5 releases come from committed source 6836c59. Both packages have 1,067
+checksummed files and all six model catalogs. The extracted redb Node suite
+passes 122 tests with zero skips. Extracted redb, SurrealKV and FoundationDB
+lifecycle runs pass, including ownership, original replay, CAS rollback,
+independent physical trees, restart, isolated restore, archive and reset.
+The final run stops every owned native/FDB process and removes its data.
+This is one-machine FDB evidence, not multi-host latency/capacity.
+The host sanitizes an existing FDB restore destination to internal; complete
+before/after payload equality verifies preservation. N6 can normalize this
+private diagnostic while replacing the native bootstrap.
+
+Exact next work: complete source/physical verification for Measurement query
+payloads/selection and equal-time mixed-sign Equipment prefixes, then add Node
+signed-ingress and bounded invoicing/IssueShare workflows. Preserve their
+independent arithmetic, current authority, original plans and recovery checks.
+Map all 60 Python inventory rows to passed replacements or justified historical
+retirement before deleting files. Replace the legacy native domain parser with
+host plus structured service bootstrap; production Rust must run without Node.
+Update supported guides, templates and package contents. S0–S3 and F0 remain owed.
+Do not begin deferred G6, frontend, live providers, TiKV, migrations or a course.
+
+Local reusable artifacts (verify identities before use):
+- Node 24.22.1: target/toolchains/node-v24.22.1-linux-x64/bin.
+- Rust 1.95.0 is selected inside rebase-next; use two Cargo jobs and incremental off.
+- SDK: target/g7-environment/root/usr, with lib/libfdb_c.so and sbin/fdbserver.
+- Releases: /home/divyeshvora/.cache/rebase-g10/n5-6836c59/bundle-redb and bundle-all.
+- Shared Cargo cache: /home/divyeshvora/.cache/rebase-g10/build.
+- Redb SHA-256: 57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52.
+- All-feature SHA-256: eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e.
+
+Main is linear. Shell Git fetch works, while HTTPS push credentials are absent.
+The connected GitHub API can publish a reviewed tree with the existing parent
+and an ordinary guarded ref update; verify its tree equals the local tree,
+fetch and adopt the identical patch. Do not rewrite remote history. Check
+origin before every integration. No other task owns native/Cargo processes.
+Historical artifacts and papers below retain their original scope.
 
 ## Historical G9 current handoff — superseded
 
