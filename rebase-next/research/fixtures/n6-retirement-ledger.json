@@ -1,8 +1,8 @@
 {
   "schema": "rebase.n6-tooling-retirement.v1",
   "date": "2026-10-26",
-  "status": "retirement_prepared_extracted_release_acceptance_pending",
-  "acceptance": "N6 retirement acceptance is pending extracted-release verification; this ledger records prepared retirement only and does not mark N6 accepted.",
+  "status": "retired_n6_accepted_with_documented_bounds",
+  "acceptance": "N6 accepted by research/evidence/2026-10-26-n6-release.json at committed source1243168; archived source hashes and per-row bounded dispositions remain unchanged.",
   "pinned_commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
   "source_ledger": "research/fixtures/n0-migration-ledger.json (preserved unchanged)",
   "row_count": 60,

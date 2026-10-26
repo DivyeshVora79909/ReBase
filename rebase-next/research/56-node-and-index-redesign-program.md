@@ -1,7 +1,9 @@
 # G10 — Node developer APIs and ordered-storage redesign
 
-Prepared 2026-10-25. **This is a planning checkpoint, P0. No replacement runtime,
-Node SDK or storage layout is implemented or accepted by this document.**
+Prepared 2026-10-25. This paper records the original P0 planning checkpoint and
+its status at that time. Later implementation and acceptance supersede the
+original status entries: [N6 is accepted within bounded scope](78-node-retirement-result.md),
+while S0–S3 and F0 remain. The next actionable S0 work is recorded below.
 The starting implementation is commit `e7458dc`, source 0.16.0, store 10, native
 codec 7, effect codec 4 and API 4. G7, G8 and G9 evidence remains historical
 acceptance for its recorded inputs. A Git pull before preparation was already
@@ -15,10 +17,9 @@ functions, inspect returned values, and automate scenarios without learning a
 project-specific command language. Preserve the original ReBase's useful power,
 not its names, implementation, language mixture or compatibility surface.
 
-Current delivery is detailed planning, reviewed documentation, and a linear
-commit/push to main. Do not start implementation during this documentation task.
-A subsequent implementation continuation starts N0 below; it need not repeat
-the design discussion or request approval for routine authorized changes.
+At P0, the delivery was detailed planning, reviewed documentation, and a linear
+commit/push to main. The later implementation continuation has completed N0–N6;
+the design discussion need not be repeated.
 
 The user permits breaking changes and explicitly requests:
 
@@ -133,9 +134,9 @@ well as S2's engine result. F0 accepts one integrated source/artifact identity.
 | N3 | Node population and scenario functions | **Accepted within bounded scope:** [N3 result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json). Four ordinary functions compose bounded proposals with explicit typed pools, callbacks, saved plans and receipt-gated advancement. Real Equipment and Quantity trajectories and the O(pool-size) custom-selector boundary are recorded; no global-validity claim is made. |
 | N4 | Node experiments, observation and independent verification | **Accepted within bounded scope:** [N4 result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json). The 95-test N0–N4 suite and focused independent review pass. Ordinary workloads, bounded observation, source-only Equipment/Quantity/Measurement checks, and real Equipment/Quantity receipt-progress trials are recorded. Measurement query results/selected identities, equal-time mixed-sign Equipment prefix extrema, and physical tree structure remain explicitly incomplete. N5 typed-backup checking and N6 physical snapshots/deletion remain owed. |
 | N5 | Node storage/service/release lifecycle | **Accepted within bounded scope:** [result](71-node-lifecycle-result.md) and [release evidence](evidence/2026-10-26-n5-release.json). Committed-source packages, 122 extracted Node controls, six-model physical checks and redb/SurrealKV/local FoundationDB lifecycle pass. Current bootstrap remains the private host; removal of the older service parser and the standalone structured service bootstrap belong to N6. |
-| N6 | Python and redundant CLI removal | **First bounded source/backup checkpoint accepted:** [contract](72-node-complete-backup-contract.md) and [evidence](evidence/2026-10-26-n6-complete-backup.json); 131 Node tests pass. The [signed-ingress checkpoint](73-node-signed-ingress-contract.md) also passes; all 133 Node tests pass. The [bounded IssueShare checkpoint](74-node-issue-share-contract.md) also passes; the full suite has 135 passing tests. The [private effect-retry checkpoint](75-private-effect-retry-contract.md) also passes; all 139 Node tests pass. Structured bootstrap and retirement controls remain. Delete replaced active Python tools/requirements/provider bridge and custom project CLI parser paths only after those controls pass; update imports/manifests/docs/templates. Final supported workflows and package verification need Node, Rust/native prerequisites only. Historical executable Python experiments are converted if still needed or retired to their historical Git commits; dated evidence remains immutable. No hidden Python invocation or second maintained implementation. |
-| S0 | FoundationDB and embedded access baseline | Instrument logical/physical loads, wait dependencies, bytes, cache hits, scans and writes without altering semantics. Record host/cluster/process topology and cold/warm controls. Reuse existing correctness witnesses. Local multiple processes are not a multi-host network benchmark. |
-| S1 | Bounded alternatives trial and selected layout decision | Compare the baseline with small transaction-local batching/cache changes and a justified paged/stable-partition candidate. Validate correctness independently before timing. Define acceptance thresholds from the S0 workload before candidate results. Account for rewrite bytes, conflicts, structural metadata and rank/select costs. Select the smallest maintainable design meeting the evidence; retaining AVL is a valid measured decision. |
+| N6 | Python and redundant CLI removal | **Accepted within bounded scope:** [result](78-node-retirement-result.md) and [release evidence](evidence/2026-10-26-n6-release.json). The 60 inventoried Python paths and four bridge auxiliaries are retired; final committed-source packages and extracted Node/native workflows pass. Source, model, adapter, lifecycle, and capacity boundaries are recorded in the result. This does not complete G10. |
+| S0 | FoundationDB and embedded access baseline | First freeze the trace/workload schema and measurement plan for logical/physical loads, wait dependencies, bytes, cache hits, scans, writes, conflicts and resource use. Record data shape, host/cluster/process topology, and cold/warm controls; then execute the baseline on supported adapters without changing semantics. Reuse existing correctness witnesses. Local multiple processes are not a multi-host network benchmark. |
+| S1 | Bounded alternatives trial and selected layout decision | Do not choose a candidate before the S0 workload and measurement limits are recorded. Compare the baseline with small transaction-local batching/cache changes and a justified paged/stable-partition candidate. Validate correctness independently before timing. Define thresholds before candidate results. Account for rewrite bytes, conflicts, structural metadata and rank/select costs. Select the smallest maintainable design meeting the evidence; retaining AVL is a valid measured decision. |
 | S2 | Selected ordered-access implementation | Implement only the S1 decision, adapt independent structural checking and retain atomic mutations/receipts/authority. If encoding or meaning changes, bump identities and reject incompatible stores; do not silently migrate. Physical page changes must not become false business dependencies. Record algorithms, bounds and changed public/private capabilities. |
 | S3 | Cross-adapter and latency acceptance | Verify the selected implementation on redb, standalone SurrealKV and FoundationDB; compare complete logical outcomes, rollback, query/replay and lifecycle. Run affected N5 extracted checks. Record real multi-host results if infrastructure exists; otherwise mark that claim incomplete and record its exact required run. No synthetic delay result may be promoted to distributed capacity. |
 | F0 | Integrated developer experience, deletion and source/artifact handoff | From a clean source export, import the Node entry point in a standard REPL/script and complete model → owned service → fixture/population → mutation/query → inspection → experiment → check → backup/recovery → package workflow. Verify source/artifact/format identities and no Python/custom CLI dependency. Publish supported/deferred/blocked claims, hashes, results, cleanup and a next-action handoff. |
@@ -281,11 +282,11 @@ simple object manipulation remain ordinary JavaScript.
 | N3 | Accepted: [Node population result](67-node-population-result.md) and [evidence](evidence/2026-10-25-n3-population.json) |
 | N4 | Accepted within bounded scope: [result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json) |
 | N5 | Accepted within bounded scope: [result](71-node-lifecycle-result.md) and [committed-source release evidence](evidence/2026-10-26-n5-release.json) |
-| N6 | Next: complete semantic replacement controls and source/physical composition before Python/CLI deletion |
+| N6 | Accepted within bounded scope: [result](78-node-retirement-result.md) and [release evidence](evidence/2026-10-26-n6-release.json) |
 | S0–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
-To continue in a fresh conversation: read AGENTS, the top of CONTEXT, this
-program, the N5 release result and relevant frozen contracts. Complete N6,
-preserve the same linear Git context and selected pay-as-you-go mode. Follow the dependencies above; do not
-restart G7–G9 or implement G6.
+To continue: read AGENTS, the top of CONTEXT, and the
+[N6 result](78-node-retirement-result.md). Start S0 by fixing the workload and
+trace schema and measurement baseline before evaluating any S1 candidate. Keep
+the bounded claims and dependencies above; do not restart G7–G9 or begin G6.

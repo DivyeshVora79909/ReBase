@@ -1,0 +1,72 @@
+import { execFileSync } from 'node:child_process';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import net from 'node:net';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { runExtractedAcceptance } from './n6-extracted-acceptance.mjs';
+
+const root = '/workspace/ReBase/rebase-next';
+const revision = execFileSync('git', ['rev-parse', '--verify', 'HEAD^{commit}'], {
+  cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'],
+}).trim();
+if (!/^[0-9a-f]{40,64}$/.test(revision)) throw new Error('Git did not identify the committed source');
+const releaseRoot = path.join('/home/agent', `rebase-n6-release-${revision.slice(0, 7)}`);
+const directory = path.join('/home/agent', `rebase-n6-extracted-${revision.slice(0, 7)}-retry2`);
+await mkdir(directory, { recursive: false, mode: 0o700 });
+const sdk = path.join(root, 'target/g7-environment/lib');
+const environment = { FDB_CLIENT_LIB_PATH: sdk, LD_LIBRARY_PATH: sdk };
+const results = { sourceCommit: revision,
+  directory,
+  scope: 'bounded extracted-artifact lifecycle; single local FoundationDB process, no distributed performance claim',
+  runs: [] };
+const infra = await import(pathToFileURL(path.join(releaseRoot, 'bundle-all/tools/node/infra.mjs')));
+for (const bundleName of ['bundle-redb', 'bundle-all']) {
+  const manifest = JSON.parse(await readFile(path.join(releaseRoot, bundleName, 'BUNDLE.json'), 'utf8'));
+  if (manifest.sourceCommit !== revision) throw new Error(`${bundleName} was not built from current committed source`);
+}
+let fdb;
+try {
+  for (const backend of ['redb', 'surrealkv', 'foundationdb']) {
+    let clusterFile;
+    if (backend === 'foundationdb') {
+      const clusterDirectory = path.join(directory, 'cluster');
+      await mkdir(clusterDirectory, { recursive: false, mode: 0o700 });
+      const listener = net.createServer();
+      await new Promise(resolve => listener.listen(0, '127.0.0.1', resolve));
+      const port = listener.address().port;
+      await new Promise(resolve => listener.close(resolve));
+      clusterFile = path.join(clusterDirectory, 'fdb.cluster');
+      await writeFile(clusterFile, `rebase_n6:${randomUUID().replaceAll('-', '')}@127.0.0.1:${port}\n`,
+        { flag: 'wx', mode: 0o600 });
+      fdb = await infra.openFdbEnvironment({
+        fdbserver: path.join(root, 'target/g7-environment/root/usr/sbin/fdbserver'),
+        fdbcli: path.join(root, 'target/g7-environment/root/usr/bin/fdbcli'),
+        clusterFile, dataDirectory: path.join(clusterDirectory, 'data'),
+        logDirectory: path.join(clusterDirectory, 'logs'), serverLog: path.join(clusterDirectory, 'server.log'),
+        port, environment, startTimeoutMs: 15_000, stopTimeoutMs: 10_000, commandTimeoutMs: 20_000,
+      });
+      results.fdbStart = await fdb.start();
+      results.fdbBootstrap = await fdb.bootstrap();
+      results.fdbProbe = await fdb.check();
+    }
+    const outcome = await runExtractedAcceptance({
+      bundleDirectory: path.join(releaseRoot, backend === 'redb' ? 'bundle-redb' : 'bundle-all'),
+      backend, environment: backend === 'redb' ? {} : environment, clusterFile,
+      directory: path.join(directory, backend),
+    });
+    if (outcome.artifact.sourceCommit !== revision) throw new Error(`${backend} runtime artifact source commit differs`);
+    results.runs.push(outcome);
+    await writeFile(path.join(directory, 'results.json'), JSON.stringify(results, null, 2) + '\n');
+    console.log(JSON.stringify({ backend, status: outcome.status, sourceCommit: outcome.sourceCommit }));
+  }
+  results.status = 'passed';
+} catch (error) {
+  results.status = 'failed';
+  results.error = { name: error.name, code: error.code, message: error.message, stack: error.stack };
+  console.error(JSON.stringify(results.error));
+  process.exitCode = 1;
+} finally {
+  if (fdb) results.fdbStop = await fdb.close();
+  await writeFile(path.join(directory, 'results.json'), JSON.stringify(results, null, 2) + '\n');
+}

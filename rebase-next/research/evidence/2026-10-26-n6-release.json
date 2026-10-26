@@ -1,0 +1,1538 @@
+{
+  "schema": "rebase.n6-extracted-release.v1",
+  "date": "2026-10-26",
+  "status": "accepted_with_documented_bounds",
+  "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+  "environment": {
+    "node": "24.22.1",
+    "rust": "1.95.0",
+    "foundationdb": "7.3.77",
+    "topology": "one machine and one owned local FDB server; not multi-host"
+  },
+  "packages": [
+    {
+      "label": "redb",
+      "directory": "/home/agent/rebase-n6-release-1243168/bundle-redb",
+      "manifestSha256": "07db89e172b8a4c1b6fcb0c869168876a0d925ac4c8d7a0d0d47b6b500719b2a",
+      "binary": {
+        "path": "bin/rebase-next",
+        "sha256": "5a61cdb7f96f3ee62ccd2c17683b3a8bfe2f85529205f94e368735c67b48b2ad",
+        "provenance": "committed-export-build"
+      },
+      "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+      "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+      "sourceFileCount": 407,
+      "sourceFilesSha256": "5d94f53e04a942c77b1767224d7c87ce42617a2885d22848ed945a2368e870f8",
+      "checksummedFiles": 1061,
+      "models": 6,
+      "features": [],
+      "backends": [
+        "redb"
+      ],
+      "build": {
+        "exitCode": 0,
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/workspace/.rebase-tools/n6-release-699f096/source/Cargo.toml",
+          "--target-dir",
+          "/workspace/ReBase/rebase-next/target/verification-build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next"
+        ],
+        "cwd": "/workspace/.rebase-tools/n6-release-699f096/source",
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+        "sourceFilesSha256": "5d94f53e04a942c77b1767224d7c87ce42617a2885d22848ed945a2368e870f8",
+        "buildLogSha256": "85c8dbac64ed6a362d668bf3988686e26e947620bb15cfdbe2e999a0ff8261b2",
+        "artifactSha256": "5a61cdb7f96f3ee62ccd2c17683b3a8bfe2f85529205f94e368735c67b48b2ad"
+      }
+    },
+    {
+      "label": "all",
+      "directory": "/home/agent/rebase-n6-release-1243168/bundle-all",
+      "manifestSha256": "f201eda8e287c772cbc244a9adf6ac9ff09e99734002e3940abc73ce7ab1abb9",
+      "binary": {
+        "path": "bin/rebase-next",
+        "sha256": "cc9b9571681a14e3870848f739227fb96923d5b9cb2bf2ef4ad6eb94169b279c",
+        "provenance": "committed-export-build"
+      },
+      "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+      "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+      "sourceFileCount": 407,
+      "sourceFilesSha256": "5d94f53e04a942c77b1767224d7c87ce42617a2885d22848ed945a2368e870f8",
+      "checksummedFiles": 1061,
+      "models": 6,
+      "features": [
+        "foundationdb",
+        "surrealkv"
+      ],
+      "backends": [
+        "redb",
+        "foundationdb",
+        "surrealkv"
+      ],
+      "build": {
+        "exitCode": 0,
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/workspace/.rebase-tools/n6-release-699f096/source/Cargo.toml",
+          "--target-dir",
+          "/workspace/ReBase/rebase-next/target/verification-build",
+          "--jobs",
+          "2",
+          "--bin",
+          "rebase-next",
+          "--features",
+          "foundationdb,surrealkv"
+        ],
+        "cwd": "/workspace/.rebase-tools/n6-release-699f096/source",
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+        "sourceFilesSha256": "5d94f53e04a942c77b1767224d7c87ce42617a2885d22848ed945a2368e870f8",
+        "buildLogSha256": "b65d97c967cb13bb2fd061b2f5b86011ef366acea387375a92a9808f93395384",
+        "artifactSha256": "cc9b9571681a14e3870848f739227fb96923d5b9cb2bf2ef4ad6eb94169b279c"
+      }
+    }
+  ],
+  "sourceRefresh": {
+    "previousCommit": "699f0965601d192c6be3ba3fb130d9b00f31e48a",
+    "preservedFiles": 397,
+    "changedFiles": [
+      "AGENTS.md",
+      "CONTEXT.md",
+      "research/76-native-bootstrap-contract.md",
+      "tools/node/model.mjs",
+      "tools/node/private/config-validation.mjs",
+      "tools/node/test/model.test.mjs",
+      "tools/node/test/native-integration.test.mjs"
+    ],
+    "addedFiles": [
+      "research/evidence/2026-10-26-n6-model-catalogs-focused.txt",
+      "research/evidence/2026-10-26-n6-model-catalogs-full.txt",
+      "research/evidence/2026-10-26-n6-model-catalogs.json"
+    ],
+    "removedFiles": [],
+    "nativeInputs": 89,
+    "nativeInputsSha256": "1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616",
+    "allNativeInputsMatched": true,
+    "actualCargoExecutedBothProfiles": true,
+    "result": "Both actual locked Cargo invocations succeeded with identical profile binary hashes after copying only changed source files; unchanged native inputs kept mtimes."
+  },
+  "acceptance": {
+    "node": {
+      "passed": 143,
+      "failed": 0,
+      "skipped": 0,
+      "location": "extracted SDK-free package; no workspace module imports"
+    },
+    "nativePreviousCheckpoint": {
+      "defaultTestsPassed": 200,
+      "focusedScopeControls": 7,
+      "explicitLiveFdbGuard": 1,
+      "evidence": "research/evidence/2026-10-26-n6-bootstrap.json"
+    },
+    "standalone": {
+      "status": "passed",
+      "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+      "binarySha256": "5a61cdb7f96f3ee62ccd2c17683b3a8bfe2f85529205f94e368735c67b48b2ad",
+      "scope": "six extracted models; local redb; serve process receives PATH empty",
+      "packageCheck": {
+        "status": "passed",
+        "checksummedFiles": 1061,
+        "modelCount": 6,
+        "binaryCatalogsChecked": true,
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "binarySha256": "5a61cdb7f96f3ee62ccd2c17683b3a8bfe2f85529205f94e368735c67b48b2ad",
+        "features": [],
+        "supportedBackends": [
+          "redb"
+        ]
+      },
+      "models": [
+        {
+          "selector": "calculation",
+          "model": "2522613c12f6de684d5c983b814ca9bb6a262f00d467b2239e96a747a22c9cb2",
+          "fixture": "causal-diamond",
+          "publicContractCount": 10,
+          "developerContractCount": 12,
+          "store": "48a9a392-1561-400e-a4c3-c354f7370fc2",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "79309730-d291-4469-969c-cdb38cffc5cf",
+          "storeSha256AfterRejections": "b6cff25351f3ad141a4624b4a5a070fbd37f4561742657c7c49b45a3cd702cf4",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        },
+        {
+          "selector": "equipment",
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "fixture": "equipment",
+          "publicContractCount": 3,
+          "developerContractCount": 4,
+          "store": "1955ee5e-e7dc-4494-a2d7-29d5b84f6cc8",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "7dd37ee0-ff3b-4ef1-bde0-62a85d5f09dd",
+          "storeSha256AfterRejections": "2dbc99904ddc2fec3ea4d9ff7f3e0c6c7a210df8f1eb68c16fe212d4eb4c5ba7",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        },
+        {
+          "selector": "invoicing",
+          "model": "4c0fa1ad55595d251294a3dcd2e84c7f9b336dbcb6028d440b5379efded51969",
+          "fixture": "invoice",
+          "publicContractCount": 9,
+          "developerContractCount": 16,
+          "store": "1994c038-08f0-4a56-aa3d-c548f0a44792",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "26ba1f4a-5e1b-4024-8df3-6e6647d88d34",
+          "storeSha256AfterRejections": "7c2205370ba257523834a4ff8b24d0fc52bf2ac683f0876e455d0871bbc9f0b5",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        },
+        {
+          "selector": "measurement",
+          "model": "882ce20a2504a697e23573e71e25b73cf16642614eaa95354b57411d61c7350d",
+          "fixture": "measurements",
+          "publicContractCount": 4,
+          "developerContractCount": 4,
+          "store": "da5c0944-8b61-40a8-a0d0-aa4aa118913a",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "a1b75298-2a5b-43a7-8bec-8b1054dd55fb",
+          "storeSha256AfterRejections": "aa23d3b74ae4f30ac830af80a4a97b37e1b8af9c2a406dac3244003875d4c4b4",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        },
+        {
+          "selector": "effect-demo",
+          "model": "58a118c4c633281404672d0426756074177caffcf174611218dc357d5cfd0878",
+          "fixture": "atomic-intent",
+          "publicContractCount": 2,
+          "developerContractCount": 2,
+          "store": "c9d06a0b-bd7d-431f-8aa7-c7b93b14a3c9",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "4f395517-4132-4791-ad3a-92f1ffd72aa8",
+          "storeSha256AfterRejections": "04f22ecc57c9a6143d87936197c1ca102d6234e66d991e69fc10d6b744098add",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        },
+        {
+          "selector": "quantity",
+          "model": "ef26726c7e3fb2ef11947a2bcde8791a8e0d7b5d4cf744ffb6b7b91659af7dc4",
+          "fixture": "quantities",
+          "publicContractCount": 3,
+          "developerContractCount": 3,
+          "store": "13824d33-885d-4aef-80f3-7ede56ebcc55",
+          "receiptStatus": "committed",
+          "replayed": true,
+          "receiptOperationId": "0fc231fb-d489-4530-bc05-6cad73c2dc2d",
+          "storeSha256AfterRejections": "da7b785f4821ad321db7a4746d04f621fcc610533a4757e0416d1557b1b644d2",
+          "childPathEmpty": true,
+          "processes": 2,
+          "status": "passed"
+        }
+      ],
+      "negativeCases": [
+        {
+          "selector": "calculation",
+          "name": "invalid-format",
+          "expected": "invalid_config",
+          "exitCode": 1,
+          "stderrSha256": "d1fbba627997b2f2c255d01759cc1426a61265b338b96ec92cf51aca90548bc5",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "unknown-key",
+          "expected": "invalid_config",
+          "exitCode": 1,
+          "stderrSha256": "8645e7ea2c4a37e8e0d511dd8e622de57e5092c2d6aedf42d60923c57bbb7881",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "create-target",
+          "expected": "invalid_config",
+          "exitCode": 1,
+          "stderrSha256": "d1fbba627997b2f2c255d01759cc1426a61265b338b96ec92cf51aca90548bc5",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "wrong-expected-store",
+          "expected": "wrong_target",
+          "exitCode": 1,
+          "stderrSha256": "83f9d4a36323a0900e17d83ca5daf5d12e951c5d66a016bbbab660ff00ad3101",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "invalid-limit",
+          "expected": "invalid_input",
+          "exitCode": 1,
+          "stderrSha256": "6e446789d07302fd90ac814179b2f599cb88145c8ef80f89b3760c8fc75cf5cb",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "malformed-public-key",
+          "expected": "invalid_input",
+          "exitCode": 1,
+          "stderrSha256": "7d0c20c524346313280c857901e2d08727d119eb1f24692c5305a56616eb573c",
+          "sentinelStoreUnchanged": true
+        },
+        {
+          "selector": "calculation",
+          "name": "relative-config-path",
+          "expected": "invalid_config",
+          "exitCode": 1,
+          "stderrSha256": "6c748febd32d51179ce0aa9890e560183170a830af92959b4567fd06234faf30",
+          "sentinelStoreUnchanged": true
+        }
+      ]
+    },
+    "backends": [
+      {
+        "status": "passed",
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "backend": "redb",
+        "artifact": {
+          "directory": "/home/agent/rebase-n6-release-1243168/bundle-redb",
+          "binarySha256": "5a61cdb7f96f3ee62ccd2c17683b3a8bfe2f85529205f94e368735c67b48b2ad",
+          "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+          "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+          "storeFormat": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "proofs": [
+          "saved-plan-not-observed-no-submit",
+          "source-logical-check",
+          "native-engine-check-separate",
+          "complete-source-and-physical-backup-check-with-retained-role-history",
+          "wrong-backup-target-fence",
+          "restore-create-only-fence",
+          "complete-destination-payload-preserved-after-rejected-repeat",
+          "restored-data-reopened-and-checked",
+          "archive-verified",
+          "reset-store-fence",
+          "reset-store-reopened-empty"
+        ],
+        "native": {
+          "selector": "equipment",
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7",
+          "pid": 70909
+        },
+        "formats": {
+          "store": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "savedPlan": {
+          "operationId": "8f0302d3-d46e-4c1f-ae35-8c2b253b961b",
+          "preflightStatus": "not_observed",
+          "savedSha256": "bd2a97f86d368ec5d2160369616cad8155287558d0ab32a3730a4dd9e48cdbe1"
+        },
+        "mutation": {
+          "status": "committed",
+          "operationId": "8f0302d3-d46e-4c1f-ae35-8c2b253b961b",
+          "returnedIds": [
+            "577a90f3-0cc5-42e4-87cb-1e109470ad20",
+            "f29d32a5-cfb9-4db4-907f-2a3d407741d2",
+            "0d4a7c40-3f63-4d53-b673-81aca9483c1b"
+          ],
+          "committedStatus": "committed"
+        },
+        "receipts": {
+          "operationId": "8f0302d3-d46e-4c1f-ae35-8c2b253b961b",
+          "status": "committed",
+          "recordIds": [
+            "577a90f3-0cc5-42e4-87cb-1e109470ad20",
+            "f29d32a5-cfb9-4db4-907f-2a3d407741d2",
+            "0d4a7c40-3f63-4d53-b673-81aca9483c1b"
+          ]
+        },
+        "roleHistory": [
+          {
+            "producer": "0d4a7c40-3f63-4d53-b673-81aca9483c1b",
+            "role": 11,
+            "output": "72d8acac-f803-4439-9018-2566c6f5f2c2"
+          },
+          {
+            "producer": "0d4a7c40-3f63-4d53-b673-81aca9483c1b",
+            "role": 29,
+            "output": "d175b0a6-1bf4-4bb0-b1c7-927a8dbea98e"
+          }
+        ],
+        "sourceCheck": {
+          "status": "incomplete",
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete"
+            }
+          ]
+        },
+        "nativeEngineCheck": {
+          "status": "valid",
+          "passed": null,
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7"
+        },
+        "backup": {
+          "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7",
+          "sha256": "91d735b4a1b94faeb2cc20b6d5523610004df7c453a8cbcd0b7d2ca980eefcaa",
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 3,
+          "nativeKvRows": 29,
+          "snapshotBytes": 24658,
+          "sourceCheck": {
+            "status": "passed",
+            "scope": "bounded source records, queries, roles, roots and complete physical trees; other native inventories are outside this checker",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "restore": {
+          "status": "restored",
+          "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7",
+          "createOnlyRepeatRejected": true,
+          "repeatError": "invalid_destination",
+          "destinationPayloadBeforeSha256": "91d735b4a1b94faeb2cc20b6d5523610004df7c453a8cbcd0b7d2ca980eefcaa",
+          "destinationPayloadAfterSha256": "91d735b4a1b94faeb2cc20b6d5523610004df7c453a8cbcd0b7d2ca980eefcaa",
+          "completeDestinationPayloadUnchanged": true
+        },
+        "reopen": {
+          "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7",
+          "records": 5,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7"
+          },
+          "sourceStatus": "incomplete"
+        },
+        "archive": {
+          "status": "archived",
+          "sha256": "6cf5572e36429d28b8b89a9c5bdbdaf40be617f1a046430be1400b0e5fe18e16",
+          "structure": {
+            "status": "passed",
+            "sourceMembership": "not_evaluated",
+            "rootCount": 1,
+            "nodeCount": 3,
+            "nativeKvRows": 29,
+            "snapshotBytes": 24658
+          },
+          "sourceCheck": {
+            "status": "passed",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "reset": {
+          "status": "reset",
+          "previousStore": "59f9b06a-e7f7-44c1-b8b2-05fdb1dfebf7",
+          "store": "3d6fdc02-e221-4460-bf05-f67137f98444",
+          "wrongExpectedStoreRejected": true
+        },
+        "resetReopen": {
+          "store": "3d6fdc02-e221-4460-bf05-f67137f98444",
+          "recordCount": 0,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "3d6fdc02-e221-4460-bf05-f67137f98444"
+          }
+        }
+      },
+      {
+        "status": "passed",
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "backend": "surrealkv",
+        "artifact": {
+          "directory": "/home/agent/rebase-n6-release-1243168/bundle-all",
+          "binarySha256": "cc9b9571681a14e3870848f739227fb96923d5b9cb2bf2ef4ad6eb94169b279c",
+          "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+          "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+          "storeFormat": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "proofs": [
+          "saved-plan-not-observed-no-submit",
+          "source-logical-check",
+          "native-engine-check-separate",
+          "complete-source-and-physical-backup-check-with-retained-role-history",
+          "wrong-backup-target-fence",
+          "restore-create-only-fence",
+          "complete-destination-payload-preserved-after-rejected-repeat",
+          "restored-data-reopened-and-checked",
+          "archive-verified",
+          "reset-store-fence",
+          "reset-store-reopened-empty"
+        ],
+        "native": {
+          "selector": "equipment",
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce",
+          "pid": 71020
+        },
+        "formats": {
+          "store": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "savedPlan": {
+          "operationId": "a6c7d35e-476d-4de8-9789-3c20f513f933",
+          "preflightStatus": "not_observed",
+          "savedSha256": "40e5e1ad81fd127c870f1c010e069a281ac3b740fd928a6f0d232a49524d53ba"
+        },
+        "mutation": {
+          "status": "committed",
+          "operationId": "a6c7d35e-476d-4de8-9789-3c20f513f933",
+          "returnedIds": [
+            "6dc46d2c-cbe6-45d7-9dc1-d22fe6d06bcc",
+            "9c98eae6-a70f-4a9e-9be2-b74fc0fae0c2",
+            "c8abfa6e-ec0b-4ccc-8c6e-ec0a4d9b2c81"
+          ],
+          "committedStatus": "committed"
+        },
+        "receipts": {
+          "operationId": "a6c7d35e-476d-4de8-9789-3c20f513f933",
+          "status": "committed",
+          "recordIds": [
+            "6dc46d2c-cbe6-45d7-9dc1-d22fe6d06bcc",
+            "9c98eae6-a70f-4a9e-9be2-b74fc0fae0c2",
+            "c8abfa6e-ec0b-4ccc-8c6e-ec0a4d9b2c81"
+          ]
+        },
+        "roleHistory": [
+          {
+            "producer": "c8abfa6e-ec0b-4ccc-8c6e-ec0a4d9b2c81",
+            "role": 11,
+            "output": "b4a520f1-a769-45a9-998f-ad9455eee642"
+          },
+          {
+            "producer": "c8abfa6e-ec0b-4ccc-8c6e-ec0a4d9b2c81",
+            "role": 29,
+            "output": "c52bc119-1053-4e0f-84f6-fcae21917a9f"
+          }
+        ],
+        "sourceCheck": {
+          "status": "incomplete",
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete"
+            }
+          ]
+        },
+        "nativeEngineCheck": {
+          "status": "valid",
+          "passed": null,
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce"
+        },
+        "backup": {
+          "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce",
+          "sha256": "4f68c087ed32b09cf4c96cef38629f18ea3fa3bb2ea9b678f520cd30ec8edf14",
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 3,
+          "nativeKvRows": 29,
+          "snapshotBytes": 24658,
+          "sourceCheck": {
+            "status": "passed",
+            "scope": "bounded source records, queries, roles, roots and complete physical trees; other native inventories are outside this checker",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "restore": {
+          "status": "restored",
+          "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce",
+          "createOnlyRepeatRejected": true,
+          "repeatError": "invalid_destination",
+          "destinationPayloadBeforeSha256": "4f68c087ed32b09cf4c96cef38629f18ea3fa3bb2ea9b678f520cd30ec8edf14",
+          "destinationPayloadAfterSha256": "4f68c087ed32b09cf4c96cef38629f18ea3fa3bb2ea9b678f520cd30ec8edf14",
+          "completeDestinationPayloadUnchanged": true
+        },
+        "reopen": {
+          "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce",
+          "records": 5,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "5b8316c4-a755-4f9c-92a0-f45bac85cdce"
+          },
+          "sourceStatus": "incomplete"
+        },
+        "archive": {
+          "status": "archived",
+          "sha256": "5ee047fda06df539c2758da47114df70392ebc954bd65ff5f8561c46694b4e96",
+          "structure": {
+            "status": "passed",
+            "sourceMembership": "not_evaluated",
+            "rootCount": 1,
+            "nodeCount": 3,
+            "nativeKvRows": 29,
+            "snapshotBytes": 24658
+          },
+          "sourceCheck": {
+            "status": "passed",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "reset": {
+          "status": "reset",
+          "previousStore": "5b8316c4-a755-4f9c-92a0-f45bac85cdce",
+          "store": "5efbe8f4-19d8-4cfa-85cb-736acb00d183",
+          "wrongExpectedStoreRejected": true
+        },
+        "resetReopen": {
+          "store": "5efbe8f4-19d8-4cfa-85cb-736acb00d183",
+          "recordCount": 0,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "5efbe8f4-19d8-4cfa-85cb-736acb00d183"
+          }
+        }
+      },
+      {
+        "status": "passed",
+        "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+        "backend": "foundationdb",
+        "artifact": {
+          "directory": "/home/agent/rebase-n6-release-1243168/bundle-all",
+          "binarySha256": "cc9b9571681a14e3870848f739227fb96923d5b9cb2bf2ef4ad6eb94169b279c",
+          "sourceCommit": "1243168424294728968591d69efbe5d836fd36fd",
+          "sourceTree": "ce70a199cc5e018f4d0aeb8c5cd8d1a1f8c0c5b0",
+          "storeFormat": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "proofs": [
+          "saved-plan-not-observed-no-submit",
+          "source-logical-check",
+          "native-engine-check-separate",
+          "complete-source-and-physical-backup-check-with-retained-role-history",
+          "wrong-backup-target-fence",
+          "restore-create-only-fence",
+          "complete-destination-payload-preserved-after-rejected-repeat",
+          "restored-data-reopened-and-checked",
+          "archive-verified",
+          "reset-store-fence",
+          "reset-store-reopened-empty"
+        ],
+        "native": {
+          "selector": "equipment",
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3",
+          "pid": 71473
+        },
+        "formats": {
+          "store": "rebase-store-10",
+          "nativeCodec": "native-slice-kv-7",
+          "api": "rebase-local-api-4",
+          "effectCodec": "rebase-effects-4"
+        },
+        "savedPlan": {
+          "operationId": "b11a4384-d713-49cc-8859-559e4131ea56",
+          "preflightStatus": "not_observed",
+          "savedSha256": "6e884e5c37ba1c5805900d995ca89a76c9043cfc2325aaa241b135d18d02976a"
+        },
+        "mutation": {
+          "status": "committed",
+          "operationId": "b11a4384-d713-49cc-8859-559e4131ea56",
+          "returnedIds": [
+            "a6aa0452-741b-4641-887c-b16e6fbff142",
+            "dc26f27d-6ac6-4d6a-96df-f40c65778917",
+            "fd18f6c3-465f-4e20-850f-81c5192871cf"
+          ],
+          "committedStatus": "committed"
+        },
+        "receipts": {
+          "operationId": "b11a4384-d713-49cc-8859-559e4131ea56",
+          "status": "committed",
+          "recordIds": [
+            "a6aa0452-741b-4641-887c-b16e6fbff142",
+            "dc26f27d-6ac6-4d6a-96df-f40c65778917",
+            "fd18f6c3-465f-4e20-850f-81c5192871cf"
+          ]
+        },
+        "roleHistory": [
+          {
+            "producer": "fd18f6c3-465f-4e20-850f-81c5192871cf",
+            "role": 11,
+            "output": "0eb0e72e-ab39-4fe5-b3ae-d4e52f6b40c7"
+          },
+          {
+            "producer": "fd18f6c3-465f-4e20-850f-81c5192871cf",
+            "role": 29,
+            "output": "d12c9f70-ba4c-4d7b-95ca-7a290b96e55d"
+          }
+        ],
+        "sourceCheck": {
+          "status": "incomplete",
+          "obligations": [
+            {
+              "name": "source-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "source-contract-and-inputs",
+              "status": "passed"
+            },
+            {
+              "name": "source-derived-values",
+              "status": "passed"
+            },
+            {
+              "name": "private-output-records",
+              "status": "passed"
+            },
+            {
+              "name": "root-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "root-summaries",
+              "status": "passed"
+            },
+            {
+              "name": "query-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "role-inventory",
+              "status": "passed"
+            },
+            {
+              "name": "query-descriptor-contents",
+              "status": "passed"
+            },
+            {
+              "name": "role-binding-contents",
+              "status": "passed"
+            },
+            {
+              "name": "tree-node-inventory",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-child-links",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-heights",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-leaf-order",
+              "status": "incomplete"
+            },
+            {
+              "name": "tree-node-aggregates",
+              "status": "incomplete"
+            }
+          ]
+        },
+        "nativeEngineCheck": {
+          "status": "valid",
+          "passed": null,
+          "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+          "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3"
+        },
+        "backup": {
+          "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3",
+          "sha256": "231f077f85644ccdcd764eb9d5b01d745366541f68045ccd3875511dafd18e32",
+          "status": "passed",
+          "sourceMembership": "not_evaluated",
+          "rootCount": 1,
+          "nodeCount": 3,
+          "nativeKvRows": 29,
+          "snapshotBytes": 24656,
+          "sourceCheck": {
+            "status": "passed",
+            "scope": "bounded source records, queries, roles, roots and complete physical trees; other native inventories are outside this checker",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "restore": {
+          "status": "restored",
+          "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3",
+          "createOnlyRepeatRejected": true,
+          "repeatError": "internal",
+          "destinationPayloadBeforeSha256": "231f077f85644ccdcd764eb9d5b01d745366541f68045ccd3875511dafd18e32",
+          "destinationPayloadAfterSha256": "231f077f85644ccdcd764eb9d5b01d745366541f68045ccd3875511dafd18e32",
+          "completeDestinationPayloadUnchanged": true
+        },
+        "reopen": {
+          "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3",
+          "records": 5,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3"
+          },
+          "sourceStatus": "incomplete"
+        },
+        "archive": {
+          "status": "archived",
+          "sha256": "2551dc8a2517d16473b0b0fb2b0e1e02f9d94af49c73c89112f55d9486142901",
+          "structure": {
+            "status": "passed",
+            "sourceMembership": "not_evaluated",
+            "rootCount": 1,
+            "nodeCount": 3,
+            "nativeKvRows": 29,
+            "snapshotBytes": 24656
+          },
+          "sourceCheck": {
+            "status": "passed",
+            "obligations": [
+              {
+                "name": "source-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "source-contract-and-inputs",
+                "status": "passed"
+              },
+              {
+                "name": "source-derived-values",
+                "status": "passed"
+              },
+              {
+                "name": "private-output-records",
+                "status": "passed"
+              },
+              {
+                "name": "root-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "root-summaries",
+                "status": "passed"
+              },
+              {
+                "name": "query-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "role-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "query-descriptor-contents",
+                "status": "passed"
+              },
+              {
+                "name": "role-binding-contents",
+                "status": "passed"
+              },
+              {
+                "name": "source-physical-membership",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-inventory",
+                "status": "passed"
+              },
+              {
+                "name": "tree-child-links",
+                "status": "passed"
+              },
+              {
+                "name": "tree-heights",
+                "status": "passed"
+              },
+              {
+                "name": "tree-leaf-order",
+                "status": "passed"
+              },
+              {
+                "name": "tree-node-aggregates",
+                "status": "passed"
+              },
+              {
+                "name": "root-prefix-extrema-order",
+                "status": "passed"
+              },
+              {
+                "name": "role-reservation-inverse",
+                "status": "passed"
+              }
+            ]
+          }
+        },
+        "reset": {
+          "status": "reset",
+          "previousStore": "5a7f2c05-90d3-43e2-98f6-c2f82df9bbc3",
+          "store": "c59c62ad-9ae2-4758-9cc9-65f3123edad6",
+          "wrongExpectedStoreRejected": true
+        },
+        "resetReopen": {
+          "store": "c59c62ad-9ae2-4758-9cc9-65f3123edad6",
+          "recordCount": 0,
+          "engineCheck": {
+            "status": "valid",
+            "passed": null,
+            "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+            "store": "c59c62ad-9ae2-4758-9cc9-65f3123edad6"
+          }
+        }
+      }
+    ]
+  },
+  "retired": {
+    "python": 60,
+    "bridgeAuxiliaries": 4,
+    "ledger": "research/fixtures/n6-retirement-ledger.json",
+    "archivedSourceCommit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+    "historicalEvidencePreserved": true
+  },
+  "trials": [
+    {
+      "kind": "product_bug_fixed",
+      "issue": "Native i64 input formats missing from Node model preparation for Measurement and EffectDemo",
+      "fixCommit": "1243168424294728968591d69efbe5d836fd36fd",
+      "evidence": "research/evidence/2026-10-26-n6-model-catalogs.json"
+    },
+    {
+      "kind": "acceptance_harness_fixed",
+      "issue": "Pre-execute status is not_observed, not unknown; restore preserves backup store identity and returns it inside integrity, not restored.store",
+      "outcome": "Corrected assertions and added complete destination payload equality. Original saved request/context retained."
+    },
+    {
+      "kind": "acceptance_harness_fixed",
+      "issue": "Readiness parser accepted a partial stderr chunk containing only 127",
+      "outcome": "Wait for a complete newline-terminated readiness record; six-model standalone rerun passed."
+    }
+  ],
+  "cleanup": {
+    "ownedEnvironments": [
+      {
+        "directory": "/home/agent/rebase-n6-extracted-699f096-retry2",
+        "fdbStopped": {
+          "status": "stopped",
+          "pid": 69610
+        },
+        "ownedDataAndLogsRemoved": true
+      },
+      {
+        "directory": "/home/agent/rebase-n6-extracted-1243168-retry2",
+        "fdbStopped": {
+          "status": "stopped",
+          "pid": 71107
+        },
+        "ownedDataAndLogsRemoved": true
+      }
+    ],
+    "nativeAndFdbProcessesRemaining": []
+  },
+  "logs": {
+    "node": {
+      "path": "research/evidence/2026-10-26-n6-release-node.txt",
+      "sha256": "9bd85041472641f204a746eb3ec8e539985fb46e81cd996a5e2498869c880da7",
+      "bytes": 27288
+    },
+    "standalone": {
+      "path": "research/evidence/2026-10-26-n6-release-standalone.txt",
+      "sha256": "c318068667faff658e0fe1a909f2fd3a8aa000352f33c8289bead4fa3317f2dd",
+      "bytes": 49
+    },
+    "lifecycle": {
+      "path": "research/evidence/2026-10-26-n6-release-lifecycle.txt",
+      "sha256": "0ee8c2550615c289e308bb0046e6654bfe20f669bb4d0247506c8eed48d69acf",
+      "bytes": 298
+    },
+    "originalBuild": {
+      "path": "research/evidence/2026-10-26-n6-release-originalBuild.txt",
+      "sha256": "6a4a0ca607cac575ebebb4d387924697c2cb767aa5edfc3808d1e4f46c61a2e3",
+      "bytes": 378
+    },
+    "refresh": {
+      "path": "research/evidence/2026-10-26-n6-release-refresh.txt",
+      "sha256": "d5b16a69745938a984ba99bf5340d2c876787cabe35bf5755d426cdd61bf38d7",
+      "bytes": 442
+    },
+    "standaloneFormatFailure": {
+      "path": "research/evidence/2026-10-26-n6-release-standaloneFormatFailure.txt",
+      "sha256": "b508be25b21efa573273f8ae244703b2c39750271b85cfb6e92cf142c2c6d9d2",
+      "bytes": 1524
+    },
+    "standaloneChunkFailure": {
+      "path": "research/evidence/2026-10-26-n6-release-standaloneChunkFailure.txt",
+      "sha256": "f8b2928d0c722275fa3e0dc89e470fb8012a1feb7c1dcd998ba07558c39f3416",
+      "bytes": 611
+    },
+    "lifecycleStatusFailure": {
+      "path": "research/evidence/2026-10-26-n6-release-lifecycleStatusFailure.txt",
+      "sha256": "9b2a73d8f3f61c0095ca150387f8afd57443dcc6fd090d2319fd6ab77bacfb7d",
+      "bytes": 465
+    },
+    "lifecycleRestoreShapeFailure": {
+      "path": "research/evidence/2026-10-26-n6-release-lifecycleRestoreShapeFailure.txt",
+      "sha256": "2500efd2a273819c2addee3f0eb7924a0714faaae1b722e089a5f4d21cca06d5",
+      "bytes": 1207
+    },
+    "cargoRedb": {
+      "path": "research/evidence/2026-10-26-n6-release-cargoRedb.txt",
+      "sha256": "85c8dbac64ed6a362d668bf3988686e26e947620bb15cfdbe2e999a0ff8261b2",
+      "bytes": 62
+    },
+    "cargoAll": {
+      "path": "research/evidence/2026-10-26-n6-release-cargoAll.txt",
+      "sha256": "b65d97c967cb13bb2fd061b2f5b86011ef366acea387375a92a9808f93395384",
+      "bytes": 62
+    },
+    "buildHarness": {
+      "path": "research/evidence/2026-10-26-n6-release-buildHarness.txt",
+      "sha256": "48930c20fe06bd5477a11377e0bcd97c1e57068992895444272c92aeacd168f5",
+      "bytes": 4720
+    },
+    "refreshHarness": {
+      "path": "research/evidence/2026-10-26-n6-release-refreshHarness.txt",
+      "sha256": "243dfc40f7212caab0be9e86b015b7434090c77b5d072876121f4372bf3bf19c",
+      "bytes": 10794
+    },
+    "standaloneHarness": {
+      "path": "research/evidence/2026-10-26-n6-release-standaloneHarness.txt",
+      "sha256": "a62df8cd731d17b4c4eca8eefd34a296869dc37e63bcd7c2a6d076d8b90ade2c",
+      "bytes": 16257
+    },
+    "lifecycleHarness": {
+      "path": "research/evidence/2026-10-26-n6-release-lifecycleHarness.txt",
+      "sha256": "d40daadbe6b49b59fee1a896c810a3c60b6c27e48734307fc78c08b447c26efc",
+      "bytes": 20327
+    },
+    "runnerHarness": {
+      "path": "research/evidence/2026-10-26-n6-release-runnerHarness.txt",
+      "sha256": "2168479298d5c09a07f6c6e416a38c2551ece98a6ce5609bb3f4c85af129ef89",
+      "bytes": 4010
+    }
+  },
+  "boundaries": [
+    "N6 Node/tooling retirement accepted within existing bounded model/workload limits; not all G10 complete",
+    "No multi-host latency/failover or unrestricted capacity evidence",
+    "No persisted formats, binding formulas or storage layout changed",
+    "FDB repeat restore diagnostic remains sanitized internal while complete destination state preservation is verified",
+    "Historical Python report/matrix engines remain archived evidence; current source checker covers only its named models and inventories",
+    "Broader accounting, frontend, TiKV, live providers and migrations remain deferred"
+  ],
+  "next": [
+    "S0 instrumentation and reproducible local access baseline",
+    "S1 candidate decision",
+    "S2 selected optimization",
+    "S3 conformance",
+    "F0 integrated delivery"
+  ]
+}

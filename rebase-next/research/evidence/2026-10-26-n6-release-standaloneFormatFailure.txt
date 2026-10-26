@@ -1,0 +1,17 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error: unknown format "i64" ignored in schema at path "#/properties/at"
+    at unknownFormat (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/vocabularies/format/format.js:63:23)
+    at validateFormat (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/vocabularies/format/format.js:50:17)
+    at Object.code (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/vocabularies/format/format.js:22:13)
+    at keywordCode (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/validate/index.js:464:13)
+    at /home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/validate/index.js:222:17
+    at CodeGen.code (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/codegen/index.js:439:13)
+    at CodeGen.block (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/codegen/index.js:568:18)
+    at iterateKeywords (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/validate/index.js:219:9)
+    at groupKeywords (/home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/validate/index.js:200:13)
+    at /home/agent/rebase-n6-release-699f096/bundle-redb/tools/node/node_modules/ajv/dist/compile/validate/index.js:192:13
+
+Node.js v24.22.1

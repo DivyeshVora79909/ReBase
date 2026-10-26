@@ -8,19 +8,24 @@ JSON-RPC, replay receipts and verified storage recovery. Model schemas drive
 validation and public catalogs; the server remains authoritative for global
 rules and reference access.
 
-**N6 status (2026-10-26):** the Node developer functions, model examples,
-structured `host` / `serve` bootstrap, and retirement of the inventoried Python
-and redundant CLI paths are verified locally within their recorded scopes. The
-[bootstrap evidence](research/evidence/2026-10-26-n6-bootstrap.json) records
-native and Node checks; extracted-release acceptance is pending. Do not use
+**N6 status (2026-10-26):** accepted within the documented model, backend,
+source and workload bounds. The Node developer functions, structured `host` /
+`serve` bootstrap, and retirement of 60 Python paths plus four bridge
+auxiliaries are accepted from source
+`1243168424294728968591d69efbe5d836fd36fd`. Both committed-source packages and
+extracted acceptance are recorded in the [N6 result](research/78-node-retirement-result.md)
+and [release evidence](research/evidence/2026-10-26-n6-release.json). Do not use
 historical Python workflows or legacy CLI instructions as current operating
 procedures. The old campaigns remain available as dated evidence in `research/`;
-their outcomes and limits are not current release acceptance. See the [G10 program](research/56-node-and-index-redesign-program.md),
+their outcomes and limits are not relabeled as new acceptance. This does not
+complete G10 or establish unrestricted production capacity. Next is S0's
+workload/trace schema and measurement baseline, before choosing an S1 candidate.
+See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [storage plan](research/58-ordered-storage-redesign.md), and
-[capability inventory](research/59-node-capability-inventory.md), plus the
-[native bootstrap contract](research/76-native-bootstrap-contract.md) for the
-pending acceptance controls.
+[capability inventory](research/59-node-capability-inventory.md),
+[native bootstrap contract](research/76-native-bootstrap-contract.md), and
+[retirement report](research/77-node-tooling-retirement.md).
 
 The ordinary JavaScript API is an explicit ESM barrel at
 [`tools/node/index.mjs`](tools/node/index.mjs). Importing it only defines
@@ -74,7 +79,8 @@ particular, the [N4 result](research/69-node-experiment-result.md),
 [N5 release result](research/71-node-lifecycle-result.md), and N6 contracts for
 [complete backup](research/72-node-complete-backup-contract.md),
 [signed ingress](research/73-node-signed-ingress-contract.md), and
-[IssueShare](research/74-node-issue-share-contract.md) describe bounded claims;
-they do not establish N6 release acceptance. Read [CONTEXT.md](CONTEXT.md) for
+[IssueShare](research/74-node-issue-share-contract.md) plus the
+[N6 result](research/78-node-retirement-result.md) describe bounded claims.
+Read [CONTEXT.md](CONTEXT.md) for
 the current handoff and [research/sources.md](research/sources.md) for the
 original discussion index.

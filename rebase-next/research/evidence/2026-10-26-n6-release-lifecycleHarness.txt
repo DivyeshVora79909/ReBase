@@ -1,0 +1,336 @@
+import { createHash, generateKeyPairSync, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, rm } from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const METHODS = Object.freeze(['store.check', 'store.inspect', 'store.backup', 'store.restore', 'store.archive',
+  'store.reset', 'service.start', 'service.stop', 'identity.issue']);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * Run an extracted Equipment lifecycle with source membership and role-history
+ * checks against one caller-selected N6 bundle.
+ * Every maintained module is loaded from that bundle; this file imports only Node built-ins.
+ */
+export async function runExtractedAcceptance({ bundleDirectory, backend, environment = {}, clusterFile, directory } = {}) {
+  absolutePath(bundleDirectory, 'bundleDirectory');
+  absolutePath(directory, 'directory');
+  if (!['redb', 'surrealkv', 'foundationdb'].includes(backend)) throw new TypeError('backend must be redb, surrealkv, or foundationdb');
+  if (backend === 'foundationdb') absolutePath(clusterFile, 'clusterFile');
+  else if (clusterFile !== undefined) throw new TypeError('clusterFile is valid only for foundationdb');
+  if (!plain(environment) || Object.values(environment).some(value => typeof value !== 'string' || value.includes('\0')))
+    throw new TypeError('environment must be an explicit string-valued object');
+
+  const bundle = path.resolve(bundleDirectory);
+  const nodeTools = path.join(bundle, 'tools', 'node');
+  const binary = path.join(bundle, 'bin', 'rebase-next');
+  const manifest = JSON.parse(await readFile(path.join(bundle, 'BUNDLE.json'), 'utf8'));
+  if (manifest.format !== 'rebase-node-release-1' || !manifest.binary || !manifest.formats)
+    throw new Error('bundle release manifest is incomplete');
+  if (!manifest.supportedBackends?.includes(backend)) throw new Error(`bundle does not support ${backend}`);
+  const binaryHash = await fileHash(binary);
+  if (manifest.binary.path !== 'bin/rebase-next' || manifest.binary.sha256 !== binaryHash)
+    throw new Error('bundle binary hash differs from its manifest');
+
+  const [{ resolveConfig }, { openNative }, { openOperator }, { connect, savePlan }, { prepareModel },
+    { checkBackupStructure }, { checkSourceSnapshot, checkSourceBackup }] = await Promise.all([
+    bundleImport('config.mjs'), bundleImport('native.mjs'), bundleImport('operator.mjs'), bundleImport('client.mjs'),
+    bundleImport('model.mjs'), bundleImport('storage-check.mjs'), bundleImport('oracles.mjs'),
+  ]);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const runDirectory = path.join(path.resolve(directory), `${backend}-${randomUUID()}`);
+  await mkdir(runDirectory, { mode: 0o700 });
+  const tenant = randomUUID();
+  const actor = randomUUID();
+  const target = backendTarget(backend, runDirectory, 'primary', tenant, actor);
+  const config = nativeConfig({ resolveConfig, binary, environment, backend, clusterFile, target });
+  const pair = generateKeyPairSync('ed25519');
+  const publicKeyPem = pair.publicKey.export({ type: 'spki', format: 'pem' }).toString();
+  const privateKeyPem = pair.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+  const identity = { issuer: `n6-extracted-${backend}`, audience: 'n6-extracted-acceptance',
+    public_keys: { local: publicKeyPem }, max_token_seconds: 300 };
+  const serviceConfig = { listen: '127.0.0.1:0', identity, max_inflight: 4, request_timeout_seconds: 10, effects: null };
+  let native;
+  let service;
+  let restoredNative;
+  const evidence = {
+    status: 'running',
+    sourceCommit: manifest.sourceCommit,
+    backend,
+    artifact: { directory: bundle, binarySha256: binaryHash, sourceCommit: manifest.sourceCommit,
+      sourceTree: manifest.sourceTree, storeFormat: manifest.formats.store,
+      nativeCodec: manifest.formats.nativeCodec, api: manifest.formats.api, effectCodec: manifest.formats.effectCodec },
+    proofs: [],
+  };
+
+  const configForTarget = next => nativeConfig({ resolveConfig, binary, environment, backend, clusterFile, target: next });
+  try {
+    native = await openNative(config);
+    const selected = await native.describe();
+    if (native.selection.selector !== 'equipment' || !selected.engine.compiled_models.includes('equipment'))
+      throw new Error('extracted host did not select compiled Equipment');
+    evidence.native = { selector: native.selection.selector, model: native.scope.model,
+      store: native.scope.store, pid: native.pid };
+    evidence.formats = { store: selected.engine.store_format, nativeCodec: selected.engine.native_codec,
+      api: selected.engine.api, effectCodec: selected.engine.effect_codec };
+    const operator = openOperator(native, { scope: native.scope, methods: METHODS });
+    const model = prepareModel(await native.catalog({ scope: 'developer' }), { native, selector: 'equipment' });
+    const live = await operator.startService({ config: serviceConfig });
+    service = live;
+    const token = (await operator.issueIdentity({ identity,
+      request: { tenant, actor, epoch: 0, ttl: 120, key_id: 'local' }, privateKeyPem })).token;
+    const client = connect({ endpoint: live.endpoint, credential: token });
+
+    const pool = randomUUID();
+    const delivery = randomUUID();
+    const reservation = randomUUID();
+    const draft = model.draftFixture([
+      { contract: 'Pool', id: pool, fields: { unit: 1 } },
+      { contract: 'Delivery', id: delivery, fields: { pool, at: '0', quantity: '10' } },
+      { contract: 'Reservation', id: reservation,
+        fields: { pool, starts: '10', ends: '30', requested: '8', active: true } },
+    ], { returning: [pool, delivery, reservation] });
+    const plan = await client.prepare(draft);
+    const planPath = path.join(runDirectory, 'equipment.plan.json');
+    await savePlan(planPath, plan);
+    const savedPlan = JSON.parse(await readFile(planPath, 'utf8'));
+    equalJson(savedPlan, plan, 'saved plan changed after write');
+    const preflightStatus = await client.status(savedPlan);
+    if (preflightStatus.status !== 'not_observed')
+      throw new Error(`unsent plan should be not_observed before execute, got ${preflightStatus.status}`);
+    if (await client.call('records.get', { model: native.scope.model, id: pool }) !== null)
+      throw new Error('status lookup created source records instead of remaining read-only');
+    evidence.savedPlan = { operationId: savedPlan.request.operation_id, preflightStatus: preflightStatus.status,
+      savedSha256: createHash('sha256').update(await readFile(planPath)).digest('hex') };
+    evidence.proofs.push('saved-plan-not-observed-no-submit');
+
+    const commit = await client.execute(savedPlan);
+    if (commit.status !== 'committed') throw new Error('saved Equipment mutation did not commit');
+    const committedStatus = await client.status(savedPlan);
+    if (committedStatus.status !== 'committed') throw new Error('exact saved plan did not reconcile as committed');
+    const sourceFacts = Object.fromEntries(draft.commands.map(command => [command.id,
+      { contract: command.contract, fields: command.fields }]));
+    const sourceSnapshot = await operator.inspect();
+    const roleHistory = sourceSnapshot.roles.map(row => ({ producer: row.source_role.id,
+      role: row.source_role.slot, output: row.binding.output }));
+    if (roleHistory.length !== 2) throw new Error('fixture must retain every Equipment role ever allocated');
+    const logical = checkSourceSnapshot({ model: 'equipment', facts: sourceFacts, snapshot: sourceSnapshot, roleHistory });
+    const logicalFailures = logical.obligations.filter(row => row.status === 'failed');
+    if (logicalFailures.length) throw new Error(`independent source check failed: ${logicalFailures.map(row => row.name).join(', ')}`);
+    const nativeCheck = await operator.check();
+    requireHealthyCheck(nativeCheck, 'primary native check');
+    const backupPath = path.join(runDirectory, 'primary.backup.json');
+    const backup = await operator.snapshot({ destination: backupPath });
+    const structure = checkBackupStructure(await readFile(backupPath));
+    if (structure.status !== 'passed' || structure.nodeCount < 1) throw new Error('extracted native backup failed independent structure check');
+    const completeBackup = checkSourceBackup({ model: 'equipment', facts: sourceFacts,
+      backup: await readFile(backupPath), roleHistory });
+    if (completeBackup.status !== 'passed') {
+      throw new Error(`complete source and physical backup check failed: ${completeBackup.obligations.filter(row => row.status !== 'passed').map(row => row.name).join(', ')}`);
+    }
+    evidence.mutation = { status: commit.status, operationId: savedPlan.request.operation_id,
+      returnedIds: savedPlan.request.returning, committedStatus: committedStatus.status };
+    evidence.receipts = { operationId: commit.result?.operation_id ?? savedPlan.request.operation_id,
+      status: commit.status, recordIds: (commit.result?.records ?? []).map(row => row.id) };
+    evidence.roleHistory = roleHistory;
+    evidence.sourceCheck = { status: logical.status,
+      obligations: logical.obligations.map(row => ({ name: row.name, status: row.status })) };
+    evidence.nativeEngineCheck = summarizeCheck(nativeCheck);
+    evidence.backup = { store: backup.store, sha256: backup.sha256, ...structure,
+      sourceCheck: { status: completeBackup.status, scope: completeBackup.scope,
+        obligations: completeBackup.obligations.map(row => ({ name: row.name, status: row.status })) } };
+    evidence.proofs.push('source-logical-check', 'native-engine-check-separate',
+      'complete-source-and-physical-backup-check-with-retained-role-history');
+
+    await operator.stopService({ service: service.service });
+    service = null;
+    const restoredTarget = backendTarget(backend, runDirectory, 'restored', tenant, actor);
+    const wrongTarget = backendTarget(backend, runDirectory, 'wrong', tenant, actor);
+    await assertRejects(() => operator.restore({ backup: backupPath, expectBackupStore: randomUUID(),
+      destination: restoreDestination(backend, wrongTarget, clusterFile) }), 'wrong backup store UUID must be rejected', 'wrong_target');
+    if (backend !== 'foundationdb' && existsSync(wrongTarget.path)) throw new Error('wrong-target restore created its destination');
+    evidence.proofs.push('wrong-backup-target-fence');
+
+    const restored = await operator.restore({ backup: backupPath, expectBackupStore: native.scope.store,
+      destination: restoreDestination(backend, restoredTarget, clusterFile) });
+    if (restored.status !== 'restored') throw new Error('valid backup restore did not complete');
+    const restoredStore = native.scope.store;
+    if (restored.integrity?.store !== restoredStore || restored.integrity?.status !== 'valid')
+      throw new Error('restore did not preserve and verify the expected backup store identity');
+    const destinationBeforePath = path.join(runDirectory, 'restored-before-repeat.backup.json');
+    let destinationBeforePayload;
+    let destinationProbe;
+    try {
+      destinationProbe = await openNative(configForTarget(openTarget(backend, restoredTarget, restoredStore)));
+      const destinationOperator = openOperator(destinationProbe, { scope: destinationProbe.scope, methods: METHODS });
+      await destinationOperator.snapshot({ destination: destinationBeforePath });
+      destinationBeforePayload = JSON.parse(await readFile(destinationBeforePath, 'utf8')).payload;
+    } finally {
+      if (destinationProbe) {
+        await destinationProbe.close();
+        destinationProbe = null;
+      }
+    }
+    let repeatRestoreError;
+    try {
+      await operator.restore({ backup: backupPath, expectBackupStore: native.scope.store,
+        destination: restoreDestination(backend, restoredTarget, clusterFile) });
+    } catch (error) { repeatRestoreError = error; }
+    const expectedRepeatCode = backend === 'foundationdb' ? 'internal' : 'invalid_destination';
+    if (repeatRestoreError?.code !== expectedRepeatCode) {
+      throw new Error(`repeat restore error differs: expected ${expectedRepeatCode}, got ${repeatRestoreError?.code ?? 'success'}`);
+    }
+    const destinationAfterPath = path.join(runDirectory, 'restored-after-repeat.backup.json');
+    let destinationAfterPayload;
+    try {
+      destinationProbe = await openNative(configForTarget(openTarget(backend, restoredTarget, restoredStore)));
+      const destinationOperator = openOperator(destinationProbe, { scope: destinationProbe.scope, methods: METHODS });
+      await destinationOperator.snapshot({ destination: destinationAfterPath });
+      destinationAfterPayload = JSON.parse(await readFile(destinationAfterPath, 'utf8')).payload;
+    } finally {
+      if (destinationProbe) {
+        await destinationProbe.close();
+        destinationProbe = null;
+      }
+    }
+    equalJson(destinationAfterPayload, destinationBeforePayload,
+      'rejected repeat restore changed the complete destination backup payload');
+    const destinationPayloadSha256 = createHash('sha256').update(JSON.stringify(destinationBeforePayload)).digest('hex');
+    if (backend === 'redb') {
+      const restoredBytes = await readFile(restoredTarget.path);
+      if (!restoredBytes.length) throw new Error('restored store file is empty');
+    }
+    evidence.restore = { status: restored.status, store: restoredStore,
+      createOnlyRepeatRejected: true, repeatError: repeatRestoreError.code,
+      destinationPayloadBeforeSha256: destinationPayloadSha256,
+      destinationPayloadAfterSha256: createHash('sha256').update(JSON.stringify(destinationAfterPayload)).digest('hex'),
+      completeDestinationPayloadUnchanged: true };
+    evidence.proofs.push('restore-create-only-fence', 'complete-destination-payload-preserved-after-rejected-repeat');
+    await native.close();
+    native = null;
+
+    restoredNative = await openNative(configForTarget(openTarget(backend, restoredTarget, restoredStore)));
+    const restoredOperator = openOperator(restoredNative, { scope: restoredNative.scope, methods: METHODS });
+    const restoredInspect = await restoredOperator.inspect();
+    const restoredLogical = checkSourceSnapshot({ model: 'equipment', facts: sourceFacts, snapshot: restoredInspect });
+    if (restoredLogical.obligations.some(row => row.status === 'failed'))
+      throw new Error('restored records differ from independent source facts');
+    const restoredCheck = await restoredOperator.check();
+    requireHealthyCheck(restoredCheck, 'restored native check');
+    evidence.reopen = { store: restoredNative.scope.store, records: restoredInspect.records.length,
+      engineCheck: summarizeCheck(restoredCheck), sourceStatus: restoredLogical.status };
+    evidence.proofs.push('restored-data-reopened-and-checked');
+
+    const archivePath = path.join(runDirectory, 'restored.archive.json');
+    const archived = await restoredOperator.archive({ destination: archivePath });
+    if (archived.status !== 'archived') throw new Error('archive did not complete');
+    const archiveBytes = await readFile(archivePath);
+    const archiveStructure = checkBackupStructure(archiveBytes);
+    if (archiveStructure.status !== 'passed') throw new Error('archive failed independent physical checking');
+    const archiveSourceCheck = checkSourceBackup({ model: 'equipment', facts: sourceFacts,
+      backup: archiveBytes, roleHistory });
+    if (archiveSourceCheck.status !== 'passed') throw new Error('archive failed complete source and physical checking');
+    await assertRejects(() => restoredOperator.reset({ expectStore: randomUUID() }), 'reset must reject a stale expected store', 'wrong_target');
+    const reset = await restoredOperator.reset({ expectStore: restoredNative.scope.store });
+    if (reset.status !== 'reset' || reset.store === restoredNative.scope.store)
+      throw new Error('reset did not advance store identity');
+    evidence.archive = { status: archived.status, sha256: await fileHash(archivePath),
+      structure: archiveStructure, sourceCheck: { status: archiveSourceCheck.status,
+        obligations: archiveSourceCheck.obligations.map(row => ({ name: row.name, status: row.status })) } };
+    evidence.reset = { status: reset.status, previousStore: restoredNative.scope.store, store: reset.store,
+      wrongExpectedStoreRejected: true };
+    evidence.proofs.push('archive-verified', 'reset-store-fence');
+    await restoredNative.close();
+    restoredNative = null;
+
+    const resetTarget = openTarget(backend, restoredTarget, reset.store);
+    restoredNative = await openNative(configForTarget(resetTarget));
+    const afterReset = await restoredNative.inspect();
+    if (afterReset.records.length !== 0) throw new Error('reset store contains stale application records');
+    const resetCheck = await restoredNative.check();
+    requireHealthyCheck(resetCheck, 'reset native check');
+    evidence.resetReopen = { store: restoredNative.scope.store, recordCount: afterReset.records.length,
+      engineCheck: summarizeCheck(resetCheck) };
+    evidence.proofs.push('reset-store-reopened-empty');
+    evidence.status = 'passed';
+    return evidence;
+  } finally {
+    if (restoredNative) await restoredNative.close().catch(() => {});
+    if (native) {
+      try { if (service) await native.stopService({ service: service.service }); } catch {}
+      await native.close().catch(() => {});
+    }
+    await rm(runDirectory, { recursive: true, force: true });
+  }
+
+  function bundleImport(name) {
+    const location = path.join(nodeTools, name);
+    return import(pathToFileURL(location).href);
+  }
+}
+
+function nativeConfig({ resolveConfig, binary, environment, backend, clusterFile, target }) {
+  const backendConfig = { kind: backend, cluster_file: backend === 'foundationdb' ? clusterFile : null };
+  return resolveConfig({ overrides: {
+    native: { binary, environment, configuration: {
+      model: 'equipment', backend: backendConfig, target, operator_methods: target ? [...METHODS] : [],
+    } },
+    runner: { startTimeoutMs: 20_000, closeTimeoutMs: 7_500, diagnosticBytes: 8192 },
+  } });
+}
+
+function backendTarget(backend, directory, name, tenant, actor) {
+  if (backend === 'foundationdb') {
+    return { mode: 'create', namespace: `n5-extracted-${name}-${randomUUID()}`, tenant, actor };
+  }
+  const targetPath = path.join(directory, `${name}.${backend === 'redb' ? 'redb' : 'skv'}`);
+  return { mode: 'create', path: targetPath, tenant, actor };
+}
+
+function openTarget(backend, createdTarget, expectStore) {
+  return backend === 'foundationdb'
+    ? { mode: 'open', namespace: createdTarget.namespace, expect_store: expectStore }
+    : { mode: 'open', path: createdTarget.path, expect_store: expectStore };
+}
+
+function restoreDestination(backend, target, clusterFile) {
+  return { backend: { kind: backend, cluster_file: backend === 'foundationdb' ? clusterFile : null },
+    target: backend === 'foundationdb' ? { namespace: target.namespace } : { path: target.path } };
+}
+
+function summarizeCheck(value) {
+  return { status: value?.status ?? 'returned', passed: value?.passed ?? null,
+    model: value?.model ?? null, store: value?.store ?? null };
+}
+
+async function assertRejects(action, message, code) {
+  try { await action(); }
+  catch (error) {
+    if (code && error.code !== code) throw new Error(`${message}: expected ${code}, got ${error.code ?? error.message}`);
+    return;
+  }
+  throw new Error(message);
+}
+
+function requireHealthyCheck(value, label) {
+  if (!value || value.status !== 'valid' || !UUID.test(value.store ?? '') || !/^[0-9a-f]{64}$/.test(value.model ?? ''))
+    throw new Error(`${label} reported failure`);
+}
+
+async function fileHash(file) {
+  return createHash('sha256').update(await readFile(file)).digest('hex');
+}
+
+function equalJson(left, right, message) {
+  if (JSON.stringify(left) !== JSON.stringify(right)) throw new Error(message);
+}
+
+function absolutePath(value, label) {
+  if (typeof value !== 'string' || !path.isAbsolute(value) || value.includes('\0')) throw new TypeError(`${label} must be an absolute path`);
+}
+
+function plain(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+}

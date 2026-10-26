@@ -1,0 +1,86 @@
+import { execFileSync, spawn } from 'node:child_process';
+import { createReadStream } from 'node:fs';
+import { mkdir, open, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { prepareReleaseSource, describeReleaseBuild, packageRelease } from '../tools/node/release.mjs';
+
+const root = '/workspace/ReBase/rebase-next';
+const gitEnvironment = { PATH: process.env.PATH, HOME: process.env.HOME,
+  GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0' };
+const revision = execFileSync('git', ['rev-parse', '--verify', 'HEAD^{commit}'], {
+  cwd: root, env: gitEnvironment, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'],
+}).trim();
+if (!/^[0-9a-f]{40,64}$/.test(revision)) throw new Error('Git did not identify the committed source');
+
+const artifacts = path.join('/workspace/.rebase-tools', `n6-release-${revision.slice(0, 7)}`);
+const outputRoot = path.join('/home/agent', `rebase-n6-release-${revision.slice(0, 7)}`);
+await mkdir(path.dirname(artifacts), { recursive: true });
+await mkdir(artifacts, { recursive: false, mode: 0o700 });
+await mkdir(outputRoot, { recursive: false, mode: 0o700 });
+
+const sdk = path.join(root, 'target/g7-environment/lib');
+const exported = await prepareReleaseSource({ repository: root, sourceRef: revision,
+  destination: path.join(artifacts, 'source'), environment: gitEnvironment });
+const source = exported;
+const buildEnvironment = {
+  PATH: '/home/agent/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin:/usr/local/bin:/usr/bin:/bin',
+  HOME: process.env.HOME,
+  CARGO_HOME: '/workspace/.rebase-tools/rust-review/cargo',
+  CARGO_NET_OFFLINE: 'true',
+  FDB_CLIENT_LIB_PATH: sdk,
+  LD_LIBRARY_PATH: sdk,
+};
+const toolingEnvironment = {
+  PATH: '/workspace/.rebase-tools/node24.22.1/bin:/usr/local/bin:/usr/bin:/bin',
+  HOME: process.env.HOME,
+};
+const results = { sourceCommit: source.sourceCommit, sourceTree: source.sourceTree,
+  sourceFilesSha256: hashJson(source.sourceFiles), artifacts, outputRoot, runs: [] };
+
+// Cargo owns the shared verification target for the duration of this script.
+// Build and package one profile before Cargo can replace its executable.
+for (const features of [[], ['foundationdb', 'surrealkv']]) {
+  const label = features.length ? 'all' : 'redb';
+  const spec = describeReleaseBuild({ source, features,
+    targetDir: path.join(root, 'target/verification-build'), environment: buildEnvironment });
+  const logPath = path.join(artifacts, `cargo-${label}.txt`);
+  const log = await open(logPath, 'wx', 0o600);
+  let exitCode;
+  try {
+    const child = spawn(spec.executable, spec.args, { cwd: spec.cwd, env: spec.environment,
+      shell: false, stdio: ['ignore', log.fd, log.fd] });
+    exitCode = await new Promise((resolve, reject) => {
+      child.once('error', reject);
+      child.once('close', (code, signal) => code === null
+        ? reject(new Error(`cargo ${label} was killed by ${signal}`)) : resolve(code));
+    });
+    await log.sync();
+  } finally { await log.close(); }
+  if (exitCode !== 0) throw new Error(`cargo ${label} failed; inspect ${logPath}`);
+
+  const binary = path.join(root, 'target/verification-build/release/rebase-next');
+  const binarySha256 = await hashFile(binary);
+  const receipt = { exitCode, command: [spec.executable, ...spec.args], cwd: spec.cwd,
+    sourceCommit: source.sourceCommit, sourceTree: source.sourceTree,
+    sourceFilesSha256: hashJson(source.sourceFiles), buildLogSha256: await hashFile(logPath),
+    artifactSha256: binarySha256 };
+  const provenance = { spec, receipt, sha256: binarySha256 };
+  await writeFile(path.join(artifacts, `provenance-${label}.json`),
+    JSON.stringify({ source, provenance }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+  const nativeEnvironment = features.length ? { FDB_CLIENT_LIB_PATH: sdk, LD_LIBRARY_PATH: sdk } : {};
+  const output = path.join(outputRoot, `bundle-${label}`);
+  const packaged = await packageRelease({ source, artifact: { path: binary, provenance }, output,
+    features, environment: nativeEnvironment, buildEnvironment, toolingEnvironment });
+  results.runs.push({ label, features, exitCode, logPath, receipt, output, packaged });
+  await writeFile(path.join(artifacts, 'results.json'), JSON.stringify(results, null, 2) + '\n',
+    { flag: results.runs.length === 1 ? 'wx' : 'w', mode: 0o600 });
+  console.log(JSON.stringify({ label, status: 'built_and_packaged', binarySha256, output }));
+}
+
+async function hashFile(file) {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  return hash.digest('hex');
+}
+function hashJson(value) { return createHash('sha256').update(JSON.stringify(value)).digest('hex'); }

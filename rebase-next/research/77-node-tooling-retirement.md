@@ -1,18 +1,19 @@
 # N6 — Node tooling retirement checkpoint
 
-Status: **final N6 implementation verified locally; release acceptance pending.** The working
-tree now includes structured native `host` / `serve` bootstrap and retirement of
-the 60 Python paths inventoried at N0 plus four obsolete schema-values bridge
-files. This is prepared implementation, not N6 acceptance. The retirement ledger
-records each exact retired path, its pinned source SHA-256, concrete current
-Node/native controls or dated historical basis, and an explicit claim boundary.
-The bootstrap behavior and acceptance matrix
-are specified in the [N6 native bootstrap contract](76-native-bootstrap-contract.md).
+Status: **N6 accepted within the documented bounds.** The accepted source
+retires the 60 Python paths inventoried at N0 and four obsolete schema-values
+bridge files, and provides structured native `host` / `serve` bootstrap. See the
+[N6 result](78-node-retirement-result.md) and
+[release evidence](evidence/2026-10-26-n6-release.json) for source/package
+identities and extracted acceptance. The [native bootstrap contract](76-native-bootstrap-contract.md)
+records the accepted behavior and limits. The retirement ledger preserves each
+path's pinned source SHA-256, replacement controls or historical basis, and
+claim boundary; the N0 ledger and dated evidence remain unchanged.
 
-The [bootstrap evidence](evidence/2026-10-26-n6-bootstrap.json) records the
-independent 64-file Git hash check, all 297 current-control references, preserved
-historical evidence, native checks and 141 passing Node tests. Final package
-contents and extracted workflows remain an acceptance gate.
+The earlier [bootstrap evidence](evidence/2026-10-26-n6-bootstrap.json) and
+[catalog correction](evidence/2026-10-26-n6-model-catalogs.json) remain separate
+dated executions. Their results are not relabeled as the final committed-source
+package and extracted-release acceptance.
 
 The baseline is pinned at [`0d0601187c79d430f8d7ed41674f53e9905af75f`](https://github.com/DivyeshVora79909/ReBase/tree/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next),
 resolved from the requested short revision `0d06011`. The original N0 ledger
@@ -50,13 +51,9 @@ scoped `tools/node/` package owns the current Node dependency boundary.
 See [`n6-retirement-ledger.json`](fixtures/n6-retirement-ledger.json) for all
 60 Python rows and the four auxiliary paths.
 
-Root's exact pending acceptance is to verify all 60 unique paths and four
-auxiliary paths against the pinned source and recorded SHA-256 values; verify
-replacement references, historical links, package contents and service
-templates; then run the native host/service checks in the
-[bootstrap contract](76-native-bootstrap-contract.md) and the final Node suite
-and package checks from a clean source export and extracted release. Demonstrate
-the ordinary Node workflow and minimal native bootstrap without Python or the
-retired project CLI parsers. Record hashes, outcomes, cleanup and bounded claim
-limits as new evidence. Keep N6 pending until root accepts that evidence. These
-controls remain bounded and make no unrestricted-capacity claim.
+N6 release acceptance includes ordinary Node workflows, the standalone native
+service and all six model receipts, plus extracted redb, SurrealKV and local FDB
+lifecycle runs. See the [result](78-node-retirement-result.md) for the exact
+claims and limits. Retirement of historical experiment implementations does
+not claim full parity with their synthetic engines, and no unrestricted capacity
+or multi-host FDB result is asserted.

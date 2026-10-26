@@ -1,0 +1,190 @@
+import { execFileSync, spawn } from 'node:child_process';
+import { createReadStream } from 'node:fs';
+import { chmod, copyFile, lstat, mkdir, open, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { prepareReleaseSource, describeReleaseBuild, packageRelease } from '../tools/node/release.mjs';
+
+const root = '/workspace/ReBase/rebase-next';
+const previousCommit = '699f0965601d192c6be3ba3fb130d9b00f31e48a';
+const previousSourceDirectory = '/workspace/.rebase-tools/n6-release-699f096/source';
+const previousReleaseRoot = '/home/agent/rebase-n6-release-699f096';
+const nativeInputsPath = path.join(root, 'research/evidence/2026-10-26-n6-bootstrap-inputs.json');
+const gitEnvironment = { PATH: process.env.PATH, HOME: process.env.HOME,
+  GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0' };
+const revision = execFileSync('git', ['rev-parse', '--verify', 'HEAD^{commit}'], {
+  cwd: root, env: gitEnvironment, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'],
+}).trim();
+if (!/^[0-9a-f]{40,64}$/.test(revision) || revision === previousCommit)
+  throw new Error('a new committed source revision is required');
+
+const artifacts = path.join('/workspace/.rebase-tools', `n6-release-${revision.slice(0, 7)}`);
+const outputRoot = path.join('/home/agent', `rebase-n6-release-${revision.slice(0, 7)}`);
+await mkdir(path.dirname(artifacts), { recursive: true });
+await mkdir(artifacts, { recursive: false, mode: 0o700 });
+await mkdir(outputRoot, { recursive: false, mode: 0o700 });
+
+const proof = await prepareReleaseSource({ repository: root, sourceRef: revision,
+  destination: path.join(artifacts, 'source-proof'), environment: gitEnvironment });
+const previous = await readPreviousManifests();
+const inputEvidence = JSON.parse(await readFile(nativeInputsPath, 'utf8'));
+if (!inputEvidence.nativeInputs || Object.keys(inputEvidence.nativeInputs).length !== inputEvidence.nativeInputCount
+    || inputEvidence.nativeInputCount !== 89
+    || hashJson(inputEvidence.nativeInputs) !== inputEvidence.nativeInputsSha256) {
+  throw new Error('recorded N6 native input inventory is malformed');
+}
+const nativeInputMismatches = [];
+for (const [file, expected] of Object.entries(inputEvidence.nativeInputs)) {
+  if (proof.sourceFiles[file] !== expected || previous.sourceFiles[file] !== expected)
+    nativeInputMismatches.push(file);
+}
+if (nativeInputMismatches.length) throw new Error(`native build inputs changed: ${nativeInputMismatches.join(', ')}`);
+
+// The original 699f096 export is the prior authentic build's Cargo working
+// directory. First prove it exactly matches that release, then refresh only committed files
+// whose content changed in the new Node-only commit.
+const oldInventory = await hashRegularTree(previousSourceDirectory);
+assertInventory(oldInventory, previous.sourceFiles, 'prior 699f096 export');
+const sync = await refreshOwnedSource(previousSourceDirectory, oldInventory, proof.directory, proof.sourceFiles);
+const refreshedInventory = await hashRegularTree(previousSourceDirectory);
+assertInventory(refreshedInventory, proof.sourceFiles, 'refreshed source build directory');
+const source = { ...proof, directory: previousSourceDirectory };
+
+const sdk = path.join(root, 'target/g7-environment/lib');
+const buildEnvironment = {
+  PATH: '/home/agent/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin:/usr/local/bin:/usr/bin:/bin',
+  HOME: process.env.HOME,
+  CARGO_HOME: '/workspace/.rebase-tools/rust-review/cargo',
+  CARGO_NET_OFFLINE: 'true',
+  FDB_CLIENT_LIB_PATH: sdk,
+  LD_LIBRARY_PATH: sdk,
+};
+const toolingEnvironment = {
+  PATH: '/workspace/.rebase-tools/node24.22.1/bin:/usr/local/bin:/usr/bin:/bin',
+  HOME: process.env.HOME,
+};
+const results = { status: 'running', sourceCommit: source.sourceCommit, sourceTree: source.sourceTree,
+  sourceFilesSha256: hashJson(source.sourceFiles), sourceProofDirectory: proof.directory,
+  cargoWorkingDirectory: source.directory, nativeInputEvidence: nativeInputsPath,
+  nativeInputCount: Object.keys(inputEvidence.nativeInputs).length,
+  nativeInputsSha256: inputEvidence.nativeInputsSha256, sourceSync: sync,
+  previousCommit: previous.sourceCommit, previousBundles: previousReleaseRoot,
+  artifacts, outputRoot, runs: [] };
+
+// Cargo owns the shared target for this script. Each authentic build completes
+// and is packaged before the next profile can replace its executable.
+for (const features of [[], ['foundationdb', 'surrealkv']]) {
+  const label = features.length ? 'all' : 'redb';
+  const oldBinarySha256 = previous.binaries[label];
+  const spec = describeReleaseBuild({ source, features,
+    targetDir: path.join(root, 'target/verification-build'), environment: buildEnvironment });
+  const logPath = path.join(artifacts, `cargo-${label}.txt`);
+  const log = await open(logPath, 'wx', 0o600);
+  let exitCode;
+  try {
+    const child = spawn(spec.executable, spec.args, { cwd: spec.cwd, env: spec.environment,
+      shell: false, stdio: ['ignore', log.fd, log.fd] });
+    exitCode = await new Promise((resolve, reject) => {
+      child.once('error', reject);
+      child.once('close', (code, signal) => code === null
+        ? reject(new Error(`cargo ${label} was killed by ${signal}`)) : resolve(code));
+    });
+    await log.sync();
+  } finally { await log.close(); }
+  if (exitCode !== 0) throw new Error(`cargo ${label} failed; inspect ${logPath}`);
+
+  const binary = path.join(root, 'target/verification-build/release/rebase-next');
+  const binarySha256 = await hashFile(binary);
+  const receipt = { exitCode, command: [spec.executable, ...spec.args], cwd: spec.cwd,
+    sourceCommit: source.sourceCommit, sourceTree: source.sourceTree,
+    sourceFilesSha256: hashJson(source.sourceFiles), buildLogSha256: await hashFile(logPath),
+    artifactSha256: binarySha256 };
+  const provenance = { spec, receipt, sha256: binarySha256 };
+  await writeFile(path.join(artifacts, `provenance-${label}.json`),
+    JSON.stringify({ source, provenance }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+  const nativeEnvironment = features.length ? { FDB_CLIENT_LIB_PATH: sdk, LD_LIBRARY_PATH: sdk } : {};
+  const output = path.join(outputRoot, `bundle-${label}`);
+  const packaged = await packageRelease({ source, artifact: { path: binary, provenance }, output,
+    features, environment: nativeEnvironment, buildEnvironment, toolingEnvironment });
+  results.runs.push({ label, features, exitCode, logPath, receipt, output, packaged,
+    priorBinarySha256: oldBinarySha256, matchesPriorBinarySha256: binarySha256 === oldBinarySha256 });
+  await writeFile(path.join(artifacts, 'results.json'), JSON.stringify(results, null, 2) + '\n',
+    { flag: results.runs.length === 1 ? 'wx' : 'w', mode: 0o600 });
+  console.log(JSON.stringify({ label, status: 'built_and_packaged', binarySha256,
+    matchesPriorBinarySha256: binarySha256 === oldBinarySha256, output }));
+}
+results.status = 'passed';
+await writeFile(path.join(artifacts, 'results.json'), JSON.stringify(results, null, 2) + '\n', { mode: 0o600 });
+
+async function readPreviousManifests() {
+  const manifests = {};
+  for (const label of ['redb', 'all']) {
+    const filename = path.join(previousReleaseRoot, `bundle-${label}`, 'BUNDLE.json');
+    manifests[label] = JSON.parse(await readFile(filename, 'utf8'));
+    if (manifests[label].sourceCommit !== previousCommit || !manifests[label].sourceFiles
+        || !/^[0-9a-f]{64}$/.test(manifests[label].binary?.sha256 ?? '')) {
+      throw new Error(`prior ${label} bundle does not match the authentic 699f096 build`);
+    }
+  }
+  const [redb, all] = [manifests.redb, manifests.all];
+  if (redb.sourceTree !== all.sourceTree || hashJson(redb.sourceFiles) !== hashJson(all.sourceFiles))
+    throw new Error('prior release bundles disagree on committed source');
+  return { sourceCommit: redb.sourceCommit, sourceTree: redb.sourceTree,
+    sourceFiles: redb.sourceFiles, binaries: { redb: redb.binary.sha256, all: all.binary.sha256 } };
+}
+
+async function refreshOwnedSource(target, previousFiles, proofDirectory, nextFiles) {
+  const added = [], changed = [], removed = [], preserved = [];
+  for (const [file, oldHash] of Object.entries(previousFiles)) {
+    if (Object.hasOwn(nextFiles, file)) {
+      if (nextFiles[file] === oldHash) preserved.push(file);
+      else changed.push(file);
+    } else removed.push(file);
+  }
+  for (const file of Object.keys(nextFiles)) if (!Object.hasOwn(previousFiles, file)) added.push(file);
+
+  // Deletions are permitted only for paths proven by the prior old release
+  // and by the immediately preceding whole-tree hash verification.
+  for (const file of removed) await rm(path.join(target, file));
+  for (const file of [...changed, ...added]) {
+    const from = path.join(proofDirectory, file);
+    const to = path.join(target, file);
+    await mkdir(path.dirname(to), { recursive: true });
+    await copyFile(from, to);
+    const mode = (await lstat(from)).mode & 0o777;
+    await chmod(to, mode);
+  }
+  return { preservedCount: preserved.length, preservedFiles: preserved,
+    changedCount: changed.length, changedFiles: changed, addedCount: added.length, addedFiles: added,
+    removedCount: removed.length, removedFiles: removed };
+}
+
+async function hashRegularTree(rootDirectory) {
+  const rootInfo = await lstat(rootDirectory);
+  if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()) throw new Error('source export root must be a real directory');
+  const output = {};
+  const visit = async (directory, prefix = '') => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const full = path.join(directory, entry.name);
+      const info = await lstat(full);
+      if (info.isSymbolicLink()) throw new Error(`source export contains a symlink: ${relative}`);
+      if (info.isDirectory()) await visit(full, relative);
+      else if (info.isFile() && info.nlink === 1) output[relative] = await hashFile(full);
+      else throw new Error(`source export contains a non-regular file: ${relative}`);
+    }
+  };
+  await visit(rootDirectory);
+  return Object.fromEntries(Object.entries(output).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function assertInventory(actual, expected, label) {
+  if (hashJson(actual) !== hashJson(Object.fromEntries(Object.entries(expected).sort(([a], [b]) => a.localeCompare(b)))))
+    throw new Error(`${label} file inventory differs from its committed source hashes`);
+}
+async function hashFile(file) {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  return hash.digest('hex');
+}
+function hashJson(value) { return createHash('sha256').update(JSON.stringify(value)).digest('hex'); }

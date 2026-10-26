@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — N6 verified locally; extracted releases next
+## Current instruction — N6 accepted within bounds; S0 measurement baseline next
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -14,70 +14,27 @@ ordered-storage redesign. Rust remains the native engine; normal Cargo and
 minimal process/service bootstrap are permitted. Backward compatibility is not
 required. Preserve capability and correctness, not old names or language layers.
 
-Read [the program](research/56-node-and-index-redesign-program.md), then
-[Node contracts](research/57-node-developer-contract.md),
-[storage contracts](research/58-ordered-storage-redesign.md) or
-[the inventory](research/59-node-capability-inventory.md) as needed.
-Read the [N0 decisions and bounded evidence](research/62-node-foundation-result.md),
-[N1 result and boundaries](research/63-node-native-host-result.md),
-[N2 result and boundaries](research/65-node-workflow-result.md),
-[N3 result and boundaries](research/67-node-population-result.md),
-[N4 result and boundaries](research/69-node-experiment-result.md),
-[N4 contract and evidence](research/68-node-experiment-contract.md),
-[N5 release result](research/71-node-lifecycle-result.md),
-[N5 lifecycle and release contract](research/70-node-lifecycle-contract.md),
-[frozen native wire](research/60-native-host-contract.md) and
-[Node dependency decisions](research/61-node-tooling-contract.md) when changing
-the Node/native boundary or continuing N6.
-N1 implements Node configuration and the private native host for model catalogs
-and redb check/inspection. N2 adds Node workflow composition, owned service and
-operator APIs, and bounded adapter lifecycle evidence. N3 adds caller-owned Node
-population state and receipt-gated proposals for Equipment and Quantity. N4 adds
-bounded workloads, experiments, observations and source-only checking; its
-accepted scope and incomplete logical/physical obligations are recorded in the
-N4 result. N5's committed-source redb and all-feature packages from `6836c59`
-verify outside Git; all 122 Node tests pass with no skips. The extracted redb,
-SurrealKV and local FoundationDB lifecycle runs pass with complete cleanup.
-See [release evidence](research/evidence/2026-10-26-n5-release.json) for hashes,
-failed trials and limits. N6's first source/physical checkpoint passes for
-Equipment, Measurement and Quantity; see [complete-backup checking](research/72-node-complete-backup-contract.md).
-Complete Equipment history requires the caller's retained role identity witness.
-The [Node signed-ingress workflow](research/73-node-signed-ingress-contract.md)
-also passes real transport, durable retry and startup-cleanup controls; the full
-Node suite passed 133 tests. The [bounded IssueShare workflow](research/74-node-issue-share-contract.md)
-also passes. The [private recovery operator](research/75-private-effect-retry-contract.md)
-is preserved and the full suite passes 139 tests. Structured native serving,
-the final replacement ledger, and retirement of the
-60 inventoried Python paths plus four obsolete schema-values bridge files are
-now verified locally. [Bootstrap evidence](research/76-native-bootstrap-contract.md)
-records 200 default native tests, seven focused scope controls, a real local FDB
-reset control and 141 Node tests without skips. This is implementation status only: N6 has
-not been accepted. Root owns fresh native and extracted-release acceptance and
-the resulting evidence. The exact prepared retirement disposition is in
-[N6 retirement](research/77-node-tooling-retirement.md) and its ledger; preserve
-the N0 ledger and dated evidence unchanged. The prepared entry point and native
-acceptance matrix are in the [bootstrap contract](research/76-native-bootstrap-contract.md).
-Ordered-storage changes remain pending.
+Read the [current program](research/56-node-and-index-redesign-program.md), the
+[N6 result](research/78-node-retirement-result.md), and the
+[release evidence](research/evidence/2026-10-26-n6-release.json). N0–N6 are
+accepted within their recorded bounds. The accepted N6 source is
+`1243168424294728968591d69efbe5d836fd36fd`; both committed-source packages have
+1,061 checksummed files and all six models. The extracted Node suite passes 143
+tests with no skips; redb, SurrealKV, and local FoundationDB lifecycle runs
+pass. The standalone service checks all six models with an empty `PATH`, fresh
+JWT/context, SIGTERM drain, restart, and original receipt replay. Details,
+package hashes and boundaries are in the N6 result/evidence. The 60-path
+retirement ledger, N0 ledger, and historical evidence remain preserved.
 
-The [catalog format correction](research/evidence/2026-10-26-n6-model-catalogs.json)
-adds six-model/twelve-scope fixture acceptance by sharing the existing strict
-native schema registry. The full suite now passes 143 tests with no skips and
-all 89 native inputs remain unchanged. Refresh packages from the corrected
-commit; do not relabel the preceding `699f096` artifacts as the new source.
-
-Next acceptance sequence: independently verify the ledger's 60 unique Python
-paths and four auxiliary paths against pinned source
-`0d0601187c79d430f8d7ed41674f53e9905af75f` and each recorded SHA-256; check
-replacement references and historical link targets; then run the focused native
-host/service checks in the bootstrap contract and the final Node suite and
-package checks from a clean source export/extracted release. Exercise the
-ordinary Node workflow and minimal `host` / `serve` bootstrap, confirm no Python
-runtime or retired CLI parser is required, and record hashes, results, claim
-limits and cleanup in new evidence. Keep N6 pending until those checks pass and
-root accepts the evidence. Do not claim unrestricted capacity: current controls
-remain bounded to their named models, inputs and recorded envelopes. Follow the
-dependency ledger through verified checkpoints; do not ask for repeated routine
-permission.
+Next, start S0 by freezing the trace/workload schema and measurement plan before
+choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,
+cache hits, wait dependencies, conflicts and resource measurements; record data
+shape, backend, host/cluster/process topology, and cold/warm controls; then run
+the same bounded baseline across supported adapters. Reuse accepted correctness
+witnesses. Local multi-process FoundationDB is not multi-host evidence. Keep
+capacity claims bounded; do not claim unrestricted production capacity. S0's
+measurement baseline must precede any candidate or layout choice. Continue
+without reopening accepted N6 campaigns or restarting G7–G9.
 
 This explicitly supersedes older instructions to preserve Python orchestration,
 the Python-to-Node faker bridge, legacy CLI verbs, or the G9 no-next-goal stop.

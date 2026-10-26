@@ -1,0 +1,290 @@
+import { createHash, generateKeyPairSync, randomUUID } from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { createReadStream } from 'node:fs';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const SELECTORS = Object.freeze(['calculation', 'equipment', 'invoicing', 'measurement', 'effect-demo', 'quantity']);
+const MAX_STDERR = 64 * 1024;
+
+/**
+ * Exercise the extracted production `serve` bootstrap with no SDK and an empty
+ * child PATH. Maintained helpers are imported only from the supplied bundle.
+ */
+export async function runStandaloneAcceptance({ bundleDirectory } = {}) {
+  absolutePath(bundleDirectory, 'bundleDirectory');
+  const bundle = path.resolve(bundleDirectory);
+  const binary = path.join(bundle, 'bin', 'rebase-next');
+  const manifest = JSON.parse(await readFile(path.join(bundle, 'BUNDLE.json'), 'utf8'));
+  if (manifest.format !== 'rebase-node-release-1' || !manifest.binary
+      || !manifest.supportedBackends?.includes('redb')) throw new Error('standalone acceptance requires an extracted redb release');
+  const { verifyRelease } = await import(pathToFileURL(path.join(bundle, 'tools/node/release.mjs')).href);
+  const packageCheck = await verifyRelease({ directory: bundle, environment: { PATH: '' } });
+  if (packageCheck.status !== 'passed' || packageCheck.sourceCommit !== manifest.sourceCommit)
+    throw new Error('extracted standalone release failed package verification');
+
+  const [{ resolveConfig }, { openNative }, { prepareModel }, { connect }] = await Promise.all([
+    bundleImport('config.mjs'), bundleImport('native.mjs'), bundleImport('model.mjs'), bundleImport('client.mjs'),
+  ]);
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'rebase-n6-standalone-'));
+  const children = new Set();
+  const results = { status: 'running', sourceCommit: manifest.sourceCommit,
+    binarySha256: manifest.binary.sha256, scope: 'six extracted models; local redb; serve process receives PATH empty',
+    packageCheck, models: [], negativeCases: [] };
+  try {
+    for (const selector of SELECTORS) {
+      results.models.push(await acceptModel(selector));
+    }
+    results.status = 'passed';
+    return results;
+  } finally {
+    await Promise.all([...children].map(child => stopChild(child).catch(() => {})));
+    await rm(workspace, { recursive: true, force: true });
+  }
+
+  async function acceptModel(selector) {
+    const modelDirectory = path.join(workspace, selector);
+    await mkdir(modelDirectory, { mode: 0o700 });
+    const storePath = path.join(modelDirectory, 'store.redb');
+    const configPath = path.join(modelDirectory, 'service.json');
+    const tenant = randomUUID();
+    const actor = randomUUID();
+    const methods = ['identity.issue'];
+    const hostConfig = resolveConfig({ overrides: { native: { binary, environment: {}, configuration: {
+      model: selector, backend: { kind: 'redb', cluster_file: null },
+      target: { mode: 'create', path: storePath, tenant, actor }, operator_methods: methods,
+    } }, runner: { startTimeoutMs: 15_000, closeTimeoutMs: 5_000, diagnosticBytes: 4096 } } });
+    const keys = generateKeyPairSync('ed25519');
+    const publicKeyPem = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
+    const privateKeyPem = keys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+    const identity = { issuer: `n6-standalone-${selector}`, audience: 'n6-standalone',
+      public_keys: { local: publicKeyPem }, max_token_seconds: 300 };
+    let owner;
+    let activeChild;
+    try {
+      owner = await openNative(hostConfig);
+      const description = await owner.describe();
+      if (owner.selection.selector !== selector || !description.engine.compiled_models.includes(selector))
+        throw new Error(`native helper did not select ${selector}`);
+      const publicCatalog = await owner.catalog({ scope: 'public' });
+      const developerCatalog = await owner.catalog({ scope: 'developer' });
+      if (developerCatalog.model !== owner.scope.model || publicCatalog.model !== owner.scope.model)
+        throw new Error(`${selector} native catalogs do not match selected model identity`);
+      if (!Array.isArray(publicCatalog.contracts) || !Array.isArray(developerCatalog.contracts)
+          || publicCatalog.contracts.length === 0 || developerCatalog.contracts.length < publicCatalog.contracts.length)
+        throw new Error(`${selector} authoritative native catalogs are incomplete`);
+      const model = prepareModel(developerCatalog, { native: owner, selector });
+      const fixtures = await model.fixtureCatalog();
+      if (!Array.isArray(fixtures) || fixtures.length === 0 || typeof fixtures[0].name !== 'string')
+        throw new Error(`${selector} has no authoritative native fixture`);
+      const fixture = await model.fixturePlan({ name: fixtures[0].name, namespace: randomUUID() });
+      if (fixture.model !== owner.scope.model || !Array.isArray(fixture.commands) || fixture.commands.length === 0)
+        throw new Error(`${selector} fixture plan is incomplete`);
+      const tokenResult = await owner.issueIdentity({ scope: owner.scope, identity,
+        request: { tenant, actor, epoch: 0, ttl: 180, key_id: 'local' }, private_key_pem: privateKeyPem });
+      if (typeof tokenResult.token !== 'string' || !tokenResult.token)
+        throw new Error(`${selector} identity helper returned no token`);
+      const storeId = owner.scope.store;
+      await owner.close();
+      owner = null;
+
+      const serviceConfiguration = { format: 'rebase-service-1', model: selector,
+        backend: { kind: 'redb', cluster_file: null },
+        target: { mode: 'open', path: storePath, expect_store: storeId },
+        service: { listen: '127.0.0.1:0', identity, max_inflight: 4,
+          request_timeout_seconds: 10, effects: null } };
+      await writePrivateJson(configPath, serviceConfiguration);
+      activeChild = await startServe(binary, configPath, modelDirectory);
+      children.add(activeChild.child);
+      const firstEndpoint = `http://${activeChild.address}/rpc`;
+      const firstClient = connect({ endpoint: firstEndpoint, credential: tokenResult.token });
+      const described = await firstClient.call('model.describe', {});
+      assert.deepStrictEqual(described, publicCatalog, `${selector} standalone public catalog`);
+      const session = await firstClient.call('session.describe', {});
+      if (session.model !== developerCatalog.model || session.store !== storeId
+          || session.tenant !== tenant || session.actor !== actor || session.credential_epoch !== 0)
+        throw new Error(`${selector} standalone session identity differs from its created store`);
+      const plan = await firstClient.prepare(fixture);
+      const receipt = await firstClient.execute(plan);
+      if (receipt.status !== 'committed') throw new Error(`${selector} standalone fixture did not commit`);
+      const firstStopped = await stopChild(activeChild.child);
+      const firstDiagnostics = activeChild.captured.text();
+      children.delete(activeChild.child);
+      activeChild = null;
+      if (firstStopped.code !== 0) throw new Error(`${selector} standalone process did not stop cleanly: ${firstDiagnostics}`);
+
+      const reopenedBytesHash = await hashFile(storePath);
+      if (selector === SELECTORS[0]) {
+        const rejected = await verifyRejectedConfigurations({ selector, modelDirectory, configPath,
+          serviceConfiguration, storePath, storeBytesHash: reopenedBytesHash, binary });
+        results.negativeCases.push(...rejected);
+      }
+      const afterRejectedHash = await hashFile(storePath);
+      if (afterRejectedHash !== reopenedBytesHash) throw new Error(`${selector} rejected config changed the sentinel store`);
+
+      activeChild = await startServe(binary, configPath, modelDirectory);
+      children.add(activeChild.child);
+      const replayClient = connect({ endpoint: `http://${activeChild.address}/rpc`, credential: tokenResult.token });
+      const replay = await replayClient.call('records.mutate', plan.request);
+      if (replay.replayed !== true) throw new Error(`${selector} standalone restart did not replay the original receipt`);
+      assert.deepStrictEqual(replay.result, receipt.result, `${selector} original receipt replay`);
+      const finalStopped = await stopChild(activeChild.child);
+      const finalDiagnostics = activeChild.captured.text();
+      children.delete(activeChild.child);
+      activeChild = null;
+      if (finalStopped.code !== 0) throw new Error(`${selector} restarted process did not stop cleanly: ${finalDiagnostics}`);
+      return { selector, model: developerCatalog.model, fixture: fixtures[0].name,
+        publicContractCount: publicCatalog.contracts.length, developerContractCount: developerCatalog.contracts.length,
+        store: storeId, receiptStatus: receipt.status, replayed: replay.replayed,
+        receiptOperationId: plan.request.operation_id, storeSha256AfterRejections: afterRejectedHash,
+        childPathEmpty: true, processes: 2, status: 'passed' };
+    } finally {
+      if (owner) await owner.close().catch(() => {});
+      if (activeChild) {
+        await stopChild(activeChild.child).catch(() => {});
+        children.delete(activeChild.child);
+      }
+    }
+  }
+
+  async function verifyRejectedConfigurations({ selector, modelDirectory, configPath,
+    serviceConfiguration, storePath, storeBytesHash, binary }) {
+    const cases = [];
+    const record = async (name, mutate, expected) => {
+      const configuration = structuredClone(serviceConfiguration);
+      mutate(configuration);
+      await writePrivateJson(configPath, configuration);
+      const outcome = await runRejectedServe(binary, configPath, modelDirectory);
+      if (outcome.code === 0 || !outcome.stderr.includes(expected))
+        throw new Error(`${selector} ${name} was not rejected as ${expected}: ${outcome.stderr}`);
+      if (await hashFile(storePath) !== storeBytesHash) throw new Error(`${selector} ${name} changed the configured sentinel store`);
+      cases.push({ selector, name, expected, exitCode: outcome.code,
+        stderrSha256: hashText(outcome.stderr), sentinelStoreUnchanged: true });
+    };
+    await record('invalid-format', value => { value.format = 'rebase-service-0'; }, 'invalid_config');
+    await record('unknown-key', value => { value.unrecognized = true; }, 'invalid_config');
+    await record('create-target', value => {
+      value.target = { mode: 'create', path: path.join(modelDirectory, 'must-not-exist.redb'),
+        tenant: randomUUID(), actor: randomUUID() };
+    }, 'invalid_config');
+    await record('wrong-expected-store', value => { value.target.expect_store = randomUUID(); }, 'wrong_target');
+    await record('invalid-limit', value => { value.service.max_inflight = 0; }, 'invalid_input');
+    await record('malformed-public-key', value => { value.service.identity.public_keys.local = 'bad PEM'; }, 'invalid_input');
+    await writePrivateJson(configPath, serviceConfiguration);
+    const relative = await runRejectedServe(binary, path.basename(configPath), modelDirectory, modelDirectory);
+    if (relative.code === 0 || !relative.stderr.includes('invalid_config'))
+      throw new Error(`${selector} relative service path was not rejected: ${relative.stderr}`);
+    if (await hashFile(storePath) !== storeBytesHash) throw new Error(`${selector} relative config attempt changed the sentinel store`);
+    cases.push({ selector, name: 'relative-config-path', expected: 'invalid_config', exitCode: relative.code,
+      stderrSha256: hashText(relative.stderr), sentinelStoreUnchanged: true });
+    if (await exists(path.join(modelDirectory, 'must-not-exist.redb')))
+      throw new Error(`${selector} rejected create target created a store`);
+    return cases;
+  }
+
+  function bundleImport(name) {
+    return import(pathToFileURL(path.join(bundle, 'tools', 'node', name)).href);
+  }
+}
+
+async function startServe(binary, configPath, cwd) {
+  const child = spawn(binary, ['serve', configPath], { cwd, env: { PATH: '' }, shell: false,
+    stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
+  const captured = captureStderr(child);
+  let timer;
+  const startup = new Promise((resolve, reject) => {
+    let text = '';
+    const fail = error => { clearTimeout(timer); reject(error); };
+    captured.onChunk = chunk => {
+      text += chunk.toString('utf8');
+      const match = /^ReBase Next listening on (127\.0\.0\.1:[0-9]{1,5})[ \t]+[^\n]*\n/m.exec(text);
+      if (match) { clearTimeout(timer); resolve(match[1]); }
+      else if (captured.overflow) fail(new Error('standalone startup diagnostics exceeded 64 KiB'));
+    };
+    child.once('error', fail);
+    child.once('close', (code, signal) => fail(new Error(`standalone exited before listening (${code ?? signal ?? 'unknown'}): ${captured.text()}`)));
+    timer = setTimeout(() => fail(new Error(`standalone did not announce readiness within 15 seconds: ${captured.text()}`)), 15_000);
+    timer.unref?.();
+  });
+  try {
+    const address = await startup;
+    if (!/^127\.0\.0\.1:[0-9]{1,5}$/.test(address)) throw new Error(`unexpected standalone listen address: ${address}`);
+    return { child, address, captured };
+  } catch (error) {
+    await stopChild(child).catch(() => {});
+    throw error;
+  }
+}
+
+async function runRejectedServe(binary, configPath, cwd, argumentCwd = cwd) {
+  const child = spawn(binary, ['serve', configPath], { cwd: argumentCwd, env: { PATH: '' }, shell: false,
+    stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
+  const captured = captureStderr(child);
+  try {
+    const outcome = await waitForExit(child, 7_500);
+    if (captured.overflow) throw new Error('rejected standalone diagnostics exceeded 64 KiB');
+    return { ...outcome, stderr: captured.text() };
+  } catch (error) {
+    await stopChild(child).catch(() => {});
+    throw error;
+  }
+}
+
+function captureStderr(child) {
+  let bytes = 0;
+  let chunks = [];
+  let onChunk = null;
+  let overflow = false;
+  child.stderr.on('data', chunk => {
+    bytes += chunk.length;
+    if (bytes > MAX_STDERR) { overflow = true; return; }
+    chunks.push(Buffer.from(chunk));
+    onChunk?.(chunk);
+  });
+  return { get overflow() { return overflow; }, get onChunk() { return onChunk; }, set onChunk(value) { onChunk = value; },
+    text() { return Buffer.concat(chunks).toString('utf8'); } };
+}
+
+async function stopChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return waitForExit(child, 1_000);
+  child.kill('SIGTERM');
+  try { return await waitForExit(child, 10_000); }
+  catch (error) {
+    child.kill('SIGKILL');
+    await waitForExit(child, 3_000).catch(() => {});
+    throw error;
+  }
+}
+
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve({ code: child.exitCode, signal: child.signalCode });
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { cleanup(); reject(new Error('standalone child did not exit within its bound')); }, timeoutMs);
+    timer.unref?.();
+    const close = (code, signal) => { cleanup(); resolve({ code, signal }); };
+    const error = failure => { cleanup(); reject(failure); };
+    const cleanup = () => { clearTimeout(timer); child.removeListener('close', close); child.removeListener('error', error); };
+    child.once('close', close);
+    child.once('error', error);
+  });
+}
+
+async function writePrivateJson(filename, value) {
+  await writeFile(filename, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+}
+async function hashFile(filename) {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(filename)) hash.update(chunk);
+  return hash.digest('hex');
+}
+async function exists(filename) {
+  try { await lstat(filename); return true; }
+  catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+}
+function hashText(text) { return createHash('sha256').update(text).digest('hex'); }
+function absolutePath(value, name) {
+  if (typeof value !== 'string' || !path.isAbsolute(value)) throw new TypeError(`${name} must be an absolute path`);
+}

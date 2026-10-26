@@ -1,43 +1,36 @@
 # Compact context — 2026-10-26
 
-## Current handoff — N6 implementation verified; extracted releases next
+## Current handoff — N6 accepted within bounds; S0 measurement baseline next
 
-P0 and N0–N5 are accepted within their documented bounds. The N6 source/backup,
-signed-ingress, IssueShare and private effect-retry checkpoints have their
-recorded bounded controls. The current [bootstrap evidence](research/evidence/2026-10-26-n6-bootstrap.json)
-records 200 default native tests, seven focused scope controls, an explicitly
-executed local FDB reset control, and 141 Node tests with no skips. The sole stale
-example assertion was repaired and its targeted rerun passes; the initial failed
-campaign log is preserved.
-Broader extracted six-model acceptance then found an incomplete Node model
-format registry. The [catalog correction](research/evidence/2026-10-26-n6-model-catalogs.json)
-reuses the existing strict registry; all 12 public/developer catalog scopes and
-every native fixture now pass, with 143 full Node tests and no skips. All 89
-native inputs are unchanged. Refresh the committed-source packages before final
-N6 acceptance; the earlier source `699f096` artifacts retain their own identity.
-Structured native `host` / `serve` bootstrap and retirement of the 60 inventoried
-Python paths plus four obsolete schema-values bridge files are now prepared in
-the worktree and verified locally. N6 release acceptance remains pending. The retirement ledger is prepared evidence,
-not final acceptance, and must remain unchanged during root's acceptance run.
-The N0 ledger and dated evidence also remain unchanged. Read [AGENTS](AGENTS.md),
-[README](README.md), [the program](research/56-node-and-index-redesign-program.md),
-[N5 result](research/71-node-lifecycle-result.md), [N5 release evidence](research/evidence/2026-10-26-n5-release.json),
-[capability inventory](research/59-node-capability-inventory.md), and the
-[retirement report and ledger](research/77-node-tooling-retirement.md), and
-[native bootstrap contract](research/76-native-bootstrap-contract.md).
+P0 and N0–N6 are accepted within their documented scopes. The final N6 source is
+`1243168424294728968591d69efbe5d836fd36fd`. Its committed-source
+[redb package](research/78-node-retirement-result.md) and all-feature package
+each contain 1,061 checksummed files and all six models. Extracted acceptance
+passes 143 Node tests with no skips and redb, SurrealKV, and local FoundationDB
+lifecycle runs. The standalone Rust service runs all six models with an empty
+`PATH`, fresh JWT and session context, SIGTERM drain, restart, and original
+receipt replay. Seven invalid service configurations leave stores unchanged.
+The [N6 result](research/78-node-retirement-result.md) and
+[release evidence](research/evidence/2026-10-26-n6-release.json) own package
+hashes, native controls, cleanup and precise claim limits.
 
-The local audit verifies all 60 unique retired Python paths and four
-auxiliary paths against pinned source `0d0601187c79d430f8d7ed41674f53e9905af75f`
-and the ledger's per-path SHA-256 values; check current replacement references,
-historical links and service templates. Exact next work: commit this verified
-implementation with release acceptance pending, export that exact Git commit,
-build and package SDK-free and all-feature native executables, then run the
-Node suite/package verification from the extracted release. Demonstrate the ordinary Node workflow and
-minimal native bootstrap without requiring Python or retired project CLI
-parsers. Root records exact source/artifact hashes, results, cleanup and bounded
-claim limits in new evidence, then decides acceptance. Existing bounded controls
-do not establish unrestricted capacity. Ordered-storage S0–S3 and integrated
-F0 remain pending after this N6 acceptance work.
+The 60 retired Python paths and four bridge auxiliaries match the pinned source
+ledger; the N0 ledger and dated evidence remain preserved. This accepts N6, not
+all of G10. Existing capacity limits stay model- and workload-bounded; local
+FoundationDB evidence does not establish multi-host latency or failover.
+
+Next, begin S0 by fixing the trace/workload schema and measurement plan before
+choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,
+cache hits, wait dependencies, conflicts and resource use. Record data shape,
+backend, host/cluster/process topology, and cold/warm conditions, then run the
+same bounded baseline on supported adapters with existing correctness witnesses.
+Do not select an index layout or candidate until this baseline and its limits
+are recorded. S1 may retain AVL when evidence does not justify a change; S2 and
+S3 follow the result, then F0 integrates the accepted source and artifacts.
+G6 accounting expansion, frontend, live providers, TiKV, populated migrations,
+unrestricted million-record capacity and the explanation course remain deferred.
+
+## Earlier N5 and N6 checkpoint notes
 
 N5 releases come from committed source 6836c59. Both packages have 1,067
 checksummed files and all six model catalogs. The extracted redb Node suite
@@ -46,9 +39,10 @@ lifecycle runs pass, including ownership, original replay, CAS rollback,
 independent physical trees, restart, isolated restore, archive and reset.
 The final run stops every owned native/FDB process and removes its data.
 This is one-machine FDB evidence, not multi-host latency/capacity.
-The host sanitizes an existing FDB restore destination to internal; complete
-before/after payload equality verifies preservation. N6 can normalize this
-private diagnostic while replacing the native bootstrap.
+On a repeated failed restore, FoundationDB returns its sanitized `internal`
+diagnostic; complete before/after payload equality verifies the destination is
+preserved. This remains a documented diagnostic limitation. N6 did not
+normalize it.
 
 The [complete-backup source checker](research/72-node-complete-backup-contract.md)
 now verifies Measurement query payloads/selection and source-bound physical
@@ -70,12 +64,13 @@ rollback and original receipts. Broader native invoicing checks remain mapped.
 The [scoped private recovery operator](research/75-private-effect-retry-contract.md)
 preserves effect retry through the owned host, including current authority,
 stopped service/worker, revision CAS and an in-transaction store UUID fence.
-No public HTTP retry method was added. The final N6 implementation now includes
-structured native serving, the 60-row disposition ledger, Python/CLI retirement,
-and updated supported guides/templates. These changes await the acceptance steps
-above; production Rust remains independent of Node. Keep current authority,
-original plans and recovery checks; do not expand G6. Do not begin deferred G6,
-frontend, live providers, TiKV, migrations or a course.
+No public HTTP retry method was added. N6 subsequently accepted structured native
+serving, the 60-row disposition ledger, Python/CLI retirement, and updated
+supported guides/templates. See the [N6 result](research/78-node-retirement-result.md)
+for final package and extracted-release evidence. Production Rust remains
+independent of Node. Keep current authority, original plans and recovery checks;
+do not expand G6. Do not begin deferred G6, frontend, live providers, TiKV,
+migrations or a course.
 
 Environment-specific artifacts (verify identities before use; these API-host
 paths are historical locations, not portable defaults):
@@ -98,7 +93,7 @@ In this cloud workspace, Node 24.22.1 is at
 `/workspace/.rebase-tools/rust-review/cargo`. Verified local releases from
 `6f16164` remain under `/home/agent/rebase-n5-release-6f16164/`; their native
 inputs match `6836c59`, but they are distinct artifacts from the N5 API-host
-release. A fresh continuation check passes all 122 current Node tests against
+release. An earlier continuation check passed all 122 then-current Node tests against
 the local SDK-free release. See [review evidence](research/evidence/2026-10-26-continuation-review.json).
 
 Main is linear. Check credentials/tools in the current environment; ordinary

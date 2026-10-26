@@ -1,0 +1,12 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error: unexpected standalone listen address: 127
+    at startServe (file:///workspace/ReBase/rebase-next/target/n6-standalone-acceptance.mjs:214:59)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async acceptModel (file:///workspace/ReBase/rebase-next/target/n6-standalone-acceptance.mjs:100:21)
+    at async runStandaloneAcceptance (file:///workspace/ReBase/rebase-next/target/n6-standalone-acceptance.mjs:39:27)
+    at async file:///workspace/ReBase/rebase-next/[eval1]:1:149
+
+Node.js v24.22.1

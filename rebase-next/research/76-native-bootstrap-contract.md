@@ -1,17 +1,12 @@
 # N6 — Native bootstrap contract
 
-Status: **native implementation verified; extracted-release acceptance
-pending.** The [local evidence](evidence/2026-10-26-n6-bootstrap.json) records
-200 default native tests, seven focused scope controls, an explicitly executed
-local FoundationDB reset control, and 141 Node tests with no skips. The initial
-example assertion failure and its targeted repair remain recorded. This does
-not yet claim N6 release acceptance.
-
-The subsequent [catalog correction](evidence/2026-10-26-n6-model-catalogs.json)
-shares the strict native schema registry across configuration and model tools.
-All six models, both catalog scopes and every native fixture now pass; the full
-Node suite has 143 passes and no skips. Native inputs are unchanged. Refreshed
-committed-source packages still require extracted acceptance.
+Status: **accepted within the bounded N6 release scope.** The final
+[N6 result](78-node-retirement-result.md) and
+[release evidence](evidence/2026-10-26-n6-release.json) record committed-source
+packages, extracted controls, native bootstrap checks, and their limits. The
+earlier [bootstrap evidence](evidence/2026-10-26-n6-bootstrap.json) and
+[catalog correction](evidence/2026-10-26-n6-model-catalogs.json) remain separate
+dated executions; they are not relabeled as final release runs.
 
 ## Entry points and configuration
 
@@ -57,36 +52,24 @@ operation ID, request and context to obtain its original receipt. SIGTERM drains
 admitted requests and joins owned worker/service tasks before releasing store
 ownership.
 
-## Acceptance evidence still required
+## Accepted controls and boundaries
 
-Native controls in `tests/native_bootstrap.rs`, `tests/native_host.rs`, and
-`tests/native_service.rs` cover parts of this boundary. The final acceptance
-record must report fresh execution results rather than infer them from source or
-older N1–N5 evidence. It must cover:
+The real-binary service check runs all six compiled models with an empty `PATH`,
+fresh JWT, native session context, mutation, SIGTERM shutdown, restart, and
+original-ID receipt replay. Seven invalid configurations fail without changing
+stores. The native campaign records 200 default tests, seven focused scope
+controls, and a real local FoundationDB reset control. The final extracted
+release adds 143 passing Node tests with no skips and redb, SurrealKV, and local
+FoundationDB lifecycle runs; see the [N6 result](78-node-retirement-result.md)
+for the complete restore/archive/reset boundaries.
 
-- A standalone real-binary `serve` run with an empty `PATH`, a fresh signed JWT,
-  `session.describe` context, one mutation, and same-ID/context replay with the
-  original receipt for all six compiled models.
-- Absolute config-path and strict bounded-JSON behavior; malformed, wrong-model,
-  wrong-store and corrupt-integrity startup failures leave the store unchanged,
-  create no destination, bind no listener and activate no worker.
-  Corrupt-integrity startup remains an explicit acceptance case; source review
-  alone does not establish this behavior.
-- Runtime UUID checks across read, write, session, signed ingress, worker and
-  post-reset paths; `wrong_target` is safely mapped, and protected header reads
-  are covered at the transaction boundary.
-- SIGTERM drain and cleanup of owned native/service/worker resources, followed
-  by a successful clean reopen and integrity check.
-- Fresh extracted-package checks for each claimed backend. FoundationDB host and
-  service acceptance is explicitly unverified until a feature-enabled run with
-  an owned real cluster, namespace isolation and complete cleanup is recorded;
-  compilation or configuration rejection alone is not backend acceptance.
-
-These are required acceptance controls, not claims that every item has passed.
-Root records exact source and artifact identities, executed cases, failures,
-cleanup and backend-specific limits in new evidence before deciding acceptance.
-The bounded model and workload results do not imply unrestricted capacity,
-multi-host FoundationDB behavior, or failover guarantees.
+The checks exercise expected-store UUID guards across scoped operations and
+post-reset paths. Read fences use the same snapshot as the header; writes read
+the header in their writable transaction. `wrong_target` maps to a fixed safe
+RPC message, while model or store-format mismatch is `model_mismatch`. The
+service opens existing stores only, checks integrity before readiness, and
+drains owned work on SIGTERM. Local FoundationDB evidence does not establish
+multi-host behavior. No result here implies unrestricted production capacity.
 
 See the [frozen private host protocol](60-native-host-contract.md),
 [server guide](../docs/server.md), [deployment guide](../docs/deployment.md),
