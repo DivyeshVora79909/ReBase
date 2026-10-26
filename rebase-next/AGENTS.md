@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — G10 N4 accepted; N5 is next
+## Current instruction — N5 implementation tested; release acceptance pending
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -24,18 +24,24 @@ Read the [N0 decisions and bounded evidence](research/62-node-foundation-result.
 [N3 result and boundaries](research/67-node-population-result.md),
 [N4 result and boundaries](research/69-node-experiment-result.md),
 [N4 contract and evidence](research/68-node-experiment-contract.md),
+[N5 implementation result](research/71-node-lifecycle-result.md),
+[N5 lifecycle and release contract](research/70-node-lifecycle-contract.md),
 [frozen native wire](research/60-native-host-contract.md) and
 [Node dependency decisions](research/61-node-tooling-contract.md) when changing
-the N1/N2/N3 boundary or starting N5.
+the N1/N2/N3 boundary or continuing N5.
 N1 implements Node configuration and the private native host for model catalogs
 and redb check/inspection. N2 adds Node workflow composition, owned service and
 operator APIs, and bounded adapter lifecycle evidence. N3 adds caller-owned Node
 population state and receipt-gated proposals for Equipment and Quantity. N4 adds
 bounded workloads, experiments, observations and source-only checking; its
 accepted scope and incomplete logical/physical obligations are recorded in the
-N4 result. N5–N6 and ordered-storage changes remain. On continuation, start N5
-and follow the dependency ledger through verified checkpoints; do not ask for
-repeated routine permission.
+N4 result. The N5 Node prebuild suite passes 122 tests, and a local FDB ownership
+witness passes. N5 is not accepted until root builds the exact committed source,
+packages and verifies the extracted artifact, completes the planned released-
+artifact adapter runs, and reviews the evidence and cleanup. Continue at that
+release boundary; N6 and ordered-storage changes remain pending. Follow the
+dependency ledger through verified checkpoints; do not ask for repeated routine
+permission.
 
 This explicitly supersedes older instructions to preserve Python orchestration,
 the Python-to-Node faker bridge, legacy CLI verbs, or the G9 no-next-goal stop.

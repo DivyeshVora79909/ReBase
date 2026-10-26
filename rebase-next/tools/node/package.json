@@ -11,7 +11,8 @@
     "test": "node --test ./test/*.test.mjs",
     "test:n2": "node --test ./test/client.test.mjs ./test/model.test.mjs ./test/operator.test.mjs ./test/n2-real-workflow.test.mjs",
     "test:n3": "node --test ./test/population-semantics.test.mjs ./test/population-contract.test.mjs ./test/n3-population.test.mjs",
-    "test:n4": "node --test ./test/workload.test.mjs ./test/experiments.test.mjs ./test/n4-scenarios-observe.test.mjs ./test/n4-real-receipt-progress.test.mjs"
+    "test:n4": "node --test ./test/workload.test.mjs ./test/experiments.test.mjs ./test/n4-scenarios-observe.test.mjs ./test/n4-real-receipt-progress.test.mjs",
+    "test:n5": "node --test ./test/storage-check.test.mjs ./test/fake-provider.test.mjs ./test/infra.test.mjs ./test/n5-lifecycle.test.mjs ./test/n5-model-snapshots.test.mjs ./test/release.test.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

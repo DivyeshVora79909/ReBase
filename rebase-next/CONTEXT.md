@@ -1,15 +1,18 @@
 # Compact context — 2026-10-26
 
-## Current handoff — G10 N4 accepted; N5 next
+## Current handoff — G10 N4 accepted; N5 release acceptance pending
 
 G10 P0, N0, N1, N2, N3 and N4 are accepted within their documented scopes.
-N5 is next; N6, S0–S3 and F0 remain pending.
+N5 implementation is tested but not accepted; its committed-source release and
+adapter checks remain the current task. N6, S0–S3 and F0 remain pending.
 Read [N0 results](research/62-node-foundation-result.md),
 [N1 results](research/63-node-native-host-result.md), the
 [N2 result](research/65-node-workflow-result.md),
 [N3 result](research/67-node-population-result.md),
 [N4 result](research/69-node-experiment-result.md) and
 [N4 evidence](research/evidence/2026-10-26-n4-node-experiments.json),
+[N5 implementation result](research/71-node-lifecycle-result.md),
+[N5 contract](research/70-node-lifecycle-contract.md),
 [native wire contract](research/60-native-host-contract.md),
 [Node decisions](research/61-node-tooling-contract.md) and the
 [G10 program](research/56-node-and-index-redesign-program.md),
@@ -23,7 +26,11 @@ source fingerprints and limits. N4 adds bounded workloads, observation,
 experiments, and source-only checking. Its 95-test N0–N4 suite and independent
 review pass. Measurement query-result/selection payloads, equal-time mixed-sign
 Equipment prefix extrema, and physical tree verification remain incomplete;
-N5 typed-backup checking and N6 physical-snapshot/deletion work remain owed.
+N5 typed-backup checking verifies physical trees across six compiled models;
+the 122-test Node prebuild suite and a local FoundationDB 7.3.77 ownership
+witness pass. N5 still needs the committed-source locked release build, package
+verification outside the checkout, and redb/SurrealKV/FoundationDB runs against
+the resulting artifact. N6 physical-snapshot/deletion work remains owed.
 Python workflow deletion remains pending until N6 replacement controls pass. G7–G9
 evidence remains historical acceptance for its recorded sources and bounds.
 Documentation-only checks and fingerprints are recorded in the
@@ -48,8 +55,9 @@ Node 24 and npm are available at
 verification build; use pinned `target/n2-native-default/rebase-next` for
 SDK-free workflows and source identity checks. No Python file is deleted until
 its replacement controls pass. Root owns Git.
-Next exact action: implement N5 storage/service/release lifecycle functions,
-reusing the unchanged
+Next exact action: build and package the committed N5 source with its locked
+release profile, verify the extracted artifact, then run the planned adapter
+checks. The prebuild suite reused the unchanged
 `target/n2-native-default/rebase-next` binary (SHA-256
 `74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e`). N3 source
 hashes, Equipment/Quantity receipts and run boundaries are recorded in

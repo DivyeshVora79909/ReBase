@@ -1,0 +1,28 @@
+{
+  "scope": "single local owned FoundationDB7.3.77 process; not multi-host latency",
+  "start": {
+    "status": "started",
+    "pid": 19102,
+    "address": "127.0.0.1:34319"
+  },
+  "bootstrap": {
+    "status": "completed",
+    "stdout": "Database created\n",
+    "stderr": ""
+  },
+  "probe": {
+    "status": "passed",
+    "key": "rebase_n5_environment_probe_a10a66f7cf9e46a08d132bc2b61a3a83",
+    "output": ">>> writemode on\n>>> begin\nTransaction started\n>>> set rebase_n5_environment_probe_a10a66f7cf9e46a08d132bc2b61a3a83 verified\n>>> commit\nCommitted (72725)\n>>> get rebase_n5_environment_probe_a10a66f7cf9e46a08d132bc2b61a3a83\n`rebase_n5_environment_probe_a10a66f7cf9e46a08d132bc2b61a3a83' is `verified'\n>>> begin\nTransaction started\n>>> clear rebase_n5_environment_probe_a10a66f7cf9e46a08d132bc2b61a3a83\n>>> commit\nCommitted (74920)\n"
+  },
+  "status": {
+    "status": "completed",
+    "stdout": "Using cluster file `/workspace/ReBase/rebase-next/target/n5-fdb-owner-real/fdb.cluster'.\n\nUnable to retrieve all status information.\n\nConfiguration:\n  Redundancy mode        - single\n  Storage engine         - ssd-2\n  Log engine             - ssd-2\n  Encryption at-rest     - disabled\n  Coordinators           - 1\n  Desired Commit Proxies - 3\n  Desired GRV Proxies    - 1\n  Desired Resolvers      - 1\n  Desired Logs           - 3\n  Usable Regions         - 1\n\nCluster:\n  FoundationDB processes - 1\n  Zones                  - unknown\n  Machines               - 0\n  Fault Tolerance        - 0 machines\n  Server time            - 10/26/26 04:17:02\n\nData:\n  Replication health     - unknown\n  Moving data            - unknown\n  Sum of key-value sizes - unknown\n  Disk space used        - unknown\n\nOperating space:\n  Unable to retrieve operating space status\n\nWorkload:\n  Read rate              - 0 Hz\n  Write rate             - 0 Hz\n  Transactions started   - 0 Hz\n  Transactions committed - 0 Hz\n  Conflict rate          - 0 Hz\n\nBackup and DR:\n  Running backups        - 0\n  Running DRs            - 0\n\nClient time: 10/26/26 04:17:02\n",
+    "stderr": ""
+  },
+  "result": "passed",
+  "stop": {
+    "status": "stopped",
+    "pid": 19102
+  }
+}

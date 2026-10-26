@@ -30,6 +30,37 @@ test('two ordinary scenarios use the same bounded runner and source oracle', asy
   assert.equal(first.costs.nativeMs, null);
 });
 
+test('natural exhaustion drains a sampler already in flight before finalizing the report', async () => {
+  let signalStarted;
+  const sampling = new Promise(resolve => { signalStarted = resolve; });
+  const run = await runWorkload({ state: {}, profile: { ...profile, durationMs: 500, maxActions: 2,
+    maxObservations: 2, sampleIntervalMs: 20 }, observe: async () => {
+      signalStarted();
+      await new Promise(resolve => setTimeout(resolve, 30));
+      return { status: 'ready' };
+    }, scenario: async function* () {
+      yield { id: 'finish', kind: 'read', run: async () => { await sampling; return { ok: true }; } };
+    } });
+  assert.equal(run.status, 'complete');
+  assert.equal(run.cancelled, false);
+  assert.equal(run.samples.length, 1);
+  assert.equal(run.samples[0].status, 'observed');
+});
+
+test('natural exhaustion stays incomplete when an in-flight sampler ignores the deadline', async () => {
+  let signalStarted;
+  const sampling = new Promise(resolve => { signalStarted = resolve; });
+  const run = await runWorkload({ state: {}, profile: { ...profile, durationMs: 60, maxActions: 2,
+    maxObservations: 2, sampleIntervalMs: 10 }, observe: () => { signalStarted(); return new Promise(() => {}); },
+    scenario: async function* () {
+      yield { id: 'finish', kind: 'read', run: async () => { await sampling; return { ok: true }; } };
+    } });
+  assert.equal(run.status, 'incomplete');
+  assert.equal(run.timedOut, true);
+  assert.equal(run.cancelled, true);
+  assert.equal(run.observations[0].status, 'completed');
+});
+
 test('checker derives from raw observations and detects corruption and incomplete capture', async () => {
   const run = await runWorkload({ scenario, state: {}, profile });
   const corrupt = structuredClone(run);

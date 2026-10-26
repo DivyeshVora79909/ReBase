@@ -1,0 +1,111 @@
+{
+  "schema": "rebase.n5-node-lifecycle-evidence.v1",
+  "date": "2026-10-26",
+  "status": "implementation_tested_release_acceptance_pending",
+  "scope": [
+    "independent structural checking of native backup tree rows",
+    "durable bounded local fake-provider fixture",
+    "managed test infrastructure and N2 lifecycle composition",
+    "committed-source release packaging and extracted-directory verification",
+    "cross-adapter lifecycle checks"
+  ],
+  "implementation": {
+    "status": "implemented in shared tree; committed source identity not frozen",
+    "storage_check_api": "checkBackupStructure",
+    "fake_provider_api": "startFakeProvider",
+    "managed_foundationdb_api": "openFdbEnvironment",
+    "release_apis": [
+      "prepareReleaseSource",
+      "describeReleaseBuild",
+      "packageRelease",
+      "verifyRelease"
+    ],
+    "native_binary": "target/n2-native-default/rebase-next",
+    "native_binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+    "native_source_runtime_inputs_sha256": "1378f90fcfb7ce47e072dec41910df4e8431e1c9d773fb947735cdf6639ae85d",
+    "native_binary_scope": "pinned N2 SDK-free test input only; actual N5 release artifact remains pending",
+    "runtime_input_comparison": "all 88 Rust runtime inputs match the N2 baseline; no Rust source inputs changed",
+    "cargo_release_build": "not run yet; root owns the build after the implementation source commit"
+  },
+  "source_sha256": {
+    "tools/node/storage-check.mjs": "929d2b55ad87304aae4e969eabdcb47e752b2dda591ed9cf73506d71e20c452d",
+    "tools/node/fake-provider.mjs": "8b16f34f14d1a6d58ef79a154f71e3495515c8461d0d77404e0c326d5c833a05",
+    "tools/node/infra.mjs": "f0fb67bfcb1cfac042094bc0b242c743f7a06771146de8ae235748e19c93eecd",
+    "tools/node/release.mjs": "97818dac059325d685dc0ac64a5944cf7b84d221921eadc8c86b294b165ef777",
+    "tools/node/workload.mjs": "67fb755236f87c1201b57581597843a1d44e52bcf5ebaef059bbdb20072bf6d7",
+    "tools/node/package.json": "775a513b4360bfbdd3b9e088634654efe2babcd0df8b5834c8fbf218566e9589",
+    "tools/node/package-lock.json": "64bd1070db31b0fa254072f3100d66c94a334706d6b49f8a9eb214004ae2d84f",
+    "tools/node/examples/n5-release.mjs": "f8fdb16bbfb609d6390170e898ceba991928cb8e69b8c784033f6b5f794787ea",
+    "tools/node/examples/n5-lifecycle.mjs": "8137b1da1483272f854ba66060459fa242a3dc90901983d5969a38bcede10a77",
+    "tools/node/test/workload.test.mjs": "de519d88aafd4a3832a9b21ed374f2e5ceaedb943300909d5ed4399453da570b",
+    "research/70-node-lifecycle-contract.md": "1555507e044095ef57f2e643a04702a01327b46c5bf5252702f08fab34d46c70",
+    "tools/node/test/storage-check.test.mjs": "d15a14ca07602dd0bf9b9928d4c4c9bfde6706b5d9d79287e3f6d248dd9eca36",
+    "tools/node/test/fake-provider.test.mjs": "810cd0faee277bf42598b4d9f4cdbeef81fa50731c177435186f8b453016a37d",
+    "tools/node/test/infra.test.mjs": "cf2c342da069d5d1317806a5718190d1fa80a39c8f5c7a84e6851f1182ae8854",
+    "tools/node/test/n5-lifecycle.test.mjs": "80a2b475c443f65c92355e4a06bb89ff458ad1ebc473d0533929627babc4795e",
+    "tools/node/test/n5-model-snapshots.test.mjs": "4782f7d813703646e22dde0bde004d45cdbff7b41ed8f037b6c50897781dc4c7"
+  },
+  "prebuild_test_evidence": {
+    "root_prebuild_full_node_suite": {
+      "working_directory": "tools/node",
+      "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N2_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N3_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N4_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next REBASE_NODE_N5_BINARY=/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next npm test",
+      "passed": 122,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 12690.275221,
+      "log": "research/evidence/2026-10-26-n5-node-prebuild.txt",
+      "log_sha256": "65610f83a048f175cbcb22b208031b9fc85beea27a675f46d7a511d9164f5b0c",
+      "binary_sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+      "note": "Prebuild Node suite; does not substitute for the committed-source release build or released-artifact adapter runs."
+    }
+  },
+  "managed_foundationdb_witness": {
+    "status": "passed",
+    "sdk": "FoundationDB 7.3.77",
+    "scope": "one owned local process; no multi-host or application-adapter claim",
+    "steps": [
+      "start managed local server",
+      "bootstrap single-node cluster",
+      "status command",
+      "write/read/clear probe",
+      "stop the owned child process"
+    ],
+    "pid": 19102,
+    "address": "127.0.0.1:34319",
+    "stopped": true,
+    "result": "research/evidence/2026-10-26-n5-fdb-owner-real.json",
+    "result_sha256": "005c89ce61f8b650d8cab54a4a089ceb29ef11153c6a249dbaed5ed41a0fb21e"
+  },
+  "pending_runs": {
+    "committed-source release build and retained build receipt/log": true,
+    "extracted committed-source verification outside checkout": true,
+    "redb run against released artifact": true,
+    "standalone SurrealKV run against released artifact": true,
+    "FoundationDB application-adapter run against released artifact": true
+  },
+  "structural_obligations": {
+    "physical_tree_verification": "root prebuild suite passed; included structural corruption controls and complete native-backup checks for all six compiled models",
+    "expected_source_membership": "checked only when independent N4 expected-member facts are supplied; `not_evaluated` otherwise",
+    "native_store_check_counts_as_independent_oracle": false,
+    "N4_logical_incompletes_still_visible": [
+      "Measurement query-result and selected-identity payloads",
+      "equal-time mixed-sign Equipment prefix extrema"
+    ]
+  },
+  "release_artifact": "pending root locked release build from the committed N5 source; synthetic N2 package fixture is not an acceptance artifact",
+  "acceptance": {
+    "implementation_review": "passed; focused independent review reports no remaining N5 module blockers",
+    "release_integration_and_root_acceptance": "pending released artifact, extracted verification, and adapter runs"
+  },
+  "cleanup": {
+    "root_reported_rebase_next_processes": 0,
+    "root_reported_fdbserver_processes": 0,
+    "managed_fdb_witness_owned_pid_19102": "stopped and recorded in its retained result"
+  },
+  "limitations": [
+    "No actual N5 release build or extracted committed-source result is recorded yet.",
+    "No redb, SurrealKV, or FoundationDB run against the N5 released artifact is recorded yet.",
+    "The fake provider is a local fixture; distributed provider behavior is outside its claim.",
+    "N4 Measurement query-result/selection and mixed-sign equal-time prefix extrema remain incomplete unless later evidence closes them."
+  ]
+}

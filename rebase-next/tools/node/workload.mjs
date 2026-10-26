@@ -54,6 +54,7 @@ export async function runWorkload({ scenario, state, profile = {}, signal, obser
   let timedOut = false;
   let sampleTimer = null;
   let samplerPending = false;
+  let samplerTask = null;
   let samplerUnresolved = false;
   let iteratorUnresolved = false;
   let iteratorCleanupUnresolved = false;
@@ -121,7 +122,12 @@ export async function runWorkload({ scenario, state, profile = {}, signal, obser
     try {
       const samplePromise = Promise.resolve().then(() => observe({ atMs, state, signal: controller.signal }));
       const sampled = await Promise.race([samplePromise.then(value => ({ value }), error => ({ error })), deadlineResult, cancelledResult]);
-      if (sampled?.timeout) { samplerUnresolved = true; return; }
+      if (sampled?.timeout) {
+        samplerUnresolved = true;
+        timedOut = true;
+        if (!controller.signal.aborted) controller.abort(new Error('resource sampler exceeded the workload deadline'));
+        return;
+      }
       if (sampled?.cancelled) { samplerUnresolved = true; return; }
       if (sampled?.error) throw sampled.error;
       const value = sampled.value;
@@ -133,7 +139,12 @@ export async function runWorkload({ scenario, state, profile = {}, signal, obser
       samplerPending = false;
     }
   };
-  const timer = observe ? setInterval(() => { void takeSample(); }, limits.sampleIntervalMs) : null;
+  const timer = observe ? setInterval(() => {
+    if (samplerTask) return;
+    const task = takeSample();
+    samplerTask = task;
+    void task.finally(() => { if (samplerTask === task) samplerTask = null; });
+  }, limits.sampleIntervalMs) : null;
   sampleTimer = timer;
   let nextPending = null;
   try {
@@ -258,12 +269,26 @@ export async function runWorkload({ scenario, state, profile = {}, signal, obser
       elapsedMs: Math.max(0, performance.now() - start), outcomeUnknown: false });
   } finally {
     if (sampleTimer) clearInterval(sampleTimer);
+    if (samplerPending) {
+      const naturalFinish = exhausted && !controller.signal.aborted && !timedOut;
+      if (naturalFinish && samplerTask) {
+        const drained = await Promise.race([
+          samplerTask.then(() => ({ drained: true })), deadlineResult, cancelledResult,
+        ]);
+        if (!drained?.drained) {
+          samplerUnresolved = true;
+          if (drained?.timeout) {
+            timedOut = true;
+            controller.abort(new Error('resource sampler exceeded the workload deadline'));
+          }
+        }
+      } else {
+        samplerUnresolved = true;
+      }
+      if (samplerPending) samplerUnresolved = true;
+    }
     clearTimeout(deadlineTimer);
     if (signal) signal.removeEventListener('abort', abortFromCaller);
-    if (samplerPending) {
-      samplerUnresolved = true;
-      controller.abort(new Error('resource sampler did not finish before report finalization'));
-    }
     if (controller.signal.aborted) {
       for (const [id, item] of active) {
         if (item.settled) {
