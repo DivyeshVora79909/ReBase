@@ -63,12 +63,13 @@ Do not introduce a subprocess merely to wrap a function available in Node.
 
 Apply the user's selected [agent execution mode](docs/agents/README.md):
 [subscription](docs/agents/subscription.md) or
-[pay as you go](docs/agents/pay-as-you-go.md). Keep the selected model and default
-to one agent. Batch independent tool operations without delegating agent work.
-The 2026-10-26 user instruction supersedes older Luna/Sol delegation preferences.
-Every checkpoint still has explicit inputs, outputs, invariants and acceptance
-evidence. If the user later requests delegation, give disjoint file ownership;
-workers must not reset, stash, rebase or push the shared tree.
+[pay as you go](docs/agents/pay-as-you-go.md). Select models and delegation
+based on the actual environment, available tools, limits and task; account for
+their total context, retries and integration. Use only capabilities authorized
+and exposed by the current client, and do not infer a client restriction from
+its billing mode. Every checkpoint still has explicit inputs, outputs,
+invariants and acceptance evidence. Give delegated workers disjoint file
+ownership; workers must not reset, stash, rebase or push the shared tree.
 
 Use one Cargo owner and a shared cache, two build jobs and incremental off in
 this cloud environment. Node-only changes with unchanged native hashes need no

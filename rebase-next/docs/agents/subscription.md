@@ -7,9 +7,10 @@ otherwise treat the remaining allowance as unknown.
 
 ## How to work
 
-1. Keep the selected model. If the user requests model advice, match capability
-   to the task using current availability and measured results. Do not assume a
-   smaller model with more retries uses less allowance overall.
+1. Use the model and delegation controls actually available and authorized in
+   this environment. Match capability to task and consider the total allowance,
+   elapsed time, retries and integration; do not assume a smaller model or more
+   workers use less allowance overall.
 2. Load the active checkpoint, relevant contracts and acceptance controls once.
    Use exact paths and source ranges for follow-up questions. Keep unrelated
    documents and inactive tool definitions out of the working context where the
@@ -21,8 +22,8 @@ otherwise treat the remaining allowance as unknown.
    program when authorized; do not stop early merely to conserve an imagined
    token quota or turn one coherent task into many user prompts.
 5. Batch independent tool reads; run dependent mutations and acceptance in order.
-   Use a single agent unless the user explicitly requests delegation. Shared
-   context and repeated integration reviews also consume usage.
+   Delegate independent work when available and likely to improve total outcome;
+   assign disjoint ownership and account for shared context and integration.
 6. When real remaining-capacity information is available, avoid starting optional
    campaigns that would crowd out required acceptance. Preserve a precise
    handoff at any actual limit; never call incomplete work accepted.
@@ -40,8 +41,9 @@ does not embed a plan's current limits or model-specific multipliers.
 
 ## Reusable instruction
 
-> Subscription mode. Complete the authorized checkpoints with compact relevant
-> context and focused acceptance. Respect my selected model, use one agent,
-> batch independent tool work, and preserve evidence at checkpoint boundaries.
+> Subscription mode. Complete authorized checkpoints with compact relevant
+> context and focused acceptance. Use available authorized model routing and
+> delegation when they suit the task and total allowance; batch independent tool
+> work and preserve evidence at checkpoint boundaries.
 > Continue without repeated routine confirmation. Treat limits as unknown
 > unless actually visible; keep required correctness checks.

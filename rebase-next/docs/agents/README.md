@@ -22,6 +22,11 @@ also separate; a client's single-model session is a constraint to respect, not a
 universal property of usage-based billing. See [authentication](https://learn.chatgpt.com/docs/auth)
 and [model controls](https://learn.chatgpt.com/docs/models).
 
+The user's current cloud subscription offers model choice and subagents; their
+current API client permits one model. Apply those constraints in the matching
+environment. A Git handoff or another client's memory must not impose its
+execution mode on the current session.
+
 ## Shared execution rules
 
 1. Inspect current instructions, Git status/history, the active checkpoint and
@@ -42,12 +47,19 @@ and [model controls](https://learn.chatgpt.com/docs/models).
 8. Preserve unknown transaction outcomes, user changes and ownership rules.
    Neither mode permits guessing results, omitting acceptance, buying credits,
    changing paid settings or altering authorization.
+9. Complete one changing checkpoint through its required verification, evidence,
+   commit and authorized push before starting the next changing checkpoint.
+   Independent read-only preparation can overlap. If interrupted, label unfinished
+   work unverified; resume from the last accepted boundary without claiming success.
 
 One user turn can contain many model requests and tool operations. A tool call
 is not a reliable unit of billing or a one-to-one count of model requests.
-Subagents add their own input/output and integration work; use one agent by
-default, and delegate only when explicitly requested and the task benefits.
-Do not infer exact savings or actual billing without usage measurements.
+Subagents add context, output, retries and integration work. Use delegation or
+model routing when the current environment exposes and authorizes it and the
+task's likely total cost, elapsed time or result quality supports it. A client
+may impose a single-model restriction; check the actual client rather than
+assuming one from subscription or API billing. Do not infer exact savings or
+actual billing without usage measurements.
 
 ## Sources and what they establish
 

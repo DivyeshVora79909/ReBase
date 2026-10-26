@@ -31,9 +31,11 @@ planning models, not measured costs for the current session.
 
 ## How to work
 
-1. Keep the current model; assume the user's single-model session constraint.
-   Optimize task organization within it. Do not change model/effort settings or
-   start subagents to simulate routing without explicit direction.
+1. Check which model and delegation controls the current client exposes and
+   which the user has authorized. Respect client restrictions, including a
+   single-model session where applicable; do not infer them from API billing.
+   Compare likely total cost, elapsed time, retries and integration before
+   routing work or delegating it.
 2. Before a tool round, identify independent questions it can answer together.
    Run those operations concurrently with bounded individual and total output.
    Inspect their results before dependent decisions, edits or verification.
@@ -53,7 +55,7 @@ planning models, not measured costs for the current session.
    Finish the exact required artifact checks before marking a checkpoint done.
 8. If usage is available, measure total task cost, wall time, retries and
    successful acceptance together. Request count alone does not establish a
-   saving; include all subagent/tool usage if delegation was requested.
+   saving; include all subagent/tool usage when delegation is used.
 
 API work still has token, context, rate and spend limits. This mode does not
 invent a quota or abandon authorized work early. It also does not assume
@@ -69,8 +71,9 @@ cache behavior is documented in
 
 ## Reusable instruction
 
-> Pay-as-you-go mode. Keep the current model and one agent. Finish the authorized
-> checkpoints in one sustained attempt, minimizing avoidable round trips,
-> repeated context and unnecessary generation while preserving acceptance.
+> Pay-as-you-go mode. Use the models and delegation controls available and
+> authorized in this client. Finish authorized checkpoints in one sustained
+> attempt, minimizing total cost, elapsed time and avoidable repeated context
+> while preserving acceptance.
 > Batch independent tools, use bounded output, and keep dependent work in order.
 > Optimize total time and cost to a verified result, not tokens per request.

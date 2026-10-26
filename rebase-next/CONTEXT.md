@@ -4,7 +4,11 @@
 
 P0 and N0–N5 are accepted within their documented bounds. Continue N6's
 replacement controls, then Python/CLI removal, followed by S0–S3 and F0.
-The selected workflow is **pay as you go, one agent**. Read AGENTS, README,
+Choose execution policy for the current client: this cloud subscription allows
+authorized model choice and delegation; the user's API client currently permits
+one model. Do not transfer a client's restrictions through Git as global policy.
+Finish one changing checkpoint through verification, commit and push before
+starting the next; read-only preparation can overlap. Read AGENTS, README,
 [the program](research/56-node-and-index-redesign-program.md),
 [N5 result](research/71-node-lifecycle-result.md) and
 [N5 release evidence](research/evidence/2026-10-26-n5-release.json).
@@ -32,7 +36,8 @@ host plus structured service bootstrap; production Rust must run without Node.
 Update supported guides, templates and package contents. S0–S3 and F0 remain owed.
 Do not begin deferred G6, frontend, live providers, TiKV, migrations or a course.
 
-Local reusable artifacts (verify identities before use):
+Environment-specific artifacts (verify identities before use; these API-host
+paths are historical locations, not portable defaults):
 - Node 24.22.1: target/toolchains/node-v24.22.1-linux-x64/bin.
 - Rust 1.95.0 is selected inside rebase-next; use two Cargo jobs and incremental off.
 - SDK: target/g7-environment/root/usr, with lib/libfdb_c.so and sbin/fdbserver.
@@ -41,11 +46,19 @@ Local reusable artifacts (verify identities before use):
 - Redb SHA-256: 57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52.
 - All-feature SHA-256: eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e.
 
-Main is linear. Shell Git fetch works, while HTTPS push credentials are absent.
-The connected GitHub API can publish a reviewed tree with the existing parent
-and an ordinary guarded ref update; verify its tree equals the local tree,
-fetch and adopt the identical patch. Do not rewrite remote history. Check
-origin before every integration. No other task owns native/Cargo processes.
+In this cloud workspace, Node 24.22.1 is at
+`/workspace/.rebase-tools/node24.22.1/bin/node`, and the shared Cargo cache is
+`/workspace/.rebase-tools/rust-review/cargo`. Verified local releases from
+`6f16164` remain under `/home/agent/rebase-n5-release-6f16164/`; their native
+inputs match `6836c59`, but they are distinct artifacts from the N5 API-host
+release. A fresh continuation check passes all 122 current Node tests against
+the local SDK-free release. See [review evidence](research/evidence/2026-10-26-continuation-review.json).
+
+Main is linear. Check credentials/tools in the current environment; ordinary
+shell push works in this cloud workspace. The prior API host used a connected
+GitHub API because its shell lacked credentials. Do not generalize either
+condition or rewrite remote history. Check origin before every integration.
+One task owns native/Cargo processes.
 Historical artifacts and papers below retain their original scope.
 
 ## Historical G9 current handoff — superseded

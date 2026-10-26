@@ -13,11 +13,16 @@ guide for the ongoing task:
 - [Shared rules, comparison and sources](rebase-next/docs/agents/README.md)
 
 Read the shared guide and only the selected mode once. Preserve the selection
-across continuations unless the user changes it. If no mode is supplied, use the
+within that client/session unless the user changes it; reassess capabilities
+when moving to another environment. If no mode is supplied, use the
 shared rules without guessing account limits or billing from the interface.
 These guides change work organization, not acceptance criteria or authorization.
 
-Default to one agent. Batch independent tool operations with bounded output;
-keep dependent edits, checks and Git operations sequential. Do not launch
-subagents or change the user's model just to optimize usage. A current explicit
-user instruction takes precedence over older model/delegation preferences.
+Choose models and delegation from the actual tools, limits and task needs in
+the current environment. Use available, authorized model routing or subagents
+when they are likely to improve total cost, elapsed time or result quality;
+include their context, retries and integration in that judgment. Respect client
+restrictions such as a single-model API session, without treating them as
+universal properties of a billing mode. Batch independent tool operations with
+bounded output; keep dependent edits, checks and Git operations sequential. Do
+not invent usage costs or change paid settings.

@@ -1,0 +1,53 @@
+{
+  "schema": "rebase.continuation-review.v1",
+  "date": "2026-10-26",
+  "reviewed_head": "f134f190003290723bf0eb376c866bfac281d268",
+  "commits": [
+    {
+      "commit": "8a723b72aa3ad40fe80a760adfb3bd9baff890ea",
+      "result": "Guidance corrected: select execution policy by actual environment; billing alone does not restrict delegation or model choice."
+    },
+    {
+      "commit": "6836c592abc99398d5e5440c18015b003859df49",
+      "result": "No dropped tests or error assertions; startup/cancellation is synchronized, timeout cases separated and binary identity accepts explicit/release metadata."
+    },
+    {
+      "commit": "f134f190003290723bf0eb376c866bfac281d268",
+      "result": "No runtime changes; committed evidence hashes, source inventory, build logs and build-ID digests recompute; bounded three-adapter assertions reviewed."
+    }
+  ],
+  "historical_evidence": {
+    "source_files": 413,
+    "unchanged_files": 407,
+    "changed_files": 6,
+    "source_inventory_sha256": "5d4a22cc71cb462147336cbdd8b28b1c7e68a2839e70ecd1dfd35e26beff0e63",
+    "native_inputs_identical_across": [
+      "6f16164",
+      "8a723b7",
+      "6836c59",
+      "f134f19"
+    ],
+    "native_input_count": 88
+  },
+  "fresh_check": {
+    "node": "v24.22.1",
+    "working_directory": "tools/node",
+    "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N2_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N3_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N4_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N5_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next npm test",
+    "passed": 122,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 9061.204286,
+    "native_binary": "/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next",
+    "native_binary_sha256": "18d8a45c8a3d72ec70c19d8c489453fb4f274a43ab2f5631360e79b225402492",
+    "native_package_source": "6f1616413d8ec1327485ff2a71c182b8b916c156",
+    "log": "target/remote-n5-review-node.log",
+    "log_sha256": "89f154b47a1210894fb0128f11cbff8a2124fd7835528eded096adf58c6c7f8b",
+    "log_committed": false
+  },
+  "limits": [
+    "Remote binary bytes/manifests under /home/divyeshvora were not available in this cloud workspace; their recorded hashes were not reverified against those files.",
+    "Fresh tests used the proven local SDK-free artifact with unchanged native inputs; this was not a fresh remote-package build or multi-host latency trial.",
+    "N6 source-to-physical, Measurement query and role-history obligations remain before Python deletion."
+  ],
+  "next": "N6 bounded complete-backup source/physical verification; signed ingress and bounded invoicing/IssueShare workflows follow before retirement."
+}
