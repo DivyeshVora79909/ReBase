@@ -1,10 +1,10 @@
 # Compact context — 2026-10-26
 
-## Current handoff — N6 source/backup and signed ingress accepted; continue N6
+## Current handoff — N6 source, ingress and IssueShare controls accepted; continue N6
 
 P0 and N0–N5 are accepted within their documented bounds. N6's first source/backup
-checkpoint passes; the signed-ingress slice brings the full suite to 133 passing
-Node tests. Complete the remaining N6 replacement controls,
+checkpoint passes; signed ingress and IssueShare bring the full suite to 135
+passing Node tests. Complete the remaining N6 replacement controls,
 then Python/CLI removal, followed by S0–S3 and F0. N6 as a whole is not complete.
 Choose execution policy for the current client: this cloud subscription allows
 authorized model choice and delegation; the user's API client currently permits
@@ -42,10 +42,13 @@ restart/application and owned startup cleanup. It adds ordinary imported
 functions, not a command parser or another public SDK. Bearer identity uses
 Ed25519 separately; current-authority application rules remain native controls.
 
-Exact next work: bounded Node invoicing/IssueShare workflows using native
-fixtures, existing model/client APIs and literal independent expectations.
-Avoid duplicating the accounting engine or expanding deferred G6. Preserve their
-independent arithmetic, current authority, original plans and recovery checks.
+The [IssueShare composition](research/74-node-issue-share-contract.md) now verifies
+literal rounding, live parent publication, both command orders, rejection
+rollback and original receipts. Broader native invoicing checks remain mapped.
+Exact next work: preserve private operator effect retry before removing the old
+CLI (it is currently that capability's only executable path), then structured
+native serving, the final 60-row disposition ledger and Python/CLI retirement.
+Keep current authority, original plans and recovery checks; do not expand G6.
 Map all 60 Python inventory rows to passed replacements or justified historical
 retirement before deleting files. Replace the legacy native domain parser with
 host plus structured service bootstrap; production Rust must run without Node.

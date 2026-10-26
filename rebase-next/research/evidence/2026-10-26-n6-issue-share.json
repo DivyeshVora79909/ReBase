@@ -1,0 +1,73 @@
+{
+  "schema": "rebase.n6-issue-share.v1",
+  "date": "2026-10-26",
+  "status": "accepted_bounded_subcheckpoint",
+  "parent_commit": "f8b1d31",
+  "node": "v24.22.1",
+  "source_sha256": {
+    "tools/node/examples/n6-issue-share.mjs": "497d0076a8da9605cadedb11226ca8cbcdbd6bcd6b38ea9d69c08f8a1dbc4abe",
+    "tools/node/test/n6-issue-share.test.mjs": "ff03c361d7ce04becc76ddbcc8896e387d7d63755add9b4816ad17741f086978",
+    "research/74-node-issue-share-contract.md": "61a75ffcd0595018d42c0a46cbe38c2210615c319aa4d9c46c8b9258363f4de1"
+  },
+  "native": {
+    "binary": "/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next",
+    "sha256": "18d8a45c8a3d72ec70c19d8c489453fb4f274a43ab2f5631360e79b225402492",
+    "package_source": "6f1616413d8ec1327485ff2a71c182b8b916c156",
+    "native_inputs_unchanged": true,
+    "cargo_build": "not run"
+  },
+  "verification": {
+    "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N2_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N3_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N4_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N5_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N6_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next npm test",
+    "working_directory": "tools/node",
+    "passed": 135,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 10000.69743,
+    "log": "research/evidence/2026-10-26-n6-issue-share-node.txt",
+    "log_sha256": "df5728aa92e880d2c32a38f031195bbeb580cca4e4620fed3386df4b219914e0",
+    "focused_passed": 2,
+    "independent_review": "passed; focused real-native 2/2; counts overlap complete suite"
+  },
+  "example": {
+    "model": "4c0fa1ad55595d251294a3dcd2e84c7f9b336dbcb6028d440b5379efded51969",
+    "store": "730317af-a711-4ac6-aaae-5310e47645e7",
+    "namespace": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "fixture": "issue-share",
+    "initial": {
+      "issueMinor": "15002",
+      "basisMinor": "15002",
+      "amountMinor": "5001"
+    },
+    "afterParentEdit": {
+      "issueMinor": "20002",
+      "basisMinor": "20002",
+      "amountMinor": "6667"
+    },
+    "committed": true,
+    "replayed": true
+  },
+  "controls": [
+    "authoritative native catalog and deterministic fixture",
+    "literal issue/share 15002/5001, parent update 20002/6667",
+    "schema versus native rational canonical/range validity",
+    "floor, ceiling, zero and exact/inexact rejection",
+    "complete backup table equality and absent receipt after inexact and stale CAS rejection",
+    "retarget and parent/consumer edits in both command orders",
+    "immediate original replay, later current-version record redaction"
+  ],
+  "api": {
+    "public_sdk_additions": 0,
+    "new_arithmetic_implementation": false,
+    "example": "runIssueShareWorkflow({binary,directory,namespace,tenant?,actor?})"
+  },
+  "limits": [
+    "Bounded existing invoicing/IssueShare capability only; no G6 business expansion.",
+    "Broader dated accounting and authority controls remain mapped to existing native tests/checker and historical evidence.",
+    "No native formats, models, storage layout or dependency locks changed."
+  ],
+  "cleanup": {
+    "owned_native_and_fdb_processes_remaining": 0,
+    "owned_test_directories": "removed by finally cleanup"
+  },
+  "remaining": "N6 private operator retry, structured service bootstrap, final 60-row mapping and Python/CLI retirement; S0–S3 and F0."
+}

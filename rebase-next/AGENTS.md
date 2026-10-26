@@ -44,8 +44,9 @@ Equipment, Measurement and Quantity; see [complete-backup checking](research/72-
 Complete Equipment history requires the caller's retained role identity witness.
 The [Node signed-ingress workflow](research/73-node-signed-ingress-contract.md)
 also passes real transport, durable retry and startup-cleanup controls; the full
-Node suite now passes 133 tests. N6 must still complete bounded
-invoicing/IssueShare replacement controls before deleting
+Node suite passed 133 tests. The [bounded IssueShare workflow](research/74-node-issue-share-contract.md)
+also passes; all 135 Node tests now pass. Private operator retry, structured
+native serving and the final replacement ledger remain before deleting
 Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.
