@@ -139,6 +139,8 @@ struct Control {
     failures: usize,
     commits: usize,
     before_commit: Option<Box<dyn FnOnce() -> Result<()> + Send>>,
+    #[cfg(test)]
+    before_begin_write: Option<Box<dyn FnOnce() -> Result<()> + Send>>,
 }
 type Controls = Arc<Mutex<Control>>;
 fn lock(controls: &Controls) -> Result<std::sync::MutexGuard<'_, Control>> {
@@ -164,12 +166,17 @@ impl Backend for Controlled {
         self.db.backend.begin_read()
     }
     fn begin_write(&self) -> Result<Box<dyn WriteView>> {
+        #[cfg(test)]
+        if let Some(hook) = lock(&self.controls)?.before_begin_write.take() {
+            hook()?;
+        }
         Ok(Box::new(ControlledWrite {
             inner: self.db.backend.begin_write()?,
             controls: self.controls.clone(),
         }))
     }
 }
+
 struct ControlledWrite {
     inner: Box<dyn WriteView>,
     controls: Controls,
@@ -641,4 +648,54 @@ pub fn run(factory: impl Fn(&str) -> Result<Database>, concurrent: bool) -> Resu
             "Concurrent controls use deterministic overlapping transactions; redb runs the sequential controls only.",
             "Persistent reopen is in-process evidence, not process restart or distributed failover."]}),
     )
+}
+
+#[cfg(test)]
+mod retry_scope_tests {
+    use super::*;
+    use crate::models::effect_demo::EffectDemo;
+
+    #[test]
+    fn private_retry_fences_a_real_reset_at_write_admission() {
+        let directory = std::env::temp_dir().join(format!("rebase-retry-race-{}", Uuid::new_v4()));
+        std::fs::create_dir(&directory).unwrap();
+        let db = Arc::new(
+            Store::<EffectDemo>::create_redb_database(directory.join("store.redb")).unwrap(),
+        );
+        let controls = Arc::new(Mutex::new(Control::default()));
+        let store = Store::<EffectDemo>::create_backend_secured(
+            controlled(db.clone(), &controls),
+            Arc::new(Prepared::load().unwrap()),
+            context(),
+        )
+        .unwrap();
+        let (_, _, header) = store.read(store.model().identity()).unwrap();
+        let peer = Store::<EffectDemo>::open_backend(
+            controlled(db.clone(), &Arc::new(Mutex::new(Control::default()))),
+            Arc::new(Prepared::load().unwrap()),
+        )
+        .unwrap();
+        let post_reset = Arc::new(Mutex::new(None));
+        let captured = post_reset.clone();
+        lock(&controls).unwrap().before_begin_write = Some(Box::new(move || {
+            peer.reset(header.store_id)?;
+            *captured.lock().unwrap() = Some(peer.observe_for_verification()?);
+            Ok(())
+        }));
+        // The caller's scope read above is old. The competitor commits a real
+        // reset exactly as retry requests its own write transaction.
+        assert_eq!(
+            store
+                .retry_effect_scoped(header.store_id, Uuid::new_v4(), 0)
+                .unwrap_err()
+                .code,
+            "wrong_target"
+        );
+        assert_eq!(
+            Some(store.observe_for_verification().unwrap()),
+            *post_reset.lock().unwrap()
+        );
+        drop((store, db));
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 }

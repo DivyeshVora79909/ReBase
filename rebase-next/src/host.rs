@@ -34,7 +34,7 @@ const MODELS: [&str; 6] = [
     "effect-demo",
     "quantity",
 ];
-const METHODS: [&str; 18] = [
+const METHODS: [&str; 19] = [
     "host.describe",
     "host.configure",
     "model.catalog",
@@ -53,6 +53,7 @@ const METHODS: [&str; 18] = [
     "store.restore",
     "store.archive",
     "store.reset",
+    "effects.retry",
 ];
 
 #[derive(Deserialize)]
@@ -167,6 +168,7 @@ fn failure(id: Value, kind: &str) -> Value {
         "service_running" => "Service must be stopped",
         "service_not_running" => "Service is not running",
         "invalid_destination" => "Invalid restore destination",
+        "unsupported_effect" => "Model has no effect action",
         "internal" => "Host operation failed",
         _ => {
             let public = crate::rpc::failure(id.clone(), kind);
@@ -343,6 +345,7 @@ impl Host {
                         | "store.archive"
                         | "store.reset"
                         | "store.recover"
+                        | "effects.retry"
                 )
             })
             || (config.target.is_null() && !grants.is_empty())
@@ -461,13 +464,15 @@ impl Host {
             }
             "model.explain" | "model.validate" | "model.render" | "fixture.catalog"
             | "fixture.plan" | "service.start" | "service.stop" | "identity.issue"
-            | "store.backup" | "store.restore" | "store.archive" | "store.reset" => {
+            | "store.backup" | "store.restore" | "store.archive" | "store.reset"
+            | "effects.retry" => {
                 if self.selected.is_none() {
                     return Err(Error::new("not_configured", "model/store unavailable"));
                 }
                 let privileged = method.starts_with("service.")
                     || method.starts_with("identity.")
-                    || method.starts_with("store.");
+                    || method.starts_with("store.")
+                    || method.starts_with("effects.");
                 if privileged && !self.grants.contains(method) {
                     return Err(Error::new("forbidden", "operator grant absent"));
                 }
@@ -542,7 +547,7 @@ pub fn configuration_schema() -> Value {
     };
     json!({"$schema":crate::model::SCHEMA_DIALECT,"type":"object","additionalProperties":false,"required":["model","backend","target","operator_methods"],"properties":{
         "model":{"enum":MODELS},"backend":{"type":"object","additionalProperties":false,"required":["kind","cluster_file"],"properties":{"kind":{"enum":backends},"cluster_file":{"oneOf":[{"type":"null"},path]}}},
-        "target":{},"operator_methods":{"type":"array","uniqueItems":true,"maxItems":10,"items":{"enum":["store.check","store.inspect","service.start","service.stop","identity.issue","store.backup","store.restore","store.archive","store.reset","store.recover"]}}},
+        "target":{},"operator_methods":{"type":"array","uniqueItems":true,"maxItems":11,"items":{"enum":["store.check","store.inspect","service.start","service.stop","identity.issue","store.backup","store.restore","store.archive","store.reset","store.recover","effects.retry"]}}},
         "allOf":[{"if":{"properties":{"target":{"type":"null"}}},"then":{"properties":{"operator_methods":{"maxItems":0}}}},
         {"if":{"properties":{"backend":{"properties":{"kind":{"const":"foundationdb"}}}}},"then":{"properties":{"target":target("namespace",namespace),"backend":{"properties":{"cluster_file":path}}}},"else":{"properties":{"target":target("path",path),"backend":{"properties":{"cluster_file":{"type":"null"}}}}}},
         {"if":{"properties":{"target":{"type":"object","properties":{"mode":{"const":"recover"}},"required":["mode"]}}},"then":{"properties":{"backend":{"properties":{"kind":{"const":"redb"}}},"operator_methods":{"contains":{"const":"store.recover"}}}}}]})

@@ -9,7 +9,7 @@ const ALLOWED_METHODS = new Set([
   'host.describe', 'host.configure', 'model.catalog', 'store.check', 'store.inspect', 'host.close',
   'model.explain', 'model.validate', 'model.render', 'fixture.catalog', 'fixture.plan',
   'service.start', 'service.stop', 'identity.issue', 'store.backup', 'store.archive',
-  'store.reset', 'store.restore',
+  'store.reset', 'store.restore', 'effects.retry',
 ]);
 const RESPONSE_KEYS = new Set(['protocol', 'id', 'result', 'error']);
 const HASH = /^[0-9a-f]{64}$/;
@@ -137,6 +137,7 @@ class NativeHost {
       restore(params, options = {}) { return host.#request('store.restore', params, options, true); },
       archive(params, options = {}) { return host.#request('store.archive', params, options, true); },
       reset(params, options = {}) { return host.#request('store.reset', params, options, true); },
+      retryEffect(params, options = {}) { return host.#retryEffect(params, options); },
       diagnostics() { return host.#diagnostics(); },
       close() { closePromise ??= host.close(); return closePromise; },
     });
@@ -147,6 +148,30 @@ class NativeHost {
       return Promise.reject(hostError('forbidden', 'Host operation is not granted'));
     }
     return this.#request(method, { scope: this.#scope() }, { signal }, false);
+  }
+
+  #retryEffect(params, options) {
+    try {
+      if (!this.#configured?.target || !this.#grants.has('effects.retry')) {
+        throw hostError('forbidden', 'Host operation is not granted');
+      }
+      if (!isRecord(params) || Object.keys(params).length !== 3
+        || !Object.hasOwn(params, 'scope') || !Object.hasOwn(params, 'execution_id') || !Object.hasOwn(params, 'if_revision')) {
+        throw new TypeError('retryEffect requires exactly scope, execution_id, and if_revision');
+      }
+      const { scope, execution_id: executionId, if_revision: revision } = params;
+      if (!isRecord(scope) || Object.keys(scope).length !== 2
+        || typeof scope.model !== 'string' || !HASH.test(scope.model)
+        || typeof scope.store !== 'string' || !UUID.test(scope.store)) {
+        throw new TypeError('retryEffect scope requires the native model hash and store UUID');
+      }
+      if (typeof executionId !== 'string' || !UUID.test(executionId)) throw new TypeError('retryEffect execution_id must be a canonical UUID');
+      if (typeof revision !== 'string' || revision.length > 20
+        || !/^(0|[1-9][0-9]*)$/.test(revision) || BigInt(revision) > (1n << 64n) - 1n) {
+        throw new TypeError('retryEffect if_revision must be a canonical u64 decimal string');
+      }
+      return this.#request('effects.retry', params, options, true);
+    } catch (error) { return Promise.reject(error); }
   }
 
   #scope() {

@@ -203,7 +203,48 @@ impl<B: Binding> Store<B> {
     /// Offline operator command; never an arbitrary patch or a new submission.
     /// The caller must own the stopped store's file lock, as other CLI tools do.
     pub fn retry_effect(&self, id: Uuid, revision: u64) -> Result<Value> {
+        self.retry_effect_inner(id, revision, None)
+    }
+
+    /// Private owned-host retry: the expected store is protected by the same
+    /// write transaction as authority, execution CAS and the retry transition.
+    pub(crate) fn retry_effect_scoped(
+        &self,
+        expected_store: Uuid,
+        id: Uuid,
+        revision: u64,
+    ) -> Result<Value> {
+        self.retry_effect_inner(id, revision, Some(expected_store))
+    }
+
+    fn retry_effect_inner(
+        &self,
+        id: Uuid,
+        revision: u64,
+        expected_store: Option<Uuid>,
+    ) -> Result<Value> {
+        if B::effect_action().is_none() {
+            return Err(Error::new(
+                "unsupported_effect",
+                "model has no effect action",
+            ));
+        }
         let write = self.db.begin_write().map_err(local::storage)?;
+        if let Some(expected) = expected_store {
+            let header: RuntimeHeader = local::decode(
+                write
+                    .open_table(RUNTIME)
+                    .map_err(local::storage)?
+                    .get(HEADER)
+                    .map_err(local::storage)?
+                    .ok_or_else(|| local::corrupt("missing header"))?
+                    .value(),
+            )?;
+            local::validate_header(&header)?;
+            if header.store_id != expected {
+                return Err(Error::new("wrong_target", "retry store scope changed"));
+            }
+        }
         let now = now_millis()?;
         let scope = self.write_authority(&write)?;
         let mut runtime = runtime_write(&write)?;

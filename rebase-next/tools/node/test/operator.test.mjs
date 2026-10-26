@@ -10,7 +10,7 @@ const scope = Object.freeze({
 function host(grants) {
   const calls = [];
   const native = { scope, grants: Object.freeze(grants) };
-  for (const method of ['check', 'inspect', 'backup', 'restore', 'archive', 'reset', 'startService', 'stopService', 'issueIdentity']) {
+  for (const method of ['check', 'inspect', 'backup', 'restore', 'archive', 'reset', 'startService', 'stopService', 'issueIdentity', 'retryEffect']) {
     native[method] = async params => { calls.push([method, params]); return { method }; };
   }
   return { native, calls };
@@ -64,4 +64,19 @@ test('service and identity functions stay scoped; private signing material is pa
     ['stopService', { scope, service: '55555555-5555-4555-8555-555555555555' }],
   ]);
   assert.equal(JSON.stringify(operator).includes(privateKeyPem), false);
+});
+
+test('private effect retry narrows its grant and adds the host-owned store scope', async () => {
+  const { native, calls } = host(['effects.retry']);
+  const operator = openOperator(native, { scope, methods: ['effects.retry'] });
+  assert.deepEqual(Object.keys(operator).sort(), ['grants', 'retryEffect', 'scope']);
+  const options = { signal: new AbortController().signal };
+  await operator.retryEffect({ executionId: '55555555-5555-4555-8555-555555555555', ifRevision: '0' }, options);
+  assert.deepEqual(calls, [['retryEffect', {
+    scope,
+    execution_id: '55555555-5555-4555-8555-555555555555',
+    if_revision: '0',
+  }]]);
+  assert.throws(() => openOperator(native, { scope, methods: ['effects.retry', 'effects.retry'] }), /Duplicate/);
+  assert.throws(() => openOperator(native, { scope, methods: ['effects.retry', 'store.reset'] }), error => error.code === 'forbidden');
 });

@@ -1,10 +1,10 @@
 # Compact context — 2026-10-26
 
-## Current handoff — N6 source, ingress and IssueShare controls accepted; continue N6
+## Current handoff — N6 recovery operator accepted; bootstrap and retirement next
 
 P0 and N0–N5 are accepted within their documented bounds. N6's first source/backup
-checkpoint passes; signed ingress and IssueShare bring the full suite to 135
-passing Node tests. Complete the remaining N6 replacement controls,
+checkpoint passes; signed ingress, IssueShare and private effect retry bring the
+full suite to 139 passing Node tests. Complete the remaining N6 replacement controls,
 then Python/CLI removal, followed by S0–S3 and F0. N6 as a whole is not complete.
 Choose execution policy for the current client: this cloud subscription allows
 authorized model choice and delegation; the user's API client currently permits
@@ -45,9 +45,11 @@ Ed25519 separately; current-authority application rules remain native controls.
 The [IssueShare composition](research/74-node-issue-share-contract.md) now verifies
 literal rounding, live parent publication, both command orders, rejection
 rollback and original receipts. Broader native invoicing checks remain mapped.
-Exact next work: preserve private operator effect retry before removing the old
-CLI (it is currently that capability's only executable path), then structured
-native serving, the final 60-row disposition ledger and Python/CLI retirement.
+The [scoped private recovery operator](research/75-private-effect-retry-contract.md)
+now preserves effect retry through the owned host, including current authority,
+stopped service/worker, revision CAS and an in-transaction store UUID fence.
+No public HTTP retry method was added. Exact next work: structured native
+serving, the final 60-row disposition ledger and Python/CLI retirement.
 Keep current authority, original plans and recovery checks; do not expand G6.
 Map all 60 Python inventory rows to passed replacements or justified historical
 retirement before deleting files. Replace the legacy native domain parser with
@@ -64,6 +66,11 @@ paths are historical locations, not portable defaults):
 - Shared Cargo cache: /home/divyeshvora/.cache/rebase-g10/build.
 - Redb SHA-256: 57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52.
 - All-feature SHA-256: eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e.
+
+The current cloud development binary is `target/n6-retry-native-default/rebase-next`
+(SHA-256 `87beadaab19f60230632cbed007f77e423d8f43f9a7ebdd00a21da119c7f5fd0`), with exact native inputs in
+`target/n6-retry-native-default/runtime-inputs.json`. Earlier `6f16164` releases
+predate this method and cannot verify the new private interface.
 
 In this cloud workspace, Node 24.22.1 is at
 `/workspace/.rebase-tools/node24.22.1/bin/node`, and the shared Cargo cache is

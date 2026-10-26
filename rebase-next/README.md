@@ -15,8 +15,8 @@ complete Equipment history needs a retained identity witness. The
 [signed-ingress example](research/73-node-signed-ingress-contract.md) adds
 ordinary Node HMAC/HTTP composition and durable retry checks. The
 [IssueShare example](research/74-node-issue-share-contract.md) verifies bounded
-rounding and parent recomputation. Private recovery retry, bootstrap and
-retirement remain in N6. Ordered-storage work remains pending. Python workflow
+rounding and parent recomputation. The scoped private effect retry operator is
+also available. Bootstrap and retirement remain in N6. Ordered-storage work remains pending. Python workflow
 deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
 and [capability inventory](research/59-node-capability-inventory.md).

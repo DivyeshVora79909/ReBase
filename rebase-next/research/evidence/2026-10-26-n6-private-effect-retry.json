@@ -1,0 +1,111 @@
+{
+  "schema": "rebase.n6-private-effect-retry.v1",
+  "date": "2026-10-26",
+  "status": "accepted_bounded_subcheckpoint",
+  "parent_commit": "619d658",
+  "source_sha256": {
+    "src/effects/application.rs": "4970e705c46f8749b8cb817c6c146394adebb398e5356af24b548b7566c839e4",
+    "src/effects/worker_tests.rs": "de4a444a0072afb4089b3fc6218e42fac1704cc68a23d57a226297be1fe2696f",
+    "src/host.rs": "912d4667233d4f1d9369d469e24edb1c7e971e7caa6cf2e50138735a91f27894",
+    "src/host/operations.rs": "83463d4d046a6b0c799780e5112dd9398cbe88474b03a68c6e08df0dd1d619fd",
+    "src/storage/concurrency_checks.rs": "479e9b1c504b99366a9bc7aa8fc2cdee10f48507af04f92db16d0581a722612f",
+    "tools/node/native.mjs": "4de88ea42997e421847fc669ffc49ab48a7b89c0ed6a229b24a1ff54452a4406",
+    "tools/node/operator.mjs": "dac0f5c3e8fa1fe164d6cae12637f289043685045d9d8c2fb37884536f43a2c3",
+    "tools/node/test/fixtures/fake-native-host.mjs": "68b9fb3ce76ce3cbcf1ed76fa88565dbb94055b1e61c8a787b81f6bcf09d498d",
+    "tools/node/test/native.test.mjs": "122ff001fba506220b814f27f3a1ae98738c26a9a75c587ef54fdf7dd1e689d3",
+    "tools/node/test/operator.test.mjs": "0640236550d042d8ccf717163157ca27ed5e99de8db00b3f97ee8dfc6df71f4d",
+    "tools/node/test/n6-effect-retry.test.mjs": "1018eb84c6c160aa8ed39c9761df0815f82eec7d22e8a7c5594393d80f0ebb75",
+    "research/75-private-effect-retry-contract.md": "7db93b1ec9944cfcf83f05b3aaf2172b1cdd90070834666321f33bd4574d3681"
+  },
+  "native_artifact": {
+    "binary": "/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next",
+    "sha256": "87beadaab19f60230632cbed007f77e423d8f43f9a7ebdd00a21da119c7f5fd0",
+    "profile": "dev",
+    "sourceKind": "current working-tree native inputs; not a committed-source release",
+    "manifest": "research/evidence/2026-10-26-n6-private-effect-retry-inputs.json",
+    "manifest_sha256": "328f6cea787041063435e508648eea89c8ea9fb759969c3f24086ce33d8041c4",
+    "nativeInputCount": 88,
+    "nativeInputsSha256": "829d4f94a45463b4fdb05c7386181ad54c2735cee688b7a78aea30c82436440e",
+    "committed_source_release": false
+  },
+  "verification": {
+    "node": "v24.22.1",
+    "working_directory": "tools/node",
+    "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N2_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N3_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N4_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N5_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N6_BINARY=/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next REBASE_NODE_N4_BINARY_SHA256=87beadaab19f60230632cbed007f77e423d8f43f9a7ebdd00a21da119c7f5fd0 npm test",
+    "passed": 139,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 15898.88418,
+    "log": "research/evidence/2026-10-26-n6-private-effect-retry-node.txt",
+    "log_sha256": "dc6518c9e04515b31eb13fa0f852a7b35529765898c2ba229003d805c4084754",
+    "focused_node_passed": 30,
+    "native_checks": [
+      {
+        "name": "effects",
+        "passed": true,
+        "passed_executions": 21,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-effects.txt",
+        "sha256": "e23e3357ac54ef5bbc6f28405bcf8b9d508abc0a1528f4e7977ff8ee0a8362f2"
+      },
+      {
+        "name": "host-service",
+        "passed": true,
+        "passed_executions": 16,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-host-service.txt",
+        "sha256": "5771a169cad61cd710ad8917b88df37f49b75dbc07bd2a67f65e2fa878c47351"
+      },
+      {
+        "name": "reset",
+        "passed": true,
+        "passed_executions": 1,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-reset.txt",
+        "sha256": "b02ee57ab68d4a77da68e06a679957de76fe58fdc8d9646dcaa3205b262d3669"
+      },
+      {
+        "name": "default-build",
+        "passed": true,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-default-build.txt",
+        "sha256": "a41051563a4cb5fc1b1bcdd9aa0ba28ca80f7736d629d90cc138218756e8e3a9"
+      },
+      {
+        "name": "all-features-check",
+        "passed": true,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-all-features-check.txt",
+        "sha256": "4677d2560fec99ba46b5d12be42f6194f4f1b8c6726a7324a3b87a75b70930b3"
+      },
+      {
+        "name": "clippy",
+        "passed": true,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-clippy.txt",
+        "sha256": "f0d4dde6665b2d6181239e0acb259bedc84861c70faacdc40b226d36fdb95bb4"
+      },
+      {
+        "name": "fmt",
+        "passed": true,
+        "log": "research/evidence/2026-10-26-n6-private-effect-retry-fmt.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "review": "Independent transaction/read-set, reset-seam, scoped private transport and fresh-binary Node review passed. Focused counts overlap full suite."
+  },
+  "scope": [
+    "typed explicitly granted private effects.retry only",
+    "local service and persisted worker stop guards",
+    "canonical decimal-string u64 CAS including max without Number conversion",
+    "current requester/administrator and target Update authority",
+    "expected store UUID verified inside retry write transaction",
+    "stale revision, denied authority and wrong scope preserve complete images",
+    "real competing reset at write admission rejects stale scope",
+    "unknown outcome retains exact original immutable private request"
+  ],
+  "limits": [
+    "Public HTTP has no retry operation. No automatic revision refresh or resubmission.",
+    "Existing retry transition reused; no binding/store/codec/model semantic changes.",
+    "Deterministic local reset boundary plus existing adapter read-set contract, not a new multi-host/failover result.",
+    "New native inputs invalidate prior executable reuse; final committed-source release acceptance remains with N6 retirement/F0."
+  ],
+  "cleanup": {
+    "remaining_owned_native_fdb_and_cargo_processes": 0
+  },
+  "remaining": "N6 structured native serving, final 60-row mapping and Python/CLI retirement; S0–S3 and F0 remain."
+}

@@ -20,6 +20,11 @@ const METHODS = Object.freeze({
     request: params.request,
     private_key_pem: params.privateKeyPem,
   }, options)],
+  'effects.retry': ['retryEffect', (native, scope, params, options) => native.retryEffect({
+    scope,
+    execution_id: params.executionId,
+    if_revision: params.ifRevision,
+  }, options)],
 });
 
 /** Narrow methods over an already-owned host. This function never opens a store or process. */

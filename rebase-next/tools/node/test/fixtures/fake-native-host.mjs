@@ -27,7 +27,7 @@ const schema = {
         } },
       ],
     },
-    operator_methods: { type: 'array', uniqueItems: true, items: { enum: ['store.check', 'store.inspect'] } },
+    operator_methods: { type: 'array', uniqueItems: true, items: { enum: ['store.check', 'store.inspect', 'effects.retry'] } },
   },
 };
 const modeSchema = mode === 'remote-ref' ? {
@@ -59,7 +59,7 @@ function description() {
     configuration: { schema: modeSchema, defaults: {}, sources: {} },
     capabilities: {
       framing: { request_bytes: mode === 'wrong-framing' ? 100 : 65536, response_bytes: 8388608, max_outstanding: 1, bytes_exclude_lf: true },
-      host_methods: ['host.describe', 'host.configure', 'model.catalog', 'store.check', 'store.inspect', 'host.close'],
+      host_methods: ['host.describe', 'host.configure', 'model.catalog', 'store.check', 'store.inspect', 'effects.retry', 'host.close'],
       host_backends: ['redb'], model: null, mutation_work_limit: 200000, backup_bytes: 67108864,
     },
       selection: configured ? { selector: modelSelector, model: modelIdentity, backend: { kind: 'redb', cluster_file: null }, target } : null,
@@ -162,6 +162,14 @@ function handle(request) {
     const grant = request.method;
     if (!grants.includes(grant)) return respond(request, undefined, { kind: 'forbidden', message: 'Host operation is not granted' });
     return respond(request, request.method === 'store.check' ? { valid: true } : { records: [] });
+  }
+  if (request.method === 'effects.retry') {
+    if (!grants.includes(request.method)) return respond(request, undefined, { kind: 'forbidden', message: 'Host operation is not granted' });
+    if (request.params.scope?.model !== modelIdentity || request.params.scope?.store !== target?.store) {
+      return respond(request, undefined, { kind: 'wrong_target', message: 'Retry scope does not match the configured store' });
+    }
+    if (mode === 'retry-lost-response') process.exit(17);
+    return respond(request, { status: 'retried', execution_id: request.params.execution_id, revision: request.params.if_revision });
   }
   if (request.method === 'host.close') {
     if (mode === 'close-hang') return;

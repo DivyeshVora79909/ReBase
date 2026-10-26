@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2bc5c4167f9b2b5b)
+
+running 1 test
+test storage::concurrency_checks::retry_scope_tests::private_retry_fences_a_real_reset_at_write_admission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 101 filtered out; finished in 0.04s
+

@@ -248,6 +248,267 @@ fn success_applies_once_and_blocked_fact_survives_repair_without_resubmission() 
 }
 
 #[test]
+fn scoped_retry_rechecks_current_authority_revision_worker_and_phase_without_partial_writes() {
+    let f = Fixture::new();
+    let (requesting, mut graph) = requester(&f.store);
+    let e = f.seed_as(&requesting, 12);
+    let (claim, now) = f.begin(e);
+    set_balance(&f.store, 2);
+    f.store
+        .finish_effect_at(
+            &claim,
+            Some(&outcome(e, ProviderPhase::Succeeded)),
+            Some(now + 1),
+            None,
+        )
+        .unwrap();
+    assert!(
+        !f.store
+            .apply_effect(&candidate(&f.store, e, WorkClass::Apply))
+            .unwrap()
+    );
+    let (_, _, header) = f.store.read(f.store.model().identity()).unwrap();
+    let revision = row(&f.store, e).revision;
+    let before = f.store.observe_for_verification().unwrap();
+    assert_eq!(
+        requesting
+            .retry_effect_scoped(header.store_id, e, revision)
+            .unwrap_err()
+            .code,
+        "invalid_input"
+    );
+    assert_eq!(f.store.observe_for_verification().unwrap(), before);
+    f.store
+        .activate_effect_worker(WorkerMode::Disabled)
+        .unwrap();
+    graph
+        .principals
+        .iter_mut()
+        .find(|p| p.id == id(3))
+        .unwrap()
+        .grants
+        .contracts
+        .get_mut(&101)
+        .unwrap()
+        .remove(&Action::Update);
+    replace_graph(&f.store, graph.clone());
+    let before = f.store.observe_for_verification().unwrap();
+    assert_eq!(
+        requesting
+            .retry_effect_scoped(header.store_id, e, revision)
+            .unwrap_err()
+            .code,
+        "forbidden"
+    );
+    assert_eq!(f.store.observe_for_verification().unwrap(), before);
+    graph
+        .principals
+        .iter_mut()
+        .find(|p| p.id == id(3))
+        .unwrap()
+        .grants
+        .contracts
+        .get_mut(&101)
+        .unwrap()
+        .insert(Action::Update);
+    replace_graph(&f.store, graph);
+    let before = f.store.observe_for_verification().unwrap();
+    assert_eq!(
+        requesting
+            .retry_effect_scoped(header.store_id, e, revision - 1)
+            .unwrap_err()
+            .code,
+        "stale_version"
+    );
+    assert_eq!(f.store.observe_for_verification().unwrap(), before);
+    assert_eq!(
+        requesting
+            .retry_effect_scoped(Uuid::new_v4(), e, revision)
+            .unwrap_err()
+            .code,
+        "wrong_target"
+    );
+    assert_eq!(f.store.observe_for_verification().unwrap(), before);
+    let retried = requesting
+        .retry_effect_scoped(header.store_id, e, revision)
+        .unwrap();
+    assert_eq!(retried["application"], "pending");
+    assert_eq!(retried["revision"], (revision + 1).to_string());
+    assert_eq!(row(&f.store, e).attempts, 1);
+    let before = f.store.observe_for_verification().unwrap();
+    assert_eq!(
+        requesting
+            .retry_effect_scoped(header.store_id, e, revision + 1)
+            .unwrap_err()
+            .code,
+        "invalid_input"
+    );
+    assert_eq!(f.store.observe_for_verification().unwrap(), before);
+    f.store.check_integrity().unwrap();
+}
+
+#[test]
+fn private_host_retry_requires_grant_and_stopped_service_then_retries_a_blocked_fact() {
+    use crate::host::{Host, PROTOCOL};
+    fn call(host: &mut Host, method: &str, params: Value) -> Value {
+        host.handle(
+            &serde_json::to_vec(
+                &json!({"protocol":PROTOCOL,"id":"retry-test","method":method,"params":params}),
+            )
+            .unwrap(),
+        )
+    }
+    fn image(host: &mut Host, scope: &Value, directory: &std::path::Path) -> Value {
+        let destination = directory.join(format!("image-{}.json", Uuid::new_v4()));
+        let reply = call(
+            host,
+            "store.backup",
+            json!({"scope":scope,"destination":destination}),
+        );
+        assert!(reply.get("error").is_none(), "{reply}");
+        let backup: Value = serde_json::from_slice(&std::fs::read(destination).unwrap()).unwrap();
+        backup["payload"].clone()
+    }
+    let directory = std::env::temp_dir().join(format!("rebase-host-retry-{}", Uuid::new_v4()));
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("store.redb");
+    let store = Store::<EffectDemo>::create_secured(
+        &path,
+        Arc::new(Prepared::load().unwrap()),
+        Context {
+            tenant: id(1),
+            actor: id(2),
+        },
+    )
+    .unwrap();
+    let e: Uuid = mutate(
+        &store,
+        json!([
+            {"op":"create","id":id(10),"contract":101,"fields":{"balance":"12"}}, dispatch(20, None)
+        ]),
+    )["result"]["executions"][0]["execution_id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    store.activate_effect_worker(WorkerMode::Delivery).unwrap();
+    let now = row(&store, e).created_at + 1;
+    let claim = store
+        .claim_effect_at(&candidate(&store, e, WorkClass::Submit), Some(now))
+        .unwrap()
+        .unwrap();
+    let claim = store.start_effect_at(&claim, Some(now)).unwrap().unwrap();
+    set_balance(&store, 2);
+    store
+        .finish_effect_at(
+            &claim,
+            Some(&outcome(e, ProviderPhase::Succeeded)),
+            Some(now + 1),
+            None,
+        )
+        .unwrap();
+    assert!(
+        !store
+            .apply_effect(&candidate(&store, e, WorkClass::Apply))
+            .unwrap()
+    );
+    store.activate_effect_worker(WorkerMode::Disabled).unwrap();
+    let revision = row(&store, e).revision;
+    let (_, _, header) = store.read(store.model().identity()).unwrap();
+    let scope = json!({"model":store.model().identity(),"store":header.store_id});
+    let public = crate::rpc::handle(
+        &store,
+        &serde_json::to_vec(
+            &json!({"jsonrpc":"2.0","id":"public","method":"effects.retry","params":{}}),
+        )
+        .unwrap(),
+    );
+    assert_eq!(public["error"]["data"]["kind"], "method_not_found");
+    drop(store);
+    let config = |granted: bool| {
+        json!({"model":"effect-demo","backend":{"kind":"redb","cluster_file":null},
+        "target":{"mode":"open","path":path,"expect_store":header.store_id},
+        "operator_methods":if granted { vec!["effects.retry","store.backup","service.start","service.stop"] } else { vec![] }})
+    };
+    let params = json!({"scope":scope,"execution_id":e,"if_revision":revision.to_string()});
+    let mut host = Host::default();
+    assert!(
+        call(&mut host, "host.configure", config(false))
+            .get("error")
+            .is_none()
+    );
+    assert_eq!(
+        call(&mut host, "effects.retry", params.clone())["error"]["kind"],
+        "forbidden"
+    );
+    call(&mut host, "host.close", json!({}));
+    drop(host);
+    let mut host = Host::default();
+    assert!(
+        call(&mut host, "host.configure", config(true))
+            .get("error")
+            .is_none()
+    );
+    for invalid in [
+        json!(revision),
+        json!("01"),
+        json!("-1"),
+        json!("18446744073709551616"),
+    ] {
+        let mut request = params.clone();
+        request["if_revision"] = invalid;
+        assert_eq!(
+            call(&mut host, "effects.retry", request)["error"]["kind"],
+            "invalid_request"
+        );
+    }
+    let service = call(
+        &mut host,
+        "service.start",
+        json!({"scope":scope,"config":{
+            "listen":"127.0.0.1:0","identity":{"issuer":"retry","audience":"retry","public_keys":{"test":include_str!("../../tests/fixtures/test-ed25519-public.pem")},"max_token_seconds":300},
+            "max_inflight":1,"request_timeout_seconds":1,"effects":null
+        }}),
+    );
+    assert!(service.get("error").is_none(), "{service}");
+    let before = image(&mut host, &scope, &directory);
+    assert_eq!(
+        call(&mut host, "effects.retry", params.clone())["error"]["kind"],
+        "service_running"
+    );
+    assert_eq!(image(&mut host, &scope, &directory), before);
+    assert!(
+        call(
+            &mut host,
+            "service.stop",
+            json!({"scope":scope,"service":service["result"]["service"]})
+        )
+        .get("error")
+        .is_none()
+    );
+    let before = image(&mut host, &scope, &directory);
+    let mut wrong = params.clone();
+    wrong["scope"]["store"] = json!(Uuid::new_v4());
+    assert_eq!(
+        call(&mut host, "effects.retry", wrong)["error"]["kind"],
+        "wrong_target"
+    );
+    let mut stale = params.clone();
+    stale["if_revision"] = json!((revision - 1).to_string());
+    assert_eq!(
+        call(&mut host, "effects.retry", stale)["error"]["kind"],
+        "stale_version"
+    );
+    assert_eq!(image(&mut host, &scope, &directory), before);
+    let retried = call(&mut host, "effects.retry", params);
+    assert_eq!(retried["result"]["application"], "pending", "{retried}");
+    assert_eq!(retried["result"]["revision"], (revision + 1).to_string());
+    call(&mut host, "host.close", json!({}));
+    drop(host);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn fact_and_application_abort_after_real_writes_preserve_every_table() {
     let f = Fixture::new();
     let e = f.seed(12);

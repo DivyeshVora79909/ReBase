@@ -1,0 +1,30 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 28.49s
+     Running tests/native_host.rs (target/verification-build/debug/deps/native_host-5c74b7b6b9fc0f78)
+
+running 12 tests
+test exact_request_limit_fragmented_utf8_and_coalesced_frames_are_bounded ... ok
+test frozen_malformed_frames_reject_and_oversize_resumes ... ok
+test frozen_sessions_run_against_real_process_and_authoritative_catalogs ... ok
+test close_and_eof_join_owned_services_before_releasing_the_store ... ok
+test exclusive_create_preserves_existing_destination_and_eof_releases_owner ... ok
+test invalid_config_has_no_filesystem_effect_and_description_schema_validates ... ok
+test public_rpc_cannot_reach_the_operator_allowlist ... ok
+test owned_sigterm_closes_native_store_cleanly_before_exit ... ok
+test same_process_owners_contend_without_losing_the_first_handle ... ok
+test killed_owner_requires_explicit_recovery_without_preview_writes ... ok
+test store_scope_grants_exclusivity_and_wrong_target_reject_before_writes ... ok
+test every_compiled_model_has_the_unchanged_catalog_on_both_scopes ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.70s
+
+     Running tests/native_service.rs (target/verification-build/debug/deps/native_service-f16858ab6fa4add7)
+
+running 4 tests
+test model_and_fixture_calls_reuse_native_values_without_store_creation ... ok
+test denied_operator_methods_reject_before_parsing_or_destination_disclosure ... ok
+test wrong_scopes_and_invalid_service_config_leave_the_owner_unchanged ... ok
+test owned_http_identity_mutation_inspection_and_lifecycle_preserve_fences ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+

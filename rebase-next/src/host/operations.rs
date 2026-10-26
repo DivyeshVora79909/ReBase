@@ -61,6 +61,16 @@ struct Reset {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct RetryEffect {
+    scope: Scope,
+    #[serde(with = "uuid_text")]
+    execution_id: Uuid,
+    #[serde(with = "crate::native_codec::decimal")]
+    if_revision: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Restore {
     scope: Scope,
     backup: String,
@@ -205,6 +215,12 @@ impl<B: Binding> SelectedModel<B> {
                 Ok(
                     json!({"token":crate::identity::issue(&p.identity,&p.request,p.private_key_pem.as_bytes())?}),
                 )
+            }
+            "effects.retry" => {
+                let p: RetryEffect = bind(params, "invalid_request")?;
+                let store = self.scoped(&p.scope)?;
+                self.offline()?;
+                store.retry_effect_scoped(p.scope.store, p.execution_id, p.if_revision)
             }
             "store.backup" | "store.archive" => {
                 let p: Destination = bind(params, "invalid_request")?;

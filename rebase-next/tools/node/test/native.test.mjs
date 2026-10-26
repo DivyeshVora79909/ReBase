@@ -66,6 +66,48 @@ test('store check and inspection use configured native identity and require expl
   openedHandles.delete(noGrant);
 });
 
+test('private effect retry uses a granted configured scope and canonical u64 revision strings', async () => {
+  const configuration = {
+    model: 'calculation', backend: { kind: 'redb', cluster_file: null },
+    target: { mode: 'open', path: path.join(sandbox, 'effects.redb'), expect_store: '33333333-3333-4333-8333-333333333333' },
+    operator_methods: ['effects.retry'],
+  };
+  const handle = await open('normal', configuration);
+  const execution = '55555555-5555-4555-8555-555555555555';
+  assert.deepEqual(await handle.retryEffect({ scope: handle.scope, execution_id: execution, if_revision: '0' }), {
+    status: 'retried', execution_id: execution, revision: '0',
+  });
+  for (const revision of [0, '-1', '00', '+1', '18446744073709551616', '9'.repeat(100_000)]) {
+    await assert.rejects(handle.retryEffect({ scope: handle.scope, execution_id: execution, if_revision: revision }), /canonical u64/);
+  }
+  await assert.rejects(handle.retryEffect({ scope: { ...handle.scope, store: '44444444-4444-4444-8444-444444444444' }, execution_id: execution, if_revision: '1' }), error => error.code === 'wrong_target');
+  await handle.close();
+  openedHandles.delete(handle);
+
+  const noGrant = await open('normal', { ...configuration, operator_methods: [] });
+  await assert.rejects(noGrant.retryEffect({ scope: noGrant.scope, execution_id: execution, if_revision: '1' }), error => error.code === 'forbidden');
+  await noGrant.close();
+  openedHandles.delete(noGrant);
+});
+
+test('lost retry response retains the exact admitted host request and never retries it', async () => {
+  const store = '33333333-3333-4333-8333-333333333333';
+  const handle = await open('retry-lost-response', {
+    model: 'calculation', backend: { kind: 'redb', cluster_file: null },
+    target: { mode: 'open', path: path.join(sandbox, 'lost-effects.redb'), expect_store: store },
+    operator_methods: ['effects.retry'],
+  });
+  const params = { scope: { model: handle.scope.model, store }, execution_id: '55555555-5555-4555-8555-555555555555', if_revision: '18446744073709551615' };
+  await assert.rejects(handle.retryEffect(params), error => {
+    assert.equal(error.code, 'outcome_unknown');
+    assert.deepEqual(error.operation, { protocol: 'rebase-native-host-1', id: 'node:3', method: 'effects.retry', params });
+    assert.ok(Object.isFrozen(error.operation.params));
+    return true;
+  });
+  openedHandles.delete(handle);
+  await handle.close().catch(() => {});
+});
+
 test('complete native config errors remain known errors; lost configure response retains original intent as unknown', async () => {
   await assert.rejects(openNative(await configFor('configure-error')), error => error.name === 'NativeHostError' && error.code === 'invalid_config' && !error.operation);
   await assert.rejects(openNative(await configFor('configure-duplicate')), error => error.name === 'NativeOutcomeUnknownError' && error.operation.method === 'host.configure');

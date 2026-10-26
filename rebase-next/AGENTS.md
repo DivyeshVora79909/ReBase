@@ -45,8 +45,9 @@ Complete Equipment history requires the caller's retained role identity witness.
 The [Node signed-ingress workflow](research/73-node-signed-ingress-contract.md)
 also passes real transport, durable retry and startup-cleanup controls; the full
 Node suite passed 133 tests. The [bounded IssueShare workflow](research/74-node-issue-share-contract.md)
-also passes; all 135 Node tests now pass. Private operator retry, structured
-native serving and the final replacement ledger remain before deleting
+also passes. The [private recovery operator](research/75-private-effect-retry-contract.md)
+is preserved and the full suite passes 139 tests. Structured native serving
+and the final replacement ledger remain before deleting
 Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.

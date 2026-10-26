@@ -1,0 +1,29 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.91s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2bc5c4167f9b2b5b)
+
+running 21 tests
+test effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence ... ok
+test effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation ... ok
+test effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers ... ok
+test effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts ... ok
+test effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart ... ok
+test effects::worker_tests::ingress::authentication_covers_exact_bytes_identity_skew_and_bounded_typed_json ... ok
+test effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table ... ok
+test effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider ... ok
+test effects::worker_tests::ingress::archive_retains_inbox_and_clean_reset_rejects_old_receipts_claims_and_hints ... ok
+test effects::worker_tests::ingress::durable_ack_dedup_and_consumed_fact_rollback_cover_actual_writes ... ok
+test effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions ... ok
+test effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate ... ok
+test effects::worker_tests::ingress::prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission ... ok
+test effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked ... ok
+test effects::worker_tests::scoped_retry_rechecks_current_authority_revision_worker_and_phase_without_partial_writes ... ok
+test effects::worker_tests::private_host_retry_requires_grant_and_stopped_service_then_retries_a_blocked_fact ... ok
+test effects::worker_tests::ingress::inbox_inventory_and_compiled_action_mismatch_reject_check_and_restore ... ok
+test effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption ... ok
+test effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission ... ok
+test effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates ... ok
+test effects::worker_tests::ingress::complete_capacity_retains_a_blocked_event_advances_sweeps_and_fits_backup ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 81 filtered out; finished in 9.72s
+
