@@ -1,0 +1,83 @@
+{
+  "schema": "rebase.n6-signed-ingress.v1",
+  "date": "2026-10-26",
+  "status": "accepted_bounded_subcheckpoint",
+  "parent_commit": "e143418",
+  "node": "v24.22.1",
+  "source_sha256": {
+    "tools/node/examples/n6-signed-ingress.mjs": "893436b074ed0c13e89778d9ab76aad0fa53b7a90bcb7b363f82b1abf33e5872",
+    "tools/node/test/n6-signed-ingress.test.mjs": "40b92e1a065dfd57089901cb7539fed560eb249b8f4a045048ec85166d62ca34",
+    "research/73-node-signed-ingress-contract.md": "8ec2f92fd4be3cfbecc5ee7d7dbeaee5e77ec38513669d21602392098d0f43d5"
+  },
+  "native": {
+    "binary": "/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next",
+    "sha256": "18d8a45c8a3d72ec70c19d8c489453fb4f274a43ab2f5631360e79b225402492",
+    "package_source": "6f1616413d8ec1327485ff2a71c182b8b916c156",
+    "native_source_unchanged": true,
+    "cargo_build": "not run"
+  },
+  "verification": {
+    "working_directory": "tools/node",
+    "command": "PATH=/workspace/.rebase-tools/node24.22.1/bin:$PATH REBASE_NODE_N1_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N2_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N3_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N4_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N5_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next REBASE_NODE_N6_BINARY=/home/agent/rebase-n5-release-6f16164/bundle-redb/bin/rebase-next npm test",
+    "passed": 133,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 9263.294748,
+    "log": "research/evidence/2026-10-26-n6-signed-ingress-node.txt",
+    "log_sha256": "358e4206794db747c2642d898b896d7ba9f8d3b0b0204b4bed53447eb859d87c",
+    "focused_passed": 2,
+    "independent_review": {
+      "status": "passed",
+      "real_native_passed": 2,
+      "additional_transport_controls": 4,
+      "startup_failure_reproduced_then_fixed": true,
+      "note": "Focused controls overlap the complete suite."
+    },
+    "final_format_check": {
+      "syntax": "node --check tools/node/examples/n6-signed-ingress.mjs passed",
+      "focused_passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 2038.065854,
+      "note": "Focused tests rerun after final newline normalization; no executable behavior changed."
+    }
+  },
+  "example": {
+    "execution": "4ccdfc1b-746a-4a7b-a922-0ea797487f2c",
+    "event": "2b99d853-27ca-4261-8684-960ba55804fd",
+    "accepted": {
+      "duplicate": false,
+      "status": "accepted"
+    },
+    "phase": "succeeded",
+    "application": "applied",
+    "balance": "9"
+  },
+  "scope": [
+    "pure HMAC headers over exact caller-owned body bytes",
+    "one bounded HTTP request with no redirects or automatic retry",
+    "durable lost ACK, explicit same-event/body retry and conflict for changed bytes",
+    "signature, timestamp, account, execution, schema, duplicate-key and native size rejections",
+    "restart, one domain application and no provider submission",
+    "owned startup cleanup and existing caller directory preservation"
+  ],
+  "api": {
+    "public_sdk_additions": 0,
+    "example_functions": [
+      "signFakeIngressHeaders",
+      "postFakeIngress",
+      "runN6SignedIngress"
+    ],
+    "custom_cli_added": false
+  },
+  "limits": [
+    "This local fake-provider composition is not a production provider or exactly-once external delivery guarantee.",
+    "Transactional write-fault, full inbox, slow-body and current-authority application checks remain mapped to existing native controls; those Rust tests were not rerun here.",
+    "HMAC-SHA256 webhook authentication is separate from Ed25519 bearer identity."
+  ],
+  "cleanup": {
+    "owned_native_and_fdb_processes_remaining": 0,
+    "owned_fixture_directories": "removed by finally cleanup"
+  },
+  "remaining": "N6 bounded invoicing/IssueShare, bootstrap and Python/CLI retirement; S0–S3 and F0 remain."
+}

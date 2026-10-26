@@ -1,9 +1,10 @@
 # Compact context — 2026-10-26
 
-## Current handoff — N6 source/backup checking accepted; continue N6
+## Current handoff — N6 source/backup and signed ingress accepted; continue N6
 
 P0 and N0–N5 are accepted within their documented bounds. N6's first source/backup
-checkpoint passes 131 Node tests. Complete the remaining N6 replacement controls,
+checkpoint passes; the signed-ingress slice brings the full suite to 133 passing
+Node tests. Complete the remaining N6 replacement controls,
 then Python/CLI removal, followed by S0–S3 and F0. N6 as a whole is not complete.
 Choose execution policy for the current client: this cloud subscription allows
 authorized model choice and delegation; the user's API client currently permits
@@ -35,9 +36,15 @@ incomplete. Exact inputs and null derived values are enforced for private output
 [Evidence](research/evidence/2026-10-26-n6-complete-backup.json) records the
 131-test run, independent review and scope exclusions. No Rust source changed.
 
-Exact next work: add the Node signed-ingress workflow, then bounded
-invoicing/IssueShare workflows. Fake ingress uses HMAC-SHA256 over exact body
-bytes and headers; bearer identity uses Ed25519 separately. Preserve their
+The [signed-ingress example](research/73-node-signed-ingress-contract.md) now
+proves exact-byte HMAC-SHA256, a lost durable ACK with explicit duplicate retry,
+restart/application and owned startup cleanup. It adds ordinary imported
+functions, not a command parser or another public SDK. Bearer identity uses
+Ed25519 separately; current-authority application rules remain native controls.
+
+Exact next work: bounded Node invoicing/IssueShare workflows using native
+fixtures, existing model/client APIs and literal independent expectations.
+Avoid duplicating the accounting engine or expanding deferred G6. Preserve their
 independent arithmetic, current authority, original plans and recovery checks.
 Map all 60 Python inventory rows to passed replacements or justified historical
 retirement before deleting files. Replace the legacy native domain parser with

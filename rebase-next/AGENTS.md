@@ -42,7 +42,10 @@ See [release evidence](research/evidence/2026-10-26-n5-release.json) for hashes,
 failed trials and limits. N6's first source/physical checkpoint passes for
 Equipment, Measurement and Quantity; see [complete-backup checking](research/72-node-complete-backup-contract.md).
 Complete Equipment history requires the caller's retained role identity witness.
-N6 must still complete signed ingress and bounded invoicing/IssueShare replacement controls before deleting
+The [Node signed-ingress workflow](research/73-node-signed-ingress-contract.md)
+also passes real transport, durable retry and startup-cleanup controls; the full
+Node suite now passes 133 tests. N6 must still complete bounded
+invoicing/IssueShare replacement controls before deleting
 Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.
