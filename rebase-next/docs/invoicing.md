@@ -1,27 +1,19 @@
 # Bounded invoicing model
 
-Select `--model invoicing` for a store using fractional line pricing, chronological
+Select `model: "invoicing"` in the service configuration for fractional line pricing, chronological
 tax assessments, linked monetary credits, payments and refunds. The same compiled schemas drive
 validation, catalogs, fixture plans and the inspector. The model uses the existing
 transaction, authority, ordered-tree, causal, receipt and storage paths.
 
-```sh
-rebase-next --model invoicing model developer
-rebase-next --model invoicing fixture list
-rebase-next --model invoicing fixture plan invoice-refund \
-  --namespace 00000000-0000-4000-8000-000000000100 > draft.json
-```
+Use `connect` from the public Node barrel for authenticated plans; the [IssueShare example](../tools/node/examples/n6-issue-share.mjs) shows the separate bounded rounding workflow.
 
-Create/serve an invoicing store using the [ordinary server commands](server.md),
-with the same selector for `init`, `serve`, `check`, backup and restore. Submit
-the draft through the existing stateless client:
+Use the [service configuration](server.md) to open an existing invoicing store.
+Legacy CLI and Python fixture commands are retired; see the
+[N2 example](../tools/node/examples/n2-equipment-workflow.mjs) for caller-owned
+client composition and the [N6 IssueShare example](../tools/node/examples/n6-issue-share.mjs)
+for the related rounding workflow.
 
-```sh
-python3 -B tools/client.py --url http://127.0.0.1:9000/rpc \
-  --token-file token.txt prepare draft.json saved-mutation.json
-python3 -B tools/client.py --url http://127.0.0.1:9000/rpc \
-  --token-file token.txt apply saved-mutation.json
-```
+Use `connect` from the public Node barrel for authenticated plans; the [IssueShare example](../tools/node/examples/n6-issue-share.mjs) shows the separate bounded rounding workflow.
 
 Keep the saved request/context for retries. A fixture is a deterministic authored
 scenario, not an arbitrary globally valid random-data generator. `invoice` creates
@@ -73,11 +65,7 @@ ratio retains the dependency. Retargeting repairs the reference route; deleting
 an Issue with a surviving share rejects. Both records remain within the existing
 64-public-source envelope.
 
-```sh
-rebase-next --model invoicing fixture plan issue-share \
-  --namespace 00000000-0000-4000-8000-000000000100 > share-draft.json
-python3 -B tools/issue_shares.py --binary target/release/rebase-next --out target/share-workflow
-```
+Use `connect` from the public Node barrel for authenticated plans; the [IssueShare example](../tools/node/examples/n6-issue-share.mjs) shows the separate bounded rounding workflow.
 
 Creating or retargeting a share requires current read access to its new Issue.
 An already materialized share follows its own Read permission and reader route;
@@ -178,13 +166,7 @@ or refund edits must still satisfy every complete-time history.
 
 Run the real HTTP workflow and independent Fraction oracle from `rebase-next/`:
 
-```sh
-cargo build --locked --release --bin rebase-next
-python3 -B tools/invoicing.py --binary target/release/rebase-next \
-  --out target/my-invoicing-run
-cargo test --locked --test invoicing
-python3 -B tools/test_invoicing.py -v
-```
+Use `connect` from the public Node barrel for authenticated plans; the [IssueShare example](../tools/node/examples/n6-issue-share.mjs) shows the separate bounded rounding workflow.
 
 Choose a new output directory per run; the tool retains owned credentials, exact
 mutation plans, server logs, a verified backup/restored store and `result.json`.

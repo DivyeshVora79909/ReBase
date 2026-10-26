@@ -1,10 +1,5 @@
 use serde_json::{Value, json};
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use std::{fs, io::Write, path::PathBuf, sync::Arc};
 use uuid::Uuid;
 
 struct Directory(PathBuf);
@@ -15,27 +10,18 @@ impl Drop for Directory {
 }
 
 fn rpc(directory: &Directory, requests: &[Value]) -> Vec<Value> {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-        .args(["rpc", "example/demo.redb"])
-        .current_dir(&directory.0)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-    {
-        let mut input = child.stdin.take().unwrap();
-        for request in requests {
-            writeln!(input, "{}", request).unwrap();
-        }
+    let store = rebase_semantic_proof::local::LocalStore::open(
+        directory.0.join("example/demo.redb"),
+        Arc::new(rebase_semantic_proof::model::PreparedModel::load().unwrap()),
+    )
+    .unwrap();
+    let mut input = Vec::new();
+    for request in requests {
+        writeln!(input, "{}", request).unwrap();
     }
-    let output = child.wait_with_output().unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    String::from_utf8(output.stdout)
+    let mut output = Vec::new();
+    rebase_semantic_proof::rpc::serve(&store, std::io::Cursor::new(input), &mut output).unwrap();
+    String::from_utf8(output)
         .unwrap()
         .lines()
         .map(|line| serde_json::from_str(line).unwrap())
@@ -43,32 +29,17 @@ fn rpc(directory: &Directory, requests: &[Value]) -> Vec<Value> {
 }
 
 #[test]
-fn binary_demo_offline_export_process_api_and_restart_are_usable_together() {
+fn native_demo_offline_export_operation_api_and_reopen_are_usable_together() {
     let dir = Directory(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("target/local-cli-tests")
             .join(Uuid::new_v4().to_string()),
     );
     fs::create_dir_all(&dir.0).unwrap();
-    let offline = Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-        .args(["model", "public"])
-        .current_dir(&dir.0)
-        .output()
-        .unwrap();
-    assert!(offline.status.success());
+    let model = Arc::new(rebase_semantic_proof::model::PreparedModel::load().unwrap());
+    let catalog = model.public_catalog();
     assert_eq!(fs::read_dir(&dir.0).unwrap().count(), 0);
-    let catalog: Value = serde_json::from_slice(&offline.stdout).unwrap();
-    let demo = Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-        .args(["demo", "example"])
-        .current_dir(&dir.0)
-        .output()
-        .unwrap();
-    assert!(
-        demo.status.success(),
-        "{}",
-        String::from_utf8_lossy(&demo.stderr)
-    );
-    let result: Value = serde_json::from_slice(&demo.stdout).unwrap();
+    let result = rebase_semantic_proof::demo::run(&dir.0.join("example"), model.clone()).unwrap();
     assert_eq!(result["model"], catalog["model"]);
     assert_eq!(
         result["after_move"],
@@ -79,12 +50,7 @@ fn binary_demo_offline_export_process_api_and_restart_are_usable_together() {
         html.contains("Settled snapshot") && html.contains("PRIVATE") && !html.contains("<script")
     );
     let before = fs::read(dir.0.join("example/demo.redb")).unwrap();
-    let refused = Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-        .args(["demo", "example"])
-        .current_dir(&dir.0)
-        .output()
-        .unwrap();
-    assert!(!refused.status.success());
+    assert!(rebase_semantic_proof::demo::run(&dir.0.join("example"), model).is_err());
     assert_eq!(fs::read(dir.0.join("example/demo.redb")).unwrap(), before);
     let source = "00000000-0000-4000-8000-000000000060";
     let account = "00000000-0000-4000-8000-000000000030";

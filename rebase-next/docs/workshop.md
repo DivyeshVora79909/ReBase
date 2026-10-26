@@ -8,9 +8,7 @@ stores.
 Build this checkout (source 0.15 or later); the historical 0.6 release bundle
 does not contain this suite or the Quantity model:
 
-```sh
-CARGO_TARGET_DIR=target/workshop-build cargo build --locked --release --bin rebase-next
-```
+The [N4 intent replay example](../tools/node/examples/n4-original-intent-replay.mjs) shows current logical replay composition; the public experiment functions are listed in [developer tools](developer-tools.md).
 
 The walkthrough writes `result.json` and `summary.md`. The JSON keeps the exact
 plans, observations, expected values, and source fingerprint. The Markdown is a
@@ -22,9 +20,7 @@ not the order in which the engine ran.
 
 Use a new output directory for every run:
 
-```sh
-python3 -B tools/verify.py --binary target/workshop-build/release/rebase-next --out target/workshop-walk --mode walk
-```
+The [N4 intent replay example](../tools/node/examples/n4-original-intent-replay.mjs) shows current logical replay composition; the public experiment functions are listed in [developer tools](developer-tools.md).
 
 The equipment chapter uses Pool `101`, Delivery `205`, and Reservation `410`.
 At the E0 baseline, a delivery of 10 at time 0 gives A 8 units over `[10,30)`
@@ -65,10 +61,7 @@ The check mode maps native test evidence to the workshop capabilities. It can
 use a cached manifest of test executables whose binary and source fingerprints
 match the current checkout:
 
-```sh
-CARGO_TARGET_DIR=target/workshop-build python3 -B tools/verify.py \
-  --binary target/workshop-build/release/rebase-next --out target/workshop-check --mode check
-```
+The [N4 intent replay example](../tools/node/examples/n4-original-intent-replay.mjs) shows current logical replay composition; the public experiment functions are listed in [developer tools](developer-tools.md).
 
 The default preparation path builds the Rust harnesses once when Cargo is available; when
 it is unavailable, the report keeps native evidence incomplete. A missing
@@ -80,19 +73,13 @@ Check also runs the existing full worker and signed-ingress process controls.
 
 Explore quantities with a reproducible seed:
 
-```sh
-python3 -B tools/verify.py --binary target/workshop-build/release/rebase-next --out target/workshop-explore \
-  --mode explore --seed 20261023
-```
+The [N4 intent replay example](../tools/node/examples/n4-original-intent-replay.mjs) shows current logical replay composition; the public experiment functions are listed in [developer tools](developer-tools.md).
 
 The exploration is bounded and seeded, not exhaustive. It saves `exploration/artifact.json`
 with the actions and plans. Replay it in a new output directory to reconstruct
 the same logical actions against a fresh store, with newly bound contexts:
 
-```sh
-python3 -B tools/verify.py --binary target/workshop-build/release/rebase-next --out target/workshop-replay \
-  --mode replay --artifact target/workshop-explore/exploration/artifact.json
-```
+The [N4 intent replay example](../tools/node/examples/n4-original-intent-replay.mjs) shows current logical replay composition; the public experiment functions are listed in [developer tools](developer-tools.md).
 
 On a mismatch, exploration retains the original and a bounded span-reduced
 failure. Shrinking preserves the failure class and its valid preconditions; it
@@ -100,11 +87,10 @@ does not guarantee a globally smallest case. Original plans remain valid only
 for their original target/context. Logical replay obtains new contexts for new
 intents, then resends each repeated intent unchanged within that new run.
 
-For direct composition, import `equipment`, `measurement`, `quantity` and
-`service` from `tools/verify_cases.py`, `evaluate`/`stage` from
-`tools/verify_oracles.py`, or `explore`, `replay` and `minimize` from
-`tools/verify_explore.py`. These are ordinary functions. `Scenario` owns one
-disposable backend; close it in `finally`. Reports contain final inventories and
+Earlier workshop campaigns imported case, oracle and exploration functions from
+Python tooling, now retired. The current public JavaScript functions are listed
+in [developer tools](developer-tools.md). `Scenario` in the historical campaign
+owned one disposable backend. Reports contain final inventories and
 measured counters, not an invented execution trace. Artifacts and credentials
 stay in private fixture directories; do not publish a complete run directory.
 

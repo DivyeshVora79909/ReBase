@@ -1,58 +1,35 @@
 # Bounded workload and deployment checks
 
-**Current versus planned:** this guide documents the accepted Python workload
-tools and results. G10 proposes Node ESM developer functions and an
-ordered-storage redesign; neither is implemented. Existing commands remain the
-runnable baseline until replacement checkpoints pass. See the [G10 program](../research/56-node-and-index-redesign-program.md),
+**N6 status:** this guide records workload semantics and dated G8 campaign
+evidence. N6 Node bootstrap and retirement acceptance are pending; no Python
+workflow command here is a current run procedure. See the [G10 program](../research/56-node-and-index-redesign-program.md),
 [Node contract](../research/57-node-developer-contract.md),
 [storage contract](../research/58-ordered-storage-redesign.md) and
 [capability inventory](../research/59-node-capability-inventory.md).
 
-`tools/g8.py` is the operational entry point. It uses the ordinary authenticated
-client, owned `Backend` processes and the workshop's source-only arithmetic.
-Use a fresh private output directory for each run. G8.0–G8.5 are accepted within
-the boundaries in the [results](../research/53-workload-deployment-result.md).
-G8 and G9 are accepted within the bounds in their respective results.
+Earlier G8 workloads used the ordinary authenticated client, owned backend
+processes and source-only arithmetic. Their bounded claims and exclusions are
+recorded in the [dated results](../research/53-workload-deployment-result.md);
+they are not N6 or current deployment acceptance.
 
-```sh
-export LD_LIBRARY_PATH="$PWD/target/g7-environment/root/usr/lib"
-python3 -B tools/g8.py smoke --binary target/g75-accepted/rebase-next --backend redb --out target/my-g8-smoke
-python3 -B tools/g8.py check --result target/my-g8-smoke/result.json
-# One continuous memory epoch, then two separate full receipt/archive cycles.
-python3 -B tools/g8.py churn --binary target/g75-accepted/rebase-next --backend redb --out target/my-g8-churn
-```
+The current public functions include `runWorkload`, `checkRun`, `explore` and `logicalReplay`; see [developer tools](developer-tools.md) for the caller-owned Node API.
 
-The retained G7 executable enables both optional adapters and needs `libfdb_c`
-even for redb. A default redb-only executable needs no FoundationDB SDK. Select
-`--backend surrealkv` or `--backend foundationdb --cluster-file
-target/g7-environment/fdb.cluster`. FoundationDB resource runs require the
-explicitly owned helper service and observe its real data/log directories.
-Start it with `python3 -B tools/fdb_cluster.py start` and stop it after the run.
-Namespaces are distinct new output paths; they are not database data paths.
+The historical G7 executable enabled both optional adapters and required
+`libfdb_c` even for redb. Current model and backend selection is explicit in
+`rebase-service-1`; FoundationDB uses a nonempty namespace label and an absolute
+cluster-file path. See [backend setup](storage-backends.md).
 
 The same operations compose directly:
 
-```python
-from g8_workload import prepare, profile, run, check, check_sources, offline
+The current public functions include `runWorkload`, `checkRun`, `explore` and `logicalReplay`; see [developer tools](developer-tools.md) for the caller-owned Node API.
 
-state = prepare(binary, new_directory, settings=profile(smoke=True))
-try:
-    result = run(state)
-    check(result)
-    check_sources(state)             # separate source-only oracle
-    complete = offline(state, "complete")  # stops the process outside timing
-finally:
-    state["backend"].stop()
-```
-
-Import from the adjacent `tools` directory, for example with `PYTHONPATH=tools`.
-`complete_epoch` also performs the quiescent rollback control, original-intent
+The retired campaign's `complete_epoch` performed the quiescent rollback control, original-intent
 receipt reconciliation, existing engine-work observation and final complete
 thirteen-table check. `g8_observe.sample`, `check_resources`, `read_jsonl` and
 `JsonlWriter` are usable without the runner. Reports describe trusted functions
 and values; they never execute code from an artifact.
 
-`g8_check.check_directory(directory)` independently consumes the saved raw
+The retired `g8_check.check_directory(directory)` independently consumed the saved raw
 trace, source observations, samples and complete images. The CLI `check` uses
 that function and requires the completed epoch's `result.json` with its adjacent
 private evidence. It does not accept a cached pass without the required raw files.
@@ -125,10 +102,7 @@ their own explicit source oracles. The reusable scheduler is
 `g8_pressure.bounded_step(requests, submit, ...)`; hooks observe offers,
 submissions and completions without changing scheduling code.
 
-```sh
-python3 -B tools/g8.py overload --binary /path/to/current/rebase-next --backend redb --out target/my-overload
-python3 -B tools/g8.py check --result target/my-overload/pressure/pressure-result.json
-```
+The current public functions include `runWorkload`, `checkRun`, `explore` and `logicalReplay`; see [developer tools](developer-tools.md) for the caller-owned Node API.
 
 Reports retain counts, latency distributions, achieved elapsed rates, queue/drain
 observations, resources and actual n/m/r. Whole action time, queue/request time
@@ -144,10 +118,7 @@ service even after exceptions, and reconciles the original operation IDs.
 It is not a replica failover or native commit-ack injection. Embedded backends
 have no independent network database service. Start the helper before this command:
 
-```sh
-python3 -B tools/g8.py outage --binary /path/to/current/rebase-next --backend foundationdb --cluster-file target/g7-environment/fdb.cluster --out target/my-outage
-python3 -B tools/g8.py check --result target/my-outage/outage-result.json
-```
+The current public functions include `runWorkload`, `checkRun`, `explore` and `logicalReplay`; see [developer tools](developer-tools.md) for the caller-owned Node API.
 
 `g8_faults.run_outage(state)` and `check_outage_directory(directory)` also
 compose directly. Offline checks recompute source/receipt outcomes, complete

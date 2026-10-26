@@ -809,7 +809,7 @@ impl<B: Binding> Store<B> {
             return Err(Error::new("unsupported_query", "model has no effects"));
         }
         let hash = self.request_hash("effects.cancel", request)?;
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let scope = self.write_authority(&write)?;
         let header: RuntimeHeader = local::decode(
             write

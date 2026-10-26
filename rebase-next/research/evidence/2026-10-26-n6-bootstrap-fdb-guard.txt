@@ -1,0 +1,9 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 43.50s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-a869806e7f7b18ea)
+
+running 1 test
+test server::tests::scoped_foundationdb_service_fences_replacement_through_another_handle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.10s
+

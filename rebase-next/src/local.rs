@@ -223,6 +223,7 @@ pub struct Store<B: Binding> {
     pub(crate) bootstrap_actor: Uuid,
     pub(crate) secured: bool,
     pub(crate) credential_epoch: Option<u64>,
+    pub(crate) expected_store: Option<Uuid>,
 }
 
 pub type LocalStore = Store<Calculation>;
@@ -323,6 +324,7 @@ impl<B: Binding> Store<B> {
             bootstrap_actor: context.actor,
             secured,
             credential_epoch: None,
+            expected_store: None,
         })
     }
 
@@ -366,6 +368,7 @@ impl<B: Binding> Store<B> {
             bootstrap_actor: context.actor,
             secured,
             credential_epoch: None,
+            expected_store: None,
         };
         store.check_meta(&meta, store.model.identity())?;
         let public = read.open_table(PUBLIC).map_err(storage)?;
@@ -403,10 +406,58 @@ impl<B: Binding> Store<B> {
 
     pub(crate) fn read(&self, requested: &str) -> Result<(ReadTransaction, Meta, RuntimeHeader)> {
         let read = self.db.begin_read().map_err(storage)?;
+        let header = read_header(&read)?;
+        self.check_expected_store(header.store_id)?;
         let meta = read_meta(&read)?;
         self.check_meta(&meta, requested)?;
-        let header = read_header(&read)?;
         Ok((read, meta, header))
+    }
+
+    pub(crate) fn check_expected_store(&self, actual: Uuid) -> Result<()> {
+        if self
+            .expected_store
+            .is_some_and(|expected| expected != actual)
+        {
+            return Err(Error::new("wrong_target", "service store scope changed"));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn begin_read(&self) -> Result<ReadTransaction> {
+        let read = self.db.begin_read().map_err(storage)?;
+        if self.expected_store.is_some() {
+            self.check_expected_store(read_header(&read)?.store_id)?;
+        }
+        Ok(read)
+    }
+
+    /// Begin a write and check the service's store UUID in that same writable
+    /// transaction. This makes reset/replacement unable to race the fence.
+    pub(crate) fn begin_write(&self) -> Result<crate::storage::WriteTransaction> {
+        let write = self.db.begin_write().map_err(storage)?;
+        if self.expected_store.is_some() {
+            let table = write.open_table(RUNTIME).map_err(storage)?;
+            let bytes = table
+                .get(HEADER)
+                .map_err(storage)?
+                .ok_or_else(|| corrupt("missing runtime header"))?;
+            let header: RuntimeHeader = decode(bytes.value())?;
+            validate_header(&header)?;
+            self.check_expected_store(header.store_id)?;
+        }
+        Ok(write)
+    }
+
+    pub(crate) fn scoped_to(&self, expected_store: Uuid) -> Self {
+        Self {
+            db: self.db.clone(),
+            model: self.model.clone(),
+            context: self.context,
+            bootstrap_actor: self.bootstrap_actor,
+            secured: self.secured,
+            credential_epoch: self.credential_epoch,
+            expected_store: Some(expected_store),
+        }
     }
 
     pub(crate) fn project(
@@ -500,7 +551,7 @@ impl<B: Binding> Store<B> {
             ));
         }
         let request_hash = self.request_hash("records.mutate", request)?;
-        let write = self.db.begin_write().map_err(storage)?;
+        let write = self.begin_write()?;
         let scope = self.write_authority(&write)?;
         let header: RuntimeHeader;
         let (batch, result, disclosed, intents, work) = {

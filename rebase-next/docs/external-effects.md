@@ -9,10 +9,7 @@ ingress and recovery acceptance; [G5b](../research/38-fenced-worker-implementati
 retains the delivery evidence;
 the last packaged deployment remains 0.6.0.
 
-```sh
-python3 -B tools/effects_worker.py --binary path/to/rebase-next --out target/effect-worker-run
-python3 -B tools/effects_ingress.py --binary path/to/rebase-next --out target/effect-ingress-run
-```
+The [N5 lifecycle example](../tools/node/examples/n5-lifecycle.mjs) shows scoped operator use; [N6 signed ingress](../tools/node/examples/n6-signed-ingress.mjs) remains a separate bounded example.
 
 The literal example creates Account balance 12, then atomically changes it to 10
 and creates Dispatch units 3. Provider success applies to the current Account,
@@ -23,8 +20,8 @@ retry produce 2 once, without another submission.
 
 ## Model and request
 
-Select `--model effect-demo` before every executable command against this store.
-`model public` declares requests, typed outcomes and permitted application fields.
+Select `effect-demo` explicitly in the native configuration. Its public catalog
+declares requests, typed outcomes and permitted application fields.
 The `atomic-intent` fixture provides ordinary Account/Dispatch commands.
 
 Account (101) has a canonical integer `balance`, bounded to one million in
@@ -49,9 +46,7 @@ archive cannot replace it. Every retained execution pins its Account.
 The existing authenticated server configuration works without a worker. Start
 the independent fake journal, then add its `ready.json` endpoint to that config:
 
-```sh
-python3 -B tools/fake_provider.py --directory target/fake-provider
-```
+The [N5 lifecycle example](../tools/node/examples/n5-lifecycle.mjs) shows scoped operator use; [N6 signed ingress](../tools/node/examples/n6-signed-ingress.mjs) remains a separate bounded example.
 
 ```json
 {"effects":{"endpoint":"http://127.0.0.1:12345","mode":"delivery"}}
@@ -150,9 +145,7 @@ may return `null`. Never refresh an archived uncertain operation's context.
 Repair a blocked Account through the ordinary authenticated API, stop the server
 gracefully, then retry using the current execution revision:
 
-```sh
-rebase-next --model effect-demo effects retry store.redb <execution-uuid> --if-revision <revision>
-```
+The [N5 lifecycle example](../tools/node/examples/n5-lifecycle.mjs) shows scoped operator use; [N6 signed ingress](../tools/node/examples/n6-signed-ingress.mjs) remains a separate bounded example.
 
 Restart the configured server to apply. This also permits another bounded
 observation round for uncertain/waiting work, including a quarantined ready row

@@ -271,7 +271,7 @@ and output lifecycles settle, refresh validation queries and check invariants.
 Publish the permitted response only after the atomic commit. Internal publication,
 terminal validation and external disclosure are three different boundaries.
 
-The bounded [executable model](experiments/m3_m5.py) compares exact grouped source
+The bounded [executable model](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/m3_m5.py) compares exact grouped source
 scans, hand-worked expectations and every valid order of five fixed calculation
 steps. It retains the invalid-order and old/new-union counterexamples, checks
 complete logical inventories, and predicts feedback, historical-floor and

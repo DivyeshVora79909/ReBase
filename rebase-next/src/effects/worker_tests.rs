@@ -1172,3 +1172,115 @@ fn persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked()
 
 #[path = "inbox_tests.rs"]
 mod ingress;
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn scoped_live_worker_and_signed_ingress_cannot_adopt_reset_store() {
+    use crate::{
+        identity::IdentityConfig,
+        server::{ServerConfig, start_scoped},
+    };
+    use hmac::{Hmac, Mac};
+    let f = Fixture::new();
+    let execution = f.seed(12);
+    let store = Arc::new(f.store.session(id(2), 0).unwrap());
+    let (_, _, header) = store.read(store.model().identity()).unwrap();
+    let scoped = store.scoped_to(header.store_id);
+    let secret = b"n6-disposable-secret-for-runtime-scope";
+    let secret_path = f.path.join("ingress.secret");
+    std::fs::write(&secret_path, secret).unwrap();
+    let hold = f.path.join("before_start.hold");
+    std::fs::write(&hold, b"").unwrap();
+    let identity: IdentityConfig = serde_json::from_value(json!({
+        "issuer":"worker-scope", "audience":"worker-scope",
+        "public_keys":{"test":include_str!("../../tests/fixtures/test-ed25519-public.pem")},
+        "max_token_seconds":300,
+    }))
+    .unwrap();
+    let service = start_scoped(
+        store.clone(),
+        ServerConfig {
+            listen: "127.0.0.1:0".parse().unwrap(),
+            identity,
+            max_inflight: 2,
+            request_timeout_seconds: 2,
+            effects: Some(fake::Config {
+                endpoint: "http://127.0.0.1:1/".into(),
+                mode: WorkerMode::Delivery,
+                ingress_secret_file: Some(secret_path),
+                probe_directory: Some(f.path.clone()),
+            }),
+        },
+        Some(header.store_id),
+    )
+    .await
+    .unwrap();
+    let paused = f.path.join(format!("{execution}.before_start.json"));
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        while !paused.exists() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    // The real worker is paused after claim and before native start/provider I/O.
+    // A retained unscoped owner cancels work and disables its activation before
+    // a legal reset. The service and worker remain alive with the old UUID.
+    cancel(&store, execution);
+    store.activate_effect_worker(WorkerMode::Disabled).unwrap();
+    store.reset(header.store_id).unwrap();
+    let replacement = store.observe_for_verification().unwrap();
+    let event = Uuid::new_v4().to_string();
+    let timestamp = now_millis().unwrap().to_string();
+    let bytes = local::encode(&json!({
+        "execution_id":execution, "outcome":outcome(execution, ProviderPhase::Succeeded),
+    }))
+    .unwrap();
+    let mut mac = Hmac::<Sha256>::new_from_slice(secret).unwrap();
+    mac.update(format!("fake-account-1\n{event}\n{timestamp}\n").as_bytes());
+    mac.update(&bytes);
+    let response = reqwest::Client::new()
+        .post(format!("http://{}/effects/fake", service.address))
+        .header("content-type", "application/json")
+        .header("x-fake-account", "fake-account-1")
+        .header("x-fake-event", event)
+        .header("x-fake-timestamp", timestamp)
+        .header(
+            "x-fake-signature",
+            native_codec::hex(&mac.finalize().into_bytes()),
+        )
+        .body(bytes)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(
+        response.json::<Value>().await.unwrap()["error"],
+        "wrong_target"
+    );
+    for mode in [WorkerMode::Delivery, WorkerMode::Disabled] {
+        assert_eq!(
+            scoped.activate_effect_worker(mode).unwrap_err().code,
+            "wrong_target"
+        );
+    }
+    assert_eq!(
+        scoped.scan_effects(Uuid::new_v4()).unwrap_err().code,
+        "wrong_target"
+    );
+    assert_eq!(store.observe_for_verification().unwrap(), replacement);
+    // Releasing the real worker forces its next transaction to reject the new
+    // UUID. Its failure stops admission; stop joins the worker and HTTP drain.
+    std::fs::remove_file(&hold).unwrap();
+    let address = service.address;
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        while tokio::net::TcpStream::connect(address).await.is_ok() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(service.stop().await.unwrap_err().code, "wrong_target");
+    assert_eq!(store.observe_for_verification().unwrap(), replacement);
+    drop((scoped, store));
+    std::fs::remove_dir_all(&f.path).unwrap();
+}

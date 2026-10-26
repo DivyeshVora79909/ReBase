@@ -1,5 +1,5 @@
 use rebase_semantic_proof::{
-    binding::Calculation,
+    binding::{Binding, Calculation},
     host::{self, Host},
     model::Prepared,
 };
@@ -433,6 +433,14 @@ fn same_process_owners_contend_without_losing_the_first_handle() {
 
 #[test]
 fn every_compiled_model_has_the_unchanged_catalog_on_both_scopes() {
+    fn catalog<B: Binding>(scope: &str) -> Value {
+        let model = Prepared::<B>::load().unwrap();
+        if scope == "public" {
+            model.public_catalog()
+        } else {
+            model.developer_catalog()
+        }
+    }
     for model in [
         "calculation",
         "equipment",
@@ -449,12 +457,23 @@ fn every_compiled_model_has_the_unchanged_catalog_on_both_scopes() {
         );
         assert!(configured.get("result").is_some());
         for scope in ["public", "developer"] {
-            let expected = Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-                .args(["--model", model, "model", scope])
-                .output()
-                .unwrap();
-            assert!(expected.status.success());
-            let expected: Value = serde_json::from_slice(&expected.stdout).unwrap();
+            let expected = match model {
+                "calculation" => catalog::<Calculation>(scope),
+                "equipment" => {
+                    catalog::<rebase_semantic_proof::models::equipment::Equipment>(scope)
+                }
+                "invoicing" => {
+                    catalog::<rebase_semantic_proof::models::invoicing::Invoicing>(scope)
+                }
+                "measurement" => {
+                    catalog::<rebase_semantic_proof::models::measurement::Measurement>(scope)
+                }
+                "effect-demo" => {
+                    catalog::<rebase_semantic_proof::models::effect_demo::EffectDemo>(scope)
+                }
+                "quantity" => catalog::<rebase_semantic_proof::models::quantity::Quantity>(scope),
+                _ => unreachable!(),
+            };
             let actual = process.call(scope, "model.catalog", json!({"scope":scope}));
             assert_eq!(actual["result"], expected);
         }

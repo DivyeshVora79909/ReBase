@@ -178,7 +178,7 @@ impl<B: Binding> Store<B> {
         event: Verified<B>,
         abort: Option<usize>,
     ) -> Result<Value> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let mut runtime = runtime_write(&write)?;
         let execution = load_execution::<B>(&write, event.payload.execution_id)?;
         if execution.provider_account != ACCOUNT || event.received_at < execution.created_at {
@@ -240,7 +240,7 @@ impl<B: Binding> Store<B> {
     /// Stable-key cursor visits at most sixteen rows, including consumed rows.
     /// A failed consumer cannot pin the cursor or starve a later event.
     pub(super) fn scan_effect_inbox(&self, activation: Uuid) -> Result<Vec<Vec<u8>>> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let mut runtime = runtime_write(&write)?;
         if runtime.activation != activation || !runtime.mode.active() {
             return Err(Error::new("stale_version", "inbox activation changed"));
@@ -300,7 +300,7 @@ impl<B: Binding> Store<B> {
         supplied: Option<i64>,
         abort: Option<usize>,
     ) -> Result<bool> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let mut runtime = runtime_write(&write)?;
         if runtime.activation != activation || !runtime.mode.active() {
             return Err(Error::new("stale_version", "inbox activation changed"));

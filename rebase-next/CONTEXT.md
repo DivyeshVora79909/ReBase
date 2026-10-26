@@ -1,21 +1,37 @@
 # Compact context — 2026-10-26
 
-## Current handoff — N6 recovery operator accepted; bootstrap and retirement next
+## Current handoff — N6 implementation verified; extracted releases next
 
-P0 and N0–N5 are accepted within their documented bounds. N6's first source/backup
-checkpoint passes; signed ingress, IssueShare and private effect retry bring the
-full suite to 139 passing Node tests. Complete the remaining N6 replacement controls,
-then Python/CLI removal, followed by S0–S3 and F0. N6 as a whole is not complete.
-Choose execution policy for the current client: this cloud subscription allows
-authorized model choice and delegation; the user's API client currently permits
-one model. Do not transfer a client's restrictions through Git as global policy.
-Finish one changing checkpoint through verification, commit and push before
-starting the next; read-only preparation can overlap. Read AGENTS, README,
-[the program](research/56-node-and-index-redesign-program.md),
-[N5 result](research/71-node-lifecycle-result.md) and
-[N5 release evidence](research/evidence/2026-10-26-n5-release.json).
-The [capability inventory](research/59-node-capability-inventory.md) and
-[N0 ledger](research/fixtures/n0-migration-ledger.json) govern deletion.
+P0 and N0–N5 are accepted within their documented bounds. The N6 source/backup,
+signed-ingress, IssueShare and private effect-retry checkpoints have their
+recorded bounded controls. The current [bootstrap evidence](research/evidence/2026-10-26-n6-bootstrap.json)
+records 200 default native tests, seven focused scope controls, an explicitly
+executed local FDB reset control, and 141 Node tests with no skips. The sole stale
+example assertion was repaired and its targeted rerun passes; the initial failed
+campaign log is preserved.
+Structured native `host` / `serve` bootstrap and retirement of the 60 inventoried
+Python paths plus four obsolete schema-values bridge files are now prepared in
+the worktree and verified locally. N6 release acceptance remains pending. The retirement ledger is prepared evidence,
+not final acceptance, and must remain unchanged during root's acceptance run.
+The N0 ledger and dated evidence also remain unchanged. Read [AGENTS](AGENTS.md),
+[README](README.md), [the program](research/56-node-and-index-redesign-program.md),
+[N5 result](research/71-node-lifecycle-result.md), [N5 release evidence](research/evidence/2026-10-26-n5-release.json),
+[capability inventory](research/59-node-capability-inventory.md), and the
+[retirement report and ledger](research/77-node-tooling-retirement.md), and
+[native bootstrap contract](research/76-native-bootstrap-contract.md).
+
+The local audit verifies all 60 unique retired Python paths and four
+auxiliary paths against pinned source `0d0601187c79d430f8d7ed41674f53e9905af75f`
+and the ledger's per-path SHA-256 values; check current replacement references,
+historical links and service templates. Exact next work: commit this verified
+implementation with release acceptance pending, export that exact Git commit,
+build and package SDK-free and all-feature native executables, then run the
+Node suite/package verification from the extracted release. Demonstrate the ordinary Node workflow and
+minimal native bootstrap without requiring Python or retired project CLI
+parsers. Root records exact source/artifact hashes, results, cleanup and bounded
+claim limits in new evidence, then decides acceptance. Existing bounded controls
+do not establish unrestricted capacity. Ordered-storage S0–S3 and integrated
+F0 remain pending after this N6 acceptance work.
 
 N5 releases come from committed source 6836c59. Both packages have 1,067
 checksummed files and all six model catalogs. The extracted redb Node suite
@@ -46,16 +62,14 @@ The [IssueShare composition](research/74-node-issue-share-contract.md) now verif
 literal rounding, live parent publication, both command orders, rejection
 rollback and original receipts. Broader native invoicing checks remain mapped.
 The [scoped private recovery operator](research/75-private-effect-retry-contract.md)
-now preserves effect retry through the owned host, including current authority,
+preserves effect retry through the owned host, including current authority,
 stopped service/worker, revision CAS and an in-transaction store UUID fence.
-No public HTTP retry method was added. Exact next work: structured native
-serving, the final 60-row disposition ledger and Python/CLI retirement.
-Keep current authority, original plans and recovery checks; do not expand G6.
-Map all 60 Python inventory rows to passed replacements or justified historical
-retirement before deleting files. Replace the legacy native domain parser with
-host plus structured service bootstrap; production Rust must run without Node.
-Update supported guides, templates and package contents. S0–S3 and F0 remain owed.
-Do not begin deferred G6, frontend, live providers, TiKV, migrations or a course.
+No public HTTP retry method was added. The final N6 implementation now includes
+structured native serving, the 60-row disposition ledger, Python/CLI retirement,
+and updated supported guides/templates. These changes await the acceptance steps
+above; production Rust remains independent of Node. Keep current authority,
+original plans and recovery checks; do not expand G6. Do not begin deferred G6,
+frontend, live providers, TiKV, migrations or a course.
 
 Environment-specific artifacts (verify identities before use; these API-host
 paths are historical locations, not portable defaults):
@@ -67,10 +81,11 @@ paths are historical locations, not portable defaults):
 - Redb SHA-256: 57e0dbd7ea66e8340680c21ed85558f4e6057a4bca5b8e437014e17dd6a32b52.
 - All-feature SHA-256: eef38bdc5bbd830325cc4477d8e9c49d258831edd0dbd689b439ec2ea9a5a11e.
 
-The current cloud development binary is `target/n6-retry-native-default/rebase-next`
-(SHA-256 `87beadaab19f60230632cbed007f77e423d8f43f9a7ebdd00a21da119c7f5fd0`), with exact native inputs in
-`target/n6-retry-native-default/runtime-inputs.json`. Earlier `6f16164` releases
-predate this method and cannot verify the new private interface.
+The current cloud development binary is `target/n6-final-native-default-v2/rebase-next`
+(SHA-256 `18ed0f85e2c4f296a5b85f0530128cca2214040e1bab8521c4016dc5cfae481a`), with exact native inputs in
+`target/n6-final-native-default-v2/runtime-inputs.json`. The prior retry and
+`6f16164` binaries predate this bootstrap and cannot verify it. The final native
+input digest is `1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616`.
 
 In this cloud workspace, Node 24.22.1 is at
 `/workspace/.rebase-tools/node24.22.1/bin/node`, and the shared Cargo cache is

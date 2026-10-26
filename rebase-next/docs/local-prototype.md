@@ -1,9 +1,9 @@
 # Run and use the local prototype
 
-This reference describes the current 0.16.0 source /API 4 contract. The examples
-use the default `calculation` model and redb backend. Select equipment with
-`--model equipment` or [bounded invoicing and settlement](invoicing.md) with
-`--model invoicing`; the other compiled models share the same operations.
+This reference retains the model, operation and storage contracts recorded by
+the 0.16.0 /API 4 source. Select the compiled model explicitly in the native
+configuration. Earlier CLI walkthroughs below are retired; the operation
+semantics remain useful when composing the current JavaScript client.
 See [equipment semantics](equipment.md) and [backend selection](storage-backends.md).
 Original 0.4 calculation/equipment and 0.6 invoicing acceptance remain dated.
 There are no runtime imports from the original ReBase or MetaSol projects.
@@ -12,12 +12,7 @@ There are no runtime imports from the original ReBase or MetaSol projects.
 
 From the repository root:
 
-```sh
-cd rebase-next
-export CARGO_TARGET_DIR=target/native-slice/build
-cargo build --locked --bin rebase-next
-target/native-slice/build/debug/rebase-next demo target/my-first-demo
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
 The demo requires a **new directory**; choose another name for another run.
 It creates `demo.redb`, `inspect.html`, separate public/developer model catalogs,
@@ -42,15 +37,7 @@ the final trusted developer snapshot use their dedicated local tooling paths.
 
 ## Model and developer tools
 
-```sh
-target/native-slice/build/debug/rebase-next model public
-target/native-slice/build/debug/rebase-next model developer
-target/native-slice/build/debug/rebase-next model explain Adjustment
-target/native-slice/build/debug/rebase-next model view > target/model.html
-target/native-slice/build/debug/rebase-next model validate 7 model-moment.json
-target/native-slice/build/debug/rebase-next inspect target/my-first-demo/demo.redb
-target/native-slice/build/debug/rebase-next inspect target/my-first-demo/demo.redb --html > target/inspection.html
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
 For the validation example, `model-moment.json` contains `{"at":"10"}`.
 Preparation/export/explain/view do not open a store or activate a model. Output
@@ -102,25 +89,14 @@ Equipment instead declares Pool 101 (availability root slot 7), Delivery 205,
 Reservation 410 (published availability/allocation), and private Output 900.
 Use the selected model's catalogs and fixtures rather than calculation codes:
 
-```sh
-rebase-next --model equipment model public
-rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100
-rebase-next --model equipment init target/equipment.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
-rebase-next --model equipment rpc target/equipment.redb
-rebase-next --model equipment inspect target/equipment.redb --html > target/equipment.html
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
 Fixture plans are authored drafts for the [ordinary client](developer-tools.md),
 not direct writes. The `demo` command remains a calculation-only scenario.
 
 ## Start a fresh store and process API
 
-```sh
-target/native-slice/build/debug/rebase-next init target/new.redb \
-  --tenant 00000000-0000-4000-8000-000000000001 \
-  --actor 00000000-0000-4000-8000-000000000002
-target/native-slice/build/debug/rebase-next rpc target/new.redb
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
 `init` requires a new file; its parent directory must exist. `rpc` requires an
 existing compatible store. One process owns the file; close the process before
@@ -167,38 +143,7 @@ IDs, tree links, signing material or raw receipt tables.
 This Python client opens the completed demo, reads an actual version and edits
 one source. All arithmetic remains on the engine; values stay strings.
 
-```python
-import json, subprocess, uuid
-
-p = subprocess.Popen(
-    ["target/native-slice/build/debug/rebase-next", "rpc",
-     "target/my-first-demo/demo.redb"],
-    stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-
-def call(method, params):
-    request = {"jsonrpc": "2.0", "id": str(uuid.uuid4()),
-               "method": method, "params": params}
-    p.stdin.write(json.dumps(request) + "\n")
-    p.stdin.flush()
-    return json.loads(p.stdout.readline())
-
-model = call("model.describe", {})["result"]["model"]
-source = "00000000-0000-4000-8000-000000000060"  # Adjustment P
-record = call("records.get", {"model": model, "id": source})["result"]
-context = call("session.describe", {})["result"]["operation_context"]
-operation_id = str(uuid.uuid4())  # Retain this ID and request until reconciled.
-params = {
-    "model": model, "context": context, "operation_id": operation_id,
-    "commands": [{"op": "update", "id": source,
-                  "if_version": record["version"],
-                  "set": {"target": "25"}, "unset": []}],
-    "returning": [source]
-}
-print(call("records.mutate", params))
-print(call("operations.status", {"model": model, "context": context, "operation_id": operation_id}))
-p.stdin.close()
-p.wait()
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
 One `records.mutate` is atomic. Create supplies `op`, `id`, `contract`, `fields`;
 update supplies `op`, `id`, `if_version`, `set`, `unset`; delete supplies `op`,
@@ -290,17 +235,10 @@ logarithmic; an entire affected closure may still exceed the unchanged work
 budget and reject atomically. Store checks and backups inventory complete state,
 and backups retain the 64 MiB bound.
 
-```sh
-CARGO_TARGET_DIR=target/native-slice/build cargo test --locked --all-targets
-cargo fmt --all -- --check
-CARGO_TARGET_DIR=target/native-slice/build cargo clippy --locked --all-targets -- -D warnings
-python3 -B tools/harness.py --binary target/native-slice/build/debug/rebase-next --out target/my-local-workflow --writes 0
-python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-population-run
-```
+The [N1 model-catalog example](../tools/node/examples/n1-model-catalog.mjs) and [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) show current native and client composition.
 
-The population probe defaults to both models at 64, 256, 1,024 and 4,096 public
-sources. Use `--models calculation` or `--models equipment` for a single model.
-Its HTTP checks and measured fanout boundaries are described in the
+The historical population probe covered both models at 64, 256, 1,024 and 4,096
+public sources. Its HTTP checks and measured fanout boundaries are described in the
 [population result](../research/24-population-scaling-result.md). It records
 work-limit rollback rather than assuming every full-population edit can commit.
 

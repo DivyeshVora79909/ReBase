@@ -1,0 +1,22 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 43.62s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-a869806e7f7b18ea)
+
+running 1 test
+test server::tests::scoped_foundationdb_service_fences_replacement_through_another_handle ... FAILED
+
+failures:
+
+---- server::tests::scoped_foundationdb_service_fences_replacement_through_another_handle stdout ----
+
+thread 'server::tests::scoped_foundationdb_service_fences_replacement_through_another_handle' (66514) panicked at src/server.rs:603:22:
+called `Result::unwrap()` on an `Err` value: Error { code: "storage_schema", detail: "table value kind mismatch" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    server::tests::scoped_foundationdb_service_fences_replacement_through_another_handle
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `--lib`

@@ -1,9 +1,11 @@
 # Node tooling migration capability inventory
 
-Status: planning input for a docs-first replacement of Python orchestration and
-the custom Rust developer CLI with ordinary Node.js ESM functions. This paper
-records obligations and likely capability boundaries; it does not authorize
-implementation or claim a one-to-one translation of Python functions. The user
+Status: capability inventory updated at N6 retirement checkpoint. The 60 Python
+paths and four auxiliary schema-values bridge files have been retired from the
+working tree under [the N6 retirement ledger](fixtures/n6-retirement-ledger.json)
+and [retirement report](77-node-tooling-retirement.md). Extracted-release
+verification remains pending; this status does not accept N6. The inventory
+records obligations and capability boundaries, not a one-to-one translation. The user
 selected this direction after G9.0–G9.4 acceptance. That instruction supersedes
 the older Python-preservation notes in `AGENTS.md` for this new goal.
 

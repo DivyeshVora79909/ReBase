@@ -27,7 +27,7 @@ the proposed public `records.mutate` API.
 | [`plan.rs`](../src/plan.rs) | Reuse explicit local dependency ordering. It does not discover cross-record consumers. |
 | [`staging.rs`](../src/staging.rs) | Reuse point-overlay semantics and final `Batch`. The current byte overlay does not supply a typed node workspace or staged ranges. |
 | [`feasibility.rs`](../examples/feasibility.rs) | Reuse the redb transaction/abort/reopen pattern. Its one-leaf nodes and system-temporary directory are not the new fixture layout or output location. |
-| [`m6.py`](experiments/m6.py) | Reuse independent inventory/tree-walk obligations. Its IDs, financial cache shape and M3/M5 oracle are fixture-specific; it cannot check native bytes unchanged. |
+| [`m6.py`](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/m6.py) | Reuse independent inventory/tree-walk obligations. Its IDs, financial cache shape and M3/M5 oracle are fixture-specific; it cannot check native bytes unchanged. |
 
 Use one Cargo package, ordinary modules and the existing pins. No range overlay
 is needed here: domain traversal follows staged point-addressed tree links;

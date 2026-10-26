@@ -292,6 +292,7 @@ impl<B: Binding> Store<B> {
             bootstrap_actor: self.bootstrap_actor,
             secured: true,
             credential_epoch: Some(credential_epoch),
+            expected_store: self.expected_store,
         })
     }
 
@@ -415,7 +416,7 @@ impl<B: Binding> Store<B> {
         if !self.secured {
             return Err(denied());
         }
-        let write = self.db.begin_write().map_err(storage)?;
+        let write = self.begin_write().map_err(storage)?;
         if !self.write_authority(&write)?.grants.admin {
             return Err(denied());
         }

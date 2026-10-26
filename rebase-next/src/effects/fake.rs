@@ -230,7 +230,7 @@ pub(crate) async fn run<B: Binding>(
                         } else {
                             let owner=store.clone();let id=claim.execution;
                             let row=blocking(move || {
-                                let write=owner.db.begin_write().map_err(local::storage)?;
+                                let write=owner.begin_write().map_err(local::storage)?;
                                 load_execution::<B>(&write,id)
                             }).await?;
                             (claim,row)

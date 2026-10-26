@@ -67,13 +67,7 @@ bases, claims and refunds need their own model contracts.
 
 From `rebase-next/`, with the pinned Rust toolchain:
 
-```sh
-cargo build --locked --example exact_values
-python3 -B research/experiments/exact_values.py \
-  --binary target/debug/examples/exact_values \
-  --out target/exact-values-oracle.json
-cargo test --locked --test exact_values
-```
+For JavaScript composition, `prepareModel` consumes the native model catalog and `connect` submits plans through the authenticated service; see [developer tools](developer-tools.md).
 
 If `CARGO_TARGET_DIR` is set, use that directory's example executable instead.
 The JSON-lines example is an oracle adapter, not a second arithmetic API.

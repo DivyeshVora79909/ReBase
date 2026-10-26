@@ -20,7 +20,7 @@ impl<B: Binding> Store<B> {
             {
                 // The failed domain transaction has already dropped. Its fact
                 // predates it and remains durable; blocked is a separate write.
-                let write = self.db.begin_write().map_err(local::storage)?;
+                let write = self.begin_write().map_err(local::storage)?;
                 let mut runtime = runtime_write(&write)?;
                 let before = load_execution::<B>(&write, candidate.execution)?;
                 if runtime.activation == candidate.activation
@@ -46,7 +46,7 @@ impl<B: Binding> Store<B> {
         candidate: &Candidate,
         abort: Option<usize>,
     ) -> Result<bool> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, candidate.execution)?;
         if candidate.class != WorkClass::Apply
@@ -187,7 +187,7 @@ impl<B: Binding> Store<B> {
             if error.code != "outcome_unknown" {
                 return Err(error);
             }
-            let read = self.db.begin_read().map_err(local::storage)?;
+            let read = self.begin_read().map_err(local::storage)?;
             let table = read.open_table(FACTS).map_err(local::storage)?;
             if let Some(value) = table.get(key.as_slice()).map_err(local::storage)? {
                 let fact: Fact<B> = local::decode(value.value())?;
@@ -229,7 +229,7 @@ impl<B: Binding> Store<B> {
                 "model has no effect action",
             ));
         }
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         if let Some(expected) = expected_store {
             let header: RuntimeHeader = local::decode(
                 write

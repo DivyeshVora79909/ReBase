@@ -22,7 +22,10 @@ use std::{
 use uuid::Uuid;
 
 mod backend;
+mod bootstrap;
 mod operations;
+
+pub use bootstrap::run_service_file;
 
 pub const PROTOCOL: &str = "rebase-native-host-1";
 pub const MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
@@ -195,6 +198,7 @@ trait Selected {
         runtime: Option<&tokio::runtime::Handle>,
     ) -> Result<Value>;
     fn shutdown(&mut self, runtime: Option<&tokio::runtime::Handle>) -> Result<()>;
+    fn serve(&self, config: crate::server::ServerConfig, expected_store: Uuid) -> Result<()>;
 }
 struct SelectedModel<B: Binding> {
     model: Arc<Prepared<B>>,
@@ -207,6 +211,23 @@ struct SelectedModel<B: Binding> {
     network: Arc<std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>>,
 }
 impl<B: Binding> Selected for SelectedModel<B> {
+    fn serve(&self, config: crate::server::ServerConfig, expected_store: Uuid) -> Result<()> {
+        let store = self
+            .store
+            .as_ref()
+            .ok_or_else(|| Error::new("wrong_target", "no configured store"))?
+            .clone();
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .map_err(local::storage)?
+            .block_on(crate::server::serve_scoped(
+                store,
+                config,
+                Some(expected_store),
+            ))
+    }
     fn backend(&self) -> Value {
         serde_json::to_value(&self.backend).expect("backend config serializes")
     }
@@ -276,11 +297,15 @@ impl<B: Binding> Selected for SelectedModel<B> {
 fn prepare<B: Binding>(
     target: Option<Target>,
     backend: BackendConfig,
+    service_config: Option<&crate::server::ServerConfig>,
     #[cfg(feature = "foundationdb")] network: Arc<
         std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>,
     >,
 ) -> Result<Box<dyn Selected>> {
     let model = Arc::new(Prepared::<B>::load()?);
+    if let Some(config) = service_config {
+        crate::server::validate_configuration::<B>(config)?;
+    }
     let mut selected = SelectedModel {
         model,
         store: None,
@@ -295,6 +320,37 @@ fn prepare<B: Binding>(
         selected.open_target(target)?;
     }
     Ok(Box::new(selected))
+}
+
+fn prepare_selected(
+    selector: &str,
+    target: Option<Target>,
+    backend: BackendConfig,
+    service_config: Option<&crate::server::ServerConfig>,
+    #[cfg(feature = "foundationdb")] network: Arc<
+        std::sync::Mutex<Option<foundationdb::api::NetworkAutoStop>>,
+    >,
+) -> Result<Box<dyn Selected>> {
+    macro_rules! selected {
+        ($binding:ty) => {
+            prepare::<$binding>(
+                target,
+                backend,
+                service_config,
+                #[cfg(feature = "foundationdb")]
+                network,
+            )
+        };
+    }
+    match selector {
+        "calculation" => selected!(Calculation),
+        "equipment" => selected!(Equipment),
+        "invoicing" => selected!(Invoicing),
+        "measurement" => selected!(Measurement),
+        "effect-demo" => selected!(EffectDemo),
+        "quantity" => selected!(Quantity),
+        _ => Err(Error::new("invalid_config", "unknown compiled model")),
+    }
 }
 
 /// One control owner, with no retained request history or hidden process state.
@@ -360,25 +416,14 @@ impl Host {
         };
         // All parameter/grant validation precedes model preparation and every
         // store side effect. Selection only becomes visible on full success.
-        macro_rules! prepare_selected {
-            ($binding:ty) => {
-                prepare::<$binding>(
-                    target,
-                    config.backend,
-                    #[cfg(feature = "foundationdb")]
-                    self.network.clone(),
-                )?
-            };
-        }
-        let selected = match config.model.as_str() {
-            "calculation" => prepare_selected!(Calculation),
-            "equipment" => prepare_selected!(Equipment),
-            "invoicing" => prepare_selected!(Invoicing),
-            "measurement" => prepare_selected!(Measurement),
-            "effect-demo" => prepare_selected!(EffectDemo),
-            "quantity" => prepare_selected!(Quantity),
-            _ => unreachable!("validated compiled selector"),
-        };
+        let selected = prepare_selected(
+            &config.model,
+            target,
+            config.backend,
+            None,
+            #[cfg(feature = "foundationdb")]
+            self.network.clone(),
+        )?;
         let response = json!({"status":"configured","model":selected.identity(),"target":selected.target()?,"operator_methods":grants});
         self.selector = Some(config.model);
         self.grants = grants;

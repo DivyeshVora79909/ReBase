@@ -5,23 +5,17 @@ persistence boundary also serves explicitly selected FoundationDB and standalone
 SurrealKV targets; see [backend usage and scope](storage-backends.md). Runtime
 writes, derived repairs, indexes, authority, query epochs and receipts commit atomically.
 Network startup checks complete current-state integrity before listening.
-The redb operator commands below take the file lock; stop the HTTP process first.
+The redb operator functions take the file lock; stop the HTTP process first.
 The [external-work model](external-effects.md) also persists executions, due
 rows, immutable provider facts, signed inbox events and reserved recovery capacity.
 Effect-bearing restores rotate activation and remain quarantined; explicit
 reconciliation-only activation can resolve and apply confirmed outcomes. Delivery
 and new Dispatch creation stay disabled until a clean reset. Receipt archives
 preserve effect evidence; reset rejects unresolved work and pending inbox rows.
-These examples use the default `calculation` model. For equipment or invoicing,
-prepend `--model equipment` or `--model invoicing` before every command, including `version`, `restore`,
-`receipts archive`, and `reset`. Wrong-model opens and restores reject.
+Choose the compiled model explicitly in the native configuration. Wrong-model
+opens and restores reject.
 
-```sh
-rebase-next version
-rebase-next check app.redb
-rebase-next backup app.redb backups/before-change.json
-rebase-next restore backups/before-change.json restored.redb
-```
+The [N5 lifecycle example](../tools/node/examples/n5-lifecycle.mjs) composes scoped operator functions over an already-owned native handle.
 
 Backup reads all application tables from one consistent snapshot. A SHA-256
 checksum detects accidental damage. These are trusted operator backups, not
@@ -98,18 +92,27 @@ reconciliation/audit period. There is no automatic unsafe receipt eviction.
 
 ## Reset disposable state
 
-Read the store UUID from `check` or `inspect`, then supply it explicitly:
+The Node operator resets a store only through an already-owned native handle.
+Open that handle for the existing store with the `store.reset` grant, scope the
+operator to the handle, and pass its expected store UUID:
 
-```sh
-rebase-next reset disposable.redb --expect-store <store-uuid>
+```js
+import { openOperator } from './tools/node/index.mjs';
+
+// `native` is an already-open, caller-owned handle configured for this store.
+const operator = openOperator(native, {
+  scope: native.scope,
+  methods: ['store.reset'],
+});
+const reset = await operator.reset({ expectStore: native.scope.store });
 ```
 
 One transaction clears domain records/trees/indexes/reservations/query epochs/receipts/slots,
 preserves configured principals/grants, advances every credential epoch, and
 installs a new store UUID/cursor key. Old tokens, cursors and operation contexts
 are fenced. Issue fresh credentials before reusing the service. This avoids any
-reference-deletion ordering or recompilation/redeployment. The command is a
-trusted operator tool and has no network RPC counterpart.
+reference-deletion ordering or recompilation/redeployment. Reset is a trusted
+operator function and has no network RPC counterpart.
 
 ## Data identity and upgrades
 

@@ -205,17 +205,7 @@ fn router_with_admission<B: Binding>(
     if expected_store.is_some_and(|expected| checked["store"] != expected.to_string()) {
         return Err(Error::new("wrong_target", "service store scope changed"));
     }
-    if let Some(effects) = &config.effects {
-        effects.validate::<B>()?;
-    }
-    if !(1..=64).contains(&config.max_inflight)
-        || !(1..=120).contains(&config.request_timeout_seconds)
-    {
-        return Err(Error::new(
-            "invalid_input",
-            "network concurrency/deadline limits",
-        ));
-    }
+    validate_configuration::<B>(config)?;
     let permits = Arc::new(Semaphore::new(usize::from(config.max_inflight)));
     let app = App {
         store,
@@ -242,6 +232,27 @@ fn router_with_admission<B: Binding>(
             .with_state(app),
         permits,
     ))
+}
+
+/// Configuration-only validation shared by standalone startup and owned service
+/// admission. This runs before the bootstrap acquires a writable store owner.
+pub(crate) fn validate_configuration<B: Binding>(config: &ServerConfig) -> Result<()> {
+    if let Some(effects) = &config.effects {
+        effects.validate::<B>()?;
+        if let Some(path) = &effects.ingress_secret_file {
+            crate::effects::inbox::Secret::load(path)?;
+        }
+    }
+    if !(1..=64).contains(&config.max_inflight)
+        || !(1..=120).contains(&config.request_timeout_seconds)
+    {
+        return Err(Error::new(
+            "invalid_input",
+            "network concurrency/deadline limits",
+        ));
+    }
+    Verifier::new(config.identity.clone())?;
+    Ok(())
 }
 
 pub fn router<B: Binding>(store: Arc<Store<B>>, config: &ServerConfig) -> Result<Router> {
@@ -273,6 +284,10 @@ pub(crate) async fn start_scoped<B: Binding>(
     config: ServerConfig,
     expected_store: Option<uuid::Uuid>,
 ) -> Result<OwnedService> {
+    let store = match expected_store {
+        Some(expected) => Arc::new(store.scoped_to(expected)),
+        None => store,
+    };
     let checked = config.clone();
     let owner = store.clone();
     let (routes, admission) =
@@ -340,11 +355,18 @@ pub(crate) async fn start_scoped<B: Binding>(
             None => Ok(()),
         };
         if B::effect_action().is_some() {
-            tokio::task::spawn_blocking(move || {
+            let stopped = tokio::task::spawn_blocking(move || {
                 store.activate_effect_worker(crate::effects::WorkerMode::Disabled)
             })
             .await
-            .map_err(|_| Error::new("internal", "worker shutdown task"))??;
+            .map_err(|_| Error::new("internal", "worker shutdown task"))?;
+            // A replaced store has already invalidated this worker's authority.
+            // Do not write its shutdown marker into the replacement runtime.
+            if let Err(error) = stopped
+                && error.code != "wrong_target"
+            {
+                return Err(error);
+            }
         }
         served.and(worker_result)
     });
@@ -356,7 +378,15 @@ pub(crate) async fn start_scoped<B: Binding>(
 }
 
 pub async fn serve<B: Binding>(store: Arc<Store<B>>, config: ServerConfig) -> Result<()> {
-    let mut service = start(store, config).await?;
+    serve_scoped(store, config, None).await
+}
+
+pub(crate) async fn serve_scoped<B: Binding>(
+    store: Arc<Store<B>>,
+    config: ServerConfig,
+    expected_store: Option<uuid::Uuid>,
+) -> Result<()> {
+    let mut service = start_scoped(store, config, expected_store).await?;
     eprintln!(
         "ReBase Next listening on {} (TLS belongs at the ingress proxy)",
         service.address
@@ -428,6 +458,166 @@ mod tests {
         assert!(matches!(result, Err(error) if error.code == "wrong_target"));
         drop(store);
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn scoped_service_fences_every_call_after_store_reset() {
+        let dir =
+            std::env::temp_dir().join(format!("rebase-service-runtime-scope-{}", Uuid::new_v4()));
+        std::fs::create_dir(&dir).unwrap();
+        let path = dir.join("store.redb");
+        let store = Arc::new(
+            LocalStore::create_secured(
+                &path,
+                Arc::new(PreparedModel::load().unwrap()),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+            )
+            .unwrap(),
+        );
+        assert_retained_service_reset_fence(store.clone(), store.clone()).await;
+        drop(store);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    async fn assert_retained_service_reset_fence(
+        store: Arc<LocalStore>,
+        resetter: Arc<LocalStore>,
+    ) {
+        let (_, _, before) = store.read(store.model().identity()).unwrap();
+        let identity = IdentityConfig {
+            issuer: "runtime-scope".into(),
+            audience: "runtime-scope".into(),
+            public_keys: BTreeMap::from([(
+                "test".into(),
+                include_str!("../tests/fixtures/test-ed25519-public.pem").into(),
+            )]),
+            max_token_seconds: 600,
+        };
+        let service = start_scoped(
+            store.clone(),
+            ServerConfig {
+                listen: "127.0.0.1:0".parse().unwrap(),
+                identity: identity.clone(),
+                max_inflight: 2,
+                request_timeout_seconds: 2,
+                effects: None,
+            },
+            Some(before.store_id),
+        )
+        .await
+        .unwrap();
+        // Reset through the retained unscoped administrative owner. The new
+        // epoch token proves later rejection is the store fence, not auth.
+        resetter.reset(before.store_id).unwrap();
+        let fresh_session = resetter.session(Uuid::from_u128(2), 1).unwrap();
+        let fresh_context = fresh_session
+            .operation_context(resetter.model().identity())
+            .unwrap();
+        let reset_image = resetter.observe_for_verification().unwrap();
+        let token = identity::issue(
+            &identity,
+            &TokenRequest {
+                tenant: Uuid::from_u128(1),
+                actor: Uuid::from_u128(2),
+                epoch: 1,
+                ttl: 300,
+                key_id: "test".into(),
+            },
+            include_bytes!("../tests/fixtures/test-ed25519-private.pem"),
+        )
+        .unwrap();
+        let address = service.address;
+        let post = |method: &'static str, params: Value| {
+            let token = token.clone();
+            async move {
+                reqwest::Client::new()
+                    .post(format!("http://{address}/rpc"))
+                    .bearer_auth(token)
+                    .json(&json!({"jsonrpc":"2.0","id":"scope","method":method,"params":params}))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<Value>()
+                    .await
+                    .unwrap()
+            }
+        };
+        let session = post("session.describe", json!({})).await;
+        assert_eq!(
+            session["error"]["data"]["kind"], "wrong_target",
+            "{session}"
+        );
+        let get = post(
+            "records.get",
+            json!({"model":store.model().identity(),"id":Uuid::new_v4()}),
+        )
+        .await;
+        assert_eq!(get["error"]["data"]["kind"], "wrong_target", "{get}");
+        let mutate = post(
+            "records.mutate",
+            json!({"model":store.model().identity(),"context":fresh_context,"operation_id":Uuid::new_v4(),
+                "commands":[{"op":"create","id":Uuid::new_v4(),"contract":7,"fields":{"at":"0"}}],"returning":[]}),
+        )
+        .await;
+        assert_eq!(mutate["error"]["data"]["kind"], "wrong_target", "{mutate}");
+        service.stop().await.unwrap();
+        assert_eq!(resetter.observe_for_verification().unwrap(), reset_image);
+    }
+
+    #[cfg(feature = "foundationdb")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[ignore = "requires an isolated local FoundationDB cluster via REBASE_TEST_FDB_CLUSTER"]
+    async fn scoped_foundationdb_service_fences_replacement_through_another_handle() {
+        let cluster = std::env::var("REBASE_TEST_FDB_CLUSTER").unwrap();
+        let namespace = format!("n6-service-reset-{}", Uuid::new_v4());
+        // This test alone owns the process-global FDB network.
+        let network = unsafe { foundationdb::boot() };
+        let connect =
+            || crate::storage::foundationdb::connect(Some(&cluster), namespace.as_bytes()).unwrap();
+        let store = Arc::new(
+            LocalStore::create_backend_secured(
+                connect(),
+                Arc::new(PreparedModel::load().unwrap()),
+                Context {
+                    tenant: Uuid::from_u128(1),
+                    actor: Uuid::from_u128(2),
+                },
+            )
+            .unwrap(),
+        );
+        let resetter = Arc::new(
+            LocalStore::open_backend(connect(), Arc::new(PreparedModel::load().unwrap())).unwrap(),
+        );
+        assert_retained_service_reset_fence(store.clone(), resetter.clone()).await;
+        // Remove every table only from this test's random isolated namespace.
+        let write = resetter.db.begin_write().unwrap();
+        for name in crate::local::table_names(true) {
+            if name == "public_records" || name == "reader_records" {
+                write
+                    .delete_table(crate::storage::TableDefinition::<&[u8], u16>::new(&name))
+                    .unwrap();
+            } else {
+                write
+                    .delete_table(crate::storage::TableDefinition::<&[u8], &[u8]>::new(&name))
+                    .unwrap();
+            }
+        }
+        write.commit().unwrap();
+        assert!(
+            resetter
+                .db
+                .begin_read()
+                .unwrap()
+                .list_tables()
+                .unwrap()
+                .next()
+                .is_none()
+        );
+        drop((store, resetter));
+        drop(network);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

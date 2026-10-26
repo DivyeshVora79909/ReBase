@@ -162,8 +162,8 @@ such work units. This is a reproducible checker limit, not a runtime benchmark.
 
 ## 5. Bounded snapshot and corruption controls
 
-Reuse [M3/M5's source oracle](experiments/m3_m5.py), unchanged. It has no tree
-maintenance code. The [M6 experiment](experiments/m6.py) builds synthetic link
+Reuse [M3/M5's source oracle](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/m3_m5.py), unchanged. It has no tree
+maintenance code. The [M6 experiment](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/m6.py) builds synthetic link
 layouts from that expected population, then checks and corrupts copies. Sharing
 the source oracle here does not rerun the 36 M3/M5 orders or implement settlement.
 

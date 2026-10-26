@@ -10,27 +10,16 @@ Current source is 0.16.0 with store format 10 /native codec 7 /effect codec 4 /
 API 4. Earlier-format stores and backups require their matching binaries;
 selection of another backend does not migrate them.
 
-## Build and select
+## Select a backend
 
-The default build uses redb and needs no FoundationDB client. Optional Cargo
-features are `foundationdb` and `surrealkv`:
-
-```sh
-export CARGO_TARGET_DIR=target/verification-build CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
-cargo build --locked --release --bin rebase-next
-cargo build --locked --release --bin rebase-next --features surrealkv
-# Requires the FoundationDB native SDK/runtime described below.
-cargo build --locked --release --bin rebase-next --features foundationdb,surrealkv
-```
-
-Leading options compose in any order, before the command. The selected model
-defaults to `calculation`; the backend defaults to `redb`.
-
-```sh
-rebase-next --model quantity --backend redb check ./quantity.redb
-rebase-next --backend surrealkv --model quantity check ./quantity-kv
-rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity check quantity-dev
-```
+The service configuration selects the model and backend explicitly. The
+complete [redb](../deploy/server.example.json),
+[SurrealKV](../deploy/server-surrealkv.example.json), and
+[FoundationDB](../deploy/server-foundationdb.example.json) examples each include
+the full `rebase-service-1` shape. The binary opens the configured existing
+target only through `rebase-next serve /absolute/service.json`; it has no
+backend or model command-line flags. Replace the store UUID and any
+`REPLACE_WITH_` placeholders before use.
 
 | Backend | Meaning of the store argument | Runtime |
 | --- | --- | --- |
@@ -38,22 +27,18 @@ rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity
 | FoundationDB 7.3.77, Rust client 0.11.0 | Exact UTF-8 namespace label | Native client network booted once for the process |
 | SurrealKV 1.0.0 | Directory path | Standalone embedded engine, persistent WAL runtime, Immediate durability |
 
-The FoundationDB CLI maps the exact store label to its SHA-256 namespace inside
+The FoundationDB adapter maps the exact store label to its SHA-256 namespace inside
 the adapter's reserved application prefix. Use the same label and cluster file
 to reopen it; it is not a local filesystem path or a globally unique store
 locator. Lower-level adapter callers supply namespace bytes explicitly.
-A missing SurrealKV directory rejects an open; `init` creates the destination.
+A missing SurrealKV directory rejects an open.
 SurrealKV is embedded here, not a distributed SurrealDB API.
 
-`init`, `rpc`, `serve`, `check`, `inspect`, `backup`, `restore`, receipt archive,
-reset and effect retry all use the same selected target. The teaching `demo`
-command remains calculation/redb; other models use their ordinary fixture plans.
-For example, after choosing fresh tenant/actor UUIDs:
-
-```sh
-rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity init quantity-dev --tenant <tenant-uuid> --actor <actor-uuid>
-rebase-next --backend foundationdb --cluster-file ./fdb.cluster --model quantity serve quantity-dev --config ./server.json
-```
+The server configuration fields are authoritative: `backend.kind` is `redb`,
+`surrealkv` or `foundationdb`; `cluster_file` is null except for FoundationDB;
+`target.mode` is `open`; embedded backends use an absolute `target.path`, and
+FoundationDB uses a nonempty `target.namespace`; all targets carry the expected
+canonical store UUID. The service process owns the selected store while active.
 
 The server uses the existing bounded blocking-worker admission. An HTTP timeout
 leaves native work running and retains its permit until completion. The storage
@@ -111,10 +96,10 @@ library at runtime, through its configured search path or `LD_LIBRARY_PATH`.
 A binary compiled with the FoundationDB feature needs that library even when
 selecting redb. A default redb-only build has no such dependency.
 
-The disposable cloud helper is `python3 -B tools/fdb_cluster.py start|status|stop`;
-its extracted SDK/server and cluster file live under ignored `target/g7-environment`.
-This single-process cluster has no replicated fault tolerance. It is test
-infrastructure, not the production deployment recipe.
+The earlier disposable single-process FoundationDB cluster was test
+infrastructure with no replicated fault tolerance. Its dated setup and
+conformance details remain in [G7.6](../research/51-storage-conformance-result.md);
+they are not a deployment recipe.
 
 FoundationDB limits are exposed as encoded key 10,000 bytes, value 100,000
 bytes, transaction 10,000,000 bytes and approximately five-second snapshot
@@ -136,19 +121,11 @@ emptiness is protected inside that transaction. A populated destination rejects.
 Backups, operation context expiry, reset identity and effect quarantine use the
 shared [storage lifecycle](storage.md); a backend change does not bypass them.
 
-The bounded secured HTTP suite is an ordinary developer script:
-
-```sh
-python3 -B tools/g7_http.py --binary target/verification-build/debug/rebase-next --backend redb --out target/my-g7-redb
-python3 -B tools/g7_http.py --binary target/verification-build/debug/rebase-next --backend surrealkv --out target/my-g7-surreal
-python3 -B tools/g7_http.py --binary target/verification-build/debug/rebase-next --backend foundationdb --cluster-file target/g7-environment/fdb.cluster --out target/my-g7-fdb
-```
-
-Each output directory must be new. Defaults are four rounds of four competing
-clients. The script retains private credentials, plans, complete backups and a
-result, then stops its owned application server. It reuses the normal client and
-harness; it adds no model DSL or runtime service. Its proxy deliberately loses
-one request or completed HTTP response, not a native database commit acknowledgement.
+The dated G7.6 secured HTTP suite used four rounds of four competing clients,
+retained private credentials, plans and complete backups, and stopped the
+server it owned. Its proxy deliberately lost one request or completed HTTP
+response, not a native database commit acknowledgement. This is historical
+conformance evidence, not a current execution procedure.
 The current complete secured inventory contains thirteen tables, including
 `query_epochs` and `receipt_slots`. Restart and restore compare their complete
 images; archive compares all preserved tables and the exact expiry-header change.

@@ -1,11 +1,22 @@
 {
-  "listen": "127.0.0.1:8080",
-  "identity": {
-    "issuer": "rebase-local-issuer",
-    "audience": "rebase-next",
-    "public_keys": {"main": "REPLACE_WITH_ED25519_PUBLIC_PEM"},
-    "max_token_seconds": 600
+  "format": "rebase-service-1",
+  "model": "calculation",
+  "backend": { "kind": "redb", "cluster_file": null },
+  "target": {
+    "mode": "open",
+    "path": "/var/lib/rebase-next/app.redb",
+    "expect_store": "00000000-0000-4000-8000-000000000001"
   },
-  "max_inflight": 16,
-  "request_timeout_seconds": 15
+  "service": {
+    "listen": "127.0.0.1:8080",
+    "identity": {
+      "issuer": "REPLACE_WITH_ISSUER",
+      "audience": "REPLACE_WITH_AUDIENCE",
+      "public_keys": { "REPLACE_WITH_KEY_ID": "REPLACE_WITH_ED25519_PUBLIC_PEM" },
+      "max_token_seconds": 600
+    },
+    "max_inflight": 16,
+    "request_timeout_seconds": 15,
+    "effects": null
+  }
 }

@@ -1,204 +1,80 @@
 # ReBase Next
 
-**G10 status (2026-10-26):** N1–N5 are accepted within bounded scopes. `tools/node/` provides
-ordinary ESM functions for configuration, native model/store access, authenticated
-services, client workflows, scoped operator lifecycle and receipt-gated
-population, experiments, bounded workloads, observations and source-only
-checking. The [N4 result](research/69-node-experiment-result.md) records its
-evidence and incomplete obligations: Measurement query result/selection,
-equal-time mixed-sign Equipment prefix extrema and physical tree structure.
-The [N5 release](research/71-node-lifecycle-result.md) verifies committed-source
-packages, 122 extracted Node tests and redb/SurrealKV/local FoundationDB
-lifecycle checks. N6's [complete-backup source checker](research/72-node-complete-backup-contract.md)
-now binds Equipment, Measurement and Quantity expectations to physical trees;
-complete Equipment history needs a retained identity witness. The
-[signed-ingress example](research/73-node-signed-ingress-contract.md) adds
-ordinary Node HMAC/HTTP composition and durable retry checks. The
-[IssueShare example](research/74-node-issue-share-contract.md) verifies bounded
-rounding and parent recomputation. The scoped private effect retry operator is
-also available. Bootstrap and retirement remain in N6. Ordered-storage work remains pending. Python workflow
-deletion waits for N6 replacement controls. See the [G10 program](research/56-node-and-index-redesign-program.md),
-[Node contract](research/57-node-developer-contract.md), [storage plan](research/58-ordered-storage-redesign.md)
-and [capability inventory](research/59-node-capability-inventory.md).
+ReBase Next is a Rust calculation and transactional state engine with compiled
+models for calculation, equipment, invoicing, measurement, external effects and
+quantity. It provides exact connected calculations, private outputs, ordered
+aggregates and historical invariants, transactional DAG authority, authenticated
+JSON-RPC, replay receipts and verified storage recovery. Model schemas drive
+validation and public catalogs; the server remains authoritative for global
+rules and reference access.
 
-Compose the native host functions directly from JavaScript. This N1 model-only
-example returns the selected compiled model's public catalog and closes its
-owned host. For an N2 authenticated Equipment workflow, see the complete
-[ordinary function example](tools/node/examples/n2-equipment-workflow.mjs):
+**N6 status (2026-10-26):** the Node developer functions, model examples,
+structured `host` / `serve` bootstrap, and retirement of the inventoried Python
+and redundant CLI paths are verified locally within their recorded scopes. The
+[bootstrap evidence](research/evidence/2026-10-26-n6-bootstrap.json) records
+native and Node checks; extracted-release acceptance is pending. Do not use
+historical Python workflows or legacy CLI instructions as current operating
+procedures. The old campaigns remain available as dated evidence in `research/`;
+their outcomes and limits are not current release acceptance. See the [G10 program](research/56-node-and-index-redesign-program.md),
+[Node contract](research/57-node-developer-contract.md),
+[storage plan](research/58-ordered-storage-redesign.md), and
+[capability inventory](research/59-node-capability-inventory.md), plus the
+[native bootstrap contract](research/76-native-bootstrap-contract.md) for the
+pending acceptance controls.
 
-```js
-import { resolve } from 'node:path';
-import { parseEnvironment, resolveConfig } from './tools/node/config.mjs';
-import { openNative } from './tools/node/native.mjs';
+The ordinary JavaScript API is an explicit ESM barrel at
+[`tools/node/index.mjs`](tools/node/index.mjs). Importing it only defines
+functions; callers choose when to open a native host, connect to a service, or
+run a workflow. Complete examples remain separate modules because they show
+specific caller-owned compositions: [N1 model catalog](tools/node/examples/n1-model-catalog.mjs),
+[N2 equipment workflow](tools/node/examples/n2-equipment-workflow.mjs),
+[N3 population workflow](tools/node/examples/n3-population.mjs),
+[N4 intent replay](tools/node/examples/n4-original-intent-replay.mjs),
+[N5 lifecycle and release](tools/node/examples/n5-lifecycle.mjs),
+[N6 signed ingress](tools/node/examples/n6-signed-ingress.mjs), and
+[N6 IssueShare](tools/node/examples/n6-issue-share.mjs). Examples are evidence
+and learning material, not additional SDK exports.
 
-const config = resolveConfig({
-  defaults: {
-    native: {
-      binary: resolve('target/verification-build/debug/rebase-next'),
-      environment: {},
-    },
-  },
-  environment: parseEnvironment(process.env),
-  overrides: {
-    native: {
-      configuration: {
-        model: 'equipment',
-        backend: { kind: 'redb', cluster_file: null },
-        target: null,
-        operator_methods: [],
-      },
-    },
-  },
-});
+The frozen native bootstrap interface is `rebase-next host` for the line-framed
+native protocol and `rebase-next serve /absolute/service.json` for the HTTP
+service. The JSON uses `format: "rebase-service-1"`, an explicit compiled model,
+backend, open target with expected store identity, and service settings. The
+server opens existing stores only. Configure a store through the documented
+application lifecycle before pointing a service at it; a mismatched store
+identity or model fails closed. The [server guide](docs/server.md) and
+[deployment guide](docs/deployment.md) describe configuration and operating
+limits.
 
-const native = await openNative(config);
-try {
-  const catalog = await native.catalog({ scope: 'public' });
-  console.log(catalog);
-} finally {
-  await native.close();
-}
-```
-
-The binary path must resolve to a built executable. See the complete
-[N1 model-catalog example](tools/node/examples/n1-model-catalog.mjs).
-The N2 function composition example shows the Equipment model, scoped operator,
-local authenticated service, saved plan and status recovery:
-[N2 Equipment workflow](tools/node/examples/n2-equipment-workflow.mjs).
-The N3 example composes a caller-owned population proposal with a prepared model
-and client: [N3 population workflow](tools/node/examples/n3-population.mjs).
-
-**A bounded calculation backend with reusable compiled models and developer tools.**
-One Rust executable provides exact connected calculations, private outputs,
-ordered aggregates and historical invariants, transactional DAG authority,
-authenticated JSON-RPC, replay receipts and verified storage recovery. A small
-stateless Python client and model-driven fixtures make it directly usable from
-scripts. Calculation, equipment reservation, sensor measurement and bounded
-external work share the engine, authority and tools. Existing bounded invoicing
-remains available. All implementation and dependencies stay inside this directory.
-This checkout's package source is 0.16.0 and includes native index families,
-reactive dimensioned reports and latest-observation selection, declared published-parent values and bounded fake-provider
-work with signed events and reconciliation after restore. Shared storage now uses
-opaque mutation tokens, scoped query epochs and bounded receipt allocation slots;
-the [G7 result](research/51-storage-conformance-result.md) records accepted
-FoundationDB, redb and standalone SurrealKV conformance and its limits.
-A [self-explaining workshop](docs/workshop.md) adds independent checks, bounded
-exploration and replay across four small examples.
-G8.4 verifies 0.16.0 redb-only and all-feature release packages through extracted
-workflows; see the [G8 results](research/53-workload-deployment-result.md) for
-artifact hashes and acceptance limits. The 0.6.0 deployment result remains
-historical evidence.
-
-```sh
-cd rebase-next
-export CARGO_TARGET_DIR=target/native-slice/build
-cargo build --locked --release --bin rebase-next
-python3 -B tools/harness.py --binary target/native-slice/build/release/rebase-next --out target/my-first-run --writes 128 --readers 4
-```
-
-The harness needs Python 3.11+ and OpenSSL. It creates a new secured store and
-its own credentials, runs the public API workflow and bounded workload, checks
-restart/restore, then stops its server. The directory retains a usable store,
-saved plans and `result.json`. Use a new output directory for each run.
-Packaged releases include `bin/rebase-next`; use `--binary bin/rebase-next`
-to run the harness without building Rust locally. The [deployment guide](docs/deployment.md)
-shows how to build a committed source bundle and verify its extracted tools.
-For an existing non-accounting sensor-report and selection workflow using the
-current checkout's executable:
-
-```sh
-mkdir -p target
-python3 -B tools/observation_selection.py --binary target/native-slice/build/release/rebase-next --out target/my-sensor-run
-```
-
-| Task | Guide |
+| Topic | Guide |
 | --- | --- |
-| Compose the Node native configuration and model-catalog functions | [N1 result and limits](research/63-node-native-host-result.md) · [example module](tools/node/examples/n1-model-catalog.mjs) |
-| Author a compiled model or select one for a store | [Compiled models](docs/compiled-models.md) |
-| Use exact fractional rates and explicit rounding in a native model | [Exact values](docs/exact-values.md) |
-| Run the equipment allocation scenario | [Equipment](docs/equipment.md) |
-| Run invoice pricing, tax-on-tax, credits, payments and refunds | [Invoicing](docs/invoicing.md) |
-| Run, install and understand the supported limits | [Deployment](docs/deployment.md) |
-| Add native index summaries or run the measurement model | [Native indexes](docs/native-indexes.md) |
-| Commit and run bounded external work | [External work](docs/external-effects.md) |
-| Use exact financial windows in reactive reads and public root reads | [Exact time windows](docs/reactive-windows.md) |
-| Prepare fixtures, inspect the model, compose API calls and retain mutation plans | [Developer tools](docs/developer-tools.md) |
-| Configure HTTP, identity, credentials and rotation | [Server](docs/server.md) |
-| Check, back up, restore, reset or archive receipts | [Storage lifecycle](docs/storage.md) |
-| Exact command/query shapes and the offline inspector | [Operation reference](docs/local-prototype.md) |
-| Verified release packages | [N5 Node/native package result](research/71-node-lifecycle-result.md) · [historical G8.4 package result](research/53-workload-deployment-result.md#g84--current-extracted-release-packages) |
-| Accepted storage adapters | [G7 result](research/51-storage-conformance-result.md) · [Backend usage](docs/storage-backends.md) |
-| Operational assurance | [G8 results](research/53-workload-deployment-result.md) · [Workload guide](docs/workloads.md) · [Plan](research/52-workload-deployment-plan.md) |
-| Compose bounded population with the existing mutation client | [Population guide](docs/population.md) · [G9 results](research/55-population-tooling-result.md) |
-| Source verification | [G7.5 coordination](research/50-scoped-coordination-result.md) · [G7.6 conformance](research/51-storage-conformance-result.md) · [V1 workshop](research/44-workshop-verification-result.md) |
-| Run the self-explaining verification suite | [Workshop guide](docs/workshop.md) |
+| Compiled models and authored model behavior | [Compiled models](docs/compiled-models.md) |
+| Exact fractional values and rounding | [Exact values](docs/exact-values.md) |
+| Equipment allocation and reservations | [Equipment](docs/equipment.md) |
+| Invoice pricing, tax, credits, payments and refunds | [Invoicing](docs/invoicing.md) |
+| Native indexes and measurement semantics | [Native indexes](docs/native-indexes.md) |
+| Bounded external work, retries and reconciliation | [External effects](docs/external-effects.md) |
+| Exact financial windows and reactive reads | [Reactive windows](docs/reactive-windows.md) |
+| Node functions and client plans | [Developer tools](docs/developer-tools.md) |
+| Storage identity, recovery and backend behavior | [Storage](docs/storage.md) · [Backends](docs/storage-backends.md) |
+| Workload bounds and verification limits | [Workloads](docs/workloads.md) · [Workshop](docs/workshop.md) |
+| Deployment configuration | [Deployment](docs/deployment.md) |
 
-The G8.4 redb-only package supports redb without optional backend features; its
-all-feature package supports redb, FoundationDB and standalone SurrealKV. Extracted
-smoke/recovery checks cover one tenant and one selected compiled model; see the
-[package results](research/53-workload-deployment-result.md#g84--current-extracted-release-packages)
-and [backend usage](docs/storage-backends.md) for verification boundaries.
-Calculation/equipment allow up to 4,096 public source records, 8,192 active
-private outputs, 16,384 retained output identity reservations, and explicit work,
-query and receipt limits. Trusted Rust modules author models; arbitrary behavior
-loading, a full accounting port, live-provider adapters and a frontend are separate
-future gates. TiKV and G6 remain deferred; G8.0–G8.5 are accepted within their
-recorded boundaries. G9’s composable population API and live Equipment/Quantity
-examples are accepted, including isolated source-tooling and optional-provider
-checks. See the [population guide](docs/population.md) for current scope
-and limits. G6, TiKV and frontend remain deferred. Exact workload results and
-bounds are documented. Invoicing initially supports 64 public
-sources/256 outputs/512 retained roles; see its guide for the bounded workflow.
-Read the resource envelope before choosing a workload; these are enforced bounds,
-not a claim of general production capacity.
+Calculation and equipment support up to 4,096 public source records, 8,192
+active private outputs and 16,384 retained output identity reservations, subject
+to explicit work, query and receipt limits. Bounded invoicing supports 64 public
+sources, 256 outputs and 512 retained roles. These are enforced bounds, not a
+general production-capacity claim. Model behavior identities bind the model,
+token and coordination contract; there is no implicit migration between store
+formats or models. Keep each store with its matching compatible binary and
+verified backups. Broader accounting, arbitrary behavior loading, live provider
+adapters, TiKV and a frontend remain deferred.
 
-The [workshop](docs/workshop.md) now walks through, checks, explores and replays
-non-accounting examples with independent source expectations and native/process
-controls. Equipment, measurement, quantity and effect-demo remain separate
-stores. Broader accounting is deferred; bounded invoicing remains an existing
-regression workflow. See the [result and limits](research/44-workshop-verification-result.md).
-
-The population probe runs both models at 64, 256, 1,024 and 4,096 public sources:
-
-```sh
-python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-capacity-run
-```
-
-It checks source arithmetic, selective updates, fanout, rollback, replay,
-authorization, restart and verified restore through the real HTTP process.
-Each mutation retains the 200,000 work-unit budget; larger causal closures can
-reject atomically. The 0.16.0 source uses store format 10 /native codec 7 /
-effect codec 4 /API 4. All six compiled model behavior identities change with
-the token and coordination contract; formulas retain their declared meaning.
-There is no implicit migration from earlier formats;
-keep matching binaries with their stores. See [upgrades](docs/storage.md#data-identity-and-upgrades).
-
-`rebase-next --help` lists operator commands. Select equipment with
-`rebase-next --model equipment <command>` or invoicing with
-`rebase-next --model invoicing <command>`; calculation is the default. Use the
-same selector for every command against that store. `--model measurement` selects
-the 64-source dimensioned statistics model. Pure model commands need no store.
-`--model effect-demo` selects bounded Account/Dispatch work. Its fake worker is optional;
-restored stores permit explicit reconciliation-only activation.
-`fixture plan` produces authored inputs; `tools/client.py` sends the ordinary
-public operations. Stored plans retain the original actor/store/receipt context
-across retries. Filesystem operator tools remain separate from the HTTP API.
-
-```sh
-cargo fmt --all -- --check
-cargo clippy --locked --all-targets -- -D warnings
-cargo test --locked --release --all-targets
-python3 -B tools/test_client.py -v
-```
-
-For continuation, read [CONTEXT.md](CONTEXT.md) and the
-[G10 program](research/56-node-and-index-redesign-program.md). The research papers
-distinguish user intent, proposals, mathematical facts and executed evidence.
-[The original discussion index](research/sources.md),
-[model/mathematics](research/01-model-and-mathematics.md),
-[storage semantics](research/02-transactions-and-storage.md),
-[access/query contract](research/03-access-and-queries.md),
-[system audit](research/06-system-audit.md) and
-[research gates](research/08-research-workflow.md) preserve the broader design.
-Earlier evidence remains dated; unchanged semantic contracts do not require
-repeating a whole-project audit.
+Research records preserve the evidence and limits of earlier campaigns. In
+particular, the [N4 result](research/69-node-experiment-result.md),
+[N5 release result](research/71-node-lifecycle-result.md), and N6 contracts for
+[complete backup](research/72-node-complete-backup-contract.md),
+[signed ingress](research/73-node-signed-ingress-contract.md), and
+[IssueShare](research/74-node-issue-share-contract.md) describe bounded claims;
+they do not establish N6 release acceptance. Read [CONTEXT.md](CONTEXT.md) for
+the current handoff and [research/sources.md](research/sources.md) for the
+original discussion index.

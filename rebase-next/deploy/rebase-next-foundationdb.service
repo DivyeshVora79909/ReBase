@@ -13,7 +13,7 @@ StateDirectory=rebase-next
 StateDirectoryMode=0700
 WorkingDirectory=/var/lib/rebase-next
 Environment=LD_LIBRARY_PATH=/usr/local/lib/foundationdb
-ExecStart=/usr/local/bin/rebase-next --backend foundationdb --cluster-file /etc/rebase-next/fdb.cluster --model equipment serve rebase-next-equipment --config /etc/rebase-next/server.json
+ExecStart=/usr/local/bin/rebase-next serve /etc/rebase-next/service.json
 Restart=on-failure
 RestartSec=2
 TimeoutStopSec=180

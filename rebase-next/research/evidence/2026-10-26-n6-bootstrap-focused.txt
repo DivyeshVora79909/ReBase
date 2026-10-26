@@ -1,0 +1,15 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 44.77s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2bc5c4167f9b2b5b)
+
+running 7 tests
+test lifecycle::scoped_tests::invalid_restore_never_calls_the_optional_backend_opener ... ok
+test effects::worker_tests::scoped_retry_rechecks_current_authority_revision_worker_and_phase_without_partial_writes ... ok
+test lifecycle::scoped_tests::stale_scope_cannot_publish_backup_or_archive_a_reset_store ... ok
+test server::tests::scoped_start_rejects_reset_before_native_validation ... ok
+test server::tests::scoped_service_fences_every_call_after_store_reset ... ok
+test integrity::tests::scoped_coordination_inventory_rejects_corruption_without_repair ... ok
+test effects::worker_tests::scoped_live_worker_and_signed_ingress_cannot_adopt_reset_store ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 97 filtered out; finished in 0.82s
+

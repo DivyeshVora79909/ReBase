@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — N5 accepted; complete N6 replacement controls
+## Current instruction — N6 verified locally; extracted releases next
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -46,9 +46,30 @@ The [Node signed-ingress workflow](research/73-node-signed-ingress-contract.md)
 also passes real transport, durable retry and startup-cleanup controls; the full
 Node suite passed 133 tests. The [bounded IssueShare workflow](research/74-node-issue-share-contract.md)
 also passes. The [private recovery operator](research/75-private-effect-retry-contract.md)
-is preserved and the full suite passes 139 tests. Structured native serving
-and the final replacement ledger remain before deleting
-Python and redundant CLI paths. Ordered-storage changes remain pending. Follow the
+is preserved and the full suite passes 139 tests. Structured native serving,
+the final replacement ledger, and retirement of the
+60 inventoried Python paths plus four obsolete schema-values bridge files are
+now verified locally. [Bootstrap evidence](research/76-native-bootstrap-contract.md)
+records 200 default native tests, seven focused scope controls, a real local FDB
+reset control and 141 Node tests without skips. This is implementation status only: N6 has
+not been accepted. Root owns fresh native and extracted-release acceptance and
+the resulting evidence. The exact prepared retirement disposition is in
+[N6 retirement](research/77-node-tooling-retirement.md) and its ledger; preserve
+the N0 ledger and dated evidence unchanged. The prepared entry point and native
+acceptance matrix are in the [bootstrap contract](research/76-native-bootstrap-contract.md).
+Ordered-storage changes remain pending.
+
+Next acceptance sequence: independently verify the ledger's 60 unique Python
+paths and four auxiliary paths against pinned source
+`0d0601187c79d430f8d7ed41674f53e9905af75f` and each recorded SHA-256; check
+replacement references and historical link targets; then run the focused native
+host/service checks in the bootstrap contract and the final Node suite and
+package checks from a clean source export/extracted release. Exercise the
+ordinary Node workflow and minimal `host` / `serve` bootstrap, confirm no Python
+runtime or retired CLI parser is required, and record hashes, results, claim
+limits and cleanup in new evidence. Keep N6 pending until those checks pass and
+root accepts the evidence. Do not claim unrestricted capacity: current controls
+remain bounded to their named models, inputs and recorded envelopes. Follow the
 dependency ledger through verified checkpoints; do not ask for repeated routine
 permission.
 

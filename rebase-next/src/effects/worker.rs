@@ -19,7 +19,7 @@ fn stale() -> Error {
 impl<B: Binding> Store<B> {
     /// Called only by the single server owner, before any provider tasks exist.
     pub(crate) fn activate_effect_worker(&self, mode: WorkerMode) -> Result<Uuid> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = now_millis()?;
         let mut runtime = runtime_write(&write)?;
         if mode.active() && B::effect_action().is_none()
@@ -74,7 +74,7 @@ impl<B: Binding> Store<B> {
         activation: Uuid,
         supplied: Option<i64>,
     ) -> Result<Vec<Candidate>> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         if runtime.activation != activation || !runtime.mode.active() {
@@ -183,7 +183,7 @@ impl<B: Binding> Store<B> {
         candidate: &Candidate,
         supplied: Option<i64>,
     ) -> Result<Option<Claim>> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, candidate.execution)?;
@@ -266,7 +266,7 @@ impl<B: Binding> Store<B> {
         claim: &Claim,
         supplied: Option<i64>,
     ) -> Result<Option<Claim>> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, claim.execution)?;
@@ -326,7 +326,7 @@ impl<B: Binding> Store<B> {
     }
 
     pub(crate) fn confirm_effect_start(&self, claim: &Claim) -> Result<Execution<B>> {
-        let read = self.db.begin_read().map_err(local::storage)?;
+        let read = self.begin_read().map_err(local::storage)?;
         let runtime = runtime_read(&read)?;
         let table = read.open_table(EXECUTIONS).map_err(local::storage)?;
         let value = table
@@ -351,7 +351,7 @@ impl<B: Binding> Store<B> {
     // that renew bounded ownership; controls exercise the real transaction path.
     #[allow(dead_code)]
     pub(super) fn renew_effect_at(&self, claim: &Claim, supplied: Option<i64>) -> Result<Claim> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, claim.execution)?;
@@ -391,7 +391,7 @@ impl<B: Binding> Store<B> {
         supplied: Option<i64>,
         abort: Option<usize>,
     ) -> Result<()> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let now = clock(supplied)?;
         let mut runtime = runtime_write(&write)?;
         let before = load_execution::<B>(&write, claim.execution)?;
@@ -434,7 +434,7 @@ impl<B: Binding> Store<B> {
             }
             // Inspect the committed row; never repeat provider I/O for a local
             // finish acknowledgement failure, even when no fact was available.
-            let read = self.db.begin_read().map_err(local::storage)?;
+            let read = self.begin_read().map_err(local::storage)?;
             let executions = read.open_table(EXECUTIONS).map_err(local::storage)?;
             if let Some(value) = executions
                 .get(row.id.as_bytes().as_slice())

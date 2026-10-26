@@ -1,15 +1,15 @@
 # Authenticated backend
 
-This network boundary serves one selected compiled model over one embedded
-redb process. Calculation is the default; add `--model equipment` or
-`--model invoicing` before `init`, `serve` and other operator commands for those
-models. Identity configuration and
-the HTTP protocol are shared. It does not add a distributed backend or a full
-accounting model. The [current checkpoint](../research/28-settlement-refund-gate.md)
-and dated [release checkpoints](../research/17-deployable-backend.md) own acceptance.
+The service opens one existing store for one selected compiled model and serves
+the authenticated HTTP API. Its only binary invocation is
+`rebase-next serve /absolute/service.json`; `rebase-next host` starts the native
+line-framed protocol. Both bootstrap paths are being accepted as part of N6, so
+this guide describes the frozen configuration and protocol contract, not an
+accepted deployment release. Calculation, equipment, invoicing, measurement,
+effect-demo and quantity are explicit model choices. The [G10 program](../research/56-node-and-index-redesign-program.md)
+records current acceptance status and evidence boundaries.
 
-Build with `cargo build --locked --release --bin rebase-next`. Generate your own
-issuer key with an existing tool; never use the public test fixture keys:
+Generate an issuer key with an existing tool; never use public test fixture keys:
 
 ```sh
 umask 077
@@ -17,47 +17,35 @@ openssl genpkey -algorithm ED25519 -out issuer-private.pem
 openssl pkey -in issuer-private.pem -pubout -out issuer-public.pem
 ```
 
-Create `server.json` with the **contents** of the public PEM as the JSON string
-at `public_keys.main` (including its newline escapes):
+Start from a backend-specific [service configuration](../deploy/server.example.json)
+and replace every `REPLACE_WITH_` value and the example store UUID. The JSON
+shape is explicit and shared by every backend:
 
 ```json
 {
-  "listen": "127.0.0.1:8080",
-  "identity": {
-    "issuer": "https://identity.example.com",
-    "audience": "rebase-next",
-    "public_keys": {"main": "-----BEGIN PUBLIC KEY-----\nYOUR KEY\n-----END PUBLIC KEY-----\n"},
-    "max_token_seconds": 600
-  },
-  "max_inflight": 16,
-  "request_timeout_seconds": 15
+  "format": "rebase-service-1",
+  "model": "calculation",
+  "backend": {"kind": "redb", "cluster_file": null},
+  "target": {"mode": "open", "path": "/var/lib/rebase-next/app.redb", "expect_store": "REPLACE_WITH_CANONICAL_STORE_UUID"},
+  "service": {"listen": "127.0.0.1:8080", "identity": {"issuer": "REPLACE_WITH_ISSUER", "audience": "REPLACE_WITH_AUDIENCE", "public_keys": {"REPLACE_WITH_KEY_ID": "REPLACE_WITH_ED25519_PUBLIC_PEM"}, "max_token_seconds": 600}, "max_inflight": 16, "request_timeout_seconds": 15, "effects": null}
 }
 ```
 
-Initialize a new secured store with distinct canonical tenant/administrator UUIDs:
+The `target` must use `mode: "open"`, an absolute embedded-store path or a
+nonempty FoundationDB namespace, and the canonical UUID expected for that store.
+The server does not create or reset stores. It fails closed if the opened store
+identity or model differs. Give one process exclusive ownership of an embedded
+store while serving it.
 
-```sh
-rebase-next init app.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
-rebase-next serve app.redb --config server.json
-```
-
-`init` does not overwrite a file. Network serving refuses a legacy local demo
-store without authority. The HTTP process owns its file; do not start another
-server/CLI against the same live redb file. Pure model tools need no store.
-
-An existing identity service can issue the supported profile. The offline
-operator helper accepts `token-request.json`:
+An existing identity service can issue the supported profile. A token request
+has these fields:
 
 ```json
 {"tenant":"00000000-0000-4000-8000-000000000001","actor":"00000000-0000-4000-8000-000000000002","epoch":0,"ttl":300,"key_id":"main"}
 ```
 
-```sh
-rebase-next auth issue server.json token-request.json issuer-private.pem
-```
-
 Keep the private key outside the server; it needs only verification public keys.
-The helper prints a bearer token. Supply it as `Authorization: Bearer <token>`
+Supply the token as `Authorization: Bearer <token>`
 on `POST /rpc`, with `Content-Type: application/json`. Use the structured methods
 in the [operation guide](local-prototype.md), plus `session.describe {}`,
 `access.describe {model}` and `access.replace {model,if_revision,graph}`. The last
@@ -107,17 +95,17 @@ network. Default binding is loopback; an explicitly configured private-container
 address can be used behind that proxy. Forwarding actor headers does not grant
 authority. A JWT bearer credential is required on `/rpc` regardless of proxy.
 
-Axum/Tokio supply HTTP transport; the existing strict JSON-RPC dispatch remains
-shared with stdio. A second jsonrpsee parse/dispatch layer would add no operation
-semantics to this API. JWT cryptography uses jsonwebtoken's AWS-LC provider. The
+Axum/Tokio supply HTTP transport; the Rust library retains the strict JSON-RPC
+dispatch shared by its HTTP handler and native host implementation. The binary
+exposes only `host` and `serve`; it has no public stdio RPC process. A second
+jsonrpsee parse/dispatch layer would add no operation semantics to this API. JWT
+cryptography uses jsonwebtoken's AWS-LC provider. The
 alternative RustCrypto feature pulled unpatched `rsa` (RUSTSEC-2023-0071), even
 though this service only accepts Ed25519; it is absent from the selected graph.
 
 
-The optional `effects` configuration selects an explicit `disabled` (default),
-`delivery` or `reconcile` mode for the experimental effect-demo worker, with a
-pinned loopback fake-provider origin. `ingress_secret_file` separately enables
-the signed `/effects/fake` route, with an 8 KiB body limit and two-second read
-deadline. That route uses provider HMAC authentication; `/rpc` retains JWT
-authentication. See [external work](external-effects.md) for captured authority,
-durable ACKs, shutdown/retry behavior and reconciliation-only restored stores.
+`service.effects` is either `null` or the existing native fake-effects
+configuration for effect-demo. The signed ingress example is a separate Node
+composition and does not extend the public barrel or service configuration.
+See [external work](external-effects.md) for captured authority, durable ACKs,
+shutdown/retry behavior and reconciliation-only restored stores.

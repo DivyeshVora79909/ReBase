@@ -486,6 +486,7 @@ mod tests {
                 actor: Uuid::nil(),
             },
         )?;
+        let baseline = snapshot(&db.begin_read()?)?;
         let write = db.begin_write()?;
         {
             let mut table = write.open_table(KV)?;
@@ -493,9 +494,10 @@ mod tests {
         }
         write.commit()?;
         let raw = snapshot(&db.begin_read()?)?;
-        assert_eq!(raw.rows.len(), 2);
+        assert_eq!(raw.rows.len(), baseline.rows.len() + 1);
+        assert_eq!(raw.rows[..baseline.rows.len()], baseline.rows);
         assert_eq!(
-            raw.rows[1],
+            raw.rows[baseline.rows.len()],
             Row {
                 key: "ff".into(),
                 value: native_codec::hex(b"unreachable")

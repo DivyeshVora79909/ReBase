@@ -1,0 +1,391 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.80s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2bc5c4167f9b2b5b)
+
+running 104 tests
+test dependency::tests::final_moves_reverse_edges_without_union_cycles_or_excluded_prefix_feedback ... ok
+test dependency::tests::inclusive_bounds_consume_whole_equal_time_groups_and_extreme_timestamps ... ok
+test causal::tests::resolved_query_cannot_substitute_an_unauthored_account ... ok
+test dependency::tests::window_gates_match_independent_pairwise_reachability_and_cycles ... ok
+test dependency::tests::dense_prefix_dependencies_keep_the_existing_linear_gate_path ... ok
+test dependency::tests::sparse_windows_use_linear_graph_space_and_enforce_build_and_schedule_budgets ... ok
+test effect_tests::action_metadata_is_checked_and_advertised_only_for_effect_models ... ok
+test effect_tests::current_account_authority_controls_creation_cancel_status_and_receipt_disclosure ... ok
+test effect_tests::immutable_input_expiry_and_allocation_failures_leave_no_intent_or_receipt ... ok
+test effect_tests::intent_and_cancel_roll_back_after_actual_writes_and_share_receipts ... ok
+test effects::tests::due_key_preserves_full_signed_time_and_uuid_order ... ok
+test effects::tests::schedule_defaults_and_twenty_four_hour_boundaries_are_exact ... ok
+test effects::worker_tests::bounded_sweeps_advance_past_unclaimed_rows_wrap_backdated_inserts_and_restart ... ok
+test effects::worker_tests::cancellation_before_start_suppresses_it_and_after_start_forces_reconciliation ... ok
+test effects::worker_tests::captured_epoch_is_rechecked_at_claim_and_start_but_cannot_erase_later_facts ... ok
+test effects::worker_tests::duplicate_and_older_facts_do_not_regress_success_and_conflicts_remain_evidence ... ok
+test effects::worker_tests::duplicate_claims_revisions_activation_and_finite_renewal_fence_writers ... ok
+test effect_tests::corrupt_effect_inventory_rejects_complete_check_and_restore_without_publication ... ok
+test effects::worker_tests::expired_unstarted_claims_and_submission_deadlines_do_not_call_the_provider ... ok
+test effects::worker_tests::fact_and_application_abort_after_real_writes_preserve_every_table ... ok
+test effects::worker_tests::ingress::authentication_covers_exact_bytes_identity_skew_and_bounded_typed_json ... ok
+test effects::worker_tests::ingress::archive_retains_inbox_and_clean_reset_rejects_old_receipts_claims_and_hints ... ok
+test effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions ... ok
+test effects::worker_tests::ingress::durable_ack_dedup_and_consumed_fact_rollback_cover_actual_writes ... ok
+test effects::worker_tests::ingress::inbox_inventory_and_compiled_action_mismatch_reject_check_and_restore ... ok
+test causal::tests::selective_closure_matches_source_arithmetic_through_repeated_topology_edits ... ok
+test effects::worker_tests::ingress::prestart_restore_only_reconciles_and_empty_lookup_never_authorizes_submission ... ok
+test effects::worker_tests::only_definitive_nonacceptance_retries_and_all_automatic_budgets_terminate ... ok
+test effects::worker_tests::persisted_sweep_and_lease_bounds_and_unsupported_failure_states_are_checked ... ok
+test effects::worker_tests::private_host_retry_requires_grant_and_stopped_service_then_retries_a_blocked_fact ... ok
+test effects::worker_tests::scoped_retry_rechecks_current_authority_revision_worker_and_phase_without_partial_writes ... ok
+test effects::worker_tests::success_applies_once_and_blocked_fact_survives_repair_without_resubmission ... ok
+test effects::worker_tests::scoped_live_worker_and_signed_ingress_cannot_adopt_reset_store ... ok
+test effects::worker_tests::typed_outcome_binding_and_fact_inventory_reject_corruption ... ok
+test fixtures::tests::fixtures_remap_declared_references_and_reject_invalid_inventories ... ok
+test host::operations::tests::identity_old_scope_cannot_authorize_the_post_reset_credential_epoch ... ok
+test host::tests::serialization_never_publishes_a_partial_oversized_result ... ok
+test index_tests::index_codes_and_time_keys_are_strict_native_values ... ok
+test index_tests::native_financial_algebra_matches_complete_time_source_scans ... ok
+test index_tests::native_query_port_preserves_standard_scalar_wire_and_rejects_statistics ... ok
+test index_tests::one_native_tree_supports_noncopy_nontime_values ... ok
+test inspector::tests::data_is_text_in_the_offline_artifact ... ok
+test integrity::tests::canonical_orphan_root_returns_corruption_at_check_startup_and_restore ... ok
+test integrity::tests::corrupt_data_chain_is_rejected_before_unbounded_recursion ... ok
+test integrity::tests::model_population_limits_are_checked_inside_codec_envelope ... ok
+test integrity::tests::scoped_coordination_inventory_rejects_corruption_without_repair ... ok
+test integrity::tests::selector_checker_recomputes_empty_identity_minimum_and_bounded_count_from_sources ... ok
+test integrity::tests::selector_checker_rejects_wrong_order_imbalance_and_disconnected_nodes ... ok
+test effects::worker_tests::terminal_reservation_survives_the_actual_fact_ceiling_and_duplicates ... ok
+test json::tests::nested_duplicate_keys_trailing_documents_and_oversize_input_reject ... ok
+test lifecycle::scoped_tests::invalid_restore_never_calls_the_optional_backend_opener ... ok
+test lifecycle::scoped_tests::stale_scope_cannot_publish_backup_or_archive_a_reset_store ... ok
+test local::tests::active_model_context_and_table_inventory_are_checked_before_use ... ok
+test local::tests::old_store_format_is_rejected_before_decoding_legacy_meta ... ok
+test local::tests::partial_writes_and_receipt_writes_abort_all_application_tables ... ok
+test local::tests::secured_physical_aborts_include_authority_and_reader_tables ... ok
+test model::tests::bundled_preparation_exports_public_schemas_without_private_roles ... ok
+test model::tests::preparation_rejects_ambiguous_or_inconsistent_declarations ... ok
+test integrity::tests::source_inventory_and_structure_reject_corruption_without_writer_replay ... ok
+test mutation::tests::opaque_tokens_preserve_noops_and_reject_delete_recreate_aba ... ok
+test native_slice::tests::prepared_calculation_and_exact_bindings ... ok
+test native_slice::tests::typed_workspace_retains_old_images_and_coalesces_current_state ... ok
+test parameter_tests::calculation_only_reader_recomputes_fallback_when_its_query_is_inactive ... ok
+test parameter_tests::inherited_parameters_react_retarget_and_survive_replay_and_reopening ... ok
+test parameter_tests::parent_edit_and_retarget_use_the_final_authored_state_in_both_orders ... ok
+test parameter_tests::rejected_parent_changes_leave_all_tables_revision_and_receipts_unchanged ... ok
+test effect_tests::real_capacity_bounds_preserve_replay_reserved_bytes_restore_and_reset ... ok
+test parameter_tests::terminal_only_reader_tracks_strict_bounds_roots_activation_and_deletion ... ok
+test parameter_tests::terminal_reader_checks_the_final_repaired_prefix_in_both_command_orders ... ok
+test publication_tests::aggregate_change_reaches_publication_diamond_chain_and_deduplicated_routes ... ok
+test publication_tests::final_publication_and_financial_graph_matches_plain_enumerated_orders ... ok
+test parameter_tests::terminal_reader_waits_for_managed_outputs_and_calculation_only_reader_evaluates ... ok
+test publication_tests::final_reversal_retargets_in_both_command_orders_and_equal_values_keep_edges ... ok
+test publication_tests::prepared_publication_contract_rejects_unresolved_and_incompatible_declarations ... ok
+test publication_tests::malformed_resolved_slots_targets_native_type_and_tenant_are_atomic ... ok
+test publication_tests::self_direct_mixed_cycles_and_overflow_roll_back_every_table_and_receipt ... ok
+test receipts::tests::slot_collision_probes_and_partial_publication_aborts ... ok
+test receipts::tests::slot_inventory_rejects_orphan_duplicate_and_mismatched_bindings ... ok
+test receipts::tests::exact_capacity_uses_last_slot_and_full_rejection_preserves_tables ... ok
+test route_tests::empty_identity_minimum_cache_extremes_and_exact_remove_are_preserved ... ok
+test route_tests::through_endpoints_interleave_and_only_subscribers_accept_windows ... ok
+test route_tests::bounded_stabbing_prunes_both_sides_at_gate_population ... ok
+test rpc::tests::definite_storage_rejections_remain_distinct_from_uncertain_commit ... ok
+test server::tests::deadline_keeps_admission_until_the_real_transaction_finishes ... ok
+test route_tests::window_routes_match_literal_sources_after_rotations_rekeys_and_old_new_moves ... ok
+test server::tests::scoped_service_fences_every_call_after_store_reset ... ok
+test server::tests::owned_stop_waits_for_timed_out_blocking_attempt ... ok
+test server::tests::scoped_start_rejects_reset_before_native_validation ... ok
+test storage::tests::legacy_adapter_preserves_atomic_spaces_and_read_snapshot ... ok
+test time_range::tests::closed_open_and_extreme_membership_matches_literal_predicates ... ok
+test time_range::tests::wire_is_canonical_closed_and_preserves_empty_window_identity ... ok
+test values::tests::intermediate_overflow_is_distinct_from_final_overflow ... ok
+test values::tests::reduction_and_canonical_wire_preserve_native_boundaries ... ok
+test values::tests::schema_exports_the_wire_contract_and_rounding_names ... ok
+test values::tests::tax_fx_and_rounding_location_are_model_choices ... ok
+test values::tests::ties_and_directed_rounding_are_explicit_for_both_signs ... ok
+test values::tests::wire_rejects_noncanonical_or_unbounded_values ... ok
+test storage::concurrency_checks::retry_scope_tests::private_retry_fences_a_real_reset_at_write_admission ... ok
+test window_tests::windows_accept_edge_reversal_even_when_old_new_union_is_cyclic ... ok
+test window_tests::terminal_windows_validate_final_managed_repairs_in_both_command_orders ... ok
+test window_tests::windows_reject_zero_feedback_and_preserve_activation_and_phase_identity ... ok
+test window_tests::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting ... ok
+test models::invoicing_check::tests::independent_invoicing_checker_rejects_numeric_and_structural_corruption ... ok
+test effects::worker_tests::ingress::complete_capacity_retains_a_blocked_event_advances_sweeps_and_fits_backup ... ok
+
+test result: ok. 104 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.41s
+
+     Running unittests src/bin/rebase-next.rs (target/verification-build/debug/deps/rebase_next-f599eac5a03e77af)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/access_control.rs (target/verification-build/debug/deps/access_control-da69ee4f3e3b38d8)
+
+running 4 tests
+test direct_group_access_inherits_grants_without_granting_siblings ... ok
+test prepared_scopes_match_independent_path_search_and_preserve_diamonds ... ok
+test reader_partition_cursors_survive_disjoint_changes_and_fence_both_sides_of_moves ... ok
+test real_store_repairs_reader_indexes_revokes_credentials_and_redacts_receipts ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/equipment.rs (target/verification-build/debug/deps/equipment-4bbc8eedba379b59)
+
+running 2 tests
+test sparse_equipment_contracts_are_closed_and_native_bound ... ok
+test independent_equipment_model_reuses_mutation_receipts_queries_and_storage ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+     Running tests/equipment_http.rs (target/verification-build/debug/deps/equipment_http-c44549225011b099)
+
+running 1 test
+test equipment_uses_shared_http_authority_receipts_and_sparse_queries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/exact_values.rs (target/verification-build/debug/deps/exact_values-2993ad80d3db7a90)
+
+running 1 test
+test exact_values_cross_native_binding_http_receipts_and_reopening ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/invoicing.rs (target/verification-build/debug/deps/invoicing-ca60698425d246dc)
+
+running 9 tests
+test invalid_invoicing_batches_preserve_every_table_revision_and_receipt ... ok
+test fractional_issue_dated_taxes_and_linked_credit_reach_literal_totals ... ok
+test developer_fixtures_are_repeatable_and_execute_through_the_shared_store ... ok
+test self_membership_resolves_only_a_declared_root_of_its_own_contract ... ok
+test dated_source_and_rule_edits_recompute_taxes_and_preserve_zero_roles ... ok
+test zero_outputs_and_owned_roots_retire_with_their_authored_producers ... ok
+test invalid_settlement_batches_roll_back_every_table_revision_and_receipt ... ok
+test partial_payments_repeated_refunds_and_self_memberships_follow_the_final_graph ... ok
+test settlement_preserves_historical_balance_and_claim_identity_across_sign_changes ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.04s
+
+     Running tests/issue_share.rs (target/verification-build/debug/deps/issue_share-e013d70b9cb8d7db)
+
+running 4 tests
+test issue_share_invalid_batches_preserve_all_tables_and_receipt_absence ... ok
+test issue_share_retarget_and_existing_parent_edits_use_final_references_in_both_orders ... ok
+test issue_share_uses_fresh_ready_publications_without_outputs_or_queries ... ok
+test issue_share_checker_rejects_stale_publications_and_missing_or_orphan_direct_routes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+
+     Running tests/local_api.rs (target/verification-build/debug/deps/local_api-2b656f8a9371e43d)
+
+running 6 tests
+test budgeted_reads_distinguish_empty_pages_unknown_and_exhaustion ... ok
+test cursor_contract_scope_survives_unrelated_edits_and_covers_derived_only_changes ... ok
+test framing_and_request_rejections_cannot_execute_hidden_mutations ... ok
+test exact_mutations_publish_settled_values_and_durable_replay_receipts ... ok
+test cursors_bind_query_scope_and_survive_replay_noop_and_unchanged_reopen ... ok
+test private_identity_and_fixture_paths_are_not_public_operations ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/local_cli.rs (target/verification-build/debug/deps/local_cli-4515c854871185a0)
+
+running 1 test
+test native_demo_offline_export_operation_api_and_reopen_are_usable_together ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running tests/measurement.rs (target/verification-build/debug/deps/measurement-7aba11b6848472bf)
+
+running 14 tests
+test latest_observation_native_selection_uses_complete_member_slot_ties ... ok
+test latest_observation_query_variants_are_closed_and_report_bytes_are_preserved ... ok
+test measurement_algebra_matches_literal_scan_for_every_short_parenthesization ... ok
+test latest_observation_final_retarget_unit_repairs_and_budget_are_atomic ... ok
+test measurement_schemas_and_native_objects_are_closed_and_exact ... ok
+test latest_observation_tracks_absence_ties_nonwinners_and_every_changed_root ... ok
+test measurements_use_native_members_windows_final_unit_repairs_replay_and_lifecycle ... ok
+test measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks ... ok
+test observation_report_budget_failure_discards_staged_queries_and_all_tables ... ok
+test observation_report_query_contract_and_native_result_are_checked ... ok
+test full_population_replacement_accepts_both_command_orders ... ok
+test observation_reports_retarget_and_repair_units_in_both_orders_with_complete_rollback ... ok
+test observation_reports_keep_exact_empty_and_equal_result_dependencies ... ok
+test observation_report_and_native_corruptions_fail_check_startup_and_verified_restore ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.02s
+
+     Running tests/model_contract.rs (target/verification-build/debug/deps/model_contract-3540b72287130c2e)
+
+running 1 test
+test authored_fixture_bindings_agree_with_prepared_schemas ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/native_bootstrap.rs (target/verification-build/debug/deps/native_bootstrap-4b54032faa24fc0f)
+
+running 2 tests
+test malformed_configuration_and_wrong_store_fail_without_changing_or_creating_stores ... ok
+test standalone_rust_serves_all_six_catalogs_sources_and_original_receipts_without_tooling_on_path ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.98s
+
+     Running tests/native_host.rs (target/verification-build/debug/deps/native_host-5c74b7b6b9fc0f78)
+
+running 12 tests
+test exact_request_limit_fragmented_utf8_and_coalesced_frames_are_bounded ... ok
+test frozen_malformed_frames_reject_and_oversize_resumes ... ok
+test frozen_sessions_run_against_real_process_and_authoritative_catalogs ... ok
+test close_and_eof_join_owned_services_before_releasing_the_store ... ok
+test invalid_config_has_no_filesystem_effect_and_description_schema_validates ... ok
+test exclusive_create_preserves_existing_destination_and_eof_releases_owner ... ok
+test public_rpc_cannot_reach_the_operator_allowlist ... ok
+test owned_sigterm_closes_native_store_cleanly_before_exit ... ok
+test same_process_owners_contend_without_losing_the_first_handle ... ok
+test killed_owner_requires_explicit_recovery_without_preview_writes ... ok
+test every_compiled_model_has_the_unchanged_catalog_on_both_scopes ... ok
+test store_scope_grants_exclusivity_and_wrong_target_reject_before_writes ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests/native_service.rs (target/verification-build/debug/deps/native_service-f16858ab6fa4add7)
+
+running 4 tests
+test denied_operator_methods_reject_before_parsing_or_destination_disclosure ... ok
+test wrong_scopes_and_invalid_service_config_leave_the_owner_unchanged ... ok
+test model_and_fixture_calls_reuse_native_values_without_store_creation ... ok
+test owned_http_identity_mutation_inspection_and_lifecycle_preserve_fences ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+     Running tests/native_tree.rs (target/verification-build/debug/deps/native_tree-b14a067f1c0a08bc)
+
+running 7 tests
+test range_extrema_are_rebased_folds_not_differences_of_prefix_minima ... ok
+test equal_time_complete_boundaries_and_latest_extremes ... ok
+test range_rejects_overflow_and_corrupt_traversed_links ... ok
+test strict_prefix_matches_authored_scan_at_equal_times_and_extremes ... ok
+test all_rotation_directions_and_intrusive_deletions_match_source_scans ... ok
+test ranges_match_literal_subsets_complete_groups_and_extreme_bounds ... ok
+test range_prunes_many_positions_under_a_population_independent_budget ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+
+     Running tests/network_api.rs (target/verification-build/debug/deps/network_api-7a7d079bca5940cc)
+
+running 3 tests
+test standard_credential_profile_rejects_wrong_context_signature_time_and_key ... ok
+test real_http_concurrency_receipts_revocation_and_reopen ... ok
+test authenticated_ranges_preserve_complete_times_exact_bounds_and_reopen ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/quantity.rs (target/verification-build/debug/deps/quantity-1cb92c03b22c72ff)
+
+running 6 tests
+test exact_rounding_rejects_every_scale_atomically_and_zero_factor_does_not_hide_cycle ... ok
+test cas_replay_reopen_and_lifecycle_preserve_quantities ... ok
+test source_literal_rational_oracle_covers_signed_ties_large_values_and_bounds ... ok
+test ready_publication_chain_diamond_repeat_slots_and_source_edit ... ok
+test source_bounds_accept_signed_limits_and_reject_values_outside_them ... ok
+test retargets_and_parent_edits_settle_final_state_in_either_order ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/routes.rs (target/verification-build/debug/deps/routes-5ecf08745937c05e)
+
+running 5 tests
+test endpoint_rewrites_keep_original_snapshot_and_exact_endpoint_bounds ... ok
+test selection_rejects_dangling_cross_route_and_cyclic_links ... ok
+test every_route_kind_drains_and_reuses_deleted_registration_identities ... ok
+test narrow_selection_loads_only_a_balanced_path_at_gate_population ... ok
+test ordered_routes_preserve_old_and_new_memberships_through_rotations_and_moves ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+
+     Running tests/semantics.rs (target/verification-build/debug/deps/semantics-dab3f7dce5bdded6)
+
+running 8 tests
+test declaration_order_never_overrides_actual_field_dependencies ... ok
+test exact_algebra_rejects_overflow_and_reversed_segments ... ok
+test complete_time_summary_matches_scan_at_every_split_and_grouping ... ok
+test conflict_set_counterexample_requires_a_tracked_guard_read ... ok
+test linear_guard_needs_a_shared_difference_measure_and_historical_extrema ... ok
+test merge_preserves_authorized_order_ties_and_budgeted_existence ... ok
+test scalar_reader_preserves_first_incomparable_choice_and_owner_fallback ... ok
+test point_overlay_coalesces_patches_preserves_absence_and_drops_no_ops ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/storage_lifecycle.rs (target/verification-build/debug/deps/storage_lifecycle-9a2310a5e864f744)
+
+running 4 tests
+test archived_receipts_fence_old_uncertain_requests_and_remain_reconcilable ... ok
+test damaged_or_incomplete_backups_never_publish_a_destination ... ok
+test mixed_causal_and_exchange_state_is_valid_across_rate_edits_restore_and_startup ... ok
+test verified_backup_restore_and_reset_preserve_or_atomically_replace_complete_state ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running tests/workshop_exhaustive.rs (target/verification-build/debug/deps/workshop_exhaustive-9bb309fa8d8f2316)
+
+running 1 test
+test six_authored_actions_match_literal_oracle_through_depth_three ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.71s
+
+     Running unittests examples/exact_values.rs (target/verification-build/debug/examples/exact_values-411eb4e8e88f8474)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/feasibility.rs (target/verification-build/debug/examples/feasibility-c718d8d96fba4533)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/g7_application.rs (target/verification-build/debug/examples/g7_application-c8e7a01d65d682de)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/g7_coordination.rs (target/verification-build/debug/examples/g7_coordination-32d45426a22255d0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/g7_storage.rs (target/verification-build/debug/examples/g7_storage-d8b2f2e73b4dde02)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/local_acceptance.rs (target/verification-build/debug/examples/local_acceptance-84197949cb67ea15)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/native_slice.rs (target/verification-build/debug/examples/native_slice-b855e3e17814b8a8)
+
+running 1 test
+test tests::raw_observer_includes_unreachable_rows_and_refuses_other_tables ... FAILED
+
+failures:
+
+---- tests::raw_observer_includes_unreachable_rows_and_refuses_other_tables stdout ----
+
+thread 'tests::raw_observer_includes_unreachable_rows_and_refuses_other_tables' (64676) panicked at examples/native_slice.rs:496:9:
+assertion `left == right` failed
+  left: 3
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::raw_observer_includes_unreachable_rows_and_refuses_other_tables
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--example native_slice`

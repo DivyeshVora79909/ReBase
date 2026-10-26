@@ -62,7 +62,7 @@ before runtime acceptance. The final reports and logs are retained under
 `target/g3e-release/`; `extracted.json` locates the private disposable stores and
 saved requests used for the checks.
 
-The [template/recovery probe](experiments/deployment_bundle.py) preserves the exact
+The [template/recovery probe](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/deployment_bundle.py) preserves the exact
 executed probe source. To repeat it against a fresh extracted bundle, first create
 that bundle's `target/` directory, then run from this source checkout:
 

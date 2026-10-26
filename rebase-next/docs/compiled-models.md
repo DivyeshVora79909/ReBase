@@ -4,20 +4,14 @@ G1 adds reusable model authoring through trusted Rust modules. The calculation
 model and the independently checked [equipment model](equipment.md) use the same
 `Prepared<B>`, `Store<B>`, mutation lifecycle, principal DAG authority, public
 queries, receipts, HTTP server and storage tools. Select one compiled model per
-store. Omitting the selector chooses `calculation`:
+store; current service configuration requires the choice explicitly:
 
-```sh
-rebase-next --model equipment model public
-rebase-next --model equipment model developer
-rebase-next --model equipment model explain Reservation
-rebase-next --model equipment fixture list
-rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100 > equipment-draft.json
-```
+The [N1 catalog example](../tools/node/examples/n1-model-catalog.mjs) reads a public catalog, while [N2](../tools/node/examples/n2-equipment-workflow.mjs) shows a selected model through an authenticated workflow.
 
 The [invoicing model](invoicing.md) adds fractional pricing, chronological tax
 reassessment, payments and linked refunds using the same interfaces, with typed
 authored-parent parameters and explicit money memberships.
-Select `--model invoicing`; its initial source/output/retained envelope is
+Select `invoicing`; its initial source/output/retained envelope is
 64/256/512 rather than calculation/equipment's larger accepted workload profile.
 
 The [effect-demo model](external-effects.md) adds immutable Dispatch requests
@@ -28,11 +22,11 @@ the action's immutable source and required typed target reference and hashes its
 versioned metadata. Action metadata contributes to the declaring model's identity;
 shared semantic changes still require every affected behavior identity to change.
 
-`--model` must precede the command. Use the same selector for initialization,
-serving, checks, inspection, backup, restore and reset. There is no HTTP operation
-that switches a store's model. A model or codec mismatch rejects opening a store;
-this gate supplies no migration from earlier store formats. Use `version` with
-the selector to inspect the selected model identity and current store format.
+The same explicit model identity must be used for native lifecycle operations and
+service opens. There is no HTTP operation that switches a store's model. A model
+or codec mismatch rejects opening a store; this gate supplies no migration from
+earlier store formats. Version and behavior identities bind a store to its
+compiled model contract.
 
 ## Small compiled interfaces
 
@@ -220,15 +214,12 @@ evidence for that bundle. See [storage upgrades](storage.md#data-identity-and-up
 
 The [ordinary developer workflow](developer-tools.md) applies to either model;
 its original D5 acceptance examples use calculation. Follow the [server
-configuration](server.md) for issuer keys, tokens and HTTP settings, adding
-`--model equipment` to model/store commands for equipment. Send its fixture draft
-using the existing client:
+configuration](server.md) for issuer keys, tokens and HTTP settings. Select the
+equipment model explicitly in configuration. The former fixture CLI workflow is
+retired; the [N2 example](../tools/node/examples/n2-equipment-workflow.mjs)
+shows caller-owned client composition:
 
-```sh
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt prepare equipment-draft.json equipment.plan.json
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt apply equipment.plan.json
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt status equipment.plan.json
-```
+The [N1 catalog example](../tools/node/examples/n1-model-catalog.mjs) reads a public catalog, while [N2](../tools/node/examples/n2-equipment-workflow.mjs) shows a selected model through an authenticated workflow.
 
 The client takes no model selector: the draft and authenticated destination supply
 model identity. A saved plan preserves the original operation context across
@@ -271,7 +262,7 @@ I/O and configuration remain outside model calculation and transactions.
 
 ## Minimal ready-publication example
 
-Select `--model quantity` for the [workshop](workshop.md). Source (101) publishes
+Select `quantity` in configuration for the [workshop](workshop.md). Source (101) publishes
 an authored integer, Scale (205) applies an exact rational with explicit rounding,
 and Join (309) adds two ready parent quantities. `fixture plan quantities
 --namespace <uuid>` prepares Source 12, exact half/third scales and Join 10.

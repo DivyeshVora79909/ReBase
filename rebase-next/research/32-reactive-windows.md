@@ -73,7 +73,7 @@ remains dated and unchanged.
 
 ## Independent acceptance
 
-The [literal source oracle](experiments/reactive_windows.py) uses ordinary
+The [literal source oracle](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/reactive_windows.py) uses ordinary
 bound conjunction, full source sums and pairwise final producer/read edges.
 It imports no runtime code and implements neither AVL selection nor compressed
 readiness gates. Its self-tests are preparation evidence, not native acceptance.

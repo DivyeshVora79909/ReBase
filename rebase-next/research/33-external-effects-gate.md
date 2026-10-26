@@ -7,7 +7,7 @@ typed result application; [G5c](39-ingress-recovery-implementation.md) adds dura
 signed ingress and explicit restored reconciliation. The fixed fake provider is
 verified against an independent journal. Restored delivery stays prohibited.
 The [capability program](30-capability-program.md) remains active. The original
-[lifecycle oracle](experiments/effect_lifecycle.py) below is separate logical
+[lifecycle oracle](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/effect_lifecycle.py) below is separate logical
 preparation evidence; it alone does not prove native durability or transport.
 The implementation results above own those executed claims and their limits.
 

@@ -397,6 +397,7 @@ fn issue_share_checker_rejects_stale_publications_and_missing_or_orphan_direct_r
         },
     )
     .unwrap();
+    let expected_store = store.inspect().unwrap()["store"].clone();
     let fixture = Invoicing::fixture_plan(&model, "issue-share", id(30)).unwrap();
     let ids = &fixture["fixture"]["ids"];
     let identity = |name: &str| Uuid::parse_str(ids[name].as_str().unwrap()).unwrap();
@@ -501,18 +502,35 @@ fn issue_share_checker_rejects_stale_publications_and_missing_or_orphan_direct_r
         drop(db);
         let damaged = Arc::new(Store::<Invoicing>::open(&path, model.clone()).unwrap());
         let before = damaged.observe_for_verification().unwrap();
-        assert!(damaged.check_integrity().is_err(), "{label}");
+        let integrity_error = damaged.check_integrity().unwrap_err();
         assert!(
             server::router(damaged.clone(), &config).is_err(),
             "startup {label}"
         );
         assert_eq!(damaged.observe_for_verification().unwrap(), before);
         drop(damaged);
+        let startup = dir.0.join("corrupt-service.json");
+        std::fs::write(&startup, serde_json::to_vec(&json!({
+            "format":"rebase-service-1","model":"invoicing","backend":{"kind":"redb","cluster_file":null},
+            "target":{"mode":"open","path":path,"expect_store":expected_store},"service":config
+        })).unwrap()).unwrap();
         let result = std::process::Command::new(env!("CARGO_BIN_EXE_rebase-next"))
-            .args(["--model", "invoicing", "check"])
-            .arg(&path)
+            .arg("serve")
+            .arg(&startup)
+            .env("PATH", "")
             .output()
             .unwrap();
-        assert!(!result.status.success(), "CLI check {label}");
+        assert!(!result.status.success(), "standalone startup {label}");
+        assert!(
+            String::from_utf8_lossy(&result.stderr).contains(integrity_error.code),
+            "startup {label}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let reopened = Store::<Invoicing>::open(&path, model.clone()).unwrap();
+        assert_eq!(
+            reopened.observe_for_verification().unwrap(),
+            before,
+            "startup changed {label}"
+        );
     }
 }

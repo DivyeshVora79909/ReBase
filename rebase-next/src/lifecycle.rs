@@ -130,7 +130,7 @@ impl<B: Binding> Store<B> {
         expected_store: Option<Uuid>,
     ) -> Result<Value> {
         let backup = self.backup_scoped(destination, expected_store)?;
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         self.archive_cleanup(write, &backup)
     }
 
@@ -180,7 +180,7 @@ impl<B: Binding> Store<B> {
     /// but every credential epoch advances and store/cursor identities change.
     /// The explicit expected UUID prevents resetting a different opened store.
     pub fn reset(&self, expected_store: Uuid) -> Result<Value> {
-        let write = self.db.begin_write().map_err(local::storage)?;
+        let write = self.begin_write().map_err(local::storage)?;
         let header: RuntimeHeader = local::decode(
             write
                 .open_table(RUNTIME)

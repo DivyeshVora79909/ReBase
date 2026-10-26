@@ -147,6 +147,7 @@ pub(crate) fn failure(id: Value, kind: &str) -> Value {
             "A storage key, value, size or lifetime limit was reached",
         ),
         "model_mismatch" => (-32000, "Model or store format differs"),
+        "wrong_target" => (-32000, "Service store identity changed"),
         "invariant" => (-32000, "The settled state violates a declared rule"),
         "feedback" => (-32000, "The final calculation graph contains feedback"),
         "duplicate_time" => (-32000, "A quote already occupies that time"),

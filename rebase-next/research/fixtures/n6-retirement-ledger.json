@@ -1,0 +1,2292 @@
+{
+  "schema": "rebase.n6-tooling-retirement.v1",
+  "date": "2026-10-26",
+  "status": "retirement_prepared_extracted_release_acceptance_pending",
+  "acceptance": "N6 retirement acceptance is pending extracted-release verification; this ledger records prepared retirement only and does not mark N6 accepted.",
+  "pinned_commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+  "source_ledger": "research/fixtures/n0-migration-ledger.json (preserved unchanged)",
+  "row_count": 60,
+  "unique_python_paths": 60,
+  "auxiliary_path_count": 4,
+  "rows": [
+    {
+      "path": "research/experiments/deployment_bundle.py",
+      "capability": [
+        "independent release manifest/recovery expectations"
+      ],
+      "n0_future_node_group": "package",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/release.mjs",
+          "basis": "N5 release tests cover committed-source manifests and extracted verification; the original deployment bundle prototype is retained as a historical package campaign."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N5 release tests cover committed-source manifests and extracted verification; the original deployment bundle prototype is retained as a historical package campaign."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-23-g3e-package.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "82ed8e7c4228679f783e53023868f1b6f4e76c46c9f3035676c624ffd3f04f23"
+      },
+      "retirement_basis": "N5 release tests cover committed-source manifests and extracted verification; the original deployment bundle prototype is retained as a historical package campaign.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "research/experiments/effect_lifecycle.py",
+      "capability": [
+        "independent effect lifecycle expectations"
+      ],
+      "n0_future_node_group": "operator",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "N5 lifecycle and accepted N6 retry/ingress controls cover the extant lifecycle obligations; the Python experiment remains historical source for its earlier campaign."
+        },
+        {
+          "path": "tools/node/test/n6-effect-retry.test.mjs",
+          "basis": "N5 lifecycle and accepted N6 retry/ingress controls cover the extant lifecycle obligations; the Python experiment remains historical source for its earlier campaign."
+        },
+        {
+          "path": "tools/node/test/n6-signed-ingress.test.mjs",
+          "basis": "N5 lifecycle and accepted N6 retry/ingress controls cover the extant lifecycle obligations; the Python experiment remains historical source for its earlier campaign."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-23-g5b-fenced-worker.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "bb294f3cba29eef8d5386ba78ebe4d49e2663ee331787984550a0157109ae369"
+      },
+      "retirement_basis": "N5 lifecycle and accepted N6 retry/ingress controls cover the extant lifecycle obligations; the Python experiment remains historical source for its earlier campaign.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "research/experiments/exact_values.py",
+      "capability": [
+        "independent exact-value vectors"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/test/n0-feasibility.test.mjs",
+          "basis": "N0 strict exact-value witness and N3 population semantics cover the retained typed-value boundary; campaign evidence remains immutable."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N0 strict exact-value witness and N3 population semantics cover the retained typed-value boundary; campaign evidence remains immutable."
+        },
+        {
+          "path": "tests/exact_values.rs",
+          "basis": "Native retained control: tests/exact_values.rs::exact_values_cross_native_binding_http_receipts_and_reopening exercises exact rational binding, authored calculation, HTTP receipts, atomic rejection, and durable replay; examples/exact_values.rs remains the independent Fraction command-line oracle. This is native corpus coverage, not a claim that Node mirrors that oracle."
+        },
+        {
+          "path": "examples/exact_values.rs",
+          "basis": "Native retained control: tests/exact_values.rs::exact_values_cross_native_binding_http_receipts_and_reopening exercises exact rational binding, authored calculation, HTTP receipts, atomic rejection, and durable replay; examples/exact_values.rs remains the independent Fraction command-line oracle. This is native corpus coverage, not a claim that Node mirrors that oracle."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-g3a-values.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "a6dade2f8048c594a6023eecbadb8999a80076555d1bf0d2cc672923f375abbe"
+      },
+      "retirement_basis": "Retire the research Fraction implementation as historical experiment source; preserve its dated vectors and pinned source. Concrete current native controls are tests/exact_values.rs::exact_values_cross_native_binding_http_receipts_and_reopening and the independent rational adapter in examples/exact_values.rs. The Node typed-value tests cover their named subset only.",
+      "claim_boundary": "The Node N0/N3 tests are a typed-value subset, not a replacement for the independent Fraction oracle or its complete vectors. The historical implementation and evidence remain available at the pinned commit; current native exact-value controls are the named integration test and examples/exact_values.rs."
+    },
+    {
+      "path": "research/experiments/local_prototype.py",
+      "capability": [
+        "independent local adapter/receipt expectations"
+      ],
+      "n0_future_node_group": "native",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/test/n2-real-workflow.test.mjs",
+          "basis": "The N2 real workflow and native controls cover the current service path; the local prototype is historical evidence and not a second active adapter."
+        },
+        {
+          "path": "tools/node/test/native.test.mjs",
+          "basis": "The N2 real workflow and native controls cover the current service path; the local prototype is historical evidence and not a second active adapter."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-local-prototype.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "cc596e7e8ccad623f58c304694627911f0c7b5a73928856d324cee49950152a2"
+      },
+      "retirement_basis": "The N2 real workflow and native controls cover the current service path; the local prototype is historical evidence and not a second active adapter.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "research/experiments/m3_m5.py",
+      "capability": [
+        "literal calculation/query oracle vectors"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles retain applicable Quantity calculation/query expectations; the old calculation/query implementation is retired to its dated campaign and pinned source."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles retain applicable Quantity calculation/query expectations; the old calculation/query implementation is retired to its dated campaign and pinned source."
+        },
+        {
+          "path": "tests/invoicing.rs",
+          "basis": "Native retained compiled-Calculation controls: tests/invoicing.rs exercises the production invoicing Calculation model; src/parameter_tests.rs covers inherited parameters, calculation-only readers and final-state repair; src/publication_tests.rs covers calculation publication graphs, order independence and atomic rollback. The Node Quantity oracle does not reproduce the historical M3/M5 specification engine."
+        },
+        {
+          "path": "src/parameter_tests.rs",
+          "basis": "Native retained compiled-Calculation controls: tests/invoicing.rs exercises the production invoicing Calculation model; src/parameter_tests.rs covers inherited parameters, calculation-only readers and final-state repair; src/publication_tests.rs covers calculation publication graphs, order independence and atomic rollback. The Node Quantity oracle does not reproduce the historical M3/M5 specification engine."
+        },
+        {
+          "path": "src/publication_tests.rs",
+          "basis": "Native retained compiled-Calculation controls: tests/invoicing.rs exercises the production invoicing Calculation model; src/parameter_tests.rs covers inherited parameters, calculation-only readers and final-state repair; src/publication_tests.rs covers calculation publication graphs, order independence and atomic rollback. The Node Quantity oracle does not reproduce the historical M3/M5 specification engine."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-m3-m5.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "1a98c16ba16f5a9ac30890d28650819c57969e95db2b18d27ba018b3de25e800"
+      },
+      "retirement_basis": "Retire the independent M3/M5 Python specification implementation as historical experiment source, preserving its dated cases and pinned source. Current native compiled Calculation behavior is controlled by tests/invoicing.rs plus src/parameter_tests.rs and src/publication_tests.rs. The Node Quantity source oracle covers a separate bounded subset; it does not replace the richer M3/M5 calculation/query specification.",
+      "claim_boundary": "The historical independent M3/M5 spec engine is retired, not ported to Node. Named native compiled-Calculation tests preserve current production semantics, while historical vectors/report evidence remain tied to the pinned Python source. No full one-to-one Node coverage is claimed."
+    },
+    {
+      "path": "research/experiments/m6.py",
+      "capability": [
+        "independent typed snapshot invariants"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracle tests cover typed snapshot invariants still required by N4; the broader experimental engine remains historical."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracle tests cover typed snapshot invariants still required by N4; the broader experimental engine remains historical."
+        },
+        {
+          "path": "tests/native_tree.rs",
+          "basis": "Native retained controls: tests/native_tree.rs directly checks rotations, intrusive deletion, equal-time boundaries, strict prefixes, ranges, overflow and corruption; examples/native_slice.rs provides the bounded raw native-KV observer; tools/node/test/n6-complete-backup.test.mjs independently checks the current typed tree backup path. These controls do not recreate the historical full non-tree KV/report/matrix engines."
+        },
+        {
+          "path": "examples/native_slice.rs",
+          "basis": "Native retained controls: tests/native_tree.rs directly checks rotations, intrusive deletion, equal-time boundaries, strict prefixes, ranges, overflow and corruption; examples/native_slice.rs provides the bounded raw native-KV observer; tools/node/test/n6-complete-backup.test.mjs independently checks the current typed tree backup path. These controls do not recreate the historical full non-tree KV/report/matrix engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-m6.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "c5ab901d6fd52b6824160a8e67759d094e13e3a9965739dd71807999b7a2009e"
+      },
+      "retirement_basis": "Retire the synthetic M6 Python snapshot checker as historical implementation source, preserving its dated oracle/evidence and pinned source. Current native tree invariants have concrete tests/native_tree.rs controls and examples/native_slice.rs supplies raw KV observations; the Node N6 checker covers typed tree backups only. Neither replaces the former full non-tree KV/report/matrix engines.",
+      "claim_boundary": "Current native tree tests and Node typed-backup checks cover named structural obligations only. The historical synthetic snapshot/report engine is retired to pinned source and dated evidence; full historical non-tree KV, report and matrix behavior is not claimed as reproduced."
+    },
+    {
+      "path": "research/experiments/measurement.py",
+      "capability": [
+        "historical measurement source provenance"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node tests retain current Measurement source/window/selection expectations; unavailable historical measurement campaign is not rerun and its dated provenance remains the oracle."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node tests retain current Measurement source/window/selection expectations; unavailable historical measurement campaign is not rerun and its dated provenance remains the oracle."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-m6.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "0317f353d778a467e8c3210ad7896e245614713811637270b22a6d39df468d22"
+      },
+      "retirement_basis": "Node tests retain current Measurement source/window/selection expectations; unavailable historical measurement campaign is not rerun and its dated provenance remains the oracle.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "research/experiments/native_slice.py",
+      "capability": [
+        "source oracle",
+        "native KV checker"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Current complete-backup checking covers the typed tree snapshot path. It does not replace the old full non-tree KV, report, or matrix engines; those remain retired historical source and evidence."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Current complete-backup checking covers the typed tree snapshot path. It does not replace the old full non-tree KV, report, or matrix engines; those remain retired historical source and evidence."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Current complete-backup checking covers the typed tree snapshot path. It does not replace the old full non-tree KV, report, or matrix engines; those remain retired historical source and evidence."
+        },
+        {
+          "path": "examples/native_slice.rs",
+          "basis": "Native retained controls: examples/native_slice.rs::raw_observer_includes_unreachable_rows_and_refuses_other_tables captures complete raw KV rows and refuses unexpected tables; tests/native_tree.rs checks native tree algorithms; the Node N6 typed-tree backup checker is a separate current path."
+        },
+        {
+          "path": "tests/native_tree.rs",
+          "basis": "Native retained controls: examples/native_slice.rs::raw_observer_includes_unreachable_rows_and_refuses_other_tables captures complete raw KV rows and refuses unexpected tables; tests/native_tree.rs checks native tree algorithms; the Node N6 typed-tree backup checker is a separate current path."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-22-native-slice.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "e1af06b56760cde9258b8d1a8289700bc1619c25c6e9c6748ccc9416d5fc6708"
+      },
+      "retirement_basis": "Retire the Python native-slice oracle/checker as historical implementation source, preserving its campaign evidence and pinned source. Concrete current controls are examples/native_slice.rs::raw_observer_includes_unreachable_rows_and_refuses_other_tables and tests/native_tree.rs; Node complete-backup tests check the typed tree snapshot path. The Node checker is not a replacement for full non-tree KV/report/matrix engines.",
+      "claim_boundary": "The retained Rust example observes raw native KV and the Rust tree suite controls tree behavior. Node typed-tree checking covers its named snapshot contract only. No claim is made that either replaces the old complete non-tree KV/report/matrix Python engines."
+    },
+    {
+      "path": "research/experiments/reactive_windows.py",
+      "capability": [
+        "independent window/causality vectors"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node Measurement oracle controls retain exact window and tie behavior; dated native window acceptance remains the historical campaign record."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node Measurement oracle controls retain exact window and tie behavior; dated native window acceptance remains the historical campaign record."
+        },
+        {
+          "path": "src/window_tests.rs",
+          "basis": "Native retained controls: src/window_tests.rs::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting and related terminal-window tests cover compiled window behavior; tests/native_tree.rs::ranges_match_literal_subsets_complete_groups_and_extreme_bounds covers tree range semantics; tests/measurement.rs provides the production Measurement window/query controls."
+        },
+        {
+          "path": "tests/native_tree.rs",
+          "basis": "Native retained controls: src/window_tests.rs::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting and related terminal-window tests cover compiled window behavior; tests/native_tree.rs::ranges_match_literal_subsets_complete_groups_and_extreme_bounds covers tree range semantics; tests/measurement.rs provides the production Measurement window/query controls."
+        },
+        {
+          "path": "tests/measurement.rs",
+          "basis": "Native retained controls: src/window_tests.rs::windows_preserve_groups_extremes_disjoint_impacts_and_bound_retargeting and related terminal-window tests cover compiled window behavior; tests/native_tree.rs::ranges_match_literal_subsets_complete_groups_and_extreme_bounds covers tree range semantics; tests/measurement.rs provides the production Measurement window/query controls."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-23-g4b-windows.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "e2aa7d1082b23eeeee331f9bcc9a40314111fd74a9863c097fa996197bbbfa22"
+      },
+      "retirement_basis": "Retire the independent Python reactive-window oracle as historical source with its dated G4b evidence and pinned source. Current behavior is controlled by native compiled-window tests in src/window_tests.rs, literal tree ranges in tests/native_tree.rs, and production Measurement tests/measurement.rs; Node oracle tests cover their named subset.",
+      "claim_boundary": "Native tests cover the named compiled window, tree range and Measurement behavior. The separate historical Python generated-vector/JSONL engine is retired to pinned source and evidence; no claim of a complete Node reproduction is made."
+    },
+    {
+      "path": "research/experiments/workshop_shrink_probe.py",
+      "capability": [
+        "injected failure shrink/replay expectation"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node bounded shrink/replay controls retain the accepted failure-minimization obligation; the workshop probe is historical."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node bounded shrink/replay controls retain the accepted failure-minimization obligation; the workshop probe is historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-23-v1-workshop.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "e6f166ca124b9c94c9a677cb861bb2ed68799d3bfefb19a88f8a39e17f78465d"
+      },
+      "retirement_basis": "Node bounded shrink/replay controls retain the accepted failure-minimization obligation; the workshop probe is historical.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/capacity.py",
+      "capability": [
+        "bounded capacity envelope",
+        "independent expected state",
+        "atomic rejection"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Node native adapter composes population with the authoritative native capability; accepted G8.1 evidence remains the capacity campaign record."
+        },
+        {
+          "path": "tests/equipment.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "tests/measurement.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "src/integrity.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "tests/access_control.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g81-churn-resources.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b73d98fb52d3e3e8dfae71e8a761b2affb4a9aa411ac731ade44f31f7d1c20b1"
+      },
+      "retirement_basis": "Node bounded population/scenario controls plus the named native Equipment, Measurement, integrity/population-limit and access-control tests preserve current bounded capability contracts. The actual capacity measurements remain the dated G8.1 campaign; retirement does not turn those measurements into a new or broader capacity claim.",
+      "claim_boundary": "Current Node and native tests cover model limits, selected population/access invariants, and bounded scenario mechanics. The historical G8.1 measured campaign remains authoritative for its original conditions and claims; no new throughput or general capacity assertion is made."
+    },
+    {
+      "path": "tools/client.py",
+      "capability": [
+        "client transport",
+        "strict duplicate JSON",
+        "endpoint/auth fences",
+        "immutable plan and unknown outcome"
+      ],
+      "n0_future_node_group": "client",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/client.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        },
+        {
+          "path": "tools/node/test/client.test.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        },
+        {
+          "path": "tools/node/test/n2-real-workflow.test.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-n2-node-workflow.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "487f7999d7e2fa30a4806ffdf9fab61ddf3588b6966cf7b9dc41642bd8a89798"
+      },
+      "retirement_basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node.",
+      "claim_boundary": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+    },
+    {
+      "path": "tools/effects.py",
+      "capability": [
+        "authenticated effect intent",
+        "status/replay"
+      ],
+      "n0_future_node_group": "operator",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/fake-provider.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/fake-provider.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-effect-retry.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-signed-ingress.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-private-effect-retry.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "f377abddf8af9e69cb35e4732b0fa64bb43f9e65f4dd420a90a6a5bd26498141"
+      },
+      "retirement_basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable.",
+      "claim_boundary": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+    },
+    {
+      "path": "tools/effects_ingress.py",
+      "capability": [
+        "signed ingress",
+        "deduplication",
+        "restore/reset fences"
+      ],
+      "n0_future_node_group": "operator",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/fake-provider.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/fake-provider.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-effect-retry.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-signed-ingress.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-private-effect-retry.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "e4078c90baa8aa3aa85f11f4289391a7129c256ffcbf3c917978a2c0d385f76e"
+      },
+      "retirement_basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable.",
+      "claim_boundary": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+    },
+    {
+      "path": "tools/effects_worker.py",
+      "capability": [
+        "durable journal",
+        "reconciliation",
+        "crash boundaries"
+      ],
+      "n0_future_node_group": "operator",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/fake-provider.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/fake-provider.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-effect-retry.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-signed-ingress.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-private-effect-retry.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "6da7c246719da61bb03e95d2f02381312c912dd290db8184cf21d79d2e523c3c"
+      },
+      "retirement_basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable.",
+      "claim_boundary": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+    },
+    {
+      "path": "tools/fake_provider.py",
+      "capability": [
+        "deterministic fake provider lifecycle"
+      ],
+      "n0_future_node_group": "operator",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/fake-provider.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/fake-provider.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-effect-retry.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        },
+        {
+          "path": "tools/node/test/n6-signed-ingress.test.mjs",
+          "basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-private-effect-retry.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "53a4fa247dd2110b4e906e567a7332016e00e18e990602114854bbd6aea49f21"
+      },
+      "retirement_basis": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable.",
+      "claim_boundary": "N5 lifecycle, private retry and signed-ingress controls cover current Node/native obligations; each dated N5/N6 evidence record remains immutable."
+    },
+    {
+      "path": "tools/fdb_cluster.py",
+      "capability": [
+        "owned FoundationDB lifecycle",
+        "PID/port checks",
+        "bounded cleanup"
+      ],
+      "n0_future_node_group": "native",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/infra.mjs",
+          "basis": "Node infra controls owned start/check/stop and refuses ownership claims over unrelated listeners; the dated local FDB witness is bounded to one local process."
+        },
+        {
+          "path": "tools/node/test/infra.test.mjs",
+          "basis": "Node infra controls owned start/check/stop and refuses ownership claims over unrelated listeners; the dated local FDB witness is bounded to one local process."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n5-fdb-owner-real.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "5c6ad0029fe549c6e7eadad5a0cea15b8bd4393372dcb4dab171d8aaf2b46925"
+      },
+      "retirement_basis": "Node infra controls owned start/check/stop and refuses ownership claims over unrelated listeners; the dated local FDB witness is bounded to one local process.",
+      "claim_boundary": "Node infra controls owned start/check/stop and refuses ownership claims over unrelated listeners; the dated local FDB witness is bounded to one local process."
+    },
+    {
+      "path": "tools/g7_http.py",
+      "capability": [
+        "backend HTTP conformance",
+        "fault boundary"
+      ],
+      "n0_future_node_group": "native",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        },
+        {
+          "path": "tools/node/test/native-integration.test.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        },
+        {
+          "path": "tools/node/test/n2-real-workflow.test.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-24-g7-shared-persistence.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "ba541614ed8ca2d48ca292fb4375bcebc0f0f45ca4ec233e399c11537581e81c"
+      },
+      "retirement_basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained.",
+      "claim_boundary": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+    },
+    {
+      "path": "tools/g7_oracle.py",
+      "capability": [
+        "independent storage/application oracle"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        },
+        {
+          "path": "tools/node/test/native-integration.test.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        },
+        {
+          "path": "tools/node/test/n2-real-workflow.test.mjs",
+          "basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-24-g7-shared-persistence.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "548bf325c66325b53f3a5a3331b966df3fdf161a11664fca6ff55d5dbbb983dd"
+      },
+      "retirement_basis": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained.",
+      "claim_boundary": "Current native adapter and real N2 integration own current conformance checks; G7 accepted backend and oracle campaign evidence is historical and retained."
+    },
+    {
+      "path": "tools/g8.py",
+      "capability": [
+        "bounded workload compositions",
+        "remove project CLI dispatch"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node experiment controls preserve the applicable bounded source oracle behavior."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "55781894108faa0e94218382e55ff641a744fe9ef77fe61d96177bbef6ce03da"
+      },
+      "retirement_basis": "Node experiment controls preserve the applicable bounded source oracle behavior.",
+      "claim_boundary": "Node experiment controls preserve the applicable bounded source oracle behavior."
+    },
+    {
+      "path": "tools/g8_check.py",
+      "capability": [
+        "independent workload result checking"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g81-churn-resources.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "2ab875ea83dc97bd1daee917173c198706bf30cf118cb4a9842564d39250b088"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_cycles.py",
+      "capability": [
+        "bounded receipt/workload cycles"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "0f0e2ac53fbbd8d71ef53d06e7afa3e3a0f9df2f0dfff8d65ca58e88dc1ddec1"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_faults.py",
+      "capability": [
+        "fault injection boundaries",
+        "owned cleanup"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g83-outage.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "cd4a9cf4bb55f6f0937ec08e979210f792b49ee925a0f1d0a2d856d6433ae9d1"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_observe.py",
+      "capability": [
+        "workload observations and reports"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "54fd60773ffccaaadc440e8bfc525fea70d5c259d488f831b5ecf41ad1e55fc0"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_pressure.py",
+      "capability": [
+        "pressure caps",
+        "claim boundaries"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g82-pressure.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "d0c29ac6fe544af00067d511993270f85fffb5bf33e5d2f59eca34901e7c85c8"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_release.py",
+      "capability": [
+        "release behavior",
+        "report checking"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g84-release.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "3d42b0a4bf362fa8c22a77ca52ec4415b0daaeec80be7dfbb904fe2963d46c32"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/g8_workload.py",
+      "capability": [
+        "bounded workload setup/execution"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "c89f353714f9891b93fbaae808368f995ce1e71587b60d62b0768a671ae65b93"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/harness.py",
+      "capability": [
+        "owned process lifecycle",
+        "cleanup and bounded artifacts"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/infra.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/infra.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n5-node-lifecycle.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b581bf3be99fab4ad2f5d36ed1e8d367836b332be1f6dbd22ef70330ba5e605b"
+      },
+      "retirement_basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical.",
+      "claim_boundary": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+    },
+    {
+      "path": "tools/invoicing.py",
+      "capability": [
+        "bounded invoicing composition",
+        "exact value and receipt behavior"
+      ],
+      "n0_future_node_group": "client",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "research/74-node-issue-share-contract.md",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/examples/n6-issue-share.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/test/n6-issue-share.test.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/invoicing.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/issue_share.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-issue-share.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "2d96aba0d412d89123d6c28ab435d39e7542ae1fe121c81f1d288eb4480bfd4b"
+      },
+      "retirement_basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine.",
+      "claim_boundary": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+    },
+    {
+      "path": "tools/issue_shares.py",
+      "capability": [
+        "authored share issuance and report"
+      ],
+      "n0_future_node_group": "client",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "research/74-node-issue-share-contract.md",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/examples/n6-issue-share.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/test/n6-issue-share.test.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/invoicing.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/issue_share.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-issue-share.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "8332b67aec25eca1027ef2c0c4f5b2d92df207b719bfa16e0af9bee99f4f845a"
+      },
+      "retirement_basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine.",
+      "claim_boundary": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+    },
+    {
+      "path": "tools/observation_reports.py",
+      "capability": [
+        "machine and human report meaning"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "N6 Measurement complete-backup structure controls retain the current full typed-tree snapshot path; historical report formats remain dated."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "N6 complete backup control preserves typed tree structure independently; it does not recreate historical non-tree KV/report/matrix engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n4-node-experiments.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "24f903554fa2dfa89a879a5534c614af222a19416a501b66f3455cfd6ed8d744"
+      },
+      "retirement_basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only.",
+      "claim_boundary": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+    },
+    {
+      "path": "tools/observation_selection.py",
+      "capability": [
+        "bounded observation selection"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "N6 Measurement complete-backup structure controls retain the current full typed-tree snapshot path; historical report formats remain dated."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "N6 complete backup control preserves typed tree structure independently; it does not recreate historical non-tree KV/report/matrix engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n4-node-experiments.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "cd10ff95bc27f051c4a031cbbfa1872404ec333b708589100abf26034e3e3422"
+      },
+      "retirement_basis": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only.",
+      "claim_boundary": "Node bounded raw observation and independent checking own current observation controls; old report formats and historical campaign values remain dated evidence only."
+    },
+    {
+      "path": "tools/package.py",
+      "capability": [
+        "committed-source export",
+        "manifest/checksum",
+        "restore isolation"
+      ],
+      "n0_future_node_group": "package",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/release.mjs",
+          "basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n5-release.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "3ca779e623243f41afe35a2be2e1fc3aee2c07eebe39e4aad49668263980815d"
+      },
+      "retirement_basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior.",
+      "claim_boundary": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+    },
+    {
+      "path": "tools/population.py",
+      "capability": [
+        "typed pools",
+        "seed/cursor",
+        "fresh context",
+        "pending plan acknowledgement"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "573de875f1c68a577f6ff8ce02dab1e66a17ed38e7be1b3b8e45ae379734ce24"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/population_demo.py",
+      "capability": [
+        "demo composition",
+        "resume/replay identity"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "7c888838f2ca97b208e2ef3ab78a6e6433cd5dc0ac3e4b259db30308d99c26c9"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/population_values.py",
+      "capability": [
+        "exact typed values",
+        "provider boundary"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "404364ba2067c54b66d219643e9bbdf9c7ae54ced0c959534eaada04ec736655"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/test_capacity.py",
+      "capability": [
+        "semantic controls for capacity capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node population, bounded workload and N4 controls retain applicable capacity envelope semantics; this does not reassert historical measured capacity beyond its dated campaign."
+        },
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Node native adapter composes population with the authoritative native capability; accepted G8.1 evidence remains the capacity campaign record."
+        },
+        {
+          "path": "tests/equipment.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "tests/measurement.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "src/integrity.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        },
+        {
+          "path": "tests/access_control.rs",
+          "basis": "Native retained controls: tests/equipment.rs::sparse_equipment_contracts_are_closed_and_native_bound and tests/measurement.rs::measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks cover model population bounds; src/integrity.rs::model_population_limits_are_checked_inside_codec_envelope checks persisted codec limits; tests/access_control.rs::prepared_scopes_match_independent_path_search_and_preserve_diamonds covers native access structure. G8.1 JSON remains the historical measured capacity campaign."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g81-churn-resources.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "e81de22034d9ebde6857d4e803e42d27d8694b31e47e6fad5ce1b169e94a7ef6"
+      },
+      "retirement_basis": "Node bounded population/scenario controls plus the named native Equipment, Measurement, integrity/population-limit and access-control tests preserve current bounded capability contracts. The actual capacity measurements remain the dated G8.1 campaign; retirement does not turn those measurements into a new or broader capacity claim.",
+      "claim_boundary": "Current Node and native tests cover model limits, selected population/access invariants, and bounded scenario mechanics. The historical G8.1 measured campaign remains authoritative for its original conditions and claims; no new throughput or general capacity assertion is made."
+    },
+    {
+      "path": "tools/test_client.py",
+      "capability": [
+        "semantic controls for client capability"
+      ],
+      "n0_future_node_group": "client",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/client.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        },
+        {
+          "path": "tools/node/test/client.test.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        },
+        {
+          "path": "tools/node/test/n2-real-workflow.test.mjs",
+          "basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-n2-node-workflow.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "2f09e89cd60e084dec6c83930db0595e740402924280a92e0aed781c85d266f7"
+      },
+      "retirement_basis": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node.",
+      "claim_boundary": "Strict transport, saved original plan identity, unknown outcomes and real workflow are directly controlled in Node."
+    },
+    {
+      "path": "tools/test_g8_check.py",
+      "capability": [
+        "semantic controls for g8_check capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g81-churn-resources.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "f18093f4a499e1f5b48e7c066a70990861ac5dbe8428a27da688d962e1b0f767"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_cli.py",
+      "capability": [
+        "semantic controls for g8_cli capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "bb6cf331c0dd39015460aed59b419c7d473b48a0275449a203ae2820a7b27178"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_faults.py",
+      "capability": [
+        "semantic controls for g8_faults capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g83-outage.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "3812ca7c1351d7d5b073c8a9c4a0de59ffd4aa21e2c4b6019d55a95b0d8743a9"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_observe.py",
+      "capability": [
+        "semantic controls for g8_observe capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "010ef0ef4193f9a349a7ae545fd73e9eca63654fbb29c3727a2151adea54eccc"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_pressure.py",
+      "capability": [
+        "semantic controls for g8_pressure capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g82-pressure.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "0963e0050e9599964ef3855ab6448ab7214751d5fc2cf175c706bad12e434fd8"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_release.py",
+      "capability": [
+        "semantic controls for g8_release capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g84-release.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "d18e975483ca4e090e0324bd304ee2bee941baa6a95ea5f5b6d7fda83e6354c0"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_g8_workload.py",
+      "capability": [
+        "semantic controls for g8_workload capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/scenarios.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/observe.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g80-workload-inputs.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "8ed7ef80727778176e15c8743dde88fc303144cb74ec3bb0a56c4e34506e20c6"
+      },
+      "retirement_basis": "N4 ordinary bounded scenarios, observation and raw report checks retain reusable workload behavior; G8 report schemas, raw queues and campaign matrices are retired historical artifacts with dated G8 evidence.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/test_harness.py",
+      "capability": [
+        "semantic controls for harness capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/native.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/infra.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/workload.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/infra.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/workload.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        },
+        {
+          "path": "tools/node/test/n5-lifecycle.test.mjs",
+          "basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n5-node-lifecycle.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b60675cf8223e21620523a4df8a44306c986c4cae6f6a170fe33d59e36ab260c"
+      },
+      "retirement_basis": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical.",
+      "claim_boundary": "Current explicit Node native/FDB/workload handles own relevant lifecycle and bounded artifact behavior; old harness report serializers are historical."
+    },
+    {
+      "path": "tools/test_invoicing.py",
+      "capability": [
+        "semantic controls for invoicing capability"
+      ],
+      "n0_future_node_group": "client",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "research/74-node-issue-share-contract.md",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/examples/n6-issue-share.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tools/node/test/n6-issue-share.test.mjs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/invoicing.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        },
+        {
+          "path": "tests/issue_share.rs",
+          "basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-issue-share.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "a6be1b99cd87ea67c2d7284ffe2a7a76e3bd21e27ac2298c30142460998d37a4"
+      },
+      "retirement_basis": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine.",
+      "claim_boundary": "The accepted bounded Node IssueShare example, Rust authoritative invoice/share behavior and native tests preserve bounded business flows; the Fraction campaign is retired without duplicating an arithmetic engine."
+    },
+    {
+      "path": "tools/test_package.py",
+      "capability": [
+        "semantic controls for package capability"
+      ],
+      "n0_future_node_group": "package",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/release.mjs",
+          "basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+        },
+        {
+          "path": "tools/node/test/release.test.mjs",
+          "basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n5-release.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "993b81ed7e526a26ee564be606ac90b5ad0437d9578f77bc080473ac1f783e8c"
+      },
+      "retirement_basis": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior.",
+      "claim_boundary": "N5 release module and extracted-release controls cover current source export, manifest and verification behavior."
+    },
+    {
+      "path": "tools/test_population.py",
+      "capability": [
+        "semantic controls for population capability"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b71496345c925900c9d1bf4f403ec2908f586702b30759e5dbfaf780fcc07eb3"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/test_population_demo.py",
+      "capability": [
+        "semantic controls for population_demo capability"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "1acbbf6a2bd7639fbd4909083351e05ccf31a61a09b2458abfb37358aac99b5a"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/test_population_values.py",
+      "capability": [
+        "semantic controls for population_values capability"
+      ],
+      "n0_future_node_group": "population",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/examples/n3-population.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/n3-population.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        },
+        {
+          "path": "tools/node/test/population-semantics.test.mjs",
+          "basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-25-g93-population-experiment.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "017076d69c08ac0054374e1ed9f4112bf3a7d400faf90b413c51e1ef4dccb341"
+      },
+      "retirement_basis": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical.",
+      "claim_boundary": "N3 population tests and example cover typed pools, deterministic bounds, receipts and progress; the G9 measurement campaign remains historical."
+    },
+    {
+      "path": "tools/test_verify_checks.py",
+      "capability": [
+        "semantic controls for verify_checks capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "3b49b1a64cfa30a997327d4fdaeb97034564bde18a459bfaeb40b447752b66ed"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+    },
+    {
+      "path": "tools/test_verify_explore.py",
+      "capability": [
+        "semantic controls for verify_explore capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "8cfcd7eb66b08cf0643939ca0aa7736eff3949f44f7493828800f4a1b7ea82a7"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+    },
+    {
+      "path": "tools/test_verify_walk.py",
+      "capability": [
+        "semantic controls for verify_walk capability"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "f759adff26632abd97a5465751aa0e36921963bc57b5e7c70fcdca31a4e89f38"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+    },
+    {
+      "path": "tools/verify.py",
+      "capability": [
+        "walk/check/explore/replay entry behavior"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "d4baa7b1a2cad4e6d67ab7d16920ae876ed97a9f7571bcc8fd52e2ba19b3b3b7"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/verify_cases.py",
+      "capability": [
+        "explicit cases and expected data"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "f65f30f2c8884e8d5ecf218e726b9a2095d551cd099e44407df3d8eebf949fb7"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/verify_checks.py",
+      "capability": [
+        "independent persisted snapshot checks",
+        "bounded checker work"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "0b244ffacebcedd900ff2f163a623c6b6155d01e9ebb1190eb2fb1d387e63c32"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/verify_explore.py",
+      "capability": [
+        "seeded explore",
+        "shrink/minimize",
+        "logical replay"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "75358e0f9ada0a8ab1a7d3262819de28f8a42e7dd30ede63adaf26a30db8539a"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/verify_oracles.py",
+      "capability": [
+        "independent source-derived oracle"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b7fba5f1539d67fe0f4046cbd749d24ad9cc7508af0eb8d985cbf20fd406953c"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    },
+    {
+      "path": "tools/verify_runtime.py",
+      "capability": [
+        "scenario comparison",
+        "mismatch diagnostics",
+        "artifact identity"
+      ],
+      "n0_future_node_group": "workload",
+      "n6_disposition": "retire_after_replacement_controls",
+      "current_controls": [
+        {
+          "path": "tools/node/experiments.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/oracles.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/storage-check.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/experiments.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/storage-check.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n4-scenarios-observe.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        },
+        {
+          "path": "tools/node/test/n6-complete-backup.test.mjs",
+          "basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines."
+        }
+      ],
+      "historical_evidence": "research/evidence/2026-10-26-n6-complete-backup.json",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b04feb924dbbb9b3ed50a13fa343f65380a8a3fec20ff8136e4a6487d013e3e0"
+      },
+      "retirement_basis": "Node source oracles and bounded walk/explore/replay controls cover current logical obligations; N6 complete-backup controls cover typed tree structure. This does not reproduce retired historical report/matrix or full non-tree KV engines.",
+      "claim_boundary": "Current Node controls are limited to the named API/tests and accepted evidence. Historical campaign outputs, raw report schemas, old non-tree KV/report/matrix engines and measurement claims remain immutable dated evidence/source at the pinned commit; no source backup or tree checker is represented as a replacement for those engines."
+    }
+  ],
+  "auxiliary_paths": [
+    {
+      "path": "tools/requirements-population.txt",
+      "disposition": "retire_bridge_auxiliary",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "4f1a2710e0861ef576aa599eec2087a3710d708b100de0f28e896c83ac07bdc0"
+      },
+      "basis": "The scoped tools/node ESM dependency boundary and N0 typed-value witness supersede the Python-owned schema-values bridge; keep N0 evidence JSON immutable."
+    },
+    {
+      "path": "tools/schema-values/generate.mjs",
+      "disposition": "retire_bridge_auxiliary",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "af5abd5a50889a47de0fd6af53a754b7480340c7f3eb9a127038f4919f47208c"
+      },
+      "basis": "The scoped tools/node ESM dependency boundary and N0 typed-value witness supersede the Python-owned schema-values bridge; keep N0 evidence JSON immutable."
+    },
+    {
+      "path": "tools/schema-values/package.json",
+      "disposition": "retire_bridge_auxiliary",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "b5019d00c23f5740f7c53d41256b86fad7ccd038373bd29136e5cc2930781666"
+      },
+      "basis": "The scoped tools/node ESM dependency boundary and N0 typed-value witness supersede the Python-owned schema-values bridge; keep N0 evidence JSON immutable."
+    },
+    {
+      "path": "tools/schema-values/package-lock.json",
+      "disposition": "retire_bridge_auxiliary",
+      "pinned_source": {
+        "commit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+        "sha256": "32057d3b0c400daf997886480a76b7abe64b44445d41e4484dcef1a7d1c8c9a8"
+      },
+      "basis": "The scoped tools/node ESM dependency boundary and N0 typed-value witness supersede the Python-owned schema-values bridge; keep N0 evidence JSON immutable."
+    }
+  ],
+  "immutable_evidence_policy": "No research/evidence JSON, N0 ledger, source manifests, or archived dated report bytes are edited. Historical paths below resolve to blobs at the pinned commit. Node source backup and typed-tree checking do not replace full historical non-tree KV/report/matrix engines."
+}

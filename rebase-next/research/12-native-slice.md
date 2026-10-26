@@ -16,7 +16,7 @@ October 21 feasibility result was relabelled as native acceptance.
 
 | Boundary | Implementation and purpose |
 | --- | --- |
-| Expected state | [Fixture](fixtures/native-slice.json) and [Python oracle/checker](experiments/native_slice.py): apply authored commands independently, scan quote facts, calculate values, derive every expected role and validate grouped account histories. |
+| Expected state | [Fixture](fixtures/native-slice.json) and [Python oracle/checker](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/research/experiments/native_slice.py): apply authored commands independently, scan quote facts, calculate values, derive every expected role and validate grouped account histories. |
 | Native binding/model | [Native slice](../src/native_slice.rs): six fixed input types, strict command fields, exact native values, declared local field order, toy context, versions and state/work limits. |
 | Persistence format | [Codec](../src/native_codec.rs): canonical decimal/UUID values, explicit key tags and slot codes, strict typed stored values. |
 | Attempt state | The typed `Workspace` keeps original bytes, original typed values and one current value per touched key. It loads/decodes each touched key once and encodes final dirty values at the batch boundary. |

@@ -14,30 +14,20 @@ returns count 2 and sum 7. Equal-time observations remain separate occurrences.
 
 ## Run the model
 
-Use `--model measurement` for every model/store command. The fixture is repeatable
-for a supplied namespace and uses the ordinary developer-tool plan format:
+Select `measurement` in the explicit native model configuration. Historical
+campaign fixture commands have been retired; the public contract shapes below
+remain useful as authored input examples.
 
-```sh
-rebase-next --model measurement model public
-rebase-next --model measurement fixture plan measurements \
-  --namespace 00000000-0000-0000-0000-00000135295f
-```
+Use `prepareModel` with the selected native catalog; the [N3 population example](../tools/node/examples/n3-population.mjs) shows a caller-owned model/client workflow.
 
-Select the model when initializing and serving a store; the authentication and
-configuration steps are the same as in [the server guide](server.md).
-Use `tools/client.py` to prepare and apply the fixture through the public API.
-The independent HTTP acceptance workflow creates its own secured store, issuer,
-credentials and server, then retains its plans, backups and result:
+The earlier HTTP acceptance workflow created its own secured store, issuer,
+credentials and server, then retained plans, backups and results. Its evidence
+is dated and is not a current procedure.
 
-```sh
-python3 -B research/experiments/measurement.py \
-  --binary target/native-slice/build/release/rebase-next \
-  --out target/measurement-acceptance
-```
+Use `prepareModel` with the selected native catalog; the [N3 population example](../tools/node/examples/n3-population.mjs) shows a caller-owned model/client workflow.
 
-Use a new output directory. The workflow stops all its owned processes. Its
-`result.json` records executed checks; merely building the model is not evidence
-that deployment acceptance has run.
+The archived result records executed checks; merely building the model is not
+evidence that deployment acceptance has run.
 
 ## Public contracts
 
@@ -103,12 +93,7 @@ Read hides it from record reads, pages and replay disclosure.
 
 The fixture and independent integer/HTTP workflow use ordinary APIs:
 
-```sh
-rebase-next --model measurement fixture plan observation-report \
-  --namespace 00000000-0000-0000-0000-00000135295f
-python3 -B tools/observation_reports.py --binary target/g4db-accepted/rebase-next \
-  --out target/my-report-workflow
-```
+Use `prepareModel` with the selected native catalog; the [N3 population example](../tools/node/examples/n3-population.mjs) shows a caller-owned model/client workflow.
 
 ## Latest authored observation
 
@@ -136,12 +121,7 @@ Its own Read grant controls materialized results, including record pages and
 replay. Creating or retargeting it still requires authority to reference the
 Instrument. Unit checks, retargeting and joint repairs use the final batch state.
 
-```sh
-rebase-next --model measurement fixture plan latest-observation \
-  --namespace 00000000-0000-0000-0000-00000135295f
-python3 -B tools/observation_selection.py --binary target/g4dc-accepted/rebase-next \
-  --out target/my-selection-workflow
-```
+Use `prepareModel` with the selected native catalog; the [N3 population example](../tools/node/examples/n3-population.mjs) shows a caller-owned model/client workflow.
 
 The fixture includes a report and equal-time candidates. The workflow compares
 both consumers against authored facts, then verifies authority, complete

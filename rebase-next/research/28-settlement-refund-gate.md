@@ -152,7 +152,7 @@ external transfers, distributed conformance or a frontend.
 
 [Packaging evidence](evidence/2026-10-23-g3e-package.json) records a successful
 native build from an exported Git tree outside the checkout. The ordinary
-[`tools/package.py`](../tools/package.py) command packages committed sources,
+[`tools/package.py`](https://github.com/DivyeshVora79909/ReBase/blob/0d0601187c79d430f8d7ed41674f53e9905af75f/rebase-next/tools/package.py) command packages committed sources,
 builds with the lockfile and reusable Cargo cache, and emits `BUNDLE.json`,
 `SHA256SUMS` and a normalized tar/gzip archive. The manifest reads the model
 identities, codec and limits from the compiled executable.

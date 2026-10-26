@@ -1,0 +1,198 @@
+{
+  "schema": "rebase.n6-bootstrap-retirement.v1",
+  "date": "2026-10-26",
+  "status": "implementation_verified_extracted_release_acceptance_pending",
+  "source": {
+    "baseCommit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+    "kind": "working-tree implementation accepted for checkpoint commit; not a committed-source release",
+    "nativeInputCount": 89,
+    "nativeInputsSha256": "1354c9fa93c2cb7108f974a03f978c0f491da3ec3dc22ecebf6d3aa35846d616",
+    "inputs": "research/evidence/2026-10-26-n6-bootstrap-inputs.json",
+    "formatsUnchanged": {
+      "version": "0.16.0",
+      "store": 10,
+      "nativeCodec": 7,
+      "effectCodec": 4,
+      "api": 4
+    }
+  },
+  "artifact": {
+    "path": "/workspace/ReBase/rebase-next/target/n6-final-native-default-v2/rebase-next",
+    "sha256": "18ed0f85e2c4f296a5b85f0530128cca2214040e1bab8521c4016dc5cfae481a",
+    "bytes": 285865944,
+    "hardLinks": 1
+  },
+  "environment": {
+    "node": "24.22.1",
+    "rust": "1.95.0",
+    "foundationdb": "7.3.77",
+    "topology": "one cloud machine; one owned local FDB process; no multi-host claim",
+    "cargoJobs": 2,
+    "incremental": false
+  },
+  "native": {
+    "scopedFocused": {
+      "passed": 7,
+      "failed": 0
+    },
+    "defaultCampaign": {
+      "passedBeforeStaleExample": 199,
+      "initialFailed": 1,
+      "affectedExampleRerunPassed": 1,
+      "currentDistinctDefaultTestsPassed": 200,
+      "interpretation": "All unit/integration tests passed. Only the inherited raw-observer example failed; it was repaired and rerun. The initial all-target command itself exited nonzero and is retained."
+    },
+    "liveFoundationdbReset": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "checks": [
+      "cargo fmt --check",
+      "cargo clippy --locked --all-targets -- -D warnings",
+      "cargo clippy --locked --example native_slice -- -D warnings",
+      "cargo check --locked --all-features --all-targets"
+    ],
+    "guardControls": [
+      "retained scoped service after legal reset",
+      "fresh valid epoch-1 JWT and replacement operation context",
+      "session/read/mutation reject wrong_target",
+      "live effect worker paused at before-start",
+      "valid exact-byte signed ingress rejects replacement",
+      "activation, scan and shutdown fence",
+      "complete replacement inventory unchanged after rejection and drain",
+      "FDB reset through a second real database handle"
+    ],
+    "standaloneControls": [
+      "all six model catalogs and authoritative fixtures with PATH empty",
+      "clean SIGTERM and original receipt replay",
+      "bounded strict OPEN-only configuration",
+      "corrupt store startup preserves full state with actual integrity diagnostic"
+    ]
+  },
+  "node": {
+    "passed": 141,
+    "failed": 0,
+    "skipped": 0,
+    "binarySha256": "18ed0f85e2c4f296a5b85f0530128cca2214040e1bab8521c4016dc5cfae481a",
+    "artifactReuseProof": "Final default rebuild after cfg(test)-only cleanup has identical executable SHA-256. The 141-test result applies to those exact bytes; no duplicate run needed."
+  },
+  "retirement": {
+    "status": "passed",
+    "pinnedCommit": "0d0601187c79d430f8d7ed41674f53e9905af75f",
+    "pythonPaths": 60,
+    "auxiliaryPaths": 4,
+    "exactN0Inventory": true,
+    "archivedSourceHashes": 64,
+    "immutableN0AndEvidence": true,
+    "currentControls": 297,
+    "historyReferences": 60,
+    "markdownFiles": 100,
+    "markdownLinks": 836,
+    "publicFunctions": 37,
+    "boundary": "Static inventory, source hashes, file retirement and links; no native, release or historical capacity acceptance."
+  },
+  "independentReview": {
+    "nativeStoreFence": "no blocking findings after worker/ingress controls and safe wrong_target RPC mapping",
+    "docsAndInventory": "concrete current functions, archived sources and scoped claims verified; root independently checked Git blob hashes"
+  },
+  "trials": [
+    {
+      "result": "failed_then_fixed",
+      "issue": "RPC sanitizer mapped new service wrong_target to internal",
+      "fix": "fixed safe public mapping; focused seven controls pass",
+      "rawInitialLogRetained": false
+    },
+    {
+      "result": "failed_then_fixed",
+      "issue": "inherited example assumed one initialization row; Meta and Population now make two",
+      "fix": "verify unchanged baseline inventory plus one exact unreachable sentinel",
+      "log": "research/evidence/2026-10-26-n6-bootstrap-native-tests-initial.txt"
+    },
+    {
+      "result": "failed_then_fixed",
+      "issue": "FDB regression cleanup treated reader_records u16 key as raw bytes after guard assertions succeeded",
+      "fix": "use typed reader table deletion, rerun actual FDB test and confirm isolated cleanup",
+      "log": "research/evidence/2026-10-26-n6-bootstrap-fdb-guard-initial.txt"
+    }
+  ],
+  "cleanup": {
+    "nativeNodeTestsFinished": true,
+    "ownedFdbServerStopped": {
+      "status": "stopped",
+      "pid": 66599
+    },
+    "ownedFdbDataAndLogsRemoved": true,
+    "randomTestNamespaceTablesDeleted": true,
+    "obsoleteBuildArtifactsReclaimed": "five exact stale test executables, 1,430,794,632 bytes; no user records or source removed"
+  },
+  "logs": {
+    "focused": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-focused.txt",
+      "sha256": "475f6bcfe7488c0681871b16cb125282cd5b50eb2dbf43732ffd305ac3d7436a",
+      "bytes": 1037
+    },
+    "default-build": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-default-build.txt",
+      "sha256": "806f1d747d436c73844c105bf0aa076f689be8d44dc28ea15c18fa1a0a24cbb2",
+      "bytes": 148
+    },
+    "native-tests-initial": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-native-tests-initial.txt",
+      "sha256": "6d6bf5bf9a1e9e548cf9419bbc06e4ef6710ef74aaf2c4a7a5f4d67973347011",
+      "bytes": 24782
+    },
+    "native-example": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-native-example.txt",
+      "sha256": "d453400e50e91e5b46acd6862e28b8523c4adf60e192298764eb88fa87754293",
+      "bytes": 464
+    },
+    "clippy": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-clippy.txt",
+      "sha256": "e6ef94852f2159eafac7b404858f5200bcb3af5f44ce504ac5be7ab7de289bac",
+      "bytes": 148
+    },
+    "clippy-example": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-clippy-example.txt",
+      "sha256": "5f8d011163bdbf3763d6172111fa43ea3eeab970e920d696850214d5f5b22d07",
+      "bytes": 147
+    },
+    "all-feature-check": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-all-feature-check.txt",
+      "sha256": "59a7fb39c76091d20d1ad4ca74e117134fb2f32b5d731a0e025a732bffb22047",
+      "bytes": 147
+    },
+    "fmt": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-fmt.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "fdb-guard-initial": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-fdb-guard-initial.txt",
+      "sha256": "75087c362582a6dfbbbc53e6a30bf171948cd8c42e07e9dc2e294d32b414dd72",
+      "bytes": 1067
+    },
+    "fdb-guard": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-fdb-guard.txt",
+      "sha256": "cc7b11293392f12302eb4bfbd28164a79298e8f5ee7b0432a88aa6abe426c421",
+      "bytes": 472
+    },
+    "node": {
+      "path": "research/evidence/2026-10-26-n6-bootstrap-node.txt",
+      "sha256": "1c116f68b54b982fb9c74e0720c1bdf0845a9cb46352267b7bbf0c6a30e788e0",
+      "bytes": 27400
+    }
+  },
+  "remaining": [
+    "authentic committed-source SDK-free and all-feature release builds",
+    "extracted Node and three-backend lifecycle acceptance",
+    "extracted standalone serving without Node/Python on PATH",
+    "N6 closeout; then S0-S3 and F0"
+  ],
+  "boundaries": [
+    "no N6 release acceptance yet",
+    "no historical Python campaign rerun or unrestricted capacity claim",
+    "no persisted codec, binding formula or storage-layout change",
+    "original ReBase untouched"
+  ]
+}

@@ -1,0 +1,9 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.87s
+     Running unittests examples/native_slice.rs (target/verification-build/debug/examples/native_slice-b855e3e17814b8a8)
+
+running 1 test
+test tests::raw_observer_includes_unreachable_rows_and_refuses_other_tables ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

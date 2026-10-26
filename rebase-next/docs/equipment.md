@@ -29,27 +29,14 @@ order, and compares published values, private output payloads, query registratio
 actual tree memberships and summaries. It does not call settlement or tree queries.
 Sparse contract/root/member/query/role codes exercise the reusable engine boundary.
 
-## Run with the existing tools
+## Current use
 
-Build the binary and configure issuer keys, a token and `server.json` using the
-[server guide](server.md). Select equipment before each command that reads its
-model or opens its store:
+Choose `model: "equipment"` in the native model configuration and configure the
+HTTP service using the [server guide](server.md). Legacy CLI and Python fixture
+commands are retired. The [N2 equipment example](../tools/node/examples/n2-equipment-workflow.mjs)
+shows the current caller-owned JavaScript composition:
 
-```sh
-rebase-next --model equipment model public
-rebase-next --model equipment model explain Reservation
-rebase-next --model equipment init equipment.redb --tenant 00000000-0000-4000-8000-000000000001 --actor 00000000-0000-4000-8000-000000000002
-rebase-next --model equipment fixture plan equipment --namespace 00000000-0000-4000-8000-000000000100 > equipment-draft.json
-rebase-next --model equipment serve equipment.redb --config server.json
-```
-
-In another terminal, submit the draft through the existing stateless client:
-
-```sh
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt prepare equipment-draft.json equipment.plan.json
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt apply equipment.plan.json
-python3 tools/client.py --url http://127.0.0.1:8080/rpc --token-file token.txt status equipment.plan.json
-```
+The [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) shows the current caller-owned model, client and operator composition.
 
 The draft includes deterministic UUIDv5 identities under `fixture.ids`, public
 commands, returning IDs and literal expected allocations. A different namespace
@@ -67,12 +54,7 @@ inspection can explain its role declarations.
 
 After stopping the HTTP process, the same model selector applies to operators:
 
-```sh
-rebase-next --model equipment check equipment.redb
-rebase-next --model equipment inspect equipment.redb --html > equipment.html
-rebase-next --model equipment backup equipment.redb equipment-backup.json
-rebase-next --model equipment restore equipment-backup.json restored-equipment.redb
-```
+The [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) shows the current caller-owned model, client and operator composition.
 
 One process owns a live redb file. Backup and restore destinations must be new.
 The equipment `demo` command is unsupported; its fixture and the ordinary client
@@ -86,14 +68,11 @@ full fanout may exceed that budget and reject atomically.
 See [compiled model authoring](compiled-models.md) for the trusted Rust interfaces
 and declared-shape boundary.
 
-Run the source-arithmetic HTTP population probe for equipment alone with:
+The historical source-arithmetic HTTP population probe covered these sizes:
 
-```sh
-python3 -B tools/capacity.py --binary target/native-slice/build/release/rebase-next --out target/my-equipment-capacity --models equipment
-```
+The [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) shows the current caller-owned model, client and operator composition.
 
-It defaults to 64, 256, 1,024 and 4,096 public sources. Omit `--models equipment`
-to include calculation. Results retain loaded bytes, selector work, fanout
+It measured 64, 256, 1,024 and 4,096 public sources. Results retained loaded bytes, selector work, fanout
 outcomes and rollback checks, plus lifecycle, authority, replay, pages and
 restart/restore controls. See the [population result](../research/24-population-scaling-result.md)
 for executed evidence. Release 0.4.0 equipment behavior is
