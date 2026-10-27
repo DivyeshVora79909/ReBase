@@ -1,0 +1,41 @@
+// Private final inventory. Reads executions; performs no native work.
+import {readFile,writeFile,readdir,access} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const hash=value=>createHash('sha256').update(value).digest('hex');
+const files=[];
+async function walk(directory){for(const row of await readdir(path.join(root,directory),{withFileTypes:true})){if(row.name==='node_modules')continue;const name=`${directory}/${row.name}`;if(row.isDirectory())await walk(name);else if(row.isFile()&&/\.(mjs|json)$/.test(row.name))files.push(name);}}
+await walk('tools/node');
+const drivers=['target/s01-node-driver.mjs','target/s01-focused-matrix.mjs','target/s01-native-negative-driver.mjs','target/s01-save-node-evidence.mjs'];
+files.push(...drivers);
+const inputs=await Promise.all(files.sort().map(async name=>({path:name,sha256:hash(await readFile(path.join(root,name)))})));
+const digest=createHash('sha256');for(const row of inputs)digest.update(row.path+'\0'+row.sha256+'\n');
+const nodeInputs={algorithm:'sha256(path + NUL + sha256(file) + LF), sorted paths',sha256:digest.digest('hex'),count:inputs.length,files:inputs};
+await writeFile(path.join(root,'target/s01-node-final-inputs.json'),JSON.stringify(nodeInputs,null,2)+'\n',{mode:0o600});
+const directories=['target/s01-entry8-prefix-redb','target/s01-entry8-prefix-redb-v2','target/s01-entry8-prefix-redb-v3-final','target/s01-focused-matrix-v3-final/redb',...['redb','surrealkv','foundationdb-local'].map(backend=>`target/s01-focused-matrix-v3-final-r2/${backend}`),'target/s01-native-ack-v3-final-abort','target/s01-native-ack-v3-final-wrong-action'];
+const records=[],processIdentities=new Map(),targets=[];
+for(const directory of directories){
+  for(const name of ['run.json','check.json']){const relative=`${directory}/${name}`,bytes=await readFile(path.join(root,relative));records.push({path:relative,bytes:bytes.length,sha256:hash(bytes)});}
+  const run=JSON.parse(await readFile(path.join(root,directory,'run.json'),'utf8'));
+  targets.push({path:run.request.location,nativeCleanup:run.report?.cleanup??null});
+  for(const sample of run.resources??[])for(const [role,row]of Object.entries(sample.processes??{}))if(row.available)processIdentities.set(`${row.pid}/${row.startTicks}`,{pid:row.pid,startTicks:row.startTicks,role});
+}
+const extra=['target/s01-focused-matrix-v3-final-r2/matrix.json','target/s01-focused-matrix-v3-final-r2/owned-fdb/infrastructure.json','target/s01-node24-full-suite.txt','target/s01-node24-focused-barrier-test.txt','target/s01-node-focused-barrier-test.txt','target/s01-working-tree-source.json','target/s01-working-tree-source-v2.json','target/s01-working-tree-source-v3-final.json','target/s01-node-final-inputs.json',...drivers];
+for(const relative of extra){const bytes=await readFile(path.join(root,relative));records.push({path:relative,bytes:bytes.length,sha256:hash(bytes)});}
+for(const target of targets){try{await access(target.path);target.absent=false;}catch(error){target.absent=error.code==='ENOENT';}}
+const processes=[];
+for(const identity of processIdentities.values()){
+  let state='absent';try{const stat=await readFile(`/proc/${identity.pid}/stat`,'utf8'),fields=stat.slice(stat.lastIndexOf(')')+2).trim().split(/\s+/);state=Number(fields[19])===identity.startTicks?'owned-process-still-present':'pid-reused-by-another-process';}catch(error){if(error.code!=='ENOENT'&&error.code!=='ESRCH')state=`unavailable:${error.code}`;}
+  processes.push({...identity,state});
+}
+const freshApp=path.join(root,'target/s01-native-final/rebase-next-default'),probe=path.join(root,'target/s01-native-final-v3-final/s0_baseline-allfeatures-v3-final'),fdbData=path.join(root,'target/s01-focused-matrix-v3-final-r2/owned-fdb/data');
+const remaining=[];
+for(const name of await readdir('/proc')){if(!/^\d+$/.test(name))continue;try{const args=(await readFile(`/proc/${name}/cmdline`,'utf8')).split('\0');if(args[0]===freshApp||args[0]===probe||args.includes(fdbData))remaining.push({pid:Number(name),role:args[0]===freshApp?'fresh-default-app':args[0]===probe?'v3-final-probe':'owned-fdb'});}catch{}}
+const full=await readFile(path.join(root,'target/s01-node24-full-suite.txt'),'utf8'),focused=await readFile(path.join(root,'target/s01-node24-focused-barrier-test.txt'),'utf8');
+const source=JSON.parse(await readFile(path.join(root,'target/s01-working-tree-source-v3-final.json'),'utf8'));
+const evidence={format:'rebase-s01-node-execution-inventory-1',at:new Date().toISOString(),node:{path:process.execPath,version:process.version},source,nodeInputs:{path:'target/s01-node-final-inputs.json',sha256:nodeInputs.sha256,count:nodeInputs.count},application:{path:freshApp,sha256:hash(await readFile(freshApp)),inputMap:'target/s01-native-final/app-inputs.json'},probe:{path:probe,sha256:hash(await readFile(probe)),inputMap:'target/s01-native-final-v3-final/probe-inputs.json'},tests:{focused:{tests:22,passed:22,failed:0,skipped:0,log:'target/s01-node24-focused-barrier-test.txt',note:'Before final Quote membership regression; full suite includes that additional test.'},full:{tests:166,passed:166,failed:0,skipped:0,log:'target/s01-node24-full-suite.txt',serial:true,includesQuoteSlotRegression:full.includes('S0 posting revalue checks both financial memberships and quote membership at native slot three')}},focusedMatrix:{path:'target/s01-focused-matrix-v3-final-r2/matrix.json',casesPerBackend:23,samplesPerBackend:32,backends:['redb','surrealkv','foundationdb-local'],runReasons:[],resourceReasons:[],boundedIncomplete:'Fourteen native-settlement dependency lineage gaps per adapter; redb protected-read concurrency control unavailable. Local FDB is single-host only.'},failedTrials:[{directory:directories[0],reason:'Native rollback control expected not-observed; actual API returns not_observed; no measured samples.'},{directory:directories[1],reason:'Native tree sample omitted commitBoundaryNs:null; rejected first sample prevented repeat.'},{directory:directories[3],reason:'Node independent inventory incorrectly placed Quote membership at slot1; source declares slot3; fixed only Node checker, no native rebuild.'}],cleanup:{targets,processes,remainingOwnedExecutables:remaining,complete:targets.every(row=>row.absent&&row.nativeCleanup?.complete)&&processes.every(row=>row.state!=='owned-process-still-present'&&!row.state.startsWith('unavailable:'))&&remaining.length===0},records:records.sort((a,b)=>a.path.localeCompare(b.path)),continuation:'S0.1 only; no S0.2 pilot, overhead or 30-sample campaign was admitted.'};
+if(!full.includes('ℹ pass 166')||!full.includes('ℹ skipped 0')||!focused.includes('ℹ pass 22'))throw Error('unexpected retained test counts');
+await writeFile(path.join(root,'target/s01-node-execution-inventory.json'),JSON.stringify(evidence,null,2)+'\n',{mode:0o600});
+console.log(JSON.stringify({nodeInputCount:nodeInputs.count,nodeInputSha256:nodeInputs.sha256,records:records.length,cleanup:evidence.cleanup.complete,remainingOwnedExecutables:remaining,tests:evidence.tests}));

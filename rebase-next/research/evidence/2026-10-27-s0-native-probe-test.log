@@ -1,0 +1,9 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.76s
+     Running unittests examples/s0_baseline.rs (target/verification-build/debug/examples/s0_baseline-608711a8b069977d)
+
+running 1 test
+test tests::diagnostic_literal_guards_and_checkpoint_ack_are_bounded ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+

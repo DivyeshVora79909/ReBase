@@ -1,0 +1,627 @@
+{
+  "format": "rebase-s0-instrumentation-evidence-4",
+  "date": "2026-10-27",
+  "status": "accepted-within-bounded-s0.1",
+  "acceptance": {
+    "accepted": true,
+    "scope": "S0.1 optional instrumentation, focused working-tree matrix, per-sample independent ACK checks, cleanup, and source-bound focused evidence",
+    "approval": "root final review",
+    "limits": [
+      "Native settlement key lineage remains incomplete, so native-settlement dependent read depth is not claimed.",
+      "Redb protected-read overlap control is unavailable with its serialized embedded writer.",
+      "FoundationDB evidence is local single-host only.",
+      "The focused working-tree matrix is not the committed-source S0.2 baseline or overhead campaign."
+    ]
+  },
+  "source": {
+    "baseCommit": "0c14b41cf684a13fcf0af7e143a9564783b8fcc6",
+    "kind": "focused working-tree build",
+    "probe": {
+      "inputCount": 96,
+      "inputSha256": "a88c0782685cafe374a62cec8f31055b814a80db66b7221f80383fdeceb19f34",
+      "binarySha256": "50094d1a7b404c3e02501a441c204be8e36fb1e52e4078fdebc67e5d8f8c8213",
+      "features": [
+        "foundationdb",
+        "surrealkv"
+      ]
+    },
+    "application": {
+      "inputCount": 91,
+      "inputSha256": "be20039f3f563320bf4095a3a85d6b4da57aa2875ba858c64e6a6acc4c077281",
+      "binarySha256": "688616f7572faad5ed19e97613c11a18425ac13c6ba9638fbc349b7575f72663",
+      "features": []
+    },
+    "independentCheck": "research/evidence/2026-10-27-s0-independent-source-check-v3-final.json",
+    "normalPathFilesIdenticalToBase": 7,
+    "behaviorIdentity": "rebase-calculation-contract-7",
+    "codecIdentity": "native-slice-kv-7",
+    "nodeSourceInventory": {
+      "count": 70,
+      "sha256": "ed8fb60d8f0c1283de4154253fbaf5f5b2c9c8fe4279ca92fe5a0b49302d22d9",
+      "artifact": "research/evidence/2026-10-27-s0-node-inputs.json",
+      "maintainedCount": 66,
+      "executionArchiveCount": 4,
+      "executionArchives": [
+        {
+          "originalPath": "target/s01-focused-matrix.mjs",
+          "archivePath": "research/evidence/2026-10-27-s0-executed-s01-focused-matrix.mjs.source",
+          "bytes": 3570,
+          "sha256": "30151f81ef66b2a9e0323ad98588d17eb454975e21fe280dc55859f65291cb18",
+          "byteIdentical": true,
+          "classification": "transient execution input; archived as non-runnable .source"
+        },
+        {
+          "originalPath": "target/s01-native-negative-driver.mjs",
+          "archivePath": "research/evidence/2026-10-27-s0-executed-s01-native-negative-driver.mjs.source",
+          "bytes": 5457,
+          "sha256": "c3837baf1f7c988f50382f94c5bd109f8578c736fd3d693ea7761d5f253072d4",
+          "byteIdentical": true,
+          "classification": "transient execution input; archived as non-runnable .source"
+        },
+        {
+          "originalPath": "target/s01-node-driver.mjs",
+          "archivePath": "research/evidence/2026-10-27-s0-executed-s01-node-driver.mjs.source",
+          "bytes": 3913,
+          "sha256": "c18213a54a1ad99253d958f187e858850c6da3c169d558be11a5c39089a7bf00",
+          "byteIdentical": true,
+          "classification": "transient execution input; archived as non-runnable .source"
+        },
+        {
+          "originalPath": "target/s01-save-node-evidence.mjs",
+          "archivePath": "research/evidence/2026-10-27-s0-executed-s01-save-node-evidence.mjs.source",
+          "bytes": 7183,
+          "sha256": "9241ebc7f1bd448b5512575c5f1b19437da5edbff5737e63200b9a8cdbe63a2a",
+          "byteIdentical": true,
+          "classification": "transient execution input; archived as non-runnable .source"
+        }
+      ]
+    },
+    "nodeCheckerSources": [
+      {
+        "path": "tools/node/examples/s0-baseline.mjs",
+        "bytes": 40493,
+        "sha256": "ad1a6901ede409e4a191236eb3e6682e0bbae1e5932ab4afc819d79bfff222d1"
+      },
+      {
+        "path": "tools/node/examples/s0-contract.mjs",
+        "bytes": 21530,
+        "sha256": "ade110bc7be2d5a970dffde70b566a864837b400ddccae3a91abb1ed4b98f284"
+      },
+      {
+        "path": "tools/node/observe.mjs",
+        "bytes": 9445,
+        "sha256": "11bae5ea71f156fe54ecb197afdb433458111e81b899d16cd294a794bc652ae7"
+      },
+      {
+        "path": "tools/node/private/config-validation.mjs",
+        "bytes": 16245,
+        "sha256": "7fb905cdebfc78082950fd621387294c3aa6f8a52cc7a501837dc3deca9ef102"
+      },
+      {
+        "path": "tools/node/private/json-codec.mjs",
+        "bytes": 4616,
+        "sha256": "5d2713946f650b3f4a53b7c63f8bb2b98f90d46ed3cc5dbf923cab414cb7ec04"
+      },
+      {
+        "path": "tools/node/storage-check.mjs",
+        "bytes": 26842,
+        "sha256": "3c83bb252da832632b75ca09af35e2ac57b26605facf00cc48384cffea1f76d7"
+      },
+      {
+        "path": "tools/node/test/s0-baseline.test.mjs",
+        "bytes": 28934,
+        "sha256": "725f1e9d0940a3173fd3b3582c3a197e0a6b6ad35e7a555c225ea28c242af83a"
+      },
+      {
+        "path": "tools/node/test/s0-contract.test.mjs",
+        "bytes": 12910,
+        "sha256": "f1bcd7e4465f26f49688d6646bae6f75cbe0b363475031acb79573f53d56d383"
+      }
+    ]
+  },
+  "focusedChecks": [
+    {
+      "artifact": "research/evidence/2026-10-27-s0-native-default-tests.log",
+      "assertion": "114 default native tests passed; 0 failed."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-native-diagnostics-tests.log",
+      "assertion": "12 focused diagnostics/native/storage tests passed; 0 failed."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-native-fdb-tests.log",
+      "assertion": "3 focused FoundationDB tests passed; 0 failed."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-native-probe-test-v3-final.log",
+      "assertion": "1 probe example test passed; assembled trace-off/on fields and exact final-report/checkpoint equality."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-native-clippy-v3-final.log",
+      "assertion": "Clippy completed successfully."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-probe-build-v3-final.log",
+      "assertion": "Final all-features focused probe build completed."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-node24-focused-barrier-tests.log",
+      "assertion": "Node 24 focused barrier suite: 22 passed, 0 failed; full suite additionally covers final quote-slot regression."
+    },
+    {
+      "artifact": "research/evidence/2026-10-27-s0-node24-full-suite.log",
+      "assertion": "Node 24 full suite: 166 tests, 166 passed, 0 failed, 0 skipped; serialized at concurrency 1."
+    }
+  ],
+  "focusedMatrix": {
+    "artifact": "research/evidence/2026-10-27-s0-focused-matrix-v3-final-r2.json",
+    "perBackendSamples": 32,
+    "perBackendAcknowledgements": 32,
+    "allRunReasonsEmpty": true,
+    "allResourceReasonsEmpty": true,
+    "allNativeCleanupsComplete": true,
+    "allTargetsAbsent": true,
+    "results": [
+      {
+        "backend": "redb",
+        "rawSamples": 32,
+        "acknowledgedAndIndependentlyChecked": 32,
+        "runIncompleteReasons": [],
+        "resourceIncompleteReasons": [],
+        "checkerStatus": "incomplete",
+        "checkerIncompleteReasons": [
+          "adapter-protected-read-control-unavailable",
+          "dependency-incomplete:focused/entry-1/insert-end/0/true",
+          "dependency-incomplete:focused/entry-1/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-1/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-8/insert-end/0/true",
+          "dependency-incomplete:focused/entry-8/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-8/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-64/insert-end/0/true",
+          "dependency-incomplete:focused/entry-64/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-64/delete-middle/0/true",
+          "dependency-incomplete:focused/posting-1/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-8/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-64/revalue-posting/0/true",
+          "dependency-incomplete:focused/rule-closure-1/revalue-rule/0/true",
+          "dependency-incomplete:focused/rule-closure-4/revalue-rule/0/true"
+        ],
+        "adapterProtectedReadsExecuted": false,
+        "nativeCleanupComplete": true,
+        "targetAbsent": true,
+        "processStopped": true,
+        "runArtifact": "research/evidence/2026-10-27-s0-focused-redb-run.json.gz",
+        "checkArtifact": "research/evidence/2026-10-27-s0-focused-redb-check.json.gz"
+      },
+      {
+        "backend": "surrealkv",
+        "rawSamples": 32,
+        "acknowledgedAndIndependentlyChecked": 32,
+        "runIncompleteReasons": [],
+        "resourceIncompleteReasons": [],
+        "checkerStatus": "incomplete",
+        "checkerIncompleteReasons": [
+          "dependency-incomplete:focused/entry-1/insert-end/0/true",
+          "dependency-incomplete:focused/entry-1/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-1/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-8/insert-end/0/true",
+          "dependency-incomplete:focused/entry-8/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-8/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-64/insert-end/0/true",
+          "dependency-incomplete:focused/entry-64/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-64/delete-middle/0/true",
+          "dependency-incomplete:focused/posting-1/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-8/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-64/revalue-posting/0/true",
+          "dependency-incomplete:focused/rule-closure-1/revalue-rule/0/true",
+          "dependency-incomplete:focused/rule-closure-4/revalue-rule/0/true"
+        ],
+        "adapterProtectedReadsExecuted": true,
+        "nativeCleanupComplete": true,
+        "targetAbsent": true,
+        "processStopped": true,
+        "runArtifact": "research/evidence/2026-10-27-s0-focused-surrealkv-run.json.gz",
+        "checkArtifact": "research/evidence/2026-10-27-s0-focused-surrealkv-check.json.gz"
+      },
+      {
+        "backend": "foundationdb-local",
+        "rawSamples": 32,
+        "acknowledgedAndIndependentlyChecked": 32,
+        "runIncompleteReasons": [],
+        "resourceIncompleteReasons": [],
+        "checkerStatus": "incomplete",
+        "checkerIncompleteReasons": [
+          "dependency-incomplete:focused/entry-1/insert-end/0/true",
+          "dependency-incomplete:focused/entry-1/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-1/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-8/insert-end/0/true",
+          "dependency-incomplete:focused/entry-8/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-8/delete-middle/0/true",
+          "dependency-incomplete:focused/entry-64/insert-end/0/true",
+          "dependency-incomplete:focused/entry-64/revalue-middle/0/true",
+          "dependency-incomplete:focused/entry-64/delete-middle/0/true",
+          "dependency-incomplete:focused/posting-1/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-8/revalue-posting/0/true",
+          "dependency-incomplete:focused/posting-64/revalue-posting/0/true",
+          "dependency-incomplete:focused/rule-closure-1/revalue-rule/0/true",
+          "dependency-incomplete:focused/rule-closure-4/revalue-rule/0/true"
+        ],
+        "adapterProtectedReadsExecuted": true,
+        "nativeCleanupComplete": true,
+        "targetAbsent": true,
+        "processStopped": true,
+        "runArtifact": "research/evidence/2026-10-27-s0-focused-foundationdb-local-run.json.gz",
+        "checkArtifact": "research/evidence/2026-10-27-s0-focused-foundationdb-local-check.json.gz"
+      }
+    ],
+    "infrastructure": "research/evidence/2026-10-27-s0-owned-fdb-infrastructure.json"
+  },
+  "ackControls": [
+    {
+      "mode": "abort",
+      "passed": true,
+      "expectedReason": "checkpoint-rejected",
+      "actualSamples": 1,
+      "checkpointCount": 1,
+      "independentChecksPassed": true,
+      "repeatOccurred": false,
+      "processStopped": true,
+      "nativeCleanupComplete": true,
+      "targetAbsent": true,
+      "runArtifact": "research/evidence/2026-10-27-s0-native-ack-abort-run.json.gz",
+      "checkArtifact": "research/evidence/2026-10-27-s0-native-ack-abort-check.json"
+    },
+    {
+      "mode": "wrong-action",
+      "passed": true,
+      "expectedReason": "checkpoint-acknowledgement-invalid",
+      "actualSamples": 1,
+      "checkpointCount": 1,
+      "independentChecksPassed": true,
+      "repeatOccurred": false,
+      "processStopped": true,
+      "nativeCleanupComplete": true,
+      "targetAbsent": true,
+      "runArtifact": "research/evidence/2026-10-27-s0-native-ack-wrong-action-run.json.gz",
+      "checkArtifact": "research/evidence/2026-10-27-s0-native-ack-wrong-action-check.json"
+    }
+  ],
+  "focusedEntry8Prefix": {
+    "runArtifact": "research/evidence/2026-10-27-s0-v3-entry8-prefix-redb-run.json.gz",
+    "checkArtifact": "research/evidence/2026-10-27-s0-v3-entry8-prefix-redb-check.json.gz",
+    "actualSamples": 2,
+    "acknowledgedSamples": 2,
+    "checkerStatus": "incomplete",
+    "incompleteReasons": [
+      "adapter-protected-read-control-unavailable"
+    ]
+  },
+  "retainedFailedTrials": [
+    {
+      "id": "v1-entry8-prefix-redb",
+      "classification": "failed-control-not-acceptance",
+      "runArtifact": "research/evidence/2026-10-27-s0-v1-entry8-prefix-redb-failed-run.json.gz",
+      "checkArtifact": "research/evidence/2026-10-27-s0-v1-entry8-prefix-redb-failed-check.json.gz",
+      "error": {
+        "code": "invalid_input",
+        "detail": "tiny application rollback control failed"
+      },
+      "actualSamples": 0,
+      "cleanupComplete": true,
+      "underlyingComparisonNote": "Investigation identified not-observed vs not_observed; raw run retains only generic rollback-control failure detail."
+    },
+    {
+      "id": "v2-entry8-prefix-redb",
+      "classification": "checkpoint-rejected-not-acceptance",
+      "runArtifact": "research/evidence/2026-10-27-s0-v2-entry8-prefix-redb-rejected-run.json.gz",
+      "checkArtifact": "research/evidence/2026-10-27-s0-v2-entry8-prefix-redb-rejected-check.json.gz",
+      "error": "S0 run: outer commit boundary duration",
+      "acknowledgedSamples": 0,
+      "cleanupComplete": true
+    },
+    {
+      "id": "intermediate-v3-redb-partial-matrix",
+      "classification": "failed-node-oracle-not-acceptance",
+      "runArtifact": "research/evidence/2026-10-27-s0-focused-redb-partial-failed-run.json.gz",
+      "checkArtifact": "research/evidence/2026-10-27-s0-focused-redb-partial-failed-check.json.gz",
+      "actualSamples": 28,
+      "acknowledgedSamples": 27,
+      "checkerError": "tree node is absent from independent source membership",
+      "resolution": "Corrected Node source oracle to honor authored model member slot 3; no native code change. Retained raw run excluded from final matrix."
+    }
+  ],
+  "cleanup": {
+    "infrastructure": "local FDB server stopped; owned data/log directories removed",
+    "reclaimedArtifacts": "research/evidence/2026-10-27-s0-reclaimed-binaries.json",
+    "obsoleteGeneratedELFBytesRemoved": 1192055280,
+    "nodeExecutionInventory": "research/evidence/2026-10-27-s0-node-execution-inventory.json",
+    "nodeCleanupComplete": true,
+    "noOwnedExecutablesRemain": true
+  },
+  "nextCheckpoint": {
+    "name": "S0.2",
+    "status": "not-started-user-stop",
+    "required": "On a later continuation: committed-source optimized pilot, then an explicitly frozen bounded fragmentation revision with exact campaign coverage before baseline/overhead admission; no silent limit increase or discarded samples."
+  },
+  "performanceAndCapacityClaims": {
+    "latencySummary": "none accepted",
+    "capacity": "no claim",
+    "layoutChoice": "none",
+    "multiHostFoundationDB": "not demonstrated"
+  },
+  "artifacts": [
+    {
+      "path": "research/evidence/2026-10-27-s0-app-artifact.json",
+      "bytes": 13417,
+      "sha256": "56468602115bd230cebdd50534f12bad77d2b537c784cfa7f714d38b989bcae3"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-app-inputs.json",
+      "bytes": 12373,
+      "sha256": "9eb6962650e0697a387cb9202b8ebb1f97430f50d648d86f2d3c2f3ee0d2687c"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-executed-s01-focused-matrix.mjs.source",
+      "bytes": 3570,
+      "sha256": "30151f81ef66b2a9e0323ad98588d17eb454975e21fe280dc55859f65291cb18"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-executed-s01-native-negative-driver.mjs.source",
+      "bytes": 5457,
+      "sha256": "c3837baf1f7c988f50382f94c5bd109f8578c736fd3d693ea7761d5f253072d4"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-executed-s01-node-driver.mjs.source",
+      "bytes": 3913,
+      "sha256": "c18213a54a1ad99253d958f187e858850c6da3c169d558be11a5c39089a7bf00"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-executed-s01-save-node-evidence.mjs.source",
+      "bytes": 7183,
+      "sha256": "9241ebc7f1bd448b5512575c5f1b19437da5edbff5737e63200b9a8cdbe63a2a"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-foundationdb-local-check.json.gz",
+      "bytes": 6226,
+      "sha256": "fddf171b82ee83983a574269e634b901795d3f7bc632e117640919a93eda2b27",
+      "compression": "gzip",
+      "uncompressedBytes": 22946,
+      "uncompressedSha256": "2e805151edec7880e6d2d151884c26d2dc0a5ef6ed466596fc66586ce3c37820"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-foundationdb-local-run.json.gz",
+      "bytes": 478290,
+      "sha256": "f8a3a0ebc898ace1d2439f74a7033c4f1a70fd0fb8eb30808ac0024c9321e985",
+      "compression": "gzip",
+      "uncompressedBytes": 9985859,
+      "uncompressedSha256": "eadce1f18086f4e5bf38e3536c8736bf6da0e86c2bf2aa391db2257d3c622a53"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-matrix-v3-final-r2.json",
+      "bytes": 93526,
+      "sha256": "8deefaea3e3002b887ae3f79a60b3c0d99691c272974ee9362490c2aea514247"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-redb-check.json.gz",
+      "bytes": 6228,
+      "sha256": "a9b666a3f263bcc891696c98af01d549c6195f528200591c602b244c768eacd0",
+      "compression": "gzip",
+      "uncompressedBytes": 22942,
+      "uncompressedSha256": "5d8d88c5a57217edf1565c5bf3074c64c6665c51ed7c4a90f3ca73e946e2a59a"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-redb-partial-failed-check.json.gz",
+      "bytes": 5108,
+      "sha256": "e71e02cddf1e3dd8ad4c14e0c4274c4f4e326f5d854d9e29a13462492277b01d",
+      "compression": "gzip",
+      "uncompressedBytes": 14999,
+      "uncompressedSha256": "d97aa3ddfecea059d109155e252c80a167a984b06639d7c5a0acb494f024abf5"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-redb-partial-failed-run.json.gz",
+      "bytes": 351808,
+      "sha256": "cf89b0845518f8f75344e6478ee2a232f9e4c48f63b576d791ba8e860da25cc7",
+      "compression": "gzip",
+      "uncompressedBytes": 7200922,
+      "uncompressedSha256": "87282b34f25ef74f51a5f7cacc3d5a574939e3e93373075eeb66e74ebf048293"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-redb-run.json.gz",
+      "bytes": 442277,
+      "sha256": "3c56b2a3c21e711d592bbdb3c87b1e9ac90aa3058fe53e079c8cea56dfaf62c0",
+      "compression": "gzip",
+      "uncompressedBytes": 9577430,
+      "uncompressedSha256": "538d74a7ce7d95ba453c2d113ca4d6d3f3f8a8a4ece1bbae846f130e1810dd25"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-surrealkv-check.json.gz",
+      "bytes": 6193,
+      "sha256": "63b566164d20f780650ec281a12e4721600fcf217adfa3237a51ac296225e2c2",
+      "compression": "gzip",
+      "uncompressedBytes": 22884,
+      "uncompressedSha256": "9231cce409e5f6441224b2b28fb408e715f7f7ab10ff8f7731cb63533b8c079a"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-focused-surrealkv-run.json.gz",
+      "bytes": 442833,
+      "sha256": "53da3e76242c861a4900cd1635b16f046ecfbf0e191890f26ac15bb5b0a84732",
+      "compression": "gzip",
+      "uncompressedBytes": 9581850,
+      "uncompressedSha256": "8034a639c7da470c1bc5da2e154612dcbaa78a3413d105ba5b30423da487ebac"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-independent-source-check-v2.json",
+      "bytes": 30886,
+      "sha256": "ca3582424bd82f0f5afac2eff8e2cbbe88463c11497bebe2936663b3aca55287"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-independent-source-check-v3-final.json",
+      "bytes": 45030,
+      "sha256": "a5229149aa5af5386e012fd714a0317a0522209ba9d9683f0ee951e243a5c3c7"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-ack-abort-check.json",
+      "bytes": 1185,
+      "sha256": "f3fd37eef0fb19dd7878847e09080d1d72bfa723f4378288b43868868d2dc73f"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-ack-abort-run.json.gz",
+      "bytes": 17911,
+      "sha256": "4c0339afa147d433e6b2ec5530d5b7a904ff6755d421103133aa2ba271d0f4fa",
+      "compression": "gzip",
+      "uncompressedBytes": 117733,
+      "uncompressedSha256": "f3c5aeab587e32e594bfb68cd63a2a39eb3a72b9e943a3364ea7dcb7b54008a4"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-ack-wrong-action-check.json",
+      "bytes": 1224,
+      "sha256": "fa95a7c590f8b92fc116c2a23d5087ed199befe76b8be7336006cd1b47445c29"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-ack-wrong-action-run.json.gz",
+      "bytes": 17941,
+      "sha256": "13bd2b4cd07de66f7c6d7b7be5b000b9b02656c908ef455752179bf15f9857a8",
+      "compression": "gzip",
+      "uncompressedBytes": 117789,
+      "uncompressedSha256": "39326ecbcd1eae940c4c3bdae5a80db4f930410751ed1856efea98dc71934932"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-clippy-v3-final.log",
+      "bytes": 147,
+      "sha256": "ebb4b0d38fbb58a6695ba894ac24d92f4fc1e8d951ee3b82960303c06aa942a7"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-clippy.log",
+      "bytes": 147,
+      "sha256": "e91bb7682e308f6d3e7f060aec228e4ea3bada6c09f18c13f69f4c322af59ba9"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-default-tests.log",
+      "bytes": 11465,
+      "sha256": "ce70412a9c8a3f8f67ce043bd6e95947bdd360016657d260a6e0b8b968927628"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-diagnostics-tests.log",
+      "bytes": 1636,
+      "sha256": "8e7660620a35911754e8fd4043bd8cf3720c8591e8fcd3a78c96e8ead2a7c40a"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-fdb-tests.log",
+      "bytes": 624,
+      "sha256": "957376eccf47e69e4ff0de054a4cf1b47b74fd614d722378a0506818d8726bb6"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-probe-test-v3-final.log",
+      "bytes": 455,
+      "sha256": "34a0295e24d1d112286ce0ae658f8993c681a215cec9785d45f9df8c0facfe0f"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-native-probe-test.log",
+      "bytes": 455,
+      "sha256": "4dfc2a3bc11c9097771248b126b4eaaa63a5baac2ad35c99b4b23f659effe2bb"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-node-execution-inventory.json",
+      "bytes": 27568,
+      "sha256": "c5f0165472b0fe2967cd7ce3c7397ee0e6eb023015d9e6adaebdcc695536329a"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-node-inputs.json",
+      "bytes": 10510,
+      "sha256": "a465caae281f09fc06c0abfe909eeac72f6f370936b0e2ab11fe5f50c23791cf"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-node24-focused-barrier-tests.log",
+      "bytes": 2228,
+      "sha256": "6a3b042bde071d93563d79eeea6a042499673c275b8091f76bdacbbff474ac24"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-node24-full-suite.log",
+      "bytes": 29682,
+      "sha256": "4144f70f324863ae850b5943580a155c9d1bd2c80c9b98260f60683570adf6e6"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-owned-fdb-infrastructure.json",
+      "bytes": 1727,
+      "sha256": "4397d0ff67c561a469471390ac7d06f4031048416448d39697198647ff46ab38"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-probe-artifact-v3-final.json",
+      "bytes": 14259,
+      "sha256": "1e47470e2142ffb03427e41c1e0e509686383556cb6f0bafa6ac158bcb5ed847"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-probe-build-v3-final.log",
+      "bytes": 147,
+      "sha256": "649c03663b2deaadae22560f64dbbf9a3e253cc450459aa673c81b9a2a7999ec"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-probe-build.log",
+      "bytes": 147,
+      "sha256": "0dfe9eaa50d781b71e1902b7f93fe1df8364cc3c463efac74e61ec25298a067e"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-probe-inputs-v2.json",
+      "bytes": 13114,
+      "sha256": "067e5b9c7b884d2fcb14dd621d0e4b41c9a9c8aa4653712b2d9bf3231a0db104"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-probe-inputs-v3-final.json",
+      "bytes": 13114,
+      "sha256": "dab2c2896fd487ba8bbda7c1ccf1a3121cd077a540fdc926fe43103eaed0a007"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-reclaimed-binaries.json",
+      "bytes": 1238,
+      "sha256": "572d692f7ff7863bf7e01875a316dbcd0e3bed4781ba903efcfaf4aa8aa0fd8f"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v1-entry8-prefix-redb-failed-check.json.gz",
+      "bytes": 5277,
+      "sha256": "9fcf07f94af42df9ebd1ae2c6cdf6bf449ed0cd899d406756e4c8a9e757b5b7d",
+      "compression": "gzip",
+      "uncompressedBytes": 15619,
+      "uncompressedSha256": "adf2607afd6c86a864b6707793e1b7b2b070c5b390485662245d41b0e007891f"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v1-entry8-prefix-redb-failed-run.json.gz",
+      "bytes": 6527,
+      "sha256": "a6af24f962ba7fb501be487662a8f5c2d4d2fcbd13ddf44abcde1ed3f8f32019",
+      "compression": "gzip",
+      "uncompressedBytes": 26406,
+      "uncompressedSha256": "22c369560e739d6c61f26d3fb06eb374fe65b594f9b87d84a635a480929808f9"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v2-entry8-prefix-redb-rejected-check.json.gz",
+      "bytes": 5094,
+      "sha256": "30c3a39d08e0e506011beab8503ea2532aa003d851078660d28396a20cb1f8f4",
+      "compression": "gzip",
+      "uncompressedBytes": 14970,
+      "uncompressedSha256": "a709290cd061fb5b835cb04e8579bd00d5dda539605875e59679cee8ee534b6b"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v2-entry8-prefix-redb-rejected-run.json.gz",
+      "bytes": 30486,
+      "sha256": "6a49bb3c2b1c9165d03f9c820af0bf7ebcd14833fdf5afda222400b9368b99d7",
+      "compression": "gzip",
+      "uncompressedBytes": 296678,
+      "uncompressedSha256": "798a909a99133fb07fa1b81c155217f4e63b5862b7eff932ca1d428e200c47e4"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v3-entry8-prefix-redb-check.json.gz",
+      "bytes": 5298,
+      "sha256": "4a4c932a40b6337c46416e51c7982a9519f8a9031f36d09add4ba8c9d2fc91ba",
+      "compression": "gzip",
+      "uncompressedBytes": 15577,
+      "uncompressedSha256": "c8f0d57db92187a2e4e8465f0164e5e104679a39cfa5b13bec8d6b611e7c23d4"
+    },
+    {
+      "path": "research/evidence/2026-10-27-s0-v3-entry8-prefix-redb-run.json.gz",
+      "bytes": 24155,
+      "sha256": "91ae619ca9d18d204e78e65c566fdc08a98209fb0291f44c07eb2865b1ef5cf8",
+      "compression": "gzip",
+      "uncompressedBytes": 207865,
+      "uncompressedSha256": "4a1a7fc115c3311ae9d90f245867190d303163c6e37e0433160c9908547afd9f"
+    }
+  ]
+}

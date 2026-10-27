@@ -1,0 +1,20 @@
+   Compiling rebase-semantic-proof v0.16.0 (/workspace/ReBase/rebase-next)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 49.41s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4)
+
+running 12 tests
+test diagnostics::tests::diagnostic_error_outcomes_preserve_unknown_and_conflict ... ok
+test diagnostics::tests::diagnostic_cross_thread_activity_has_no_fabricated_scope_parent ... ok
+test diagnostics::tests::diagnostic_reset_retains_header_limits_and_unknown_cache_lineage ... ok
+test diagnostics::tests::diagnostic_unknown_provenance_and_counter_overflow_are_explicit ... ok
+test native_slice::diagnostic_tests::diagnostic_failed_decode_counts_received_bytes_without_disclosing_keys ... ok
+test native_slice::diagnostic_tests::diagnostic_load_failure_retains_normal_work_and_outcome ... ok
+test native_slice::diagnostic_tests::diagnostic_decoded_root_and_every_node_pointer_disclose_exact_native_keys ... ok
+test native_slice::diagnostic_tests::diagnostic_tree_results_batches_and_work_match_normal_with_zero_repeat_loads ... ok
+test storage::foundationdb::tests::diagnostic_range_accumulation_handles_short_more_empty_and_overshoot ... ok
+test storage::diagnostic_tests::diagnostic_redb_facade_preserves_results_and_counts_selected_primitive_bytes ... ok
+test diagnostics::tests::diagnostic_bounds_keep_counts_and_explicit_incompleteness ... ok
+test effects::worker_tests::ingress::delayed_events_preserve_blocked_diagnostics_and_applied_revisions ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.09s
+

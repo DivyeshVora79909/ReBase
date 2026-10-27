@@ -1,0 +1,40 @@
+// Private review driver; import and call ordinary functions with explicit inputs.
+import {createHash} from 'node:crypto';
+import {readFile,writeFile,mkdir,access} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {runS0Baseline,checkS0Run} from '../tools/node/examples/s0-baseline.mjs';
+
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+const fixture=name=>path.join(root,'research/fixtures',name);
+export async function prepareS01Source({probe,baseCommit,exactSourceCommit}={}) {
+  const text=await readFile(path.join(root,'examples/s0_baseline/fingerprint.rs'),'utf8');
+  const paths=[...text.matchAll(/"([^"\n]+)",\s*include_bytes!\(/g)].map(match=>match[1]);
+  if(paths.length!==96||new Set(paths).size!==paths.length||paths.join('\n')!==[...paths].sort().join('\n'))throw Error('expected exact sorted 96-input compiled probe inventory');
+  const probeInputs=await Promise.all(paths.map(async name=>({path:name,sha256:sha(await readFile(path.join(root,name)))})));
+  const digest=createHash('sha256');for(const row of probeInputs)digest.update(row.path+'\0'+row.sha256+'\n');
+  if(Boolean(baseCommit)===Boolean(exactSourceCommit))throw Error('name one working-tree base or exact committed source');
+  return {kind:baseCommit?'working-tree':'committed',...(baseCommit?{baseCommit}:{exactSourceCommit}),probeInputSha256:digest.digest('hex'),probeInputCount:probeInputs.length,probeInputs,binarySha256:sha(await readFile(probe))};
+}
+
+export async function allS01Cases() {
+  const manifest=JSON.parse(await readFile(fixture('s0-workload-manifest.json'),'utf8'));
+  return manifest.cases.flatMap(group=>group.corpusIds.flatMap(corpus=>group.selectedActionIds.map(action=>({corpus,action}))));
+}
+
+export async function runS01Focused({probe,source,environment,backend,outputDirectory,cases=[{corpus:'entry-8',action:'prefix'}],clusterFile=null,namespace=null,resourceProcesses=[],resourcePaths=[],timeoutMs=600000}={}) {
+  if(!path.isAbsolute(outputDirectory))throw Error('explicit absolute private outputDirectory');
+  await mkdir(outputDirectory,{recursive:true,mode:0o700});
+  const request={format:'rebase-s0-probe-input-1',backend,location:path.join(outputDirectory,'owned-target'),namespace,clusterFile,phase:'focused',samples:1,trace:true,cases};
+  const manifestBytes=await readFile(fixture('s0-workload-manifest.json')),inputBytes=await readFile(fixture('s0-inputs.json')),traceSchema=JSON.parse(await readFile(fixture('s0-trace.schema.json'),'utf8'));
+  const run=await runS0Baseline({probe,source,environment,request,resourceProcesses,resourcePaths,timeoutMs});
+  const raw=JSON.stringify(run)+'\n';await writeFile(path.join(outputDirectory,'run.json'),raw,{mode:0o600});
+  let checked;try{checked=checkS0Run(run,{manifest:JSON.parse(manifestBytes),manifestBytes,inputBytes,traceSchema,source});}
+  catch(error){checked={status:'failed',error:error.message};}
+  const control=run.report?.controls?.find(row=>row.format==='rebase-s0-adapter-control-1');
+  let targetAbsent=false;try{await access(request.location);}catch(error){if(error.code==='ENOENT')targetAbsent=true;else throw error;}
+  const summary={format:'rebase-s01-focused-review-1',backend,source,rawSha256:sha(raw),rawBytes:Buffer.byteLength(raw),cases:cases.length,actualSamples:run.report?.samples?.length??0,checkpointChecked:run.checkpoints?.checked??0,checker:checked,runIncompleteReasons:run.incompleteReasons,resourceIncompleteReasons:run.resourceObservation?.incompleteReasons??['resource-evidence-missing'],adapterProtectedReadsExecuted:control?.protectedReadControls?.executed??false,cleanup:{...run.cleanup,native:run.report?.cleanup??null,targetAbsent}};
+  await writeFile(path.join(outputDirectory,'check.json'),JSON.stringify(summary,null,2)+'\n',{mode:0o600});
+  return summary;
+}

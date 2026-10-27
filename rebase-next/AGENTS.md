@@ -5,7 +5,7 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — N6 accepted within bounds; S0 measurement baseline next
+## Current instruction — S0.1 accepted within bounds; stop after checkpoint
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -26,13 +26,22 @@ JWT/context, SIGTERM drain, restart, and original receipt replay. Details,
 package hashes and boundaries are in the N6 result/evidence. The 60-path
 retirement ledger, N0 ledger, and historical evidence remain preserved.
 
-The [S0.0 contract](research/79-s0-baseline-contract.md) freezes the trace/workload
-schema and literal bounded inputs, with a focused Node evidence checker. It is
-a checked preparation checkpoint, not native instrumentation or measurement.
-Next continue S0.1 after reading that contract: implement the optional bounded
-recorder and prove native key-disclosure witnesses, then use the pilot before
-S0.2 measurements. Keep one Cargo owner; root alone commits/pushes. Stop after
-the current S0.0 commit for this session as requested by the user.
+The [S0.0 contract](research/79-s0-baseline-contract.md) remains the bounded
+measurement contract. [S0.1](research/80-s0-instrumentation-result.md) now accepts
+optional native instrumentation and independent per-sample Node checks within
+the recorded scope: 23 actions / 32 samples on each of redb, SurrealKV and local
+FoundationDB, actual abort/invalid-ACK controls, and 166 passing Node tests.
+Settlement dependency lineage remains incomplete; redb serializes writers, and
+local FoundationDB is not multi-host evidence. No layout or performance decision
+is accepted.
+
+The user's latest instruction is to **stop after this S0.1 commit and push**.
+Do not start S0.2 without a later continuation. When resumed, use the committed
+S0.1 source for an optimized, source-bound pilot before the S0.2 campaign. The
+focused report sizes project beyond the existing 64 MiB per-report bound; inspect
+the result's handoff and freeze an explicit bounded fragmentation plan before
+admitting the campaign. Never silently raise limits or discard samples. Keep one
+Cargo owner and root-only Git integration; do not rerun accepted N6 campaigns.
 
 The full S0 sequence freezes the trace/workload schema and measurement plan before
 choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,

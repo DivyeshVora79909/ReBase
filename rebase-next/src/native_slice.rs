@@ -484,6 +484,7 @@ pub struct Attempt<L, B: Binding> {
     entries: BTreeMap<Key, Entry<B>>,
     pub work: Work,
     limit: u64,
+    diagnostic: Option<crate::diagnostics::Recorder>,
 }
 
 impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
@@ -493,7 +494,13 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
             entries: BTreeMap::new(),
             work: Work::default(),
             limit,
+            diagnostic: None,
         }
+    }
+    pub fn new_diagnostic(load: L, limit: u64, diagnostic: crate::diagnostics::Recorder) -> Self {
+        let mut attempt = Self::new(load, limit);
+        attempt.diagnostic = Some(diagnostic);
+        attempt
     }
     pub fn charge(&mut self, kind: &str, count: u64) -> Result<()> {
         match kind {
@@ -512,6 +519,9 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
             "allocate" => self.work.allocations += count,
             _ => return Err(Error::new("internal", "unknown work counter")),
         }
+        if let Some(trace) = &self.diagnostic {
+            trace.work(kind, count);
+        }
         self.work.work_units = self
             .work
             .work_units
@@ -523,14 +533,67 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
         Ok(())
     }
     fn ensure(&mut self, key: &Key) -> Result<()> {
-        if !self.entries.contains_key(key) {
+        let cached = self.entries.contains_key(key);
+        let scope = self.diagnostic.as_ref().map(|trace| {
+            trace.scope(
+                "attempt",
+                if cached { "cache-hit" } else { "load" },
+                "native",
+                Some(&key.encode()),
+            )
+        });
+        if !cached {
             self.charge("load", 1)?;
-            let before = (self.load)(&key.encode())?;
-            self.work.loaded_bytes += before.as_ref().map_or(0, |bytes| bytes.len() as u64);
-            let original = before
+            let before = match (self.load)(&key.encode()) {
+                Ok(value) => value,
+                Err(error) => {
+                    if let Some(scope) = scope {
+                        scope.finish(crate::diagnostics::error_outcome(&error), 0, 0, 0);
+                    }
+                    return Err(error);
+                }
+            };
+            let loaded_bytes = before.as_ref().map_or(0, |bytes| bytes.len() as u64);
+            self.work.loaded_bytes += loaded_bytes;
+            let original = match before
                 .as_deref()
                 .map(|bytes| native_codec::decode_for::<B>(key, bytes))
-                .transpose()?;
+                .transpose()
+            {
+                Ok(value) => value,
+                Err(error) => {
+                    if let Some(scope) = scope {
+                        scope.finish(
+                            crate::diagnostics::error_outcome(&error),
+                            u64::from(before.is_some()),
+                            0,
+                            loaded_bytes,
+                        );
+                    }
+                    return Err(error);
+                }
+            };
+            if let Some(scope) = &scope {
+                // Typed fields, never a serialization scan or inferred causality.
+                match &original {
+                    Some(StoredValue::Root(root)) => scope.disclose(
+                        [root.head, root.first, root.last]
+                            .into_iter()
+                            .flatten()
+                            .map(|a| Key::Node(a).encode()),
+                    ),
+                    Some(StoredValue::Node(node)) => scope.disclose(
+                        std::iter::once(Key::Root(node.root).encode()).chain(
+                            [node.parent, node.left, node.right, node.prev, node.next]
+                                .into_iter()
+                                .flatten()
+                                .map(|a| Key::Node(a).encode()),
+                        ),
+                    ),
+                    _ => {}
+                }
+            }
+            let found = before.is_some();
             self.entries.insert(
                 key.clone(),
                 Entry {
@@ -539,6 +602,16 @@ impl<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: Binding> Attempt<L, B> {
                     original,
                 },
             );
+            if let Some(scope) = scope {
+                scope.finish(
+                    if found { "found" } else { "missing" },
+                    u64::from(found),
+                    0,
+                    loaded_bytes,
+                );
+            }
+        } else if let Some(scope) = scope {
+            scope.finish("success", 0, 0, 0);
         }
         Ok(())
     }
@@ -1229,5 +1302,274 @@ mod tests {
         assert_eq!(loads, 1);
         assert!(Key::decode(&[3]).is_err());
         assert!(Key::decode(&[255]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+    use crate::{
+        diagnostics::Recorder,
+        indexes::standard::{FINANCIAL, Leaf},
+        tree::{self, Root},
+    };
+    use std::cell::Cell;
+
+    fn address(id: u128, slot: u16) -> Address {
+        Address::new(Uuid::from_u128(id), slot)
+    }
+    fn recorder() -> Recorder {
+        Recorder::new(
+            "native-control",
+            "attempt",
+            "redb",
+            "native-tree",
+            "attempt-first",
+        )
+    }
+
+    #[test]
+    fn diagnostic_tree_results_batches_and_work_match_normal_with_zero_repeat_loads() {
+        let owner = address(100, 2);
+        let mut setup = Workspace::new(|_: &[u8]| Ok(None), 100000);
+        setup
+            .put(
+                Key::Root(owner),
+                Some(Stored::Root(
+                    Root::empty(FINANCIAL, Uuid::from_u128(1)).unwrap(),
+                )),
+            )
+            .unwrap();
+        for n in 1..=7 {
+            tree::insert(
+                &mut setup,
+                owner,
+                address(n, 1),
+                TimeKey::new(n as i64),
+                Leaf::Financial(n as i128),
+            )
+            .unwrap();
+        }
+        let image: BTreeMap<_, _> = setup
+            .finish()
+            .unwrap()
+            .into_iter()
+            .map(|(k, v)| (k, v.unwrap()))
+            .collect();
+        let mut normal = Workspace::new(|key: &[u8]| Ok(image.get(key).cloned()), 100000);
+        let expected = tree::prefix(&mut normal, owner, Some(5)).unwrap();
+        let trace = recorder();
+        trace.seed_invocation(&Key::Root(owner).encode());
+        let loads = Cell::new(0u64);
+        let mut measured = Workspace::new_diagnostic(
+            |key: &[u8]| {
+                loads.set(loads.get() + 1);
+                Ok(image.get(key).cloned())
+            },
+            100000,
+            trace.clone(),
+        );
+        assert_eq!(
+            tree::prefix(&mut measured, owner, Some(5)).unwrap(),
+            expected
+        );
+        assert_eq!(expected, 10);
+        assert_eq!(normal.finish().unwrap(), measured.finish().unwrap());
+        assert_eq!(
+            serde_json::to_value(&normal.work).unwrap(),
+            serde_json::to_value(&measured.work).unwrap()
+        );
+        let first = trace.snapshot("success", 0, None);
+        assert!(first.complete && first.dependency.complete);
+        assert_eq!(
+            first.counters.attempt_load_attempts,
+            measured.work.key_loads
+        );
+        assert_eq!(
+            first.counters.attempt_loaded_value_bytes,
+            measured.work.loaded_bytes
+        );
+        assert_eq!(first.counters.node_visits, measured.work.node_visits);
+        assert_eq!(
+            first.counters.selector_visits,
+            measured.work.selector_visits
+        );
+        let work = measured.work.clone();
+        let prior_loads = loads.get();
+        trace.reset_phase("attempt-repeat");
+        assert_eq!(tree::prefix(&mut measured, owner, Some(5)).unwrap(), 10);
+        let repeat = trace.snapshot("success", 0, None);
+        assert_eq!(loads.get(), prior_loads);
+        assert_eq!(measured.work.key_loads, work.key_loads);
+        assert_eq!(measured.work.loaded_bytes, work.loaded_bytes);
+        assert_eq!(repeat.counters.attempt_load_attempts, 0);
+        assert_eq!(repeat.counters.attempt_loaded_value_bytes, 0);
+        assert!(repeat.counters.attempt_cache_hits > 0);
+        assert_eq!(
+            repeat.counters.node_visits,
+            measured.work.node_visits - work.node_visits
+        );
+        assert_eq!(repeat.dependency.observed_read_depth, Some(0));
+    }
+
+    #[test]
+    fn diagnostic_decoded_root_and_every_node_pointer_disclose_exact_native_keys() {
+        use crate::{
+            algebra::Summary,
+            indexes::standard::{Aggregate, Standard},
+            tree::{FullKey, Node, Span},
+        };
+        let owner = address(100, 2);
+        let head = address(1, 1);
+        let first = address(2, 1);
+        let last = address(3, 1);
+        let mut root = Root::<Standard>::empty(FINANCIAL, Uuid::from_u128(1)).unwrap();
+        root.head = Some(head);
+        root.first = Some(first);
+        root.last = Some(last);
+        root.height = 1;
+        root.span = Some(Span {
+            first: TimeKey::new(0),
+            last: TimeKey::new(10),
+        });
+        let node = Node::<Standard> {
+            kind: FINANCIAL,
+            root: owner,
+            key: FullKey {
+                value: TimeKey::new(5),
+                id: head.id,
+                slot: head.slot,
+            },
+            leaf: Leaf::Financial(1),
+            parent: Some(address(4, 1)),
+            left: Some(first),
+            right: Some(last),
+            prev: Some(address(5, 1)),
+            next: Some(address(6, 1)),
+            height: 1,
+            span: Span {
+                first: TimeKey::new(5),
+                last: TimeKey::new(5),
+            },
+            summary: Aggregate::Financial(Summary::leaf(5, Some(1))),
+        };
+        let image = BTreeMap::from([
+            (
+                Key::Root(owner).encode(),
+                native_codec::encode(&Key::Root(owner), &Stored::Root(root.clone())).unwrap(),
+            ),
+            (
+                Key::Node(head).encode(),
+                native_codec::encode(&Key::Node(head), &Stored::Node(node.clone())).unwrap(),
+            ),
+        ]);
+        let trace = recorder();
+        trace.seed_invocation(&Key::Root(owner).encode());
+        // Constructing an encoded child key does not disclose or seed its address.
+        let first_key = Key::Node(first).encode();
+        let mut attempt = Workspace::new_diagnostic(
+            |key: &[u8]| Ok(image.get(key).cloned()),
+            100000,
+            trace.clone(),
+        );
+        assert_eq!(
+            attempt.get(&Key::Root(owner)).unwrap(),
+            Some(Stored::Root(root))
+        );
+        assert_eq!(
+            attempt.get(&Key::Node(head)).unwrap(),
+            Some(Stored::Node(node))
+        );
+        let report = trace.snapshot("success", 0, None);
+        let token = |a| trace.token(&Key::Node(a).encode());
+        let expected_root = BTreeSet::from([token(head), trace.token(&first_key), token(last)]);
+        assert_eq!(
+            report.events[0]
+                .discovered_key_tokens
+                .iter()
+                .cloned()
+                .collect::<BTreeSet<_>>(),
+            expected_root
+        );
+        assert_eq!(report.events[1].key_discovered_by, Some(0));
+        assert_eq!(
+            report.events[1]
+                .discovered_key_tokens
+                .iter()
+                .cloned()
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from([
+                token(address(4, 1)),
+                token(address(5, 1)),
+                token(address(6, 1))
+            ])
+        );
+        assert_eq!(report.dependency.observed_read_depth, Some(2));
+        trace.reset_phase("attempt-repeat");
+        let report = trace.snapshot("success", 0, None);
+        let origins: BTreeMap<_, _> = report
+            .initial_keys
+            .iter()
+            .map(|k| (k.token.clone(), k.origin.as_str()))
+            .collect();
+        assert_eq!(origins[&token(head)], "attempt-cache");
+        assert_eq!(origins[&trace.token(&first_key)], "previously-known");
+        assert_eq!(attempt.get(&Key::Node(first)).unwrap(), None);
+        let report = trace.snapshot("success", 0, None);
+        assert!(report.dependency.complete);
+        assert_eq!(report.events[0].key_knowledge, "previously-known");
+        assert_eq!(report.events[0].key_discovered_by, None);
+        assert_eq!(report.dependency.observed_read_depth, Some(1));
+    }
+
+    #[test]
+    fn diagnostic_load_failure_retains_normal_work_and_outcome() {
+        let trace = recorder();
+        trace.seed_invocation(&Key::Population.encode());
+        let mut normal = Workspace::new(
+            |_: &[u8]| Err(Error::new("outcome_unknown", "control")),
+            100,
+        );
+        let mut measured = Workspace::new_diagnostic(
+            |_: &[u8]| Err(Error::new("outcome_unknown", "control")),
+            100,
+            trace.clone(),
+        );
+        assert_eq!(
+            normal.get(&Key::Population).unwrap_err().code,
+            measured.get(&Key::Population).unwrap_err().code
+        );
+        assert_eq!(
+            serde_json::to_value(&normal.work).unwrap(),
+            serde_json::to_value(&measured.work).unwrap()
+        );
+        let report = trace.snapshot("unknown", 0, None);
+        assert_eq!(report.events[0].outcome, "unknown");
+        assert_eq!(report.counters.attempt_load_attempts, 1);
+    }
+    #[test]
+    fn diagnostic_failed_decode_counts_received_bytes_without_disclosing_keys() {
+        let trace = recorder();
+        trace.seed_invocation(&Key::Population.encode());
+        let bytes = b"invalid-codec".to_vec();
+        let mut normal = Workspace::new(|_: &[u8]| Ok(Some(bytes.clone())), 100);
+        let mut measured =
+            Workspace::new_diagnostic(|_: &[u8]| Ok(Some(bytes.clone())), 100, trace.clone());
+        assert_eq!(
+            normal.get(&Key::Population).unwrap_err().code,
+            measured.get(&Key::Population).unwrap_err().code
+        );
+        assert_eq!(
+            serde_json::to_value(&normal.work).unwrap(),
+            serde_json::to_value(&measured.work).unwrap()
+        );
+        let report = trace.snapshot("definite-abort", 0, None);
+        assert_eq!(report.events[0].outcome, "definite-abort");
+        assert_eq!(
+            report.counters.attempt_loaded_value_bytes,
+            bytes.len() as u64
+        );
+        assert_eq!(report.events[0].value_bytes, bytes.len() as u64);
+        assert!(report.events[0].discovered_key_tokens.is_empty());
     }
 }

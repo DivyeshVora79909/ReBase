@@ -1,6 +1,6 @@
-# Compact context — 2026-10-26
+# Compact context — 2026-10-27
 
-## Current handoff — N6 accepted within bounds; S0 measurement baseline next
+## Current handoff — S0.1 accepted within bounds; requested checkpoint stop
 
 P0 and N0–N6 are accepted within their documented scopes. The final N6 source is
 `1243168424294728968591d69efbe5d836fd36fd`. Its committed-source
@@ -19,19 +19,44 @@ ledger; the N0 ledger and dated evidence remain preserved. This accepts N6, not
 all of G10. Existing capacity limits stay model- and workload-bounded; local
 FoundationDB evidence does not establish multi-host latency or failover.
 
-S0.0 now has a [bounded contract](research/79-s0-baseline-contract.md), literal
-inputs/manifest and trace schema in `research/fixtures/s0-*.json`, plus ordinary
-`tools/node/examples/s0-contract.mjs` and focused contract tests. This is checked
-preparation only: no Rust runtime change, Cargo build or native measurement.
-Native command execution, faithful decoded-key disclosure, real adapter metrics,
-trace-off/on overhead and topology measurements remain S0.1/S0.2 obligations.
-The next agent should read the contract, implement S0.1 with one Cargo owner,
-then run the declared pilot before S0.2. Root alone owns Git. The current session
-must stop after the S0.0 commit/push at the user's token-limit stop request.
-Before measurement, S0.1 must add the independent full-key ordered fold and
-prefix extrema, commit-outcome consistency, native Work counter checks and
-decoded-key witness fidelity controls. Synthetic checks do not prove these
-obligations; see the contract's preparation limits.
+S0.0's [bounded contract](research/79-s0-baseline-contract.md) and literal fixtures
+remain the measurement foundation. [S0.1](research/80-s0-instrumentation-result.md)
+is now accepted within its recorded scope. Optional caller-owned diagnostics
+separate Attempt loads/cache hits, storage-facade work and FoundationDB binding
+calls. A bounded native probe pauses after each sample; Node independently checks
+source-derived inventories, actual tree bytes, ordered folds, results, Work and
+trace witnesses before acknowledging the next sample. Resource observations run
+while the probe is paused, outside measured spans.
+
+All 23 selected actions pass on each backend: 32 samples and acknowledgements
+each on redb, standalone SurrealKV and local FoundationDB. Actual abort and wrong
+ACK controls stop after the first sample. Cleanup passes. The Node 24 suite has
+166 passing tests with no skips; focused native diagnostics, probe tests, builds,
+formatting and Clippy pass. Exact logs, failed exploratory trials, source maps
+and raw results are in the [evidence](research/evidence/2026-10-27-s0-instrumentation.json).
+No formula, behavior/codec identity, dependency or public SDK export changes.
+
+The accepted focused probe has 96 compile-time inputs with digest
+`a88c0782685cafe374a62cec8f31055b814a80db66b7221f80383fdeceb19f34`
+and binary SHA-256
+`50094d1a7b404c3e02501a441c204be8e36fb1e52e4078fdebc67e5d8f8c8213`.
+The SDK-free application has 91 inputs with digest
+`be20039f3f563320bf4095a3a85d6b4da57aa2875ba858c64e6a6acc4c077281`
+and binary SHA-256
+`688616f7572faad5ed19e97613c11a18425ac13c6ba9638fbc349b7575f72663`.
+These are explicitly working-tree focused checks based on `0c14b41`; this
+checkpoint commits those exact native inputs. They are not a committed-source
+optimized pilot. Native settlement dependency depth stays incomplete, redb's
+overlapping-writer control is unavailable, and FoundationDB is single-host only.
+
+**Stop after committing and pushing S0.1, as the user requested.** S0.2 has not
+started. On a later continuation, read the result and prepare an optimized probe
+from the committed source, using one Cargo owner and the shared two-job cache.
+Run the declared pilot first. Focused wire reports are about 19–20 MB for 32
+samples; projecting 30 repetitions per action exceeds the 64 MiB report bound. Before
+the campaign, freeze a bounded fragmentation revision with global sample indices
+and exact nonoverlapping coverage; do not silently raise limits or drop samples.
+No S1 candidate may be selected from the focused diagnostic timings.
 
 The full S0 sequence fixes the trace/workload schema and measurement plan before
 choosing an S1 candidate. Define logical and physical reads/writes, bytes, scans,

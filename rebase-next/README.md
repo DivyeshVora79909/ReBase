@@ -18,8 +18,13 @@ and [release evidence](research/evidence/2026-10-26-n6-release.json). Do not use
 historical Python workflows or legacy CLI instructions as current operating
 procedures. The old campaigns remain available as dated evidence in `research/`;
 their outcomes and limits are not relabeled as new acceptance. This does not
-complete G10 or establish unrestricted production capacity. Next is S0's
-workload/trace schema and measurement baseline, before choosing an S1 candidate.
+complete G10 or establish unrestricted production capacity.
+
+**S0.1 status (2026-10-27):** [bounded instrumentation is accepted](research/80-s0-instrumentation-result.md).
+Independent per-sample checks pass all 23 selected actions on redb, SurrealKV
+and local FoundationDB; the Node suite passes 166 tests. The next checkpoint is
+S0.2's committed-source optimized pilot and bounded measurement campaign, before
+any S1 layout decision. Work stops here at the user's requested checkpoint.
 See the [G10 program](research/56-node-and-index-redesign-program.md),
 [Node contract](research/57-node-developer-contract.md),
 [storage plan](research/58-ordered-storage-redesign.md), and

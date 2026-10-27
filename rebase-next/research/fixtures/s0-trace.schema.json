@@ -100,6 +100,7 @@
         "bindingSet",
         "bindingClear",
         "bindingClearRange",
+        "bindingApproximateSize",
         "returnedRows",
         "readKeyBytes",
         "readValueBytes",
@@ -226,6 +227,9 @@
               }
             }
           ]
+        },
+        "bindingApproximateSize": {
+          "$ref": "#/$defs/nullableCount"
         }
       }
     },
@@ -322,7 +326,8 @@
             "enum": [
               "invocation",
               "locally-generated",
-              "attempt-cache"
+              "attempt-cache",
+              "previously-known"
             ]
           }
         }
@@ -421,7 +426,8 @@
             "set",
             "clear",
             "clear-range",
-            "commit"
+            "commit",
+            "approximate-size"
           ]
         },
         "role": {

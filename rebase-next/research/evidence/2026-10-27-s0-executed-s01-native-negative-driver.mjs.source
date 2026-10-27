@@ -1,0 +1,44 @@
+// Private real-probe ACK controls, separate from the ordinary runner.
+import {spawn} from 'node:child_process';
+import {readFile,writeFile,mkdir,access,statfs} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {parseFrame,encodeFrame} from '../tools/node/private/json-codec.mjs';
+import {observeResources} from '../tools/node/observe.mjs';
+import {checkS0Run} from '../tools/node/examples/s0-baseline.mjs';
+
+const sha=value=>createHash('sha256').update(value).digest('hex');
+export async function runNativeAckControl({probe,source,environment,outputDirectory,mode}={}) {
+  if(!['abort','wrong-action'].includes(mode))throw Error('explicit ACK control mode');
+  await mkdir(outputDirectory,{recursive:true,mode:0o700});
+  const manifestBytes=await readFile(new URL('../research/fixtures/s0-workload-manifest.json',import.meta.url)),inputBytes=await readFile(new URL('../research/fixtures/s0-inputs.json',import.meta.url)),traceSchema=JSON.parse(await readFile(new URL('../research/fixtures/s0-trace.schema.json',import.meta.url),'utf8'));
+  const request={format:'rebase-s0-probe-input-1',backend:'redb',location:path.join(outputDirectory,'owned-target'),namespace:null,clusterFile:null,phase:'focused',samples:1,trace:true,cases:[{corpus:'entry-8',action:'prefix'}],manifestSha256:sha(manifestBytes),inputsSha256:sha(inputBytes)};
+  const child=spawn(probe,[],{env:{...environment},stdio:['pipe','pipe','pipe'],shell:false});
+  const snapshots=[],frames=[];let buffer=Buffer.alloc(0),wire=0,stderrBytes=0,pending=Promise.resolve(),failure=null;
+  const timer=setTimeout(()=>{failure='control-deadline';child.kill('SIGKILL');},20000);
+  const handle=async frame=>{
+    frames.push(frame);
+    if(frame.format==='rebase-s0-start-1'&&frame.sourceFingerprint.sha256!==source.probeInputSha256)throw Error('executed source differs');
+    if(frame.format==='rebase-s0-checkpoint-1'){
+      if(snapshots.length)throw Error('probe admitted another checkpoint after rejected ACK');
+      const sample=frame.sample;
+      snapshots.push({stage:'checkpoint',actionId:sample.actionId,cachePhase:sample.cachePhase,...await observeResources({processes:[{role:'probe',pid:child.pid}],native:{binary:probe,sha256:source.binarySha256,model:'calculation',backend:'redb'},paths:[request.location],maxFiles:1024})});
+      child.stdin.write(encodeFrame({actionId:mode==='wrong-action'?sample.actionId+'/wrong':sample.actionId,cachePhase:sample.cachePhase,continue:mode!=='abort'},1024));
+    }
+  };
+  child.stdout.on('data',chunk=>{wire+=chunk.length;if(wire>67108864){failure='wire-bound';child.kill('SIGKILL');return;}child.stdout.pause();buffer=Buffer.concat([buffer,chunk]);pending=pending.then(async()=>{let newline;while((newline=buffer.indexOf(10))!==-1){const line=buffer.subarray(0,newline);buffer=buffer.subarray(newline+1);if(line.length)await handle(parseFrame(line));}}).catch(error=>{failure=error.message;child.kill('SIGKILL');}).finally(()=>child.stdout.resume());});
+  child.stderr.on('data',chunk=>{stderrBytes+=chunk.length;if(stderrBytes>65536){failure='stderr-bound';child.kill('SIGKILL');}});child.stdin.on('error',()=>{});
+  const done=new Promise(resolve=>{child.once('error',error=>{failure=error.code;resolve({code:null,signal:null});});child.once('close',(code,signal)=>resolve({code,signal}));});
+  child.stdin.write(encodeFrame(request,65536));const exit=await done;await pending;clearTimeout(timer);child.stdin.end();
+  const report=frames.find(frame=>frame.format==='rebase-s0-probe-report-1');
+  const expected=mode==='abort'?'checkpoint-rejected':'checkpoint-acknowledgement-invalid';
+  let targetAbsent=false;try{await access(request.location);}catch(error){if(error.code==='ENOENT')targetAbsent=true;else throw error;}
+  const disk=await statfs(outputDirectory);
+  const resourceReasons=[];if(!snapshots[0]?.physical?.available)resourceReasons.push('resource-physical-unavailable');if(!snapshots[0]?.processes?.probe?.available)resourceReasons.push('resource-process-unavailable:probe');
+  const run={format:'rebase-s0-run-1',request,source,binarySha256:source.binarySha256,resources:snapshots,resourceObservation:{format:'rebase-s0-resources-1',maxSamples:3842,maxFiles:1024,roles:['probe'],paths:[request.location],complete:resourceReasons.length===0,incompleteReasons:resourceReasons,disk:{available:true,availableBytes:disk.bavail*disk.bsize,totalBytes:disk.blocks*disk.bsize}},report,complete:false,incompleteReasons:[expected,...resourceReasons],cleanup:{processStopped:child.exitCode!==null||child.signalCode!==null,exitCode:exit.code,signal:exit.signal,stdoutBytes:wire,stderrBytes}};
+  await writeFile(path.join(outputDirectory,'run.json'),JSON.stringify(run)+'\n',{mode:0o600});
+  const checked=checkS0Run(run,{manifest:JSON.parse(manifestBytes),manifestBytes,inputBytes,traceSchema,source});
+  const passed=!failure&&exit.code===0&&report?.samples?.length===1&&report.samples[0].cachePhase==='attempt-first'&&report.complete===false&&report.incompleteReasons.includes(expected)&&report.cleanup?.complete===true&&targetAbsent&&snapshots.length===1;
+  const summary={mode,passed,failure,expectedReason:expected,actualSamples:report?.samples?.length,checkpointCount:snapshots.length,checked,targetAbsent,cleanup:run.cleanup,nativeCleanup:report?.cleanup};
+  await writeFile(path.join(outputDirectory,'check.json'),JSON.stringify(summary,null,2)+'\n',{mode:0o600});return summary;
+}

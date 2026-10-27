@@ -6,6 +6,7 @@ pub mod binding;
 pub mod causal;
 pub mod demo;
 mod dependency;
+pub mod diagnostics;
 pub mod effects;
 pub mod fixtures;
 pub mod host;

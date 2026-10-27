@@ -1,0 +1,36 @@
+{
+  "format": "rebase-s01-owned-fdb-1",
+  "topology": "one local server on loopback, single ssd; not multi-host evidence",
+  "fdbserver": {
+    "path": "/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver",
+    "sha256": "179df8ec7292ad060fb7bd60a771ff4a8dd3989a8115638356c73feea4fc2c5f"
+  },
+  "fdbcli": {
+    "path": "/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/bin/fdbcli",
+    "sha256": "6dfe3328389fe8ff8175ddc080e278c5b07d1d2601f97079cba1194bfb2e41fb"
+  },
+  "clusterFile": "/workspace/ReBase/rebase-next/target/s01-focused-matrix-v3-final-r2/owned-fdb/fdb.cluster",
+  "dataDirectory": "/workspace/ReBase/rebase-next/target/s01-focused-matrix-v3-final-r2/owned-fdb/data",
+  "logDirectory": "/workspace/ReBase/rebase-next/target/s01-focused-matrix-v3-final-r2/owned-fdb/log",
+  "started": {
+    "status": "started",
+    "pid": 22799,
+    "address": "127.0.0.1:38181"
+  },
+  "bootstrap": {
+    "status": "completed",
+    "stdout": "Database created\n",
+    "stderr": ""
+  },
+  "health": {
+    "status": "passed",
+    "key": "rebase_n5_environment_probe_02a1d043bd2a446494c9e40cb253c5dc",
+    "output": ">>> writemode on\n>>> begin\nTransaction started\n>>> set rebase_n5_environment_probe_02a1d043bd2a446494c9e40cb253c5dc verified\n>>> commit\nCommitted (81015)\n>>> get rebase_n5_environment_probe_02a1d043bd2a446494c9e40cb253c5dc\n`rebase_n5_environment_probe_02a1d043bd2a446494c9e40cb253c5dc' is `verified'\n>>> begin\nTransaction started\n>>> clear rebase_n5_environment_probe_02a1d043bd2a446494c9e40cb253c5dc\n>>> commit\nCommitted (83254)\n"
+  },
+  "stopped": {
+    "status": "stopped",
+    "pid": 22799
+  },
+  "dataRemoved": true,
+  "logsRemoved": true
+}

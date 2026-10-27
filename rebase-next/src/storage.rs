@@ -12,6 +12,7 @@ pub mod application_checks;
 pub mod concurrency_checks;
 pub mod conformance;
 pub mod coordination_checks;
+pub mod diagnostic_checks;
 #[cfg(feature = "foundationdb")]
 pub mod foundationdb;
 pub mod lifecycle_checks;
@@ -163,6 +164,18 @@ pub trait Backend: Send + Sync {
     }
     fn begin_read(&self) -> Result<Box<dyn ReadView>>;
     fn begin_write(&self) -> Result<Box<dyn WriteView>>;
+    fn begin_read_diagnostic(
+        &self,
+        _trace: crate::diagnostics::Recorder,
+    ) -> Result<Box<dyn ReadView>> {
+        self.begin_read()
+    }
+    fn begin_write_diagnostic(
+        &self,
+        _trace: crate::diagnostics::Recorder,
+    ) -> Result<Box<dyn WriteView>> {
+        self.begin_write()
+    }
 }
 pub struct Database {
     backend: Box<dyn Backend>,
@@ -188,6 +201,24 @@ impl Database {
     }
     pub fn limits(&self) -> Limits {
         self.backend.limits()
+    }
+    pub fn begin_read_diagnostic(
+        &self,
+        trace: crate::diagnostics::Recorder,
+    ) -> Result<ReadTransaction> {
+        let inner = self.backend.begin_read_diagnostic(trace.clone())?;
+        Ok(ReadTransaction {
+            view: Arc::new(Mutex::new(Box::new(DiagnosticRead { inner, trace }))),
+        })
+    }
+    pub fn begin_write_diagnostic(
+        &self,
+        trace: crate::diagnostics::Recorder,
+    ) -> Result<WriteTransaction> {
+        let inner = self.backend.begin_write_diagnostic(trace.clone())?;
+        Ok(WriteTransaction {
+            view: Arc::new(Mutex::new(Box::new(DiagnosticWrite { inner, trace }))),
+        })
     }
     pub fn begin_read(&self) -> Result<ReadTransaction> {
         Ok(ReadTransaction {
@@ -557,6 +588,233 @@ mod tests {
         );
         drop(read);
         drop(old);
+        drop(db);
+        std::fs::remove_file(path).unwrap();
+    }
+}
+
+// Scoped facade instrumentation is allocated only by explicit diagnostic begins.
+struct DiagnosticRead {
+    inner: Box<dyn ReadView>,
+    trace: crate::diagnostics::Recorder,
+}
+struct DiagnosticWrite {
+    inner: Box<dyn WriteView>,
+    trace: crate::diagnostics::Recorder,
+}
+fn diagnostic_get(
+    inner: &dyn ReadView,
+    trace: &crate::diagnostics::Recorder,
+    table: &TableSpec,
+    key: &[u8],
+) -> Result<Option<Vec<u8>>> {
+    let scope = trace.scope("facade", "get", "native", Some(key));
+    let result = inner.get(table, key);
+    match &result {
+        Ok(value) => scope.finish(
+            if value.is_some() { "found" } else { "missing" },
+            u64::from(value.is_some()),
+            if value.is_some() { key.len() as u64 } else { 0 },
+            value.as_ref().map_or(0, |v| v.len() as u64),
+        ),
+        Err(e) => scope.finish(crate::diagnostics::error_outcome(e), 0, 0, 0),
+    }
+    result
+}
+fn diagnostic_scan(
+    inner: &dyn ReadView,
+    trace: &crate::diagnostics::Recorder,
+    table: &TableSpec,
+    start: Bound<Vec<u8>>,
+    end: Bound<Vec<u8>>,
+    limit: usize,
+) -> Result<Vec<Row>> {
+    let scope = trace.scope("facade", "scan", "native", None);
+    let result = inner.scan(table, start, end, limit);
+    match &result {
+        Ok(rows) => scope.finish(
+            "success",
+            rows.len() as u64,
+            rows.iter().map(|r| r.0.len() as u64).sum(),
+            rows.iter().map(|r| r.1.len() as u64).sum(),
+        ),
+        Err(e) => scope.finish(crate::diagnostics::error_outcome(e), 0, 0, 0),
+    }
+    result
+}
+macro_rules! diagnostic_read {
+    ($ty:ty) => {
+        impl ReadView for $ty {
+            fn table_exists(&self, t: &TableSpec) -> Result<bool> {
+                self.inner.table_exists(t)
+            }
+            fn get(&self, t: &TableSpec, k: &[u8]) -> Result<Option<Vec<u8>>> {
+                diagnostic_get(self.inner.as_ref(), &self.trace, t, k)
+            }
+            fn scan(
+                &self,
+                t: &TableSpec,
+                s: Bound<Vec<u8>>,
+                e: Bound<Vec<u8>>,
+                l: usize,
+            ) -> Result<Vec<Row>> {
+                diagnostic_scan(self.inner.as_ref(), &self.trace, t, s, e, l)
+            }
+            fn list_tables(&self) -> Result<Vec<String>> {
+                self.inner.list_tables()
+            }
+            fn has_multimap_tables(&self) -> Result<bool> {
+                self.inner.has_multimap_tables()
+            }
+        }
+    };
+}
+diagnostic_read!(DiagnosticRead);
+diagnostic_read!(DiagnosticWrite);
+impl WriteView for DiagnosticWrite {
+    fn create_table(&mut self, t: &TableSpec) -> Result<()> {
+        self.inner.create_table(t)
+    }
+    fn delete_table(&mut self, t: &TableSpec) -> Result<bool> {
+        self.inner.delete_table(t)
+    }
+    fn put(&mut self, t: &TableSpec, k: &[u8], v: &[u8]) -> Result<Option<Vec<u8>>> {
+        let scope = self.trace.scope("facade", "put", "native", Some(k));
+        let result = self.inner.put(t, k, v);
+        scope.finish(
+            result
+                .as_ref()
+                .map_or_else(|e| crate::diagnostics::error_outcome(e), |_| "success"),
+            0,
+            k.len() as u64,
+            v.len() as u64,
+        );
+        result
+    }
+    fn remove(&mut self, t: &TableSpec, k: &[u8]) -> Result<Option<Vec<u8>>> {
+        let scope = self.trace.scope("facade", "remove", "native", Some(k));
+        let result = self.inner.remove(t, k);
+        scope.finish(
+            result
+                .as_ref()
+                .map_or_else(|e| crate::diagnostics::error_outcome(e), |_| "success"),
+            0,
+            k.len() as u64,
+            0,
+        );
+        result
+    }
+    fn commit(self: Box<Self>) -> Result<()> {
+        let Self { inner, trace } = *self;
+        // FDB records its actual submitted commit after staged mutations/size checks.
+        let scope =
+            (!trace.is_foundationdb()).then(|| trace.scope("commit", "commit", "other", None));
+        let result = inner.commit();
+        if let Some(scope) = scope {
+            scope.finish(
+                result
+                    .as_ref()
+                    .map_or_else(|e| crate::diagnostics::error_outcome(e), |_| "success"),
+                0,
+                0,
+                0,
+            );
+        }
+        result
+    }
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+    use crate::diagnostics::Recorder;
+    const DATA: TableDefinition<&[u8], &[u8]> = TableDefinition::new("diagnostic_bytes");
+
+    #[test]
+    fn diagnostic_redb_facade_preserves_results_and_counts_selected_primitive_bytes() {
+        let path =
+            std::env::temp_dir().join(format!("rebase-diagnostic-{}.redb", uuid::Uuid::new_v4()));
+        let db = Database::from_redb(::redb::Database::create(&path).unwrap());
+        let write = db.begin_write().unwrap();
+        write
+            .open_table(DATA)
+            .unwrap()
+            .insert(b"a", b"old".as_slice())
+            .unwrap();
+        write
+            .open_table(DATA)
+            .unwrap()
+            .insert(b"b", b"keep".as_slice())
+            .unwrap();
+        write.commit().unwrap();
+        let trace = Recorder::new("facade", "attempt", "redb", "Store-control", "control");
+        let read = db.begin_read_diagnostic(trace.clone()).unwrap();
+        let data = read.open_table(DATA).unwrap();
+        assert_eq!(data.get(b"a").unwrap().unwrap().value(), b"old");
+        assert!(data.get(b"missing").unwrap().is_none());
+        assert_eq!(data.iter().unwrap().count(), 2);
+        let report = trace.snapshot("success", 0, None);
+        assert_eq!(report.counters.facade_get, 2);
+        assert_eq!(report.counters.facade_scan, 1);
+        assert_eq!(report.counters.returned_rows, 3);
+        assert_eq!(report.counters.read_key_bytes, 3);
+        assert_eq!(report.counters.read_value_bytes, 10);
+        assert_eq!(report.counters.binding_get, None);
+        drop(data);
+        drop(read);
+        let trace = Recorder::new(
+            "facade-write",
+            "attempt",
+            "redb",
+            "Store-control",
+            "control",
+        );
+        let write = db.begin_write_diagnostic(trace.clone()).unwrap();
+        assert_eq!(
+            write
+                .open_table(DATA)
+                .unwrap()
+                .insert(b"a", b"newer".as_slice())
+                .unwrap()
+                .unwrap()
+                .value(),
+            b"old"
+        );
+        assert_eq!(
+            write
+                .open_table(DATA)
+                .unwrap()
+                .remove(b"b")
+                .unwrap()
+                .unwrap()
+                .value(),
+            b"keep"
+        );
+        write.commit().unwrap();
+        let report = trace.snapshot("success", 0, None);
+        assert!(report.complete);
+        assert_eq!(report.counters.returned_rows, 0);
+        assert_eq!(report.counters.read_key_bytes, 0);
+        assert_eq!(report.counters.read_value_bytes, 0);
+        assert_eq!(report.counters.write_key_bytes, 2);
+        assert_eq!(report.counters.write_value_bytes, 5);
+        assert_eq!(
+            report.events.iter().filter(|e| e.layer == "commit").count(),
+            1
+        );
+        assert!(report.commit_ns.is_some());
+        let read = db.begin_read().unwrap();
+        assert_eq!(
+            read.open_table(DATA)
+                .unwrap()
+                .get(b"a")
+                .unwrap()
+                .unwrap()
+                .value(),
+            b"newer"
+        );
+        assert!(read.open_table(DATA).unwrap().get(b"b").unwrap().is_none());
+        drop(read);
         drop(db);
         std::fs::remove_file(path).unwrap();
     }

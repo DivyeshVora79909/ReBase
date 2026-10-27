@@ -8,6 +8,7 @@
 use super::{
     Backend, Limits, ReadView, Result, Row, StorageError, TableSpec, ValueKind, WriteView,
 };
+use crate::diagnostics::{Recorder, Scope, error_outcome};
 use foundationdb::{
     Database as FdbDatabase, KeySelector, RangeOption, Transaction,
     options::{ConflictRangeType, TransactionOption},
@@ -48,15 +49,16 @@ impl Backend for FdbBackend {
         }
     }
     fn begin_read(&self) -> Result<Box<dyn ReadView>> {
-        let trx = transaction(&self.db)?;
+        let trx = transaction(&self.db, None)?;
         Ok(Box::new(FdbRead {
             trx,
             prefix: self.prefix.clone(),
+            trace: None,
         }))
     }
 
     fn begin_write(&self) -> Result<Box<dyn WriteView>> {
-        let trx = transaction(&self.db)?;
+        let trx = transaction(&self.db, None)?;
         Ok(Box::new(FdbWrite {
             trx,
             prefix: self.prefix.clone(),
@@ -65,6 +67,28 @@ impl Backend for FdbBackend {
             catalog: BTreeMap::new(),
             bytes: 0,
             started: Instant::now(),
+            trace: None,
+        }))
+    }
+    fn begin_read_diagnostic(&self, trace: Recorder) -> Result<Box<dyn ReadView>> {
+        let trx = transaction(&self.db, Some(&trace))?;
+        Ok(Box::new(FdbRead {
+            trx,
+            prefix: self.prefix.clone(),
+            trace: Some(trace),
+        }))
+    }
+    fn begin_write_diagnostic(&self, trace: Recorder) -> Result<Box<dyn WriteView>> {
+        let trx = transaction(&self.db, Some(&trace))?;
+        Ok(Box::new(FdbWrite {
+            trx,
+            prefix: self.prefix.clone(),
+            writes: BTreeMap::new(),
+            cleared: Vec::new(),
+            catalog: BTreeMap::new(),
+            bytes: 0,
+            started: Instant::now(),
+            trace: Some(trace),
         }))
     }
 }
@@ -72,6 +96,7 @@ impl Backend for FdbBackend {
 struct FdbRead {
     trx: Transaction,
     prefix: Vec<u8>,
+    trace: Option<Recorder>,
 }
 struct FdbWrite {
     trx: Transaction,
@@ -81,6 +106,7 @@ struct FdbWrite {
     catalog: BTreeMap<String, Option<ValueKind>>,
     bytes: usize,
     started: Instant,
+    trace: Option<Recorder>,
 }
 
 fn fail(code: &'static str, detail: impl Into<String>) -> StorageError {
@@ -109,8 +135,25 @@ fn fdb_error(error: foundationdb::FdbError, fallback: &'static str) -> StorageEr
     )
 }
 
-fn transaction(db: &FdbDatabase) -> Result<Transaction> {
-    let trx = db.create_trx().map_err(|e| fdb_error(e, "storage"))?;
+fn transaction(db: &FdbDatabase, trace: Option<&Recorder>) -> Result<Transaction> {
+    let trx = if let Some(trace) = trace {
+        let metrics = foundationdb::metrics::TransactionMetrics::new();
+        let trx = db.create_instrumented_trx(metrics.clone()).map_err(|e| {
+            e.get_fdb_error().map_or_else(
+                || {
+                    fail(
+                        "storage",
+                        "FoundationDB instrumentation initialization failed",
+                    )
+                },
+                |e| fdb_error(e, "storage"),
+            )
+        })?;
+        trace.attach_sdk(metrics);
+        trx
+    } else {
+        db.create_trx().map_err(|e| fdb_error(e, "storage"))?
+    };
     trx.set_option(TransactionOption::Timeout(CLIENT_TIMEOUT_MS as i32))
         .map_err(|e| fdb_error(e, "storage"))?;
     trx.set_option(TransactionOption::SizeLimit(MAX_MUTATION_BYTES as i32))
@@ -208,11 +251,63 @@ fn byte_kind(byte: u8) -> Result<ValueKind> {
     }
 }
 
-fn fetch(trx: &Transaction, key: &[u8], snapshot: bool) -> Result<Option<Vec<u8>>> {
+// These counters name Rust binding invocations, not packets or disk operations.
+// Read key bytes count returned keys; missing point reads return zero bytes.
+fn finish_read(scope: Option<Scope>, result: &Result<Option<Vec<u8>>>, key_len: usize) {
+    if let Some(scope) = scope {
+        match result {
+            Ok(Some(value)) => scope.finish("found", 1, key_len as u64, value.len() as u64),
+            Ok(None) => scope.finish("missing", 0, 0, 0),
+            Err(error) => scope.finish(error_outcome(error), 0, 0, 0),
+        }
+    }
+}
+fn fetch(
+    trx: &Transaction,
+    key: &[u8],
+    snapshot: bool,
+    trace: Option<&Recorder>,
+    role: &str,
+    control: Option<u64>,
+) -> Result<Option<Vec<u8>>> {
     validate_key(key)?;
-    block_on(trx.get(key, snapshot))
+    let scope = trace.map(|trace| trace.scope("binding", "get", role, None));
+    if let Some(scope) = &scope {
+        scope.control(control);
+    }
+    let result = block_on(trx.get(key, snapshot))
         .map(|v| v.map(|b| b.as_ref().to_vec()))
-        .map_err(|e| fdb_error(e, "storage"))
+        .map_err(|e| fdb_error(e, "storage"));
+    finish_read(scope, &result, key.len());
+    result
+}
+fn catalog_exists(
+    trx: &Transaction,
+    prefix: &[u8],
+    table: &TableSpec,
+    trace: Option<&Recorder>,
+    read_view: bool,
+) -> Result<(bool, Option<u64>)> {
+    let key = catalog_key(prefix, &table.name);
+    validate_key(&key)?;
+    let scope = trace.map(|trace| trace.scope("binding", "get", "catalog", None));
+    let id = scope.as_ref().and_then(Scope::id);
+    let result = block_on(trx.get(&key, false))
+        .map(|v| v.map(|b| b.as_ref().to_vec()))
+        .map_err(|e| fdb_error(e, "storage"));
+    finish_read(scope, &result, key.len());
+    match result? {
+        None => Ok((false, id)),
+        Some(bytes) if bytes.as_slice() == [kind_byte(table.value)] => Ok((true, id)),
+        Some(_) => Err(fail(
+            "storage_schema",
+            if read_view {
+                format!("table {} has another value kind", table.name)
+            } else {
+                "table value kind mismatch".into()
+            },
+        )),
+    }
 }
 
 fn range_rows(
@@ -220,7 +315,9 @@ fn range_rows(
     begin: KeySelector<'_>,
     end: KeySelector<'_>,
     limit: usize,
-    snapshot: bool,
+    trace: Option<&Recorder>,
+    role: &str,
+    control: Option<u64>,
 ) -> Result<Vec<Row>> {
     if limit == 0 {
         return Ok(Vec::new());
@@ -230,34 +327,65 @@ fn range_rows(
     let mut rows = Vec::new();
     let mut iteration = 1;
     loop {
-        let values = block_on(trx.get_range(&option, iteration, snapshot))
-            .map_err(|error| fdb_error(error, "storage"))?;
-        // Iterator streaming can return a short native batch while `more` is
-        // true. Fill the requested facade page before reporting exhaustion.
-        if values.is_empty() && values.more() {
-            return Err(fail(
-                "storage",
-                "FoundationDB range made no progress with more=true",
-            ));
+        let scope = trace.map(|trace| trace.scope("binding", "get-range", role, None));
+        if let Some(scope) = &scope {
+            scope.control(control);
         }
+        let result = block_on(trx.get_range(&option, iteration, false))
+            .map_err(|error| fdb_error(error, "storage"));
+        if let Some(scope) = scope {
+            match &result {
+                Ok(values) => scope.finish(
+                    "success",
+                    values.len() as u64,
+                    values.iter().map(|kv| kv.key().len() as u64).sum(),
+                    values.iter().map(|kv| kv.value().len() as u64).sum(),
+                ),
+                Err(error) => scope.finish(error_outcome(error), 0, 0, 0),
+            }
+        }
+        let values = result?;
+        let more = values.more();
         let next = option.next_range(&values);
-        rows.extend(
+        append_range_batch(
+            &mut rows,
             values
                 .into_iter()
-                .map(|kv| (kv.key().to_vec(), kv.value().to_vec())),
-        );
-        if rows.len() > limit {
-            return Err(fail(
-                "storage",
-                "FoundationDB range exceeded requested row limit",
-            ));
-        }
+                .map(|kv| (kv.key().to_vec(), kv.value().to_vec()))
+                .collect(),
+            more,
+            limit,
+        )?;
         let Some(next) = next else {
             return Ok(rows);
         };
         option = next;
         iteration += 1;
     }
+}
+
+// Streaming may return a short batch with more=true. Keep every actual batch;
+// these checks reject a stalled or oversized response without changing paging.
+fn append_range_batch(
+    rows: &mut Vec<Row>,
+    batch: Vec<Row>,
+    more: bool,
+    limit: usize,
+) -> Result<()> {
+    if batch.is_empty() && more {
+        return Err(fail(
+            "storage",
+            "FoundationDB range made no progress with more=true",
+        ));
+    }
+    rows.extend(batch);
+    if rows.len() > limit {
+        return Err(fail(
+            "storage",
+            "FoundationDB range exceeded requested row limit",
+        ));
+    }
+    Ok(())
 }
 
 fn selector_start<'a>(bound: &'a Bound<Vec<u8>>, fallback: &'a [u8]) -> KeySelector<'a> {
@@ -282,7 +410,9 @@ fn scan_table(
     start: Bound<Vec<u8>>,
     end: Bound<Vec<u8>>,
     limit: usize,
+    diagnostic: (Option<&Recorder>, Option<u64>),
 ) -> Result<Vec<Row>> {
+    let (trace, control) = diagnostic;
     if limit == 0 {
         return Ok(Vec::new());
     }
@@ -317,7 +447,7 @@ fn scan_table(
         .map_err(|error| fdb_error(error, "storage"))?;
     let begin = selector_start(&start_key, &dp);
     let stop = selector_end(&end_key, &dp_end);
-    let mut rows = range_rows(trx, begin, stop, limit, false)?;
+    let mut rows = range_rows(trx, begin, stop, limit, trace, "data", control)?;
     rows.retain(|(k, _)| k.starts_with(&dp));
     Ok(rows
         .into_iter()
@@ -327,20 +457,23 @@ fn scan_table(
 
 impl ReadView for FdbRead {
     fn table_exists(&self, table: &TableSpec) -> Result<bool> {
-        match fetch(&self.trx, &catalog_key(&self.prefix, &table.name), false)? {
-            None => Ok(false),
-            Some(bytes) if bytes.as_slice() == [kind_byte(table.value)] => Ok(true),
-            Some(_) => Err(fail(
-                "storage_schema",
-                format!("table {} has another value kind", table.name),
-            )),
-        }
+        catalog_exists(&self.trx, &self.prefix, table, self.trace.as_ref(), true)
+            .map(|(exists, _)| exists)
     }
     fn get(&self, table: &TableSpec, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        if !self.table_exists(table)? {
+        let (exists, control) =
+            catalog_exists(&self.trx, &self.prefix, table, self.trace.as_ref(), true)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
-        fetch(&self.trx, &data_key(&self.prefix, &table.name, key)?, false)
+        fetch(
+            &self.trx,
+            &data_key(&self.prefix, &table.name, key)?,
+            false,
+            self.trace.as_ref(),
+            "data",
+            control,
+        )
     }
     fn scan(
         &self,
@@ -349,11 +482,22 @@ impl ReadView for FdbRead {
         end: Bound<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Row>> {
-        if !self.table_exists(table)? {
+        let (exists, control) =
+            catalog_exists(&self.trx, &self.prefix, table, self.trace.as_ref(), true)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
-        scan_table(&self.trx, &self.prefix, table, start, end, limit)
+        scan_table(
+            &self.trx,
+            &self.prefix,
+            table,
+            start,
+            end,
+            limit,
+            (self.trace.as_ref(), control),
+        )
     }
+
     fn list_tables(&self) -> Result<Vec<String>> {
         let p = catalog_prefix(&self.prefix);
         let end = successor(&p);
@@ -362,7 +506,9 @@ impl ReadView for FdbRead {
             KeySelector::first_greater_or_equal(p.as_slice()),
             KeySelector::first_greater_or_equal(end.as_slice()),
             10_001,
-            false,
+            self.trace.as_ref(),
+            "catalog",
+            None,
         )?;
         if rows.len() > 10_000 {
             return Err(fail("storage_limit", "too many tables to list"));
@@ -382,19 +528,19 @@ impl ReadView for FdbRead {
 
 impl FdbWrite {
     fn exists(&self, table: &TableSpec) -> Result<bool> {
+        self.exists_control(table).map(|(exists, _)| exists)
+    }
+    fn exists_control(&self, table: &TableSpec) -> Result<(bool, Option<u64>)> {
         if let Some(kind) = self.catalog.get(&table.name) {
             return match kind {
-                Some(k) if *k == table.value => Ok(true),
+                Some(k) if *k == table.value => Ok((true, None)),
                 Some(_) => Err(fail("storage_schema", "table value kind mismatch")),
-                None => Ok(false),
+                None => Ok((false, None)),
             };
         }
-        match fetch(&self.trx, &catalog_key(&self.prefix, &table.name), false)? {
-            None => Ok(false),
-            Some(bytes) if bytes.as_slice() == [kind_byte(table.value)] => Ok(true),
-            Some(_) => Err(fail("storage_schema", "table value kind mismatch")),
-        }
+        catalog_exists(&self.trx, &self.prefix, table, self.trace.as_ref(), false)
     }
+
     fn charge(&mut self, n: usize) -> Result<()> {
         let next = self.bytes.saturating_add(n);
         if next > MAX_MUTATION_BYTES {
@@ -438,6 +584,7 @@ impl FdbWrite {
         start: Bound<Vec<u8>>,
         end: Bound<Vec<u8>>,
         limit: usize,
+        control: Option<u64>,
     ) -> Result<Vec<Row>> {
         if limit == 0 {
             return Ok(Vec::new());
@@ -450,7 +597,15 @@ impl FdbWrite {
             loop {
                 // Each native range request remains bounded even when staged
                 // deletes force us to continue to a later page.
-                let rows = scan_table(&self.trx, &self.prefix, table, cursor, end.clone(), 64)?;
+                let rows = scan_table(
+                    &self.trx,
+                    &self.prefix,
+                    table,
+                    cursor,
+                    end.clone(),
+                    64,
+                    (self.trace.as_ref(), control),
+                )?;
                 if rows.is_empty() {
                     break;
                 }
@@ -519,14 +674,22 @@ impl ReadView for FdbWrite {
         self.exists(table)
     }
     fn get(&self, table: &TableSpec, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        if !self.exists(table)? {
+        let (exists, control) = self.exists_control(table)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
         let full = data_key(&self.prefix, &table.name, key)?;
         if let Some(value) = self.read_overlay(&full) {
             return Ok(value);
         }
-        fetch(&self.trx, &full, false)
+        fetch(
+            &self.trx,
+            &full,
+            false,
+            self.trace.as_ref(),
+            "data",
+            control,
+        )
     }
     fn scan(
         &self,
@@ -535,10 +698,11 @@ impl ReadView for FdbWrite {
         end: Bound<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Row>> {
-        if !self.exists(table)? {
+        let (exists, control) = self.exists_control(table)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
-        self.read_scan(table, start, end, limit)
+        self.read_scan(table, start, end, limit, control)
     }
     fn list_tables(&self) -> Result<Vec<String>> {
         let p = catalog_prefix(&self.prefix);
@@ -548,7 +712,9 @@ impl ReadView for FdbWrite {
             KeySelector::first_greater_or_equal(p.as_slice()),
             KeySelector::first_greater_or_equal(end.as_slice()),
             10_001,
-            false,
+            self.trace.as_ref(),
+            "catalog",
+            None,
         )?;
         if rows.len() > 10_000 {
             return Err(fail("storage_limit", "too many tables to list"));
@@ -614,25 +780,41 @@ impl WriteView for FdbWrite {
     }
     fn put(&mut self, table: &TableSpec, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>> {
         validate_value(value)?;
-        if !self.exists(table)? {
+        let (exists, control) = self.exists_control(table)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
         let full = data_key(&self.prefix, &table.name, key)?;
         let old = match self.read_overlay(&full) {
             Some(value) => value,
-            None => fetch(&self.trx, &full, false)?,
+            None => fetch(
+                &self.trx,
+                &full,
+                false,
+                self.trace.as_ref(),
+                "data",
+                control,
+            )?,
         };
         self.buffer(full, Some(value.to_vec()))?;
         Ok(old)
     }
     fn remove(&mut self, table: &TableSpec, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        if !self.exists(table)? {
+        let (exists, control) = self.exists_control(table)?;
+        if !exists {
             return Err(fail("storage", format!("missing table {}", table.name)));
         }
         let full = data_key(&self.prefix, &table.name, key)?;
         let old = match self.read_overlay(&full) {
             Some(value) => value,
-            None => fetch(&self.trx, &full, false)?,
+            None => fetch(
+                &self.trx,
+                &full,
+                false,
+                self.trace.as_ref(),
+                "data",
+                control,
+            )?,
         };
         self.buffer(full, None)?;
         Ok(old)
@@ -645,6 +827,7 @@ impl WriteView for FdbWrite {
             cleared,
             catalog,
             started,
+            trace,
             ..
         } = *self;
         if started.elapsed().as_millis() >= u128::from(CLIENT_TIMEOUT_MS) {
@@ -654,31 +837,98 @@ impl WriteView for FdbWrite {
             ));
         }
         for dp in cleared {
-            trx.clear_range(&dp, &successor(&dp));
+            let end = successor(&dp);
+            let scope = trace
+                .as_ref()
+                .map(|t| t.scope("binding", "clear-range", "data", None));
+            trx.clear_range(&dp, &end);
+            if let Some(scope) = scope {
+                scope.finish("success", 0, (dp.len() + end.len()) as u64, 0);
+            }
         }
         for (key, value) in writes {
             match value {
-                Some(v) => trx.set(&key, &v),
-                None => trx.clear(&key),
+                Some(v) => {
+                    let scope = trace
+                        .as_ref()
+                        .map(|t| t.scope("binding", "set", "data", None));
+                    trx.set(&key, &v);
+                    if let Some(scope) = scope {
+                        scope.finish("success", 0, key.len() as u64, v.len() as u64);
+                    }
+                }
+                None => {
+                    let scope = trace
+                        .as_ref()
+                        .map(|t| t.scope("binding", "clear", "data", None));
+                    trx.clear(&key);
+                    if let Some(scope) = scope {
+                        scope.finish("success", 0, key.len() as u64, 0);
+                    }
+                }
             }
         }
         for (name, kind) in catalog {
             let key = catalog_key(&prefix, &name);
             match kind {
-                Some(kind) => trx.set(&key, &[kind_byte(kind)]),
-                None => trx.clear(&key),
+                Some(kind) => {
+                    let scope = trace
+                        .as_ref()
+                        .map(|t| t.scope("binding", "set", "catalog", None));
+                    trx.set(&key, &[kind_byte(kind)]);
+                    if let Some(scope) = scope {
+                        scope.finish("success", 0, key.len() as u64, 1);
+                    }
+                }
+                None => {
+                    let scope = trace
+                        .as_ref()
+                        .map(|t| t.scope("binding", "clear", "catalog", None));
+                    trx.clear(&key);
+                    if let Some(scope) = scope {
+                        scope.finish("success", 0, key.len() as u64, 0);
+                    }
+                }
             }
         }
-        let size = block_on(trx.get_approximate_size()).map_err(|e| fdb_error(e, "storage"))?;
+        let scope = trace
+            .as_ref()
+            .map(|t| t.scope("binding", "approximate-size", "other", None));
+        let result = block_on(trx.get_approximate_size()).map_err(|e| fdb_error(e, "storage"));
+        if let Some(scope) = scope {
+            scope.finish(
+                result
+                    .as_ref()
+                    .map_or_else(|e| error_outcome(e), |_| "success"),
+                0,
+                0,
+                0,
+            );
+        }
+        let size = result?;
         if size < 0 || size as usize > MAX_MUTATION_BYTES {
             return Err(fail(
                 "transaction_limit",
                 "FoundationDB transaction size budget exceeded",
             ));
         }
-        block_on(trx.commit())
+        let scope = trace
+            .as_ref()
+            .map(|t| t.scope("commit", "commit", "other", None));
+        let result = block_on(trx.commit())
             .map(|_| ())
-            .map_err(|e| fdb_error(e.into(), "outcome_unknown"))
+            .map_err(|e| fdb_error(e.into(), "outcome_unknown"));
+        if let Some(scope) = scope {
+            scope.finish(
+                result
+                    .as_ref()
+                    .map_or_else(|e| error_outcome(e), |_| "success"),
+                0,
+                0,
+                0,
+            );
+        }
+        result
     }
 }
 
@@ -716,5 +966,23 @@ mod tests {
                 "outcome_unknown"
             );
         }
+    }
+    #[test]
+    fn diagnostic_range_accumulation_handles_short_more_empty_and_overshoot() {
+        let mut rows = Vec::new();
+        append_range_batch(&mut rows, vec![(vec![1], vec![11])], true, 3).unwrap();
+        append_range_batch(&mut rows, vec![(vec![2], vec![22])], true, 3).unwrap();
+        append_range_batch(&mut rows, vec![(vec![3], vec![33])], false, 3).unwrap();
+        assert_eq!(
+            rows,
+            vec![
+                (vec![1], vec![11]),
+                (vec![2], vec![22]),
+                (vec![3], vec![33])
+            ]
+        );
+        assert!(append_range_batch(&mut Vec::new(), Vec::new(), true, 3).is_err());
+        assert!(append_range_batch(&mut rows, vec![(vec![4], vec![44])], false, 3).is_err());
+        append_range_batch(&mut Vec::new(), Vec::new(), false, 3).unwrap();
     }
 }

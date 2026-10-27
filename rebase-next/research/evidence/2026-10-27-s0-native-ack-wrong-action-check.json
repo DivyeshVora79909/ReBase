@@ -1,0 +1,46 @@
+{
+  "mode": "wrong-action",
+  "passed": true,
+  "failure": null,
+  "expectedReason": "checkpoint-acknowledgement-invalid",
+  "actualSamples": 1,
+  "checkpointCount": 1,
+  "checked": {
+    "status": "incomplete",
+    "checkedSamples": 1,
+    "incompleteReasons": [
+      "checkpoint-acknowledgement-invalid",
+      "adapter-protected-read-control-unavailable",
+      "raw-sample-set-incomplete"
+    ],
+    "statistics": [
+      {
+        "group": "entry-8/prefix/attempt-first/true",
+        "n": 1,
+        "min": 894036,
+        "p50": 894036,
+        "p95": 894036,
+        "p99": 894036,
+        "max": 894036
+      }
+    ],
+    "overheadPairs": [],
+    "scope": "direct real-adapter Attempt/tree/native settlement; excludes authenticated HTTP, Store receipt/authority overhead and multi-host performance"
+  },
+  "targetAbsent": true,
+  "cleanup": {
+    "processStopped": true,
+    "exitCode": 0,
+    "signal": null,
+    "stdoutBytes": 204094,
+    "stderrBytes": 520
+  },
+  "nativeCleanup": {
+    "complete": true,
+    "errors": [],
+    "location": "/workspace/ReBase/rebase-next/target/s01-native-ack-v3-final-wrong-action/owned-target",
+    "namespace": null,
+    "preservedTargets": [],
+    "unknownActions": []
+  }
+}

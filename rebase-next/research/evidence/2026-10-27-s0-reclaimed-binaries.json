@@ -1,0 +1,29 @@
+{
+  "removed": [
+    {
+      "path": "/workspace/ReBase/rebase-next/target/n2-native-default/rebase-next",
+      "sha256": "74b816d1f72dff333c76633420da35e5e08daf3c087a06abc6d38a07cd39ae5e",
+      "bytes": 287168688,
+      "reason": "root-authorized obsolete generated ELF; no active executable consumer"
+    },
+    {
+      "path": "/workspace/ReBase/rebase-next/target/n2-native-all/rebase-next",
+      "sha256": "dd15140864a59b933511d394ef953adf045f6a6708e4e9b60f71db390f27c63a",
+      "bytes": 331944968,
+      "reason": "root-authorized obsolete generated ELF; no active executable consumer"
+    },
+    {
+      "path": "/workspace/ReBase/rebase-next/target/n6-retry-native-default/rebase-next",
+      "sha256": "87beadaab19f60230632cbed007f77e423d8f43f9a7ebdd00a21da119c7f5fd0",
+      "bytes": 287075680,
+      "reason": "root-authorized obsolete generated ELF; no active executable consumer"
+    },
+    {
+      "path": "/workspace/ReBase/rebase-next/target/n6-final-native-default/rebase-next",
+      "sha256": "18ed0f85e2c4f296a5b85f0530128cca2214040e1bab8521c4016dc5cfae481a",
+      "bytes": 285865944,
+      "reason": "root-authorized obsolete generated ELF; no active executable consumer"
+    }
+  ],
+  "totalBytes": 1192055280
+}

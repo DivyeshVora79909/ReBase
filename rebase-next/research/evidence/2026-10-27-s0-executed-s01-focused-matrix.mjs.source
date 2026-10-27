@@ -1,0 +1,32 @@
+import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
+import {randomUUID,createHash} from 'node:crypto';
+import {createServer} from 'node:net';
+import path from 'node:path';
+import {allS01Cases,runS01Focused} from './s01-node-driver.mjs';
+import {openFdbEnvironment} from '../tools/node/infra.mjs';
+
+const sha=value=>createHash('sha256').update(value).digest('hex');
+export async function runFocusedMatrix({probe,source,environment,outputDirectory,fdbserver,fdbcli}={}) {
+  await mkdir(outputDirectory,{recursive:true,mode:0o700});const cases=await allS01Cases(),results=[];
+  for(const backend of ['redb','surrealkv']){
+    const result=await runS01Focused({probe,source,environment,backend,cases,outputDirectory:path.join(outputDirectory,backend)});results.push(result);
+    if(result.checker.status==='failed'||result.runIncompleteReasons.some(reason=>!reason.startsWith('resource-'))||result.actualSamples!==32||result.checkpointChecked!==32||!result.cleanup.targetAbsent||result.cleanup.native?.complete!==true)throw Error(`${backend} focused matrix failed: ${JSON.stringify(result.checker)}`);
+  }
+  const directory=path.join(outputDirectory,'owned-fdb'),dataDirectory=path.join(directory,'data'),logDirectory=path.join(directory,'log'),clusterFile=path.join(directory,'fdb.cluster'),serverLog=path.join(directory,'server.log');
+  await mkdir(directory,{recursive:true,mode:0o700});
+  const port=await new Promise((resolve,reject)=>{const server=createServer();server.once('error',reject);server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(error=>error?reject(error):resolve(port));});});
+  await writeFile(clusterFile,`s01:12345678@127.0.0.1:${port}\n`,{mode:0o600});
+  const owned=await openFdbEnvironment({fdbserver,fdbcli,clusterFile,dataDirectory,logDirectory,serverLog,port,environment});
+  let started,bootstrap,health,stopped,result;
+  try{
+    started=await owned.start();bootstrap=await owned.bootstrap();health=await owned.check();
+    result=await runS01Focused({probe,source,environment,backend:'foundationdb-local',cases,namespace:`rebase-s0-${randomUUID()}`,clusterFile,outputDirectory:path.join(outputDirectory,'foundationdb-local'),resourceProcesses:[{role:'fdbserver',pid:owned.pid}],resourcePaths:[dataDirectory,logDirectory]});results.push(result);
+  }finally{stopped=await owned.stop();}
+  const preserve=result?.cleanup.native?.preservedTargets?.length>0;
+  if(!preserve){await rm(dataDirectory,{recursive:true,force:true});await rm(logDirectory,{recursive:true,force:true});}
+  const infrastructure={format:'rebase-s01-owned-fdb-1',topology:'one local server on loopback, single ssd; not multi-host evidence',fdbserver:{path:fdbserver,sha256:sha(await readFile(fdbserver))},fdbcli:{path:fdbcli,sha256:sha(await readFile(fdbcli))},clusterFile,dataDirectory,logDirectory,started,bootstrap,health,stopped,dataRemoved:!preserve,logsRemoved:!preserve};
+  await writeFile(path.join(directory,'infrastructure.json'),JSON.stringify(infrastructure,null,2)+'\n',{mode:0o600});
+  await writeFile(path.join(outputDirectory,'matrix.json'),JSON.stringify({format:'rebase-s01-focused-matrix-1',source,cases:cases.length,results,infrastructure},null,2)+'\n',{mode:0o600});
+  if(result.checker.status==='failed'||result.runIncompleteReasons.some(reason=>!reason.startsWith('resource-'))||result.actualSamples!==32||result.checkpointChecked!==32||!result.cleanup.targetAbsent||result.cleanup.native?.complete!==true||preserve)throw Error(`FDB focused matrix failed: ${JSON.stringify(result.checker)}`);
+  return results;
+}

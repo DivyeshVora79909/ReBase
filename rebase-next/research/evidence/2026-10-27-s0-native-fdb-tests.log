@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/lib.rs (target/verification-build/debug/deps/rebase_semantic_proof-2da5e0a5fd73deb4)
+
+running 3 tests
+test storage::foundationdb::tests::timeout_is_definite_before_submission_and_uncertain_during_commit ... ok
+test storage::foundationdb::tests::diagnostic_range_accumulation_handles_short_more_empty_and_overshoot ... ok
+test storage::foundationdb::tests::definite_commit_abort_retains_conflict_or_limit_classification ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 114 filtered out; finished in 0.00s
+

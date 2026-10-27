@@ -3,7 +3,9 @@
 Prepared 2026-10-25. This paper records the original P0 planning checkpoint and
 its status at that time. Later implementation and acceptance supersede the
 original status entries: [N6 is accepted within bounded scope](78-node-retirement-result.md),
-while S0–S3 and F0 remain. The next actionable S0 work is recorded below.
+as are S0.0 preparation and [S0.1 instrumentation](80-s0-instrumentation-result.md).
+S0.2, S1–S3 and F0 remain. The user requested a stop after the S0.1 commit/push;
+the next actionable work on a later continuation is recorded below.
 The starting implementation is commit `e7458dc`, source 0.16.0, store 10, native
 codec 7, effect codec 4 and API 4. G7, G8 and G9 evidence remains historical
 acceptance for its recorded inputs. A Git pull before preparation was already
@@ -283,10 +285,14 @@ simple object manipulation remain ordinary JavaScript.
 | N4 | Accepted within bounded scope: [result](69-node-experiment-result.md) and [evidence](evidence/2026-10-26-n4-node-experiments.json) |
 | N5 | Accepted within bounded scope: [result](71-node-lifecycle-result.md) and [committed-source release evidence](evidence/2026-10-26-n5-release.json) |
 | N6 | Accepted within bounded scope: [result](78-node-retirement-result.md) and [release evidence](evidence/2026-10-26-n6-release.json) |
-| S0–S3 | Pending; no layout selection or performance claim |
+| S0.0 | Checked preparation: [frozen bounded contract](79-s0-baseline-contract.md) |
+| S0.1 | Accepted within scope: [instrumentation result](80-s0-instrumentation-result.md) and [evidence](evidence/2026-10-27-s0-instrumentation.json) |
+| S0.2, S1–S3 | Pending; no layout selection or performance claim |
 | F0 | Pending |
 
 To continue: read AGENTS, the top of CONTEXT, and the
-[N6 result](78-node-retirement-result.md). Start S0 by fixing the workload and
-trace schema and measurement baseline before evaluating any S1 candidate. Keep
-the bounded claims and dependencies above; do not restart G7–G9 or begin G6.
+[S0.1 result](80-s0-instrumentation-result.md). S0.2 needs a committed-source
+optimized pilot and an explicitly bounded campaign before evaluating any S1
+candidate. The focused report-size projection exceeds 64 MiB at 30 repetitions per action;
+freeze any fragmentation revision and exact coverage checks before the campaign.
+Keep the bounded claims and dependencies above; do not restart G7–G9 or begin G6.

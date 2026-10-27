@@ -1,0 +1,30 @@
+✔ S0 report checks actual raw source, root, member bytes and complete sample set (414.867614ms)
+✔ S0 source/build identity, exact commands and Work are checked independently (109.892258ms)
+✔ S0 working-tree evidence explicitly names its base and is restricted to focused verification (80.273353ms)
+✔ S0 FDB requests use the same bounded owned namespace accepted by the native probe (41.228972ms)
+✔ S0 read trace discloses exactly actual decoded native addresses with faithful invocation seeds (92.489043ms)
+✔ S0 unknown outcomes stay incomplete and preserve original commands and IDs (39.612607ms)
+✔ S0 nearest-rank quantiles come from all raw durations with p99=max at n=30 (0.951854ms)
+✔ S0 matched thirty overhead pairs retain alternating raw samples and native Work (2.779327ms)
+✔ S0 runner requires explicit absolute probe before starting a process (1.086947ms)
+✔ S0 bounded child errors retain original request and explicit incomplete cleanup (261.836798ms)
+✔ S0 runner observes native work only at a paused, independently checked checkpoint (174.408947ms)
+✔ S0 selected tree edges and independently known keys have different depth (5.929822ms)
+✔ S0 checks IDs, time bounds, scope containment and completed dependency sources (1.376513ms)
+✔ S0 unsupported metrics stay absent and counts match event retention (1.13552ms)
+✔ S0 repeat is measured inside same Attempt with no new load (0.314003ms)
+✔ S0 schema rejects unknown fields and incomplete metrics without reason (0.354684ms)
+✔ S0 frozen source facts independently reproduce actual n/m/r and expected actions (34.972218ms)
+✔ S0 full occurrence fold handles UUID/slot ties, negative and zero amounts and complete-time extrema (0.534756ms)
+✔ S0 source oracle selects exact dated quote and rejects unresolved parents (8.776721ms)
+✔ S0 commit outcomes, read-only and Work counters must match actual scopes (1.050022ms)
+✔ S0 physical wrapper unknown key does not inflate native discovery depth (0.479211ms)
+✔ S0 binding invocations distinguish SDK successful GETs and missing-key byte definitions (1.264505ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1318.519136
