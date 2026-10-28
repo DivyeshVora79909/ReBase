@@ -1,0 +1,897 @@
+{
+  "kind": "read-study-latency-sensitivity",
+  "sources": [
+    {
+      "path": "/tmp/rebase-linked-read-study/redb.jsonl",
+      "sha256": "54359809ab4a59a960189970b2ee22e1c9bd30b35065a7a67d3f763fb8cb073b"
+    },
+    {
+      "path": "/tmp/rebase-linked-read-study/surrealkv.jsonl",
+      "sha256": "1b2fff6728bcd1999df0a5499958498628a073c5d13b137779661b75f550fd4d"
+    }
+  ],
+  "profiles_ms": [
+    1,
+    5,
+    20,
+    80
+  ],
+  "assumptions": {
+    "data_load_model": "measured local median + delay * observed Attempt key_loads. Applies only to linked consumers. Assumes each distinct Attempt cache miss entails exactly one additional unhidden remote trip; SDK caching, batching, overlap or retries can violate this assumption.",
+    "binding_call_model": "measured local median + delay * (bindingGet + bindingGetRange), with counts from separate checked diagnostic execution. Artificial delay per serialized API invocation, not network RTT: SDK may serve repeated catalog reads locally.",
+    "baseline": "One warmup, three timed fresh read transactions. Backend/OS/storage caches are warm or uncontrolled; no cold-cache or production p95 claim.",
+    "threshold": "4500 ms is a conservative analysis warning, not an observed timeout. Ordinary FoundationDB read transaction age limit is about five seconds from the first read; projected durations beyond the budget are not feasible completed single-transaction measurements.",
+    "topology": "Local topology does not establish geographic latency; read requests need not visit all replicas, and read versus commit replication paths differ.",
+    "raw_ordered_range": "Attempt key_loads is zero because it uses scans; no zero-latency or zero-network-cost implication. Its range batches and output bytes must be accounted separately."
+  },
+  "cases": [
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 0.301064,
+      "measured_samples_ms": [
+        0.301675,
+        0.301064,
+        0.272771
+      ],
+      "attempt_key_loads": 51,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 51.301064,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 255.301064,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 1020.301064,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 4080.301064,
+          "at_or_over_4500ms": false
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 0.538501,
+      "measured_samples_ms": [
+        0.556378,
+        0.515988,
+        0.538501
+      ],
+      "attempt_key_loads": 101,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 101.538501,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 505.538501,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 2020.538501,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 8080.538501,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.174873,
+      "measured_samples_ms": [
+        0.174873,
+        0.190747,
+        0.173121
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 0.569368,
+      "measured_samples_ms": [
+        0.581616,
+        0.569368,
+        0.548457
+      ],
+      "attempt_key_loads": 101,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 101.569368,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 505.569368,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 2020.569368,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 8080.569368,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 1.082422,
+      "measured_samples_ms": [
+        1.109573,
+        1.082422,
+        1.062912
+      ],
+      "attempt_key_loads": 201,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 202.082422,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 1006.082422,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 4021.082422,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 16081.082422,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.352702,
+      "measured_samples_ms": [
+        0.352681,
+        0.367003,
+        0.352702
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 6.19081,
+      "measured_samples_ms": [
+        6.212723,
+        6.19081,
+        6.036788
+      ],
+      "attempt_key_loads": 1001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 1007.19081,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 5011.19081,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 20026.19081,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 80086.19081,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 11.894006,
+      "measured_samples_ms": [
+        11.894006,
+        11.758239,
+        12.059575
+      ],
+      "attempt_key_loads": 2001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 2012.894006,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 10016.894006,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 40031.894006,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 160091.894006,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 3.60985,
+      "measured_samples_ms": [
+        3.614757,
+        3.60985,
+        3.597822
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 70.719618,
+      "measured_samples_ms": [
+        70.719618,
+        71.193753,
+        70.494198
+      ],
+      "attempt_key_loads": 10001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 10071.719618,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 50075.719618,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 200090.719618,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 800150.719618,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 140.704568,
+      "measured_samples_ms": [
+        140.704568,
+        140.365848,
+        142.192891
+      ],
+      "attempt_key_loads": 20001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 20141.704568,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 100145.704568,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 400160.704568,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 1600220.704568,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 36.452086,
+      "measured_samples_ms": [
+        40.169717,
+        36.271253,
+        36.452086
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 100000,
+      "start": 0,
+      "op": "summary_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.005909,
+      "measured_samples_ms": [
+        0.007591,
+        0.005909,
+        0.005408
+      ],
+      "attempt_key_loads": 1,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "redb",
+      "n": 100000,
+      "q": 100000,
+      "start": 0,
+      "op": "summary_prefix",
+      "sample_count": 3,
+      "measured_median_ms": 0.186892,
+      "measured_samples_ms": [
+        0.217398,
+        0.186892,
+        0.181704
+      ],
+      "attempt_key_loads": 33,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 0.302035,
+      "measured_samples_ms": [
+        0.287673,
+        0.302035,
+        0.304909
+      ],
+      "attempt_key_loads": 51,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 51.302035,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 255.302035,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 1020.302035,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 4080.302035,
+          "at_or_over_4500ms": false
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 0.489618,
+      "measured_samples_ms": [
+        0.489618,
+        0.473684,
+        0.569408
+      ],
+      "attempt_key_loads": 101,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 101.489618,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 505.489618,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 2020.489618,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 8080.489618,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 50,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.182465,
+      "measured_samples_ms": [
+        0.186461,
+        0.182355,
+        0.182465
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 0.549899,
+      "measured_samples_ms": [
+        0.544541,
+        0.549899,
+        0.589198
+      ],
+      "attempt_key_loads": 101,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 101.549899,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 505.549899,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 2020.549899,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 8080.549899,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 0.974999,
+      "measured_samples_ms": [
+        0.968851,
+        1.004794,
+        0.974999
+      ],
+      "attempt_key_loads": 201,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 201.974999,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 1005.974999,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 4020.974999,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 16080.974999,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 100,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.369978,
+      "measured_samples_ms": [
+        0.368986,
+        0.383818,
+        0.369978
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 7.825142,
+      "measured_samples_ms": [
+        5.419217,
+        10.070047,
+        7.825142
+      ],
+      "attempt_key_loads": 1001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 1008.825142,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 5012.825142,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 20027.825142,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 80087.825142,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 10.993027,
+      "measured_samples_ms": [
+        10.993027,
+        10.488458,
+        14.092689
+      ],
+      "attempt_key_loads": 2001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 2011.993027,
+          "at_or_over_4500ms": false
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 10015.993027,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 40030.993027,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 160090.993027,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 1000,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 3.797803,
+      "measured_samples_ms": [
+        3.879987,
+        3.797803,
+        3.763241
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "linked_ids",
+      "sample_count": 3,
+      "measured_median_ms": 67.05138,
+      "measured_samples_ms": [
+        68.213752,
+        66.236251,
+        67.05138
+      ],
+      "attempt_key_loads": 10001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 10068.05138,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 50072.05138,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 200087.05138,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 800147.05138,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "linked_hydrate",
+      "sample_count": 3,
+      "measured_median_ms": 127.048578,
+      "measured_samples_ms": [
+        128.18344,
+        127.048578,
+        123.330425
+      ],
+      "attempt_key_loads": 20001,
+      "diagnostic_complete": false,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": [
+        {
+          "added_delay_ms": 1,
+          "projected_median_ms": 20128.048578,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 5,
+          "projected_median_ms": 100132.048578,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 20,
+          "projected_median_ms": 400147.048578,
+          "at_or_over_4500ms": true
+        },
+        {
+          "added_delay_ms": 80,
+          "projected_median_ms": 1600207.048578,
+          "at_or_over_4500ms": true
+        }
+      ],
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 10000,
+      "start": 0,
+      "op": "raw_ordered_range",
+      "sample_count": 3,
+      "measured_median_ms": 42.378566,
+      "measured_samples_ms": [
+        42.378566,
+        43.730294,
+        39.99897
+      ],
+      "attempt_key_loads": 0,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 100000,
+      "start": 0,
+      "op": "summary_range",
+      "sample_count": 3,
+      "measured_median_ms": 0.00637,
+      "measured_samples_ms": [
+        0.00637,
+        0.006761,
+        0.005849
+      ],
+      "attempt_key_loads": 1,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    },
+    {
+      "backend": "surrealkv",
+      "n": 100000,
+      "q": 100000,
+      "start": 0,
+      "op": "summary_prefix",
+      "sample_count": 3,
+      "measured_median_ms": 0.181374,
+      "measured_samples_ms": [
+        0.181374,
+        0.185309,
+        0.179521
+      ],
+      "attempt_key_loads": 33,
+      "diagnostic_complete": true,
+      "binding_calls": null,
+      "one_extra_unhidden_remote_trip_per_attempt_miss": null,
+      "artificial_extra_delay_per_serialized_binding_call": null
+    }
+  ]
+}

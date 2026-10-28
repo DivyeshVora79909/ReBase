@@ -1,0 +1,184 @@
+{
+  "purpose": "Bounded current-source ordered-read design research; no officialS0.2 or applicationchanges",
+  "source_base": "1560ba1 parent-verified",
+  "optimized_current_library_sha256": "f60b60e1f562a4f546b7de34a82f6b233f2b933396d13ec8285510ab4bf162e7",
+  "profile": "three localFDB processes distinct simulatedzones/singleDC, tripleSSD,1usableRegion,1024MiB/process,cache64/storage64; samecompiledbinaries and4500msclienttimeout",
+  "sampling": {
+    "timedSamplesPerCompletedCase": 3,
+    "warmupsPerCase": 1,
+    "diagnosticPassPerCase": 1,
+    "oracleAndChecksumOutsideTimer": true,
+    "freshReadTransactionPerPrimitive": true,
+    "diagnosticIsUntimed": true
+  },
+  "finalCases": {
+    "redbPrimitive": 53,
+    "surrealkvPrimitive": 53,
+    "foundationdbPrimitive": 38,
+    "redbActualPublicPage": 4,
+    "surrealkvActualPublicPage": 4,
+    "foundationdbActualPublicPage": 0,
+    "totalPassed": 152,
+    "finalReadErrors": [],
+    "foundationdbMissingPrimitiveCases": [
+      {
+        "n": 100000,
+        "q": 1000,
+        "start": 0,
+        "op": "linked_hydrate",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 1000,
+        "start": 0,
+        "op": "raw_ordered_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 1000,
+        "start": 99000,
+        "op": "linked_ids",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 1000,
+        "start": 99000,
+        "op": "linked_hydrate",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 1000,
+        "start": 99000,
+        "op": "raw_ordered_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 0,
+        "op": "linked_ids",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 0,
+        "op": "linked_hydrate",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 0,
+        "op": "raw_ordered_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 90000,
+        "op": "linked_ids",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 90000,
+        "op": "linked_hydrate",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 10000,
+        "start": 90000,
+        "op": "raw_ordered_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 100000,
+        "start": 0,
+        "op": "summary_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 100000,
+        "start": 0,
+        "op": "summary_prefix",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 33333,
+        "start": 33333,
+        "op": "summary_range",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      },
+      {
+        "n": 100000,
+        "q": 33333,
+        "start": 33333,
+        "op": "summary_prefix",
+        "status": "incomplete_due_to_owned_disk_guard_stop"
+      }
+    ],
+    "foundationdbMissingActualPageQs": [
+      50,
+      100,
+      1000,
+      4096
+    ]
+  },
+  "stop": {
+    "reason": "Owned allocation guard crossed duringFDpreallocation; nativeSIGTERM andownedcleanup",
+    "allocatedGuardBytes": 1500000000,
+    "peakObservedAllocatedBytes": 1623781376,
+    "allocationBeforeJump": 1309122560,
+    "minObservedFilesystemFreeBytes": 2006736896,
+    "nativeSignal": "SIGTERM",
+    "notClientReadTimeout": true,
+    "serverOom": false
+  },
+  "cleanup": {
+    "ownedPids": [
+      28908,
+      28909,
+      28910
+    ],
+    "pidsStillPresent": [],
+    "ownedStoresStillPresent": []
+  },
+  "limits": [
+    "Researchlinkedconsumer usesactualtree::root/node/next+Attempt::record but isnotanexistingpublicrowpage",
+    "Actualtree::range_keys/prefix areaggregatecontrols; summary isnotrowfetch",
+    "Raworderedrange isresearchcoveringlayoutduplicatingRecordbodies withUUID+slotkeys",
+    "Largeprimitivefixtures bypasspopulationadmission; scratchAttemptbudget1000000; productioncapsunchanged",
+    "TypedcanonicalEntryrecords330B; sourceUUIDSHAderivedindependentoflogicaltimeorder; noarbitrarypadding",
+    "ActualStorepage4096fixture usesrealStorecreate/open andcanonicalPopulation butbulkfixturebypassesmutation/referencevalidation",
+    "ActualStorepage usesUUIDorder and32-rowlimits; noHTTP/authcost anditsbindingcountersuninstrumented",
+    "Largefulltracesoverflowexistingcaps; aggregatecountersremain; remotereadroundsnotmeasured",
+    "BindingcallsandreturnedbytesarenotTCPRTT/wirebytecounts",
+    "Threeprocessesallonehost; noactualregions ordistributedlatencyclaim",
+    "FinalFDB100kq1000hydrated/q10000andactualpageincomplete; nofurtherprofilesauthorized"
+  ],
+  "artifactsSha256": {
+    "main.rs": "e2f5cc643a80223031f765ca3af8507d9a7aaa55f4fc43350c81f8d52ac6b1a4",
+    "page.rs": "36b808327e7ab9526fc272ea317507cece699339a62d80ec8107d8f17ebe9f69",
+    "results.jsonl": "b9c37a526f7fd4d27e4057d846c58a89cab47c1737c9b5bfd03aee93257a49dc",
+    "redb.jsonl": "54359809ab4a59a960189970b2ee22e1c9bd30b35065a7a67d3f763fb8cb073b",
+    "surrealkv.jsonl": "1b2fff6728bcd1999df0a5499958498628a073c5d13b137779661b75f550fd4d",
+    "page-redb.jsonl": "ba19efca4bb41b169ab316a74014b6b312524bc61d4172a6b179606e089dd21a",
+    "page-surrealkv.jsonl": "09e5e092b8e5ba1443f157ecd1b621fee5ebcd01c56d8156c97f28ec66f17623",
+    "foundationdb-three-1024.jsonl": "71e64b54a5b66efe699ff31ebc1e6958e9da627f253a86f7d43c04f7ddf39c0b",
+    "fdb-three-1024-run.json": "1bdd823d2be5ee84724e1970419dbb8cc549f7f5a407ad764403a27bace6bdaa",
+    "fdb-three-1024-runner.mjs": "3c10de2564c4cb8f9690eaaa4ea417e500db06f0780cf6d83c2ed36d896bffc0",
+    "current-build-inputs.json": "be1c63fb546fdd5d0489c794bb88ad7bcafb0b523971c8753a74ed898b05cf9e",
+    "harness-build-inputs.json": "5367cdbb7a3566ed86cf91daa3b2eeb8c9f3ef8c661c6edf59ee8a748a352aeb",
+    "profile-history.json": "090044a93009571a9defda177483705c17991d3fcd257514be90314e6b328002"
+  }
+}

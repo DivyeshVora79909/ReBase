@@ -1,0 +1,553 @@
+{
+  "format": "linked-read-study-artifacts-1",
+  "status": "complete final FDB profile retained; earlier incomplete profiles remain separate",
+  "artifacts": [
+    {
+      "path": "2026-10-28-linked-read-main.rs.source",
+      "kind": "source-archive",
+      "sha256": "e2f5cc643a80223031f765ca3af8507d9a7aaa55f4fc43350c81f8d52ac6b1a4",
+      "bytes": 11093,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-page.rs.source",
+      "kind": "source-archive",
+      "sha256": "36b808327e7ab9526fc272ea317507cece699339a62d80ec8107d8f17ebe9f69",
+      "bytes": 5062,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-build-current.mjs.source",
+      "kind": "source-archive",
+      "sha256": "9790e33750f47af2e720bd23e41c489d6b6ff23de6e6fff89c666cbe9aaf0f2a",
+      "bytes": 2998,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-compile-harness.mjs.source",
+      "kind": "source-archive",
+      "sha256": "215553046c63b89d3244d6dfaa7ed77f6422ccd0aede750e8f32a0dbbc2f36ef",
+      "bytes": 1325,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-runner.mjs.source",
+      "kind": "source-archive",
+      "sha256": "1cdd4b5bf00f7d0ab9f6589e80550a6fab57f733815be101a69e8825bed51e77",
+      "bytes": 11250,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-single-runner.mjs.source",
+      "kind": "source-archive",
+      "sha256": "a4e0a32f2e12e330de8f38d1510fd626cba7be363bb862bae23cdc76e228ac86",
+      "bytes": 3621,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-single-1024-runner.mjs.source",
+      "kind": "source-archive",
+      "sha256": "cb038237ce37ee63c216c35ef40ec2916ec9dde65a77dcb33f69e8eb2d14406d",
+      "bytes": 11422,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-latency-sensitivity.mjs.source",
+      "kind": "source-archive",
+      "sha256": "722960392673abb602f440fa42d85667e2f3444b775bbd5b37fcd929d4edcba2",
+      "bytes": 3222,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-current-build-inputs.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "be1c63fb546fdd5d0489c794bb88ad7bcafb0b523971c8753a74ed898b05cf9e",
+      "bytes": 18761,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-harness-build-inputs.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "5367cdbb7a3566ed86cf91daa3b2eeb8c9f3ef8c661c6edf59ee8a748a352aeb",
+      "bytes": 2949,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-embedded-summary.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "45ee5d43703ef5169e8b67d782d683a2824dff701bc292b3c3db88eb455d5cd0",
+      "bytes": 46089,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-latency-sensitivity.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "3de61f1569e396a6234b5cd7e02670b0033169de990c86d0e2d0dea9caf44357",
+      "bytes": 24671,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-run-metadata.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "7a51f9d654ec323d110af9c2bfadbe8de07e30b30646bff7ea12ffd2fa45b504",
+      "bytes": 122881,
+      "source_sha256": "5ec14b9901a3786e53064f8e1c5a52983d870eb3305d1253bdb84d5ed1c8c2ae",
+      "redactions": [
+        "disposable loopback FDB connection strings"
+      ]
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-single-512-run-metadata.json",
+      "kind": "provenance-or-run-metadata",
+      "sha256": "dd5d051bd0101d33bf0d8b2c596189eb2cd69b126565daaf74ae1ba135d8ac29",
+      "bytes": 127250,
+      "source_sha256": "ffa7a80f0fa8ced1005afa845655096dee322abc25996a90ad08011b5c35aa40",
+      "redactions": [
+        "disposable loopback FDB connection strings"
+      ]
+    },
+    {
+      "path": "2026-10-28-linked-read-redb.gz",
+      "kind": "gzip-jsonl",
+      "source": "redb.jsonl",
+      "source_sha256": "54359809ab4a59a960189970b2ee22e1c9bd30b35065a7a67d3f763fb8cb073b",
+      "sha256": "af737efafe9eceec46d1d13b7072ef0e4b932275b6f8db76f75dd0ba70c95d13",
+      "source_bytes": 57638,
+      "bytes": 5077,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-surrealkv.gz",
+      "kind": "gzip-jsonl",
+      "source": "surrealkv.jsonl",
+      "source_sha256": "1b2fff6728bcd1999df0a5499958498628a073c5d13b137779661b75f550fd4d",
+      "sha256": "521d932326e20cd3229b3453e9d7d7989614b830a0b83a787f6653c460bc6ac1",
+      "source_bytes": 57897,
+      "bytes": 5100,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-page-redb.gz",
+      "kind": "gzip-jsonl",
+      "source": "page-redb.jsonl",
+      "source_sha256": "ba19efca4bb41b169ab316a74014b6b312524bc61d4172a6b179606e089dd21a",
+      "sha256": "605d2a41b2cbf43be196bc785c8bd38dff1aafa7da7db55ee62c21830e378d4f",
+      "source_bytes": 1803,
+      "bytes": 623,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-page-surrealkv.gz",
+      "kind": "gzip-jsonl",
+      "source": "page-surrealkv.jsonl",
+      "source_sha256": "09e5e092b8e5ba1443f157ecd1b621fee5ebcd01c56d8156c97f28ec66f17623",
+      "sha256": "814874ebd65497039f00bc6f547a9384ba75a21219113fe3d27c43e4768bab66",
+      "source_bytes": 1828,
+      "bytes": 632,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-process-partial.gz",
+      "kind": "gzip-jsonl",
+      "source": "foundationdb.jsonl",
+      "source_sha256": "12217b97346ac2c3bcad24b2679984290430732dbab59fd1f9666eedf04ad281",
+      "sha256": "7bbd5c68d7eb2ffca5407ad970c0668f719801744f8300bd8d3fc4a21bb80fd2",
+      "source_bytes": 31172,
+      "bytes": 3609,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-single-512-partial.gz",
+      "kind": "gzip-jsonl",
+      "source": "foundationdb-single.jsonl",
+      "source_sha256": "e994e251ccb83f5435e253a012ed969ceac07664fa4aa8b24659c78c879f0fc0",
+      "sha256": "2ed2a871ca71bc213b03e875a09a94a631ae3d8fce7d1d442c0505ef5c37e022",
+      "source_bytes": 31169,
+      "bytes": 3603,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-process-stderr.log",
+      "kind": "stderr",
+      "sha256": "cafb5b65075b7d5cc54f433ab52a8a29c3bec6d5b6673b323f0bc20d2b4d67f3",
+      "bytes": 323,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-single-512-stderr.log",
+      "kind": "stderr",
+      "sha256": "e415dc9647fde714b05dd6658955c64464a54a88a54a2f71e3308faab69254d7",
+      "bytes": 323,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-startup-failure-metadata.json",
+      "kind": "failed-exploratory-run",
+      "sha256": "12ee3db3d9d190ab91da1543977640b7eedd6d4de2e2f8999934faec776e7223",
+      "bytes": 50277,
+      "source_sha256": "2d2bc51db8976e0645b495e02c99b70d8ff52c0139e309ab2d4fdae892998019",
+      "redactions": [
+        "disposable loopback FDB connection strings"
+      ]
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-startup-failure.jsonl",
+      "kind": "failed-exploratory-run",
+      "sha256": "822beeb0881ba15ce6298fa482349613f1bd0ecf92115d56eb3dc4ce90b8260e",
+      "bytes": 312,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-startup-failure-stderr.log",
+      "kind": "failed-exploratory-run",
+      "sha256": "b86c8808d9cc282f7242b31192853fb5810d7512d79e3880845eca609b7223ab",
+      "bytes": 311,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-runner.mjs.source",
+      "kind": "source-archive",
+      "sha256": "3c10de2564c4cb8f9690eaaa4ea417e500db06f0780cf6d83c2ed36d896bffc0",
+      "bytes": 12696,
+      "source": "fdb-three-1024-runner.mjs",
+      "source_sha256": "3c10de2564c4cb8f9690eaaa4ea417e500db06f0780cf6d83c2ed36d896bffc0"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-guard3g-runner.mjs.source",
+      "kind": "source-archive",
+      "sha256": "34c7cd80188e9bebb74f79d37531eaf055668890de91e782cead484e8dc3a04b",
+      "bytes": 13159,
+      "source": "fdb-three-1024-guard3g-runner.mjs",
+      "source_sha256": "34c7cd80188e9bebb74f79d37531eaf055668890de91e782cead484e8dc3a04b"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-guard3g-run.json",
+      "kind": "final-run-metadata-exact",
+      "sha256": "07759d97b47dd81709658c22e9a964e33bd0a654e7eda454abd2631a706d7e98",
+      "bytes": 257804,
+      "source": "fdb-three-1024-guard3g-run.json",
+      "source_sha256": "07759d97b47dd81709658c22e9a964e33bd0a654e7eda454abd2631a706d7e98"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-run-guard-stop.json",
+      "kind": "guard-stop-metadata-exact",
+      "sha256": "1bdd823d2be5ee84724e1970419dbb8cc549f7f5a407ad764403a27bace6bdaa",
+      "bytes": 131645,
+      "source": "fdb-three-1024-run.json",
+      "source_sha256": "1bdd823d2be5ee84724e1970419dbb8cc549f7f5a407ad764403a27bace6bdaa"
+    },
+    {
+      "path": "2026-10-28-linked-read-manifest-guard-stop.json",
+      "kind": "guard-stop-manifest-exact",
+      "sha256": "2422d613258d1471740f3747ab63c7c368d9b163f692a841466ff6de0a18b8e5",
+      "bytes": 6520,
+      "source": "manifest-guard-stop.json",
+      "source_sha256": "2422d613258d1471740f3747ab63c7c368d9b163f692a841466ff6de0a18b8e5"
+    },
+    {
+      "path": "2026-10-28-linked-read-latency-sensitivity-final.json",
+      "kind": "deterministic-analysis-exact",
+      "sha256": "643fb2e24419a0a93b5884c688bf6ee9df9a6843093b6ec961bfb0e23ac84da9",
+      "bytes": 44041,
+      "source": "latency-sensitivity-final.json",
+      "source_sha256": "643fb2e24419a0a93b5884c688bf6ee9df9a6843093b6ec961bfb0e23ac84da9"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-guard3g-runner.log",
+      "kind": "runner-stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "fdb-three-1024-guard3g-runner.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-foundationdb-three-1024-guard3g.stderr.log",
+      "kind": "native-stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "foundationdb-three-1024-guard3g.stderr.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-page-foundationdb-three-1024-guard3g.stderr.log",
+      "kind": "page-stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "page-foundationdb-three-1024-guard3g.stderr.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-1.stdout.log",
+      "kind": "server-stdout",
+      "sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb",
+      "bytes": 21,
+      "source": "fdb3-1024-guard3g-server-1.stdout.log",
+      "source_sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-1.stderr.log",
+      "kind": "server-stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "fdb3-1024-guard3g-server-1.stderr.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-2.stdout.log",
+      "kind": "server-stdout",
+      "sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb",
+      "bytes": 21,
+      "source": "fdb3-1024-guard3g-server-2.stdout.log",
+      "source_sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-2.stderr.log",
+      "kind": "server-stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "fdb3-1024-guard3g-server-2.stderr.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-3.stdout.log",
+      "kind": "server-stdout",
+      "sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb",
+      "bytes": 21,
+      "source": "fdb3-1024-guard3g-server-3.stdout.log",
+      "source_sha256": "77a1623a9f151c62163ee4300db4d195d1e3362f46628917f36a652055b043fb"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb3-1024-server-3.stderr.log",
+      "kind": "server-stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "source": "fdb3-1024-guard3g-server-3.stderr.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-guard3g.gz",
+      "kind": "gzip-jsonl",
+      "source": "foundationdb-three-1024-guard3g.jsonl",
+      "source_sha256": "478b0c9cdc948526bebb50d8d9dc032d7ecbfae5b33a25c4cca740be1d2a9f3c",
+      "sha256": "99d640c97a3277007ac7fa492d8cf14cee6fe2b4364ffbdcab8ef2e8ddb748ec",
+      "source_bytes": 65679,
+      "bytes": 6059,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-page-fdb-three-1024-guard3g.gz",
+      "kind": "gzip-jsonl",
+      "source": "page-foundationdb-three-1024-guard3g.jsonl",
+      "source_sha256": "d25945bf2ee83834aa6b4082e1b8af6f5053ea148c02a6b055be22c4486cccdb",
+      "sha256": "d947627d369ded421caf21657d3e3f1b8fb3a1a485f1386145804fbf1aa8c66a",
+      "source_bytes": 1871,
+      "bytes": 640,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-fdb-three-1024-guard-stop.gz",
+      "kind": "gzip-jsonl",
+      "source": "foundationdb-three-1024.jsonl",
+      "source_sha256": "71e64b54a5b66efe699ff31ebc1e6958e9da627f253a86f7d43c04f7ddf39c0b",
+      "sha256": "f831b4c92b15c05955f084a99a1a6ff5ffdba6b8b1269b1e04f6e80de1e3c66c",
+      "source_bytes": 46982,
+      "bytes": 4583,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-aggregated-results-guard-stop.gz",
+      "kind": "gzip-jsonl",
+      "source": "results-guard-stop.jsonl",
+      "source_sha256": "b9c37a526f7fd4d27e4057d846c58a89cab47c1737c9b5bfd03aee93257a49dc",
+      "sha256": "f43ed429e0add74e0256510265b54bd1da1d6e9718d11b82da166841ac5e4835",
+      "source_bytes": 180189,
+      "bytes": 14619,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-debug-pilot.rs.source",
+      "kind": "excluded-exploratory-source",
+      "sha256": "351a6bf4987c34ede892e1a7f6bf8d3e8cf5a36af92b61a5d00073d2f30d0904",
+      "bytes": 9369,
+      "source": "main-debug-pilot.rs",
+      "source_sha256": "351a6bf4987c34ede892e1a7f6bf8d3e8cf5a36af92b61a5d00073d2f30d0904"
+    },
+    {
+      "path": "2026-10-28-linked-read-debug-build.mjs.source",
+      "kind": "excluded-exploratory-source",
+      "sha256": "587f6ce28ed77f70b5582bf8f3f3e3a13da3d73a634ff4a58b7e8271b0ab6be0",
+      "bytes": 2103,
+      "source": "build.mjs",
+      "source_sha256": "587f6ce28ed77f70b5582bf8f3f3e3a13da3d73a634ff4a58b7e8271b0ab6be0"
+    },
+    {
+      "path": "2026-10-28-linked-read-excluded-debug-pilot-redb.gz",
+      "kind": "gzip-jsonl",
+      "source": "debug-pilot-redb.jsonl",
+      "source_sha256": "0736f4b31a21b3f53d8eb811e0e2809120932eae86608d6faa131b94e813721d",
+      "sha256": "dbac6902f24b2b53722aeeab4ae35958d45316548aebd5fb731ea6fd71544453",
+      "source_bytes": 60095,
+      "bytes": 4820,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "2026-10-28-linked-read-excluded-optimized-preflight-redb.gz",
+      "kind": "gzip-jsonl",
+      "source": "optimized-preflight-redb.jsonl",
+      "source_sha256": "d54916cca8325de507b4db8a37d44d689a70b834a62e3450a24cb59be44509a2",
+      "sha256": "540ebc5c41f90d76726ae3f168d01c55cbeb27e6ecf2e2c545be0a9ebcbd51bd",
+      "source_bytes": 57638,
+      "bytes": 5065,
+      "compression": "gzip -n level 9, lossless"
+    },
+    {
+      "path": "numeric-offset-study/2026-10-28-numeric-offset-report.md",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "f8e6562386730427ab28fd499d31f69537b6e82c68a0db66aca4257226236012",
+      "bytes": 6062,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/build.sh",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "ec6b154933ea39b07a5376b6d524a2967bcfb31ed11f9108bac4a92f1e09db91",
+      "bytes": 768,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/embedded.jsonl",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "494c8bfeb87167f25fb5c38303e710961bbc55ae4d6bd96d4ad9bc9db003e3c5",
+      "bytes": 6536,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/embedded.rs",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "8d0f7382366ff35254023ae8450246c64377cfa4e5f369b480a6b69bed101fd8",
+      "bytes": 5173,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/fdb.jsonl",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "c1097b913d6c9c764c9e128571c8ecbecd6a9f99095ed79823a894fe3dd1e416",
+      "bytes": 7985,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/fdb.rs",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "568ea0c69e853f0ad86c55d2127d2004497dbcf609d598e1431c8e209da264b0",
+      "bytes": 4012,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/manifest.json",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "9dbe44709f4731289bb150b005f3a6ac65934b790129ccaf75356635f2697963",
+      "bytes": 4648,
+      "source_sha256": null,
+      "redactions": []
+    },
+    {
+      "path": "numeric-offset-study/run-fdb.mjs",
+      "kind": "separate-prior-local-fdb-numeric-offset-trial",
+      "sha256": "41a9418269f310886d3764f1d06aab75f41a4e55a98f4f2f7369db33c8920c1c",
+      "bytes": 1798,
+      "source_sha256": null,
+      "redactions": []
+    }
+  ],
+  "baseline_source_inventory": "2026-10-27-s0-app-inputs.json (91-input accepted source map, digest be20039f3f563320bf4095a3a85d6b4da57aa2875ba858c64e6a6acc4c077281; rechecked all 91 file hashes and inventory digest; referenced, not duplicated)",
+  "exclusions": [
+    "compiled binaries",
+    "FoundationDB data and log directories",
+    "cluster configuration files",
+    "private complete stores",
+    "external credentials or actual secrets; exact final local-run metadata contains only disposable loopback test-cluster strings"
+  ],
+  "verification": {
+    "native_compiled_source_map": {
+      "artifact": "2026-10-28-linked-read-current-build-inputs.json",
+      "entries": 80,
+      "all_current_files_match": true,
+      "optimized_rlib_sha256": "f60b60e1f562a4f546b7de34a82f6b233f2b933396d13ec8285510ab4bf162e7"
+    },
+    "harnesses": {
+      "main_source_sha256": "e2f5cc643a80223031f765ca3af8507d9a7aaa55f4fc43350c81f8d52ac6b1a4",
+      "main_binary_sha256": "67b1d502f339043161654f1548ade8f7d4776a5ecd3923680198df1759bdc9a4",
+      "page_source_sha256": "36b808327e7ab9526fc272ea317507cece699339a62d80ec8107d8f17ebe9f69",
+      "page_binary_sha256": "7f11ad0fa1e77af32f2a4aaa41fa399af7cf8b062061ced6f579e9eba144331e",
+      "sources_and_binaries_match_recorded_hashes": true
+    },
+    "final_three_process_fdb": {
+      "profile": "three local processes, 1024 MiB each, triple SSD, one usable region, same compiled binaries and 4500 ms client timeout",
+      "native_jsonl": "55 lines: two fixture records plus 53 passed cases; three samples each",
+      "page_jsonl": "5 lines: one fixture record plus four passed cases; three samples each",
+      "native_exit_code": 0,
+      "page_exit_code": 0,
+      "errors": [],
+      "healthy_before_and_after": "true",
+      "owned_processes": "three stopped by SIGTERM; root confirmed none remain",
+      "owned_store_directories": "removed",
+      "total_final_timed_cases": 171,
+      "total_final_timed_samples": 513
+    },
+    "correctness": {
+      "all_53_matrix_case_keys_match_across_redb_surrealkv_and_fdb_output_hash_and_row_count": true,
+      "all_four_page_output_hashes_match_across_backends": true,
+      "all_checksums_and_source-oracles_outside_timed_spans": true
+    },
+    "latency_analysis": {
+      "script": "2026-10-28-linked-read-latency-sensitivity.mjs.source",
+      "profiles_added_ms": [
+        1,
+        5,
+        20,
+        80
+      ],
+      "model": "measured median + added serial delay multiplied by observed Attempt key loads or by distinct FDB binding GET+range invocations; mathematical sensitivity only"
+    }
+  },
+  "topology_history": [
+    {
+      "profile": "three-process local FDB initial",
+      "status": "incomplete; n=10k pass subset, n=100k fixture upload timed out at existing client timeout; kept separate"
+    },
+    {
+      "profile": "single process 512 MiB",
+      "status": "incomplete exploratory attempt; kept separate"
+    },
+    {
+      "profile": "three processes 1024 MiB, 1.5 GB decimal study guard",
+      "status": "incomplete; 38 passed cases; stopped during FDB preallocation at 1,623,781,376 allocated bytes; guard 1,500,000,000; not read timeout, database error, disk full or server OOM; exact records separately retained"
+    },
+    {
+      "profile": "three processes 1024 MiB each, 3 GB decimal study guard",
+      "status": "complete final profile; 53 matrix cases and four Store page cases passed; exit codes zero and cleanup completed"
+    }
+  ]
+}

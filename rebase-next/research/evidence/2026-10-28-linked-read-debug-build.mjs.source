@@ -1,0 +1,12 @@
+import fs from 'node:fs';import path from 'node:path';import {spawnSync} from 'node:child_process';
+const base='/workspace/ReBase/rebase-next/target/verification-build/debug';const hash='53eae2990d259d6e';
+const proof=`${base}/deps/librebase_semantic_proof-${hash}.rlib`;
+const meta=JSON.parse(fs.readFileSync(`${base}/.fingerprint/rebase-semantic-proof-${hash}/lib-rebase_semantic_proof.json`));
+const selected={};
+for(const name of ['uuid','serde_json','sha2','foundationdb','futures']){const dep=meta.deps.find(x=>x[1]===name);if(!dep)throw Error(name);const want=BigInt(dep[3]);let found;
+// JSON numeric u64s need their exact token, so extract dependency fingerprint from source text.
+const text=fs.readFileSync(`${base}/.fingerprint/rebase-semantic-proof-${hash}/lib-rebase_semantic_proof.json`,'utf8');const match=text.match(new RegExp(`\\[\\d+,"${name}",false,(\\d+)\\]`));const exact=BigInt(match[1]);
+for(const dir of fs.readdirSync(`${base}/.fingerprint`)){if(!dir.startsWith(`${name}-`))continue;const marker=`${base}/.fingerprint/${dir}/lib-${name}`;if(!fs.existsSync(marker))continue;const v=fs.readFileSync(marker,'utf8');if(Buffer.from(v,'hex').readBigUInt64LE()===exact){const candidate=`${base}/deps/lib${name}-${dir.slice(name.length+1)}.rlib`;if(fs.existsSync(candidate))found=candidate;}}
+if(!found)throw Error(`no rlib for${name}`);selected[name]=found;}
+const args=['--edition','2021','-O','-C','debuginfo=0','-C','strip=debuginfo','/tmp/rebase-linked-read-study/main.rs','-L',`dependency=${base}/deps`,'-L','native=/workspace/ReBase/rebase-next/target/g7-environment/lib','--extern',`rebase_semantic_proof=${proof}`];for(const[name,file]of Object.entries(selected))args.push('--extern',`${name}=${file}`);args.push('-o','/tmp/rebase-linked-read-study/bench');
+fs.writeFileSync('/tmp/rebase-linked-read-study/build-inputs.json',JSON.stringify({proof,selected,args},null,2));const r=spawnSync('/home/agent/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/rustc',args,{encoding:'utf8'});process.stdout.write(r.stdout);process.stderr.write(r.stderr);process.exit(r.status??1);

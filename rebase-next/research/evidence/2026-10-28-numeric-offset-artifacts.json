@@ -1,0 +1,54 @@
+{
+  "format": "numeric-offset-study-artifacts-1",
+  "context": "Separate prior scratch trial; bounded local native ordered-offset research, not linked-read or application acceptance evidence.",
+  "artifacts": [
+    {
+      "path": "numeric-offset-study/2026-10-28-numeric-offset-report.md",
+      "kind": "report",
+      "bytes": 6062,
+      "sha256": "f8e6562386730427ab28fd499d31f69537b6e82c68a0db66aca4257226236012"
+    },
+    {
+      "path": "numeric-offset-study/build.sh",
+      "kind": "source-or-provenance",
+      "bytes": 768,
+      "sha256": "ec6b154933ea39b07a5376b6d524a2967bcfb31ed11f9108bac4a92f1e09db91"
+    },
+    {
+      "path": "numeric-offset-study/embedded.jsonl",
+      "kind": "raw-samples",
+      "bytes": 6536,
+      "sha256": "494c8bfeb87167f25fb5c38303e710961bbc55ae4d6bd96d4ad9bc9db003e3c5"
+    },
+    {
+      "path": "numeric-offset-study/embedded.rs",
+      "kind": "source-or-provenance",
+      "bytes": 5173,
+      "sha256": "8d0f7382366ff35254023ae8450246c64377cfa4e5f369b480a6b69bed101fd8"
+    },
+    {
+      "path": "numeric-offset-study/fdb.jsonl",
+      "kind": "raw-samples",
+      "bytes": 7985,
+      "sha256": "c1097b913d6c9c764c9e128571c8ecbecd6a9f99095ed79823a894fe3dd1e416"
+    },
+    {
+      "path": "numeric-offset-study/fdb.rs",
+      "kind": "source-or-provenance",
+      "bytes": 4012,
+      "sha256": "568ea0c69e853f0ad86c55d2127d2004497dbcf609d598e1431c8e209da264b0"
+    },
+    {
+      "path": "numeric-offset-study/manifest.json",
+      "kind": "source-or-provenance",
+      "bytes": 4648,
+      "sha256": "9dbe44709f4731289bb150b005f3a6ac65934b790129ccaf75356635f2697963"
+    },
+    {
+      "path": "numeric-offset-study/run-fdb.mjs",
+      "kind": "source-or-provenance",
+      "bytes": 1798,
+      "sha256": "41a9418269f310886d3764f1d06aab75f41a4e55a98f4f2f7369db33c8920c1c"
+    }
+  ]
+}

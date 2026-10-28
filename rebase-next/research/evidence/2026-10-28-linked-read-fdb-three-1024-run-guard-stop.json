@@ -1,0 +1,1367 @@
+{
+  "profile": "three-local-processes-triple-ssd-1024MiB-each",
+  "memoryMiBEach": 1024,
+  "cacheMiBEach": 64,
+  "storageMemoryMiBEach": 64,
+  "resourceGuard": {
+    "maxOwnedAllocatedBytes": 1500000000,
+    "minFreeBytes": 300000000,
+    "peakOwnedAllocatedBytes": 1623781376,
+    "minObservedFreeBytes": 2006736896,
+    "aborted": true,
+    "observations": [
+      {
+        "utc": "2026-10-28T08:54:36.942Z",
+        "allocatedBytes": 0,
+        "freeBytes": 2007285760
+      },
+      {
+        "utc": "2026-10-28T08:54:39.448Z",
+        "allocatedBytes": 208896,
+        "freeBytes": 2007285760
+      },
+      {
+        "utc": "2026-10-28T08:54:41.948Z",
+        "allocatedBytes": 630210560,
+        "freeBytes": 2007285760
+      },
+      {
+        "utc": "2026-10-28T08:54:44.448Z",
+        "allocatedBytes": 630657024,
+        "freeBytes": 2007285760
+      },
+      {
+        "utc": "2026-10-28T08:54:46.949Z",
+        "allocatedBytes": 630743040,
+        "freeBytes": 2007285760
+      },
+      {
+        "utc": "2026-10-28T08:54:49.449Z",
+        "allocatedBytes": 630874112,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:54:51.950Z",
+        "allocatedBytes": 630968320,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:54:54.450Z",
+        "allocatedBytes": 650342400,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:54:56.954Z",
+        "allocatedBytes": 671350784,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:54:59.454Z",
+        "allocatedBytes": 702861312,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:01.954Z",
+        "allocatedBytes": 731049984,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:04.457Z",
+        "allocatedBytes": 731103232,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:06.961Z",
+        "allocatedBytes": 731168768,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:09.462Z",
+        "allocatedBytes": 731213824,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:11.961Z",
+        "allocatedBytes": 731299840,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:14.464Z",
+        "allocatedBytes": 731357184,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:16.965Z",
+        "allocatedBytes": 731422720,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:19.468Z",
+        "allocatedBytes": 731471872,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:21.969Z",
+        "allocatedBytes": 731566080,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:24.472Z",
+        "allocatedBytes": 731602944,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:26.973Z",
+        "allocatedBytes": 731680768,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:29.476Z",
+        "allocatedBytes": 731725824,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:31.979Z",
+        "allocatedBytes": 763924480,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:34.480Z",
+        "allocatedBytes": 826884096,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:36.983Z",
+        "allocatedBytes": 895594496,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:39.485Z",
+        "allocatedBytes": 915091456,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:41.986Z",
+        "allocatedBytes": 939372544,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:44.490Z",
+        "allocatedBytes": 976633856,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:46.992Z",
+        "allocatedBytes": 983658496,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:49.493Z",
+        "allocatedBytes": 1306169344,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:51.995Z",
+        "allocatedBytes": 1308479488,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:54.497Z",
+        "allocatedBytes": 1308512256,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:57.000Z",
+        "allocatedBytes": 1308598272,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:55:59.501Z",
+        "allocatedBytes": 1308635136,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:02.002Z",
+        "allocatedBytes": 1308725248,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:04.504Z",
+        "allocatedBytes": 1308766208,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:07.004Z",
+        "allocatedBytes": 1308844032,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:09.505Z",
+        "allocatedBytes": 1308880896,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:12.008Z",
+        "allocatedBytes": 1308971008,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:14.509Z",
+        "allocatedBytes": 1309011968,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:17.009Z",
+        "allocatedBytes": 1309089792,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:19.510Z",
+        "allocatedBytes": 1309122560,
+        "freeBytes": 2006736896
+      },
+      {
+        "utc": "2026-10-28T08:56:22.011Z",
+        "allocatedBytes": 1623781376,
+        "freeBytes": 2006736896
+      }
+    ],
+    "reason": "owned allocation or filesystem free-space guard exceeded"
+  },
+  "cluster": "linkedstudy3x1024:linkedstudy3x1024@127.0.0.1:49521",
+  "clusterFile": "/tmp/rebase-linked-read-study/fdb3-1024.cluster",
+  "versions": {
+    "127.0.0.1:49522": "7.3.77",
+    "127.0.0.1:49521": "7.3.77",
+    "127.0.0.1:49523": "7.3.77"
+  },
+  "status": "{\n    \"client\" : {\n        \"cluster_file\" : {\n            \"path\" : \"/tmp/rebase-linked-read-study/fdb3-1024.cluster\",\n            \"up_to_date\" : true\n        },\n        \"coordinators\" : {\n            \"coordinators\" : [\n                {\n                    \"address\" : \"127.0.0.1:49521\",\n                    \"protocol\" : \"0fdb00b073000000\",\n                    \"reachable\" : true\n                }\n            ],\n            \"quorum_reachable\" : true\n        },\n        \"database_status\" : {\n            \"available\" : true,\n            \"healthy\" : true\n        },\n        \"messages\" : [\n        ],\n        \"timestamp\" : 1793177693\n    },\n    \"cluster\" : {\n        \"active_primary_dc\" : \"linked_dc\",\n        \"active_tss_count\" : 0,\n        \"bounce_impact\" : {\n            \"can_clean_bounce\" : true\n        },\n        \"clients\" : {\n            \"count\" : 10,\n            \"supported_versions\" : [\n                {\n                    \"client_version\" : \"7.3.77\",\n                    \"connected_clients\" : [\n                        {\n                            \"address\" : \"127.0.0.1:46962\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46966\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46976\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46990\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47002\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47006\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47016\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52834\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52848\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52858\",\n                            \"log_group\" : \"default\"\n                        }\n                    ],\n                    \"count\" : 10,\n                    \"max_protocol_clients\" : [\n                        {\n                            \"address\" : \"127.0.0.1:46962\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46966\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46976\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46990\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47002\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47006\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47016\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52834\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52848\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52858\",\n                            \"log_group\" : \"default\"\n                        }\n                    ],\n                    \"max_protocol_count\" : 10,\n                    \"protocol_version\" : \"fdb00b073000000\",\n                    \"source_version\" : \"3ea44ce1d9003ad095e408039e1f755c319c4dfb\"\n                }\n            ]\n        },\n        \"cluster_controller_timestamp\" : 1793177693,\n        \"configuration\" : {\n            \"backup_worker_enabled\" : 0,\n            \"blob_granules_enabled\" : 0,\n            \"commit_proxies\" : 3,\n            \"coordinators_count\" : 1,\n            \"encryption_at_rest_mode\" : \"disabled\",\n            \"excluded_servers\" : [\n            ],\n            \"grv_proxies\" : 1,\n            \"log_engine\" : \"ssd-2\",\n            \"log_spill\" : 2,\n            \"logs\" : 3,\n            \"perpetual_storage_wiggle\" : 0,\n            \"perpetual_storage_wiggle_engine\" : \"none\",\n            \"perpetual_storage_wiggle_locality\" : \"0\",\n            \"proxies\" : 4,\n            \"redundancy_mode\" : \"triple\",\n            \"resolvers\" : 1,\n            \"storage_engine\" : \"ssd-2\",\n            \"storage_migration_type\" : \"disabled\",\n            \"tenant_mode\" : \"disabled\",\n            \"usable_regions\" : 1\n        },\n        \"configuration_database\" : {\n            \"commits\" : [\n            ],\n            \"last_compacted_version\" : 0,\n            \"most_recent_version\" : 0,\n            \"mutations\" : [\n            ],\n            \"snapshot\" : {\n            }\n        },\n        \"connection_string\" : \"linkedstudy3x1024:linkedstudy3x1024@127.0.0.1:49521\",\n        \"data\" : {\n            \"least_operating_space_bytes_log_server\" : 16201647243,\n            \"least_operating_space_bytes_storage_server\" : 16201647018,\n            \"state\" : {\n                \"description\" : \"(Re)initializing automatic data distribution\",\n                \"name\" : \"initializing\"\n            },\n            \"total_disk_used_bytes\" : 629219952\n        },\n        \"database_available\" : true,\n        \"database_lock_state\" : {\n            \"locked\" : false\n        },\n        \"datacenter_lag\" : {\n            \"seconds\" : 0,\n            \"versions\" : 0\n        },\n        \"degraded_processes\" : 0,\n        \"fault_tolerance\" : {\n            \"max_zone_failures_without_losing_availability\" : 0,\n            \"max_zone_failures_without_losing_data\" : 0\n        },\n        \"full_replication\" : true,\n        \"generation\" : 4,\n        \"idempotency_ids\" : {\n            \"size_bytes\" : 0\n        },\n        \"incompatible_connections\" : [\n        ],\n        \"latency_probe\" : {\n            \"batch_priority_transaction_start_seconds\" : 0.00030422200000000004,\n            \"commit_seconds\" : 0.00119305,\n            \"immediate_priority_transaction_start_seconds\" : 0.00015830999999999999,\n            \"read_seconds\" : 2.1457700000000003e-05,\n            \"transaction_start_seconds\" : 0.00034236900000000003\n        },\n        \"layers\" : {\n            \"_valid\" : true\n        },\n        \"logs\" : [\n            {\n                \"begin_version\" : 76049,\n                \"current\" : true,\n                \"epoch\" : 4,\n                \"log_fault_tolerance\" : 2,\n                \"log_interfaces\" : [\n                    {\n                        \"address\" : \"127.0.0.1:49523\",\n                        \"healthy\" : true,\n                        \"id\" : \"1498de52f809e748\"\n                    },\n                    {\n                        \"address\" : \"127.0.0.1:49522\",\n                        \"healthy\" : true,\n                        \"id\" : \"820d41ff392ecab7\"\n                    },\n                    {\n                        \"address\" : \"127.0.0.1:49521\",\n                        \"healthy\" : true,\n                        \"id\" : \"f8f5240e11555f70\"\n                    }\n                ],\n                \"log_replication_factor\" : 3,\n                \"log_write_anti_quorum\" : 0,\n                \"possibly_losing_data\" : false\n            }\n        ],\n        \"lowest_compatible_protocol_version\" : \"fdb00b072000000\",\n        \"machines\" : {\n            \"linked_machine_1\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_1\",\n                    \"processid\" : \"a72123aa99bdfc9170613ec8dc013c43\",\n                    \"zoneid\" : \"linked_zone_1\"\n                },\n                \"machine_id\" : \"linked_machine_1\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.1280000000000001\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.1280000000000001\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            },\n            \"linked_machine_2\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024100000000001\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_2\",\n                    \"processid\" : \"30ac0f036597770ad40a55a13304951c\",\n                    \"zoneid\" : \"linked_zone_2\"\n                },\n                \"machine_id\" : \"linked_machine_2\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            },\n            \"linked_machine_3\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024100000000001\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_3\",\n                    \"processid\" : \"f1256d89a55b29f149562cb13941bc8b\",\n                    \"zoneid\" : \"linked_zone_3\"\n                },\n                \"machine_id\" : \"linked_machine_3\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            }\n        },\n        \"messages\" : [\n        ],\n        \"metacluster\" : {\n            \"cluster_type\" : \"standalone\"\n        },\n        \"newest_protocol_version\" : \"fdb00b073000000\",\n        \"page_cache\" : {\n            \"log_hit_rate\" : 0.95744700000000005,\n            \"storage_hit_rate\" : 0.95744700000000005\n        },\n        \"processes\" : {\n            \"30ac0f036597770ad40a55a13304951c\" : {\n                \"address\" : \"127.0.0.1:49522\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49522 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-2 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-2 --locality-dcid linked_dc --locality-zoneid linked_zone_2 --locality-machineid linked_machine_2\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0133104\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095147520,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_2\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_2\",\n                    \"processid\" : \"30ac0f036597770ad40a55a13304951c\",\n                    \"zoneid\" : \"linked_zone_2\"\n                },\n                \"machine_id\" : \"linked_machine_2\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 87822336,\n                    \"unused_allocated_memory\" : 131072,\n                    \"used_bytes\" : 242941952\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0.99998900000000002\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0.79999100000000001\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.44541600000000003\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.34364400000000001\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"id\" : \"cdc49f1304fbb3dd\",\n                        \"role\" : \"cluster_controller\"\n                    },\n                    {\n                        \"id\" : \"84c42d1ec71b9d0d\",\n                        \"role\" : \"grv_proxy\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.6600000000001\n                        },\n                        \"id\" : \"820d41ff392ecab7\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.199599999999997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 12733,\n                            \"hz\" : 470.19799999999998,\n                            \"roughness\" : 420.80700000000002\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3500000000004,\n                            \"roughness\" : 34915.800000000003\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 18,\n                            \"hz\" : 0.99999500000000008,\n                            \"roughness\" : 4.3083700000000002e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 167,\n                            \"hz\" : 18.1999,\n                            \"roughness\" : 12.823600000000001\n                        },\n                        \"id\" : \"8ebd92c58fe8eef8\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 134,\n                            \"hz\" : 9.1999499999999994,\n                            \"roughness\" : 7.2531400000000001\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 7,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 167,\n                            \"hz\" : 18.1999,\n                            \"roughness\" : 12.823600000000001\n                        },\n                        \"tss\" : false\n                    }\n                ],\n                \"run_loop_busy\" : 0.009897679999999999,\n                \"uptime_seconds\" : 15.0001,\n                \"version\" : \"7.3.77\"\n            },\n            \"a72123aa99bdfc9170613ec8dc013c43\" : {\n                \"address\" : \"127.0.0.1:49521\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49521 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-1 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-1 --locality-dcid linked_dc --locality-zoneid linked_zone_1 --locality-machineid linked_machine_1\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0078845400000000006\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095135232,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_1\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_1\",\n                    \"processid\" : \"a72123aa99bdfc9170613ec8dc013c43\",\n                    \"zoneid\" : \"linked_zone_1\"\n                },\n                \"machine_id\" : \"linked_machine_1\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 84262912,\n                    \"unused_allocated_memory\" : 131072,\n                    \"used_bytes\" : 244912128\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0.99999300000000002\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0.79999400000000009\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.144453\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.27319500000000002\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"role\" : \"coordinator\"\n                    },\n                    {\n                        \"id\" : \"3eba603fe905c179\",\n                        \"role\" : \"commit_proxy\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.5799999999999\n                        },\n                        \"id\" : \"f8f5240e11555f70\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.1997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 2708,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3400000000001,\n                            \"roughness\" : 34918.400000000001\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 22,\n                            \"hz\" : 0.99999300000000002,\n                            \"roughness\" : 4.1967300000000007e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 67,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"id\" : \"811dfb5a1074f997\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 44,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 0,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 67,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"tss\" : false\n                    }\n                ],\n                \"run_loop_busy\" : 0.0055554999999999997,\n                \"uptime_seconds\" : 15.002599999999999,\n                \"version\" : \"7.3.77\"\n            },\n            \"f1256d89a55b29f149562cb13941bc8b\" : {\n                \"address\" : \"127.0.0.1:49523\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49523 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-3 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-3 --locality-dcid linked_dc --locality-zoneid linked_zone_3 --locality-machineid linked_machine_3\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0121301\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095147520,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_3\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_3\",\n                    \"processid\" : \"f1256d89a55b29f149562cb13941bc8b\",\n                    \"zoneid\" : \"linked_zone_3\"\n                },\n                \"machine_id\" : \"linked_machine_3\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 86081536,\n                    \"unused_allocated_memory\" : 0,\n                    \"used_bytes\" : 232062976\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.19369400000000001\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.29691300000000004\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"id\" : \"1c934c8366dafc29\",\n                        \"role\" : \"master\"\n                    },\n                    {\n                        \"id\" : \"5b98c0dd4cefc5d8\",\n                        \"role\" : \"data_distributor\"\n                    },\n                    {\n                        \"id\" : \"6e378458d94ac098\",\n                        \"role\" : \"ratekeeper\"\n                    },\n                    {\n                        \"id\" : \"1f31b06672e0ff09\",\n                        \"role\" : \"consistency_scan\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.47\n                        },\n                        \"id\" : \"1498de52f809e748\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.1997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 38928,\n                            \"hz\" : 4349.96,\n                            \"roughness\" : 4305.5100000000002\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3199999999997,\n                            \"roughness\" : 34913\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 21,\n                            \"hz\" : 0.99999100000000007,\n                            \"roughness\" : 4.2674500000000006e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 133,\n                            \"hz\" : 6.5999400000000001,\n                            \"roughness\" : 5.5288599999999999\n                        },\n                        \"id\" : \"a0477f832e67e06e\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 147,\n                            \"hz\" : 11.9999,\n                            \"roughness\" : 10.880000000000001\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 3,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 133,\n                            \"hz\" : 6.5999400000000001,\n                            \"roughness\" : 5.5288599999999999\n                        },\n                        \"tss\" : false\n                    },\n                    {\n                        \"id\" : \"d8db538547adf345\",\n                        \"role\" : \"resolver\"\n                    }\n                ],\n                \"run_loop_busy\" : 0.0083677500000000002,\n                \"uptime_seconds\" : 15.0001,\n                \"version\" : \"7.3.77\"\n            }\n        },\n        \"protocol_version\" : \"fdb00b073000000\",\n        \"qos\" : {\n            \"batch_performance_limited_by\" : {\n                \"description\" : \"The database is not being saturated by the workload.\",\n                \"name\" : \"workload\",\n                \"reason_id\" : 2\n            },\n            \"batch_released_transactions_per_second\" : 0.553288,\n            \"batch_transactions_per_second_limit\" : 1153440,\n            \"limiting_data_lag_storage_server\" : {\n                \"seconds\" : 0,\n                \"versions\" : 0\n            },\n            \"limiting_durability_lag_storage_server\" : {\n                \"seconds\" : 18.196899999999999,\n                \"versions\" : 18196935\n            },\n            \"limiting_queue_bytes_storage_server\" : 3669,\n            \"performance_limited_by\" : {\n                \"description\" : \"The database is not being saturated by the workload.\",\n                \"name\" : \"workload\",\n                \"reason_id\" : 2\n            },\n            \"released_transactions_per_second\" : 11.127800000000001,\n            \"throttled_tags\" : {\n                \"auto\" : {\n                    \"busy_read\" : 0,\n                    \"busy_write\" : 0,\n                    \"count\" : 0,\n                    \"recommended_only\" : 0\n                },\n                \"manual\" : {\n                    \"count\" : 0\n                }\n            },\n            \"transactions_per_second_limit\" : 361314000,\n            \"worst_data_lag_storage_server\" : {\n                \"seconds\" : 0,\n                \"versions\" : 0\n            },\n            \"worst_durability_lag_storage_server\" : {\n                \"seconds\" : 18.338899999999999,\n                \"versions\" : 18338892\n            },\n            \"worst_queue_bytes_log_server\" : 30557,\n            \"worst_queue_bytes_storage_server\" : 3741\n        },\n        \"recovery_state\" : {\n            \"active_generations\" : 1,\n            \"description\" : \"Recovery complete.\",\n            \"name\" : \"fully_recovered\",\n            \"seconds_since_last_recovered\" : 10.521100000000001\n        },\n        \"tenants\" : {\n            \"num_tenants\" : 0\n        },\n        \"version_epoch\" : {\n            \"enabled\" : false\n        },\n        \"workload\" : {\n            \"bytes\" : {\n                \"read\" : {\n                    \"counter\" : 54369,\n                    \"hz\" : 4820.1599999999999,\n                    \"roughness\" : 3926.5599999999999\n                },\n                \"written\" : {\n                    \"counter\" : 1321,\n                    \"hz\" : 13.9999,\n                    \"roughness\" : 69\n                }\n            },\n            \"keys\" : {\n                \"read\" : {\n                    \"counter\" : 325,\n                    \"hz\" : 21.1998,\n                    \"roughness\" : 9.3060799999999997\n                }\n            },\n            \"operations\" : {\n                \"location_requests\" : {\n                    \"counter\" : 13,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"low_priority_reads\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"memory_errors\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"read_requests\" : {\n                    \"counter\" : 367,\n                    \"hz\" : 24.799800000000001,\n                    \"roughness\" : 10.882300000000001\n                },\n                \"reads\" : {\n                    \"counter\" : 367,\n                    \"hz\" : 24.799800000000001,\n                    \"roughness\" : 10.882300000000001\n                },\n                \"writes\" : {\n                    \"counter\" : 19,\n                    \"hz\" : 0.39999800000000002,\n                    \"roughness\" : 1\n                }\n            },\n            \"transactions\" : {\n                \"committed\" : {\n                    \"counter\" : 18,\n                    \"hz\" : 0.99999500000000008,\n                    \"roughness\" : 0.088605800000000012\n                },\n                \"conflicted\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"rejected_for_queued_too_long\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"started\" : {\n                    \"counter\" : 190,\n                    \"hz\" : 15.199999999999999,\n                    \"roughness\" : 6.0738700000000003\n                },\n                \"started_batch_priority\" : {\n                    \"counter\" : 9,\n                    \"hz\" : 0.79999900000000002,\n                    \"roughness\" : 4.4583800000000012e-05\n                },\n                \"started_default_priority\" : {\n                    \"counter\" : 64,\n                    \"hz\" : 4.5999999999999996,\n                    \"roughness\" : 2.6115699999999999\n                },\n                \"started_immediate_priority\" : {\n                    \"counter\" : 117,\n                    \"hz\" : 9.7999899999999993,\n                    \"roughness\" : 4.4398900000000001\n                }\n            }\n        }\n    }\n}\n",
+  "configuration": {
+    "backup_worker_enabled": 0,
+    "blob_granules_enabled": 0,
+    "commit_proxies": 3,
+    "coordinators_count": 1,
+    "encryption_at_rest_mode": "disabled",
+    "excluded_servers": [],
+    "grv_proxies": 1,
+    "log_engine": "ssd-2",
+    "log_spill": 2,
+    "logs": 3,
+    "perpetual_storage_wiggle": 0,
+    "perpetual_storage_wiggle_engine": "none",
+    "perpetual_storage_wiggle_locality": "0",
+    "proxies": 4,
+    "redundancy_mode": "triple",
+    "resolvers": 1,
+    "storage_engine": "ssd-2",
+    "storage_migration_type": "disabled",
+    "tenant_mode": "disabled",
+    "usable_regions": 1
+  },
+  "topology": {
+    "client": {
+      "cluster_file": {
+        "path": "/tmp/rebase-linked-read-study/fdb3-1024.cluster",
+        "up_to_date": true
+      },
+      "coordinators": {
+        "coordinators": [
+          {
+            "address": "127.0.0.1:49521",
+            "protocol": "0fdb00b073000000",
+            "reachable": true
+          }
+        ],
+        "quorum_reachable": true
+      },
+      "database_status": {
+        "available": true,
+        "healthy": true
+      },
+      "messages": [],
+      "timestamp": 1793177693
+    },
+    "cluster": {
+      "active_primary_dc": "linked_dc",
+      "active_tss_count": 0,
+      "bounce_impact": {
+        "can_clean_bounce": true
+      },
+      "clients": {
+        "count": 10,
+        "supported_versions": [
+          {
+            "client_version": "7.3.77",
+            "connected_clients": [
+              {
+                "address": "127.0.0.1:46962",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46966",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46976",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46990",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47002",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47006",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47016",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52834",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52848",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52858",
+                "log_group": "default"
+              }
+            ],
+            "count": 10,
+            "max_protocol_clients": [
+              {
+                "address": "127.0.0.1:46962",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46966",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46976",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:46990",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47002",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47006",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:47016",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52834",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52848",
+                "log_group": "default"
+              },
+              {
+                "address": "127.0.0.1:52858",
+                "log_group": "default"
+              }
+            ],
+            "max_protocol_count": 10,
+            "protocol_version": "fdb00b073000000",
+            "source_version": "3ea44ce1d9003ad095e408039e1f755c319c4dfb"
+          }
+        ]
+      },
+      "cluster_controller_timestamp": 1793177693,
+      "configuration": {
+        "backup_worker_enabled": 0,
+        "blob_granules_enabled": 0,
+        "commit_proxies": 3,
+        "coordinators_count": 1,
+        "encryption_at_rest_mode": "disabled",
+        "excluded_servers": [],
+        "grv_proxies": 1,
+        "log_engine": "ssd-2",
+        "log_spill": 2,
+        "logs": 3,
+        "perpetual_storage_wiggle": 0,
+        "perpetual_storage_wiggle_engine": "none",
+        "perpetual_storage_wiggle_locality": "0",
+        "proxies": 4,
+        "redundancy_mode": "triple",
+        "resolvers": 1,
+        "storage_engine": "ssd-2",
+        "storage_migration_type": "disabled",
+        "tenant_mode": "disabled",
+        "usable_regions": 1
+      },
+      "configuration_database": {
+        "commits": [],
+        "last_compacted_version": 0,
+        "most_recent_version": 0,
+        "mutations": [],
+        "snapshot": {}
+      },
+      "connection_string": "linkedstudy3x1024:linkedstudy3x1024@127.0.0.1:49521",
+      "data": {
+        "least_operating_space_bytes_log_server": 16201647243,
+        "least_operating_space_bytes_storage_server": 16201647018,
+        "state": {
+          "description": "(Re)initializing automatic data distribution",
+          "name": "initializing"
+        },
+        "total_disk_used_bytes": 629219952
+      },
+      "database_available": true,
+      "database_lock_state": {
+        "locked": false
+      },
+      "datacenter_lag": {
+        "seconds": 0,
+        "versions": 0
+      },
+      "degraded_processes": 0,
+      "fault_tolerance": {
+        "max_zone_failures_without_losing_availability": 0,
+        "max_zone_failures_without_losing_data": 0
+      },
+      "full_replication": true,
+      "generation": 4,
+      "idempotency_ids": {
+        "size_bytes": 0
+      },
+      "incompatible_connections": [],
+      "latency_probe": {
+        "batch_priority_transaction_start_seconds": 0.00030422200000000004,
+        "commit_seconds": 0.00119305,
+        "immediate_priority_transaction_start_seconds": 0.00015831,
+        "read_seconds": 0.000021457700000000003,
+        "transaction_start_seconds": 0.00034236900000000003
+      },
+      "layers": {
+        "_valid": true
+      },
+      "logs": [
+        {
+          "begin_version": 76049,
+          "current": true,
+          "epoch": 4,
+          "log_fault_tolerance": 2,
+          "log_interfaces": [
+            {
+              "address": "127.0.0.1:49523",
+              "healthy": true,
+              "id": "1498de52f809e748"
+            },
+            {
+              "address": "127.0.0.1:49522",
+              "healthy": true,
+              "id": "820d41ff392ecab7"
+            },
+            {
+              "address": "127.0.0.1:49521",
+              "healthy": true,
+              "id": "f8f5240e11555f70"
+            }
+          ],
+          "log_replication_factor": 3,
+          "log_write_anti_quorum": 0,
+          "possibly_losing_data": false
+        }
+      ],
+      "lowest_compatible_protocol_version": "fdb00b072000000",
+      "machines": {
+        "linked_machine_1": {
+          "address": "127.0.0.1",
+          "contributing_workers": 1,
+          "cpu": {
+            "logical_core_utilization": 0.010024
+          },
+          "datacenter_id": "linked_dc",
+          "excluded": false,
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_1",
+            "processid": "a72123aa99bdfc9170613ec8dc013c43",
+            "zoneid": "linked_zone_1"
+          },
+          "machine_id": "linked_machine_1",
+          "memory": {
+            "committed_bytes": 1731477504,
+            "free_bytes": 34012282880,
+            "total_bytes": 35743760384
+          },
+          "network": {
+            "megabits_received": {
+              "hz": 1.1280000000000001
+            },
+            "megabits_sent": {
+              "hz": 1.1280000000000001
+            },
+            "tcp_segments_retransmitted": {
+              "hz": 0
+            }
+          }
+        },
+        "linked_machine_2": {
+          "address": "127.0.0.1",
+          "contributing_workers": 1,
+          "cpu": {
+            "logical_core_utilization": 0.010024100000000001
+          },
+          "datacenter_id": "linked_dc",
+          "excluded": false,
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_2",
+            "processid": "30ac0f036597770ad40a55a13304951c",
+            "zoneid": "linked_zone_2"
+          },
+          "machine_id": "linked_machine_2",
+          "memory": {
+            "committed_bytes": 1731477504,
+            "free_bytes": 34012282880,
+            "total_bytes": 35743760384
+          },
+          "network": {
+            "megabits_received": {
+              "hz": 1.12686
+            },
+            "megabits_sent": {
+              "hz": 1.12686
+            },
+            "tcp_segments_retransmitted": {
+              "hz": 0
+            }
+          }
+        },
+        "linked_machine_3": {
+          "address": "127.0.0.1",
+          "contributing_workers": 1,
+          "cpu": {
+            "logical_core_utilization": 0.010024100000000001
+          },
+          "datacenter_id": "linked_dc",
+          "excluded": false,
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_3",
+            "processid": "f1256d89a55b29f149562cb13941bc8b",
+            "zoneid": "linked_zone_3"
+          },
+          "machine_id": "linked_machine_3",
+          "memory": {
+            "committed_bytes": 1731477504,
+            "free_bytes": 34012282880,
+            "total_bytes": 35743760384
+          },
+          "network": {
+            "megabits_received": {
+              "hz": 1.12686
+            },
+            "megabits_sent": {
+              "hz": 1.12686
+            },
+            "tcp_segments_retransmitted": {
+              "hz": 0
+            }
+          }
+        }
+      },
+      "messages": [],
+      "metacluster": {
+        "cluster_type": "standalone"
+      },
+      "newest_protocol_version": "fdb00b073000000",
+      "page_cache": {
+        "log_hit_rate": 0.957447,
+        "storage_hit_rate": 0.957447
+      },
+      "processes": {
+        "30ac0f036597770ad40a55a13304951c": {
+          "address": "127.0.0.1:49522",
+          "class_source": "command_line",
+          "class_type": "unset",
+          "command_line": "/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49522 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-2 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-2 --locality-dcid linked_dc --locality-zoneid linked_zone_2 --locality-machineid linked_machine_2",
+          "cpu": {
+            "usage_cores": 0.0133104
+          },
+          "disk": {
+            "busy": 0,
+            "free_bytes": 17095147520,
+            "reads": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            },
+            "total_bytes": 17871880192,
+            "writes": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            }
+          },
+          "excluded": false,
+          "fault_domain": "linked_zone_2",
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_2",
+            "processid": "30ac0f036597770ad40a55a13304951c",
+            "zoneid": "linked_zone_2"
+          },
+          "machine_id": "linked_machine_2",
+          "memory": {
+            "available_bytes": 1073741824,
+            "limit_bytes": 1073741824,
+            "rss_bytes": 87822336,
+            "unused_allocated_memory": 131072,
+            "used_bytes": 242941952
+          },
+          "messages": [],
+          "network": {
+            "connection_errors": {
+              "hz": 0
+            },
+            "connections_closed": {
+              "hz": 0.999989
+            },
+            "connections_established": {
+              "hz": 0.799991
+            },
+            "current_connections": 2,
+            "megabits_received": {
+              "hz": 0.44541600000000003
+            },
+            "megabits_sent": {
+              "hz": 0.343644
+            },
+            "tls_policy_failures": {
+              "hz": 0
+            }
+          },
+          "roles": [
+            {
+              "id": "cdc49f1304fbb3dd",
+              "role": "cluster_controller"
+            },
+            {
+              "id": "84c42d1ec71b9d0d",
+              "role": "grv_proxy"
+            },
+            {
+              "data_version": 109620078,
+              "durable_bytes": {
+                "counter": 1530,
+                "hz": 305.998,
+                "roughness": 1528.66
+              },
+              "id": "820d41ff392ecab7",
+              "input_bytes": {
+                "counter": 6624,
+                "hz": 63.1996,
+                "roughness": 315
+              },
+              "kvstore_available_bytes": 17095135232,
+              "kvstore_free_bytes": 17095135232,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_used_bytes": 104861752,
+              "queue_disk_available_bytes": 17095135232,
+              "queue_disk_free_bytes": 17095135232,
+              "queue_disk_total_bytes": 17871880192,
+              "queue_disk_used_bytes": 159744,
+              "role": "log"
+            },
+            {
+              "bytes_queried": {
+                "counter": 12733,
+                "hz": 470.198,
+                "roughness": 420.807
+              },
+              "data_lag": {
+                "seconds": 1.06043,
+                "versions": 1060428
+              },
+              "data_version": 109245722,
+              "durability_lag": {
+                "seconds": 5,
+                "versions": 5000000
+              },
+              "durable_bytes": {
+                "counter": 84770,
+                "hz": 9212.35,
+                "roughness": 34915.8
+              },
+              "durable_version": 104245722,
+              "fetched_versions": {
+                "counter": 109245722,
+                "hz": 1061740,
+                "roughness": 1061790
+              },
+              "fetches_from_logs": {
+                "counter": 18,
+                "hz": 0.9999950000000001,
+                "roughness": 0.0000430837
+              },
+              "finished_queries": {
+                "counter": 167,
+                "hz": 18.1999,
+                "roughness": 12.8236
+              },
+              "id": "8ebd92c58fe8eef8",
+              "input_bytes": {
+                "counter": 84770,
+                "hz": 0,
+                "roughness": -1
+              },
+              "keys_queried": {
+                "counter": 134,
+                "hz": 9.19995,
+                "roughness": 7.25314
+              },
+              "kvstore_available_bytes": 17095217152,
+              "kvstore_free_bytes": 17095217152,
+              "kvstore_inline_keys": 0,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_total_nodes": 0,
+              "kvstore_total_size": 0,
+              "kvstore_used_bytes": 104878232,
+              "local_rate": 100,
+              "low_priority_queries": {
+                "counter": 0,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutation_bytes": {
+                "counter": 9211,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutations": {
+                "counter": 78,
+                "hz": 0,
+                "roughness": -1
+              },
+              "query_queue_max": 7,
+              "role": "storage",
+              "storage_metadata": {
+                "created_time_datetime": "2026-10-28 08:54:41.535 +0000",
+                "created_time_timestamp": 1793177681.5356097,
+                "storage_engine": "ssd-2"
+              },
+              "stored_bytes": 0,
+              "total_queries": {
+                "counter": 167,
+                "hz": 18.1999,
+                "roughness": 12.8236
+              },
+              "tss": false
+            }
+          ],
+          "run_loop_busy": 0.009897679999999999,
+          "uptime_seconds": 15.0001,
+          "version": "7.3.77"
+        },
+        "a72123aa99bdfc9170613ec8dc013c43": {
+          "address": "127.0.0.1:49521",
+          "class_source": "command_line",
+          "class_type": "unset",
+          "command_line": "/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49521 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-1 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-1 --locality-dcid linked_dc --locality-zoneid linked_zone_1 --locality-machineid linked_machine_1",
+          "cpu": {
+            "usage_cores": 0.00788454
+          },
+          "disk": {
+            "busy": 0,
+            "free_bytes": 17095135232,
+            "reads": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            },
+            "total_bytes": 17871880192,
+            "writes": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            }
+          },
+          "excluded": false,
+          "fault_domain": "linked_zone_1",
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_1",
+            "processid": "a72123aa99bdfc9170613ec8dc013c43",
+            "zoneid": "linked_zone_1"
+          },
+          "machine_id": "linked_machine_1",
+          "memory": {
+            "available_bytes": 1073741824,
+            "limit_bytes": 1073741824,
+            "rss_bytes": 84262912,
+            "unused_allocated_memory": 131072,
+            "used_bytes": 244912128
+          },
+          "messages": [],
+          "network": {
+            "connection_errors": {
+              "hz": 0
+            },
+            "connections_closed": {
+              "hz": 0.999993
+            },
+            "connections_established": {
+              "hz": 0.7999940000000001
+            },
+            "current_connections": 2,
+            "megabits_received": {
+              "hz": 0.144453
+            },
+            "megabits_sent": {
+              "hz": 0.273195
+            },
+            "tls_policy_failures": {
+              "hz": 0
+            }
+          },
+          "roles": [
+            {
+              "role": "coordinator"
+            },
+            {
+              "id": "3eba603fe905c179",
+              "role": "commit_proxy"
+            },
+            {
+              "data_version": 109620078,
+              "durable_bytes": {
+                "counter": 1530,
+                "hz": 305.998,
+                "roughness": 1528.58
+              },
+              "id": "f8f5240e11555f70",
+              "input_bytes": {
+                "counter": 6624,
+                "hz": 63.1997,
+                "roughness": 315
+              },
+              "kvstore_available_bytes": 17095135232,
+              "kvstore_free_bytes": 17095135232,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_used_bytes": 104861752,
+              "queue_disk_available_bytes": 17095135232,
+              "queue_disk_free_bytes": 17095135232,
+              "queue_disk_total_bytes": 17871880192,
+              "queue_disk_used_bytes": 159744,
+              "role": "log"
+            },
+            {
+              "bytes_queried": {
+                "counter": 2708,
+                "hz": 0,
+                "roughness": -1
+              },
+              "data_lag": {
+                "seconds": 1.06043,
+                "versions": 1060428
+              },
+              "data_version": 109245722,
+              "durability_lag": {
+                "seconds": 5,
+                "versions": 5000000
+              },
+              "durable_bytes": {
+                "counter": 84770,
+                "hz": 9212.34,
+                "roughness": 34918.4
+              },
+              "durable_version": 104245722,
+              "fetched_versions": {
+                "counter": 109245722,
+                "hz": 1061740,
+                "roughness": 1061790
+              },
+              "fetches_from_logs": {
+                "counter": 22,
+                "hz": 0.999993,
+                "roughness": 0.00004196730000000001
+              },
+              "finished_queries": {
+                "counter": 67,
+                "hz": 0,
+                "roughness": -1
+              },
+              "id": "811dfb5a1074f997",
+              "input_bytes": {
+                "counter": 84770,
+                "hz": 0,
+                "roughness": -1
+              },
+              "keys_queried": {
+                "counter": 44,
+                "hz": 0,
+                "roughness": -1
+              },
+              "kvstore_available_bytes": 17095217152,
+              "kvstore_free_bytes": 17095217152,
+              "kvstore_inline_keys": 0,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_total_nodes": 0,
+              "kvstore_total_size": 0,
+              "kvstore_used_bytes": 104878232,
+              "local_rate": 100,
+              "low_priority_queries": {
+                "counter": 0,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutation_bytes": {
+                "counter": 9211,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutations": {
+                "counter": 78,
+                "hz": 0,
+                "roughness": -1
+              },
+              "query_queue_max": 0,
+              "role": "storage",
+              "storage_metadata": {
+                "created_time_datetime": "2026-10-28 08:54:41.535 +0000",
+                "created_time_timestamp": 1793177681.5356097,
+                "storage_engine": "ssd-2"
+              },
+              "stored_bytes": 0,
+              "total_queries": {
+                "counter": 67,
+                "hz": 0,
+                "roughness": -1
+              },
+              "tss": false
+            }
+          ],
+          "run_loop_busy": 0.0055555,
+          "uptime_seconds": 15.0026,
+          "version": "7.3.77"
+        },
+        "f1256d89a55b29f149562cb13941bc8b": {
+          "address": "127.0.0.1:49523",
+          "class_source": "command_line",
+          "class_type": "unset",
+          "command_line": "/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49523 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-3 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-3 --locality-dcid linked_dc --locality-zoneid linked_zone_3 --locality-machineid linked_machine_3",
+          "cpu": {
+            "usage_cores": 0.0121301
+          },
+          "disk": {
+            "busy": 0,
+            "free_bytes": 17095147520,
+            "reads": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            },
+            "total_bytes": 17871880192,
+            "writes": {
+              "counter": 0,
+              "hz": 0,
+              "sectors": 0
+            }
+          },
+          "excluded": false,
+          "fault_domain": "linked_zone_3",
+          "locality": {
+            "dcid": "linked_dc",
+            "machineid": "linked_machine_3",
+            "processid": "f1256d89a55b29f149562cb13941bc8b",
+            "zoneid": "linked_zone_3"
+          },
+          "machine_id": "linked_machine_3",
+          "memory": {
+            "available_bytes": 1073741824,
+            "limit_bytes": 1073741824,
+            "rss_bytes": 86081536,
+            "unused_allocated_memory": 0,
+            "used_bytes": 232062976
+          },
+          "messages": [],
+          "network": {
+            "connection_errors": {
+              "hz": 0
+            },
+            "connections_closed": {
+              "hz": 0
+            },
+            "connections_established": {
+              "hz": 0
+            },
+            "current_connections": 2,
+            "megabits_received": {
+              "hz": 0.193694
+            },
+            "megabits_sent": {
+              "hz": 0.29691300000000004
+            },
+            "tls_policy_failures": {
+              "hz": 0
+            }
+          },
+          "roles": [
+            {
+              "id": "1c934c8366dafc29",
+              "role": "master"
+            },
+            {
+              "id": "5b98c0dd4cefc5d8",
+              "role": "data_distributor"
+            },
+            {
+              "id": "6e378458d94ac098",
+              "role": "ratekeeper"
+            },
+            {
+              "id": "1f31b06672e0ff09",
+              "role": "consistency_scan"
+            },
+            {
+              "data_version": 109620078,
+              "durable_bytes": {
+                "counter": 1530,
+                "hz": 305.998,
+                "roughness": 1528.47
+              },
+              "id": "1498de52f809e748",
+              "input_bytes": {
+                "counter": 6624,
+                "hz": 63.1997,
+                "roughness": 315
+              },
+              "kvstore_available_bytes": 17095135232,
+              "kvstore_free_bytes": 17095135232,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_used_bytes": 104861752,
+              "queue_disk_available_bytes": 17095135232,
+              "queue_disk_free_bytes": 17095135232,
+              "queue_disk_total_bytes": 17871880192,
+              "queue_disk_used_bytes": 159744,
+              "role": "log"
+            },
+            {
+              "bytes_queried": {
+                "counter": 38928,
+                "hz": 4349.96,
+                "roughness": 4305.51
+              },
+              "data_lag": {
+                "seconds": 1.06043,
+                "versions": 1060428
+              },
+              "data_version": 109245722,
+              "durability_lag": {
+                "seconds": 5,
+                "versions": 5000000
+              },
+              "durable_bytes": {
+                "counter": 84770,
+                "hz": 9212.32,
+                "roughness": 34913
+              },
+              "durable_version": 104245722,
+              "fetched_versions": {
+                "counter": 109245722,
+                "hz": 1061740,
+                "roughness": 1061790
+              },
+              "fetches_from_logs": {
+                "counter": 21,
+                "hz": 0.9999910000000001,
+                "roughness": 0.000042674500000000006
+              },
+              "finished_queries": {
+                "counter": 133,
+                "hz": 6.59994,
+                "roughness": 5.52886
+              },
+              "id": "a0477f832e67e06e",
+              "input_bytes": {
+                "counter": 84770,
+                "hz": 0,
+                "roughness": -1
+              },
+              "keys_queried": {
+                "counter": 147,
+                "hz": 11.9999,
+                "roughness": 10.88
+              },
+              "kvstore_available_bytes": 17095217152,
+              "kvstore_free_bytes": 17095217152,
+              "kvstore_inline_keys": 0,
+              "kvstore_total_bytes": 17871880192,
+              "kvstore_total_nodes": 0,
+              "kvstore_total_size": 0,
+              "kvstore_used_bytes": 104878232,
+              "local_rate": 100,
+              "low_priority_queries": {
+                "counter": 0,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutation_bytes": {
+                "counter": 9211,
+                "hz": 0,
+                "roughness": -1
+              },
+              "mutations": {
+                "counter": 78,
+                "hz": 0,
+                "roughness": -1
+              },
+              "query_queue_max": 3,
+              "role": "storage",
+              "storage_metadata": {
+                "created_time_datetime": "2026-10-28 08:54:41.535 +0000",
+                "created_time_timestamp": 1793177681.5356097,
+                "storage_engine": "ssd-2"
+              },
+              "stored_bytes": 0,
+              "total_queries": {
+                "counter": 133,
+                "hz": 6.59994,
+                "roughness": 5.52886
+              },
+              "tss": false
+            },
+            {
+              "id": "d8db538547adf345",
+              "role": "resolver"
+            }
+          ],
+          "run_loop_busy": 0.00836775,
+          "uptime_seconds": 15.0001,
+          "version": "7.3.77"
+        }
+      },
+      "protocol_version": "fdb00b073000000",
+      "qos": {
+        "batch_performance_limited_by": {
+          "description": "The database is not being saturated by the workload.",
+          "name": "workload",
+          "reason_id": 2
+        },
+        "batch_released_transactions_per_second": 0.553288,
+        "batch_transactions_per_second_limit": 1153440,
+        "limiting_data_lag_storage_server": {
+          "seconds": 0,
+          "versions": 0
+        },
+        "limiting_durability_lag_storage_server": {
+          "seconds": 18.1969,
+          "versions": 18196935
+        },
+        "limiting_queue_bytes_storage_server": 3669,
+        "performance_limited_by": {
+          "description": "The database is not being saturated by the workload.",
+          "name": "workload",
+          "reason_id": 2
+        },
+        "released_transactions_per_second": 11.1278,
+        "throttled_tags": {
+          "auto": {
+            "busy_read": 0,
+            "busy_write": 0,
+            "count": 0,
+            "recommended_only": 0
+          },
+          "manual": {
+            "count": 0
+          }
+        },
+        "transactions_per_second_limit": 361314000,
+        "worst_data_lag_storage_server": {
+          "seconds": 0,
+          "versions": 0
+        },
+        "worst_durability_lag_storage_server": {
+          "seconds": 18.3389,
+          "versions": 18338892
+        },
+        "worst_queue_bytes_log_server": 30557,
+        "worst_queue_bytes_storage_server": 3741
+      },
+      "recovery_state": {
+        "active_generations": 1,
+        "description": "Recovery complete.",
+        "name": "fully_recovered",
+        "seconds_since_last_recovered": 10.5211
+      },
+      "tenants": {
+        "num_tenants": 0
+      },
+      "version_epoch": {
+        "enabled": false
+      },
+      "workload": {
+        "bytes": {
+          "read": {
+            "counter": 54369,
+            "hz": 4820.16,
+            "roughness": 3926.56
+          },
+          "written": {
+            "counter": 1321,
+            "hz": 13.9999,
+            "roughness": 69
+          }
+        },
+        "keys": {
+          "read": {
+            "counter": 325,
+            "hz": 21.1998,
+            "roughness": 9.30608
+          }
+        },
+        "operations": {
+          "location_requests": {
+            "counter": 13,
+            "hz": 0,
+            "roughness": 0
+          },
+          "low_priority_reads": {
+            "counter": 0,
+            "hz": 0,
+            "roughness": 0
+          },
+          "memory_errors": {
+            "counter": 0,
+            "hz": 0,
+            "roughness": 0
+          },
+          "read_requests": {
+            "counter": 367,
+            "hz": 24.7998,
+            "roughness": 10.8823
+          },
+          "reads": {
+            "counter": 367,
+            "hz": 24.7998,
+            "roughness": 10.8823
+          },
+          "writes": {
+            "counter": 19,
+            "hz": 0.399998,
+            "roughness": 1
+          }
+        },
+        "transactions": {
+          "committed": {
+            "counter": 18,
+            "hz": 0.9999950000000001,
+            "roughness": 0.08860580000000001
+          },
+          "conflicted": {
+            "counter": 0,
+            "hz": 0,
+            "roughness": 0
+          },
+          "rejected_for_queued_too_long": {
+            "counter": 0,
+            "hz": 0,
+            "roughness": 0
+          },
+          "started": {
+            "counter": 190,
+            "hz": 15.2,
+            "roughness": 6.07387
+          },
+          "started_batch_priority": {
+            "counter": 9,
+            "hz": 0.799999,
+            "roughness": 0.00004458380000000001
+          },
+          "started_default_priority": {
+            "counter": 64,
+            "hz": 4.6,
+            "roughness": 2.61157
+          },
+          "started_immediate_priority": {
+            "counter": 117,
+            "hz": 9.79999,
+            "roughness": 4.43989
+          }
+        }
+      }
+    }
+  },
+  "processes": [
+    {
+      "name": "fdbserver-1",
+      "pid": 28908,
+      "port": 49521,
+      "zoneid": "linked_zone_1",
+      "machineid": "linked_machine_1",
+      "stdout": "/tmp/rebase-linked-read-study/fdb3-1024-server-1.stdout.log",
+      "stderr": "/tmp/rebase-linked-read-study/fdb3-1024-server-1.stderr.log",
+      "exitCode": null,
+      "signal": "SIGTERM"
+    },
+    {
+      "name": "fdbserver-2",
+      "pid": 28909,
+      "port": 49522,
+      "zoneid": "linked_zone_2",
+      "machineid": "linked_machine_2",
+      "stdout": "/tmp/rebase-linked-read-study/fdb3-1024-server-2.stdout.log",
+      "stderr": "/tmp/rebase-linked-read-study/fdb3-1024-server-2.stderr.log",
+      "exitCode": null,
+      "signal": "SIGTERM"
+    },
+    {
+      "name": "fdbserver-3",
+      "pid": 28910,
+      "port": 49523,
+      "zoneid": "linked_zone_3",
+      "machineid": "linked_machine_3",
+      "stdout": "/tmp/rebase-linked-read-study/fdb3-1024-server-3.stdout.log",
+      "stderr": "/tmp/rebase-linked-read-study/fdb3-1024-server-3.stderr.log",
+      "exitCode": null,
+      "signal": "SIGTERM"
+    }
+  ],
+  "native": {
+    "stdout": "/tmp/rebase-linked-read-study/foundationdb-three-1024.jsonl",
+    "stderr": "/tmp/rebase-linked-read-study/foundationdb-three-1024.stderr.log",
+    "exitCode": null,
+    "signal": "SIGTERM",
+    "timedOut": false
+  },
+  "pageNative": {
+    "stdout": "/tmp/rebase-linked-read-study/page-foundationdb-three-1024.jsonl",
+    "stderr": "/tmp/rebase-linked-read-study/page-foundationdb-three-1024.stderr.log",
+    "exitCode": null,
+    "signal": null,
+    "timedOut": false,
+    "skipped": true
+  },
+  "errors": [
+    "owned allocation or filesystem free-space guard exceeded",
+    "page-bench skipped because bench exited null"
+  ],
+  "statusBeforeData": "{\n    \"client\" : {\n        \"cluster_file\" : {\n            \"path\" : \"/tmp/rebase-linked-read-study/fdb3-1024.cluster\",\n            \"up_to_date\" : true\n        },\n        \"coordinators\" : {\n            \"coordinators\" : [\n                {\n                    \"address\" : \"127.0.0.1:49521\",\n                    \"protocol\" : \"0fdb00b073000000\",\n                    \"reachable\" : true\n                }\n            ],\n            \"quorum_reachable\" : true\n        },\n        \"database_status\" : {\n            \"available\" : true,\n            \"healthy\" : true\n        },\n        \"messages\" : [\n        ],\n        \"timestamp\" : 1793177693\n    },\n    \"cluster\" : {\n        \"active_primary_dc\" : \"linked_dc\",\n        \"active_tss_count\" : 0,\n        \"bounce_impact\" : {\n            \"can_clean_bounce\" : true\n        },\n        \"clients\" : {\n            \"count\" : 10,\n            \"supported_versions\" : [\n                {\n                    \"client_version\" : \"7.3.77\",\n                    \"connected_clients\" : [\n                        {\n                            \"address\" : \"127.0.0.1:46962\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46966\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46976\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46990\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47002\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47006\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47016\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52834\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52848\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52858\",\n                            \"log_group\" : \"default\"\n                        }\n                    ],\n                    \"count\" : 10,\n                    \"max_protocol_clients\" : [\n                        {\n                            \"address\" : \"127.0.0.1:46962\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46966\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46976\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:46990\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47002\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47006\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:47016\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52834\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52848\",\n                            \"log_group\" : \"default\"\n                        },\n                        {\n                            \"address\" : \"127.0.0.1:52858\",\n                            \"log_group\" : \"default\"\n                        }\n                    ],\n                    \"max_protocol_count\" : 10,\n                    \"protocol_version\" : \"fdb00b073000000\",\n                    \"source_version\" : \"3ea44ce1d9003ad095e408039e1f755c319c4dfb\"\n                }\n            ]\n        },\n        \"cluster_controller_timestamp\" : 1793177693,\n        \"configuration\" : {\n            \"backup_worker_enabled\" : 0,\n            \"blob_granules_enabled\" : 0,\n            \"commit_proxies\" : 3,\n            \"coordinators_count\" : 1,\n            \"encryption_at_rest_mode\" : \"disabled\",\n            \"excluded_servers\" : [\n            ],\n            \"grv_proxies\" : 1,\n            \"log_engine\" : \"ssd-2\",\n            \"log_spill\" : 2,\n            \"logs\" : 3,\n            \"perpetual_storage_wiggle\" : 0,\n            \"perpetual_storage_wiggle_engine\" : \"none\",\n            \"perpetual_storage_wiggle_locality\" : \"0\",\n            \"proxies\" : 4,\n            \"redundancy_mode\" : \"triple\",\n            \"resolvers\" : 1,\n            \"storage_engine\" : \"ssd-2\",\n            \"storage_migration_type\" : \"disabled\",\n            \"tenant_mode\" : \"disabled\",\n            \"usable_regions\" : 1\n        },\n        \"configuration_database\" : {\n            \"commits\" : [\n            ],\n            \"last_compacted_version\" : 0,\n            \"most_recent_version\" : 0,\n            \"mutations\" : [\n            ],\n            \"snapshot\" : {\n            }\n        },\n        \"connection_string\" : \"linkedstudy3x1024:linkedstudy3x1024@127.0.0.1:49521\",\n        \"data\" : {\n            \"least_operating_space_bytes_log_server\" : 16201647243,\n            \"least_operating_space_bytes_storage_server\" : 16201647018,\n            \"state\" : {\n                \"description\" : \"(Re)initializing automatic data distribution\",\n                \"name\" : \"initializing\"\n            },\n            \"total_disk_used_bytes\" : 629219952\n        },\n        \"database_available\" : true,\n        \"database_lock_state\" : {\n            \"locked\" : false\n        },\n        \"datacenter_lag\" : {\n            \"seconds\" : 0,\n            \"versions\" : 0\n        },\n        \"degraded_processes\" : 0,\n        \"fault_tolerance\" : {\n            \"max_zone_failures_without_losing_availability\" : 0,\n            \"max_zone_failures_without_losing_data\" : 0\n        },\n        \"full_replication\" : true,\n        \"generation\" : 4,\n        \"idempotency_ids\" : {\n            \"size_bytes\" : 0\n        },\n        \"incompatible_connections\" : [\n        ],\n        \"latency_probe\" : {\n            \"batch_priority_transaction_start_seconds\" : 0.00030422200000000004,\n            \"commit_seconds\" : 0.00119305,\n            \"immediate_priority_transaction_start_seconds\" : 0.00015830999999999999,\n            \"read_seconds\" : 2.1457700000000003e-05,\n            \"transaction_start_seconds\" : 0.00034236900000000003\n        },\n        \"layers\" : {\n            \"_valid\" : true\n        },\n        \"logs\" : [\n            {\n                \"begin_version\" : 76049,\n                \"current\" : true,\n                \"epoch\" : 4,\n                \"log_fault_tolerance\" : 2,\n                \"log_interfaces\" : [\n                    {\n                        \"address\" : \"127.0.0.1:49523\",\n                        \"healthy\" : true,\n                        \"id\" : \"1498de52f809e748\"\n                    },\n                    {\n                        \"address\" : \"127.0.0.1:49522\",\n                        \"healthy\" : true,\n                        \"id\" : \"820d41ff392ecab7\"\n                    },\n                    {\n                        \"address\" : \"127.0.0.1:49521\",\n                        \"healthy\" : true,\n                        \"id\" : \"f8f5240e11555f70\"\n                    }\n                ],\n                \"log_replication_factor\" : 3,\n                \"log_write_anti_quorum\" : 0,\n                \"possibly_losing_data\" : false\n            }\n        ],\n        \"lowest_compatible_protocol_version\" : \"fdb00b072000000\",\n        \"machines\" : {\n            \"linked_machine_1\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_1\",\n                    \"processid\" : \"a72123aa99bdfc9170613ec8dc013c43\",\n                    \"zoneid\" : \"linked_zone_1\"\n                },\n                \"machine_id\" : \"linked_machine_1\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.1280000000000001\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.1280000000000001\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            },\n            \"linked_machine_2\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024100000000001\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_2\",\n                    \"processid\" : \"30ac0f036597770ad40a55a13304951c\",\n                    \"zoneid\" : \"linked_zone_2\"\n                },\n                \"machine_id\" : \"linked_machine_2\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            },\n            \"linked_machine_3\" : {\n                \"address\" : \"127.0.0.1\",\n                \"contributing_workers\" : 1,\n                \"cpu\" : {\n                    \"logical_core_utilization\" : 0.010024100000000001\n                },\n                \"datacenter_id\" : \"linked_dc\",\n                \"excluded\" : false,\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_3\",\n                    \"processid\" : \"f1256d89a55b29f149562cb13941bc8b\",\n                    \"zoneid\" : \"linked_zone_3\"\n                },\n                \"machine_id\" : \"linked_machine_3\",\n                \"memory\" : {\n                    \"committed_bytes\" : 1731477504,\n                    \"free_bytes\" : 34012282880,\n                    \"total_bytes\" : 35743760384\n                },\n                \"network\" : {\n                    \"megabits_received\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 1.12686\n                    },\n                    \"tcp_segments_retransmitted\" : {\n                        \"hz\" : 0\n                    }\n                }\n            }\n        },\n        \"messages\" : [\n        ],\n        \"metacluster\" : {\n            \"cluster_type\" : \"standalone\"\n        },\n        \"newest_protocol_version\" : \"fdb00b073000000\",\n        \"page_cache\" : {\n            \"log_hit_rate\" : 0.95744700000000005,\n            \"storage_hit_rate\" : 0.95744700000000005\n        },\n        \"processes\" : {\n            \"30ac0f036597770ad40a55a13304951c\" : {\n                \"address\" : \"127.0.0.1:49522\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49522 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-2 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-2 --locality-dcid linked_dc --locality-zoneid linked_zone_2 --locality-machineid linked_machine_2\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0133104\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095147520,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_2\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_2\",\n                    \"processid\" : \"30ac0f036597770ad40a55a13304951c\",\n                    \"zoneid\" : \"linked_zone_2\"\n                },\n                \"machine_id\" : \"linked_machine_2\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 87822336,\n                    \"unused_allocated_memory\" : 131072,\n                    \"used_bytes\" : 242941952\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0.99998900000000002\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0.79999100000000001\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.44541600000000003\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.34364400000000001\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"id\" : \"cdc49f1304fbb3dd\",\n                        \"role\" : \"cluster_controller\"\n                    },\n                    {\n                        \"id\" : \"84c42d1ec71b9d0d\",\n                        \"role\" : \"grv_proxy\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.6600000000001\n                        },\n                        \"id\" : \"820d41ff392ecab7\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.199599999999997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 12733,\n                            \"hz\" : 470.19799999999998,\n                            \"roughness\" : 420.80700000000002\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3500000000004,\n                            \"roughness\" : 34915.800000000003\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 18,\n                            \"hz\" : 0.99999500000000008,\n                            \"roughness\" : 4.3083700000000002e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 167,\n                            \"hz\" : 18.1999,\n                            \"roughness\" : 12.823600000000001\n                        },\n                        \"id\" : \"8ebd92c58fe8eef8\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 134,\n                            \"hz\" : 9.1999499999999994,\n                            \"roughness\" : 7.2531400000000001\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 7,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 167,\n                            \"hz\" : 18.1999,\n                            \"roughness\" : 12.823600000000001\n                        },\n                        \"tss\" : false\n                    }\n                ],\n                \"run_loop_busy\" : 0.009897679999999999,\n                \"uptime_seconds\" : 15.0001,\n                \"version\" : \"7.3.77\"\n            },\n            \"a72123aa99bdfc9170613ec8dc013c43\" : {\n                \"address\" : \"127.0.0.1:49521\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49521 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-1 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-1 --locality-dcid linked_dc --locality-zoneid linked_zone_1 --locality-machineid linked_machine_1\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0078845400000000006\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095135232,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_1\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_1\",\n                    \"processid\" : \"a72123aa99bdfc9170613ec8dc013c43\",\n                    \"zoneid\" : \"linked_zone_1\"\n                },\n                \"machine_id\" : \"linked_machine_1\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 84262912,\n                    \"unused_allocated_memory\" : 131072,\n                    \"used_bytes\" : 244912128\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0.99999300000000002\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0.79999400000000009\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.144453\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.27319500000000002\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"role\" : \"coordinator\"\n                    },\n                    {\n                        \"id\" : \"3eba603fe905c179\",\n                        \"role\" : \"commit_proxy\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.5799999999999\n                        },\n                        \"id\" : \"f8f5240e11555f70\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.1997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 2708,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3400000000001,\n                            \"roughness\" : 34918.400000000001\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 22,\n                            \"hz\" : 0.99999300000000002,\n                            \"roughness\" : 4.1967300000000007e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 67,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"id\" : \"811dfb5a1074f997\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 44,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 0,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 67,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"tss\" : false\n                    }\n                ],\n                \"run_loop_busy\" : 0.0055554999999999997,\n                \"uptime_seconds\" : 15.002599999999999,\n                \"version\" : \"7.3.77\"\n            },\n            \"f1256d89a55b29f149562cb13941bc8b\" : {\n                \"address\" : \"127.0.0.1:49523\",\n                \"class_source\" : \"command_line\",\n                \"class_type\" : \"unset\",\n                \"command_line\" : \"/workspace/ReBase/rebase-next/target/g7-environment/upgrade-7.3.77/usr/sbin/fdbserver -p 127.0.0.1:49523 -C /tmp/rebase-linked-read-study/fdb3-1024.cluster -m 1024 --cache-memory 64 --storage-memory 64 -d /tmp/rebase-linked-read-study/fdb3-1024-data-3 -L /tmp/rebase-linked-read-study/fdb3-1024-logs-3 --locality-dcid linked_dc --locality-zoneid linked_zone_3 --locality-machineid linked_machine_3\",\n                \"cpu\" : {\n                    \"usage_cores\" : 0.0121301\n                },\n                \"disk\" : {\n                    \"busy\" : 0,\n                    \"free_bytes\" : 17095147520,\n                    \"reads\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    },\n                    \"total_bytes\" : 17871880192,\n                    \"writes\" : {\n                        \"counter\" : 0,\n                        \"hz\" : 0,\n                        \"sectors\" : 0\n                    }\n                },\n                \"excluded\" : false,\n                \"fault_domain\" : \"linked_zone_3\",\n                \"locality\" : {\n                    \"dcid\" : \"linked_dc\",\n                    \"machineid\" : \"linked_machine_3\",\n                    \"processid\" : \"f1256d89a55b29f149562cb13941bc8b\",\n                    \"zoneid\" : \"linked_zone_3\"\n                },\n                \"machine_id\" : \"linked_machine_3\",\n                \"memory\" : {\n                    \"available_bytes\" : 1073741824,\n                    \"limit_bytes\" : 1073741824,\n                    \"rss_bytes\" : 86081536,\n                    \"unused_allocated_memory\" : 0,\n                    \"used_bytes\" : 232062976\n                },\n                \"messages\" : [\n                ],\n                \"network\" : {\n                    \"connection_errors\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_closed\" : {\n                        \"hz\" : 0\n                    },\n                    \"connections_established\" : {\n                        \"hz\" : 0\n                    },\n                    \"current_connections\" : 2,\n                    \"megabits_received\" : {\n                        \"hz\" : 0.19369400000000001\n                    },\n                    \"megabits_sent\" : {\n                        \"hz\" : 0.29691300000000004\n                    },\n                    \"tls_policy_failures\" : {\n                        \"hz\" : 0\n                    }\n                },\n                \"roles\" : [\n                    {\n                        \"id\" : \"1c934c8366dafc29\",\n                        \"role\" : \"master\"\n                    },\n                    {\n                        \"id\" : \"5b98c0dd4cefc5d8\",\n                        \"role\" : \"data_distributor\"\n                    },\n                    {\n                        \"id\" : \"6e378458d94ac098\",\n                        \"role\" : \"ratekeeper\"\n                    },\n                    {\n                        \"id\" : \"1f31b06672e0ff09\",\n                        \"role\" : \"consistency_scan\"\n                    },\n                    {\n                        \"data_version\" : 109620078,\n                        \"durable_bytes\" : {\n                            \"counter\" : 1530,\n                            \"hz\" : 305.99799999999999,\n                            \"roughness\" : 1528.47\n                        },\n                        \"id\" : \"1498de52f809e748\",\n                        \"input_bytes\" : {\n                            \"counter\" : 6624,\n                            \"hz\" : 63.1997,\n                            \"roughness\" : 315\n                        },\n                        \"kvstore_available_bytes\" : 17095135232,\n                        \"kvstore_free_bytes\" : 17095135232,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_used_bytes\" : 104861752,\n                        \"queue_disk_available_bytes\" : 17095135232,\n                        \"queue_disk_free_bytes\" : 17095135232,\n                        \"queue_disk_total_bytes\" : 17871880192,\n                        \"queue_disk_used_bytes\" : 159744,\n                        \"role\" : \"log\"\n                    },\n                    {\n                        \"bytes_queried\" : {\n                            \"counter\" : 38928,\n                            \"hz\" : 4349.96,\n                            \"roughness\" : 4305.5100000000002\n                        },\n                        \"data_lag\" : {\n                            \"seconds\" : 1.06043,\n                            \"versions\" : 1060428\n                        },\n                        \"data_version\" : 109245722,\n                        \"durability_lag\" : {\n                            \"seconds\" : 5,\n                            \"versions\" : 5000000\n                        },\n                        \"durable_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 9212.3199999999997,\n                            \"roughness\" : 34913\n                        },\n                        \"durable_version\" : 104245722,\n                        \"fetched_versions\" : {\n                            \"counter\" : 109245722,\n                            \"hz\" : 1061740,\n                            \"roughness\" : 1061790\n                        },\n                        \"fetches_from_logs\" : {\n                            \"counter\" : 21,\n                            \"hz\" : 0.99999100000000007,\n                            \"roughness\" : 4.2674500000000006e-05\n                        },\n                        \"finished_queries\" : {\n                            \"counter\" : 133,\n                            \"hz\" : 6.5999400000000001,\n                            \"roughness\" : 5.5288599999999999\n                        },\n                        \"id\" : \"a0477f832e67e06e\",\n                        \"input_bytes\" : {\n                            \"counter\" : 84770,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"keys_queried\" : {\n                            \"counter\" : 147,\n                            \"hz\" : 11.9999,\n                            \"roughness\" : 10.880000000000001\n                        },\n                        \"kvstore_available_bytes\" : 17095217152,\n                        \"kvstore_free_bytes\" : 17095217152,\n                        \"kvstore_inline_keys\" : 0,\n                        \"kvstore_total_bytes\" : 17871880192,\n                        \"kvstore_total_nodes\" : 0,\n                        \"kvstore_total_size\" : 0,\n                        \"kvstore_used_bytes\" : 104878232,\n                        \"local_rate\" : 100,\n                        \"low_priority_queries\" : {\n                            \"counter\" : 0,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutation_bytes\" : {\n                            \"counter\" : 9211,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"mutations\" : {\n                            \"counter\" : 78,\n                            \"hz\" : 0,\n                            \"roughness\" : -1\n                        },\n                        \"query_queue_max\" : 3,\n                        \"role\" : \"storage\",\n                        \"storage_metadata\" : {\n                            \"created_time_datetime\" : \"2026-10-28 08:54:41.535 +0000\",\n                            \"created_time_timestamp\" : 1793177681.5356097,\n                            \"storage_engine\" : \"ssd-2\"\n                        },\n                        \"stored_bytes\" : 0,\n                        \"total_queries\" : {\n                            \"counter\" : 133,\n                            \"hz\" : 6.5999400000000001,\n                            \"roughness\" : 5.5288599999999999\n                        },\n                        \"tss\" : false\n                    },\n                    {\n                        \"id\" : \"d8db538547adf345\",\n                        \"role\" : \"resolver\"\n                    }\n                ],\n                \"run_loop_busy\" : 0.0083677500000000002,\n                \"uptime_seconds\" : 15.0001,\n                \"version\" : \"7.3.77\"\n            }\n        },\n        \"protocol_version\" : \"fdb00b073000000\",\n        \"qos\" : {\n            \"batch_performance_limited_by\" : {\n                \"description\" : \"The database is not being saturated by the workload.\",\n                \"name\" : \"workload\",\n                \"reason_id\" : 2\n            },\n            \"batch_released_transactions_per_second\" : 0.553288,\n            \"batch_transactions_per_second_limit\" : 1153440,\n            \"limiting_data_lag_storage_server\" : {\n                \"seconds\" : 0,\n                \"versions\" : 0\n            },\n            \"limiting_durability_lag_storage_server\" : {\n                \"seconds\" : 18.196899999999999,\n                \"versions\" : 18196935\n            },\n            \"limiting_queue_bytes_storage_server\" : 3669,\n            \"performance_limited_by\" : {\n                \"description\" : \"The database is not being saturated by the workload.\",\n                \"name\" : \"workload\",\n                \"reason_id\" : 2\n            },\n            \"released_transactions_per_second\" : 11.127800000000001,\n            \"throttled_tags\" : {\n                \"auto\" : {\n                    \"busy_read\" : 0,\n                    \"busy_write\" : 0,\n                    \"count\" : 0,\n                    \"recommended_only\" : 0\n                },\n                \"manual\" : {\n                    \"count\" : 0\n                }\n            },\n            \"transactions_per_second_limit\" : 361314000,\n            \"worst_data_lag_storage_server\" : {\n                \"seconds\" : 0,\n                \"versions\" : 0\n            },\n            \"worst_durability_lag_storage_server\" : {\n                \"seconds\" : 18.338899999999999,\n                \"versions\" : 18338892\n            },\n            \"worst_queue_bytes_log_server\" : 30557,\n            \"worst_queue_bytes_storage_server\" : 3741\n        },\n        \"recovery_state\" : {\n            \"active_generations\" : 1,\n            \"description\" : \"Recovery complete.\",\n            \"name\" : \"fully_recovered\",\n            \"seconds_since_last_recovered\" : 10.521100000000001\n        },\n        \"tenants\" : {\n            \"num_tenants\" : 0\n        },\n        \"version_epoch\" : {\n            \"enabled\" : false\n        },\n        \"workload\" : {\n            \"bytes\" : {\n                \"read\" : {\n                    \"counter\" : 54369,\n                    \"hz\" : 4820.1599999999999,\n                    \"roughness\" : 3926.5599999999999\n                },\n                \"written\" : {\n                    \"counter\" : 1321,\n                    \"hz\" : 13.9999,\n                    \"roughness\" : 69\n                }\n            },\n            \"keys\" : {\n                \"read\" : {\n                    \"counter\" : 325,\n                    \"hz\" : 21.1998,\n                    \"roughness\" : 9.3060799999999997\n                }\n            },\n            \"operations\" : {\n                \"location_requests\" : {\n                    \"counter\" : 13,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"low_priority_reads\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"memory_errors\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"read_requests\" : {\n                    \"counter\" : 367,\n                    \"hz\" : 24.799800000000001,\n                    \"roughness\" : 10.882300000000001\n                },\n                \"reads\" : {\n                    \"counter\" : 367,\n                    \"hz\" : 24.799800000000001,\n                    \"roughness\" : 10.882300000000001\n                },\n                \"writes\" : {\n                    \"counter\" : 19,\n                    \"hz\" : 0.39999800000000002,\n                    \"roughness\" : 1\n                }\n            },\n            \"transactions\" : {\n                \"committed\" : {\n                    \"counter\" : 18,\n                    \"hz\" : 0.99999500000000008,\n                    \"roughness\" : 0.088605800000000012\n                },\n                \"conflicted\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"rejected_for_queued_too_long\" : {\n                    \"counter\" : 0,\n                    \"hz\" : 0,\n                    \"roughness\" : 0\n                },\n                \"started\" : {\n                    \"counter\" : 190,\n                    \"hz\" : 15.199999999999999,\n                    \"roughness\" : 6.0738700000000003\n                },\n                \"started_batch_priority\" : {\n                    \"counter\" : 9,\n                    \"hz\" : 0.79999900000000002,\n                    \"roughness\" : 4.4583800000000012e-05\n                },\n                \"started_default_priority\" : {\n                    \"counter\" : 64,\n                    \"hz\" : 4.5999999999999996,\n                    \"roughness\" : 2.6115699999999999\n                },\n                \"started_immediate_priority\" : {\n                    \"counter\" : 117,\n                    \"hz\" : 9.7999899999999993,\n                    \"roughness\" : 4.4398900000000001\n                }\n            }\n        }\n    }\n}\n",
+  "diskBeforeData": {
+    "logical_bytes": 631050073,
+    "allocated_bytes": 631054336
+  },
+  "diskAfterNative": {
+    "logical_bytes": 1623776257,
+    "allocated_bytes": 1623781376
+  }
+}

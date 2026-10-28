@@ -1,0 +1,1658 @@
+{
+  "note": "Final optimized current-source cases; excluded debugpilot andoptimizedpreflight",
+  "count": 106,
+  "passed": 106,
+  "failed": [],
+  "largeTraceIncomplete": 28,
+  "sourceBound": "f60b60e1f562a4f546b7de34a82f6b233f2b933396d13ec8285510ab4bf162e7",
+  "observations": [
+    {
+      "backend": "redb",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 301064,
+      "samples_ns": [
+        301675,
+        301064,
+        272771
+      ],
+      "attempt": {
+        "key_loads": 51,
+        "loaded_bytes": 34725,
+        "node_visits": 50
+      },
+      "continuation": "835b459d-0ebd-44be-9b40-a02e57c045b1",
+      "hydrated_records": 0,
+      "loader_key_bytes": 969,
+      "loader_value_bytes": 34725,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 51,
+          "attemptLoadedValueBytes": 34725,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 51,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 51,
+          "nodeVisits": 50,
+          "readKeyBytes": 969,
+          "readValueBytes": 34725,
+          "retryCount": 0,
+          "returnedRows": 51,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 13,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 538501,
+      "samples_ns": [
+        556378,
+        515988,
+        538501
+      ],
+      "attempt": {
+        "key_loads": 101,
+        "loaded_bytes": 51225,
+        "node_visits": 50
+      },
+      "continuation": "835b459d-0ebd-44be-9b40-a02e57c045b1",
+      "hydrated_records": 50,
+      "loader_key_bytes": 1819,
+      "loader_value_bytes": 51225,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 101,
+          "attemptLoadedValueBytes": 51225,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 101,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 101,
+          "nodeVisits": 50,
+          "readKeyBytes": 1819,
+          "readValueBytes": 51225,
+          "retryCount": 0,
+          "returnedRows": 101,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 174873,
+      "samples_ns": [
+        174873,
+        190747,
+        173121
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 50,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 1,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 1400,
+          "readValueBytes": 16500,
+          "retryCount": 0,
+          "returnedRows": 50,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 569368,
+      "samples_ns": [
+        581616,
+        569368,
+        548457
+      ],
+      "attempt": {
+        "key_loads": 101,
+        "loaded_bytes": 69095,
+        "node_visits": 100
+      },
+      "continuation": "d66de184-4bd0-48f9-935e-8a1b0e9b4c4b",
+      "hydrated_records": 0,
+      "loader_key_bytes": 1919,
+      "loader_value_bytes": 69095,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 101,
+          "attemptLoadedValueBytes": 69095,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 101,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 101,
+          "nodeVisits": 100,
+          "readKeyBytes": 1919,
+          "readValueBytes": 69095,
+          "retryCount": 0,
+          "returnedRows": 101,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 17,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 1082422,
+      "samples_ns": [
+        1109573,
+        1082422,
+        1062912
+      ],
+      "attempt": {
+        "key_loads": 201,
+        "loaded_bytes": 102095,
+        "node_visits": 100
+      },
+      "continuation": "d66de184-4bd0-48f9-935e-8a1b0e9b4c4b",
+      "hydrated_records": 100,
+      "loader_key_bytes": 3619,
+      "loader_value_bytes": 102095,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 201,
+          "attemptLoadedValueBytes": 102095,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 201,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 201,
+          "nodeVisits": 100,
+          "readKeyBytes": 3619,
+          "readValueBytes": 102095,
+          "retryCount": 0,
+          "returnedRows": 201,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 352702,
+      "samples_ns": [
+        352681,
+        367003,
+        352702
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 100,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 2,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 2800,
+          "readValueBytes": 33000,
+          "retryCount": 0,
+          "returnedRows": 100,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 6190810,
+      "samples_ns": [
+        6212723,
+        6190810,
+        6036788
+      ],
+      "attempt": {
+        "key_loads": 1001,
+        "loaded_bytes": 689220,
+        "node_visits": 1000
+      },
+      "continuation": "13b46a5d-f9e0-4510-bc09-deab387f2ad2",
+      "hydrated_records": 0,
+      "loader_key_bytes": 19019,
+      "loader_value_bytes": 689220,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 1001,
+          "attemptLoadedValueBytes": 689220,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 1001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 1001,
+          "nodeVisits": 1000,
+          "readKeyBytes": 19019,
+          "readValueBytes": 689220,
+          "retryCount": 0,
+          "returnedRows": 1001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 11894006,
+      "samples_ns": [
+        11894006,
+        11758239,
+        12059575
+      ],
+      "attempt": {
+        "key_loads": 2001,
+        "loaded_bytes": 1019695,
+        "node_visits": 1000
+      },
+      "continuation": "13b46a5d-f9e0-4510-bc09-deab387f2ad2",
+      "hydrated_records": 1000,
+      "loader_key_bytes": 36019,
+      "loader_value_bytes": 1019695,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 2001,
+          "attemptLoadedValueBytes": 1019695,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 2001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 2001,
+          "nodeVisits": 1000,
+          "readKeyBytes": 36019,
+          "readValueBytes": 1019695,
+          "retryCount": 0,
+          "returnedRows": 2001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 3609850,
+      "samples_ns": [
+        3614757,
+        3609850,
+        3597822
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 1000,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 16,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 28000,
+          "readValueBytes": 330475,
+          "retryCount": 0,
+          "returnedRows": 1000,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 70719618,
+      "samples_ns": [
+        70719618,
+        71193753,
+        70494198
+      ],
+      "attempt": {
+        "key_loads": 10001,
+        "loaded_bytes": 6932884,
+        "node_visits": 10000
+      },
+      "continuation": "84660d52-d35d-4300-9415-2abcf47fbbca",
+      "hydrated_records": 0,
+      "loader_key_bytes": 190019,
+      "loader_value_bytes": 6932884,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 10001,
+          "attemptLoadedValueBytes": 6932884,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 10001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 10001,
+          "nodeVisits": 10000,
+          "readKeyBytes": 190019,
+          "readValueBytes": 6932884,
+          "retryCount": 0,
+          "returnedRows": 10001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 140704568,
+      "samples_ns": [
+        140704568,
+        140365848,
+        142192891
+      ],
+      "attempt": {
+        "key_loads": 20001,
+        "loaded_bytes": 10246584,
+        "node_visits": 10000
+      },
+      "continuation": "84660d52-d35d-4300-9415-2abcf47fbbca",
+      "hydrated_records": 10000,
+      "loader_key_bytes": 360019,
+      "loader_value_bytes": 10246584,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 20001,
+          "attemptLoadedValueBytes": 10246584,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 20001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 20001,
+          "nodeVisits": 10000,
+          "readKeyBytes": 360019,
+          "readValueBytes": 10246584,
+          "retryCount": 0,
+          "returnedRows": 20001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 36452086,
+      "samples_ns": [
+        40169717,
+        36271253,
+        36452086
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 10000,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 157,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 280000,
+          "readValueBytes": 3313700,
+          "retryCount": 0,
+          "returnedRows": 10000,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "summary_range",
+      "n": 100000,
+      "q": 100000,
+      "median_ns": 5909,
+      "samples_ns": [
+        7591,
+        5909,
+        5408
+      ],
+      "attempt": {
+        "key_loads": 1,
+        "loaded_bytes": 507,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 0,
+      "loader_key_bytes": 19,
+      "loader_value_bytes": 507,
+      "result_rows": 0,
+      "result_sha256": "d2b90e7277c36ec59474eb60637c38d674949c4e7e0fb1ccab3e282f1a661d8b",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 1,
+          "attemptLoadedValueBytes": 507,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 1,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 1,
+          "nodeVisits": 0,
+          "readKeyBytes": 19,
+          "readValueBytes": 507,
+          "retryCount": 0,
+          "returnedRows": 1,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 1,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "redb",
+      "op": "summary_prefix",
+      "n": 100000,
+      "q": 100000,
+      "median_ns": 186892,
+      "samples_ns": [
+        217398,
+        186892,
+        181704
+      ],
+      "attempt": {
+        "key_loads": 33,
+        "loaded_bytes": 24471,
+        "node_visits": 32
+      },
+      "continuation": null,
+      "hydrated_records": 0,
+      "loader_key_bytes": 627,
+      "loader_value_bytes": 24471,
+      "result_rows": 0,
+      "result_sha256": "16461e7471a59d2d36b059b21ce6e7c037d3a4bd40e78204e0708b3127e44bd2",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 33,
+          "attemptLoadedValueBytes": 24471,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 33,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 33,
+          "nodeVisits": 32,
+          "readKeyBytes": 627,
+          "readValueBytes": 24471,
+          "retryCount": 0,
+          "returnedRows": 33,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 17,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 302035,
+      "samples_ns": [
+        287673,
+        302035,
+        304909
+      ],
+      "attempt": {
+        "key_loads": 51,
+        "loaded_bytes": 34725,
+        "node_visits": 50
+      },
+      "continuation": "835b459d-0ebd-44be-9b40-a02e57c045b1",
+      "hydrated_records": 0,
+      "loader_key_bytes": 969,
+      "loader_value_bytes": 34725,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 51,
+          "attemptLoadedValueBytes": 34725,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 51,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 51,
+          "nodeVisits": 50,
+          "readKeyBytes": 969,
+          "readValueBytes": 34725,
+          "retryCount": 0,
+          "returnedRows": 51,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 13,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 489618,
+      "samples_ns": [
+        489618,
+        473684,
+        569408
+      ],
+      "attempt": {
+        "key_loads": 101,
+        "loaded_bytes": 51225,
+        "node_visits": 50
+      },
+      "continuation": "835b459d-0ebd-44be-9b40-a02e57c045b1",
+      "hydrated_records": 50,
+      "loader_key_bytes": 1819,
+      "loader_value_bytes": 51225,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 101,
+          "attemptLoadedValueBytes": 51225,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 101,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 101,
+          "nodeVisits": 50,
+          "readKeyBytes": 1819,
+          "readValueBytes": 51225,
+          "retryCount": 0,
+          "returnedRows": 101,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 50,
+      "median_ns": 182465,
+      "samples_ns": [
+        186461,
+        182355,
+        182465
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 50,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 50,
+      "result_sha256": "2aac0dda60ccb2238d4db35f8f2df6330014141dcfd43e39b28f12848888af91",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 1,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 1400,
+          "readValueBytes": 16500,
+          "retryCount": 0,
+          "returnedRows": 50,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 549899,
+      "samples_ns": [
+        544541,
+        549899,
+        589198
+      ],
+      "attempt": {
+        "key_loads": 101,
+        "loaded_bytes": 69095,
+        "node_visits": 100
+      },
+      "continuation": "d66de184-4bd0-48f9-935e-8a1b0e9b4c4b",
+      "hydrated_records": 0,
+      "loader_key_bytes": 1919,
+      "loader_value_bytes": 69095,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 101,
+          "attemptLoadedValueBytes": 69095,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 101,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 101,
+          "nodeVisits": 100,
+          "readKeyBytes": 1919,
+          "readValueBytes": 69095,
+          "retryCount": 0,
+          "returnedRows": 101,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 17,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 974999,
+      "samples_ns": [
+        968851,
+        1004794,
+        974999
+      ],
+      "attempt": {
+        "key_loads": 201,
+        "loaded_bytes": 102095,
+        "node_visits": 100
+      },
+      "continuation": "d66de184-4bd0-48f9-935e-8a1b0e9b4c4b",
+      "hydrated_records": 100,
+      "loader_key_bytes": 3619,
+      "loader_value_bytes": 102095,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 201,
+          "attemptLoadedValueBytes": 102095,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 201,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 201,
+          "nodeVisits": 100,
+          "readKeyBytes": 3619,
+          "readValueBytes": 102095,
+          "retryCount": 0,
+          "returnedRows": 201,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 100,
+      "median_ns": 369978,
+      "samples_ns": [
+        368986,
+        383818,
+        369978
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 100,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 100,
+      "result_sha256": "a43f77c2599192ff9acfb38ae5d2de717149fd47ba262d633ffcedc9078c1d74",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 2,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 2800,
+          "readValueBytes": 33000,
+          "retryCount": 0,
+          "returnedRows": 100,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 7825142,
+      "samples_ns": [
+        5419217,
+        10070047,
+        7825142
+      ],
+      "attempt": {
+        "key_loads": 1001,
+        "loaded_bytes": 689220,
+        "node_visits": 1000
+      },
+      "continuation": "13b46a5d-f9e0-4510-bc09-deab387f2ad2",
+      "hydrated_records": 0,
+      "loader_key_bytes": 19019,
+      "loader_value_bytes": 689220,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 1001,
+          "attemptLoadedValueBytes": 689220,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 1001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 1001,
+          "nodeVisits": 1000,
+          "readKeyBytes": 19019,
+          "readValueBytes": 689220,
+          "retryCount": 0,
+          "returnedRows": 1001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 10993027,
+      "samples_ns": [
+        10993027,
+        10488458,
+        14092689
+      ],
+      "attempt": {
+        "key_loads": 2001,
+        "loaded_bytes": 1019695,
+        "node_visits": 1000
+      },
+      "continuation": "13b46a5d-f9e0-4510-bc09-deab387f2ad2",
+      "hydrated_records": 1000,
+      "loader_key_bytes": 36019,
+      "loader_value_bytes": 1019695,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 2001,
+          "attemptLoadedValueBytes": 1019695,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 2001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 2001,
+          "nodeVisits": 1000,
+          "readKeyBytes": 36019,
+          "readValueBytes": 1019695,
+          "retryCount": 0,
+          "returnedRows": 2001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 1000,
+      "median_ns": 3797803,
+      "samples_ns": [
+        3879987,
+        3797803,
+        3763241
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 1000,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 1000,
+      "result_sha256": "cdb58e531cb1df143e2bceb8e595098899d6eb6165d0f927cf8e730d829f6ffd",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 16,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 28000,
+          "readValueBytes": 330475,
+          "retryCount": 0,
+          "returnedRows": 1000,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_ids",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 67051380,
+      "samples_ns": [
+        68213752,
+        66236251,
+        67051380
+      ],
+      "attempt": {
+        "key_loads": 10001,
+        "loaded_bytes": 6932884,
+        "node_visits": 10000
+      },
+      "continuation": "84660d52-d35d-4300-9415-2abcf47fbbca",
+      "hydrated_records": 0,
+      "loader_key_bytes": 190019,
+      "loader_value_bytes": 6932884,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 10001,
+          "attemptLoadedValueBytes": 6932884,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 10001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 10001,
+          "nodeVisits": 10000,
+          "readKeyBytes": 190019,
+          "readValueBytes": 6932884,
+          "retryCount": 0,
+          "returnedRows": 10001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "linked_hydrate",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 127048578,
+      "samples_ns": [
+        128183440,
+        127048578,
+        123330425
+      ],
+      "attempt": {
+        "key_loads": 20001,
+        "loaded_bytes": 10246584,
+        "node_visits": 10000
+      },
+      "continuation": "84660d52-d35d-4300-9415-2abcf47fbbca",
+      "hydrated_records": 10000,
+      "loader_key_bytes": 360019,
+      "loader_value_bytes": 10246584,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": false,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 20001,
+          "attemptLoadedValueBytes": 10246584,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 20001,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 20001,
+          "nodeVisits": 10000,
+          "readKeyBytes": 360019,
+          "readValueBytes": 10246584,
+          "retryCount": 0,
+          "returnedRows": 20001,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": false,
+          "incompleteReason": "unknown-key-provenance",
+          "observedReadDepth": null,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": [
+          "event-overflow",
+          "key-fact-overflow"
+        ]
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "raw_ordered_range",
+      "n": 100000,
+      "q": 10000,
+      "median_ns": 42378566,
+      "samples_ns": [
+        42378566,
+        43730294,
+        39998970
+      ],
+      "attempt": {
+        "key_loads": 0,
+        "loaded_bytes": 0,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 10000,
+      "loader_key_bytes": 0,
+      "loader_value_bytes": 0,
+      "result_rows": 10000,
+      "result_sha256": "5144ad81d1c89e92490f1d23394b88b59649607abe9d9b7f7a465120f4b43911",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 0,
+          "attemptLoadedValueBytes": 0,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 0,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 157,
+          "logicalTouches": 0,
+          "nodeVisits": 0,
+          "readKeyBytes": 280000,
+          "readValueBytes": 3313700,
+          "retryCount": 0,
+          "returnedRows": 10000,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 0,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "summary_range",
+      "n": 100000,
+      "q": 100000,
+      "median_ns": 6370,
+      "samples_ns": [
+        6370,
+        6761,
+        5849
+      ],
+      "attempt": {
+        "key_loads": 1,
+        "loaded_bytes": 507,
+        "node_visits": 0
+      },
+      "continuation": null,
+      "hydrated_records": 0,
+      "loader_key_bytes": 19,
+      "loader_value_bytes": 507,
+      "result_rows": 0,
+      "result_sha256": "d2b90e7277c36ec59474eb60637c38d674949c4e7e0fb1ccab3e282f1a661d8b",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 1,
+          "attemptLoadedValueBytes": 507,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 1,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 1,
+          "nodeVisits": 0,
+          "readKeyBytes": 19,
+          "readValueBytes": 507,
+          "retryCount": 0,
+          "returnedRows": 1,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 1,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    },
+    {
+      "backend": "surrealkv",
+      "op": "summary_prefix",
+      "n": 100000,
+      "q": 100000,
+      "median_ns": 181374,
+      "samples_ns": [
+        181374,
+        185309,
+        179521
+      ],
+      "attempt": {
+        "key_loads": 33,
+        "loaded_bytes": 24471,
+        "node_visits": 32
+      },
+      "continuation": null,
+      "hydrated_records": 0,
+      "loader_key_bytes": 627,
+      "loader_value_bytes": 24471,
+      "result_rows": 0,
+      "result_sha256": "16461e7471a59d2d36b059b21ce6e7c037d3a4bd40e78204e0708b3127e44bd2",
+      "diagnostic": {
+        "complete": true,
+        "counters": {
+          "attemptCacheHits": 0,
+          "attemptLoadAttempts": 33,
+          "attemptLoadedValueBytes": 24471,
+          "bindingApproximateSize": null,
+          "bindingClear": null,
+          "bindingClearRange": null,
+          "bindingGet": null,
+          "bindingGetRange": null,
+          "bindingSet": null,
+          "facadeGet": 33,
+          "facadePut": 0,
+          "facadeRemove": 0,
+          "facadeScan": 0,
+          "logicalTouches": 33,
+          "nodeVisits": 32,
+          "readKeyBytes": 627,
+          "readValueBytes": 24471,
+          "retryCount": 0,
+          "returnedRows": 33,
+          "sdk": null,
+          "selectorVisits": 0,
+          "writeKeyBytes": 0,
+          "writeValueBytes": 0
+        },
+        "dependency": {
+          "complete": true,
+          "incompleteReason": null,
+          "observedReadDepth": 17,
+          "remoteReadRounds": null
+        },
+        "incompleteReasons": []
+      }
+    }
+  ]
+}

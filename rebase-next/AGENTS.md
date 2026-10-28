@@ -5,7 +5,21 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — S0.1 accepted within bounds; stop after checkpoint
+## Current instruction — linked read study; core redesign on hold
+
+The user's latest direction holds the implementation/redesign program and asks
+for a read-cost study of the existing linked/AVL layout. The core source remains
+`1560ba1`. The [linked read study](research/81-linked-read-study.md) records the
+bounded native and actual Store-page measurements, three local FoundationDB
+processes, explicit latency sensitivities, and resource-profile failures. This
+is research evidence, not S0.2 acceptance or a layout selection.
+
+The user requested separate `linked-avl-baseline` and `ordered-index-redesign`
+branches. Preserve the tested existing engine on the former; the latter is a
+reserved starting point, with no redesign implementation yet. Main is unchanged
+by this study. Do not start S0.2 or change the core until the user resumes that
+work. Root alone integrates and pushes the user-selected branches; preserve
+unexpected remote work and never force-push.
 
 The user selected a major redesign on 2026-10-25: Node ESM developer functions
 composed directly in the standard REPL, replacement of Python and redundant
@@ -35,8 +49,8 @@ Settlement dependency lineage remains incomplete; redb serializes writers, and
 local FoundationDB is not multi-host evidence. No layout or performance decision
 is accepted.
 
-The user's latest instruction is to **stop after this S0.1 commit and push**.
-Do not start S0.2 without a later continuation. When resumed, use the committed
+The earlier requested S0.1 stop was completed at `1560ba1`. When the core program
+is resumed, use the committed
 S0.1 source for an optimized, source-bound pilot before the S0.2 campaign. The
 focused report sizes project beyond the existing 64 MiB per-report bound; inspect
 the result's handoff and freeze an explicit bounded fragmentation plan before
@@ -114,7 +128,7 @@ latency. Mark unexecuted obligations incomplete rather than passing mocks.
 
 ## Git and handoff
 
-Commit verified checkpoints on existing main and push in linear order. Fetch
+Commit verified work on the user-selected branch and push in linear order. Fetch
 before integration and preserve unexpected remote work; ordinary pushes only.
 The historical force-with-lease replacement of 1fe6310 is complete and must never
 be replayed. Root alone owns commits/pushes and records exact continuation at

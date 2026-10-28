@@ -1,6 +1,42 @@
-# Compact context — 2026-10-27
+# Compact context — 2026-10-28
 
-## Current handoff — S0.1 accepted within bounds; requested checkpoint stop
+## Current handoff — linked read study complete; redesign remains on hold
+
+The user paused the core redesign to examine the existing engine's linked read
+costs and requested separate `linked-avl-baseline` and `ordered-index-redesign`
+branches. Both start from core source `1560ba1`; the latter has no redesign code.
+This research changes no production code, behavior/codec identity, validation
+rules or admission limits. Main is unchanged. Keep future core changes on hold
+until the user resumes them, rather than automatically proceeding to S0.2.
+
+Read [the study](research/81-linked-read-study.md) and its
+[evidence index](research/evidence/2026-10-28-linked-read-artifacts.json). There
+are 171 timed cases / 513 samples across redb, SurrealKV and three local
+FoundationDB processes. Every matched output hash agrees across adapters.
+The existing public page uses ordered UUID streams and sequential hydration,
+with limit 32 and visit budget 128; it is not a linked-slot row endpoint.
+The research next-chain consumer exercises existing native nodes/records at
+10,000 and 100,000 members with setup validation/admission bypassed only for
+owned fixtures. Summary queries remain separate from returning record rows.
+
+At 100,000 members, final three-process FoundationDB linked hydration medians
+are approximately 17/31/332/3,561 ms for 50/100/1,000/10,000 records. Actual
+Store pages at the admitted 4,096-record fixture take about 22 ms for 100 rows
+over four calls, and 202 ms for 1,000 rows over 32 calls. These are warm local
+native-component measurements, not HTTP/authentication, geographic latency,
+tail guarantees or unrestricted capacity. The measured linked hydration uses
+`2q+1` Attempt loads; binding calls are not measured network round trips.
+
+Final FoundationDB topology is three processes, one host/DC/usable region,
+triple SSD, 1,024 MiB/process. Smaller test profiles OOMed during fixture setup;
+a separate conservative allocation-guard stop was not a database read failure.
+The successful profile, earlier incomplete profiles, cleanup, exact source and
+binary hashes, raw samples and mathematical latency assumptions are retained.
+No real three-region network was available. All owned processes and stores were
+cleaned up. The core program's earlier checkpoints below remain historical and
+accepted only within their recorded bounds.
+
+## Earlier accepted S0.1 handoff
 
 P0 and N0–N6 are accepted within their documented scopes. The final N6 source is
 `1243168424294728968591d69efbe5d836fd36fd`. Its committed-source

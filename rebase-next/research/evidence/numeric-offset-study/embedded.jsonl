@@ -1,0 +1,36 @@
+{"backend":"redb-4.4.0","n":10000,"k":0,"op":"key_seek","client_visible_items_examined":1,"median_ns":711,"samples_ns":[742, 681, 701, 711, 731, 731, 711]}
+{"backend":"redb-4.4.0","n":10000,"k":0,"op":"ordinal_iterate","client_visible_items_examined":1,"median_ns":701,"samples_ns":[761, 681, 701, 671, 1352, 681, 1503]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":0,"op":"key_seek","client_visible_items_examined":1,"median_ns":2714,"samples_ns":[2904, 2855, 2784, 2664, 2714, 2634, 2714]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":0,"op":"ordinal_iterate","client_visible_items_examined":1,"median_ns":2774,"samples_ns":[2774, 2784, 2754, 2764, 2775, 2734, 2834]}
+{"backend":"redb-4.4.0","n":10000,"k":100,"op":"key_seek","client_visible_items_examined":1,"median_ns":711,"samples_ns":[711, 721, 712, 691, 681, 791, 691]}
+{"backend":"redb-4.4.0","n":10000,"k":100,"op":"ordinal_iterate","client_visible_items_examined":101,"median_ns":4356,"samples_ns":[4397, 4346, 4337, 4356, 4357, 4337, 4366]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":100,"op":"key_seek","client_visible_items_examined":1,"median_ns":2845,"samples_ns":[2854, 2845, 2924, 2895, 2814, 2794, 2774]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":100,"op":"ordinal_iterate","client_visible_items_examined":101,"median_ns":9415,"samples_ns":[9274, 25799, 9234, 9415, 9304, 9424, 9495]}
+{"backend":"redb-4.4.0","n":10000,"k":9999,"op":"key_seek","client_visible_items_examined":1,"median_ns":691,"samples_ns":[701, 681, 701, 671, 711, 691, 681]}
+{"backend":"redb-4.4.0","n":10000,"k":9999,"op":"ordinal_iterate","client_visible_items_examined":10000,"median_ns":383478,"samples_ns":[396949, 372011, 386121, 383478, 383778, 363088, 370818]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":9999,"op":"key_seek","client_visible_items_examined":1,"median_ns":2444,"samples_ns":[2444, 2443, 2484, 2394, 2423, 2463, 2504]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":9999,"op":"ordinal_iterate","client_visible_items_examined":10000,"median_ns":687997,"samples_ns":[694016, 682919, 687997, 687316, 689529, 701327, 650310]}
+{"backend":"redb-4.4.0","n":10000,"k":0,"op":"whole_table_len_includes_outside_prefix","client_visible_items_examined":0,"median_ns":430,"samples_ns":[470, 451, 421, 451, 430, 411, 421]}
+{"backend":"redb-4.4.0","n":10000,"k":0,"op":"prefix_count_iterate","client_visible_items_examined":10000,"median_ns":309166,"samples_ns":[315536, 301364, 301044, 301474, 330909, 343187, 309166]}
+{"backend":"surrealkv-1.0.0","n":10000,"k":0,"op":"prefix_count_iterate","client_visible_items_examined":10000,"median_ns":810441,"samples_ns":[765424, 845224, 827637, 810441, 852755, 799304, 797342]}
+{"correctness":"passed","n":10000,"first_numeric_key":1023,"last_numeric_key":159187,"rank_100_numeric_key":2705,"numeric_key_not_rank":true,"outside_prefix_entries":1,"surrealkv_reopened_after_flush_on_close":true}
+{"backend":"redb-4.4.0","n":100000,"k":0,"op":"key_seek","client_visible_items_examined":1,"median_ns":801,"samples_ns":[801, 811, 801, 831, 741, 801, 761]}
+{"backend":"redb-4.4.0","n":100000,"k":0,"op":"ordinal_iterate","client_visible_items_examined":1,"median_ns":771,"samples_ns":[781, 771, 741, 782, 761, 791, 741]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":0,"op":"key_seek","client_visible_items_examined":1,"median_ns":2794,"samples_ns":[2884, 2784, 2834, 2774, 2844, 2794, 2774]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":0,"op":"ordinal_iterate","client_visible_items_examined":1,"median_ns":2804,"samples_ns":[2734, 2804, 2795, 2904, 2814, 2854, 2774]}
+{"backend":"redb-4.4.0","n":100000,"k":100,"op":"key_seek","client_visible_items_examined":1,"median_ns":751,"samples_ns":[731, 742, 751, 761, 791, 751, 732]}
+{"backend":"redb-4.4.0","n":100000,"k":100,"op":"ordinal_iterate","client_visible_items_examined":101,"median_ns":4316,"samples_ns":[4317, 4336, 4296, 4307, 4316, 4297, 4336]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":100,"op":"key_seek","client_visible_items_examined":1,"median_ns":2915,"samples_ns":[2865, 2944, 2934, 2915, 2874, 2974, 2915]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":100,"op":"ordinal_iterate","client_visible_items_examined":101,"median_ns":9454,"samples_ns":[9354, 9584, 9174, 9214, 9525, 9495, 9454]}
+{"backend":"redb-4.4.0","n":100000,"k":10000,"op":"key_seek","client_visible_items_examined":1,"median_ns":741,"samples_ns":[761, 741, 731, 731, 751, 801, 731]}
+{"backend":"redb-4.4.0","n":100000,"k":10000,"op":"ordinal_iterate","client_visible_items_examined":10001,"median_ns":386883,"samples_ns":[386883, 370588, 370519, 393252, 379852, 391581, 392812]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":10000,"op":"key_seek","client_visible_items_examined":1,"median_ns":3125,"samples_ns":[3114, 3045, 3125, 3165, 3054, 3265, 3205]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":10000,"op":"ordinal_iterate","client_visible_items_examined":10001,"median_ns":674727,"samples_ns":[667296, 679945, 690030, 674727, 657050, 720656, 671342]}
+{"backend":"redb-4.4.0","n":100000,"k":99999,"op":"key_seek","client_visible_items_examined":1,"median_ns":751,"samples_ns":[762, 741, 751, 781, 781, 741, 731]}
+{"backend":"redb-4.4.0","n":100000,"k":99999,"op":"ordinal_iterate","client_visible_items_examined":100000,"median_ns":3866698,"samples_ns":[3840648, 3805525, 3979147, 3819025, 3866698, 3903642, 4059147]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":99999,"op":"key_seek","client_visible_items_examined":1,"median_ns":2874,"samples_ns":[2845, 2945, 2864, 2874, 2905, 2855, 2924]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":99999,"op":"ordinal_iterate","client_visible_items_examined":100000,"median_ns":6832046,"samples_ns":[6651264, 6656471, 6881921, 6809021, 7187823, 7181233, 6832046]}
+{"backend":"redb-4.4.0","n":100000,"k":0,"op":"whole_table_len_includes_outside_prefix","client_visible_items_examined":0,"median_ns":431,"samples_ns":[430, 450, 421, 471, 470, 430, 431]}
+{"backend":"redb-4.4.0","n":100000,"k":0,"op":"prefix_count_iterate","client_visible_items_examined":100000,"median_ns":3167324,"samples_ns":[3167324, 3200624, 3190248, 3155946, 3154003, 3160763, 3397580]}
+{"backend":"surrealkv-1.0.0","n":100000,"k":0,"op":"prefix_count_iterate","client_visible_items_examined":100000,"median_ns":7917963,"samples_ns":[7997924, 8035459, 7917963, 8123152, 7801788, 7835208, 7808958]}
+{"correctness":"passed","n":100000,"first_numeric_key":1023,"last_numeric_key":1596562,"rank_100_numeric_key":2705,"numeric_key_not_rank":true,"outside_prefix_entries":1,"surrealkv_reopened_after_flush_on_close":true}

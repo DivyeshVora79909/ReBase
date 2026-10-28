@@ -1,0 +1,35 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+
+// Analysis only: node this-file.mjs INPUT.jsonl [MORE.jsonl ...]
+// stdout contains JSON. Inputs are the existing measured harness outputs.
+const paths=process.argv.slice(2);
+if(!paths.length){process.stderr.write('Usage: node rebase-linked-read-study-latency.mjs MEASURED.jsonl [...]\n');process.exit(2);}
+const profiles=[1,5,20,80];
+const sources=[],cases=[];
+for(const path of paths){
+ const raw=readFileSync(path,'utf8');
+ sources.push({path,sha256:createHash('sha256').update(raw).digest('hex')});
+ for(const line of raw.trim().split('\n')){
+  const s=JSON.parse(line);if(s.status!=='passed'||s.n!==100000||s.start!==0)continue;
+  if(!Array.isArray(s.samples_ns)||s.samples_ns.length!==3)throw Error('Expected three measured samples');
+  const local=s.median_ns/1e6,loads=s.observation?.attempt?.key_loads;
+  const counters=s.diagnostic?.counters;
+  const bindingCalls=Number.isInteger(counters?.bindingGet)&&Number.isInteger(counters?.bindingGetRange)?counters.bindingGet+counters.bindingGetRange:null;
+  const linked=['linked_ids','linked_hydrate'].includes(s.op);
+  const project=count=>profiles.map(ms=>({added_delay_ms:ms,projected_median_ms:local+ms*count,at_or_over_4500ms:local+ms*count>=4500}));
+  cases.push({backend:s.backend,n:s.n,q:s.q,start:s.start,op:s.op,sample_count:3,measured_median_ms:local,measured_samples_ms:s.samples_ns.map(x=>x/1e6),attempt_key_loads:loads,diagnostic_complete:s.diagnostic?.complete??false,binding_calls:bindingCalls,
+   one_extra_unhidden_remote_trip_per_attempt_miss:linked?project(loads):null,
+   artificial_extra_delay_per_serialized_binding_call:bindingCalls===null?null:project(bindingCalls)});
+ }
+}
+const result={kind:'read-study-latency-sensitivity',sources,profiles_ms:profiles,
+ assumptions:{
+  data_load_model:'measured local median + delay * observed Attempt key_loads. Applies only to linked consumers. Assumes each distinct Attempt cache miss entails exactly one additional unhidden remote trip; SDK caching, batching, overlap or retries can violate this assumption.',
+  binding_call_model:'measured local median + delay * (bindingGet + bindingGetRange), with counts from separate checked diagnostic execution. Artificial delay per serialized API invocation, not network RTT: SDK may serve repeated catalog reads locally.',
+  baseline:'One warmup, three timed fresh read transactions. Backend/OS/storage caches are warm or uncontrolled; no cold-cache or production p95 claim.',
+  threshold:'4500 ms is a conservative analysis warning, not an observed timeout. Ordinary FoundationDB read transaction age limit is about five seconds from the first read; projected durations beyond the budget are not feasible completed single-transaction measurements.',
+  topology:'Local topology does not establish geographic latency; read requests need not visit all replicas, and read versus commit replication paths differ.',
+  raw_ordered_range:'Attempt key_loads is zero because it uses scans; no zero-latency or zero-network-cost implication. Its range batches and output bytes must be accounted separately.'
+ },cases};
+process.stdout.write(JSON.stringify(result,null,2)+'\n');

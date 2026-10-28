@@ -1,0 +1,88 @@
+{
+  "purpose": "Scratch native ordered-key seek versus ordinal offset research, not S0.2 or application acceptance",
+  "recorded_utc": "2026-10-28T08:06:42.507618+00:00",
+  "repository_base": "1560ba1 (parent-provided; no Git commands used)",
+  "changes": "Only /tmp/rebase-order-study files and owned temporary stores; no repository edits or Cargo invocation",
+  "toolchain": "rustc 1.95.0 (59807616e 2026-04-14), direct -O compilation reusing existing release dependencies",
+  "versions": {
+    "redb": "4.4.0",
+    "SurrealKV": "1.0.0",
+    "FoundationDB Rust binding": "0.11.0",
+    "FoundationDB server,cli,libfdb_c": "7.3.77",
+    "Node runner": "24.22.1",
+    "libfdb_c_reported": "7.3.77,3ea44ce1d9003ad095e408039e1f755c319c4dfb,fdb00b073000000"
+  },
+  "host": {
+    "kernel": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_cgroup": "400000 100000",
+    "memory_cgroup": "34359738368",
+    "topology": "One Linux host; embedded Rust process for redb/SurrealKV; one owned local FDB server process and Rust client over loopback; no multi-host results"
+  },
+  "data": {
+    "n": [
+      10000,
+      100000
+    ],
+    "key": "2-byte prefix p/ then big-endian u64; source generator xorshift seed0x6a09e667f3bcc909, increments1..31",
+    "value": "8-byte big-endian source ordinal",
+    "extra": "q/outside extra entry proves whole-table count and selector scope differ from prefix",
+    "source_count": "Expected from independently generated source vector length, not database metadata",
+    "first_numeric_key": 1023,
+    "rank100_numeric_key": 2705,
+    "last_numeric_key_10k": 159187,
+    "last_numeric_key_100k": 1596562
+  },
+  "sampling": {
+    "repetitions": 7,
+    "discarded_warmup_operations": 3,
+    "full_prefix_correctness_warmup": true,
+    "fresh_read_transaction_per_operation": true,
+    "clock": "std::time::Instant; elapsed includes transaction+iterator/read setup, final result validation and drops",
+    "order": "Fixed backend/operation/rank sequence in source, not randomized; no affinity pinning, no cold-cache controls",
+    "SurrealKV": "Durable tree closed using default flush_on_close and reopened before full warm correctness pass and timing; default storage settings",
+    "FDB": "Fresh single ssd cluster; batches1000 source entries committed before read trials; each operation fresh non-snapshot read transaction"
+  },
+  "counter_definitions": {
+    "embedded_client_visible_items_examined": "Explicit public iterator/cursor entries visited; excludes internal tree/LSM page and I/O work",
+    "FDB_client_returned_items": "Public binding returned entries; native selectors1, scan ordinalK returnsK+1",
+    "FDB_binding_read_calls": "Invocations of get_key or get_range, excluding transaction creation, client implementation internals, read-version requests and network exchanges",
+    "FDB_server_scanned_items": "Uninstrumented null; no conversion of client call counts to disk/network requests"
+  },
+  "correctness": {
+    "embedded_rows": 2,
+    "FDB_rows": 2,
+    "FDB_source_all_keys_values": true,
+    "FDB_offset_n_escapes_to_q_outside": true,
+    "result": "passed"
+  },
+  "cleanup": {
+    "owned_FDB_pid": 25043,
+    "owned_FDB_pid_present": false,
+    "temporary_store_paths_present": []
+  },
+  "limits": [
+    "Small warmed local measurements, not asymptotic proof or production scaling/latency claims",
+    "Known-key source vector supplies key; finding unknown rank is the separate ordinal operation",
+    "No application AVL, rank cache or auxiliary tree in measured database paths",
+    "redb metadata len applies to entire table, not arbitrary prefix; prefix counting here explicitly iterates",
+    "Native FDB selectors return one key through one binding call while server offset processing remains uninstrumented",
+    "No writes, contention, concurrent mutation, shard-boundary stress, repeated process trials or multi-host campaign measured"
+  ],
+  "sha256": {
+    "embedded.rs": "8d0f7382366ff35254023ae8450246c64377cfa4e5f369b480a6b69bed101fd8",
+    "embedded.jsonl": "494c8bfeb87167f25fb5c38303e710961bbc55ae4d6bd96d4ad9bc9db003e3c5",
+    "fdb.rs": "568ea0c69e853f0ad86c55d2127d2004497dbcf609d598e1431c8e209da264b0",
+    "fdb.jsonl": "c1097b913d6c9c764c9e128571c8ecbecd6a9f99095ed79823a894fe3dd1e416",
+    "run-fdb.mjs": "41a9418269f310886d3764f1d06aab75f41a4e55a98f4f2f7369db33c8920c1c",
+    "fdb-runner.log": "fc6e540cc3a9f223df099ea442ef7af809d1dbaf6f382dadc2a0406cdfd2b222"
+  },
+  "trial_count": {
+    "embedded_timed_cases": 34,
+    "FDB_timed_cases": 30
+  },
+  "sample_time_s": {
+    "embedded": 0.17665777,
+    "FDB": 4.862957443
+  }
+}
