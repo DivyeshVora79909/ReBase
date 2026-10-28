@@ -58,13 +58,16 @@ The [N2 Equipment example](../tools/node/examples/n2-equipment-workflow.mjs) sho
 
 One process owns a live redb file. Backup and restore destinations must be new.
 The equipment `demo` command is unsupported; its fixture and the ordinary client
-provide the workflow. Bounds are 4,096 public records, 8,192 active outputs and 16,384
-retained output identities, plus shared mutation/query/receipt budgets. Every
-active reservation requires two outputs, including when allocation is zero.
-One pool and three deliveries therefore leave room for 4,092 reservations.
-Each mutation still has at most 64 commands, 32 returning IDs and 200,000 charged
-engine work units. Endpoint indexes avoid opening unaffected subscribers, while
-full fanout may exceed that budget and reject atomically.
+provide the workflow. The model has no configured fixed population ceiling, and
+population counters are u64. Every active reservation requires two outputs,
+including when allocation is zero. Shared limits remain: a 262,144-row
+observation budget for full inventory and check operations, 64 commands, 32
+returning IDs, 200,000 charged engine work units, 128
+query visits, 1,024 receipts, and 64 MiB per backup. Endpoint indexes avoid
+opening unaffected subscribers, while full fanout may exceed the work budget
+and reject atomically. Redb-connected end-to-end checks cover 5,001 and 10,001
+records in scoped tests; this does not establish unrestricted or production
+capacity.
 See [compiled model authoring](compiled-models.md) for the trusted Rust interfaces
 and declared-shape boundary.
 

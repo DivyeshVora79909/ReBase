@@ -1,6 +1,26 @@
 # Compact context — 2026-10-28
 
-## Current handoff — linked read study complete; redesign remains on hold
+## Current handoff — population limit change and bounded valid-data study
+
+The user requested removal of the fixed 4,096 public-record limit and analysis
+of connected valid generation. On `ordered-index-redesign`, compiled models no
+longer impose default public/output/reservation population ceilings. Checked
+`u64` counts, optional model limits, codec `native-slice-kv-8` and limit-bound
+model identity replace the old envelope. Old stores need a matching old binary
+or an explicit migration. Transaction, inventory, receipt, backup, numeric and
+other work bounds remain; no unlimited-capacity claim is made.
+
+[The investigation](research/82-population-scaling-investigation.md) records
+5,001 and 10,001 connected public records through authenticated local redb,
+independent input/derived checks and valid native integrity, plus the original
+ReBase Z3 dependency used directly in one small explicit constraint example.
+Rust library 116/116 and complete Node suite 167/167 pass; the six model snapshots
+are representative, not automatic coverage of all 31 public contracts. Next
+does not declare a Z3 solver dependency. No multi-host, million-record or full
+global-validity generation claim is made. The linked baseline branch remains
+unchanged; the separate ordered-index redesign is still on hold.
+
+## Earlier handoff — linked read study complete
 
 The user paused the core redesign to examine the existing engine's linked read
 costs and requested separate `linked-avl-baseline` and `ordered-index-redesign`

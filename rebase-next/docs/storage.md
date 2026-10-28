@@ -117,22 +117,28 @@ operator function and has no network RPC counterpart.
 ## Data identity and upgrades
 
 The last verified deployment bundle, 0.6.0, uses store format
-`rebase-store-4` and native codec `native-slice-kv-4`. The current 0.16.0 source
-uses `rebase-store-10`, `native-slice-kv-7`, `rebase-effects-4` and
-`rebase-local-api-4`. One store holds one selected
+`rebase-store-4` and native codec `native-slice-kv-4`. Current source uses store
+format `rebase-store-10`, native codec `native-slice-kv-8`, effect codec
+`rebase-effects-4` and API 4; its store header, model identity and configured
+model limits must match. One store holds one selected
 compiled model.
-Model identity hashes the resolved declarations/schemas and the explicit native
-behavior contract revision. Transport formatting and dependency patch bytes do
-not define a data model. Maintainers must bump the affected `Binding::BEHAVIOR`
-when changing binding, calculation, causality or invariants. Calculation uses
+Computed model identity hashes the resolved declarations/schemas, the explicit
+native behavior contract revision, and configured model limits. A binding's
+`Binding::BEHAVIOR` value is its static behavior revision; it contributes to the
+computed identity but does not itself encode the limits. Transport formatting
+and dependency patch bytes do not define a data model. Maintainers must bump
+the affected `Binding::BEHAVIOR` when changing binding, calculation, causality
+or invariants. Calculation uses
 `native_slice::BEHAVIOR_CONTRACT`; Equipment owns its revision in its module.
 Shared semantic changes require bumping every affected binding. Structural/schema changes also
 change the resolved model identity. Evidence independently fingerprints the
 executed sources. Do not confuse a build fingerprint with data compatibility.
 
-Source 0.16.0 separates immutable model/store identity, exact population/reservation
-counts and the numeric authority administration revision. Population is written
-only when its counts change. Domain writes have no global mutation sequence.
+Current source separates immutable model/store identity, exact u64
+population/reservation counts and the numeric authority administration
+revision. Compiled models may configure optional population ceilings; the
+current models configure none. Population is written only when its counts
+change. Domain writes have no global mutation sequence.
 
 | Field | Meaning in API 4 |
 | --- | --- |
@@ -148,11 +154,12 @@ fresh token, so an earlier record token cannot pass CAS after reuse. `check`,
 `inspect` and backup metadata expose no global domain revision. Cursor digest
 semantics are described in the [operation reference](local-prototype.md#query-and-publication-semantics).
 
-The current behavior identities are `rebase-calculation-contract-7`,
-`equipment-reservations-6`, `invoice-assessments-6`,
-`dimensioned-measurements-4`, `effect-demo-ingress-4` and `quantity-flow-2`.
-All require new compatible stores. These identities describe the changed shared
-coordination contract, not new business formulas.
+The current compiled bindings have static behavior revisions recorded in
+[compiled models](compiled-models.md). Computed model identity also includes
+resolved declarations, schemas and configured limits. The current native codec
+is `native-slice-kv-8`. Stores with older codec or model identities are
+rejected; there is no automatic migration. New compatible stores are required
+when either identity changes.
 
 Historically, in 0.14.0 source, calculation behavior was `rebase-calculation-contract-6`,
 equipment behavior was `equipment-reservations-5`, and invoicing behavior was
@@ -176,12 +183,13 @@ including 0.7.0 format 5 and 0.6.0 format 4, without migrating them. Keep each
 matching binary and its backups together. The 0.6.0 bundle remains the last
 verified deployment; source checkpoint acceptance does not certify a new bundle.
 
-The calculation/equipment declared limits remain 4,096 public sources, 8,192
-active private outputs and 16,384 retained role reservations per model.
-Invoicing remains 64 public sources, 256 active outputs and 512 retained roles.
-Measurement allows 64 public sources and no private outputs or reservations.
-Backup remains capped at 64 MiB, and the active receipt window remains 1,024
-operations.
+Current compiled models have no configured fixed population ceiling. Other
+limits remain: full inventory and check operations have a 262,144-row
+observation budget, backups at 64 MiB, the active receipt window at 1,024
+operations, mutation work at 200,000
+units, mutations at 64 commands, returns and pages at 32 rows, and query visits
+at 128. Redb-connected end-to-end checks cover 5,001 and 10,001 records in
+scoped tests only; this is not a claim of unrestricted or production capacity.
 
 Format 2 through 9 stores and their backups intentionally reject in 0.16.0. The
 runtime header is checked before native metadata decoding, so an old store

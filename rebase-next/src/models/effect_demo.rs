@@ -1,6 +1,6 @@
 //! The bounded fake-provider model. Inputs and invariants use the ordinary engine.
 use crate::{
-    binding::{Binding, Limits, NativeInput},
+    binding::{Binding, NativeInput},
     effects::{ActionDeclaration, Template},
     indexes::standard::Standard,
     local::Store,
@@ -112,14 +112,7 @@ impl Binding for EffectDemo {
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
-    fn limits() -> Limits {
-        Limits {
-            public_records: 320,
-            outputs: 0,
-            reservations: 0,
-            per_contract: BTreeMap::from([(101, 64), (205, 256)]),
-        }
-    }
+
     fn declarations() -> Result<Vec<Contract>> {
         let uuid = json!({"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$","x-rebase-binding":"uuid"});
         let optional_time =

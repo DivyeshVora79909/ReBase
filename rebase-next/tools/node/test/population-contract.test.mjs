@@ -125,3 +125,11 @@ test('native catalog quotas, command bounds, and serialized proposal bytes fail 
   assert.equal(oversized.pending, null);
   assert.equal(oversized.cursor, 0);
 });
+
+ test('null population ceiling accepts quotas beyond the former u16 bound', () => {
+  const uncapped = structuredClone(catalog);
+  uncapped.capabilities.limits.public_records = null;
+  uncapped.capabilities.limits.per_contract = {};
+  const prepared = preparePopulation({ ...model, catalog: uncapped }, { Base: 65536 }, { seed: 1 });
+  assert.equal(prepared.quotas.Base, 65536);
+});

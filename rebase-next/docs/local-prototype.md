@@ -51,9 +51,10 @@ The binary selects one of its compiled bindings;
 there is no runtime behavior loader. Model identity binds resolved declarations
 and schemas to the binding's explicit behavior contract and codec. Build bytes,
 HTML/CSS and source-location labels do not define data compatibility.
-Current source uses `rebase-store-10`, `native-slice-kv-7`, `rebase-effects-4`
-and `rebase-local-api-4`, with explicit changed behavior identities. No earlier
-store or saved operation is reinterpreted by this API. Historically, version
+Current source uses `rebase-store-10`, `native-slice-kv-8`, `rebase-effects-4`
+and API 4. Model identity includes configured limits and explicit behavior
+identity. No older store or saved operation is reinterpreted by this API; old
+stores are rejected without automatic migration. Historically, version
 0.4.0 used `rebase-store-4` and `native-slice-kv-4`, calculation behavior
 `rebase-calculation-contract-4` and equipment behavior `equipment-reservations-3`.
 Resolved declarations also contribute to model identity. That version rejected
@@ -220,14 +221,15 @@ private record identities. Record-list filtering does not redefine a root sum.
 
 ## Bounds and validation
 
-Both compiled models permit at most 4,096 public authored records, 8,192 active
-private outputs and 16,384 retained role reservations. The former calculation
-16-record Quote/Posting/Adjustment/Basis limits now share the public-source
-maximum. Equipment quantities have
-model-specific bounds; read its catalog and allocation semantics.
-It allows 64 commands, 32 returning IDs, page limit 32, visit budget 128 and
-200,000 mutation work units. Calculated i128 overflow rejects. This is bounded
-acceptance, not a throughput or production-capacity claim.
+Current compiled models configure no fixed public-record, output or reservation
+ceilings; population counters are u64. Shared limits remain: a 262,144-row
+observation budget for full inventory and check operations, 64 commands, 32
+returning IDs or page rows, 128 query visits, 1,024
+receipts, 200,000 mutation work units and 64 MiB backups. Equipment quantities
+have model-specific bounds; read its catalog and allocation semantics.
+Calculated i128 overflow rejects. Redb-connected end-to-end checks cover 5,001
+and 10,001 records in scoped tests, without establishing unrestricted or
+production capacity.
 
 Ordered reverse AVL routes select affected read endpoints and a compact
 prefix-gate graph preserves final producer dependencies. Tree paths are

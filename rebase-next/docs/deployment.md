@@ -60,12 +60,15 @@ the operation receipt; absence alone does not prove the request failed. SIGINT
 and SIGTERM drain accepted work. RPC batches and notifications are unsupported,
 and replies use `Cache-Control: no-store`.
 
-Calculation and equipment enforce the 4,096 public-source, 8,192 active-output
-and 16,384 retained-output bounds, plus work, query and receipt limits. Invoicing
-has separate bounds of 64 public sources, 256 outputs and 512 retained roles.
-These limits do not establish general capacity or replicated failover. Before a
-binary or model change, stop the old writer, retain verified backups and the
-matching compatible binary, and validate restored state with that binary.
-There is no implicit format migration; use a new store when model or format
-identity changes. See [storage lifecycle](storage.md) for backup, reset,
-receipt-retention and recovery semantics.
+Current compiled models configure no fixed population ceiling, and population
+counters use u64. Shared limits remain: a 262,144-row observation budget for
+full inventory and check operations, 64 MiB backups, 1,024 receipts, 200,000
+mutation work units, 64 commands, 32 returning IDs or page rows, and 128 query
+visits. Redb-connected end-to-end checks cover 5,001
+and 10,001 records in scoped tests; these checks do not establish unrestricted
+or production capacity, or replicated failover. Before a binary or model
+change, stop the old writer, retain verified backups and the matching compatible
+binary, and validate restored state with that binary. Model identity includes
+configured limits. Old stores with earlier identities or codecs are rejected;
+there is no automatic migration. See [storage lifecycle](storage.md) for
+backup, reset, receipt-retention and recovery semantics.

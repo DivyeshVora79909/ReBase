@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import {generateKeyPairSync,randomUUID} from 'node:crypto';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
+import {performance} from 'node:perf_hooks';
+import {connect,resolveConfig,prepareModel,openNative,openOperator,preparePopulation,propose,accept} from '/workspace/ReBase/rebase-next/tools/node/index.mjs';
+const binary='/workspace/ReBase/rebase-next/target/verification-build/debug/rebase-next';
+const results=[];
+for(const n of [10,100,1000]) {
+ const dir=await mkdtemp('/tmp/equipment-population-'); let native,operator,service;
+ const r={n,publicRows:1+2*n,batchSize:32,errors:[],timings:{}}; const begin=performance.now();
+ try {
+ const tenant=randomUUID(),actor=randomUUID();const pair=generateKeyPairSync('ed25519');
+ const identity={issuer:'trial',audience:'trial',public_keys:{local:pair.publicKey.export({type:'spki',format:'pem'}).toString()},max_token_seconds:3600};
+ const methods=['store.check','service.start','service.stop','identity.issue'];
+ const config=resolveConfig({overrides:{native:{binary,environment:{},configuration:{model:'equipment',backend:{kind:'redb',cluster_file:null},target:{mode:'create',path:dir+'/store.redb',tenant,actor},operator_methods:methods}},service:{listen:'127.0.0.1:0',identity,max_inflight:8,request_timeout_seconds:60,effects:null}}});
+ native=await openNative(config);operator=openOperator(native,{scope:native.scope,methods});service=await operator.startService({config:config.service});
+ const token=(await operator.issueIdentity({identity,request:{tenant,actor,epoch:0,ttl:3600,key_id:'local'},privateKeyPem:pair.privateKey.export({type:'pkcs8',format:'pem'}).toString()})).token;
+ const client=connect({endpoint:service.endpoint,credential:token});const model=prepareModel(await native.catalog({scope:'developer'}),{native,selector:'equipment'});
+ r.limits=model.catalog.capabilities.limits;r.model=model.identity;
+ const state=preparePopulation(model,{Pool:1,Delivery:n,Reservation:n},{seed:'equipment-trial-'+n,batchSize:32,
+ strategies:{Pool:()=>({unit:1}),Delivery:()=>({at:'0',quantity:'10'}),Reservation:(_schema,_seed,cursor)=>({starts:String(10+2*(cursor-n-1)),ends:String(11+2*(cursor-n-1)),requested:'7',active:true})},
+ selectContract(eligible,remaining){return ['Pool','Delivery','Reservation'].find(k=>eligible.includes(k)&&remaining[k]>0)},
+ selectReference(child,field,pools){assert.ok(['Delivery','Reservation'].includes(child));assert.equal(field,'pool');assert.equal(pools.Pool.length,1);return ['Pool',pools.Pool[0].id]}});
+ let batches=0,proposeMs=0,prepareMs=0,executeMs=0;const facts=[];
+ const popStart=performance.now();
+ while(Object.values(state.accepted).reduce((a,b)=>a+b,0)<r.publicRows){
+  let t=performance.now();const proposal=await propose(state,{});proposeMs+=performance.now()-t;
+  for(const c of proposal.commands){assert.equal(model.validate(c.contract,c.fields).valid,true);facts.push(c)}
+  t=performance.now();const plan=await client.prepare({model:model.identity,commands:proposal.commands,returning:proposal.returning});prepareMs+=performance.now()-t;state.pending.plan=plan;
+  t=performance.now();const receipt=await client.execute(plan);executeMs+=performance.now()-t;assert.equal(receipt.status,'committed');accept(state,proposal,plan,receipt);batches++;
+ }
+ r.timings.populationMs=performance.now()-popStart;r.timings.proposeMs=proposeMs;r.timings.prepareMs=prepareMs;r.timings.executeMs=executeMs;r.batches=batches;r.accepted=state.accepted;
+ let t=performance.now();let rows=0,reservations=0;const poolId=state.poolIds.Pool[0];
+ for(const c of facts){const row=await client.call('records.get',{model:model.identity,id:c.id});assert.deepEqual(row.input,c.fields);if(c.contract===410){reservations++;if(!r.sampleReservation)r.sampleReservation=row;assert.equal(row.derived.allocated,'7');assert.equal(row.derived.available_before,String(10*n));}rows++}
+ assert.equal(reservations,n);r.verifiedReservations=reservations;r.timings.independentReadMs=performance.now()-t;r.verifiedRows=rows;r.referenceUsage=state.referenceUsage;
+ t=performance.now();r.check=await operator.check();r.timings.storeCheckMs=performance.now()-t;
+ r.pass=true;
+ } catch(e){r.pass=false;r.errors.push({name:e.name,code:e.code,message:e.message,stack:e.stack});}
+ finally{if(service)await operator.stopService({service:service.service});if(native)await native.close();await rm(dir,{recursive:true,force:true});r.cleaned=true;r.timings.totalMs=performance.now()-begin;results.push(r);await writeFile('/tmp/equipment-population-results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(r));}
+ if(!r.pass)break;
+}

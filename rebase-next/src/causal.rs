@@ -614,9 +614,6 @@ pub fn settle<L: FnMut(&[u8]) -> Result<Option<Vec<u8>>>, B: ReactiveBinding>(
             impact(&mut roots, e.root, e.at);
         }
         plans.insert(id, plan);
-        if plans.len() > usize::from(B::limits().public_records) {
-            return Err(Error::new("state_limit", "causal closure"));
-        }
     }
     ws.work.causal_candidates = plans.len() as u64;
     let order = crate::dependency::order(

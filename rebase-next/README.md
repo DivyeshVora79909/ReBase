@@ -69,15 +69,16 @@ limits.
 | Workload bounds and verification limits | [Workloads](docs/workloads.md) · [Workshop](docs/workshop.md) |
 | Deployment configuration | [Deployment](docs/deployment.md) |
 
-Calculation and equipment support up to 4,096 public source records, 8,192
-active private outputs and 16,384 retained output identity reservations, subject
-to explicit work, query and receipt limits. Bounded invoicing supports 64 public
-sources, 256 outputs and 512 retained roles. These are enforced bounds, not a
-general production-capacity claim. Model behavior identities bind the model,
-token and coordination contract; there is no implicit migration between store
-formats or models. Keep each store with its matching compatible binary and
-verified backups. Broader accounting, arbitrary behavior loading, live provider
-adapters, TiKV and a frontend remain deferred.
+Current compiled models have no configured fixed population ceilings; their
+population counters are u64. Model identity includes configured limits, so
+stores created under earlier model/codec identities are rejected and are not
+automatically migrated. The redb-connected end-to-end checks above 4,096 cover
+5,001 and 10,001 records in scoped tests; they do not establish unrestricted or
+production capacity. Other bounds remain: a 262,144-row observation budget for
+full inventory and check operations, 64 MiB backups, 1,024 receipts, 200,000
+mutation work units, 64 commands, 32 returning IDs or page rows, and 128 query
+visits. Broader accounting, arbitrary behavior
+loading, live provider adapters, TiKV and a frontend remain deferred.
 
 Research records preserve the evidence and limits of earlier campaigns. In
 particular, the [N4 result](research/69-node-experiment-result.md),

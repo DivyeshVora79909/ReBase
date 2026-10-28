@@ -10,7 +10,7 @@ use crate::{
     tree::{Node, Root},
 };
 
-pub const CODEC: &str = "native-slice-kv-7";
+pub const CODEC: &str = "native-slice-kv-8";
 
 pub mod decimal {
     use serde::{Deserialize, Deserializer, Serializer, de::Error};
@@ -336,13 +336,6 @@ fn validate<B: Binding>(key: &Key, value: &StoredValue<B>) -> Result<()> {
         (Key::Meta, StoredValue::Meta(meta)) => !meta.codec.is_empty() && !meta.model.is_empty(),
         (Key::Population, StoredValue::Population(population)) => {
             population.counts.keys().all(|code| *code > 0)
-                && population
-                    .counts
-                    .values()
-                    .map(|n| u64::from(*n))
-                    .sum::<u64>()
-                    <= crate::binding::MAX_NATIVE_RECORDS as u64
-                && population.reserved <= crate::binding::MAX_RESERVATIONS
         }
         (Key::Record(_), StoredValue::Record(r)) => {
             r.contract > 0

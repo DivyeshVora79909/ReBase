@@ -1,6 +1,6 @@
 //! Authored observations and reports using the common native tree and scheduler.
 use crate::{
-    binding::{Binding, Limits, NativeInput},
+    binding::{Binding, NativeInput},
     causal::{PublicationValue, ReactiveBinding, Read, Resolved, ResolvedShape},
     index::{IndexCode, TimeKey},
     indexes::measurement::{
@@ -333,14 +333,7 @@ impl Binding for Measurement {
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
-    fn limits() -> Limits {
-        Limits {
-            public_records: 64,
-            outputs: 0,
-            reservations: 0,
-            per_contract: BTreeMap::new(),
-        }
-    }
+
     fn valid_derived(input: &Input, derived: Option<&Derived>) -> bool {
         match (input, derived) {
             (

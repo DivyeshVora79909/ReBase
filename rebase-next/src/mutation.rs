@@ -14,15 +14,26 @@ use std::collections::BTreeSet;
 use uuid::Uuid;
 
 pub fn check_counts<B: Binding>(model: &Prepared<B>, population: &Population) -> Result<()> {
-    let limits = B::limits();
-    let mut public = 0u32;
-    let mut private = 0u32;
+    check_counts_with_limits(model, population, &B::limits())
+}
+
+fn check_counts_with_limits<B: Binding>(
+    model: &Prepared<B>,
+    population: &Population,
+    limits: &binding::Limits,
+) -> Result<()> {
+    let mut public = 0u64;
+    let mut private = 0u64;
     for (&code, &count) in &population.counts {
         let declaration = model.contract(code)?;
         if declaration.visibility == Visibility::Engine {
-            private += u32::from(count)
+            private = private
+                .checked_add(count)
+                .ok_or_else(|| Error::new("state_limit", "population overflow"))?
         } else {
-            public += u32::from(count)
+            public = public
+                .checked_add(count)
+                .ok_or_else(|| Error::new("state_limit", "population overflow"))?
         }
         if limits
             .per_contract
@@ -32,9 +43,11 @@ pub fn check_counts<B: Binding>(model: &Prepared<B>, population: &Population) ->
             return Err(Error::new("state_limit", "contract population"));
         }
     }
-    if public > u32::from(limits.public_records)
-        || private > u32::from(limits.outputs)
-        || population.reserved > limits.reservations
+    if limits.public_records.is_some_and(|limit| public > limit)
+        || limits.outputs.is_some_and(|limit| private > limit)
+        || limits
+            .reservations
+            .is_some_and(|limit| population.reserved > limit)
     {
         return Err(Error::new("state_limit", "bounded model population"));
     }
@@ -349,6 +362,69 @@ mod tests {
     use std::collections::BTreeMap;
     type Image = BTreeMap<Vec<u8>, Vec<u8>>;
     type Applied = (Uuid, Batch, BTreeSet<Vec<u8>>);
+
+    #[test]
+    fn population_codec_and_checks_support_wide_counts_and_reject_sum_overflow() {
+        let model = Prepared::<Quantity>::load().unwrap();
+        let population = Population {
+            counts: BTreeMap::from([(SOURCE, 65536)]),
+            reserved: 65536,
+        };
+        check_counts(&model, &population).unwrap();
+        let key = Key::Population;
+        let bytes = native_codec::encode_for::<Quantity>(
+            &key,
+            &StoredValue::Population(population.clone()),
+        )
+        .unwrap();
+        match native_codec::decode_for::<Quantity>(&key, &bytes).unwrap() {
+            StoredValue::Population(decoded) => assert_eq!(decoded, population),
+            _ => panic!("expected population"),
+        }
+        let overflow = Population {
+            counts: BTreeMap::from([(SOURCE, u64::MAX), (205, 1)]),
+            reserved: 0,
+        };
+        assert_eq!(
+            check_counts(&model, &overflow).unwrap_err().code,
+            "state_limit"
+        );
+    }
+
+    #[test]
+    fn configured_population_caps_accept_boundaries_and_reject_excess() {
+        use crate::{binding::Limits, models::equipment::Equipment};
+        let model = Prepared::<Equipment>::load().unwrap();
+        let limits = Limits {
+            public_records: Some(4),
+            outputs: Some(3),
+            reservations: Some(5),
+            per_contract: BTreeMap::from([(101, 2)]),
+        };
+        let population = Population {
+            counts: BTreeMap::from([(101, 2), (205, 2), (900, 3)]),
+            reserved: 5,
+        };
+        check_counts_with_limits(&model, &population, &limits).unwrap();
+        for (code, count) in [(101, 3), (205, 3), (900, 4)] {
+            let mut excess = population.clone();
+            excess.counts.insert(code, count);
+            assert_eq!(
+                check_counts_with_limits(&model, &excess, &limits)
+                    .unwrap_err()
+                    .code,
+                "state_limit"
+            );
+        }
+        let mut excess = population;
+        excess.reserved = 6;
+        assert_eq!(
+            check_counts_with_limits(&model, &excess, &limits)
+                .unwrap_err()
+                .code,
+            "state_limit"
+        );
+    }
 
     // This native control checks state and read/write sets. The storage
     // conformance schedules independently establish real commit conflicts.

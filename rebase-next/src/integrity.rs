@@ -40,8 +40,8 @@ pub(crate) fn require(condition: bool, what: &str) -> Result<()> {
 // only knows the outer runtime envelope, not this binding's declarations.
 fn check_populations<B: Binding>(
     model: &crate::model::Prepared<B>,
-    counts: &BTreeMap<u16, u16>,
-    reservations: u16,
+    counts: &BTreeMap<u16, u64>,
+    reservations: u64,
 ) -> Result<()> {
     let limits = B::limits();
     let mut public = 0u64;
@@ -49,9 +49,13 @@ fn check_populations<B: Binding>(
     for (&code, &count) in counts {
         let declaration = model.contract(code)?;
         if declaration.visibility == Visibility::Engine {
-            private += u64::from(count);
+            private = private
+                .checked_add(count)
+                .ok_or_else(|| local::corrupt("population overflow"))?;
         } else {
-            public += u64::from(count);
+            public = public
+                .checked_add(count)
+                .ok_or_else(|| local::corrupt("population overflow"))?;
         }
         require(
             limits
@@ -62,9 +66,11 @@ fn check_populations<B: Binding>(
         )?;
     }
     require(
-        public <= u64::from(limits.public_records)
-            && private <= u64::from(limits.outputs)
-            && reservations <= limits.reservations,
+        limits.public_records.is_none_or(|limit| public <= limit)
+            && limits.outputs.is_none_or(|limit| private <= limit)
+            && limits
+                .reservations
+                .is_none_or(|limit| reservations <= limit),
         "declared model population limits",
     )
 }
@@ -371,10 +377,12 @@ impl<'a, B: Binding> Snapshot<'a, B> {
         let table = read.open_table(KV).map_err(local::storage)?;
         let mut all = BTreeMap::new();
         for (i, row) in table.iter().map_err(local::storage)?.enumerate() {
-            require(
-                i < crate::binding::MAX_INVENTORY_ROWS,
-                "integrity inventory budget",
-            )?;
+            if i >= crate::binding::MAX_INVENTORY_ROWS {
+                return Err(Error::new(
+                    "work_limit",
+                    "integrity inventory is incomplete",
+                ));
+            }
             let (key, value) = row.map_err(local::storage)?;
             let key = Key::decode(key.value())?;
             all.insert(
@@ -393,10 +401,6 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 _ => None,
             })
             .collect();
-        require(
-            records.len() <= crate::binding::MAX_NATIVE_RECORDS,
-            "integrity record budget",
-        )?;
         let roots: BTreeMap<_, _> = all
             .iter()
             .filter_map(|(k, v)| match (k, v) {
@@ -455,7 +459,7 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             None
         };
 
-        let mut counts: BTreeMap<_, u16> = store.model().contracts().map(|c| (c.code, 0)).collect();
+        let mut counts: BTreeMap<_, u64> = store.model().contracts().map(|c| (c.code, 0)).collect();
         let mut public = BTreeMap::new();
         let mut readers = BTreeMap::new();
         let mut expected_keys = BTreeSet::from([Key::Meta, Key::Population]);
@@ -469,7 +473,10 @@ impl<'a, B: Binding> Snapshot<'a, B> {
                 r.contract,
                 &serde_json::to_value(&r.input).map_err(local::storage)?,
             )?;
-            *counts.entry(r.contract).or_insert(0u16) += 1;
+            let count = counts.entry(r.contract).or_insert(0u64);
+            *count = count
+                .checked_add(1)
+                .ok_or_else(|| local::corrupt("population overflow"))?;
             expected_keys.insert(Key::Record(id));
             let contract = store.model().contract(r.contract)?;
             for (key, _) in crate::binding::headers(store.model(), id, &r.input, r.version)? {
@@ -552,7 +559,10 @@ impl<'a, B: Binding> Snapshot<'a, B> {
             })
             .collect();
         require(
-            bindings.len() == reserved.len() && bindings.len() == usize::from(population.reserved),
+            bindings.len() == reserved.len()
+                && bindings.len()
+                    == usize::try_from(population.reserved)
+                        .map_err(|_| local::corrupt("reservation count overflow"))?,
             "reservation population",
         )?;
         for (role, binding) in &bindings {
@@ -1252,7 +1262,10 @@ pub(crate) fn check_calculation(store: &Store<Calculation>) -> Result<Value> {
         }
     }
     require(
-        bindings.len() == reserved.len() && bindings.len() == usize::from(population.reserved),
+        bindings.len() == reserved.len()
+            && bindings.len()
+                == usize::try_from(population.reserved)
+                    .map_err(|_| local::corrupt("reservation count overflow"))?,
         "reservation population",
     )?;
     require(
@@ -1617,48 +1630,15 @@ mod tests {
         assert_eq!(walk.seen.len(), 64);
     }
     #[test]
-    fn model_population_limits_are_checked_inside_codec_envelope() {
+    fn populations_exceed_old_source_and_u16_ceilings() {
         use crate::{model::Prepared, models::equipment::Equipment};
         let equipment = Prepared::<Equipment>::load().unwrap();
-        let limits = Equipment::limits();
-        // Per-model limits remain checked independently of codec decoding.
+        for count in [4097, 65536, u64::MAX] {
+            assert!(check_populations(&equipment, &BTreeMap::from([(101, count)]), count).is_ok());
+        }
         assert!(
-            check_populations(
-                &equipment,
-                &BTreeMap::from([(101, limits.public_records)]),
-                0
-            )
-            .is_ok()
+            check_populations(&equipment, &BTreeMap::from([(101, u64::MAX), (205, 1)]), 0).is_err()
         );
-        assert!(
-            check_populations(
-                &equipment,
-                &BTreeMap::from([(101, limits.public_records + 1)]),
-                0
-            )
-            .is_err()
-        );
-        assert!(
-            check_populations(
-                &equipment,
-                &BTreeMap::from([(900, limits.outputs)]),
-                limits.reservations
-            )
-            .is_ok()
-        );
-        assert!(
-            check_populations(
-                &equipment,
-                &BTreeMap::from([(900, limits.outputs + 1)]),
-                limits.reservations
-            )
-            .is_err()
-        );
-        assert!(check_populations(&equipment, &BTreeMap::new(), limits.reservations + 1).is_err());
-        let calculation = Prepared::<Calculation>::load().unwrap();
-        let limit = Calculation::limits().per_contract[&3];
-        assert!(check_populations(&calculation, &BTreeMap::from([(3, limit)]), 0).is_ok());
-        assert!(check_populations(&calculation, &BTreeMap::from([(3, limit + 1)]), 0).is_err());
     }
     #[test]
     fn selector_checker_rejects_wrong_order_imbalance_and_disconnected_nodes() {

@@ -297,18 +297,12 @@ impl<B: Binding> Prepared<B> {
         }
 
         let limits = B::limits();
-        if limits.public_records == 0
-            || limits.public_records > crate::binding::MAX_PUBLIC_RECORDS
-            || limits.outputs > crate::binding::MAX_OUTPUTS
-            || limits.reservations > crate::binding::MAX_RESERVATIONS
-            || limits
-                .per_contract
-                .keys()
-                .any(|code| !declarations.iter().any(|c| c.code == *code))
+        if limits
+            .per_contract
+            .keys()
+            .any(|code| !declarations.iter().any(|c| c.code == *code))
         {
-            return Err(model_error(
-                "model limits exceed the supported bounded runtime or name an unknown contract",
-            ));
+            return Err(model_error("model limits name an unknown contract"));
         }
         let mut names = BTreeSet::new();
         let mut validators = BTreeMap::new();
@@ -598,8 +592,8 @@ impl<B: Binding> Prepared<B> {
             map.remove("schema_source");
             map.remove("behavior_source");
         }
-        let semantic =
-            serde_json::to_value((semantic, &indexes)).map_err(|e| model_error(e.to_string()))?;
+        let semantic = serde_json::to_value((semantic, &indexes, &limits))
+            .map_err(|e| model_error(e.to_string()))?;
         let bytes = serde_json::to_vec(&semantic).map_err(|e| model_error(e.to_string()))?;
         let mut hash = Sha256::new();
         hash.update(b"rebase-next-local-model-v1\0");

@@ -2,7 +2,7 @@
 //! Credits, payments and linked refunds are explicit facts. No tax adjustments
 //! or external money transfers are invented by the model.
 use crate::{
-    binding::{Binding, Limits, NativeInput},
+    binding::{Binding, NativeInput},
     causal::{
         Emit, PublicationRead, PublicationValue, ReactiveBinding, Read, Resolved, ResolvedShape,
     },
@@ -807,14 +807,7 @@ impl Binding for Invoicing {
     fn engine() -> Result<Model> {
         Ok(Model::from_behavior(Self::NAME, Self::BEHAVIOR))
     }
-    fn limits() -> Limits {
-        Limits {
-            public_records: 64,
-            outputs: 256,
-            reservations: 512,
-            per_contract: BTreeMap::new(),
-        }
-    }
+
     fn valid_derived(input: &Input, derived: Option<&Derived>) -> bool {
         matches!(
             (input, derived),

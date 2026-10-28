@@ -316,7 +316,7 @@ export function checkSourceBackup({ model, facts, backup, roleHistory } = {}) {
 function validateRoleHistory(history) {
   if (history === undefined) return undefined;
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-  fail(Array.isArray(history) && history.length <= 16_384, 'role_history', 'roleHistory must be an array of at most 16384 reservations');
+  fail(Array.isArray(history), 'role_history', 'roleHistory must be an array');
   const roles = new Map(), outputs = new Set();
   for (const row of history) {
     fail(row && typeof row === 'object' && !Array.isArray(row)
@@ -331,7 +331,6 @@ function validateRoleHistory(history) {
 }
 
 function equipment(facts) {
-  fail(Object.keys(facts).length <= 4096, 'state_limit', 'Equipment source bound');
   const events = new Map();
   const derived = {};
   const dependencies = [];
@@ -410,7 +409,6 @@ function equipment(facts) {
 }
 
 function quantity(facts) {
-  fail(Object.keys(facts).length <= 16, 'state_limit', 'Quantity source limit');
   const dependencies = [];
   const parents = new Map();
   for (const [id, row] of Object.entries(facts)) {
@@ -448,7 +446,6 @@ function quantity(facts) {
 }
 
 function measurement(facts) {
-  fail(Object.keys(facts).length <= 64, 'state_limit', 'Measurement source bound');
   const roots = new Map(Object.entries(facts).filter(([, row]) => row.contract === 101).map(([id]) => [id, []]));
   const derived = {};
   const queryResults = {};

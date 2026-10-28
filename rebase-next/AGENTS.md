@@ -5,7 +5,18 @@ its relevant companion. Historical evidence remains available through their link
 Keep implementation, dependencies and current tools inside rebase-next/. The
 original ReBase is inspiration and research input, not a runtime dependency.
 
-## Current instruction — linked read study; core redesign on hold
+## Current instruction — population ceilings removed; index redesign on hold
+
+The user requested removal of the fixed population ceilings and investigation of
+the actual valid-data pipeline. On `ordered-index-redesign`, the population
+counter is widened and model limits are optional; the codec and model identity
+changed. Read [the bounded investigation](research/82-population-scaling-investigation.md)
+for connected redb results, solver scope, remaining budgets and model coverage.
+Do not infer million-record, multi-host or universal valid-generation support.
+Preserve the tested `linked-avl-baseline` branch. The ordered-index redesign
+remains on hold until the user resumes that work.
+
+## Earlier instruction — linked read study
 
 The user's latest direction holds the implementation/redesign program and asks
 for a read-cost study of the existing linked/AVL layout. The core source remains
@@ -15,8 +26,8 @@ processes, explicit latency sensitivities, and resource-profile failures. This
 is research evidence, not S0.2 acceptance or a layout selection.
 
 The user requested separate `linked-avl-baseline` and `ordered-index-redesign`
-branches. Preserve the tested existing engine on the former; the latter is a
-reserved starting point, with no redesign implementation yet. Main is unchanged
+branches. Preserve the tested existing engine on the former; the latter now
+contains population-limit changes, but no ordered-index implementation. Main is unchanged
 by this study. Do not start S0.2 or change the core until the user resumes that
 work. Root alone integrates and pushes the user-selected branches; preserve
 unexpected remote work and never force-push.

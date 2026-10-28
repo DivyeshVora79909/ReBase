@@ -1,0 +1,254 @@
+[
+  {
+    "n": 10,
+    "publicRows": 21,
+    "batchSize": 32,
+    "errors": [],
+    "timings": {
+      "populationMs": 68.61762499999998,
+      "proposeMs": 3.2202149999999676,
+      "prepareMs": 13.870221000000015,
+      "executeMs": 49.63375399999998,
+      "independentReadMs": 30.43679000000003,
+      "storeCheckMs": 18.53504399999997,
+      "totalMs": 250.89968299999998
+    },
+    "limits": {
+      "commands": 64,
+      "outputs": 8192,
+      "page_limit": 32,
+      "per_contract": {},
+      "public_records": 4096,
+      "receipts": 1024,
+      "request_bytes": 65536,
+      "reservations": 16384,
+      "returning": 32,
+      "visit_budget": 128
+    },
+    "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+    "batches": 2,
+    "accepted": {
+      "Pool": 1,
+      "Delivery": 10,
+      "Reservation": 10
+    },
+    "sampleReservation": {
+      "contract": 410,
+      "derived": {
+        "allocated": "7",
+        "available_before": "100"
+      },
+      "id": "33cfa0a1-5dd6-51c0-a551-5647d0c2e4be",
+      "input": {
+        "active": true,
+        "ends": "11",
+        "pool": "958171d7-c994-58c9-add9-c489be71dda1",
+        "requested": "7",
+        "starts": "10"
+      },
+      "version": "30c5bad0-d83a-4239-bce6-e343275fda7f"
+    },
+    "verifiedReservations": 10,
+    "verifiedRows": 21,
+    "referenceUsage": {
+      "Delivery\u0000pool\u0000Pool\u0000958171d7-c994-58c9-add9-c489be71dda1": 10,
+      "Reservation\u0000pool\u0000Pool\u0000958171d7-c994-58c9-add9-c489be71dda1": 10
+    },
+    "check": {
+      "effects": {
+        "accounted_bytes": 4096,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 0,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 0,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+      "nodes": 30,
+      "receipts": 2,
+      "records": 41,
+      "roots": 1,
+      "rows": 236,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "1c1baafb-bfea-49d3-9850-e6d72df702c4"
+    },
+    "pass": true,
+    "cleaned": true
+  },
+  {
+    "n": 100,
+    "publicRows": 201,
+    "batchSize": 32,
+    "errors": [],
+    "timings": {
+      "populationMs": 623.0620439999999,
+      "proposeMs": 6.350865000000113,
+      "prepareMs": 23.14152100000024,
+      "executeMs": 584.0336909999997,
+      "independentReadMs": 254.3227240000001,
+      "storeCheckMs": 107.31073300000003,
+      "totalMs": 1062.20961
+    },
+    "limits": {
+      "commands": 64,
+      "outputs": 8192,
+      "page_limit": 32,
+      "per_contract": {},
+      "public_records": 4096,
+      "receipts": 1024,
+      "request_bytes": 65536,
+      "reservations": 16384,
+      "returning": 32,
+      "visit_budget": 128
+    },
+    "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+    "batches": 8,
+    "accepted": {
+      "Pool": 1,
+      "Delivery": 100,
+      "Reservation": 100
+    },
+    "sampleReservation": {
+      "contract": 410,
+      "derived": {
+        "allocated": "7",
+        "available_before": "1000"
+      },
+      "id": "234f00e9-d6f5-507b-a99e-1efed302e807",
+      "input": {
+        "active": true,
+        "ends": "11",
+        "pool": "5316d08d-d6bd-513f-a386-58323f2d8f32",
+        "requested": "7",
+        "starts": "10"
+      },
+      "version": "ef0328fc-deeb-4590-87d1-77f866becb7e"
+    },
+    "verifiedReservations": 100,
+    "verifiedRows": 201,
+    "referenceUsage": {
+      "Delivery\u0000pool\u0000Pool\u00005316d08d-d6bd-513f-a386-58323f2d8f32": 100,
+      "Reservation\u0000pool\u0000Pool\u00005316d08d-d6bd-513f-a386-58323f2d8f32": 100
+    },
+    "check": {
+      "effects": {
+        "accounted_bytes": 4096,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 0,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 0,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+      "nodes": 300,
+      "receipts": 8,
+      "records": 401,
+      "roots": 1,
+      "rows": 2306,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "19ebb5a5-5dd0-4e9c-bd04-aa4584938654"
+    },
+    "pass": true,
+    "cleaned": true
+  },
+  {
+    "n": 1000,
+    "publicRows": 2001,
+    "batchSize": 32,
+    "errors": [],
+    "timings": {
+      "populationMs": 10332.263493999999,
+      "proposeMs": 49.033173999995824,
+      "prepareMs": 230.58694800000217,
+      "executeMs": 9962.188586000002,
+      "independentReadMs": 3852.2980769999995,
+      "storeCheckMs": 1616.3232960000005,
+      "totalMs": 15885.485173000001
+    },
+    "limits": {
+      "commands": 64,
+      "outputs": 8192,
+      "page_limit": 32,
+      "per_contract": {},
+      "public_records": 4096,
+      "receipts": 1024,
+      "request_bytes": 65536,
+      "reservations": 16384,
+      "returning": 32,
+      "visit_budget": 128
+    },
+    "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+    "batches": 64,
+    "accepted": {
+      "Pool": 1,
+      "Delivery": 1000,
+      "Reservation": 1000
+    },
+    "sampleReservation": {
+      "contract": 410,
+      "derived": {
+        "allocated": "7",
+        "available_before": "10000"
+      },
+      "id": "a9ac8762-bfcb-5ede-a420-3b4b02b067ec",
+      "input": {
+        "active": true,
+        "ends": "11",
+        "pool": "73a770e4-e229-594b-a047-de5ca438086b",
+        "requested": "7",
+        "starts": "10"
+      },
+      "version": "29e7df4a-3494-4397-903c-e14989b6430c"
+    },
+    "verifiedReservations": 1000,
+    "verifiedRows": 2001,
+    "referenceUsage": {
+      "Delivery\u0000pool\u0000Pool\u000073a770e4-e229-594b-a047-de5ca438086b": 1000,
+      "Reservation\u0000pool\u0000Pool\u000073a770e4-e229-594b-a047-de5ca438086b": 1000
+    },
+    "check": {
+      "effects": {
+        "accounted_bytes": 4096,
+        "blocked": 0,
+        "expired_leases": 0,
+        "facts": 0,
+        "inbox": 0,
+        "inbox_pending": 0,
+        "oldest_eligible_age_ms": null,
+        "quarantined": false,
+        "reserved_facts": 0,
+        "retained": 0,
+        "uncertain": 0,
+        "unresolved": 0,
+        "worker_mode": "disabled"
+      },
+      "model": "186bc533c7f3e53e9bde7d6db7b83c61573fb48b7f5d2fecf922675c80d7963c",
+      "nodes": 3000,
+      "receipts": 64,
+      "records": 4001,
+      "roots": 1,
+      "rows": 23006,
+      "scope": "complete current state, indexes, links, calculations and receipt structure; not historical receipt truth",
+      "status": "valid",
+      "store": "79354c61-0561-4586-9602-c876a1ebfe8a"
+    },
+    "pass": true,
+    "cleaned": true
+  }
+]

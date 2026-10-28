@@ -6,10 +6,13 @@ reference, permission, invariant or capacity limit is valid. The server remains
 authoritative. The current helper surface is `preparePopulation`, `propose`,
 `accept` and `reject` from [`tools/node/index.mjs`](../tools/node/index.mjs).
 The complete [N3 example](../tools/node/examples/n3-population.mjs) shows one
-composition. N6 bootstrap and release acceptance remain pending.
+composition. N6 bootstrap and release acceptance are accepted within their
+documented bounds; this does not claim unrestricted production capacity.
 
-Population state is bounded by the compiled catalog's public record limit and
-the caller's declared per-contract counts. Preparation validates the public
+Population state uses u64 counters. Current compiled models configure no fixed
+population ceiling; mutation work, query and receipt limits still apply. Full
+inventory and check operations have a 262,144-row observation budget; this is
+not a population admission ceiling. Preparation validates the public
 contract schemas, builds reproducible generators from a seed and keeps explicit
 strategies separate from generated values. A proposal uses the current
 operation context and caller-supplied relationships; the helper does not infer
@@ -31,13 +34,17 @@ into a durable server-side population job.
 
 ## Model bounds
 
-Calculation and Equipment each permit up to 4,096 public source records, 8,192
-active private outputs and 16,384 retained output identity reservations. The
-200,000 work-unit budget, query visit limit and receipt capacity still apply;
-large causal closures can reject atomically. Invoicing is separately bounded
-at 64 public sources, 256 outputs and 512 retained roles. These are enforced
-model limits, not performance claims. See [Equipment](equipment.md),
+Current models have no configured fixed public-record, output or reservation
+ceilings. Other limits apply to their respective operations: full inventory
+and check operations have a 262,144-row observation budget; mutations have a
+200,000 work-unit budget and 64-command maximum; queries have 128 visits; the
+active receipt window is 1,024; and returns and pages have 32-row limits. Large
+causal closures can reject atomically. Computed model identity includes configured
+limits; changing identity requires a new compatible store, and old stores are
+rejected without automatic migration. See [Equipment](equipment.md),
 [Invoicing](invoicing.md), [workload limits](workloads.md), and the dated
 [G9 population evidence](../research/55-population-tooling-result.md) for its
-original campaign results. The older Python value-provider workflow is retired;
+original campaign results. Redb-connected end-to-end checks now cover 5,001 and
+10,001 records in scoped tests, without claiming unrestricted or production
+capacity. The older Python value-provider workflow is retired;
 use explicit authored strategies or the current caller-owned Node generator.

@@ -17,7 +17,7 @@ export function preparePopulation(model, counts, options = {}) {
   }
   const catalog = cloneJson(model.catalog, 'model catalog');
   const limits = catalog.capabilities?.limits;
-  if (!isRecord(limits) || !Number.isSafeInteger(limits.public_records)) {
+  if (!isRecord(limits) || !(limits.public_records === null || (Number.isSafeInteger(limits.public_records) && limits.public_records >= 0))) {
     throw new TypeError('native catalog must publish public_records limits');
   }
   if (!isRecord(counts)) throw new TypeError('counts must be an object keyed by public contract name');
@@ -39,7 +39,7 @@ export function preparePopulation(model, counts, options = {}) {
     if (!contracts.has(name)) throw new TypeError(`unknown or private contract in counts: ${name}`);
     nonnegativeInteger(value, `count for ${name}`);
   }
-  if (Object.values(quotas).reduce((a, b) => a + b, 0) > limits.public_records) {
+  if (limits.public_records !== null && Object.values(quotas).reduce((a, b) => a + b, 0) > limits.public_records) {
     throw new TypeError('requested quotas exceed native public_records limit');
   }
   const perContract = limits.per_contract ?? {};
@@ -82,7 +82,7 @@ export function preparePopulation(model, counts, options = {}) {
       identities.add(row.id);
     }
   }
-  if (identities.size + Object.values(quotas).reduce((a, b) => a + b, 0) > limits.public_records) {
+  if (limits.public_records !== null && identities.size + Object.values(quotas).reduce((a, b) => a + b, 0) > limits.public_records) {
     throw new TypeError('existing IDs plus requested quotas exceed native public_records lower-bound limit');
   }
   for (const [name, quota] of Object.entries(quotas)) {

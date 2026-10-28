@@ -11,12 +11,7 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fmt::Debug};
 use uuid::Uuid;
 
-// Outer supported envelopes. Each compiled binding may declare smaller limits;
-// command, transport, receipt and per-attempt work budgets remain independent.
-pub const MAX_PUBLIC_RECORDS: u16 = 4096;
-pub const MAX_OUTPUTS: u16 = 8192;
-pub const MAX_RESERVATIONS: u16 = 16384;
-pub const MAX_NATIVE_RECORDS: usize = MAX_PUBLIC_RECORDS as usize + MAX_OUTPUTS as usize;
+// Full inventory operations retain an independent work budget.
 pub const MAX_INVENTORY_ROWS: usize = 262144;
 
 pub trait NativeInput:
@@ -31,19 +26,20 @@ pub trait NativeInput:
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Limits {
-    pub public_records: u16,
-    pub outputs: u16,
-    pub reservations: u16,
-    pub per_contract: BTreeMap<u16, u16>,
+    /// None means no configured population ceiling; work and storage limits still apply.
+    pub public_records: Option<u64>,
+    pub outputs: Option<u64>,
+    pub reservations: Option<u64>,
+    pub per_contract: BTreeMap<u16, u64>,
 }
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            public_records: MAX_PUBLIC_RECORDS,
-            outputs: MAX_OUTPUTS,
-            reservations: MAX_RESERVATIONS,
+            public_records: None,
+            outputs: None,
+            reservations: None,
             per_contract: BTreeMap::new(),
         }
     }

@@ -363,7 +363,7 @@ fn snapshot(db: &Database) -> Result<Value> {
         let (key, value) = row?;
         let decoded = native_codec::decode(&Key::decode(key.value())?, value.value())?;
         rows.push(json!({"key":native_codec::hex(key.value()),"value":native_codec::hex(value.value()),"decoded":decoded}));
-        if rows.len() > 4096 {
+        if rows.len() > rebase_semantic_proof::binding::MAX_INVENTORY_ROWS {
             return Err(bad("native snapshot row bound exceeded"));
         }
     }

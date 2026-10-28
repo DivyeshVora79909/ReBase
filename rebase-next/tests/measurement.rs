@@ -19,8 +19,8 @@ use uuid::Uuid;
 struct Directory(PathBuf);
 impl Directory {
     fn new() -> Self {
-        let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("target/measurement-tests")
+        let p = std::env::temp_dir()
+            .join("rebase-measurement-tests")
             .join(Uuid::new_v4().to_string());
         std::fs::create_dir_all(&p).unwrap();
         Self(p)
@@ -354,7 +354,7 @@ fn measurement_schemas_and_native_objects_are_closed_and_exact() {
 }
 
 #[test]
-fn measurement_population_limit_and_alternate_avl_shapes_use_complete_source_checks() {
+fn measurement_beyond_old_limit_and_alternate_avl_shapes_use_complete_source_checks() {
     let dir = Directory::new();
     let model = Arc::new(Prepared::<Measurement>::load().unwrap());
     let mut values = vec![];
@@ -381,16 +381,17 @@ fn measurement_population_limit_and_alternate_avl_shapes_use_complete_source_che
             run(&store, json!(commands));
         }
         values.push(read(&store, id(10), json!({"kind":"summary"})));
-        let before = store.observe_for_verification().unwrap();
-        assert!(
-            store
-                .mutate(&request(
-                    &store,
-                    json!([{"op":"create","id":id(999),"contract":101,"fields":{"unit":7}}])
-                ))
-                .is_err()
+        run(
+            &store,
+            json!([{"op":"create","id":id(999),"contract":101,"fields":{"unit":7}}]),
         );
-        assert_eq!(store.observe_for_verification().unwrap(), before);
+        assert_eq!(
+            store.inspect().unwrap()["records"]
+                .as_array()
+                .unwrap()
+                .len(),
+            65
+        );
     }
     assert_eq!(values[0], values[1]);
     assert_eq!(values[0], stats(63, 0, Some(-31), Some(31), Some(7)));

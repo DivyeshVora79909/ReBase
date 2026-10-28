@@ -1,7 +1,7 @@
 //! Binding for the original compiled calculation model.
 pub use crate::binding::Calculation;
 use crate::{
-    binding::{Binding, Limits, NativeInput},
+    binding::{Binding, NativeInput},
     local::Store,
     model::{Contract, Prepared},
     native_slice::{
@@ -45,14 +45,7 @@ impl Binding for Calculation {
     fn engine() -> Result<Model> {
         Model::prepare()
     }
-    fn limits() -> Limits {
-        Limits {
-            per_contract: [3, 6, 9, 10]
-                .map(|code| (code, crate::binding::MAX_PUBLIC_RECORDS))
-                .into(),
-            ..Limits::default()
-        }
-    }
+
     fn valid_derived(input: &Input, derived: Option<&Calculated>) -> bool {
         matches!(
             (input.contract(), derived),

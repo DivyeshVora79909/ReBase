@@ -56,8 +56,8 @@ pub struct Meta {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Population {
-    pub counts: BTreeMap<u16, u16>,
-    pub reserved: u16,
+    pub counts: BTreeMap<u16, u64>,
+    pub reserved: u64,
 }
 
 #[derive(Clone, Copy, Debug)]

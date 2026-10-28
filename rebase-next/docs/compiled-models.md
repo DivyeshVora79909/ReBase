@@ -11,8 +11,9 @@ The [N1 catalog example](../tools/node/examples/n1-model-catalog.mjs) reads a pu
 The [invoicing model](invoicing.md) adds fractional pricing, chronological tax
 reassessment, payments and linked refunds using the same interfaces, with typed
 authored-parent parameters and explicit money memberships.
-Select `invoicing`; its initial source/output/retained envelope is
-64/256/512 rather than calculation/equipment's larger accepted workload profile.
+Select `invoicing` to use its compiled behavior and declarations. Current model
+bindings do not configure fixed public-record, output or reservation ceilings;
+shared work, inventory, query and receipt bounds still apply.
 
 The [effect-demo model](external-effects.md) adds immutable Dispatch requests
 committed with Account changes. Optional `Binding::effect_action` and
@@ -162,14 +163,14 @@ two-bound financial sum windows. This is not a facility for arbitrary monoids,
 arbitrary query predicates or automatically discovered dependencies. Adding a
 new aggregate or result type needs an explicit engine contract.
 
-Calculation and equipment allow 4,096 public source records, 8,192 active private
-outputs and 16,384 retained output identity reservations. Each active equipment
-reservation consumes two outputs, including zero allocations. Calculation has
-no separate 16-record Quote/Posting/Adjustment/Basis cap. Mutations allow 1–64
-distinct source commands, at most 32 returning IDs and 200,000 charged engine
-work units. Public pages, candidate visits, receipts and transport bytes have
-separate limits published in the model catalog. A logarithmic tree path does
-not bound an affected causal closure.
+Current compiled models configure no fixed public-record, output or reservation
+ceilings. Population and reservation counters are u64, and configured limits
+participate in computed model identity. Shared limits remain: full inventory
+and check operations have a 262,144-row observation budget; mutations have
+64-command and 200,000 charged work-unit limits; returns
+and pages at 32 rows; query visits at 128; receipts at 1,024; and backups at 64
+MiB. Each active equipment reservation consumes two outputs, including zero
+allocations. A logarithmic tree path does not bound an affected causal closure.
 
 Tree insertion, removal and prefix lookup follow balanced paths. Point-addressed
 reverse AVL routes retain subscriber ranges and select affected readers from
@@ -193,12 +194,14 @@ Model identity includes explicit behavior identity and resolved declarations;
 source-file presentation paths do not define stored semantics. Bump behavior
 identity when bindings, formulas, causality or invariants change, and codec/store
 versions when those formats change. Earlier proof evidence remains dated.
-Current source 0.16.0 uses store 10 /native codec 7 /effect codec 4 /API 4, with
-calculation behavior `rebase-calculation-contract-7`, equipment
-`equipment-reservations-6`, invoicing `invoice-assessments-6`, measurement
-`dimensioned-measurements-4`, effect-demo `effect-demo-ingress-4` and quantity
-`quantity-flow-2`. These identities reflect the shared token/coordination contract;
-the declared business formulas remain unchanged. New-format stores are required.
+Current source uses store format `rebase-store-10`, native codec
+`native-slice-kv-8`, effect codec `rebase-effects-4` and API 4. Its compiled
+behavior identities remain `rebase-calculation-contract-7`,
+`equipment-reservations-6`, `invoice-assessments-6`,
+`dimensioned-measurements-4`, `effect-demo-ingress-4` and `quantity-flow-2`.
+Model identity includes configured limits and compiled behavior. Older stores
+are rejected; there is no automatic migration. New compatible stores are
+required when model or codec identity changes.
 
 Historically, 0.14.0 source used store 9 /native codec 6 /effect codec 3 /API 3,
 calculation behavior `rebase-calculation-contract-6`, equipment behavior

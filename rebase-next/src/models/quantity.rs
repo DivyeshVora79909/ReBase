@@ -1,6 +1,6 @@
 //! Small non-accounting publication model for the V1 workshop examples.
 use crate::{
-    binding::{Binding, Limits, NativeInput},
+    binding::{Binding, NativeInput},
     causal::{PublicationRead, PublicationValue, ReactiveBinding, Resolved, ResolvedShape},
     indexes::standard::Standard,
     integrity::{Snapshot, require},
@@ -181,14 +181,7 @@ impl Binding for Quantity {
     fn declarations() -> Result<Vec<Contract>> {
         Ok(declarations())
     }
-    fn limits() -> Limits {
-        Limits {
-            public_records: 16,
-            outputs: 0,
-            reservations: 0,
-            per_contract: BTreeMap::new(),
-        }
-    }
+
     fn valid_derived(_input: &Input, derived: Option<&Derived>) -> bool {
         derived.is_some_and(|v| (-MAX_QUANTITY..=MAX_QUANTITY).contains(&v.quantity))
     }

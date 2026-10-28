@@ -377,8 +377,9 @@ impl<B: Binding> Store<B> {
                 .model
                 .contracts()
                 .filter(|c| c.visibility == Visibility::Public)
-                .map(|c| u64::from(*population.counts.get(&c.code).unwrap_or(&0)))
-                .sum::<u64>()
+                .map(|c| *population.counts.get(&c.code).unwrap_or(&0))
+                .try_fold(0u64, |total, count| total.checked_add(count))
+                .ok_or_else(|| corrupt("public population overflow"))?
         {
             return Err(corrupt("public index population"));
         }
@@ -975,7 +976,7 @@ fn observe_tables(
     let table = index(PUBLIC)?;
     let mut rows = vec![];
     for (i, row) in table.iter().map_err(storage)?.enumerate() {
-        if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
+        if i >= crate::binding::MAX_INVENTORY_ROWS {
             return Err(Error::new(
                 "work_limit",
                 "public index observation is incomplete",
@@ -989,7 +990,7 @@ fn observe_tables(
         let table = index(crate::security::READERS)?;
         let mut rows = vec![];
         for (i, row) in table.iter().map_err(storage)?.enumerate() {
-            if i >= usize::from(crate::binding::MAX_PUBLIC_RECORDS) {
+            if i >= crate::binding::MAX_INVENTORY_ROWS {
                 return Err(Error::new(
                     "work_limit",
                     "reader index observation incomplete",
@@ -1095,8 +1096,8 @@ mod tests {
     struct Directory(PathBuf);
     impl Directory {
         fn new() -> Self {
-            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("target/local-tests")
+            let path = std::env::temp_dir()
+                .join("rebase-local-tests")
                 .join(Uuid::new_v4().to_string());
             std::fs::create_dir_all(&path).unwrap();
             Self(path)
@@ -1204,12 +1205,15 @@ mod tests {
             "model_mismatch"
         );
         let original = read_meta(&store.db.begin_read().unwrap()).unwrap();
-        for context_change in [true, false] {
+        for change in [0, 1, 2] {
+            let context_change = change == 0;
             let mut meta = original.clone();
             if context_change {
                 meta.actor = Uuid::from_u128(99);
-            } else {
+            } else if change == 1 {
                 meta.model = "different".into();
+            } else {
+                meta.codec = "native-slice-kv-7".into();
             }
             let write = store.db.begin_write().unwrap();
             write
